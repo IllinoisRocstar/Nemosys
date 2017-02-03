@@ -1,0 +1,4 @@
+#<destination>|<build target>|<path>|<doc_src>
+local|/Projects/IR/Software/Automatic/CDash_ilrocstar5/Rocstar/share/html|Docs/html
+local|/Projects/IR/Software/Automatic/CDash_ilrocstar5/Rocstar/share/legacy|Docs/legacy
+git|gh-pages|Docs/html

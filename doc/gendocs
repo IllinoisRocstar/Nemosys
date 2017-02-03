@@ -1,0 +1,3 @@
+./cleandocs
+doxygen IRProject.cfg
+tar zcvf irproject_html_docs.tgz html

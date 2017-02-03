@@ -1,0 +1,6 @@
+Build.dat
+build/*
+*.swp
+install/*
+lnInclude/
+build/
