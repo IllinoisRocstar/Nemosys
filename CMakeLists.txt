@@ -100,11 +100,9 @@ ELSE()
 ENDIF()
 
 # Compiled objects output paths
-SET(EXECUTABLE_OUTPUT_PADTKPROJECT_BINARY_DIR}/bin 
-     CACHE PATH "Single directory for all executables.")
-SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib 
-     CACHE PATH "Single directory for all libraries and archives.")
-MARK_AS_ADVANCED(LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Set up RPATH
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -217,11 +215,11 @@ TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
 INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
 IF (WITH_DTK)
-  ADD_EXECUTABLE(writeStructured tutorials/writeStructured.C)
-  SET_TARGET_PROPERTIES(writeStructured PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-  TARGET_LINK_LIBRARIES(writeStructured Nemosys ${MADLIB_LIB} interp Rocs 
+  ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
+  SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
+  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs 
                                                 ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  INSTALL(TARGETS writeStructured RUNTIME DESTINATION bin)
+  INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
 ENDIF()
 
 # Building converters ##########################################################
