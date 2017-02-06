@@ -1,6 +1,7 @@
 Build.dat
 build/*
 *.swp
+*.swo
 install/*
 lnInclude/
 build/
