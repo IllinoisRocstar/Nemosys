@@ -1,13 +1,37 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(Nemosys)
 
-SET (WITH_DTK ON CACHE BOOL "To build DTK dependencies")
+# this variable controls the default value of the options which are normally set
+# to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
+# -DDEFAULT=0 -DENABLE_DTK=1")
+set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+
+macro(opt OPTION HELP VALUE)
+  option(ENABLE_${OPTION} ${HELP} ${VALUE})
+  set(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
+endmacro(opt)
+
+# set to $DEFAULT to use by DEFAULT
+opt(MPI "Enable MPI support" OFF)
+opt(DTK "Enable DTK extensions" OFF)
+opt(EXODUS "Enable EXODUS II extensions" OFF)
+
+set(NEMOSYS_MAJOR_VERSION 1)
+set(NEMOSYS_MINOR_VERSION 2)
+set(NEMOSYS_PATCH_VERSION 0)
+set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
+
+set(NEMOSYS_VERSION "${GMSH_MAJOR_VERSION}.${GMSH_MINOR_VERSION}")
+set(NEMOSYS_VERSION "${GMSH_VERSION}.${GMSH_PATCH_VERSION}${GMSH_EXTRA_VERSION}")
+set(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
 
 # finding libraries ###############################################################
-FIND_PACKAGE(MPI)
-IF(MPI_CXX_COMPILER)
-  SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-ENDIF()
+IF (ENABLE_MPI)
+  FIND_PACKAGE(MPI)
+  IF(MPI_CXX_COMPILER)
+    SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
+  ENDIF()
+ENDIF (ENABLE_MPI)
 
 FIND_PACKAGE(VTK REQUIRED)
 INCLUDE(${VTK_USE_FILE})
@@ -24,15 +48,15 @@ FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
 
-FIND_LIBRARY(ANN_LIB ANN)
-FIND_FILE(ANN_HDR ANN.h)
+FIND_LIBRARY(ANN_LIB ann HINTS /usr/lib/)
+FIND_FILE(ANN_HDR ANN.h HINTS /usr/include/ANN/)
 GET_FILENAME_COMPONENT(ANN_INCPATH ${ANN_HDR} PATH)
 
 FIND_LIBRARY(METIS_LIB metis)
 FIND_FILE(METIS_HDR metis.h)
 GET_FILENAME_COMPONENT(METIS_INCPATH ${METIS_HDR} PATH)
 
-IF (WITH_DTK)
+IF (ENABLE_DTK)
   #FIND_LIBRARY(DTK_LIB classic_dtk)
   #FIND_FILE(DTK_HDR DTK_GeometryManager.hpp)
   #GET_FILENAME_COMPONENT(DTK_INCPATH ${DTK_HDR} PATH)
@@ -100,7 +124,7 @@ ELSE()
 ENDIF()
 
 # Compiled objects output paths
-SET(EXECUTABLE_OUTPUT_PADTKPROJECT_BINARY_DIR}/bin 
+SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin 
      CACHE PATH "Single directory for all executables.")
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib 
      CACHE PATH "Single directory for all libraries and archives.")
@@ -117,8 +141,9 @@ IF("${isSystemDir}" STREQUAL "-1")
    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 ENDIF("${isSystemDir}" STREQUAL "-1")
 
-INCLUDE(CTest)
+OPTION(BUILD_TESTING "Build tests" OFF)
 IF(BUILD_TESTING)
+  INCLUDE(CTest)
   SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
   MARK_AS_ADVANCED(BUILDNAME)
 ENDIF(BUILD_TESTING)
@@ -216,7 +241,7 @@ ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
 TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
 INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
-IF (WITH_DTK)
+IF (ENABE_DTK)
   ADD_EXECUTABLE(writeStructured tutorials/writeStructured.C)
   SET_TARGET_PROPERTIES(writeStructured PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
   TARGET_LINK_LIBRARIES(writeStructured Nemosys ${MADLIB_LIB} interp Rocs 
@@ -225,7 +250,9 @@ IF (WITH_DTK)
 ENDIF()
 
 # Building converters ##########################################################
-ADD_SUBDIRECTORY(converter)
+IF (ENABLE_EXODUS)
+  ADD_SUBDIRECTORY(converter)
+ENDIF ()
 
 # Builiding documentation #####################################################
 OPTION(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
