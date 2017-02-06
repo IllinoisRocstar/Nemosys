@@ -16,11 +16,11 @@ opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
 
+# set up version
 set(NEMOSYS_MAJOR_VERSION 1)
 set(NEMOSYS_MINOR_VERSION 2)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
-
 set(NEMOSYS_VERSION "${GMSH_MAJOR_VERSION}.${GMSH_MINOR_VERSION}")
 set(NEMOSYS_VERSION "${GMSH_VERSION}.${GMSH_PATCH_VERSION}${GMSH_EXTRA_VERSION}")
 set(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
@@ -96,7 +96,9 @@ IF (ENABLE_DTK)
 ENDIF()
 
 # import dtk related variables
-INCLUDE(dtk_stuff.txt)
+IF (ENABLE_DTK)
+  INCLUDE(dtk_stuff.txt)
+ENDIF ()
 
 #FIND_FILE(EIGEN_HDR Eigen)
 #GET_FILENAME_COMPONENT(EIGEN_INCPATH ${EIGEN_HDR} PATH)
@@ -108,7 +110,6 @@ INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${ANN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
-#INCLUDE_DIRECTORIES(AFTER ${DTK_INCPATH})
 
 # Setting compile and link options ############################################## 
 INCLUDE(CheckCXXCompilerFlag)
@@ -141,6 +142,7 @@ IF("${isSystemDir}" STREQUAL "-1")
    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 ENDIF("${isSystemDir}" STREQUAL "-1")
 
+# Set up testing
 OPTION(BUILD_TESTING "Build tests" OFF)
 IF(BUILD_TESTING)
   INCLUDE(CTest)
@@ -149,18 +151,16 @@ IF(BUILD_TESTING)
 ENDIF(BUILD_TESTING)
 
 # Setting files   ###############################################################
-# install include files
-FILE(GLOB H_FILES include/*.H ${IRAD_INCPATH}/*.H)
-FILE(GLOB h_FILES include/*.h ${IRAD_INCPATH}/*.h)
-FILE(GLOB hpp_FILES include/*.hpp ${IRAD_INCPATH}/*.hpp)
+# Install include files
+FILE(GLOB H_FILES include/*.H)
+FILE(GLOB h_FILES include/*.h)
+FILE(GLOB hpp_FILES include/*.hpp)
 SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
 INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 
-# setting compile and link flags 
-#SET(FLOTSAM_SRCS src/PMesh.C src/BSMesh.C src/Mesh.C src/GeoPrimitives.C)
+# Setting compile and link flags 
 SET(NEMOSYS_SRCS src/ExampleSourceFile.C src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C src/cgnsWriter.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-#SET(UTIL_SRCS utils/flotsam.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
@@ -177,10 +177,10 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${IRAD_LIB} ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB})
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB})
 INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
-# build r8 and rbf library
+# Build r8 and rbf library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(r8 SHARED ${R8_SRCS})
 ELSE()
@@ -196,7 +196,7 @@ ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
 INSTALL(TARGETS interp LIBRARY DESTINATION lib)
 
-# rocstar support library
+# Rocstar support library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Rocs SHARED ${ROCSTAR_SRCS})
 ELSE()
@@ -206,15 +206,19 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 
 
 # Builiding utilities #########################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5")
-
 # There are too many dependencies for gmsh this needs to be populated automatically
+SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} 
+    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext 
+    -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5")
+
+# optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
 TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB}) 
 SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
 INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
+# xmlDump utility
 ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
 if(VTK_LIBRARIES)
   TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES})
@@ -223,24 +227,30 @@ else()
 ENDIF()
 INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
 
+# cgns2gmsh utility
 ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
 TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB})
 INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
 
+# Rocstart volume remesh utility
 ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
 TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
 INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
 
+# Rocstar surface remesh utility
 ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
 TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
 INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
 
 # Builiding tutorials ###########################################################
 SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5")
+
+# meshTransfer tutorial
 ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
 TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
 INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
+# DTK tutorial
 IF (ENABE_DTK)
   ADD_EXECUTABLE(writeStructured tutorials/writeStructured.C)
   SET_TARGET_PROPERTIES(writeStructured PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
@@ -274,6 +284,5 @@ IF(BUILD_DOCUMENTATION)
   INSTALL( DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION share/Nemosys )
 ENDIF()
 
-
-# perform testing
+# Perform testing ############################################################
 #ADD_SUBDIRECTORY(testing)
