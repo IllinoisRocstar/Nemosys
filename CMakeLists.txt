@@ -249,11 +249,11 @@ TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
 INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
 # DTK tutorial
-IF (ENABE_DTK)
-  ADD_EXECUTABLE(writeStructured tutorials/writeStructured.C)
-  SET_TARGET_PROPERTIES(writeStructured PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-  TARGET_LINK_LIBRARIES(writeStructured Nemosys ${MADLIB_LIB} interp Rocs 
-                                                ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+IF (ENABLE_DTK)
+  ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
+  SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
+  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs 
+                                             ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
   INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
 ENDIF()
 
