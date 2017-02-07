@@ -157,7 +157,8 @@ SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
 INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 
 # Setting compile and link flags 
-SET(NEMOSYS_SRCS src/ExampleSourceFile.C src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C src/cgnsWriter.C)
+SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C 
+                 src/cgnsWriter.C  src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
@@ -239,6 +240,11 @@ INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
 ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
 TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
 INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
+
+# Rocstar surface remesh utility
+ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
+TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
+INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
 
 # Builiding tutorials ###########################################################
 SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5")
