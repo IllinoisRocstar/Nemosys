@@ -93,17 +93,9 @@ void gridTransfer::loadTrgCgSeries(int nCg)
 ////////////////////////////////////////////////////
 void gridTransfer::dummy()
 {
-  // writing the mesh to gmsh and convert to vtk
-  std::cout <<"Writing to gmsh format.\n";
-  MAd::M_writeMsh(srcMesh, "source.msh", 2, NULL);
-  std::cout << "Converting from gmsh to vtk format.\n";
-  GModel* trgGModel;
-  trgGModel = new GModel("source"); 
-  trgGModel->readMSH("source.msh");
-  trgGModel->writeVTK("source.vtk", false, true);
 }
 
-void gridTransfer::exportToMAdLib(std::string gridName)
+void gridTransfer::exportMeshToMAdLib(std::string gridName)
 {
   // if gridName = source exports source mesh data to MAdLib, otherwise target
   // exporting mesh to the MAdLib
@@ -189,10 +181,10 @@ void gridTransfer::convertToVtk(std::string gridName, bool withSolution)
   // writing solution data to the file
   if (withSolution)
   {
-    vtkAnalyzer* trgVTK;
-    trgVTK = new vtkAnalyzer(fName.c_str());
-    trgVTK->read();
-    trgVTK->report();
+    vtkAnalyzer* wrtVTK;
+    wrtVTK = new vtkAnalyzer((char *)fName.c_str());
+    wrtVTK->read();
+    wrtVTK->report();
     // figure out what is existing on the stitched grid
     int outNData, outNDim;
     std::vector<std::string> slnNameList;
@@ -208,14 +200,40 @@ void gridTransfer::convertToVtk(std::string gridName, bool withSolution)
       getSolutionDataStitched(*is, physData, outNData, outNDim);
       solution_type_t dt = getSolutionDataObj(*is)->getDataType();
       if (dt == NODAL)      
-	trgVTK->setPointDataArray((*is).c_str(), 1, physData);
+	wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
       else
-	trgVTK->setCellDataArray((*is).c_str(), 1, physData);
+	wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
     }
-    trgVTK->report();
-    trgVTK->write("stitchedPhys.vtu");
+    wrtVTK->report();
+    wrtVTK->write((char *)fName.c_str());
   }
   
+}
+
+void gridTransfer::exportNodalDataToMAdLib()
+{
+  if (!srcMesh) {std::cerr<<"Source needs to be exported to MAdLib format first.\n"; throw;}
+  MAd::NodalDataManagerSgl::instance().initialize(srcMesh); 
+  // attach all nodal data
+  int nData, nDim;
+  std::vector<std::string> cgSlnNameList;
+  std::vector<std::string> cgAppSlnNameList;
+  getSolutionDataNames(cgSlnNameList);  
+  getAppendedSolutionDataName(cgAppSlnNameList);
+  cgSlnNameList.insert(cgSlnNameList.end(),
+                     cgAppSlnNameList.begin(), cgAppSlnNameList.end());
+  for (auto is=cgSlnNameList.begin(); is<cgSlnNameList.end(); is++)
+  {
+    std::vector<double> physData;
+    getSolutionDataStitched(*is, physData, nData, nDim);
+    solution_type_t dt = getSolutionDataObj(*is)->getDataType();
+    if (dt == NODAL) {
+      std::cout << "MAdLib: Registering nodal data -> " << *is << std::endl;
+      MAd::NodalDataManagerSgl::instance().registerData(*is, physData); 
+    }
+  }
+  // report diagnostics
+  MAd::NodalDataManagerSgl::instance().diagnostics(std::cout);
 }
 
 void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)

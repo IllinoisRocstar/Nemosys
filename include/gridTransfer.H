@@ -3,12 +3,16 @@
 #ifndef __GRIDTRANSFER_H
 #define __GRIDTRANSFER_H
 
-// Nemosys
-#include "cgnsAnalyzer.H"
+// standard
 #include <string>
 
+// Nemosys
+#include <cgnsAnalyzer.H>
+#include <vtkAnalyzer.H>
+
 // MAdLib headers
-#include "MAdLib.h"
+#include <MAdLib.h>
+#include <NodalDataManager.h>
 
 class gridTransfer: public cgnsAnalyzer {
 public:
@@ -61,9 +65,10 @@ public:
 
   // transfer actions
   void dummy();
-  void exportToMAdLib(std::string gridName);
+  void exportMeshToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
   void convertToVtk(std::string gridName, bool withSolution = false);
+  void exportNodalDataToMAdLib();
 
 
   // management data

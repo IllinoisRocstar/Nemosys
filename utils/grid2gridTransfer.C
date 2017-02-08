@@ -23,7 +23,7 @@ std::vector<double> getCOG(std::vector<double>& regCntCrds);
 int main(int argc, char* argv[])
 {
   // check input
-  if (argc==1 || (argc==2 && !std::strcmp(argv[1], "-h")) ) {
+  if (argc!=3 || (argc==2 && !strcmp(argv[1], "-h")) ) {
     std::cout << "Usage: " << argv[0] 
               << " srcCGNSFile disCGNSFile" << std::endl;
     return 0;
@@ -40,9 +40,10 @@ int main(int argc, char* argv[])
   transObj->loadTrgCgSeries(1); 
 
   // reading input CGNS file
-  transObj->exportToMAdLib("src");
+  transObj->exportMeshToMAdLib("src");
+  transObj->convertToVtk("src", true);
+  transObj->exportNodalDataToMAdLib();
   transObj->dummy();
-  transObj->convertToVtk("src");
 
   /*
   cgObj1->loadGrid();
