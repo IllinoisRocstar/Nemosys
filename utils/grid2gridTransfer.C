@@ -40,7 +40,9 @@ int main(int argc, char* argv[])
   transObj->loadTrgCgSeries(1); 
 
   // reading input CGNS file
+  transObj->exportToMAdLib("src");
   transObj->dummy();
+  transObj->convertToVtk("src");
 
   /*
   cgObj1->loadGrid();

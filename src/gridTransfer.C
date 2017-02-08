@@ -58,6 +58,7 @@ void gridTransfer::loadSrcCgSeries(int nCg)
     {
       std::cout << "Zone = " << getZoneName(srcCgObjs[iCg], iz) << std::endl;
       stitchMe(srcCgObjs[iCg], iz);
+      std::cout << "Finished processing of the zone " << getZoneName(srcCgObjs[iCg], iz) << std::endl;
     }
   }
 
@@ -83,7 +84,6 @@ void gridTransfer::loadTrgCgSeries(int nCg)
     cgTmp->loadGrid();
     trgCgObjs.push_back(cgTmp);
     trgCgFNames.push_back(fName);
-
   }
 
 }
@@ -93,12 +93,6 @@ void gridTransfer::loadTrgCgSeries(int nCg)
 ////////////////////////////////////////////////////
 void gridTransfer::dummy()
 {
-  // exporting mesh to the MAdLib
-  MAd::GM_create(&srcModel,"");
-  srcMesh = MAd::M_new(srcModel);
-  exportToMAdMesh(srcMesh);
-  classifyMAdMeshOpt(srcMesh);
-
   // writing the mesh to gmsh and convert to vtk
   std::cout <<"Writing to gmsh format.\n";
   MAd::M_writeMsh(srcMesh, "source.msh", 2, NULL);
@@ -109,13 +103,128 @@ void gridTransfer::dummy()
   trgGModel->writeVTK("source.vtk", false, true);
 }
 
+void gridTransfer::exportToMAdLib(std::string gridName)
+{
+  // if gridName = source exports source mesh data to MAdLib, otherwise target
+  // exporting mesh to the MAdLib
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    MAd::GM_create(&srcModel,"");
+    srcMesh = MAd::M_new(srcModel);
+    exportToMAdMesh(srcMesh);
+    classifyMAdMeshOpt(srcMesh);
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+    MAd::GM_create(&trgModel,"");
+    trgMesh = MAd::M_new(trgModel);
+    exportToMAdMesh(trgMesh);
+    classifyMAdMeshOpt(trgMesh);
+  } else {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+}
+
+void gridTransfer::convertToMsh(std::string gridName)
+{
+  // if gridName = source exports source mesh data to MAdLib, otherwise target
+  // exporting mesh to the MAdLib
+  std::string fName;
+  MAd::pMesh wrtMesh;
+
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    if (!srcMesh) {std::cerr<<"Source needs to be exported to MAdLib format first.\n"; throw;}
+    wrtMesh = srcMesh;
+    fName = "source.msh";
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+    if (!trgMesh) {std::cerr<<"Target needs to be exported to MAdLib format first.\n"; throw;}
+    wrtMesh = trgMesh;
+    fName = "target.msh";
+  } 
+  else 
+  {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+  std::cout <<"Writing to gmsh format -> " << fName << std::endl;
+  MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
+}
+
+void gridTransfer::convertToVtk(std::string gridName, bool withSolution)
+{
+  // if gridName = source exports source mesh data to MAdLib, otherwise target
+  // exporting mesh to the MAdLib
+  // first converting to msh format
+  convertToMsh(gridName);
+  // then convert grid to vtk
+  std::string fName;
+  MAd::pMesh wrtMesh;
+  GModel* wrtGModel;
+  wrtGModel = new GModel("default"); 
+
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    wrtMesh = srcMesh;
+    fName = "source.vtk";
+    wrtGModel->readMSH("source.msh");
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+    wrtMesh = trgMesh;
+    fName = "target.vtk";
+    wrtGModel->readMSH("target.msh");
+  } 
+  else 
+  {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+  std::cout <<"Writing to vtk format -> " << fName << std::endl;
+  wrtGModel->writeVTK(fName.c_str(), false, true);
+  
+  // writing solution data to the file
+  if (withSolution)
+  {
+    vtkAnalyzer* trgVTK;
+    trgVTK = new vtkAnalyzer(fName.c_str());
+    trgVTK->read();
+    trgVTK->report();
+    // figure out what is existing on the stitched grid
+    int outNData, outNDim;
+    std::vector<std::string> slnNameList;
+    std::vector<std::string> appSlnNameList;
+    getSolutionDataNames(slnNameList);  
+    getAppendedSolutionDataName(appSlnNameList);
+    slnNameList.insert(slnNameList.end(),
+		       appSlnNameList.begin(), appSlnNameList.end());
+    // write all data into vtk file
+    for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
+    {
+      std::vector<double> physData;
+      getSolutionDataStitched(*is, physData, outNData, outNDim);
+      solution_type_t dt = getSolutionDataObj(*is)->getDataType();
+      if (dt == NODAL)      
+	trgVTK->setPointDataArray((*is).c_str(), 1, physData);
+      else
+	trgVTK->setCellDataArray((*is).c_str(), 1, physData);
+    }
+    trgVTK->report();
+    trgVTK->write("stitchedPhys.vtu");
+  }
+  
+}
+
 void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
 {
   // load proper zone
   // asking object to load its zone information
   // this should refresh vertex coordinates and 
   // element connectivity tables
-  cgObj->loadZone(zoneIdx);
+  cgObj->loadZone(zoneIdx, 1);
 
   // check if this is the first object being stitched
   if (nVertex==0)
@@ -250,25 +359,34 @@ void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
     indexBase = cgObj->getIndexBase();
     indexZone = zoneIdx;
     loadSolutionDataContainer();
+
     // append Rocstar specific BCs as solution fields
-    appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
+    if (paneHasPatchNo(cgObj, zoneIdx))
+    {
+      appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+			   ELEMENTAL, cgObj->getNElement(), 1); 
+      appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+			   ELEMENTAL, cgObj->getNElement(), 1); 
+      appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
+			   ELEMENTAL, cgObj->getNElement(), 1); 
+    }
     return;
   }
+
   // Rocstar specific BCs remove the old exisiting field 
-  cgObj->delAppSlnData("patchNo");
-  cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("bcflag");
-  cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("cnstr_type");
-  cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
+  if (paneHasPatchNo(cgObj, zoneIdx))
+  {
+    cgObj->delAppSlnData("patchNo");
+    cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
+			       ELEMENTAL, cgObj->getNElement(), 1);
+    cgObj->delAppSlnData("bcflag");
+    cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
+			       ELEMENTAL, cgObj->getNElement(), 1);
+    cgObj->delAppSlnData("cnstr_type");
+    cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
+			       ELEMENTAL, cgObj->getNElement(), 1);
+  }
+
   // call current object stitch field
   stitchFields(cgObj);
 }
@@ -532,78 +650,8 @@ int gridTransfer::getZoneRealSecType(cgnsAnalyzer* cgObj, int zoneIdx)
   return(et);
 }
 
-/*
-int gridTransfer::getNCgObj()
-{
-  return(nowCgObjs.size());
-}
-
-std::string gridTransfer::getBaseName()
-{
-  return(baseSrcCgFName);
-}
-
-std::string gridTransfer::getBaseName(int indx)
-{
-  if (indx<nowCgObjs.size())
-    return(nowCgObjs[indx]->getBaseName());
-  return("INVALID");
-}
-
-std::string gridTransfer::getCgFName(int indx)
-{
-  if (indx < nowCgFNames.size())
-    return(nowCgFNames[indx]);
-  return("INVALID");
-}
-
-std::string gridTransfer::getBaseItrName(int indx)
-{
-  if (indx < nowCgFNames.size())
-    return(nowCgObjs[indx]->getBaseItrName());
-  return("INVALID");
-}
-
-int gridTransfer::getNTStep(int indx)
-{
-  if (indx < nowCgFNames.size())
-    return(nowCgObjs[indx]->getNTStep());
-  return(-1);
-}
-
-double gridTransfer::getTimeStep(int indx)
-{
-  if (indx < nowCgFNames.size())
-    return(nowCgObjs[indx]->getTimeStep());
-  return(-1);
-}
-
-std::string gridTransfer::getZoneItrName(int indx, int zidx)
-{
-  if (indx > nowCgFNames.size())
-    return("INVALID");
-  nowCgObjs[indx]->loadZone(zidx);
-  return(nowCgObjs[indx]->getZoneItrName());
-}
-
-std::string gridTransfer::getGridCrdPntr(int indx, int zidx)
-{
-  if (indx > nowCgFNames.size())
-    return("INVALID");
-  nowCgObjs[indx]->loadZone(zidx);
-  return(nowCgObjs[indx]->getGridCrdPntr());
-}
-
-std::string gridTransfer::getSolutionPntr(int indx, int zidx)
-{
-  if (indx > nowCgFNames.size())
-    return("INVALID");
-  nowCgObjs[indx]->loadZone(zidx);
-  return(nowCgObjs[indx]->getSolutionPntr());
-}
-
 ////////////////////////////////////////////////////
-//  PANE DATA ACCESS
+//  PANE DATA ACCESS (Example implementation of BCs support)
 ////////////////////////////////////////////////////
 int gridTransfer::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
 {
@@ -633,6 +681,29 @@ int gridTransfer::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
   int bcflag;
   if(cg_array_read(iArr, &bcflag)) cg_error_exit();
   return(bcflag);
+}
+
+bool gridTransfer::paneHasPatchNo(cgnsAnalyzer* cgObj, int zoneIdx)
+{
+  if (cg_goto(cgObj->getIndexFile(),
+              cgObj->getIndexBase(),
+              "Zone_t", zoneIdx,
+              "IntegralData_t", 1, "end")) 
+    cg_error_exit();
+  int nArr;
+  int iArr;
+  if (cg_narrays(&nArr)) cg_error_exit();
+  for (iArr=1; iArr<=nArr; iArr++)
+  {
+    char arrName[33];
+    DataType_t dt;
+    int dd;
+    cgsize_t dimVec[3];
+    if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
+    if (!strcmp(arrName, "patchNo"))
+      return(true);
+  }
+  return(false);
 }
 
 int gridTransfer::getPanePatchNo(cgnsAnalyzer* cgObj, int zoneIdx)
@@ -694,4 +765,77 @@ int gridTransfer::getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx)
   if(cg_array_read(iArr, &cnstrType)) cg_error_exit();
   return(cnstrType);
 }
-*/
+
+int gridTransfer::getNCgObj()
+{
+  return(nowCgObjs.size());
+}
+
+std::string gridTransfer::getBaseNameTrg()
+{
+  return(baseCgFNameSrc);
+}
+
+std::string gridTransfer::getBaseNameSrc()
+{
+  return(baseCgFNameTrg);
+}
+
+std::string gridTransfer::getBaseName(int indx)
+{
+  if (indx<nowCgObjs.size())
+    return(nowCgObjs[indx]->getBaseName());
+  return("INVALID");
+}
+
+std::string gridTransfer::getCgFName(int indx)
+{
+  if (indx < nowCgFNames.size())
+    return(nowCgFNames[indx]);
+  return("INVALID");
+}
+
+std::string gridTransfer::getBaseItrName(int indx)
+{
+  if (indx < nowCgFNames.size())
+    return(nowCgObjs[indx]->getBaseItrName());
+  return("INVALID");
+}
+
+int gridTransfer::getNTStep(int indx)
+{
+  if (indx < nowCgFNames.size())
+    return(nowCgObjs[indx]->getNTStep());
+  return(-1);
+}
+
+double gridTransfer::getTimeStep(int indx)
+{
+  if (indx < nowCgFNames.size())
+    return(nowCgObjs[indx]->getTimeStep());
+  return(-1);
+}
+
+std::string gridTransfer::getZoneItrName(int indx, int zidx)
+{
+  if (indx > nowCgFNames.size())
+    return("INVALID");
+  nowCgObjs[indx]->loadZone(zidx);
+  return(nowCgObjs[indx]->getZoneItrName());
+}
+
+std::string gridTransfer::getGridCrdPntr(int indx, int zidx)
+{
+  if (indx > nowCgFNames.size())
+    return("INVALID");
+  nowCgObjs[indx]->loadZone(zidx);
+  return(nowCgObjs[indx]->getGridCrdPntr());
+}
+
+std::string gridTransfer::getSolutionPntr(int indx, int zidx)
+{
+  if (indx > nowCgFNames.size())
+    return("INVALID");
+  nowCgObjs[indx]->loadZone(zidx);
+  return(nowCgObjs[indx]->getSolutionPntr());
+}

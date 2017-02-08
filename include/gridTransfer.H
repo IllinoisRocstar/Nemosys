@@ -25,6 +25,8 @@ public:
   // name/misc access
   std::string getBaseName();
   std::string getBaseName(int indx);
+  std::string getBaseNameSrc();
+  std::string getBaseNameTrg();
   std::string getCgFName(int indx);
   std::string getBaseItrName(int indx);
   int getNTStep(int indx);
@@ -48,14 +50,21 @@ public:
 
   // pane data access
   int getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx);
+  bool paneHasPatchNo(cgnsAnalyzer* cgObj, int zoneIdx);
   int getPanePatchNo(cgnsAnalyzer* cgObj, int zoneIdx);
   int getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx);
 
   // data processing
-  void dummy();
   void stitchMe(cgnsAnalyzer* cgObj, int zoneIdx);
   void stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx); 
   void stitchMe(gridTransfer* cgObj);
+
+  // transfer actions
+  void dummy();
+  void exportToMAdLib(std::string gridName);
+  void convertToMsh(std::string gridName);
+  void convertToVtk(std::string gridName, bool withSolution = false);
+
 
   // management data
 private:
@@ -77,7 +86,12 @@ private:
   MAd::pGModel trgModel;
   MAd::pMesh srcMesh;
   MAd::pMesh trgMesh;
- 
+
+  // BCs data (example implementation)
+private:
+  std::vector<int> bcFlag;
+  std::vector<int> bFlag;
+  std::vector<int> patchNo; 
 };
 
 #endif

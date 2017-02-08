@@ -1299,7 +1299,6 @@ void cgnsAnalyzer::loadSolutionDataContainer()
    // look at the solution names of current grid
    std::vector<std::string> crntCgList;
    getSolutionDataNames(crntCgList);
-   std::cout << __FILE__ << __LINE__ << std::endl;
    for (auto it=crntCgList.begin(); it!=crntCgList.end(); it++)
      std::cout << *it << std::endl;
    // load solution data container if empty
