@@ -245,32 +245,32 @@ void gridTransfer::exportSrcToGModel()
   srcGModel = new GModel("src");
   srcGModel->readMSH("source.msh");
   // some testing
-  std::cout << "Number of regions = " << srcGModel->getNumMeshElements() << std::endl; 
-  SPoint3 pnt(0.02,0.0,0.0);
+  //std::cout << "Number of regions = " << srcGModel->getNumMeshElements() << std::endl; 
+}
+
+int gridTransfer::getElmIdx(const double xyz[3])
+{
+  // load to GModel if not yet
+  if (!srcGModel)
+    exportSrcToGModel();
+  // find element indx containig the point
+  SPoint3 pnt(xyz[0], xyz[1], xyz[2]);
   MElement* elm;
   elm = srcGModel->getMeshElementByCoord(pnt);
-  int elmIdx;
-  elmIdx = elm->getNum();
-  std::cout << "Element index = " << elmIdx << std::endl;
-  //pnt = elm->barycenter();
-  //std::cout << pnt.x() << " " << pnt.y() << " " << pnt.z() << std::endl;
+  return(elm->getNum());
+}
+
+int gridTransfer::getBaryCrds(const double xyz[3], double baryCrds[3])
+{
+  int elmIdx = getElmIdx(xyz);
   // check correspondense with madlib
   MAd::RIter rit = MAd::M_regionIter(srcMesh);
   MAd::pRegion pr;
-  for (int iReg = 0; iReg< elmIdx; iReg++)
-  {
+  for (int iReg = 0; iReg<elmIdx; iReg++)
     pr = MAd::RIter_next(rit);
-    std::cout << pr->iD << std::endl;
-  }
-  for (int iPnt=0; iPnt < pr->getNbVertex(); iPnt++)
-  {
-    std::cout << iPnt << std::endl;
-    MAd::MDB_Point* pp = pr->getVertex(iPnt);
-    std::cout << pp->X << " " << pp->Y << " " << pp->Z << std::endl;
-  }
-  
+  MAd::R_linearParams(pr, xyz, baryCrds);
+  return(elmIdx);
 }
-
 
 void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
 {

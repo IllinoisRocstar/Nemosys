@@ -3,6 +3,7 @@
 #include <string.h>
 #include <iostream>
 #include <memory>
+#include <ctime>
 
 // Nemosys headers
 #include "gridTransfer.H"
@@ -44,6 +45,12 @@ int main(int argc, char* argv[])
   transObj->convertToVtk("src", true);
   transObj->exportNodalDataToMAdLib();
   transObj->exportSrcToGModel();
+  double xyz[3], prm[3];
+  xyz[0] = 0.01;
+  xyz[1] = 0.0;
+  xyz[2] = 0.0;
+  std::cout << "(0.02, 0, 0) is in : " << transObj->getBaryCrds(xyz, prm) << std::endl;
+  std::cout << "param coords : " <<prm[0]<<" "<<prm[1]<<" "<<prm[2]<<std::endl;
   //transObj->dummy();
 
   /*

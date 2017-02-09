@@ -73,7 +73,10 @@ public:
   void convertToVtk(std::string gridName, bool withSolution = false);
   void exportNodalDataToMAdLib();
   void exportSrcToGModel();
-
+  
+  // helper methods
+  int getElmIdx(const double xyz[3]);
+  int getBaryCrds(const double xyz[3], double baryCrds[3]);
 
   // management data
 private:
