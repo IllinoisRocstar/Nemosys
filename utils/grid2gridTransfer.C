@@ -43,7 +43,8 @@ int main(int argc, char* argv[])
   transObj->exportMeshToMAdLib("src");
   transObj->convertToVtk("src", true);
   transObj->exportNodalDataToMAdLib();
-  transObj->dummy();
+  transObj->exportSrcToGModel();
+  //transObj->dummy();
 
   /*
   cgObj1->loadGrid();

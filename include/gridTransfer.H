@@ -14,6 +14,9 @@
 #include <MAdLib.h>
 #include <NodalDataManager.h>
 
+// GMsh
+#include <GModel.h>
+
 class gridTransfer: public cgnsAnalyzer {
 public:
   gridTransfer(std::string srcFname, std::string trgFname);
@@ -69,6 +72,7 @@ public:
   void convertToMsh(std::string gridName);
   void convertToVtk(std::string gridName, bool withSolution = false);
   void exportNodalDataToMAdLib();
+  void exportSrcToGModel();
 
 
   // management data
@@ -91,6 +95,10 @@ private:
   MAd::pGModel trgModel;
   MAd::pMesh srcMesh;
   MAd::pMesh trgMesh;
+
+  // Gmsh data
+public:
+  GModel* srcGModel;
 
   // BCs data (example implementation)
 private:
