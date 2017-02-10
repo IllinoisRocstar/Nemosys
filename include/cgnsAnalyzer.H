@@ -11,13 +11,13 @@
 #include <sys/time.h>
 
 //MAd Lib
-#include "ModelInterface.h"
-#include "MeshDataBaseInterface.h"
-#include "GmshEntities.h"
+#include <ModelInterface.h>
+#include <MeshDataBaseInterface.h>
+#include <GmshEntities.h>
 
 // third party
-#include "cgnslib.h"
-#include "ANN.h"
+#include <cgnslib.h>
+#include <ANN.h>
 //#include <Dense>
 
 //#if CGNS_VERSION < 3100
@@ -125,6 +125,7 @@ public:
    AngleUnits_t getAngleUnit();
    ZoneType_t getZoneType();
    bool isStructured();
+   std::vector<double> getVertexCoords();
    std::vector<double> getVertexCoords(int vrtxId);
    double getVrtXCrd(int vrtxId);
    std::vector<double> getVrtXCrd();

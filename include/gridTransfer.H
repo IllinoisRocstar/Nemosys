@@ -9,6 +9,7 @@
 // Nemosys
 #include <cgnsAnalyzer.H>
 #include <vtkAnalyzer.H>
+#include <baseInterp.H>
 
 // MAdLib headers
 #include <MAdLib.h>

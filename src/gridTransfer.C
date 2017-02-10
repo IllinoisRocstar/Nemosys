@@ -1,7 +1,7 @@
 /* Special purpose class for Rocstar CGNS files */
 
 
-#include "gridTransfer.H"
+#include <gridTransfer.H>
 
 ///////////////////////////////////////////////////
 // INITIALIZATION
@@ -93,6 +93,7 @@ void gridTransfer::loadTrgCgSeries(int nCg)
 ////////////////////////////////////////////////////
 void gridTransfer::dummy()
 {
+  /*
   // testings of the element locator and parametric coord calculator
   std::vector<double> xyz, prm;
   xyz.push_back(0.01);
@@ -104,7 +105,44 @@ void gridTransfer::dummy()
   std::cout << "param coords : " <<prm[0]<<" "<<prm[1]<<" "<<prm[2]<<std::endl;
   std::cout << "NVertex solution = " << (trgCgObjs[0])->getNVertex() << std::endl;
   std::cout << "NCell solution = " << (trgCgObjs[0])->getNElement() << std::endl;
+  */
   // transfering one of the nodal solutions to the new mesh
+  std::vector<std::string> slnList;
+  getSolutionDataNames(slnList);
+  std::cout << slnList[0] << std::endl;
+
+  std::vector<double> srcSlnVec;
+  int outNData, outNDim;
+  getSolutionDataStitched(slnList[0], srcSlnVec, outNData, outNDim);
+  std::cout << outNData << std::endl;
+
+  std::vector<double> srcVrtCrds = getVertexCoords();
+  basicInterpolant interp = basicInterpolant(3, nVertex, 4, srcVrtCrds);
+
+  std::vector<double> trgSlnVec;
+  int badPnt=0;
+  for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
+  {
+    std::vector<double> vrtCrds, prms;
+    std::vector<int>  vrtIds;
+    vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
+    //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+    int elmIdx = getBaryCrds(vrtCrds, prms, vrtIds);
+    if (elmIdx < 0)
+    {
+      std::cout << badPnt++ << std::endl;
+      std::vector<double> trgVrtData;
+      interp.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
+      trgSlnVec.push_back(trgVrtData[0]);
+    }
+    else
+      trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
+                           prms[1]*srcSlnVec[vrtIds[1]] +
+                           prms[2]*srcSlnVec[vrtIds[2]] +
+                           prms[3]*srcSlnVec[vrtIds[3]] );
+
+  }
+>>>>>>> cd01d4e9cbc7693a1bee2d23282a2feaa645ac42
   
 }
 
@@ -270,12 +308,16 @@ int gridTransfer::getElmIdx(std::vector<double>& xyz)
   SPoint3 pnt(xyz[0], xyz[1], xyz[2]);
   MElement* elm;
   elm = srcGModel->getMeshElementByCoord(pnt);
+  if (!elm)
+   return(-1);
   return(elm->getNum());
 }
 
 int gridTransfer::getBaryCrds(std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds)
 {
   int elmIdx = getElmIdx(xyz);
+  if (elmIdx == -1)
+     return elmIdx;
   // get barycentric coords
   MAd::RIter rit = MAd::M_regionIter(srcMesh);
   MAd::pRegion pr;
