@@ -213,22 +213,22 @@ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
 
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
-TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB}) 
+TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp) 
 SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
 INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
 # xmlDump utility
 ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
 if(VTK_LIBRARIES)
-  TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES})
+  TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES} interp)
 else()
-  TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets)
+  TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets interp)
 ENDIF()
 INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
 
 # cgns2gmsh utility
 ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
-TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB})
+TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB} interp)
 INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
 
 # Rocstart volume remesh utility

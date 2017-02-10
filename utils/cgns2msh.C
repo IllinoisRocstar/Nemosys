@@ -3,6 +3,10 @@
 #include <string.h>
 #include <iostream>
 #include <memory>
+
+//Nemosys
+#include <baseInterp.H>
+
 // MAdLib headers 
 #include "ModelInterface.h"
 

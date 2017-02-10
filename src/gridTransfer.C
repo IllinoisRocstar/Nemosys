@@ -1,7 +1,7 @@
 /* Special purpose class for Rocstar CGNS files */
 
 
-#include "gridTransfer.H"
+#include <gridTransfer.H>
 
 ///////////////////////////////////////////////////
 // INITIALIZATION
@@ -93,6 +93,56 @@ void gridTransfer::loadTrgCgSeries(int nCg)
 ////////////////////////////////////////////////////
 void gridTransfer::dummy()
 {
+  /*
+  // testings of the element locator and parametric coord calculator
+  std::vector<double> xyz, prm;
+  xyz.push_back(0.01);
+  xyz.push_back(0.0);
+  xyz.push_back(0.0);
+  std::vector<int> vrtIds;
+  std::cout << "(0.01, 0, 0) is in : " << getBaryCrds(xyz, prm, vrtIds) << std::endl;
+  std::cout << vrtIds[0]<<" "<<vrtIds[1]<<" "<<vrtIds[2]<<" "<<vrtIds[3]<<std::endl;
+  std::cout << "param coords : " <<prm[0]<<" "<<prm[1]<<" "<<prm[2]<<std::endl;
+  std::cout << "NVertex solution = " << (trgCgObjs[0])->getNVertex() << std::endl;
+  std::cout << "NCell solution = " << (trgCgObjs[0])->getNElement() << std::endl;
+  */
+  // transfering one of the nodal solutions to the new mesh
+  std::vector<std::string> slnList;
+  getSolutionDataNames(slnList);
+  std::cout << slnList[0] << std::endl;
+
+  std::vector<double> srcSlnVec;
+  int outNData, outNDim;
+  getSolutionDataStitched(slnList[0], srcSlnVec, outNData, outNDim);
+  std::cout << outNData << std::endl;
+
+  std::vector<double> srcVrtCrds = getVertexCoords();
+  basicInterpolant interp = basicInterpolant(3, nVertex, 4, srcVrtCrds);
+
+  std::vector<double> trgSlnVec;
+  int badPnt=0;
+  for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
+  {
+    std::vector<double> vrtCrds, prms;
+    std::vector<int>  vrtIds;
+    vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
+    //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+    int elmIdx = getBaryCrds(vrtCrds, prms, vrtIds);
+    if (elmIdx < 0)
+    {
+      std::cout << badPnt++ << std::endl;
+      std::vector<double> trgVrtData;
+      interp.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
+      trgSlnVec.push_back(trgVrtData[0]);
+    }
+    else
+      trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
+                           prms[1]*srcSlnVec[vrtIds[1]] +
+                           prms[2]*srcSlnVec[vrtIds[2]] +
+                           prms[3]*srcSlnVec[vrtIds[3]] );
+
+  }
+  
 }
 
 void gridTransfer::exportMeshToMAdLib(std::string gridName)
@@ -248,7 +298,7 @@ void gridTransfer::exportSrcToGModel()
   //std::cout << "Number of regions = " << srcGModel->getNumMeshElements() << std::endl; 
 }
 
-int gridTransfer::getElmIdx(const double xyz[3])
+int gridTransfer::getElmIdx(std::vector<double>& xyz)
 {
   // load to GModel if not yet
   if (!srcGModel)
@@ -257,18 +307,60 @@ int gridTransfer::getElmIdx(const double xyz[3])
   SPoint3 pnt(xyz[0], xyz[1], xyz[2]);
   MElement* elm;
   elm = srcGModel->getMeshElementByCoord(pnt);
+  if (!elm)
+   return(-1);
   return(elm->getNum());
 }
 
-int gridTransfer::getBaryCrds(const double xyz[3], double baryCrds[3])
+int gridTransfer::getBaryCrds(std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds)
 {
   int elmIdx = getElmIdx(xyz);
-  // check correspondense with madlib
+  if (elmIdx == -1)
+     return elmIdx;
+  // get barycentric coords
   MAd::RIter rit = MAd::M_regionIter(srcMesh);
   MAd::pRegion pr;
   for (int iReg = 0; iReg<elmIdx; iReg++)
     pr = MAd::RIter_next(rit);
-  MAd::R_linearParams(pr, xyz, baryCrds);
+  double tmpBaryCrds[3];
+  MAd::R_linearParams(pr, &(xyz[0]), tmpBaryCrds);
+  baryCrds.push_back(1.0-tmpBaryCrds[0]-tmpBaryCrds[1]-tmpBaryCrds[2]);
+  baryCrds.push_back(tmpBaryCrds[0]);
+  baryCrds.push_back(tmpBaryCrds[1]);
+  baryCrds.push_back(tmpBaryCrds[2]);
+  // get vertex ids
+  // vertex ids in MAdLib are start from 1
+  // reduce one from it to make 0 indexed
+  MAd::pPList rVerts = MAd::R_vertices(pr);
+  void * tmp = NULL;
+  while( MAd::pVertex pV = (MAd::pVertex)PList_next(rVerts,&tmp) )
+    vrtIds.push_back(MAd::V_id(pV)-1); 
+  /*
+  // calculating point coordinates
+  MAd::MDB_Point* pnt;
+  double coords[3] = {0.0, 0.0, 0.0};
+  double xyzv[4][3];
+  R_coordP1(pr, xyzv);
+  for (int i=0; i<4; i++)
+    std::cout << xyzv[i][0] << " " << xyzv[i][1] << " " << xyzv[i][2] << std::endl;
+
+  coords[0] = coords[0] + baryCrds[0]*xyzv[1][0];
+  coords[1] = coords[1] + baryCrds[0]*xyzv[1][1];
+  coords[2] = coords[2] + baryCrds[0]*xyzv[1][2];
+
+  coords[0] = coords[0] + baryCrds[1]*xyzv[2][0];
+  coords[1] = coords[1] + baryCrds[1]*xyzv[2][1];
+  coords[2] = coords[2] + baryCrds[1]*xyzv[2][2];
+
+  coords[0] = coords[0] + baryCrds[2]*xyzv[3][0];
+  coords[1] = coords[1] + baryCrds[2]*xyzv[3][1];
+  coords[2] = coords[2] + baryCrds[2]*xyzv[3][2];
+
+  coords[0] = coords[0] + (1.0-baryCrds[0]-baryCrds[1]-baryCrds[2])*xyzv[0][0];
+  coords[1] = coords[1] + (1.0-baryCrds[0]-baryCrds[1]-baryCrds[2])*xyzv[0][1];
+  coords[2] = coords[2] + (1.0-baryCrds[0]-baryCrds[1]-baryCrds[2])*xyzv[0][2];
+  std::cout << "Recons. Coords = "<<coords[0]<<" "<<coords[1]<<" "<<coords[2]<<std::endl; 
+  */
   return(elmIdx);
 }
 

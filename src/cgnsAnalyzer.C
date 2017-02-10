@@ -406,6 +406,18 @@ bool cgnsAnalyzer::isStructured()
    return(!isUnstructured);
 }
 
+std::vector<double> cgnsAnalyzer::getVertexCoords()
+{
+   std::vector<double> crd;
+   for (int iVrt=0; iVrt<nVertex; iVrt++)
+   {       
+     crd.push_back(xCrd[iVrt]);
+     crd.push_back(yCrd[iVrt]);
+     crd.push_back(zCrd[iVrt]);
+   }
+   return(crd);
+}
+
 std::vector<double> cgnsAnalyzer::getVertexCoords(int vrtxId)
 {
    std::vector<double> crd;
