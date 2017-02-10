@@ -75,8 +75,8 @@ public:
   void exportSrcToGModel();
   
   // helper methods
-  int getElmIdx(const double xyz[3]);
-  int getBaryCrds(const double xyz[3], double baryCrds[3]);
+  int getElmIdx(std::vector<double>& xyz);
+  int getBaryCrds(std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds);
 
   // management data
 private:

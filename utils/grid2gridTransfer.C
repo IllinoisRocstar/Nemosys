@@ -38,20 +38,17 @@ int main(int argc, char* argv[])
   // reading source CGNS file
   gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[1]);
   transObj->loadSrcCgSeries(1); 
-  transObj->loadTrgCgSeries(1); 
 
   // reading input CGNS file
   transObj->exportMeshToMAdLib("src");
   transObj->convertToVtk("src", true);
   transObj->exportNodalDataToMAdLib();
   transObj->exportSrcToGModel();
-  double xyz[3], prm[3];
-  xyz[0] = 0.01;
-  xyz[1] = 0.0;
-  xyz[2] = 0.0;
-  std::cout << "(0.02, 0, 0) is in : " << transObj->getBaryCrds(xyz, prm) << std::endl;
-  std::cout << "param coords : " <<prm[0]<<" "<<prm[1]<<" "<<prm[2]<<std::endl;
-  //transObj->dummy();
+
+  // reading target grid
+  transObj->loadTrgCgSeries(1); 
+  transObj->dummy();
+  
 
   /*
   cgObj1->loadGrid();
