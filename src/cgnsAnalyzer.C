@@ -103,7 +103,7 @@ void cgnsAnalyzer::loadGrid()
      //std::cout << "There are "<< nZone << " zones in the file (not supported).\n";
      isMltZone=true;
    }
-   loadZone(1);
+   loadZone(1,1);
 }
 
 
@@ -1212,6 +1212,25 @@ bool cgnsAnalyzer::checkElmConn(int nSharedNde)
     return(true);
   else
     return(false);
+}
+
+/* 
+   Gets element center coordinates.
+*/
+std::vector<double> cgnsAnalyzer::getElmCntCoords(MAd::pMesh msh)
+{
+   std::vector<double> elmCntCrds;
+   MAd::RIter ri = M_regionIter(msh);
+   int rCnt = 0;
+   while (MAd::pRegion pr = RIter_next(ri)) 
+   {
+     double xc[3];
+     MAd::R_center(pr, xc);
+     elmCntCrds.push_back(xc[0]);
+     elmCntCrds.push_back(xc[1]);
+     elmCntCrds.push_back(xc[2]);
+   }
+   return(elmCntCrds);
 }
 
 /*

@@ -167,6 +167,7 @@ public:
    void unclassifyMAdMeshBnd(const MAd::pMesh MAdMesh);
    void checkVertex();
    bool checkElmConn(int nSharedNde);
+   std::vector<double> getElmCntCoords(MAd::pMesh msh);
 
    // utilities
    void writeSampleStructured();

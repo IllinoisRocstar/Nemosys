@@ -33,229 +33,32 @@ int main(int argc, char* argv[])
   std::vector<std::string> cgFileName;
   cgFileName.push_back(argv[1]);
   cgFileName.push_back(argv[2]);
+  std::cout << "Transfering from " << cgFileName[0] << " -> " << cgFileName[1] << std::endl;
 
   std::cout << "Reading input files #################################################\n";
   // reading source CGNS file
   gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[1]);
-  transObj->loadSrcCgSeries(1); 
-
-  // reading input CGNS file
+  transObj->loadSrcCgSeries(4); 
   transObj->exportMeshToMAdLib("src");
-  transObj->convertToVtk("src", true);
-  transObj->exportNodalDataToMAdLib();
+  transObj->convertToVTK("src", true);
+  //transObj->exportNodalDataToMAdLib();
   transObj->exportSrcToGModel();
 
   // reading target grid
-  transObj->loadTrgCgSeries(1); 
-  transObj->dummy();
-  
+  transObj->loadTrgCg(); 
+  transObj->exportMeshToMAdLib("trg");
+  transObj->convertToMsh("trg");
+ 
+  // transfer physical values between the meshes 
+  transObj->transfer();
+ 
+  // write target with solutions to vtk 
+  transObj->convertToVTK("trg", true);
+
+  // write target to CGNSL 
+  transObj->writeTrgCg("test.cgns");
 
   /*
-  cgObj1->loadGrid();
-  // attaching partion id to the mesh
-  std::vector<double> slnData(cgObj1->getNElement(),0);
-  cgObj1->appendSolutionData("partitionOld", slnData, ELEMENTAL, cgObj1->getNElement(), 1);
-  // adding new cgns files
-  for (int iCg=1; iCg < nInCgFile; iCg++) {
-    cgnsAnalyzer* cgObj2 = new cgnsAnalyzer(cgFileName[iCg]);
-    cgObj2->loadGrid();
-    // appending data
-    std::vector<double> slnData(cgObj2->getNElement(),iCg);
-    cgObj2->appendSolutionData("partitionOld", slnData, ELEMENTAL, cgObj2->getNElement(), 1);
-    // stitching meshes
-    cgObj1->stitchMesh(cgObj2, true);
-  }
-  if (nInCgFile > 1)
-     std::cout << "Meshes stitched successfully!\n";
-
-  // checking quality of stitching
-  //cgObj1->checkVertex();
-  //cgObj1->checkElmConn(3);
-
-  // experiment with mesh partitioner
-  //meshPartitioner* mPart1 = new meshPartitioner(cgObj1);
-  //mPart1->partition(4);
-
-  std::cout << "Exporting mesh to MAdLib format #####################################\n";
-  // exporting mesh to the MAdLib
-  MAd::pGModel model = NULL;
-  MAd::GM_create(&model,"");
-  MAd::pMesh mesh = M_new(model);
-  cgObj1->exportToMAdMesh(mesh);
-  cgObj1->classifyMAdMeshOpt(mesh);
-  
-  // writing the mesh to gmsh and convert to vtk
-  std::cout <<"Writing to gmsh format.\n";
-  M_writeMsh(mesh, "stitched.msh", 2, NULL);
-  std::cout << "Converting from gmsh to vtk format.\n";
-  GModel* trgGModel;
-  trgGModel = new GModel("stitched"); 
-  trgGModel->readMSH("stitched.msh");
-  trgGModel->writeVTK("stitched.vtk", false, true);
-
-  // write physical quantities to vtk file
-  std::cout << "Writing physical quantities to vtk file.\n";
-  vtkAnalyzer* trgVTK;
-  trgVTK = new vtkAnalyzer((char*)"stitched.vtk");
-  trgVTK->read();
-  trgVTK->report();
-  // figure out what is existing on the stitched grid
-  int outNData, outNDim;
-  std::vector<std::string> slnNameList;
-  std::vector<std::string> appSlnNameList;
-  cgObj1->getSolutionDataNames(slnNameList);  
-  cgObj1->getAppendedSolutionDataName(appSlnNameList);
-  slnNameList.insert(slnNameList.end(),
-                     appSlnNameList.begin(), appSlnNameList.end());
-  // write all data into vtk file
-  for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
-  {
-    std::vector<double> physData;
-    cgObj1->getSolutionDataStitched(*is, physData, outNData, outNDim);
-    solution_type_t dt = cgObj1->getSolutionDataObj(*is)->getDataType();
-    if (dt == NODAL)      
-      trgVTK->setPointDataArray((*is).c_str(), 1, physData);
-    else
-      trgVTK->setCellDataArray((*is).c_str(), 1, physData);
-  }
-  trgVTK->report();
-  trgVTK->write("stitchedPhys.vtu");
-
-  std::cout << "Optimizing the mesh #############################################\n";
-  cgObj1->classifyMAdMeshBnd(mesh); // registering boundaries for the optimization step
-
-  // perparing for element quantity interpolation
-  std::vector<double> regCntCrdsOld;
-  getRegCenters(mesh, regCntCrdsOld);
-  //std::vector<double> tmp = getCOG(regCntCrdsOld);
-  basicInterpolant* int1 = new basicInterpolant(3, M_numRegions(mesh), 1, regCntCrdsOld);
-
-  // prepare the mesh for the optimization
-  std::cout <<"Checking mesh sanity.\n";
-  MAd::checkMesh(mesh);
-  MAd::M_info(mesh);
-
-  // defining addaptive refinement parameters
-  MAd::PWLSField * sizeField = new MAd::PWLSField(mesh);
-  sizeField->setCurrentSize();
-  sizeField->scale(1.5);
-  MAd::MeshAdapter* ma = new MAd::MeshAdapter(mesh,sizeField);
-  //ma->uglyTheMesh(0.5,20);
-  ma->printParameters();
-
-  // attach all nodal data to the mesh optimizer
-  int nData, nDim;
-  std::vector<std::string> cgSlnNameList;
-  std::vector<std::string> cgAppSlnNameList;
-  cgObj1->getSolutionDataNames(cgSlnNameList);  
-  cgObj1->getAppendedSolutionDataName(cgAppSlnNameList);
-  cgSlnNameList.insert(cgSlnNameList.end(),
-                     cgAppSlnNameList.begin(), cgAppSlnNameList.end());
-  for (auto is=cgSlnNameList.begin(); is<cgSlnNameList.end(); is++)
-  {
-    std::vector<double> physData;
-    cgObj1->getSolutionDataStitched(*is, physData, nData, nDim);
-    solution_type_t dt = cgObj1->getSolutionDataObj(*is)->getDataType();
-    if (dt == NODAL) {
-      std::cout << "Reading " << *is << std::endl;
-      ma->registerData(*is, physData); 
-    }
-  }
-
-  // optimize the mesh
-  std::cout << "Statistics before optimization: \n";
-  ma->printStatistics(std::cout);
-  std::cout << "Optimizing the mesh ...\n";
-  ma->run();
-  std::cout << "Statistics after optimization: \n";
-  ma->printStatistics(std::cout);
-  // write bulk mesh
-  cgObj1->unclassifyMAdMeshBnd(mesh); // remove registered boundaries for proper output
-  MAd::M_writeMsh (mesh, "optimizedMesh.msh", 2, NULL);
-  std::cout << "Volume Mesh "; 
-  MAd::M_info(mesh);
-  // convert optimized Gmsh file to vtk
-  std::cout << "Converting from optimized gmsh to vtk format.\n";
-  trgGModel = new GModel("stitchedOpt"); 
-  trgGModel->readMSH("optimizedMesh.msh");
-  trgGModel->writeVTK("optimizedMesh.vtk", false, true);
-
-  // skinning the mesh
-  std::cout << "Computing surface mesh.\n"; 
-  std::vector<int> skinElmIds;
-  MAd::pGModel tmpMdl = NULL;
-  MAd::GM_create(&tmpMdl,"");
-  MAd::pMesh skinMesh = M_new(tmpMdl);
-  mesh->skin_me(skinMesh, skinElmIds);
-  std::cout << "Num of elements in the mesh = " << MAd::M_numRegions(skinMesh) << std::endl;
-  std::cout << "Num of triangles in the mesh = " << MAd::M_numTriangles(skinMesh) << std::endl;
-  std::cout << "Minimum surface element index = " << *std::min_element(skinElmIds.begin(),skinElmIds.end()) << std::endl;
-  std::cout << "Maximum surface element index = " << *std::max_element(skinElmIds.begin(),skinElmIds.end()) << std::endl;
-  skinMesh->classify_unclassified_entities();
-  skinMesh->destroyStandAloneEntities();
-  //MAd::M_writeMsh (skinMesh, "skinMesh.msh", 2, NULL);
-  MAd::SaveGmshMesh (skinMesh, "skinMesh.msh", 2, false, NULL);
-
-  MAd::M_info(skinMesh);
-
-  std::cout << "Transfering solution values #############################################\n";
-  // write physical quantities to vtk file
-  std::cout << "Writing transfered physical quantities to vtk file.\n";
-  // get nodal data after refinement and write them
-  vtkAnalyzer* trgVTK2;
-  trgVTK2 = new vtkAnalyzer((char*)"optimizedMesh.vtk");
-  trgVTK2->read();
-  std::cout << "Writing cell and nodal data....\n";
-  std::vector<double> regCntCrdsNew;
-  getRegCenters(mesh, regCntCrdsNew);
-  //std::vector<double> cog = getCOG(regCntCrdsNew);
-  int nNewElm = M_numRegions(mesh);
-  for (auto is=cgSlnNameList.begin(); is<cgSlnNameList.end(); is++)
-  {
-    solution_type_t dt = cgObj1->getSolutionDataObj(*is)->getDataType();
-    if (dt == NODAL) {
-      std::cout << "Writing nodal " << *is << std::endl;
-      std::vector<double> physData;
-      ma->getMeshData((*is), &physData);
-      trgVTK2->setPointDataArray((*is).c_str(), 1, physData);
-      //MAd::NodalDataManagerSgl::instance().writeData((*is),((*is)+".pos").c_str());
-    } else {
-      //gs field is wiered in irocstar files we dont write it back
-      if (!(*is).compare("gs")){
-        continue;
-      }
-      std::cout << "Writing cell-based " << *is << std::endl;
-      std::vector<double> oldPhysData;
-      std::vector<double> newPhysData;
-      int nDataT, nDimT;      
-      cgObj1->getSolutionDataStitched(*is, oldPhysData, nDataT, nDimT);
-      int1->interpolate(nNewElm, regCntCrdsNew, oldPhysData, newPhysData);
-      std::cout << "Size oldPhys = " << oldPhysData.size()
-                << " Size newPhys = " << newPhysData.size()
-                << " nDataT = " << nDataT
-                << std::endl;
-      trgVTK2->setCellDataArray((*is).c_str(), 1, newPhysData);
-    }
-  }
-  trgVTK2->report();
-  trgVTK2->write("optimizedPhys.vtu");
-    
-  // partition the mesh
-  std::cout << " Partitioning the mesh with METIS.\n";
-  //meshPartitioner* mPart = new meshPartitioner(cgObj1);
-  meshPartitioner* mPart = new meshPartitioner(mesh);
-  mPart->partition(nOutCgFile);
-  
-  // write partitin ids for the surface mesh
-  std::ofstream of;
-  of.open("skinMeshPart.dat", std::fstream::trunc);
-  std::vector<double> elmPartIds = mPart->getPartedElm();
-  for (auto it=skinElmIds.begin(); it!=skinElmIds.end(); it++)
-  {
-    of << elmPartIds[*it - 1] << "\n";
-  } 
-  of.close();
-
   // write CGNS files for the new grid
   for (int iCg=0; iCg<nOutCgFile; iCg++)
   {

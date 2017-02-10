@@ -67,25 +67,13 @@ void gridTransfer::loadSrcCgSeries(int nCg)
 /*
    Loads a series of target cgns files based on current file name
 */
-void gridTransfer::loadTrgCgSeries(int nCg)
+void gridTransfer::loadTrgCg()
 {
-  for (int iCg=0; iCg<nCg; iCg++)
-  {
-    std::ostringstream suffix1;
-    std::ostringstream suffix2;
-    suffix1 << iCg;
-    std::string tmp = suffix1.str();
-    for (int iPad=0; iPad<padSizeTrg-tmp.size(); iPad++)
-      suffix2 << "0";
-    suffix2 << tmp << ".cgns";
-    std::string fName = baseCgFNameTrg + suffix2.str();
-    cgnsAnalyzer* cgTmp = new cgnsAnalyzer(fName);
-    // loading base grid
-    cgTmp->loadGrid();
-    trgCgObjs.push_back(cgTmp);
-    trgCgFNames.push_back(fName);
-  }
-
+  cgnsAnalyzer* cgTmp = new cgnsAnalyzer(trgCgFName);
+  // loading base grid
+  cgTmp->loadGrid();
+  trgCgObjs.push_back(cgTmp);
+  trgCgFNames.push_back(trgCgFName);
 }
 
 ////////////////////////////////////////////////////
@@ -106,44 +94,165 @@ void gridTransfer::dummy()
   std::cout << "NVertex solution = " << (trgCgObjs[0])->getNVertex() << std::endl;
   std::cout << "NCell solution = " << (trgCgObjs[0])->getNElement() << std::endl;
   */
-  // transfering one of the nodal solutions to the new mesh
+}
+
+void gridTransfer::transfer()
+{
+  // exporting to MAd if not yet
+  if (!srcMesh)
+    exportMeshToMAdLib("src");
+  if (!trgMesh)
+    exportMeshToMAdLib("trg");
+
+  // transfering solution values to the new mesh
   std::vector<std::string> slnList;
   getSolutionDataNames(slnList);
-  std::cout << slnList[0] << std::endl;
-
-  std::vector<double> srcSlnVec;
-  int outNData, outNDim;
-  getSolutionDataStitched(slnList[0], srcSlnVec, outNData, outNDim);
-  std::cout << outNData << std::endl;
-
+  solution_type_t st;
   std::vector<double> srcVrtCrds = getVertexCoords();
-  basicInterpolant interp = basicInterpolant(3, nVertex, 4, srcVrtCrds);
+  std::vector<double> srcElmCntCrds = getElmCntCoords(srcMesh);
+  std::vector<double> trgElmCntCrds = getElmCntCoords(trgMesh);
 
-  std::vector<double> trgSlnVec;
-  int badPnt=0;
-  for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
+  // preparing interpolators
+  basicInterpolant interpNde = basicInterpolant(3, nVertex, 4, srcVrtCrds);
+  basicInterpolant interpElm = basicInterpolant(3, nElem, 4, srcElmCntCrds);
+  // loop on solutions
+  for (auto is=slnList.begin(); is!=slnList.end(); is++)
   {
-    std::vector<double> vrtCrds, prms;
-    std::vector<int>  vrtIds;
-    vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
-    //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-    int elmIdx = getBaryCrds(vrtCrds, prms, vrtIds);
-    if (elmIdx < 0)
+    std::vector<double> srcSlnVec;
+    std::vector<double> trgSlnVec;
+    int badPnt=0;
+    int outNData, outNDim;
+    int inNData = 0;
+    st = getSolutionDataStitched(*is, srcSlnVec, outNData, outNDim);
+    if (st == NODAL)
     {
-      std::cout << badPnt++ << std::endl;
-      std::vector<double> trgVrtData;
-      interp.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
-      trgSlnVec.push_back(trgVrtData[0]);
+      // nodal value transfer
+      std::cout << "Transfering nodal " << *is << std::endl;
+      for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
+      {
+	std::vector<double> vrtCrds, prms;
+	std::vector<int>  vrtIds;
+	vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
+	//std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+	int elmIdx = getBaryCrds(vrtCrds, prms, vrtIds);
+	if (elmIdx < 0)
+	{
+          badPnt++;
+	  //std::cout << badPnt << std::endl;
+	  std::vector<double> trgVrtData;
+	  interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
+	  trgSlnVec.push_back(trgVrtData[0]);
+	}
+	else
+	  trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
+			       prms[1]*srcSlnVec[vrtIds[1]] +
+			       prms[2]*srcSlnVec[vrtIds[2]] +
+			       prms[3]*srcSlnVec[vrtIds[3]] );
+      }
+      inNData = trgCgObjs[0]->getNVertex();
+      std::cout << "Finished transfering with " << badPnt << " bad nodes." << std::endl;
     }
-    else
-      trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
-                           prms[1]*srcSlnVec[vrtIds[1]] +
-                           prms[2]*srcSlnVec[vrtIds[2]] +
-                           prms[3]*srcSlnVec[vrtIds[3]] );
-
+    else if (st == ELEMENTAL)
+    {
+      // elemental value transfer
+      std::cout << "Transfering elemental " << *is << std::endl;
+      interpElm.interpolate(trgCgObjs[0]->getNElement(), trgElmCntCrds, srcSlnVec, trgSlnVec);
+      inNData = trgCgObjs[0]->getNElement();
+    }
+    trgCgObjs[0]->appendSolutionData(*is, trgSlnVec, st, inNData , 3);
   }
->>>>>>> cd01d4e9cbc7693a1bee2d23282a2feaa645ac42
-  
+}
+
+void gridTransfer::writeTrgCg(std::string cgFName)
+{
+  std::cout << "Writing remeshed " << cgFName << std::endl;
+  cgnsAnalyzer* cgObj1 = trgCgObjs[0];
+  // define elementary information
+  cgnsWriter* cgWrtObj = new cgnsWriter(cgFName, cgObj1->getBaseName(), 3, 3);
+  cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
+		    cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
+		    cgObj1->getAngleUnit());
+  cgWrtObj->setBaseItrData(cgObj1->getBaseItrName(), 
+                           cgObj1->getNTStep(), 
+                           cgObj1->getTimeStep());
+  cgWrtObj->setZoneItrData(cgObj1->getZoneItrName(), 
+                           cgObj1->getGridCrdPntr(), 
+                           cgObj1->getSolutionPntr());
+  cgWrtObj->setZone(cgObj1->getZoneName(), cgObj1->getZoneType());
+  cgWrtObj->setNVrtx(cgObj1->getNVertex());
+  cgWrtObj->setNCell(cgObj1->getNElement());
+  // define coordinates
+  cgWrtObj->setGridXYZ(cgObj1->getVrtXCrd(), cgObj1->getVrtYCrd(), cgObj1->getVrtZCrd());
+  // define connctivity
+  cgWrtObj->setSection(cgObj1->getSectionName(), 
+		       (ElementType_t) cgObj1->getElementType(), 
+		       cgObj1->getElementConnectivity(-1));
+  // define vertex and cell data 
+  std::map<std::string, GridLocation_t> slnNLMap;// = cgObj1->getSolutionNameLocMap();
+  std::vector<std::string> slnList;
+  getSolutionDataNames(slnList);
+  for (auto is=slnList.begin(); is!=slnList.end(); is++)
+  {
+    std::vector<double> srcSlnVec;
+    int outNData, outNDim;
+    solution_type_t st = getSolutionDataStitched(*is, srcSlnVec, outNData, outNDim);
+    if (st== NODAL)
+      slnNLMap[*is] = Vertex; 
+    else if (st == ELEMENTAL)
+      slnNLMap[*is] = CellCenter; 
+  }
+  for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
+    cgWrtObj->setSolutionNode(is->first, is->second);
+  // write skelleton of the file
+  cgWrtObj->writeGridToFile();
+  /*
+  // write individual data fields
+  std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
+  std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
+  std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
+  std::vector<double> regCntCrdsPart = mPart->getElmSlnVec(iCg, regCntCrdsNew, 3);
+  //cog = getCOG(regCntCrdsPart);
+  int iSol = -1;
+  for (auto is=slnMap.begin(); is!=slnMap.end(); is++)
+  {
+   std::pair<int,keyValueList> slnPair = is->second;
+   int slnIdx = slnPair.first;
+   keyValueList fldLst = slnPair.second;
+   for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
+   {
+     iSol++;
+     std::vector<double> stitPhysData;
+     std::vector<double> partPhysData;
+     int nData;
+     if (gLoc[iSol] == Vertex)
+     {
+       nData = mPart->getNNdePart(iCg);
+       ma->getMeshData(ifl->second, &stitPhysData);
+       partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
+     } else {
+       nData = mPart->getNElmPart(iCg);
+       std::vector<double> oldPhysData;
+       int nDataT, nDimT;
+       cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT, nDimT);
+       int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart, oldPhysData, partPhysData);      
+       //std::cout << "Minimum element = " 
+       //          << *std::min_element(partPhysData.begin(), partPhysData.end())
+       //          << "\n Maximum element = " 
+       //          << *std::max_element(partPhysData.begin(), partPhysData.end())
+       //          << std::endl;
+     }
+     std::cout << "Writing "
+	       << nData 
+	       << " to "
+	       << ifl->second
+	       << " located in "
+	       << slnName[iSol]
+	       << std::endl;
+     // write to file
+     cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
+   }
+  }
+  */
 }
 
 void gridTransfer::exportMeshToMAdLib(std::string gridName)
@@ -156,13 +265,17 @@ void gridTransfer::exportMeshToMAdLib(std::string gridName)
     srcMesh = MAd::M_new(srcModel);
     exportToMAdMesh(srcMesh);
     classifyMAdMeshOpt(srcMesh);
+    MAd::M_info(srcMesh, std::cout);
   } 
   else if (!strcmp(gridName.c_str(), "trg")) 
   {
+    if (trgCgObjs.empty())
+      return;
     MAd::GM_create(&trgModel,"");
     trgMesh = MAd::M_new(trgModel);
-    exportToMAdMesh(trgMesh);
-    classifyMAdMeshOpt(trgMesh);
+    trgCgObjs[0]->exportToMAdMesh(trgMesh);
+    trgCgObjs[0]->classifyMAdMeshOpt(trgMesh);
+    MAd::M_info(trgMesh, std::cout);
   } else {
     std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
     throw;
@@ -197,7 +310,7 @@ void gridTransfer::convertToMsh(std::string gridName)
   MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
 }
 
-void gridTransfer::convertToVtk(std::string gridName, bool withSolution)
+void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
 {
   // if gridName = source exports source mesh data to MAdLib, otherwise target
   // exporting mesh to the MAdLib
@@ -232,31 +345,54 @@ void gridTransfer::convertToVtk(std::string gridName, bool withSolution)
   // writing solution data to the file
   if (withSolution)
   {
-    vtkAnalyzer* wrtVTK;
-    wrtVTK = new vtkAnalyzer((char *)fName.c_str());
-    wrtVTK->read();
-    wrtVTK->report();
-    // figure out what is existing on the stitched grid
-    int outNData, outNDim;
-    std::vector<std::string> slnNameList;
-    std::vector<std::string> appSlnNameList;
-    getSolutionDataNames(slnNameList);  
-    getAppendedSolutionDataName(appSlnNameList);
-    slnNameList.insert(slnNameList.end(),
-		       appSlnNameList.begin(), appSlnNameList.end());
-    // write all data into vtk file
-    for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
+    if (!strcmp(gridName.c_str(), "src"))
     {
-      std::vector<double> physData;
-      getSolutionDataStitched(*is, physData, outNData, outNDim);
-      solution_type_t dt = getSolutionDataObj(*is)->getDataType();
-      if (dt == NODAL)      
-	wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
-      else
-	wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
+      vtkAnalyzer* wrtVTK;
+      wrtVTK = new vtkAnalyzer((char *)fName.c_str());
+      wrtVTK->read();
+      // figure out what is existing on the stitched grid
+      int outNData, outNDim;
+      std::vector<std::string> slnNameList;
+      std::vector<std::string> appSlnNameList;
+      getSolutionDataNames(slnNameList);  
+      getAppendedSolutionDataName(appSlnNameList);
+      slnNameList.insert(slnNameList.end(),
+			 appSlnNameList.begin(), appSlnNameList.end());
+      // write all data into vtk file
+      for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
+      {
+	std::vector<double> physData;
+	getSolutionDataStitched(*is, physData, outNData, outNDim);
+	solution_type_t dt = getSolutionDataObj(*is)->getDataType();
+	if (dt == NODAL)      
+	  wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
+	else if (dt == ELEMENTAL)
+	  wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
+      }
+      wrtVTK->report();
+      wrtVTK->write((char *)fName.c_str());
+    } 
+    else if (!strcmp(gridName.c_str(), "trg"))
+    {
+      std::vector<std::string> appDataLst; 
+      trgCgObjs[0]->getAppendedSolutionDataName(appDataLst);
+      vtkAnalyzer* wrtVTK;
+      wrtVTK = new vtkAnalyzer((char *)fName.c_str());
+      wrtVTK->read();
+      // write transfered data to vtk
+      for (auto ia=appDataLst.begin(); ia!=appDataLst.end(); ia++)
+      {
+	std::vector<double> trgSlnVec;
+	solution_type_t dt = trgCgObjs[0]->getSolutionData(*ia, trgSlnVec);
+	if (dt == NODAL)
+	  wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
+	else if (dt== ELEMENTAL)
+	  wrtVTK->setCellDataArray((*ia).c_str(), 1, trgSlnVec);
+	
+      }
+      wrtVTK->report();
+      wrtVTK->write((char *)fName.c_str());
     }
-    wrtVTK->report();
-    wrtVTK->write((char *)fName.c_str());
   }
   
 }
@@ -920,12 +1056,12 @@ int gridTransfer::getNCgObj()
 
 std::string gridTransfer::getBaseNameTrg()
 {
-  return(baseCgFNameSrc);
+  return(baseCgFNameTrg);
 }
 
 std::string gridTransfer::getBaseNameSrc()
 {
-  return(baseCgFNameTrg);
+  return(baseCgFNameSrc);
 }
 
 std::string gridTransfer::getBaseName(int indx)

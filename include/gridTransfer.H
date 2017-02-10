@@ -8,6 +8,7 @@
 
 // Nemosys
 #include <cgnsAnalyzer.H>
+#include <cgnsWriter.H>
 #include <vtkAnalyzer.H>
 #include <baseInterp.H>
 
@@ -25,7 +26,7 @@ public:
 
   // loading
   void loadSrcCgSeries(int nCg);
-  void loadTrgCgSeries(int nCg);
+  void loadTrgCg();
 
   // cgObjects access
   int getNCgObj();
@@ -71,9 +72,13 @@ public:
   void dummy();
   void exportMeshToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
-  void convertToVtk(std::string gridName, bool withSolution = false);
+  void convertToVTK(std::string gridName, bool withSolution = false);
   void exportNodalDataToMAdLib();
   void exportSrcToGModel();
+  void transfer();
+
+  // writing actions
+  void writeTrgCg(std::string cgFName);
   
   // helper methods
   int getElmIdx(std::vector<double>& xyz);
