@@ -64,18 +64,23 @@ public:
   int getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx);
 
   // data processing
-  void stitchMe(cgnsAnalyzer* cgObj, int zoneIdx);
-  void stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx); 
+  void stitchMe(cgnsAnalyzer* cgObj, int zoneIdx, int verb=0);
+  void stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx, int verb=0); 
   void stitchMe(gridTransfer* cgObj);
 
   // transfer actions
-  void dummy();
   void exportMeshToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
   void convertToVTK(std::string gridName, bool withSolution = false);
   void exportNodalDataToMAdLib();
   void exportSrcToGModel();
   void transfer();
+
+  // quality reporting
+  void gridStats();
+  void gridCheck();
+  void dummy();
+  
 
   // writing actions
   void writeTrgCg(std::string cgFName);

@@ -56,7 +56,7 @@ void gridTransfer::loadSrcCgSeries(int nCg)
     // loading all zones
     for (int iz = 1; iz<=srcCgObjs[iCg]->getNZone(); iz++)
     {
-      std::cout << "Zone = " << getZoneName(srcCgObjs[iCg], iz) << std::endl;
+      std::cout << "  Zone ID : " << getZoneName(srcCgObjs[iCg], iz) << std::endl;
       stitchMe(srcCgObjs[iCg], iz);
       std::cout << "Finished processing of the zone " << getZoneName(srcCgObjs[iCg], iz) << std::endl;
     }
@@ -79,21 +79,33 @@ void gridTransfer::loadTrgCg()
 ////////////////////////////////////////////////////
 // DATA PROCESSING
 ////////////////////////////////////////////////////
-void gridTransfer::dummy()
+void gridTransfer::gridStats()
 {
-  /*
-  // testings of the element locator and parametric coord calculator
-  std::vector<double> xyz, prm;
-  xyz.push_back(0.01);
-  xyz.push_back(0.0);
-  xyz.push_back(0.0);
-  std::vector<int> vrtIds;
-  std::cout << "(0.01, 0, 0) is in : " << getBaryCrds(xyz, prm, vrtIds) << std::endl;
-  std::cout << vrtIds[0]<<" "<<vrtIds[1]<<" "<<vrtIds[2]<<" "<<vrtIds[3]<<std::endl;
-  std::cout << "param coords : " <<prm[0]<<" "<<prm[1]<<" "<<prm[2]<<std::endl;
-  std::cout << "NVertex solution = " << (trgCgObjs[0])->getNVertex() << std::endl;
-  std::cout << "NCell solution = " << (trgCgObjs[0])->getNElement() << std::endl;
-  */
+  std::cout << "  Number of Points    : " << srcMesh->nbPoints << std::endl;
+  std::cout << "  Number of Edges     : " << srcMesh->nbEdges << std::endl;
+  std::cout << "  Number of Triangles : " << srcMesh->nbTriangles << std::endl;
+  std::cout << "  Number of Quads     : " << srcMesh->nbQuads << std::endl;
+  std::cout << "  Number of Tets      : " << srcMesh->nbTets << std::endl;
+  std::cout << "  Number of Hexes     : " << srcMesh->nbHexes << std::endl;
+  std::cout << "  Number of Prisms    : " << srcMesh->nbPrisms << std::endl;
+
+  // running checkMesh
+  //MAd::checkMesh(srcMesh);
+
+  // running adapter checks on the grid
+  classifyMAdMeshBnd(srcMesh);
+  MAd::PWLSField* sizeField = new MAd::PWLSField(srcMesh);
+  sizeField->setCurrentSize();
+  MAd::MeshAdapter* ma;
+  ma = new MAd::MeshAdapter(srcMesh, sizeField);
+  ma->printStatistics(std::cout);
+  delete(ma);
+}
+
+void gridTransfer::gridCheck()
+{
+  // running checkMesh
+  MAd::checkMesh(srcMesh);
 }
 
 void gridTransfer::transfer()
@@ -188,71 +200,24 @@ void gridTransfer::writeTrgCg(std::string cgFName)
 		       (ElementType_t) cgObj1->getElementType(), 
 		       cgObj1->getElementConnectivity(-1));
   // define vertex and cell data 
-  std::map<std::string, GridLocation_t> slnNLMap;// = cgObj1->getSolutionNameLocMap();
+  cgWrtObj->setSolutionNode("NodeData", Vertex);
+  cgWrtObj->setSolutionNode("ElemData", CellCenter);
+
+  // write skelleton of the file
+  cgWrtObj->writeGridToFile();
+
+  // writing data to the CGNS file
   std::vector<std::string> slnList;
   getSolutionDataNames(slnList);
   for (auto is=slnList.begin(); is!=slnList.end(); is++)
   {
-    std::vector<double> srcSlnVec;
-    int outNData, outNDim;
-    solution_type_t st = getSolutionDataStitched(*is, srcSlnVec, outNData, outNDim);
-    if (st== NODAL)
-      slnNLMap[*is] = Vertex; 
+    std::vector<double> trgSlnVec;
+    solution_type_t st = trgCgObjs[0]->getSolutionData(*is, trgSlnVec);
+    if (st== NODAL)      
+      cgWrtObj->writeSolutionField(*is, "NodeData", RealDouble, &trgSlnVec[0]);
     else if (st == ELEMENTAL)
-      slnNLMap[*is] = CellCenter; 
+      cgWrtObj->writeSolutionField(*is, "ElemData", RealDouble, &trgSlnVec[0]);
   }
-  for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
-    cgWrtObj->setSolutionNode(is->first, is->second);
-  // write skelleton of the file
-  cgWrtObj->writeGridToFile();
-  /*
-  // write individual data fields
-  std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
-  std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
-  std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
-  std::vector<double> regCntCrdsPart = mPart->getElmSlnVec(iCg, regCntCrdsNew, 3);
-  //cog = getCOG(regCntCrdsPart);
-  int iSol = -1;
-  for (auto is=slnMap.begin(); is!=slnMap.end(); is++)
-  {
-   std::pair<int,keyValueList> slnPair = is->second;
-   int slnIdx = slnPair.first;
-   keyValueList fldLst = slnPair.second;
-   for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
-   {
-     iSol++;
-     std::vector<double> stitPhysData;
-     std::vector<double> partPhysData;
-     int nData;
-     if (gLoc[iSol] == Vertex)
-     {
-       nData = mPart->getNNdePart(iCg);
-       ma->getMeshData(ifl->second, &stitPhysData);
-       partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
-     } else {
-       nData = mPart->getNElmPart(iCg);
-       std::vector<double> oldPhysData;
-       int nDataT, nDimT;
-       cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT, nDimT);
-       int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart, oldPhysData, partPhysData);      
-       //std::cout << "Minimum element = " 
-       //          << *std::min_element(partPhysData.begin(), partPhysData.end())
-       //          << "\n Maximum element = " 
-       //          << *std::max_element(partPhysData.begin(), partPhysData.end())
-       //          << std::endl;
-     }
-     std::cout << "Writing "
-	       << nData 
-	       << " to "
-	       << ifl->second
-	       << " located in "
-	       << slnName[iSol]
-	       << std::endl;
-     // write to file
-     cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
-   }
-  }
-  */
 }
 
 void gridTransfer::exportMeshToMAdLib(std::string gridName)
@@ -501,13 +466,13 @@ int gridTransfer::getBaryCrds(std::vector<double>& xyz, std::vector<double>& bar
   return(elmIdx);
 }
 
-void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
+void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
 {
   // load proper zone
   // asking object to load its zone information
   // this should refresh vertex coordinates and 
   // element connectivity tables
-  cgObj->loadZone(zoneIdx, 1);
+  cgObj->loadZone(zoneIdx, verb);
 
   // check if this is the first object being stitched
   if (nVertex==0)
@@ -613,7 +578,7 @@ void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
   zoneNames.push_back(cgObj->getFileName()+"->"+cgObj->getZoneName());
 }
 
-void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
+void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
 {
   // load proper zone
   // asking object to load its zone information

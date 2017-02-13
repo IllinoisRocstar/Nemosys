@@ -89,12 +89,12 @@ public:
    };
 
    // loading mesh
-   void loadGrid(std::string fname)
+   void loadGrid(std::string fname, int verb=0)
    {
     cgFileName = fname;
-    loadGrid();
+    loadGrid(verb);
    };
-   void loadGrid();
+   void loadGrid(int verb=0);
    void loadZone(int zIdx, int verb=0);
  
    // mesh information access
@@ -180,7 +180,7 @@ protected:
    void populateSolutionDataNames();
    void buildVertexKDTree();
    void buildElementKDTree();
-   void loadSolutionDataContainer();   
+   void loadSolutionDataContainer(int verb = 0);   
    virtual void stitchFields(cgnsAnalyzer* inCg);
 
 

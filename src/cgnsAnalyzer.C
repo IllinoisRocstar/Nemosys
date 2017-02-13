@@ -59,7 +59,7 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
 /********************************************
     cgnsAnalyzer class implementation
 *********************************************/
-void cgnsAnalyzer::loadGrid()
+void cgnsAnalyzer::loadGrid(int verb)
 {
    // cgns related variables
    int i,j,k;
@@ -79,12 +79,13 @@ void cgnsAnalyzer::loadGrid()
    // reading units
    if (cg_goto(indexFile, indexBase,"end")) cg_error_exit();
    if (cg_units_read(&massU, &lengthU, &timeU, &tempU, &angleU)) cg_error_exit();
-   std::cout << " ------------------------------------------------\n"
-             << "Base name = " << baseName 
-             << "\ncellDim = " << cellDim
-             << "\nphysDim = " << physDim
-             << "\nUnits " <<massU<<" "<<lengthU<<" "<<timeU<<" "<<tempU<<" "<<angleU
-             << std::endl;
+   if (verb>0) 
+      std::cout << " ------------------------------------------------\n"
+           << "Base name = " << baseName 
+           << "\ncellDim = " << cellDim
+           << "\nphysDim = " << physDim
+           << "\nUnits " <<massU<<" "<<lengthU<<" "<<timeU<<" "<<tempU<<" "<<angleU
+           << std::endl;
 
    // reading base iterative data
    char bitername[33];
@@ -95,7 +96,7 @@ void cgnsAnalyzer::loadGrid()
    int nArrays;
    if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
    if (cg_array_read_as(1, RealDouble , &timeLabel)) cg_error_exit();
-   std::cout << "Time label = " << timeLabel << std::endl;
+   if (verb>0) std::cout << "Time label = " << timeLabel << std::endl;
 
    // reading zone information
    cg_nzones(indexFile, indexBase, &nZone);
@@ -103,7 +104,7 @@ void cgnsAnalyzer::loadGrid()
      //std::cout << "There are "<< nZone << " zones in the file (not supported).\n";
      isMltZone=true;
    }
-   loadZone(1,1);
+   loadZone(1,0);
 }
 
 
@@ -1325,30 +1326,32 @@ void cgnsAnalyzer::stitchMesh(cgnsAnalyzer* inCg, bool withFields)
    zoneNames.push_back(inCg->getZoneName());
 }
 
-void cgnsAnalyzer::loadSolutionDataContainer()
+void cgnsAnalyzer::loadSolutionDataContainer(int verb)
 {
    // look at the solution names of current grid
    std::vector<std::string> crntCgList;
    getSolutionDataNames(crntCgList);
-   for (auto it=crntCgList.begin(); it!=crntCgList.end(); it++)
-     std::cout << *it << std::endl;
+   if (verb > 0)
+     for (auto it=crntCgList.begin(); it!=crntCgList.end(); it++)
+       std::cout << *it << std::endl;
    // load solution data container if empty
    if (slnDataCont.size()==0)
    {
       for (auto is=crntCgList.begin(); is!=crntCgList.end(); is++)
       {
 	 solutionData* slnDataPtr = getSolutionDataObj(*is);
-	 std::cout << (*is)
-		   << " number of data read " 
-		   << slnDataPtr->getNData()
-		   << " "
-		   << slnDataPtr->getNDim()                   
-		   << std::endl;
+         if (verb>0)
+	   std::cout << (*is)
+		     << " number of data read " 
+		     << slnDataPtr->getNData()
+		     << " "
+		     << slnDataPtr->getNDim()                   
+		     << std::endl;
 	 slnDataCont.push_back(slnDataPtr);
       }
    }
    // information 
-   std::cout << "Number of solutions stored = " << slnDataCont.size()
+   std::cout << "  Number of Solution Field = " << slnDataCont.size()
              << std::endl;
 }
 
