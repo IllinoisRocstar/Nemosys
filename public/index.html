@@ -35,6 +35,18 @@
 
      <div class="row">
 	 <div class="large-4 columns">
+             <div id="webglContainerSrc"></div> 
+	 </div>
+	 <div class="large-4 columns">
+	     <a href="#" id="transfer" class="button">Transfer</a>
+	 </div>
+	 <div class="large-4 columns">
+             <div id="webglContainerTrg"></div> 
+	 </div>
+     </div>
+
+     <div class="row">
+	 <div class="large-4 columns">
              <a href="#" id="gridStats" class="button">Grid Statistics</a>
 	 </div>
 
@@ -47,10 +59,23 @@
              <a href="#" class="button">Download</a>
 	 </div>
      </div>
-
+    
+    <!-- vendor -->
     <script src="js/vendor/jquery.js"></script>
     <script src="js/vendor/what-input.js"></script>
     <script src="js/vendor/foundation.js"></script>
+    <!-- ThreeJS helper libraries and imports -->
+    <script src="js/vendor/three/three.min.js"></script>
+    <script src='js/vendor/three/libs/inflate.min.js'></script>
+    <script src="js/vendor/three/controls/TrackballControls.js"></script>
+    <script src="js/vendor/three/loaders/VTKLoader.js"></script>
+    <script src="js/vendor/three/loaders/STLLoader.js"></script>
+    <script src="js/vendor/three/Detector.js"></script>
+    <script src="js/vendor/three/libs/stats.min.js"></script>
+
+    <!-- main -->
     <script src="js/app.js"></script>
+    <script src="js/app_webgl.js"></script>
+
   </body>
 </html>
