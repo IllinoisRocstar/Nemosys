@@ -1,28 +1,59 @@
+// globals
 var express =   require("express");
+var app     =   express();
 var path = require('path');
-var multer  =   require('multer');
-var app         =   express();
+var formidable = require('formidable');
+var fs = require('fs');
 
-app.use(express.static(path.join(__dirname, '../public')));
+// other globals
+var verb;
+var serverStartupDate = new Date();
 
 
-var storage =   multer.diskStorage({
-  destination: function (req, file, callback) {
-    callback(null, './uploads');
-  },
-  filename: function (req, file, callback) {
-    callback(null, file.fieldname + '-' + Date.now());
+// passed command line arguments
+var args = process.argv.slice(2);
+console.log("Welcome to NEMoSys Webserver Backend(v1.0)");
+console.log("Starting server in : %s", serverStartupDate);
+console.log("The server called with these switches : ", args);
+
+// process input switches
+process.argv.forEach(function (val, index, array) {
+  if (val=='-v') {    
+    console.log("Working in the verbose mode.");
+    verb = true;
   }
 });
 
-app.post('/api/file',function(req,res){
-    var upload = multer({ storage : storage}).single('userFile');
-    upload(req,res,function(err) {
-        if(err) {
-            return res.end("Error uploading file.");
-        }
-        res.end("File is uploaded");
-    });
+
+app.use(express.static(path.join(__dirname, '../public')));
+
+app.get('/', function(req, res){
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+app.post('/upload', function(req, res){
+  // create an incoming form object
+  var form = new formidable.IncomingForm();
+  // specify that we want to allow the user to upload multiple files in a single request
+  form.multiples = true;
+  // store all uploads in the /uploads directory
+  form.uploadDir = path.join(__dirname, '/uploads');
+  // every time a file has been uploaded successfully,
+  // rename it to it's orignal name
+  form.on('file', function(field, file) {
+    fs.rename(file.path, path.join(form.uploadDir, file.name));
+    console.log("File received: %s", path.join(form.uploadDir, file.name));
+  });
+  // log any errors that occur
+  form.on('error', function(err) {
+    console.log('An error has occured: \n' + err);
+  });
+  // once all the files have been uploaded, send a response to the client
+  form.on('end', function() {
+    res.end('success');
+  });
+  // parse the incoming request containing the form data
+  form.parse(req);
 });
 
 app.listen(3000,function(){
