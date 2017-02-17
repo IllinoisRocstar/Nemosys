@@ -16,16 +16,15 @@
 	 </div>
      </div>
 
+     <!-- Row 1 -->
      <div class="row">
 	 <div class="large-4 columns">
              <label for="srcGridFileUpload" class="button">Upload Source Grid</label>
-             <input type="file" id="srcGridFileUpload" name="uploads[]" multiple="multiple" class="show-for-sr">
-             <div class="progress">
-               <div class="progress-bar" id="srcUploadProgBar" role="progressbar"></div>
-             </div>
-	 </div>
-	 <div class="large-4 columns">
-	     <a href="#" id="transfer" class="button">Transfer</a>
+             <input type="file" id="srcGridFileUpload" name="uploads[]" class="show-for-sr">
+	     <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" 
+              aria-valuemin="0" aria-valuetext="0 percent" aria-valuemax="100">
+	         <div class="progress-meter" id="srcUploadProgBar" style="width: 0%"></div>
+	     </div>
 	 </div>
 	 <div class="large-4 columns">
              <label for="trgGridFileUpload" class="button">Upload Target Grid</label>
@@ -33,26 +32,33 @@
 	 </div>
      </div>
 
+     <!-- Row 2 -->
      <div class="row">
-	 <div class="large-4 columns">
-             <div id="webglContainerSrc"></div> 
+	 <div class="large-4 columns" id="containerSrc">
+              <div id="webglContainerSrc"></div> 
 	 </div>
 	 <div class="large-4 columns">
-	     <a href="#" id="transfer" class="button">Transfer</a>
+             <div class="row">
+	         <a href="#" id="transfer" class="button">Transfer</a>
+	     </div>
+             <div class="row">
+                 <label>Processing Outputs</label>
+	         <textarea id="outbox"  rows="14"></textarea>
+	     </div>
 	 </div>
 	 <div class="large-4 columns">
+             <img src="//placehold.it/380x380" class="thumbnail" alt="">
              <div id="webglContainerTrg"></div> 
 	 </div>
      </div>
 
+     <!-- Row 3 -->
      <div class="row">
 	 <div class="large-4 columns">
              <a href="#" id="gridStats" class="button">Grid Statistics</a>
 	 </div>
 
 	 <div class="large-4 columns">
-            <label>Output Box</label>
-	    <textarea id="outbox"  placeholder="large-12.columns"></textarea>
 	 </div>
 
 	 <div class="large-4 columns">

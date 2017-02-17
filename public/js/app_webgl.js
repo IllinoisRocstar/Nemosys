@@ -11,11 +11,13 @@ function initialize() {
 
   // create a scene 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color( 11111111 ); // --- set background color (purple in this case)
-
+  scene.background = new THREE.Color( 0 );
 
   // Create a camera which will be appened to the scene object
-  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 1e10 );
+  //camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 1e10 );
+  camera = new THREE.PerspectiveCamera( 60, 1.0, 0.01, 1e10 );
+  camera.position.x = 2;
+  camera.position.y = 2;
   camera.position.z = 2;
 
   // Create a controls object which allows for user control of the camera position 
@@ -36,13 +38,11 @@ function initialize() {
   dirLight.position.set( 200, 200, 1000 ).normalize(); 
   camera.add( dirLight );
   camera.add( dirLight.target );
-
-
   var ambientLight = new THREE.AmbientLight(0x0c0c0c); 
   camera.add(ambientLight);
 
   // Create an zyx axes at the origin 
-  var axes = new THREE.AxisHelper(20); // length of axes displayed is argument 
+  var axes = new THREE.AxisHelper(1); // length of axes displayed is argument 
   scene.add(axes);
 
   // note: In threejs, in order to display an object you need to create a "mesh". A "mesh" 
@@ -51,10 +51,8 @@ function initialize() {
       { 
 	  color: 0xffffff, 
 	  side: THREE.DoubleSide, 
-	  wireframe: true 
-	  
+	  wireframe: false 
       });
-
 
   // ------------------------------------------------------------------------------------------
   // --------------- this is what we need to connect with the upload --------------------------
@@ -63,28 +61,21 @@ function initialize() {
   // Alternatively, the "STLLoader" can be used with the same syntax
   // var loader = new THREE.VTKLoader();
   var loader = new THREE.STLLoader();
-  loader.load( "models/exampleCube.stl", function ( geometry ) {
-  // loader.load( "models/exampleCube.vtk", function ( geometry ) {
-
+  loader.load( "uploads/source.stl", function ( geometry ) {
+      // loader.load( "models/exampleCube.vtk", function ( geometry ) {
       geometry.center();
       geometry.computeVertexNormals();
-
       // "mesh" from "geometry" and "material"
       var mesh = new THREE.Mesh( geometry, material ); 
       mesh.position.set( 0, 0, 0 );
       mesh.scale.multiplyScalar( 1 );
       scene.add( mesh ); // append the mesh to the scene
-
   } );
-  // ------------------------------------------------------------------------------------------
-  // ------------------------------------------------------------------------------------------
-  // ------------------------------------------------------------------------------------------
-	  
 
   // Create a renderer
   renderer = new THREE.WebGLRenderer( { antialias: true } );
   renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( 500, 500 ); // <---- customize this to fit in the "div" container!!!
+  renderer.setSize( 380, 380 ); // <---- customize this to fit in the "div" container!!!
 
   // container = document.createElement( 'div' );
   container = document.getElementById( 'webglContainerSrc' ) 
@@ -93,24 +84,23 @@ function initialize() {
 
   // renderer.setSize( container.innerWidth, container.innerHeight ); 
   // <---- customize this to fit in the "div" container!!!
-  document.body.appendChild( container );
+  //document.body.appendChild( container );
+  document.getElementById('containerSrc').appendChild( container );
   container.appendChild( renderer.domElement );
 
-
   // display stats (not needed, debug only)
-  // stats = new Stats();
-  // container.appendChild( stats.dom );
+  stats = new Stats();
+  container.appendChild( stats.dom );
 
   // watch for window resize - see function def below
   window.addEventListener( 'resize', onWindowResize, false );
-
 }
 
 
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( 380, 380 );
   controls.handleResize();
 }
 

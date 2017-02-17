@@ -49,11 +49,9 @@ $(document).ready(function(){
      // create a FormData object which will be sent as the data payload in the
      // AJAX request
      var formData = new FormData();
-
      // loop through all the selected files
      for (var i = 0; i < files.length; i++) {
        var file = files[i];
-
        // add the files to formData object for the data payload
        formData.append('uploads[]', file, file.name);
      }
@@ -65,6 +63,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('upload successful!\n' + data);
+           $('#outbox').val('Source uploaded successfully!\n' + data);
        },
        xhr: function() {
 	 // create an XMLHttpRequest
