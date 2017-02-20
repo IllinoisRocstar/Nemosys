@@ -5,6 +5,13 @@ var path = require('path');
 var formidable = require('formidable');
 var fs = require('fs');
 
+
+const spawnMe = require('child_process').spawn;   // using a new shell
+const execMe = require('child_process').execFile; // using current shell
+
+//const ls = spawnMe('ls', ['-lh', '/usr']);
+
+
 // other globals
 var verb;
 var serverStartupDate = new Date();
@@ -16,6 +23,7 @@ console.log("Welcome to NEMoSys Webserver Backend(v1.0)");
 console.log("Starting server in : %s", serverStartupDate);
 console.log("The server called with these switches : ", args);
 
+
 // process input switches
 process.argv.forEach(function (val, index, array) {
   if (val=='-v') {    
@@ -25,13 +33,18 @@ process.argv.forEach(function (val, index, array) {
 });
 
 
+// setting up the path
 app.use(express.static(path.join(__dirname, '../public')));
 
+
+// webpage requests
 app.get('/', function(req, res){
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.post('/upload', function(req, res){
+
+// upload source grid
+app.post('/uploadSrc', function(req, res){
   // create an incoming form object
   var form = new formidable.IncomingForm();
   // specify that we want to allow the user to upload multiple files in a single request
@@ -42,7 +55,7 @@ app.post('/upload', function(req, res){
   // rename it to it's orignal name
   form.on('file', function(field, file) {
     //fs.rename(file.path, path.join(form.uploadDir, file.name));
-    fs.rename(file.path, path.join(form.uploadDir, "source.stl"));
+    fs.rename(file.path, path.join(form.uploadDir, "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
   });
   // log any errors that occur
@@ -57,6 +70,28 @@ app.post('/upload', function(req, res){
   form.parse(req);
 });
 
+
+// statistics of source grid
+app.get('/srcGrdStats', function(req, res){
+  console.log("Source grid statistics request received.\n");
+
+  var g2gtNemo = execMe('/home/msafdari/scratch/scratch/Nemosys/build/bin/grid2gridTransfer',['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns']);
+  g2gtNemo.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+    res.send(`stdout: ${data}`);
+  });
+  g2gtNemo.stderr.on('data', (data) => {
+    console.log(`stderr: ${data}`);
+  });
+  g2gtNemo.on('close', (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+
+  //res.send("dfsdfsdf");
+});
+
+
+// running the webserver
 app.listen(3000,function(){
     console.log("Working on port 3000");
 });

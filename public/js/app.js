@@ -15,26 +15,41 @@ function uploadSourceGrid(){
 $(document).ready(function(){
 
 
-
   // sample hello world alert
   $("#hello").click(function() {
     alert("Hello, world!");
   });
 
 
-
-  // populate the outbox
+  // source grid statistics button
   $('#gridStats').click(function(){
     $('#outbox').val(outBoxContent);
+    // create CMLHttpRequest object, ActiveX object if old IE5, IE6
+    var xhttp;
+    if (window.XMLHttpRequest) {
+      xhttp = new XMLHttpRequest();
+    } else {
+      // code for IE6, IE5
+      xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    // preparing and sending a get request
+    $('#outbox').val("Sending request to server.\n");
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        $('#outbox').val('Source Grid Statistics \n'+
+                         '------------------------------ \n' + 
+                         this.responseText);
+      }
+    };
+    xhttp.open("GET", "srcGrdStats", true);
+    xhttp.send();
   });
-
 
 
   // transfer button click event
   $('#transfer').bind('click', function( event ){
      alert('Performing transfer action.');
   });
-
 
 
   // srcUploader button change event
@@ -56,7 +71,7 @@ $(document).ready(function(){
        formData.append('uploads[]', file, file.name);
      }
      $.ajax({
-       url: '/upload',
+       url: '/uploadSrc',
        type: 'POST',
        data: formData,
        processData: false,
