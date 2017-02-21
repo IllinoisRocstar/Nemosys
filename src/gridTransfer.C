@@ -247,6 +247,33 @@ void gridTransfer::exportMeshToMAdLib(std::string gridName)
   }
 }
 
+void gridTransfer::exportMeshBndToMAdLib(std::string gridName)
+{
+  // if gridName = source exports source mesh data to MAdLib, otherwise target
+  // exporting mesh to the MAdLib
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    MAd::GM_create(&srcModel,"");
+    srcMesh = MAd::M_new(srcModel);
+    exportToMAdMesh(srcMesh);
+    classifyMAdMeshBnd(srcMesh);
+    MAd::M_info(srcMesh, std::cout);
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+    if (trgCgObjs.empty())
+      return;
+    MAd::GM_create(&trgModel,"");
+    trgMesh = MAd::M_new(trgModel);
+    trgCgObjs[0]->exportToMAdMesh(trgMesh);
+    trgCgObjs[0]->classifyMAdMeshBnd(trgMesh);
+    MAd::M_info(trgMesh, std::cout);
+  } else {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+}
+
 void gridTransfer::convertToMsh(std::string gridName)
 {
   // if gridName = source exports source mesh data to MAdLib, otherwise target
@@ -273,6 +300,7 @@ void gridTransfer::convertToMsh(std::string gridName)
   }
   std::cout <<"Writing to gmsh format -> " << fName << std::endl;
   MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
+  std::cout << __FILE__<<__LINE__<<std::endl;
 }
 
 void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
@@ -360,6 +388,48 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
     }
   }
   
+}
+
+void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
+{
+  // if gridName = src exports source mesh data to stl, otherwise trg
+  // exports target mesh to stl
+  // first converting to msh format
+  //convertToMsh(gridName);
+
+  // skin the gird
+  std::string fName;
+  std::cout << "Computing surface mesh.\n"; 
+  std::vector<int> skinElmIds;
+  MAd::pGModel tmpMdl = NULL;
+  MAd::GM_create(&tmpMdl,"");
+  MAd::pMesh skinMesh = M_new(tmpMdl);
+
+  GModel* wrtGModel;
+  wrtGModel = new GModel("default"); 
+
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    srcMesh->skin_me(skinMesh, skinElmIds);
+    skinMesh->classify_unclassified_entities();
+    skinMesh->destroyStandAloneEntities();
+    MAd::M_writeMsh(skinMesh, "srcSkinMesh.msh", 2, NULL);
+    MAd::M_info(skinMesh);
+    fName = "source.stl";
+    wrtGModel->readMSH("srcSkinMesh.msh");
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+    fName = "target.stl";
+    wrtGModel->readMSH("target.msh");
+  } 
+  else 
+  {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+  std::cout <<"Writing to stl format -> " << fName << std::endl;
+  wrtGModel->writeSTL((prefix + fName).c_str(), false, true);
 }
 
 void gridTransfer::exportNodalDataToMAdLib()

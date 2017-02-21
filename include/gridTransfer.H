@@ -70,7 +70,9 @@ public:
 
   // transfer actions
   void exportMeshToMAdLib(std::string gridName);
+  void exportMeshBndToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
+  void convertToSTL(std::string gridName, std::string prefix);
   void convertToVTK(std::string gridName, bool withSolution = false);
   void exportNodalDataToMAdLib();
   void exportSrcToGModel();
@@ -79,7 +81,6 @@ public:
   // quality reporting
   void gridStats();
   void gridCheck();
-  void dummy();
   
 
   // writing actions

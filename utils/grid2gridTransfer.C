@@ -21,13 +21,13 @@ void helpExit()
   std::cout << "NEMoSys Webservice Backend  (version 1.0) \n"
 	    << "A grid-to-grid transfer utility \n"
 	    << "\n"
-	    << "Usage: grid2gridTransfer --command  sourceGridFile [targetGridFile]\n" 
+	    << "Usage: grid2gridTransfer --command  sourceGridFile [targetGridFile] [destinationPath]\n" 
 	    << "where command can be :\n"
 	    << "help or h :  provides current help.\n"
 	    << "transCGNS : to transfer quantities between CGNS grids.\n"
 	    << " statCGNS : gives statistics about the grid.\n"
 	    << "  chkCGNS : runs MAdLib checks on the grid.\n"
-	    << " lslnCGNS : lists soltion names exisiting on a CGNS grid.\n"
+	    << " cgns2stl : lists soltion names exisiting on a CGNS grid.\n"
 	    << std::endl;
   exit(0);
 }
@@ -110,10 +110,24 @@ int main(int argc, char* argv[])
   }
 
   // --lslnCGNS
-  else if (!strcmp(cmd[0].c_str(),"--lslnCGNS"))
+  else if (!strcmp(cmd[0].c_str(),"--cgns2stl"))
   {
-
+    // input processing
+    if (argc < 4)
+      helpExit();
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::string dist = argv[3];
+    std::cout << "Converting to stl ###########################################################\n";
+    // reading source CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
+    transObj->loadSrcCgSeries(1); 
+    transObj->exportMeshToMAdLib("src");
+    transObj->convertToSTL("src", dist);
+    std::cout << "Finished convertion successfully.\n";
   }
+
+  // wrong switch
   else
   {
     std::cout << "Error: " << cmd[0] << " is not a valid command.\n";
