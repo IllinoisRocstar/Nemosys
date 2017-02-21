@@ -1,6 +1,6 @@
 var container, stats;
 var camera, controls, scene, renderer;
-var cross;
+var cross, loader;
 
 initialize();
 animate();
@@ -9,6 +9,9 @@ animate();
 function initialize() {
   console.log("Starting initialize()");
 
+  // container = document.createElement( 'div' );
+  container = document.getElementById( 'webglContainerSrc' ) 
+
   // create a scene 
   scene = new THREE.Scene();
   scene.background = new THREE.Color( 0 );
@@ -16,12 +19,12 @@ function initialize() {
   // Create a camera which will be appened to the scene object
   //camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 1e10 );
   camera = new THREE.PerspectiveCamera( 60, 1.0, 0.01, 1e10 );
-  camera.position.x = 2;
-  camera.position.y = 2;
-  camera.position.z = 2;
+  camera.position.x = 0.01;
+  camera.position.y = 0.01;
+  camera.position.z = 0.01;
 
   // Create a controls object which allows for user control of the camera position 
-  controls = new THREE.TrackballControls( camera );
+  controls = new THREE.TrackballControls( camera , container );
   controls.rotateSpeed = 5.0;
   controls.zoomSpeed = 5;
   controls.panSpeed = 2;
@@ -60,11 +63,13 @@ function initialize() {
   // note: the VTKLoader only works for a subset of VTK!!! 
   // Alternatively, the "STLLoader" can be used with the same syntax
   // var loader = new THREE.VTKLoader();
-  var loader = new THREE.STLLoader();
+  loader = new THREE.STLLoader();
   loader.load( "uploads/source.stl", function ( geometry ) {
       // loader.load( "models/exampleCube.vtk", function ( geometry ) {
       geometry.center();
       geometry.computeVertexNormals();
+      geometry.dynamic = true;
+      geometry.verticesNeedUpdate = true;
       // "mesh" from "geometry" and "material"
       var mesh = new THREE.Mesh( geometry, material ); 
       mesh.position.set( 0, 0, 0 );
@@ -77,8 +82,6 @@ function initialize() {
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( 380, 380 ); // <---- customize this to fit in the "div" container!!!
 
-  // container = document.createElement( 'div' );
-  container = document.getElementById( 'webglContainerSrc' ) 
   // <----- in template, create a div with this ... repeat for additional container, ie 
   // one for the "input mesh" and one for the "target mesh"
 
@@ -97,10 +100,11 @@ function initialize() {
 }
 
 
+
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize( 380, 380 );
+  renderer.setSize( 379, 380 );
   controls.handleResize();
 }
 
@@ -108,9 +112,9 @@ function onWindowResize() {
 // --- this actually renders the screen and attempts to maintain 
 // a constant 60 fps refresh rate (ie, this is "called" 60 times per sec) ---------------
 function animate() {
-  requestAnimationFrame( animate );
-  controls.update();
   renderer.render( scene, camera );
+  controls.update();
   stats.update();
+  requestAnimationFrame( animate );
 }
 

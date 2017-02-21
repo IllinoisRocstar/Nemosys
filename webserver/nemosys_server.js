@@ -15,6 +15,7 @@ const execMe = require('child_process').execFile; // using current shell
 // other globals
 var verb;
 var serverStartupDate = new Date();
+var g2gCmd = '/home/msafdari/scratch/scratch/Nemosys/build/bin/grid2gridTransfer';
 
 
 // passed command line arguments
@@ -57,6 +58,19 @@ app.post('/uploadSrc', function(req, res){
     //fs.rename(file.path, path.join(form.uploadDir, file.name));
     fs.rename(file.path, path.join(form.uploadDir, "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
+    // skin the CGNS mesh
+    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_04.100000_0000.cgns', '../public/uploads/'], 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`stdout: ${stderr}`);
+	  console.log(`error: ${error}`);
+	} 
+	else
+	{
+	  console.log(`stdout: ${stdout}`);
+	}
+     });
+
   });
   // log any errors that occur
   form.on('error', function(err) {
@@ -75,19 +89,19 @@ app.post('/uploadSrc', function(req, res){
 app.get('/srcGrdStats', function(req, res){
   console.log("Source grid statistics request received.\n");
 
-  var g2gtNemo = execMe('/home/msafdari/scratch/scratch/Nemosys/build/bin/grid2gridTransfer',['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns']);
-  g2gtNemo.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
-    res.send(`stdout: ${data}`);
-  });
-  g2gtNemo.stderr.on('data', (data) => {
-    console.log(`stderr: ${data}`);
-  });
-  g2gtNemo.on('close', (code) => {
-    console.log(`child process exited with code ${code}`);
-  });
-
-  //res.send("dfsdfsdf");
+  var g2gtNemo = execMe(g2gCmd, ['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns'], 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`stdout: ${stderr}`);
+	  console.log(`error: ${error}`);
+	  res.send('error : ${error}')
+	} 
+	else
+	{
+	  console.log(`stdout: ${stdout}`);
+	  res.send(`stdout: ${stdout}`);
+	}
+     });
 });
 
 
