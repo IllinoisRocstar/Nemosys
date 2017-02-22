@@ -10,6 +10,28 @@
   </head>
   <body>
 
+	 <div class="off-canvas position-left" id="offCanvas" data-off-canvas>
+             <h5>How to use this tool:</h5>
+             <p>This is a simple web application for transfering physical quantities form 
+                a source grid to a target grid. The application currently only support CGNS grids.
+                You can download a sample CGNS grid from <a href="downloads/fluid_04.210000_0000.cgns">here</a>
+                and use it as both source and target grid. 
+             </p>
+             <p> To use the tool, follow these steps:</p>
+             <p> <b>Step 1</b>- Click on "Upload Source Grid" to upload the source grid.</p>
+             <p> <b>Step 2</b>- Click on "Upload Target Grid" to upload the target grid.</p>
+             <p> <b>Step 3</b>- Click on "Grid statistics" button to see some of the statistics of 
+                 the source grid.</p>
+             <p> <b>Step 4</b>- Click on "Transfer Solution" button to transfer physical quantities from 
+                 source to target grid.</p>
+             <p> <b>Step 5</b>- Click on "Download" button to downlad the target grid with physical values.</p>
+
+             <button class="close-button" aria-label="Dismiss alert" type="button" data-close>
+               <span aria-hidden="true">&times;</span>
+             </button>
+	 </div>
+
+  <div class="off-canvas-content" data-off-canvas-content>
      <div class="row">
 	 <div class="large-6 large-centered columns">
 	       <h2>NEMoSys Web Application</h2>
@@ -18,7 +40,7 @@
 
      <!-- Row 1 -->
      <div class="row">
-	 <div class="large-4 columns">
+	 <div class="large-4  text-center columns">
              <label for="srcGridFileUpload" class="button">Upload Source Grid</label>
              <input type="file" id="srcGridFileUpload" name="uploads[]" class="show-for-sr">
 	     <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" 
@@ -26,7 +48,7 @@
 	         <div class="progress-meter" id="srcUploadProgBar" style="width: 0%"></div>
 	     </div>
 	 </div>
-	 <div class="large-4 columns">
+	 <div class="large-4  text-center columns">
              <label for="trgGridFileUpload" class="button">Upload Target Grid</label>
              <input type="file" id="trgGridFileUpload" class="show-for-sr">
 	     <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" 
@@ -38,10 +60,10 @@
 
      <!-- Row 2 -->
      <div class="row">
-	 <div class="large-4 columns" id="containerSrc">
+	 <div class="large-4 columns" id="containerSrc" style="border: 2px solid #466d98;">
               <div id="webglContainerSrc"></div> 
 	 </div>
-	 <div class="large-4 columns">
+	 <div class="large-4 text-center columns">
              <div class="row">
 	         <a href="#" id="transferSln" class="button">Transfer Solution</a>
 	     </div>
@@ -50,7 +72,7 @@
 	         <textarea id="outbox"  rows="14"></textarea>
 	     </div>
 	 </div>
-	 <div class="large-4 columns" id="containerTrg">
+	 <div class="large-4 columns" id="containerTrg" style="border: 2px solid #466d98;">
              <div id="webglContainerTrg"></div> 
 	 </div>
      </div>
@@ -69,22 +91,29 @@
 	 </div>
      </div>
     
-    <!-- vendor -->
-    <script src="js/vendor/jquery.js"></script>
-    <script src="js/vendor/what-input.js"></script>
-    <script src="js/vendor/foundation.js"></script>
-    <!-- ThreeJS helper libraries and imports -->
-    <script src="js/vendor/three/three.min.js"></script>
-    <script src='js/vendor/three/libs/inflate.min.js'></script>
-    <script src="js/vendor/three/controls/TrackballControls.js"></script>
-    <script src="js/vendor/three/loaders/VTKLoader.js"></script>
-    <script src="js/vendor/three/loaders/STLLoader.js"></script>
-    <script src="js/vendor/three/Detector.js"></script>
-    <script src="js/vendor/three/libs/stats.min.js"></script>
+     <!-- Row 3 -->
+     <div class="row">
+       <div class="large-12 text-center columns">
+         <button type="button" class="button" data-toggle="offCanvas">Help Me!</button>
+       </div>
+     </div>
+  </div>
+  <!-- vendor -->
+  <script src="js/vendor/jquery.js"></script>
+  <script src="js/vendor/what-input.js"></script>
+  <script src="js/vendor/foundation.js"></script>
+  <!-- ThreeJS helper libraries and imports -->
+  <script src="js/vendor/three/three.min.js"></script>
+  <script src='js/vendor/three/libs/inflate.min.js'></script>
+  <script src="js/vendor/three/controls/TrackballControls.js"></script>
+  <script src="js/vendor/three/loaders/VTKLoader.js"></script>
+  <script src="js/vendor/three/loaders/STLLoader.js"></script>
+  <script src="js/vendor/three/Detector.js"></script>
+  <script src="js/vendor/three/libs/stats.min.js"></script>
 
-    <!-- main -->
-    <script src="js/app.js"></script>
-    <script src="js/app_webgl.js"></script>
+  <!-- main -->
+  <script src="js/app.js"></script>
+  <script src="js/app_webgl.js"></script>
 
   </body>
 </html>

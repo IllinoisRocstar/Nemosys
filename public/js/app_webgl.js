@@ -14,9 +14,9 @@ function initialize() {
 
   // create a scenes 
   sceneSrc = new THREE.Scene();
-  sceneSrc.background = new THREE.Color( 0 );
+  sceneSrc.background = new THREE.Color( 0xffffff );
   sceneTrg = new THREE.Scene();
-  sceneTrg.background = new THREE.Color( 0 );
+  sceneTrg.background = new THREE.Color( 0xffffff );
 
   // Create cameras which will be appened to the scene objects
   cameraSrc = new THREE.PerspectiveCamera( 60, 1.0, 0.01, 1e10 );
