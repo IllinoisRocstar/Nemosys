@@ -21,7 +21,7 @@ void helpExit()
   std::cout << "NEMoSys Webservice Backend  (version 1.0) \n"
 	    << "A grid-to-grid transfer utility \n"
 	    << "\n"
-	    << "Usage: grid2gridTransfer --command  sourceGridFile [targetGridFile] [destinationPath]\n" 
+	    << "Usage: grid2gridTransfer --command  sourceGridFile [targetGridFile] [extraOptions]\n" 
 	    << "where command can be :\n"
 	    << "help or h :  provides current help.\n"
 	    << "transCGNS : to transfer quantities between CGNS grids.\n"
@@ -35,6 +35,10 @@ void helpExit()
 /*   Main Function */ 
 int main(int argc, char* argv[])
 {
+  // handshake message
+  std::cout << "NEMoSys Webserver (v1.0)\n";
+  std::cout << "Processing request....\n";
+
   // check input
   if ((argc<=2) || (argc==2 && !strcmp(argv[1], "--h"))
                 || (argc==2 && !strcmp(argv[1], "--help")))
@@ -53,7 +57,7 @@ int main(int argc, char* argv[])
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     cgFileName.push_back(argv[3]);
-    std::cout << "Transfering between the grids #################################################\n";
+    std::cout << "Transfering between the grids ##########\n";
     std::cout << "Transfering from " << cgFileName[0] << " -> " << cgFileName[1] << std::endl;
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[1]);
@@ -83,13 +87,13 @@ int main(int argc, char* argv[])
       helpExit();
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
-    std::cout << "Acquiring grid statistics ####################################################\n";
+    std::cout << "Acquiring grid statistics ############\n";
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
     transObj->loadSrcCgSeries(1); 
     transObj->exportMeshToMAdLib("src");
     transObj->gridStats();
-    std::cout << "Statistics generated finished successfully.\n";
+    std::cout << "Statistics generated successfully.\n";
   }
 
   // --chkCGNS
@@ -100,7 +104,7 @@ int main(int argc, char* argv[])
       helpExit();
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
-    std::cout << "Checking the grid ###########################################################\n";
+    std::cout << "Checking the grid #########\n";
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
     transObj->loadSrcCgSeries(1); 
@@ -109,22 +113,31 @@ int main(int argc, char* argv[])
     std::cout << "Finished checking grid successfully.\n";
   }
 
-  // --lslnCGNS
+  // --cgns2stl
   else if (!strcmp(cmd[0].c_str(),"--cgns2stl"))
   {
     // input processing
-    if (argc < 4)
+    if (argc < 5)
       helpExit();
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     std::string dist = argv[3];
-    std::cout << "Converting to stl ###########################################################\n";
-    // reading source CGNS file
-    gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
-    transObj->loadSrcCgSeries(1); 
-    transObj->exportMeshToMAdLib("src");
-    transObj->convertToSTL("src", dist);
-    std::cout << "Finished convertion successfully.\n";
+    std::string gridName = argv[4];
+    if (!strcmp(gridName.c_str(), "src") && !strcmp(gridName.c_str(), "trg"))
+    {
+      std::cout << "The forth switch should be src or trg " << std::endl;
+      helpExit();
+    }
+    std::cout << "Converting to stl ########\n";
+    // reading the CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
+    if (!strcmp(gridName.c_str(), "src"))
+      transObj->loadSrcCgSeries(1); 
+    else
+      transObj->loadTrgCg();
+    transObj->exportMeshToMAdLib(gridName);
+    transObj->convertToSTL(gridName, dist);
+    std::cout << "Finished conversion of " << gridName << " to STL successfully.\n";
   }
 
   // wrong switch
@@ -136,7 +149,7 @@ int main(int argc, char* argv[])
   }
 
   // ending application
-  std::cout << "Request processed successfully.\n";
+  std::cout << "Request processed successfully #######\n";
   return 0;
 }
 

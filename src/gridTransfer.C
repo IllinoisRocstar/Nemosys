@@ -300,7 +300,6 @@ void gridTransfer::convertToMsh(std::string gridName)
   }
   std::cout <<"Writing to gmsh format -> " << fName << std::endl;
   MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
-  std::cout << __FILE__<<__LINE__<<std::endl;
 }
 
 void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
@@ -420,8 +419,13 @@ void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
   } 
   else if (!strcmp(gridName.c_str(), "trg")) 
   {
+    trgMesh->skin_me(skinMesh, skinElmIds);
+    skinMesh->classify_unclassified_entities();
+    skinMesh->destroyStandAloneEntities();
+    MAd::M_writeMsh(skinMesh, "trgSkinMesh.msh", 2, NULL);
+    MAd::M_info(skinMesh);
     fName = "target.stl";
-    wrtGModel->readMSH("target.msh");
+    wrtGModel->readMSH("trgSkinMesh.msh");
   } 
   else 
   {
