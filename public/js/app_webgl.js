@@ -20,11 +20,11 @@ function initialize() {
 
   // Create cameras which will be appened to the scene objects
   cameraSrc = new THREE.PerspectiveCamera( 60, 1.0, 0.01, 1e10 );
-  cameraSrc.position.x = 0.01;
+  cameraSrc.position.x = -0.01;
   cameraSrc.position.y = 0.01;
   cameraSrc.position.z = 0.01;
   cameraTrg = new THREE.PerspectiveCamera( 60, 1.0, 0.01, 1e10 );
-  cameraTrg.position.x = 0.01;
+  cameraTrg.position.x = -0.01;
   cameraTrg.position.y = 0.01;
   cameraTrg.position.z = 0.01;
 
@@ -72,15 +72,15 @@ function initialize() {
 
   // note: In threejs, in order to display an object you need to create a "mesh". A "mesh" 
   // consists of a "geometry" and a "material". 
-  var materialSrc = new THREE.MeshLambertMaterial( 
+  var materialSrc = new THREE.MeshStandardMaterial( 
       { 
-	  color: 0xffffff, 
+	  color: 0xffd700, 
 	  side: THREE.DoubleSide, 
 	  wireframe: false 
       });
   var materialTrg = new THREE.MeshLambertMaterial( 
       { 
-	  color: 0xfff111, 
+	  color: 0x388e8e, 
 	  side: THREE.DoubleSide, 
 	  wireframe: false 
       });
