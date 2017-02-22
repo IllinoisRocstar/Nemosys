@@ -176,6 +176,10 @@ $(document).ready(function(){
 
   });
 
+  // grid download button
+  $("#trgDownload").click(function() {
+      window.location = './uploads/fluid_06.100000_0000.cgns';
+  });
 
   // dummy tests
   //$("a").css("background-color", "blue");
