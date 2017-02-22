@@ -29,6 +29,10 @@
 	 <div class="large-4 columns">
              <label for="trgGridFileUpload" class="button">Upload Target Grid</label>
              <input type="file" id="trgGridFileUpload" class="show-for-sr">
+	     <div class="progress" role="progressbar" tabindex="0" aria-valuenow="0" 
+              aria-valuemin="0" aria-valuetext="0 percent" aria-valuemax="100">
+	         <div class="progress-meter" id="trgUploadProgBar" style="width: 0%"></div>
+	     </div>
 	 </div>
      </div>
 
@@ -39,15 +43,14 @@
 	 </div>
 	 <div class="large-4 columns">
              <div class="row">
-	         <a href="#" id="transfer" class="button">Transfer</a>
+	         <a href="#" id="transferSln" class="button">Transfer Solution</a>
 	     </div>
              <div class="row">
                  <label>Processing Outputs</label>
 	         <textarea id="outbox"  rows="14"></textarea>
 	     </div>
 	 </div>
-	 <div class="large-4 columns">
-             <img src="//placehold.it/380x380" class="thumbnail" alt="">
+	 <div class="large-4 columns" id="containerTrg">
              <div id="webglContainerTrg"></div> 
 	 </div>
      </div>

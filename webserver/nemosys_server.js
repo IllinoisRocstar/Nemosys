@@ -59,15 +59,57 @@ app.post('/uploadSrc', function(req, res){
     fs.rename(file.path, path.join(form.uploadDir, "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
-    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_04.100000_0000.cgns', '../public/uploads/'], 
+    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_04.100000_0000.cgns', 
+                    '../public/uploads/', 'src'], 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`stdout: ${stderr}`);
-	  console.log(`error: ${error}`);
+	  console.log(`${stderr}`);
+	  console.log(`Error: ${error}`);
 	} 
 	else
 	{
-	  console.log(`stdout: ${stdout}`);
+	  console.log(`${stdout}`);
+	}
+     });
+
+  });
+  // log any errors that occur
+  form.on('error', function(err) {
+    console.log('An error has occured: \n' + err);
+  });
+  // once all the files have been uploaded, send a response to the client
+  form.on('end', function() {
+    res.end('success');
+  });
+  // parse the incoming request containing the form data
+  form.parse(req);
+});
+
+// upload target grid
+app.post('/uploadTrg', function(req, res){
+  // create an incoming form object
+  var form = new formidable.IncomingForm();
+  // specify that we want to allow the user to upload multiple files in a single request
+  form.multiples = true;
+  // store all uploads in the /uploads directory
+  form.uploadDir = path.join(__dirname, '../public/uploads');
+  // every time a file has been uploaded successfully,
+  // rename it to it's orignal name
+  form.on('file', function(field, file) {
+    //fs.rename(file.path, path.join(form.uploadDir, file.name));
+    fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0000.cgns"));
+    console.log("File received: %s", path.join(form.uploadDir, file.name));
+    // skin the CGNS mesh
+    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_06.100000_0000.cgns', 
+                    '../public/uploads/', 'trg'], 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`${stderr}`);
+	  console.log(`Error: ${error}`);
+	} 
+	else
+	{
+	  console.log(`${stdout}`);
 	}
      });
 
@@ -89,17 +131,38 @@ app.post('/uploadSrc', function(req, res){
 app.get('/srcGrdStats', function(req, res){
   console.log("Source grid statistics request received.\n");
 
-  var g2gtNemo = execMe(g2gCmd, ['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns'], 
+     execMe(g2gCmd, ['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns'], 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`stdout: ${stderr}`);
-	  console.log(`error: ${error}`);
-	  res.send('error : ${error}')
+	  console.log(`${stderr}`);
+	  console.log(`Error:\n ${error}`);
+	  res.send('Error :\n ${error}')
 	} 
 	else
 	{
-	  console.log(`stdout: ${stdout}`);
-	  res.send(`stdout: ${stdout}`);
+	  console.log(`${stdout}`);
+	  res.send(`${stdout}`);
+	}
+     });
+});
+
+
+// statistics of source grid
+app.get('/slnTransfer', function(req, res){
+  console.log("Solution transfer request received.\n");
+
+     execMe(g2gCmd, ['--transCGNS', '../public/uploads/fluid_04.100000_0000.cgns',
+                     '../public/uploads/fluid_06.100000_0000.cgns'], 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`${stderr}`);
+	  console.log(`Error:\n ${error}`);
+	  res.send('Error :\n ${error}')
+	} 
+	else
+	{
+	  console.log(`${stdout}`);
+	  res.send(`${stdout}`);
 	}
      });
 });

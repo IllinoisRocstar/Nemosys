@@ -1,9 +1,7 @@
 $(document).foundation()
 
 // global variables
-var testVar = "global";
-var outBoxContent = "This is output box text.";
-
+// nothing so far
 
 // functions
 function uploadSourceGrid(){
@@ -23,7 +21,7 @@ $(document).ready(function(){
 
   // source grid statistics button
   $('#gridStats').click(function(){
-    $('#outbox').val(outBoxContent);
+    $('#outbox').val("Submitting source grid statistics request");
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
     var xhttp;
     if (window.XMLHttpRequest) {
@@ -46,9 +44,28 @@ $(document).ready(function(){
   });
 
 
-  // transfer button click event
-  $('#transfer').bind('click', function( event ){
-     alert('Performing transfer action.');
+  // transfer solution button click event
+  $('#transferSln').bind('click', function( event ){
+    $('#outbox').val("Submitting solution transfer request");
+    // create CMLHttpRequest object, ActiveX object if old IE5, IE6
+    var xhttp;
+    if (window.XMLHttpRequest) {
+      xhttp = new XMLHttpRequest();
+    } else {
+      // code for IE6, IE5
+      xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    // preparing and sending a get request
+    $('#outbox').val("Sending request to server.\n");
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        $('#outbox').val('Solution Transfer Log \n'+
+                         '----------------------------- \n' + 
+                         this.responseText);
+      }
+    };
+    xhttp.open("GET", "slnTransfer", true);
+    xhttp.send();
   });
 
 
@@ -78,7 +95,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('upload successful!\n' + data);
-           $('#outbox').val('Source uploaded successfully!\n' + data);
+           $('#outbox').val('Source uploaded successfully!\n');
        },
        xhr: function() {
 	 // create an XMLHttpRequest
@@ -105,6 +122,59 @@ $(document).ready(function(){
 
   });
 
+
+  // trgUploader button change event
+  $('#trgGridFileUpload').bind('change', function(){    
+
+   // zeroing progress bar
+   $('#trgUploadProgBar').text('0%');
+   $('#trgUploadProgBar').width('0%');
+   var files = $(this).get(0).files;
+   if (files.length > 0){
+     // One or more files selected, process the file upload
+     // create a FormData object which will be sent as the data payload in the
+     // AJAX request
+     var formData = new FormData();
+     // loop through all the selected files
+     for (var i = 0; i < files.length; i++) {
+       var file = files[i];
+       // add the files to formData object for the data payload
+       formData.append('uploads[]', file, file.name);
+     }
+     $.ajax({
+       url: '/uploadTrg',
+       type: 'POST',
+       data: formData,
+       processData: false,
+       contentType: false,
+       success: function(data){
+	   console.log('Target uploaded successful!\n' + data);
+           $('#outbox').val('Target uploaded successfully!\n');
+       },
+       xhr: function() {
+	 // create an XMLHttpRequest
+	 var xhr = new XMLHttpRequest();
+	 // listen to the 'progress' event
+	 xhr.upload.addEventListener('progress', function(evt) {
+	   if (evt.lengthComputable) {
+	     // calculate the percentage of upload completed
+	     var percentComplete = evt.loaded / evt.total;
+	     percentComplete = parseInt(percentComplete * 100);
+	     // update the Bootstrap progress bar with the new percentage
+	     $('#trgUploadProgBar').text(percentComplete + '%');
+	     $('#trgUploadProgBar').width(percentComplete + '%');
+	     // once the upload reaches 100%, set the progress bar text to done
+	     if (percentComplete === 100) {
+	       $('#trgUploadProgBar').html('Done');
+	     }
+	   }
+	 }, false);
+         return xhr;
+       }
+     });
+   }    
+
+  });
 
 
   // dummy tests
