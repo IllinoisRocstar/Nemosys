@@ -9,13 +9,12 @@ var fs = require('fs');
 const spawnMe = require('child_process').spawn;   // using a new shell
 const execMe = require('child_process').execFile; // using current shell
 
-//const ls = spawnMe('ls', ['-lh', '/usr']);
-
 
 // other globals
 var verb;
 var serverStartupDate = new Date();
 var g2gCmd = '/home/msafdari/scratch/scratch/Nemosys/build/bin/grid2gridTransfer';
+var scratchFldr = '/home/msafdari/scratch/scratch/WebNemosys/webserver/scratch';
 
 
 // passed command line arguments
@@ -59,8 +58,8 @@ app.post('/uploadSrc', function(req, res){
     fs.rename(file.path, path.join(form.uploadDir, "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
-    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_04.100000_0000.cgns', 
-                    '../public/uploads/', 'src'], 
+    execMe(g2gCmd, ['--cgns2stl','../../public/uploads/fluid_04.100000_0000.cgns', 
+                    '../../public/uploads/', 'src'], {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);
@@ -100,8 +99,8 @@ app.post('/uploadTrg', function(req, res){
     fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
-    execMe(g2gCmd, ['--cgns2stl','../public/uploads/fluid_06.100000_0000.cgns', 
-                    '../public/uploads/', 'trg'], 
+    execMe(g2gCmd,  ['--cgns2stl','../../public/uploads/fluid_06.100000_0000.cgns', 
+                    '../../public/uploads/', 'trg'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);
@@ -131,7 +130,7 @@ app.post('/uploadTrg', function(req, res){
 app.get('/srcGrdStats', function(req, res){
   console.log("Source grid statistics request received.\n");
 
-     execMe(g2gCmd, ['--statCGNS','../public/uploads/fluid_04.100000_0000.cgns'], 
+     execMe(g2gCmd, ['--statCGNS','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);
@@ -151,8 +150,8 @@ app.get('/srcGrdStats', function(req, res){
 app.get('/slnTransfer', function(req, res){
   console.log("Solution transfer request received.\n");
 
-     execMe(g2gCmd, ['--transCGNS', '../public/uploads/fluid_04.100000_0000.cgns',
-                     '../public/uploads/fluid_06.100000_0000.cgns'], 
+     execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
+                     '../../public/uploads/fluid_06.100000_0000.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);

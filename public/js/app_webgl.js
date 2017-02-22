@@ -78,7 +78,7 @@ function initialize() {
 	  side: THREE.DoubleSide, 
 	  wireframe: false 
       });
-  var materialTrg = new THREE.MeshLambertMaterial( 
+  var materialTrg = new THREE.MeshStandardMaterial( 
       { 
 	  color: 0x388e8e, 
 	  side: THREE.DoubleSide, 
