@@ -146,7 +146,27 @@ app.get('/srcGrdStats', function(req, res){
 });
 
 
-// statistics of source grid
+// solution names of source grid
+app.get('/srcGrdSlnNames', function(req, res){
+  console.log("Source grid solution name request received.\n");
+
+     execMe(g2gCmd, ['--listSln','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`${stderr}`);
+	  console.log(`Error:\n ${error}`);
+	  res.send('Error :\n ${error}')
+	} 
+	else
+	{
+	  console.log(`${stdout}`);
+	  res.send(`${stdout}`);
+	}
+     });
+});
+
+
+// solution transfer from source grid to target
 app.get('/slnTransfer', function(req, res){
   console.log("Solution transfer request received.\n");
 

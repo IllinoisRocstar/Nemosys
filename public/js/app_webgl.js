@@ -9,8 +9,11 @@ animate();
 function initialize() {
   console.log("Starting initialize()");
 
-  containerSrc = document.getElementById( 'webglContainerSrc' ) 
-  containerTrg = document.getElementById( 'webglContainerTrg' ) 
+  containerSrc = document.getElementById( 'webglContainerSrc' ); 
+  containerTrg = document.getElementById( 'webglContainerTrg' );
+  
+  containerSrc.innerHTML = ""; 
+  containerTrg.innerHTML = ""; 
 
   // create a scenes 
   sceneSrc = new THREE.Scene();

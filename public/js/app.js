@@ -3,11 +3,6 @@ $(document).foundation()
 // global variables
 // nothing so far
 
-// functions
-function uploadSourceGrid(){
-   return("Source grid is uploaded successfully.");
-}
-
 
 // document ready event
 $(document).ready(function(){
@@ -40,6 +35,30 @@ $(document).ready(function(){
       }
     };
     xhttp.open("GET", "srcGrdStats", true);
+    xhttp.send();
+  });
+
+  // source grid statistics button
+  $('#gridSlnNames').click(function(){
+    $('#outbox').val("Submitting source grid solution names request");
+    // create CMLHttpRequest object, ActiveX object if old IE5, IE6
+    var xhttp;
+    if (window.XMLHttpRequest) {
+      xhttp = new XMLHttpRequest();
+    } else {
+      // code for IE6, IE5
+      xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    // preparing and sending a get request
+    $('#outbox').val("Sending request to server.\n");
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        $('#outbox').val('Source Grid Solution Names \n'+
+                         '------------------------------------------ \n' + 
+                         this.responseText);
+      }
+    };
+    xhttp.open("GET", "srcGrdSlnNames", true);
     xhttp.send();
   });
 
@@ -95,6 +114,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('upload successful!\n' + data);
+           initialize();
            $('#outbox').val('Source uploaded successfully!\n');
        },
        xhr: function() {
@@ -149,6 +169,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('Target uploaded successful!\n' + data);
+           initialize();
            $('#outbox').val('Target uploaded successfully!\n');
        },
        xhr: function() {
