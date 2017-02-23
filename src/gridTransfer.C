@@ -302,7 +302,7 @@ void gridTransfer::convertToMsh(std::string gridName)
   MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
 }
 
-void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
+void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::string dist)
 {
   // if gridName = source exports source mesh data to MAdLib, otherwise target
   // exporting mesh to the MAdLib
@@ -317,13 +317,13 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution)
   if (!strcmp(gridName.c_str(), "src"))
   {
     wrtMesh = srcMesh;
-    fName = "source.vtk";
+    fName = dist + "source.vtk";
     wrtGModel->readMSH("source.msh");
   } 
   else if (!strcmp(gridName.c_str(), "trg")) 
   {
     wrtMesh = trgMesh;
-    fName = "target.vtk";
+    fName = dist + "target.vtk";
     wrtGModel->readMSH("target.msh");
   } 
   else 

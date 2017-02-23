@@ -27,7 +27,9 @@ void helpExit()
 	    << "transCGNS : to transfer quantities between CGNS grids.\n"
 	    << " statCGNS : gives statistics about the grid.\n"
 	    << "  chkCGNS : runs MAdLib checks on the grid.\n"
-	    << " cgns2stl : lists soltion names exisiting on a CGNS grid.\n"
+	    << " cgns2stl : skins a CGNS grid and writes it into a stl file.\n"
+	    << " cgns2vtk : converts cgns grid into vtk format.\n"
+	    << "  listSln : lists current existing solution names defined on the grid and their type.\n"
 	    << std::endl;
   exit(0);
 }
@@ -138,6 +140,59 @@ int main(int argc, char* argv[])
     transObj->exportMeshToMAdLib(gridName);
     transObj->convertToSTL(gridName, dist);
     std::cout << "Finished conversion of " << gridName << " to STL successfully.\n";
+  }
+
+  // --cgns2vtk
+  else if (!strcmp(cmd[0].c_str(),"--cgns2vtk"))
+  {
+    // input processing
+    if (argc < 5)
+      helpExit();
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::string dist = argv[3];
+    std::string gridName = argv[4];
+    if (!strcmp(gridName.c_str(), "src") && !strcmp(gridName.c_str(), "trg"))
+    {
+      std::cout << "The forth switch should be src or trg " << std::endl;
+      helpExit();
+    }
+    std::cout << "Converting to vtk ########\n";
+    // reading the CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
+    if (!strcmp(gridName.c_str(), "src"))
+      transObj->loadSrcCgSeries(1); 
+    else
+      transObj->loadTrgCg();
+    transObj->exportMeshToMAdLib(gridName);
+    transObj->convertToVTK(gridName, true, dist);
+    std::cout << "Finished conversion of " << gridName << " to VTK successfully.\n";
+  }
+
+  // --listSln
+  else if (!strcmp(cmd[0].c_str(),"--listSln"))
+  {
+    // input processing
+    if (argc < 3)
+      helpExit();
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::cout << "Reading solution names ########\n";
+    // reading the CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
+    transObj->loadSrcCgSeries(1); 
+    std::vector<std::string> slnList;
+    transObj->getSolutionDataNames(slnList);
+    int slnIdx = 1;
+    std::cout << setw(3) << " # " << setw(12) << "   Name   " << setw(16) << "    Type    \n";
+    std::cout << setw(3) << "---" << setw(12) << "----------" << setw(16) << "-----------\n";
+    for (auto it=slnList.begin(); it!=slnList.end(); it++){
+      solution_type_t slnType;
+      std::vector<double> slnData;
+      slnType = transObj->getSolutionData(*it, slnData);
+      std::cout << setw(3) << slnIdx++ << setw(12) << *it << setw(15) << ((slnType==0)? "NODAL":"Elemental") << std::endl;
+    }
+    std::cout << "Finished reading solution names successfully.\n";
   }
 
   // wrong switch

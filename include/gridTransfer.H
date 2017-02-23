@@ -73,7 +73,7 @@ public:
   void exportMeshBndToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
   void convertToSTL(std::string gridName, std::string prefix);
-  void convertToVTK(std::string gridName, bool withSolution = false);
+  void convertToVTK(std::string gridName, bool withSolution = false, std::string dist = "");
   void exportNodalDataToMAdLib();
   void exportSrcToGModel();
   void transfer();
