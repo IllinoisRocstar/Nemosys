@@ -54,11 +54,17 @@ int main(int argc, char* argv[])
   if (!strcmp(cmd[0].c_str(),"--transCGNS"))
   {
     // input processing
-    if (argc < 4)
+    if (argc < 5)
+    {
       helpExit();
+      std::cout << "Example: " << argv[0]
+                << "--transCGNS source.cgns target.cgns target_with_solution.cgns"
+                << std::endl;
+    }
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     cgFileName.push_back(argv[3]);
+    cgFileName.push_back(argv[4]);
     std::cout << "Transfering between the grids ##########\n";
     std::cout << "Transfering from " << cgFileName[0] << " -> " << cgFileName[1] << std::endl;
     // reading source CGNS file
@@ -77,7 +83,7 @@ int main(int argc, char* argv[])
     // write target with solutions to vtk 
     transObj->convertToVTK("trg", true);
     // write target to CGNSL 
-    transObj->writeTrgCg("target.cgns");
+    transObj->writeTrgCg(cgFileName[2]);
     std::cout << "Transfer finished successfully.\n";
   }
 
