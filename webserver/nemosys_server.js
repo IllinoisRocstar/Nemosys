@@ -171,7 +171,8 @@ app.get('/slnTransfer', function(req, res){
   console.log("Solution transfer request received.\n");
 
      execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
-                     '../../public/uploads/fluid_06.100000_0000.cgns'],  {cwd: scratchFldr}, 
+                     '../../public/uploads/fluid_06.100000_0000.cgns', 
+                     '../../public/uploads/target_with_sln.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);

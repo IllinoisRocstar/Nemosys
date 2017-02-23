@@ -199,7 +199,7 @@ $(document).ready(function(){
 
   // grid download button
   $("#trgDownload").click(function() {
-      window.location = './uploads/fluid_06.100000_0000.cgns';
+      window.location = './uploads/target_with_sln.cgns';
   });
 
   // dummy tests
