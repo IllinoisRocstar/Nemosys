@@ -114,7 +114,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('upload successful!\n' + data);
-           //initialize();
+           initialize();
            $('#outbox').val('Source uploaded successfully!\n');
        },
        xhr: function() {
@@ -169,7 +169,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('Target uploaded successful!\n' + data);
-           //initialize();
+           initialize();
            $('#outbox').val('Target uploaded successfully!\n');
        },
        xhr: function() {

@@ -75,6 +75,7 @@ app.post('/uploadSrc', function(req, res){
 	else
 	{
 	  console.log(`${stdout}`);
+          res.end('success');
 	}
      });
 
@@ -84,9 +85,9 @@ app.post('/uploadSrc', function(req, res){
     console.log('An error has occured: \n' + err);
   });
   // once all the files have been uploaded, send a response to the client
-  form.on('end', function() {
-    res.end('success');
-  });
+  //form.on('end', function() {
+    //res.end('success');
+  //});
   // parse the incoming request containing the form data
   form.parse(req);
 });
@@ -103,10 +104,10 @@ app.post('/uploadTrg', function(req, res){
   // rename it to it's orignal name
   form.on('file', function(field, file) {
     //fs.rename(file.path, path.join(form.uploadDir, file.name));
-    fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0000.cgns"));
+    fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0001.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
-    execMe(g2gCmd,  ['--cgns2stl','../../public/uploads/fluid_06.100000_0000.cgns', 
+    execMe(g2gCmd,  ['--cgns2stl','../../public/uploads/fluid_06.100000_0001.cgns', 
                     '../../public/uploads/', 'trg'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
@@ -116,6 +117,7 @@ app.post('/uploadTrg', function(req, res){
 	else
 	{
 	  console.log(`${stdout}`);
+          res.end('success');
 	}
      });
 
@@ -125,9 +127,9 @@ app.post('/uploadTrg', function(req, res){
     console.log('An error has occured: \n' + err);
   });
   // once all the files have been uploaded, send a response to the client
-  form.on('end', function() {
-    res.end('success');
-  });
+  //form.on('end', function() {
+    //res.end('success');
+  //});
   // parse the incoming request containing the form data
   form.parse(req);
 });
