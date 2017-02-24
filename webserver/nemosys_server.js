@@ -4,7 +4,7 @@ var app     =   express();
 var path = require('path');
 var formidable = require('formidable');
 var fs = require('fs');
-
+var argv = require('minimist')(process.argv.slice(2));
 
 const spawnMe = require('child_process').spawn;   // using a new shell
 const execMe = require('child_process').execFile; // using current shell
@@ -21,17 +21,24 @@ var scratchFldr = '/home/msafdari/scratch/scratch/WebNemosys/webserver/scratch';
 var args = process.argv.slice(2);
 console.log("Welcome to NEMoSys Webserver Backend(v1.0)");
 console.log("Starting server in : %s", serverStartupDate);
-console.log("The server called with these switches : ", args);
 
 
 // process input switches
-process.argv.forEach(function (val, index, array) {
-  if (val=='-v') {    
-    console.log("Working in the verbose mode.");
-    verb = true;
-  }
-});
-
+function processArgs(){
+   //console.log("The server called with these switches : ", args);
+   verb = argv['v'];
+   // grid to grid conversion commands
+   if (argv['g2g']) {
+     g2gCmd =  argv['g2g'];
+     console.log('grid2grid application : ' + g2gCmd);
+   }
+   // scratch folder location
+   if (argv['scratch']) {
+     scratchFldr =  argv['scratch'];
+     console.log('scratch folder : ' + scratchFldr);
+   }
+}
+processArgs();
 
 // setting up the path
 app.use(express.static(path.join(__dirname, '../public')));
