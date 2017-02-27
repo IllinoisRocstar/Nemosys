@@ -125,8 +125,12 @@ int main(int argc, char* argv[])
   else if (!strcmp(cmd[0].c_str(),"--cgns2stl"))
   {
     // input processing
-    if (argc < 5)
+    if (argc < 5) {
+      std::cout << "Example : " << argv[0] 
+                << " --cgns2stl srouce.cgns output_path [src or trg]"
+                << std::endl;
       helpExit();
+    }
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     std::string dist = argv[3];
@@ -139,10 +143,12 @@ int main(int argc, char* argv[])
     std::cout << "Converting to stl ########\n";
     // reading the CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
-    if (!strcmp(gridName.c_str(), "src"))
+    if (!strcmp(gridName.c_str(), "src")) 
+    {
       transObj->loadSrcCgSeries(1); 
-    else
+    } else {
       transObj->loadTrgCg();
+    }
     transObj->exportMeshToMAdLib(gridName);
     transObj->convertToSTL(gridName, dist);
     std::cout << "Finished conversion of " << gridName << " to STL successfully.\n";

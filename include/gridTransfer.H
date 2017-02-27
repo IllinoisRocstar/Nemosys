@@ -59,6 +59,7 @@ public:
 
   // pane data access
   int getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx);
+  bool zoneHasPane(cgnsAnalyzer* cgObj, int zoneIdx);
   bool paneHasPatchNo(cgnsAnalyzer* cgObj, int zoneIdx);
   int getPanePatchNo(cgnsAnalyzer* cgObj, int zoneIdx);
   int getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx);

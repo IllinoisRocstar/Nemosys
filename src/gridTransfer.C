@@ -50,7 +50,7 @@ void gridTransfer::loadSrcCgSeries(int nCg)
     std::string fName = baseCgFNameSrc + suffix2.str();
     cgnsAnalyzer* cgTmp = new cgnsAnalyzer(fName);
     // load base grid
-    cgTmp->loadGrid();
+    cgTmp->loadGrid(1);
     srcCgObjs.push_back(cgTmp);
     srcCgFNames.push_back(fName);
     // loading all zones
@@ -683,30 +683,36 @@ void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
     loadSolutionDataContainer();
 
     // append Rocstar specific BCs as solution fields
-    if (paneHasPatchNo(cgObj, zoneIdx))
+    if (zoneHasPane(cgObj, zoneIdx))
     {
-      appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
-			   ELEMENTAL, cgObj->getNElement(), 1); 
-      appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-			   ELEMENTAL, cgObj->getNElement(), 1); 
-      appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
-			   ELEMENTAL, cgObj->getNElement(), 1); 
+      if (paneHasPatchNo(cgObj, zoneIdx))
+      {
+	appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+			     ELEMENTAL, cgObj->getNElement(), 1); 
+	appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+			     ELEMENTAL, cgObj->getNElement(), 1); 
+	appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
+			     ELEMENTAL, cgObj->getNElement(), 1); 
+      }
     }
     return;
   }
 
   // Rocstar specific BCs remove the old exisiting field 
-  if (paneHasPatchNo(cgObj, zoneIdx))
+  if (zoneHasPane(cgObj, zoneIdx))
   {
-    cgObj->delAppSlnData("patchNo");
-    cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
-			       ELEMENTAL, cgObj->getNElement(), 1);
-    cgObj->delAppSlnData("bcflag");
-    cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
-			       ELEMENTAL, cgObj->getNElement(), 1);
-    cgObj->delAppSlnData("cnstr_type");
-    cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
-			       ELEMENTAL, cgObj->getNElement(), 1);
+    if (paneHasPatchNo(cgObj, zoneIdx))
+    {
+      cgObj->delAppSlnData("patchNo");
+      cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
+				 ELEMENTAL, cgObj->getNElement(), 1);
+      cgObj->delAppSlnData("bcflag");
+      cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
+				 ELEMENTAL, cgObj->getNElement(), 1);
+      cgObj->delAppSlnData("cnstr_type");
+      cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
+				 ELEMENTAL, cgObj->getNElement(), 1);
+    }
   }
 
   // call current object stitch field
@@ -1003,6 +1009,18 @@ int gridTransfer::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
   int bcflag;
   if(cg_array_read(iArr, &bcflag)) cg_error_exit();
   return(bcflag);
+}
+
+bool gridTransfer::zoneHasPane(cgnsAnalyzer* cgObj, int zoneIdx)
+{
+  if (cg_goto(cgObj->getIndexFile(),
+              cgObj->getIndexBase(),
+              "Zone_t", zoneIdx,
+              "IntegralData_t", 1, "end"))
+  { 
+    return(false);    
+  }
+  return(true);
 }
 
 bool gridTransfer::paneHasPatchNo(cgnsAnalyzer* cgObj, int zoneIdx)

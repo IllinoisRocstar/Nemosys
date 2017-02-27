@@ -104,7 +104,7 @@ void cgnsAnalyzer::loadGrid(int verb)
      //std::cout << "There are "<< nZone << " zones in the file (not supported).\n";
      isMltZone=true;
    }
-   loadZone(1,0);
+   loadZone(1,verb);
 }
 
 

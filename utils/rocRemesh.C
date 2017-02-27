@@ -241,6 +241,7 @@ int main(int argc, char* argv[])
   std::cout << " Partitioning the mesh with METIS.\n";
   //meshPartitioner* mPart = new meshPartitioner(cgObj1);
   meshPartitioner* mPart = new meshPartitioner(mesh);
+  nOutCgFile = 1;
   mPart->partition(nOutCgFile);
   
   // write partitin ids for the surface mesh
