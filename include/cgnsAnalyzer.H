@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <map>
 #include <sys/time.h>
+#include <math.h>
 
 //MAd Lib
 #include <ModelInterface.h>

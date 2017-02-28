@@ -11,7 +11,8 @@ gridTransfer::gridTransfer(std::string srcFname, std::string trgFname) :
               cgnsAnalyzer(srcFname), 
               srcCgFName(srcFname), trgCgFName(trgFname),
               srcModel(NULL), trgModel(NULL),
-              srcMesh(NULL), trgMesh(NULL)
+              srcMesh(NULL), trgMesh(NULL),
+              isTransferred(false)
 {
   // source CGNS file processing
   std::size_t _loc = srcCgFName.find_last_of("_");
@@ -65,6 +66,25 @@ void gridTransfer::loadSrcCgSeries(int nCg)
 }
 
 /*
+   Loads a source cgns file
+*/
+void gridTransfer::loadSrcCg()
+{
+  cgnsAnalyzer* cgTmp = new cgnsAnalyzer(srcCgFName);
+  cgTmp->loadGrid();
+  srcCgObjs.push_back(cgTmp);
+  srcCgFNames.push_back(srcCgFName);
+  // loading all zones
+  for (int iz = 1; iz<=srcCgObjs[0]->getNZone(); iz++)
+  {
+    std::cout << "  Zone ID : " << getZoneName(srcCgObjs[0], iz) << std::endl;
+    stitchMe(srcCgObjs[0], iz);
+    std::cout << "Finished processing of the zone " 
+ 	     << getZoneName(srcCgObjs[0], iz) << std::endl;
+  }
+}
+
+/*
    Loads a series of target cgns files based on current file name
 */
 void gridTransfer::loadTrgCg()
@@ -110,6 +130,9 @@ void gridTransfer::gridCheck()
 
 void gridTransfer::transfer()
 {
+  // check if transfered before
+  if (isTransferred)
+    return;
   // exporting to MAd if not yet
   if (!srcMesh)
     exportMeshToMAdLib("src");
@@ -146,12 +169,13 @@ void gridTransfer::transfer()
 	std::vector<int>  vrtIds;
 	vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
 	//std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-	int elmIdx = getBaryCrds(vrtCrds, prms, vrtIds);
+	int elmIdx = getBaryCrds("src", vrtCrds, prms, vrtIds);
 	if (elmIdx < 0)
 	{
           badPnt++;
 	  //std::cout << badPnt << std::endl;
 	  std::vector<double> trgVrtData;
+          interpNde.clearCache();
 	  interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
 	  trgSlnVec.push_back(trgVrtData[0]);
 	}
@@ -171,8 +195,109 @@ void gridTransfer::transfer()
       interpElm.interpolate(trgCgObjs[0]->getNElement(), trgElmCntCrds, srcSlnVec, trgSlnVec);
       inNData = trgCgObjs[0]->getNElement();
     }
-    trgCgObjs[0]->appendSolutionData(*is, trgSlnVec, st, inNData , 3);
+    trgCgObjs[0]->appendSolutionData(*is, trgSlnVec, st, inNData , 1);
   }
+  // setting transfer flag to true
+  isTransferred = true;
+}
+
+double gridTransfer::calcTransAcc(std::string slnName)
+{
+  double transAccuracy = 0.0;
+  double transAccIntp = 0.0;
+  double transAccProj = 0.0;
+
+  // check if is transferred
+  if (!isTransferred)
+    transfer();
+
+  // get available solutions list
+  std::vector<std::string> slnList;
+  getSolutionDataNames(slnList);
+  solution_type_t st;
+  std::vector<double> srcVrtCrds = getVertexCoords();
+  std::vector<double> trgVrtCrds = trgCgObjs[0]->getVertexCoords();
+  std::vector<double> srcElmCntCrds = getElmCntCoords(srcMesh);
+  std::vector<double> trgElmCntCrds = getElmCntCoords(trgMesh);
+
+  // preparing interpolators
+  basicInterpolant interpNde = basicInterpolant(3, trgCgObjs[0]->getNVertex(), 4, trgVrtCrds);
+  basicInterpolant interpElm = basicInterpolant(3, trgCgObjs[0]->getNElement(), 4, trgElmCntCrds);
+
+  // loop on solutions
+  for (auto is=slnList.begin(); is!=slnList.end(); is++)
+  {
+    if (strcmp((*is).c_str(), slnName.c_str()))
+      continue;
+    std::vector<double> srcSlnVec, origSrcSlnVec;
+    std::vector<double> trgSlnVec;
+    int badPnt=0;
+    int outNData, outNDim;
+    int inNData = 0;
+    getSolutionDataStitched(*is, origSrcSlnVec, outNData, outNDim);
+    st = trgCgObjs[0]->getSolutionDataStitched(*is, trgSlnVec, outNData, outNDim);
+    if (st == NODAL)
+    {
+      // nodal value transfer
+      std::cout << "Checking nodal " << *is << std::endl;
+      for (int iNde=0; iNde<getNVertex(); iNde++)
+      {
+	std::vector<double> vrtCrds, prms;
+	std::vector<int>  vrtIds;
+	vrtCrds = getVertexCoords(iNde);
+	//std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+	int elmIdx = getBaryCrds("trg", vrtCrds, prms, vrtIds);
+	if (elmIdx < 0)
+	{
+          badPnt++;
+	  std::vector<double> srcVrtData;
+          interpNde.clearCache();
+	  interpNde.interpolate(1, vrtCrds, trgSlnVec, srcVrtData);
+          //std::cout << "Nde: " << iNde
+          //          << " orig = " << origSrcSlnVec[iNde]
+          //          << " target projected interp = " << srcVrtData[0] 
+          //          << " delta = " << fabs(srcVrtData[0] - origSrcSlnVec[iNde])
+          //          << std::endl;
+	  transAccuracy += fabs(srcVrtData[0]-origSrcSlnVec[iNde]);
+	  transAccIntp += fabs(srcVrtData[0]-origSrcSlnVec[iNde]);
+	} else {
+	  double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
+			       prms[1]*trgSlnVec[vrtIds[1]] +
+			       prms[2]*trgSlnVec[vrtIds[2]] +
+			       prms[3]*trgSlnVec[vrtIds[3]] ;
+          //std::cout << "Nde: " << iNde
+          //          << " orig = " << origSrcSlnVec[iNde]
+          //          << " target projected = " << srcVrtData 
+          //          << " delta = " << fabs(srcVrtData - origSrcSlnVec[iNde])
+          //          << std::endl;
+          transAccuracy += fabs(srcVrtData - origSrcSlnVec[iNde]);
+          transAccProj += fabs(srcVrtData - origSrcSlnVec[iNde]);
+        }
+      }
+      std::cout << "Finished calculating accuracy with " 
+                << badPnt << " bad nodes." << std::endl;
+    }
+    else if (st == ELEMENTAL)
+    {
+      // elemental value transfer
+      std::cout << "Checking elemental " << *is << std::endl;
+      interpElm.interpolate(getNElement(), srcElmCntCrds, trgSlnVec, srcSlnVec);
+      std::cout << srcSlnVec.size() << std::endl;
+      for (int iElm=0; iElm < getNElement(); iElm++)
+      {
+         transAccuracy += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
+         transAccProj += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
+      }
+      std::cout << "Finished calculating accuracy.\n"; 
+    }
+    
+  }
+  std::cout << "Total Error Interpolation = "
+            << transAccIntp 
+            << " Projection = "
+            << transAccProj
+            << std::endl;
+  return (transAccuracy);
 }
 
 void gridTransfer::writeTrgCg(std::string cgFName)
@@ -462,39 +587,60 @@ void gridTransfer::exportNodalDataToMAdLib()
   MAd::NodalDataManagerSgl::instance().diagnostics(std::cout);
 }
 
-void gridTransfer::exportSrcToGModel()
+void gridTransfer::exportToGModel(std::string msh)
 {
   // TODO: Improve this method to avoid file I/O
   // convert to Msh format first
-  convertToMsh("src");
-  // read from file  
-  srcGModel = new GModel("src");
-  srcGModel->readMSH("source.msh");
-  // some testing
-  //std::cout << "Number of regions = " << srcGModel->getNumMeshElements() << std::endl; 
+  if (!strcmp(msh.c_str(), "src"))
+  {
+     convertToMsh("src");
+     // read from file  
+     srcGModel = new GModel("src");
+     srcGModel->readMSH("source.msh");
+     // some testing
+     //std::cout << "Number of regions = " << srcGModel->getNumMeshElements() << std::endl; 
+  } else if (!strcmp(msh.c_str(), "trg")) {
+     convertToMsh("trg");
+     // read from file  
+     trgGModel = new GModel("trg");
+     trgGModel->readMSH("target.msh");
+  }
 }
 
-int gridTransfer::getElmIdx(std::vector<double>& xyz)
+int gridTransfer::getElmIdx(std::string msh, std::vector<double>& xyz)
 {
+  GModel* pg; 
   // load to GModel if not yet
-  if (!srcGModel)
-    exportSrcToGModel();
+  if (!strcmp(msh.c_str(), "src"))
+  {
+     if (!srcGModel)
+       exportToGModel("src");
+     pg = srcGModel;
+  } else if (!strcmp(msh.c_str(), "trg")) {
+     if (!trgGModel)
+       exportToGModel("trg");
+     pg = trgGModel;
+  }
   // find element indx containig the point
   SPoint3 pnt(xyz[0], xyz[1], xyz[2]);
   MElement* elm;
-  elm = srcGModel->getMeshElementByCoord(pnt);
+  elm = pg->getMeshElementByCoord(pnt);
   if (!elm)
    return(-1);
   return(elm->getNum());
 }
 
-int gridTransfer::getBaryCrds(std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds)
+int gridTransfer::getBaryCrds(std::string msh, std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds)
 {
-  int elmIdx = getElmIdx(xyz);
+  int elmIdx = getElmIdx(msh, xyz);
   if (elmIdx == -1)
      return elmIdx;
   // get barycentric coords
-  MAd::RIter rit = MAd::M_regionIter(srcMesh);
+  MAd::RIter rit;
+  if (!strcmp(msh.c_str(), "src"))
+     rit = MAd::M_regionIter(srcMesh);
+  else if (!strcmp(msh.c_str(), "trg"))
+     rit = MAd::M_regionIter(trgMesh);
   MAd::pRegion pr;
   for (int iReg = 0; iReg<elmIdx; iReg++)
     pr = MAd::RIter_next(rit);

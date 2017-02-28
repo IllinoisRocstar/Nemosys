@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   cmd.push_back(argv[1]);
   // switch processing
 
-  // --tCGNS
+  // --transCGNS
   if (!strcmp(cmd[0].c_str(),"--transCGNS"))
   {
     // input processing
@@ -69,17 +69,23 @@ int main(int argc, char* argv[])
     std::cout << "Transfering from " << cgFileName[0] << " -> " << cgFileName[1] << std::endl;
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[1]);
-    transObj->loadSrcCgSeries(1); 
+    transObj->loadSrcCg(); 
     transObj->exportMeshToMAdLib("src");
     transObj->convertToVTK("src", true);
     //transObj->exportNodalDataToMAdLib();
-    transObj->exportSrcToGModel();
+    transObj->exportToGModel("src");
     // reading target grid
     transObj->loadTrgCg(); 
     transObj->exportMeshToMAdLib("trg");
     transObj->convertToMsh("trg");
     // transfer physical values between the meshes 
     transObj->transfer();
+    // calculate transfer accuracy
+    std::string slnName = "dispX";
+    std::cout << "Total Transfer Error "
+              << slnName
+              << " = " << transObj->calcTransAcc(slnName) 
+              << std::endl;
     // write target with solutions to vtk 
     transObj->convertToVTK("trg", true);
     // write target to CGNSL 
@@ -98,7 +104,7 @@ int main(int argc, char* argv[])
     std::cout << "Acquiring grid statistics ############\n";
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
-    transObj->loadSrcCgSeries(1); 
+    transObj->loadSrcCg(); 
     transObj->exportMeshToMAdLib("src");
     transObj->gridStats();
     std::cout << "Statistics generated successfully.\n";
@@ -115,7 +121,7 @@ int main(int argc, char* argv[])
     std::cout << "Checking the grid #########\n";
     // reading source CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
-    transObj->loadSrcCgSeries(1); 
+    transObj->loadSrcCg(); 
     transObj->exportMeshToMAdLib("src");
     transObj->gridCheck();
     std::cout << "Finished checking grid successfully.\n";
@@ -145,7 +151,7 @@ int main(int argc, char* argv[])
     gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
     if (!strcmp(gridName.c_str(), "src")) 
     {
-      transObj->loadSrcCgSeries(1); 
+      transObj->loadSrcCg(); 
     } else {
       transObj->loadTrgCg();
     }
@@ -158,8 +164,13 @@ int main(int argc, char* argv[])
   else if (!strcmp(cmd[0].c_str(),"--cgns2vtk"))
   {
     // input processing
-    if (argc < 5)
+    if (argc < 5) 
+    {
+      std::cout << "Example " << argv[0]
+                << "--cgns2vtk grid.cgns path_to_distenation_vtk [src or trg] "
+                << std::endl;
       helpExit();
+    }
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     std::string dist = argv[3];
@@ -173,7 +184,7 @@ int main(int argc, char* argv[])
     // reading the CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
     if (!strcmp(gridName.c_str(), "src"))
-      transObj->loadSrcCgSeries(1); 
+      transObj->loadSrcCg(); 
     else
       transObj->loadTrgCg();
     transObj->exportMeshToMAdLib(gridName);
@@ -192,7 +203,7 @@ int main(int argc, char* argv[])
     std::cout << "Reading solution names ########\n";
     // reading the CGNS file
     gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
-    transObj->loadSrcCgSeries(1); 
+    transObj->loadSrcCg(); 
     std::vector<std::string> slnList;
     transObj->getSolutionDataNames(slnList);
     int slnIdx = 1;

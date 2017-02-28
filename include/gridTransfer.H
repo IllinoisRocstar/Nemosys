@@ -26,6 +26,7 @@ public:
 
   // loading
   void loadSrcCgSeries(int nCg);
+  void loadSrcCg();
   void loadTrgCg();
 
   // cgObjects access
@@ -76,8 +77,9 @@ public:
   void convertToSTL(std::string gridName, std::string prefix);
   void convertToVTK(std::string gridName, bool withSolution = false, std::string dist = "");
   void exportNodalDataToMAdLib();
-  void exportSrcToGModel();
+  void exportToGModel(std::string msh);
   void transfer();
+  double calcTransAcc(std::string slnName); 
 
   // quality reporting
   void gridStats();
@@ -88,8 +90,9 @@ public:
   void writeTrgCg(std::string cgFName);
   
   // helper methods
-  int getElmIdx(std::vector<double>& xyz);
-  int getBaryCrds(std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds);
+  int getElmIdx(std::string msh, std::vector<double>& xyz);
+  int getBaryCrds(std::string msh, std::vector<double>& xyz, 
+                  std::vector<double>& baryCrds, std::vector<int>& vrtIds);
 
   // management data
 private:
@@ -104,6 +107,7 @@ private:
   std::vector<cgnsAnalyzer*> srcCgObjs;
   std::vector<cgnsAnalyzer*> trgCgObjs;
   std::vector<cgnsAnalyzer*> nowCgObjs;
+  bool isTransferred;
   
   // mesh data
 private:
@@ -115,6 +119,7 @@ private:
   // Gmsh data
 public:
   GModel* srcGModel;
+  GModel* trgGModel;
 
   // BCs data (example implementation)
 private:

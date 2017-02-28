@@ -12,7 +12,8 @@
       returns fi[ni] interpolation values
 */
 void basicInterpolant::interpolate(int ni, std::vector<double>& xi, 
-              std::vector<double>& pntData, std::vector<double>& newPntData)
+              std::vector<double>& pntData, std::vector<double>& newPntData,
+              int verb)
 {
   // calculating neighbouring indices and weights 
   if (!wCalced) {
@@ -31,16 +32,35 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
       dists  = new ANNdist[nNib];
       kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
       double totW = 0.0;
-      // correcting for zero distance points
+      // searching for zero-distance points
+      int iNibZeroDist = -1;
       for (int iNib=0; iNib<nNib; iNib++)
+        if (dists[iNib] == 0)
+        {
+          iNibZeroDist = iNib;
+          break; // for loop
+        }
+      //std::cout << "iNibZeroDist = " << iNibZeroDist << std::endl;
+      if (iNibZeroDist != -1)
       {
-        if (dists[iNib] == 0) dists[iNib] = 1.0e-14;
-        totW +=1.0/dists[iNib];
-      }
-      for (int iNib=0; iNib<nNib; iNib++) 
-      {
-        pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
-        w[iPnt*nNib+iNib] = (1.0/dists[iNib])/totW;
+         // query point is repeating
+	 for (int iNib=0; iNib<nNib; iNib++) 
+	 {
+	   pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
+	   w[iPnt*nNib+iNib] = 0.0;
+	 }
+         w[iPnt*nNib + iNibZeroDist] = 1.0;
+      } else {
+	 // query point is not repeating
+	 for (int iNib=0; iNib<nNib; iNib++)
+	 {
+	   totW +=1.0/dists[iNib];
+	 }
+	 for (int iNib=0; iNib<nNib; iNib++) 
+	 {
+	   pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
+	   w[iPnt*nNib+iNib] = (1.0/dists[iNib])/totW;
+	 }
       }
      }
      wCalced = true;
@@ -50,8 +70,16 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
   {
     newPntData.push_back(0.0);
     for (int iNib=0; iNib<nNib; iNib++)
+    {
       newPntData[iPnt] += pntData[pntNibIdx[iPnt*nNib+iNib] ] 
                    *w[iPnt*nNib+iNib];
+      if (verb>0)
+        std::cout << "Nib Indx = "
+                  << pntNibIdx[iPnt*nNib+iNib]
+                  << " weight = "
+                  << w[iPnt*nNib+iNib]
+                  << std::endl;
+    }
   }
 }
 
