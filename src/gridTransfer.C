@@ -206,6 +206,7 @@ double gridTransfer::calcTransAcc(std::string slnName)
   double transAccuracy = 0.0;
   double transAccIntp = 0.0;
   double transAccProj = 0.0;
+  double slnSum = 0.0;
 
   // check if is transferred
   if (!isTransferred)
@@ -258,8 +259,9 @@ double gridTransfer::calcTransAcc(std::string slnName)
           //          << " target projected interp = " << srcVrtData[0] 
           //          << " delta = " << fabs(srcVrtData[0] - origSrcSlnVec[iNde])
           //          << std::endl;
-	  transAccuracy += fabs(srcVrtData[0]-origSrcSlnVec[iNde]);
-	  transAccIntp += fabs(srcVrtData[0]-origSrcSlnVec[iNde]);
+	  transAccuracy += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+	  transAccIntp += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+          slnSum += fabs(origSrcSlnVec[iNde]);
 	} else {
 	  double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
 			       prms[1]*trgSlnVec[vrtIds[1]] +
@@ -270,12 +272,13 @@ double gridTransfer::calcTransAcc(std::string slnName)
           //          << " target projected = " << srcVrtData 
           //          << " delta = " << fabs(srcVrtData - origSrcSlnVec[iNde])
           //          << std::endl;
-          transAccuracy += fabs(srcVrtData - origSrcSlnVec[iNde]);
-          transAccProj += fabs(srcVrtData - origSrcSlnVec[iNde]);
+          transAccuracy += pow(srcVrtData - origSrcSlnVec[iNde],2);
+          transAccProj += pow(srcVrtData - origSrcSlnVec[iNde],2);
+          slnSum += fabs(origSrcSlnVec[iNde]);
         }
       }
-      //std::cout << "Finished calculating accuracy with " 
-      //          << badPnt << " bad nodes." << std::endl;
+      transAccuracy /= getNVertex();
+      transAccuracy =  pow(transAccuracy,0.5);
     }
     else if (st == ELEMENTAL)
     {
@@ -285,10 +288,13 @@ double gridTransfer::calcTransAcc(std::string slnName)
       //std::cout << srcSlnVec.size() << std::endl;
       for (int iElm=0; iElm < getNElement(); iElm++)
       {
-         transAccuracy += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
-         transAccProj += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
+         transAccuracy += pow(srcSlnVec[iElm] - origSrcSlnVec[iElm],2);
+         transAccProj += pow(srcSlnVec[iElm] - origSrcSlnVec[iElm],2);
+         slnSum += fabs(origSrcSlnVec[iElm]);
       }
-      //std::cout << "Finished calculating accuracy.\n"; 
+      transAccuracy /= getNElement();
+      transAccuracy =  pow(transAccuracy,0.5);
+      transAccuracy = transAccuracy / slnSum;
     }
     
   }
@@ -302,7 +308,7 @@ double gridTransfer::calcTransAcc(std::string slnName)
 
 void gridTransfer::writeTrgCg(std::string cgFName)
 {
-  std::cout << "Writing remeshed " << cgFName << std::endl;
+  std::cout << "Writing " << cgFName << std::endl;
   cgnsAnalyzer* cgObj1 = trgCgObjs[0];
   // define elementary information
   cgnsWriter* cgWrtObj = new cgnsWriter(cgFName, cgObj1->getBaseName(), 3, 3);
@@ -337,11 +343,13 @@ void gridTransfer::writeTrgCg(std::string cgFName)
   for (auto is=slnList.begin(); is!=slnList.end(); is++)
   {
     std::vector<double> trgSlnVec;
-    solution_type_t st = trgCgObjs[0]->getSolutionData(*is, trgSlnVec);
-    if (st== NODAL)      
+    int tmp;
+    solution_type_t st = trgCgObjs[0]->getSolutionDataStitched(*is, trgSlnVec, tmp, tmp);
+    if (st== NODAL) {
       cgWrtObj->writeSolutionField(*is, "NodeData", RealDouble, &trgSlnVec[0]);
-    else if (st == ELEMENTAL)
+    } else if (st == ELEMENTAL) {
       cgWrtObj->writeSolutionField(*is, "ElemData", RealDouble, &trgSlnVec[0]);
+    }
   }
 }
 
@@ -500,7 +508,8 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
       for (auto ia=appDataLst.begin(); ia!=appDataLst.end(); ia++)
       {
 	std::vector<double> trgSlnVec;
-	solution_type_t dt = trgCgObjs[0]->getSolutionData(*ia, trgSlnVec);
+        int tmp;
+	solution_type_t dt = trgCgObjs[0]->getSolutionDataStitched(*ia, trgSlnVec, tmp, tmp);
 	if (dt == NODAL)
 	  wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
 	else if (dt== ELEMENTAL)

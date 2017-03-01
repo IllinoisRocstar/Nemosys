@@ -143,7 +143,6 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
     if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
     if (cg_descriptor_write("Units", "dmy")) cg_error_exit();
   }
-  
 }
 
 void cgnsWriter::writeGridToFile()

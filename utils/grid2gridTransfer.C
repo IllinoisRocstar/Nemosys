@@ -54,17 +54,20 @@ int main(int argc, char* argv[])
   if (!strcmp(cmd[0].c_str(),"--transCGNS"))
   {
     // input processing
+    bool calcErr = false;
     if (argc < 5)
     {
       helpExit();
       std::cout << "Example: " << argv[0]
-                << "--transCGNS source.cgns target.cgns target_with_solution.cgns"
+                << "--transCGNS source.cgns target.cgns target_with_solution.cgns [--withErr]"
                 << std::endl;
     }
     std::vector<std::string> cgFileName;
     cgFileName.push_back(argv[2]);
     cgFileName.push_back(argv[3]);
     cgFileName.push_back(argv[4]);
+    if (argc==6 && !strcmp(argv[5],"--withErr"))
+      calcErr = true;
     std::cout << "Transfering between the grids ##########\n";
     std::cout << "Transfering from " << cgFileName[0] << " -> " << cgFileName[1] << std::endl;
     // reading source CGNS file
@@ -85,27 +88,29 @@ int main(int argc, char* argv[])
     // write target to CGNSL 
     transObj->writeTrgCg(cgFileName[2]);
     // report on solution transfer quality
-    std::vector<std::string> slnList;
-    transObj->getSolutionDataNames(slnList);
-    int slnIdx = 1;
-    std::cout << setw(3) << " # " 
-              << setw(12) << "   Name   " 
-              << setw(12) << "    Type    "
-              << setw(12) << " Error   \n";
-    std::cout << setw(3) << "---" 
-              << setw(12) << "----------" 
-              << setw(12) << "----------" 
-              << setw(12) << "----------\n";
-    for (auto it=slnList.begin(); it!=slnList.end(); it++){
-      solution_type_t slnType;
-      std::vector<double> slnData;
-      slnType = transObj->getSolutionData(*it, slnData);
-      double accuracy = transObj->calcTransAcc(*it);
-      std::cout << setw(3) << slnIdx++ 
-                << setw(12) << *it 
-                << setw(12) << ((slnType==0)? "NODAL":"Elemental") 
-                << setw(12) << accuracy
-                << std::endl;
+    if (calcErr) {
+      std::vector<std::string> slnList;
+      transObj->getSolutionDataNames(slnList);
+      int slnIdx = 1;
+      std::cout << setw(3) << " # " 
+		<< setw(12) << "   Name   " 
+		<< setw(12) << "    Type    "
+		<< setw(14) << "  RMS Error \n";
+      std::cout << setw(3) << "---" 
+		<< setw(12) << "----------" 
+		<< setw(12) << "----------" 
+		<< setw(14) << "------------\n";
+      for (auto it=slnList.begin(); it!=slnList.end(); it++){
+	solution_type_t slnType;
+	std::vector<double> slnData;
+	slnType = transObj->getSolutionData(*it, slnData);
+	double accuracy = transObj->calcTransAcc(*it);
+	std::cout << setw(3) << slnIdx++ 
+		  << setw(12) << *it 
+		  << setw(12) << ((slnType==0)? "Nodal":"Elemental") 
+		  << setw(14) << accuracy
+		  << std::endl;
+      }
     }
     std::cout << "Transfer finished successfully.\n";
   }
