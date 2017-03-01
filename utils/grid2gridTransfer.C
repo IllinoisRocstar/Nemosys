@@ -80,16 +80,33 @@ int main(int argc, char* argv[])
     transObj->convertToMsh("trg");
     // transfer physical values between the meshes 
     transObj->transfer();
-    // calculate transfer accuracy
-    std::string slnName = "dispX";
-    std::cout << "Total Transfer Error "
-              << slnName
-              << " = " << transObj->calcTransAcc(slnName) 
-              << std::endl;
     // write target with solutions to vtk 
     transObj->convertToVTK("trg", true);
     // write target to CGNSL 
     transObj->writeTrgCg(cgFileName[2]);
+    // report on solution transfer quality
+    std::vector<std::string> slnList;
+    transObj->getSolutionDataNames(slnList);
+    int slnIdx = 1;
+    std::cout << setw(3) << " # " 
+              << setw(12) << "   Name   " 
+              << setw(12) << "    Type    "
+              << setw(12) << " Error   \n";
+    std::cout << setw(3) << "---" 
+              << setw(12) << "----------" 
+              << setw(12) << "----------" 
+              << setw(12) << "----------\n";
+    for (auto it=slnList.begin(); it!=slnList.end(); it++){
+      solution_type_t slnType;
+      std::vector<double> slnData;
+      slnType = transObj->getSolutionData(*it, slnData);
+      double accuracy = transObj->calcTransAcc(*it);
+      std::cout << setw(3) << slnIdx++ 
+                << setw(12) << *it 
+                << setw(12) << ((slnType==0)? "NODAL":"Elemental") 
+                << setw(12) << accuracy
+                << std::endl;
+    }
     std::cout << "Transfer finished successfully.\n";
   }
 

@@ -239,7 +239,7 @@ double gridTransfer::calcTransAcc(std::string slnName)
     if (st == NODAL)
     {
       // nodal value transfer
-      std::cout << "Checking nodal " << *is << std::endl;
+      //std::cout << "Checking nodal " << *is << std::endl;
       for (int iNde=0; iNde<getNVertex(); iNde++)
       {
 	std::vector<double> vrtCrds, prms;
@@ -274,29 +274,29 @@ double gridTransfer::calcTransAcc(std::string slnName)
           transAccProj += fabs(srcVrtData - origSrcSlnVec[iNde]);
         }
       }
-      std::cout << "Finished calculating accuracy with " 
-                << badPnt << " bad nodes." << std::endl;
+      //std::cout << "Finished calculating accuracy with " 
+      //          << badPnt << " bad nodes." << std::endl;
     }
     else if (st == ELEMENTAL)
     {
       // elemental value transfer
-      std::cout << "Checking elemental " << *is << std::endl;
+      //std::cout << "Checking elemental " << *is << std::endl;
       interpElm.interpolate(getNElement(), srcElmCntCrds, trgSlnVec, srcSlnVec);
-      std::cout << srcSlnVec.size() << std::endl;
+      //std::cout << srcSlnVec.size() << std::endl;
       for (int iElm=0; iElm < getNElement(); iElm++)
       {
          transAccuracy += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
          transAccProj += fabs(srcSlnVec[iElm] - origSrcSlnVec[iElm]);
       }
-      std::cout << "Finished calculating accuracy.\n"; 
+      //std::cout << "Finished calculating accuracy.\n"; 
     }
     
   }
-  std::cout << "Total Error Interpolation = "
-            << transAccIntp 
-            << " Projection = "
-            << transAccProj
-            << std::endl;
+  //std::cout << "Total Error Interpolation = "
+  //          << transAccIntp 
+  //          << " Projection = "
+  //          << transAccProj
+  //          << std::endl;
   return (transAccuracy);
 }
 
@@ -423,7 +423,7 @@ void gridTransfer::convertToMsh(std::string gridName)
     std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
     throw;
   }
-  std::cout <<"Writing to gmsh format -> " << fName << std::endl;
+  //std::cout <<"Writing to gmsh format -> " << fName << std::endl;
   MAd::M_writeMsh(wrtMesh, fName.c_str(), 2, NULL);
 }
 
