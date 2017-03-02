@@ -177,8 +177,27 @@ app.get('/srcGrdSlnNames', function(req, res){
 
 // solution transfer from source grid to target
 app.get('/slnTransfer', function(req, res){
-  console.log("Solution transfer request received.\n");
-
+  var checkSln = req.query.checkSlnTransErr;
+  console.log("Solution transfer request received.");
+  console.log("With error check = " + checkSln);
+  if (checkSln=='true') {
+     execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
+                     '../../public/uploads/fluid_06.100000_0001.cgns', 
+                     '../../public/uploads/target_with_sln.cgns',
+                     '--withErr' ],  {cwd: scratchFldr}, 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`${stderr}`);
+	  console.log(`Error:\n ${error}`);
+	  res.send('Error :\n ${error}')
+	} 
+	else
+	{
+	  console.log(`${stdout}`);
+	  res.send(`${stdout}`);
+	}
+     });
+   } else {
      execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
                      '../../public/uploads/fluid_06.100000_0001.cgns', 
                      '../../public/uploads/target_with_sln.cgns'],  {cwd: scratchFldr}, 
@@ -194,6 +213,8 @@ app.get('/slnTransfer', function(req, res){
 	  res.send(`${stdout}`);
 	}
      });
+   }
+
 });
 
 
