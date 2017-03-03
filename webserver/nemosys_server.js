@@ -69,12 +69,12 @@ app.post('/uploadSrc', function(req, res){
                     '../../public/uploads/', 'src'], {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`${stderr}`);
-	  console.log(`Error: ${error}`);
+	  console.log(stderr);
+	  console.log('Error:'+ error);
 	} 
 	else
 	{
-	  console.log(`${stdout}`);
+	  console.log(stdout);
           res.end('success');
 	}
      });
@@ -111,12 +111,12 @@ app.post('/uploadTrg', function(req, res){
                     '../../public/uploads/', 'trg'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`${stderr}`);
-	  console.log(`Error: ${error}`);
+	  console.log(stderr);
+	  console.log('Error:'+ error);
 	} 
 	else
 	{
-	  console.log(`${stdout}`);
+	  console.log(stdout);
           res.end('success');
 	}
      });
@@ -142,14 +142,14 @@ app.get('/srcGrdStats', function(req, res){
      execMe(g2gCmd, ['--statCGNS','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`${stderr}`);
-	  console.log(`Error:\n ${error}`);
+	  console.log(stderr);
+	  console.log('Error:'+ error);
 	  res.send('Error :\n ${error}')
 	} 
 	else
 	{
-	  console.log(`${stdout}`);
-	  res.send(`${stdout}`);
+	  console.log(stdout);
+	  res.send(stdout);
 	}
      });
 });
@@ -162,14 +162,14 @@ app.get('/srcGrdSlnNames', function(req, res){
      execMe(g2gCmd, ['--listSln','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`${stderr}`);
-	  console.log(`Error:\n ${error}`);
+	  console.log(stderr);
+	  console.log('Error:\n'+ error);
 	  res.send('Error :\n ${error}')
 	} 
 	else
 	{
-	  console.log(`${stdout}`);
-	  res.send(`${stdout}`);
+	  console.log(stdout);
+	  res.send(stdout);
 	}
      });
 });
@@ -184,14 +184,14 @@ app.get('/slnTransfer', function(req, res){
                      '../../public/uploads/target_with_sln.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
-	  console.log(`${stderr}`);
-	  console.log(`Error:\n ${error}`);
+	  console.log(stderr);
+	  console.log('Error:\n'+ error);
 	  res.send('Error :\n ${error}')
 	} 
 	else
 	{
-	  console.log(`${stdout}`);
-	  res.send(`${stdout}`);
+	  console.log(stdout);
+	  res.send(stdout);
 	}
      });
 });
