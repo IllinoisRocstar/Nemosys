@@ -22,8 +22,9 @@
              <h5>How to use this tool:</h5>
              <p>This is a simple web application for transfering physical quantities form 
                 a source grid to a target grid. The application currently only support CGNS grids.
-                You can download a sample CGNS grid from <a href="downloads/fluid_04.210000_0000.cgns">here</a>
-                and use it as both source and target grid. 
+                You can download a sample source CGNS grid with physical quanitities from 
+                <a href="downloads/acm_with_solution.cgns">here</a> and an empty target CGNS grid from 
+                <a href="downloads/acm_no_solution_coarse.cgns">here</a>. 
              </p>
              <p> To use the tool, follow these steps:</p>
              <p> <b>Step1 - </b> Click on "Upload Source Grid" to upload the source grid.</p>
@@ -78,6 +79,9 @@
 	 <div class="large-4 text-center columns">
              <div class="row">
 	         <a href="#" id="transferSln" class="button">Transfer Solution</a>
+	     </div>
+             <div class="row">
+                 <input id="transErrChk" type="checkbox"><label for="checkbox1">Check transfer accuracy</label>
 	     </div>
              <div class="row">
                  <label>Processing Outputs</label>

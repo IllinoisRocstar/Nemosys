@@ -66,6 +66,13 @@ $(document).ready(function(){
   // transfer solution button click event
   $('#transferSln').bind('click', function( event ){
     $('#outbox').val("Submitting solution transfer request");
+    // checkbox value
+    var params;
+    if ($('#transErrChk').prop('checked')==true) {
+       params = "checkSlnTransErr=true";
+    } else {
+       params = "checkSlnTransErr=false";
+    }
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
     var xhttp;
     if (window.XMLHttpRequest) {
@@ -83,7 +90,7 @@ $(document).ready(function(){
                          this.responseText);
       }
     };
-    xhttp.open("GET", "slnTransfer", true);
+    xhttp.open("GET", "slnTransfer"+"?"+params, false);
     xhttp.send();
   });
 
