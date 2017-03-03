@@ -1,10 +1,14 @@
 // globals
+
 var express =   require("express");
 var app     =   express();
 var path = require('path');
 var formidable = require('formidable');
 var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
+var ip;
+
+
 
 const spawnMe = require('child_process').spawn;   // using a new shell
 const execMe = require('child_process').execFile; // using current shell
@@ -50,6 +54,9 @@ app.get('/', function(req, res){
 });
 
 
+
+
+
 // upload source grid
 app.post('/uploadSrc', function(req, res){
   // create an incoming form object
@@ -60,9 +67,11 @@ app.post('/uploadSrc', function(req, res){
   form.uploadDir = path.join(__dirname, '../public/uploads');
   // every time a file has been uploaded successfully,
   // rename it to it's orignal name
+
+
   form.on('file', function(field, file) {
-    //fs.rename(file.path, path.join(form.uploadDir, file.name));
-    fs.rename(file.path, path.join(form.uploadDir, "fluid_04.100000_0000.cgns"));
+    fs.rename(file.path, path.join(form.uploadDir, file.name));
+    //fs.rename(file.path, path.join(form.uploadDir,  "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
     execMe(g2gCmd, ['--cgns2stl','../../public/uploads/fluid_04.100000_0000.cgns', 

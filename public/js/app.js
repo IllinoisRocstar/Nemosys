@@ -90,7 +90,7 @@ $(document).ready(function(){
 
   // srcUploader button change event
   $('#srcGridFileUpload').bind('change', function(){    
-
+    var ip;
    // zeroing progress bar
    $('#srcUploadProgBar').text('0%');
    $('#srcUploadProgBar').width('0%');
@@ -100,11 +100,20 @@ $(document).ready(function(){
      // create a FormData object which will be sent as the data payload in the
      // AJAX request
      var formData = new FormData();
+    
+     
+     
+     
+     ip=document.getElementById("ip").innerHTML;
+     //window.alert("IP: " + ip);
      // loop through all the selected files
      for (var i = 0; i < files.length; i++) {
        var file = files[i];
        // add the files to formData object for the data payload
-       formData.append('uploads[]', file, file.name);
+       var d = new Date();
+       var newName = d.getDate() + "-" + (d.getMonth()+1) + "-" + d.getFullYear() + "_" + d.getTime() + "_" + ip + "_" + file.name;
+       //window.alert(ip_name);
+       formData.append('uploads[]', file,  newName);
      }
      $.ajax({
        url: '/uploadSrc',
