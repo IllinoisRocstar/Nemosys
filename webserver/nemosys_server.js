@@ -20,6 +20,7 @@ var serverStartupDate = new Date();
 var g2gCmd = '/home/msafdari/scratch/scratch/Nemosys/build/bin/grid2gridTransfer';
 var scratchFldr = '/home/msafdari/scratch/scratch/WebNemosys/webserver/scratch';
 
+var cat = 'cat';
 
 // passed command line arguments
 var args = process.argv.slice(2);
@@ -70,8 +71,8 @@ app.post('/uploadSrc', function(req, res){
 
 
   form.on('file', function(field, file) {
-    fs.rename(file.path, path.join(form.uploadDir, file.name));
-    //fs.rename(file.path, path.join(form.uploadDir,  "fluid_04.100000_0000.cgns"));
+    //fs.rename(file.path, path.join(form.uploadDir, file.name));
+    fs.rename(file.path, path.join(form.uploadDir,  "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
     execMe(g2gCmd, ['--cgns2stl','../../public/uploads/fluid_04.100000_0000.cgns', 
@@ -162,6 +163,43 @@ app.get('/srcGrdStats', function(req, res){
 	}
      });
 });
+
+
+
+
+// Generating json formatted histogram file by running g2g command with option flag '--plotHist'
+app.get('/plot', function(req, res){
+  console.log("Generation of Histogram file request received.\n");
+     execMe(g2gCmd, ['--plotHist','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
+     function callback(error, stdout, stderr) {
+	if (error){
+	  console.log(`${stderr}`);
+	  console.log(`Error:\n ${error}`);
+	  res.send('Error :\n ${error}')
+	} 
+	else
+	{
+	  console.log(`${stdout}`);
+	  res.send(`${stdout}`);
+	}
+     });
+});
+
+
+
+// using fs, grab the json file and send it back to the server
+app.get('/test', function(req, res){
+     var obj;
+     fs.readFile(scratchFldr + '/hist.json','utf8',
+       function (error,data) {
+	    if (error){
+	     console.log(error);
+	    } 
+	    else res.send(data);
+       });
+});
+
+
 
 
 // solution names of source grid

@@ -3,7 +3,6 @@ $(document).foundation()
 // global variables
 // nothing so far
 
-
 // document ready event
 $(document).ready(function(){
 
@@ -12,6 +11,100 @@ $(document).ready(function(){
   $("#hello").click(function() {
     alert("Hello, world!");
   });
+
+  //WK adding plot button
+  // Generating Histogram via running nemosys backend synchronyously
+  $('#plot').click(function(){
+    $('#outbox').val("Submitting histogram.json generation request");
+ 
+
+    // create CMLHttpRequest object, ActiveX object if old IE5, IE6
+    var xhttp;
+    if (window.XMLHttpRequest) {
+      xhttp = new XMLHttpRequest();
+    } else {
+      // code for IE6, IE5
+      xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    
+    // callback option = false
+    xhttp.open("GET", "plot", false);
+    xhttp.send();
+
+    // Display Histogram
+    var xhttpDisplayHist;
+    var jsonfile;
+    if (window.XMLHttpRequest) {
+      xhttpDisplayHist = new XMLHttpRequest();
+    } else {
+      // code for IE6, IE5
+      xhttpDisplayHist = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+    // preparing and sending a get request
+    $('#outbox').val("Sending request to server.\n");
+    xhttpDisplayHist.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        jsonfile = JSON.parse(this.response);
+        $('#outbox').val('Histogram Statistics \n'+
+                        '------------------------------ \n' + 
+						"0.0  < Q <  0.1 :   " + jsonfile[0] + " elements\n" +
+						"0.1  < Q <  0.2 :   " + jsonfile[1] + " elements\n" +
+						"0.2  < Q <  0.3 :   " + jsonfile[2] + " elements\n" +
+						"0.3  < Q <  0.4 :   " + jsonfile[3] + " elements\n" +
+						"0.4  < Q <  0.5 :   " + jsonfile[4] + " elements\n" +
+						"0.5  < Q <  0.6 :   " + jsonfile[5] + " elements\n" +
+						"0.6  < Q <  0.7 :   " + jsonfile[6] + " elements\n" +
+						"0.7  < Q <  0.8 :   " + jsonfile[7] + " elements\n" +
+						"0.8  < Q <  0.9 :   " + jsonfile[8] + " elements\n" +
+						"0.9  < Q <  1.0 :   " + jsonfile[9] + " elements\n"); 
+      }
+    };
+    
+    // callback option is true this time as we want to display the graph w/o refreshing
+    xhttpDisplayHist.open("GET", "test", true);
+    xhttpDisplayHist.send();
+
+
+    // Google Chart code
+    google.charts.load("current", {packages:['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    var loc = window.location.pathname;
+
+    function drawChart() {
+      var data = google.visualization.arrayToDataTable([
+        ["Element", "Number of Elements"],
+        ["0.0  < Q <  0.1", parseInt(jsonfile[0])],
+        ["0.1  < Q <  0.2", parseInt(jsonfile[1])],
+        ["0.2  < Q <  0.3", parseInt(jsonfile[2])],
+        ["0.3  < Q <  0.4", parseInt(jsonfile[3])],
+        ["0.4  < Q <  0.5", parseInt(jsonfile[4])],
+        ["0.5  < Q <  0.6", parseInt(jsonfile[5])],
+        ["0.6  < Q <  0.7", parseInt(jsonfile[6])],
+        ["0.7  < Q <  0.8", parseInt(jsonfile[7])],
+        ["0.8  < Q <  0.9", parseInt(jsonfile[8])],
+        ["0.9  < Q <  1.0", parseInt(jsonfile[9])],
+      ]);
+       
+      // A lot of visualization option can be set here under option object
+      var view = new google.visualization.DataView(data);
+      var options = {
+        title: "Histogram of element distribution",
+        width: 1100,
+        height: 400,
+        hAxis : {
+           textStyle : {
+              fontSize:9
+           }
+        }
+      };
+
+      var chart = new google.visualization.ColumnChart(document.getElementById("chart_diz"));
+      chart.draw(view, options);
+  }
+
+  });
+
 
 
   // source grid statistics button
