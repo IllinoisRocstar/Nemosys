@@ -132,6 +132,24 @@ int main(int argc, char* argv[])
     std::cout << "Statistics generated successfully.\n";
   }
 
+  // --plotHist : added by Woo for generating CGNS
+  else if (!strcmp(cmd[0].c_str(),"--plotHist"))
+  {
+    // input processing
+    if (argc < 3)
+      helpExit();
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::cout << "Acquiring histogram stats ############\n";
+    // reading source CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
+    transObj->loadSrcCg(); 
+    transObj->exportMeshToMAdLib("src");
+    transObj->gridHist();
+    std::cout << "Statistics generated successfully.\n";
+  }
+
+
   // --chkCGNS
   else if (!strcmp(cmd[0].c_str(),"--chkCGNS"))
   {

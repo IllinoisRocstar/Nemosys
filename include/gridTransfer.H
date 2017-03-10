@@ -84,7 +84,7 @@ public:
   // quality reporting
   void gridStats();
   void gridCheck();
-  
+  void gridHist();
 
   // writing actions
   void writeTrgCg(std::string cgFName);

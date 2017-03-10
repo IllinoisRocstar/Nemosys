@@ -122,6 +122,54 @@ void gridTransfer::gridStats()
   delete(ma);
 }
 
+// WK: For plotting the histogram. very similar to gridstat except less stdout calls
+void gridTransfer::gridHist()
+{
+
+  // running adapter checks on the grid
+  classifyMAdMeshBnd(srcMesh);
+  MAd::PWLSField* sizeField = new MAd::PWLSField(srcMesh);
+  sizeField->setCurrentSize();
+  MAd::MeshAdapter* ma;
+  ma = new MAd::MeshAdapter(srcMesh, sizeField);
+  //ma->printStatistics(std::cout);
+  
+
+  ofstream myfile;
+  myfile.open("histogram.dat");
+  ma->printStatistics(myfile);
+  myfile.close();
+
+
+  ifstream hist("histogram.dat");
+  ofstream out("hist.json");
+  std::string line;
+  out << "[";
+  while(std::getline(hist,line)){
+	if(line == "        --- Histogram ---"){
+      for(int i =0 ; i < 11; i ++){
+		std::getline(hist,line);
+        if(!line.empty()){
+          std::string filter = "%";
+          line = line.substr(line.find(filter)+filter.length(), line.length());
+          filter = "elements";
+          line = line.substr(0,line.find(filter));
+          line.erase(std::remove_if(line.begin(),line.end(),isspace),line.end());
+          if(i == 10) out <<"\"" << line << "\"";
+          else out << "\"" <<line << "\"" << ",";
+        }
+      }
+      out << "]";
+      out.close();
+      break;
+    }
+
+  }
+
+  delete(ma);
+}
+
+
 void gridTransfer::gridCheck()
 {
   // running checkMesh
