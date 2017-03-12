@@ -30,6 +30,7 @@ void helpExit()
 	    << " cgns2stl : skins a CGNS grid and writes it into a stl file.\n"
 	    << " cgns2vtk : converts cgns grid into vtk format.\n"
 	    << "  listSln : lists current existing solution names defined on the grid and their type.\n"
+            << " plotHist : generats mesh quality histogram and writes it to hist.json\n"
 	    << std::endl;
   exit(0);
 }
