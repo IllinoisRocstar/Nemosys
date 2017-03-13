@@ -3,6 +3,9 @@
 
 #include <gridTransfer.H>
 
+// JSON
+#include <jsoncons/json.hpp>
+
 ///////////////////////////////////////////////////
 // INITIALIZATION
 ///////////////////////////////////////////////////
@@ -617,6 +620,109 @@ void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
   std::cout <<"Writing to stl format -> " << fName << std::endl;
   wrtGModel->writeSTL((prefix + fName).c_str(), false, true);
 }
+
+void gridTransfer::convertToJSON(std::string gridName, std::string prefix, bool withSolution)
+{
+  // if gridName = src exports source mesh data to json, otherwise trg
+  // exports target mesh to json
+  
+  // skin the gird
+  std::string fName;
+  std::cout << "Computing surface mesh.\n"; 
+  std::vector<int> skinElmIds;
+  MAd::pGModel tmpMdl = NULL;
+  MAd::GM_create(&tmpMdl,"");
+  MAd::pMesh skinMesh = M_new(tmpMdl);
+
+  if (!strcmp(gridName.c_str(), "src"))
+  {
+    srcMesh->skin_me(skinMesh, skinElmIds);
+    skinMesh->classify_unclassified_entities();
+    skinMesh->destroyStandAloneEntities();
+    MAd::M_writeMsh(skinMesh, "srcSkinMesh.msh", 2, NULL);
+    MAd::M_info(skinMesh);
+    fName = "source.json";
+
+  } 
+  else if (!strcmp(gridName.c_str(), "trg")) 
+  {
+  } 
+  else 
+  {
+    std::cerr << "Fatal Error: Only src or trg are accpeted.\n";
+    throw;
+  }
+
+  // reading skin mesh and writing to json format
+  // decimal format hex => dec via int(16)
+  std::vector<int> defaultColorValues {15658734,13658734, 11658734 };      
+  std::vector<double> vrtCrdVec;     
+  std::vector<int> faces;     
+  std::vector<double> normals; 
+
+  // getting vertex coords
+  int cntr;
+  std::vector<std::vector<double> > vrtCrds = MAd::M_getVrtCrds(skinMesh);
+  std::cout << vrtCrds.size() << std::endl;
+  for (auto row=vrtCrds.begin(); row!=vrtCrds.end(); row++)
+    for (auto col=row->begin(); col!=row->end(); col++)
+      {
+        cntr++;
+        vrtCrdVec.push_back(*col);
+      }
+  // getting face connectivities
+  std::vector<int> faceConn = MAd::M_getConnectivities(skinMesh);
+  for (int facIdx=0; facIdx<MAd::M_numFaces(skinMesh); facIdx++)
+  {
+    // format: <142>, <vertex 1,2,3>, <normal vector>, <vertex color 1,2,3>
+    // face type
+    faces.push_back(142); 
+    // vertex ids
+    faces.push_back(faceConn[facIdx*3]);
+    faces.push_back(faceConn[facIdx*3+1]);
+    faces.push_back(faceConn[facIdx*3+2]);
+    // normal idx
+    faces.push_back(facIdx);
+    // vertex colors
+    faces.push_back(0);
+    faces.push_back(0);
+    faces.push_back(0);
+  }
+  // getting face normals
+  MAd::FIter fit = MAd::M_faceIter(skinMesh);
+  while (MAd::pFace pf = FIter_next(fit))
+  { 
+    double fNormal[3];
+    MAd::F_normal(pf, fNormal);
+    normals.push_back(fNormal[0]);
+    normals.push_back(fNormal[1]);
+    normals.push_back(fNormal[2]);
+  }
+  MAd::FIter_delete(fit); 
+
+  jsoncons::json outJson;     
+  outJson["metadata"]["formatVersion"] = 3.1;     
+  outJson["metadata"]["generatedBy"] = "";
+  outJson["metadata"]["vertices"] = MAd::M_numVertices(skinMesh);     
+  outJson["metadata"]["faces"] = MAd::M_numFaces(skinMesh);     
+  outJson["metadata"]["normals"] = MAd::M_numFaces(skinMesh);     
+  outJson["metadata"]["colors"] = 1;     
+  outJson["metadata"]["materials"] = 0;
+  outJson["vertices"] = vrtCrdVec;     
+  outJson["normals"] = normals;        
+  outJson["faces"] = faces;        
+  outJson["Scale"] = 1.0;         
+  outJson["colors"] = defaultColorValues;     
+  //outJson["solution"]["pressure"] = fieldValues1;     
+  //outJson["solution"]["temperature"] = fieldValues2;
+
+  ofstream of(fName);
+  of << jsoncons::pretty_print(outJson);
+  of.close();
+
+
+}
+
 
 void gridTransfer::exportNodalDataToMAdLib()
 {
