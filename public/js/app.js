@@ -61,7 +61,7 @@ $(document).ready(function(){
     };
     
     // callback option is true this time as we want to display the graph w/o refreshing
-    xhttpDisplayHist.open("GET", "test", true);
+    xhttpDisplayHist.open("GET", "test", false);
     xhttpDisplayHist.send();
 
 
@@ -194,6 +194,7 @@ $(document).ready(function(){
    // zeroing progress bar
    $('#srcUploadProgBar').text('0%');
    $('#srcUploadProgBar').width('0%');
+   
    var files = $(this).get(0).files;
    if (files.length > 0){
      // One or more files selected, process the file upload
@@ -249,6 +250,12 @@ $(document).ready(function(){
      });
    }    
 
+
+  });
+
+  // To close the panel when upload source grid is clicked
+  $('.button').first().on('click',function(){
+    $('#panel').fadeOut(40);
   });
 
 

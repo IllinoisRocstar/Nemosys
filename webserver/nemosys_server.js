@@ -68,7 +68,7 @@ app.post('/uploadSrc', function(req, res){
   form.uploadDir = path.join(__dirname, '../public/uploads');
   // every time a file has been uploaded successfully,
   // rename it to it's orignal name
-
+  console.log("whats going on herE");
 
   form.on('file', function(field, file) {
     //fs.rename(file.path, path.join(form.uploadDir, file.name));
