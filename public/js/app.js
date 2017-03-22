@@ -2,7 +2,9 @@ $(document).foundation()
 
 // global variables
 // nothing so far
-
+var sourceFormatted;
+var targetFormatted;
+var targetSln;
 // document ready event
 $(document).ready(function(){
 
@@ -15,9 +17,13 @@ $(document).ready(function(){
   //WK adding plot button
   // Generating Histogram via running nemosys backend synchronyously
   $('#plot').click(function(){
+    if(typeof sourceFormatted == "undefined"){
+    //alert("souce format = " + sourceFormatted)
+    $('#outbox').val("No Source Grid selected");
+    //$('#collapse').foundation('toggle')
+    } else{
     $('#outbox').val("Submitting histogram.json generation request");
  
-
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
     var xhttp;
     if (window.XMLHttpRequest) {
@@ -28,7 +34,9 @@ $(document).ready(function(){
     }
     
     // callback option = false
-    xhttp.open("GET", "plot", false);
+    var params = 'formatName='+sourceFormatted
+    //alert(params)
+    xhttp.open("GET", "plot"+"?"+params, false);
     xhttp.send();
 
     // Display Histogram
@@ -61,7 +69,7 @@ $(document).ready(function(){
     };
     
     // callback option is true this time as we want to display the graph w/o refreshing
-    xhttpDisplayHist.open("GET", "test", false);
+    xhttpDisplayHist.open("GET", "getHist", false);
     xhttpDisplayHist.send();
 
 
@@ -102,7 +110,7 @@ $(document).ready(function(){
       var chart = new google.visualization.ColumnChart(document.getElementById("chart_diz"));
       chart.draw(view, options);
   }
-
+}
   });
 
 
@@ -127,11 +135,13 @@ $(document).ready(function(){
                          this.responseText);
       }
     };
-    xhttp.open("GET", "srcGrdStats", true);
+    var params = 'formatName='+sourceFormatted
+    //alert(params)
+    xhttp.open("GET", "srcGrdStats"+"?"+params, true);
     xhttp.send();
   });
 
-  // source grid statistics button
+  // source solution name button
   $('#gridSlnNames').click(function(){
     $('#outbox').val("Submitting source grid solution names request");
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
@@ -151,13 +161,15 @@ $(document).ready(function(){
                          this.responseText);
       }
     };
-    xhttp.open("GET", "srcGrdSlnNames", true);
+    var params = 'formatName='+sourceFormatted
+    xhttp.open("GET", "srcGrdSlnNames"+"?"+params, true);
     xhttp.send();
   });
 
 
   // transfer solution button click event
   $('#transferSln').bind('click', function( event ){
+    targetSln = './uploads/target_with_sln_'+targetFormatted;
     $('#outbox').val("Submitting solution transfer request");
     // checkbox value
     var params;
@@ -183,7 +195,9 @@ $(document).ready(function(){
                          this.responseText);
       }
     };
-    xhttp.open("GET", "slnTransfer"+"?"+params, false);
+    var src = 'formatSrcName='+sourceFormatted
+    var trg = 'formatTrgName='+targetFormatted
+    xhttp.open("GET", "slnTransfer"+"?"+params+"&"+src+"&"+trg, false);
     xhttp.send();
   });
 
@@ -201,9 +215,6 @@ $(document).ready(function(){
      // create a FormData object which will be sent as the data payload in the
      // AJAX request
      var formData = new FormData();
-    
-     
-     
      
      ip=document.getElementById("ip").innerHTML;
      //window.alert("IP: " + ip);
@@ -216,6 +227,7 @@ $(document).ready(function(){
        //window.alert(ip_name);
        formData.append('uploads[]', file,  newName);
      }
+     sourceFormatted = newName;
      $.ajax({
        url: '/uploadSrc',
        type: 'POST',
@@ -224,7 +236,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('upload successful!\n' + data);
-           initialize();
+           initialize(sourceFormatted,targetFormatted);
            $('#outbox').val('Source uploaded successfully!\n');
        },
        xhr: function() {
@@ -255,7 +267,7 @@ $(document).ready(function(){
 
   // To close the panel when upload source grid is clicked
   $('.button').first().on('click',function(){
-    $('#panel').fadeOut(40);
+    $('#collapse').fadeOut(40);
   });
 
 
@@ -271,12 +283,19 @@ $(document).ready(function(){
      // create a FormData object which will be sent as the data payload in the
      // AJAX request
      var formData = new FormData();
+
+
+
+     ip=document.getElementById("ip").innerHTML;
      // loop through all the selected files
      for (var i = 0; i < files.length; i++) {
        var file = files[i];
        // add the files to formData object for the data payload
-       formData.append('uploads[]', file, file.name);
+       var d = new Date();
+       var newName = d.getDate() + "-" + (d.getMonth()+1) + "-" + d.getFullYear() + "_" + d.getTime() + "_" + ip + "_" +file.name;
+       formData.append('uploads[]', file, newName);
      }
+     targetFormatted = newName;
      $.ajax({
        url: '/uploadTrg',
        type: 'POST',
@@ -285,7 +304,7 @@ $(document).ready(function(){
        contentType: false,
        success: function(data){
 	   console.log('Target uploaded successful!\n' + data);
-           initialize();
+           initialize(sourceFormatted,targetFormatted);
            $('#outbox').val('Target uploaded successfully!\n');
        },
        xhr: function() {
@@ -315,7 +334,12 @@ $(document).ready(function(){
 
   // grid download button
   $("#trgDownload").click(function() {
-      window.location = './uploads/target_with_sln.cgns';
+      if(typeof targetSln !== "undefined"){
+        console.log(targetSln)
+        //window.location = './uploads/target_with_sln.cgns';
+        window.location = targetSln;
+      }
+      else alert("No solution file available!")
   });
 
   // dummy tests

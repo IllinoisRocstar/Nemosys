@@ -68,20 +68,24 @@ app.post('/uploadSrc', function(req, res){
   form.uploadDir = path.join(__dirname, '../public/uploads');
   // every time a file has been uploaded successfully,
   // rename it to it's orignal name
-  console.log("whats going on herE");
 
   form.on('file', function(field, file) {
-    //fs.rename(file.path, path.join(form.uploadDir, file.name));
-    fs.rename(file.path, path.join(form.uploadDir,  "fluid_04.100000_0000.cgns"));
+ 
+    //WK Messing around here!
+    fs.rename(file.path, path.join(form.uploadDir, file.name));
+    //fs.rename(file.path, path.join(form.uploadDir,  "fluid_04.100000_0000.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
+    console.log("file name is = " + file.name);
+    sourceFormatted = file.name;
     // skin the CGNS mesh
-    execMe(g2gCmd, ['--cgns2stl','../../public/uploads/fluid_04.100000_0000.cgns', 
-                    '../../public/uploads/', 'src'], {cwd: scratchFldr}, 
+    var format = '../../public/uploads/' + sourceFormatted;
+    execMe(g2gCmd, ['--cgns2stl',format, 
+                    '../../public/uploads/', 'src',sourceFormatted], {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(stderr);
 	  console.log('Error:'+ error);
-	} 
+	}
 	else
 	{
 	  console.log(stdout);
@@ -113,12 +117,15 @@ app.post('/uploadTrg', function(req, res){
   // every time a file has been uploaded successfully,
   // rename it to it's orignal name
   form.on('file', function(field, file) {
-    //fs.rename(file.path, path.join(form.uploadDir, file.name));
-    fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0001.cgns"));
+    fs.rename(file.path, path.join(form.uploadDir, file.name));
+    //fs.rename(file.path, path.join(form.uploadDir, "fluid_06.100000_0001.cgns"));
     console.log("File received: %s", path.join(form.uploadDir, file.name));
     // skin the CGNS mesh
-    execMe(g2gCmd,  ['--cgns2stl','../../public/uploads/fluid_06.100000_0001.cgns', 
-                    '../../public/uploads/', 'trg'],  {cwd: scratchFldr}, 
+    var format = '../../public/uploads/';
+    targetFormatted = file.name;
+    format += targetFormatted;
+    execMe(g2gCmd,  ['--cgns2stl',format, 
+                    '../../public/uploads/', 'trg',targetFormatted],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(stderr);
@@ -148,8 +155,12 @@ app.post('/uploadTrg', function(req, res){
 // statistics of source grid
 app.get('/srcGrdStats', function(req, res){
   console.log("Source grid statistics request received.\n");
-
-     execMe(g2gCmd, ['--statCGNS','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
+     var format = '../../public/uploads/';
+     var sourceFormatted = req.query.formatName; 
+     format = format+sourceFormatted;
+     //console.log(format);
+     execMe(g2gCmd, ['--statCGNS',format],  {cwd: scratchFldr}, 
+     //execMe(g2gCmd, ['--statCGNS','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(stderr);
@@ -170,7 +181,10 @@ app.get('/srcGrdStats', function(req, res){
 // Generating json formatted histogram file by running g2g command with option flag '--plotHist'
 app.get('/plot', function(req, res){
   console.log("Generation of Histogram file request received.\n");
-     execMe(g2gCmd, ['--plotHist','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
+     var format = '../../public/uploads/';
+     var sourceFormatted = req.query.formatName; 
+     format += sourceFormatted;
+     execMe(g2gCmd, ['--plotHist',format],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(`${stderr}`);
@@ -188,7 +202,7 @@ app.get('/plot', function(req, res){
 
 
 // using fs, grab the json file and send it back to the server
-app.get('/test', function(req, res){
+app.get('/getHist', function(req, res){
      var obj;
      fs.readFile(scratchFldr + '/hist.json','utf8',
        function (error,data) {
@@ -205,8 +219,10 @@ app.get('/test', function(req, res){
 // solution names of source grid
 app.get('/srcGrdSlnNames', function(req, res){
   console.log("Source grid solution name request received.\n");
-
-     execMe(g2gCmd, ['--listSln','../../public/uploads/fluid_04.100000_0000.cgns'],  {cwd: scratchFldr}, 
+     var format = '../../public/uploads/';
+     var sourceFormatted = req.query.formatName; 
+     format += sourceFormatted;
+     execMe(g2gCmd, ['--listSln',format],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(stderr);
@@ -225,12 +241,18 @@ app.get('/srcGrdSlnNames', function(req, res){
 // solution transfer from source grid to target
 app.get('/slnTransfer', function(req, res){
   var checkSln = req.query.checkSlnTransErr;
-  console.log("Solution transfer request received.");
+  var sourceFormatted = req.query.formatSrcName; 
+  var targetFormatted = req.query.formatTrgName; 
+  //console.log("src format = " + sourceFormatted);
+  //console.log("trg format = " + targetFormatted);
+  var sourceNewForm = '../../public/uploads/' + sourceFormatted;
+  var targetNewForm = '../../public/uploads/' + targetFormatted;
+  var targetSln = '../../public/uploads/target_with_sln_' + targetFormatted;
   console.log("With error check = " + checkSln);
   if (checkSln=='true') {
-     execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
-                     '../../public/uploads/fluid_06.100000_0001.cgns', 
-                     '../../public/uploads/target_with_sln.cgns',
+     execMe(g2gCmd, ['--transCGNS', sourceNewForm,
+                     targetNewForm, 
+                     targetSln,
                      '--withErr' ],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
@@ -245,9 +267,9 @@ app.get('/slnTransfer', function(req, res){
 	}
      });
    } else {
-     execMe(g2gCmd, ['--transCGNS', '../../public/uploads/fluid_04.100000_0000.cgns',
-                     '../../public/uploads/fluid_06.100000_0001.cgns', 
-                     '../../public/uploads/target_with_sln.cgns'],  {cwd: scratchFldr}, 
+     execMe(g2gCmd, ['--transCGNS', sourceNewForm,
+                     targetNewForm, 
+                     targetSln],  {cwd: scratchFldr}, 
      function callback(error, stdout, stderr) {
 	if (error){
 	  console.log(stderr);
