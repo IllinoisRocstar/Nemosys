@@ -59,7 +59,9 @@ int main(int argc, char* argv[]) {
   pGModel model = 0;
   pMesh mesh = M_new(model);
   M_load(mesh,"vtkConverted.msh");
-
+  mesh->classify_unclassified_entities();
+  mesh->destroyStandAloneEntities();
+ 
   // inqure mesh object
   std::cout << "---------- Input Mesh Information --------------" << std::endl;
   std::cout << "Number of points in the mesh    = " << mesh->nbPoints << std::endl;
@@ -71,14 +73,13 @@ int main(int argc, char* argv[]) {
   std::cout << "Number of Prisms in the mesh    = " << mesh->nbPrisms << std::endl;
   std::cout << "------------------------------------------------" << std::endl;
 
-  /*
+  
   PWLSField * sizeField = new PWLSField(mesh);
   //sizeField->setCurrentSize();
-  sizeField->setAllVSizes(0.1);
+  sizeField->setAllVSizes(1.0);
   MeshAdapter* ma = new MeshAdapter(mesh,sizeField);
-  */
-
   
+  /* 
   std::vector<std::string> h, e0, e1, e2;
   h.push_back("0.05+0.1*y"); h.push_back("0.1"); h.push_back("0.1");
   e0.push_back("1.0"); e0.push_back("0.0"); e0.push_back("0.0");
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
   AnalyticalSField* sizeField = 
           new AnalyticalSField("-0.18*sin(x*3.14/2)*sin(y*3.14)+0.2");
   MeshAdapter* ma = new MeshAdapter(mesh,sizeField);
-  
+  */
 
   // attach some data to mesh
   std::vector<double> pntData;
