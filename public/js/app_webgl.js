@@ -6,7 +6,7 @@ initialize();
 animate();
 
 
-function initialize() {
+function initialize(inputFormat,outputFormat) {
   console.log("Starting initialize()");
 
   containerSrc = document.getElementById( 'webglContainerSrc' ); 
@@ -92,7 +92,9 @@ function initialize() {
   // Alternatively, the "STLLoader" can be used with the same syntax
   // var loaderSrc = new THREE.VTKLoader();
   loaderSrc = new THREE.STLLoader();
-  loaderSrc.load( "uploads/source.stl", function ( geometry ) {
+  inputFormat = 'uploads/' + inputFormat+'_source.stl';
+  //console.log("souceformat" + inputFormat)
+  loaderSrc.load( inputFormat, function ( geometry ) {
       geometry.center();
       geometry.computeVertexNormals();
       geometry.dynamic = true;
@@ -103,7 +105,8 @@ function initialize() {
       sceneSrc.add( meshSrc ); // append the mesh to the sceneSrc
   } );
   loaderTrg = new THREE.STLLoader();
-  loaderTrg.load( "uploads/target.stl", function ( geometry ) {
+  outputFormat = 'uploads/' + outputFormat+'_target.stl';
+  loaderTrg.load( outputFormat, function ( geometry ) {
       geometry.center();
       geometry.computeVertexNormals();
       geometry.dynamic = true;
