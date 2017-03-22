@@ -574,13 +574,13 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
   
 }
 
-void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
+void gridTransfer::convertToSTL(std::string gridName, std::string prefix, std::string newName)
 {
   // if gridName = src exports source mesh data to stl, otherwise trg
   // exports target mesh to stl
   // first converting to msh format
   //convertToMsh(gridName);
-
+  
   // skin the gird
   std::string fName;
   std::cout << "Computing surface mesh.\n"; 
@@ -599,7 +599,9 @@ void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
     skinMesh->destroyStandAloneEntities();
     MAd::M_writeMsh(skinMesh, "srcSkinMesh.msh", 2, NULL);
     MAd::M_info(skinMesh);
-    fName = "source.stl";
+    fName = newName;
+    fName = fName + "_source.stl";
+    std::cout << "fName is = " << newName<<std::endl;
     wrtGModel->readMSH("srcSkinMesh.msh");
   } 
   else if (!strcmp(gridName.c_str(), "trg")) 
@@ -609,7 +611,9 @@ void gridTransfer::convertToSTL(std::string gridName, std::string prefix)
     skinMesh->destroyStandAloneEntities();
     MAd::M_writeMsh(skinMesh, "trgSkinMesh.msh", 2, NULL);
     MAd::M_info(skinMesh);
-    fName = "target.stl";
+    fName = newName;
+    fName = fName +  "_target.stl";
+    std::cout << "fName is = " << newName<<std::endl;
     wrtGModel->readMSH("trgSkinMesh.msh");
   } 
   else 

@@ -182,6 +182,7 @@ int main(int argc, char* argv[])
     cgFileName.push_back(argv[2]);
     std::string dist = argv[3];
     std::string gridName = argv[4];
+    std::string newname = argv[5];
     if (!strcmp(gridName.c_str(), "src") && !strcmp(gridName.c_str(), "trg"))
     {
       std::cout << "The forth switch should be src or trg " << std::endl;
@@ -197,7 +198,7 @@ int main(int argc, char* argv[])
       transObj->loadTrgCg();
     }
     transObj->exportMeshToMAdLib(gridName);
-    transObj->convertToSTL(gridName, dist);
+    transObj->convertToSTL(gridName, dist,newname);
     std::cout << "Finished conversion of " << gridName << " to STL successfully.\n";
   }
 
