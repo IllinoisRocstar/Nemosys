@@ -170,6 +170,8 @@ $(document).ready(function(){
   // transfer solution button click event
   $('#transferSln').bind('click', function( event ){
     targetSln = './uploads/target_with_sln_'+targetFormatted;
+    ip="_" +document.getElementById("ip").innerHTML + "_" ;
+    targetSln = targetSln.replace(ip,'_');
     $('#outbox').val("Submitting solution transfer request");
     // checkbox value
     var params;
@@ -197,7 +199,8 @@ $(document).ready(function(){
     };
     var src = 'formatSrcName='+sourceFormatted
     var trg = 'formatTrgName='+targetFormatted
-    xhttp.open("GET", "slnTransfer"+"?"+params+"&"+src+"&"+trg, false);
+    var ip = 'formatIPName='+ip
+    xhttp.open("GET", "slnTransfer"+"?"+params+"&"+src+"&"+trg+"&"+ip, false);
     xhttp.send();
   });
 
@@ -334,15 +337,23 @@ $(document).ready(function(){
 
   // grid download button
   $("#trgDownload").click(function() {
-      if(typeof targetSln !== "undefined"){
-        console.log(targetSln)
-        //window.location = './uploads/target_with_sln.cgns';
+    if(typeof targetSln !== 'undefined'){
+      $.ajax({
+        url:targetSln,
+        type:'HEAD',
+        error: function(){
+          alert("No solution file available.")
+        },
+        success : function(){
         window.location = targetSln;
-      }
-      else alert("No solution file available!")
+        }
+
+      });
+    }else alert("Click 'Transfer Solution'");
   });
 
-  // dummy tests
+ // dummy tests
   //$("a").css("background-color", "blue");
+
 
 });

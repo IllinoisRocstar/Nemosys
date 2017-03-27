@@ -243,11 +243,13 @@ app.get('/slnTransfer', function(req, res){
   var checkSln = req.query.checkSlnTransErr;
   var sourceFormatted = req.query.formatSrcName; 
   var targetFormatted = req.query.formatTrgName; 
+  var ip = req.query.formatIPName;
   //console.log("src format = " + sourceFormatted);
   //console.log("trg format = " + targetFormatted);
   var sourceNewForm = '../../public/uploads/' + sourceFormatted;
   var targetNewForm = '../../public/uploads/' + targetFormatted;
   var targetSln = '../../public/uploads/target_with_sln_' + targetFormatted;
+    targetSln = targetSln.replace(ip,'_');
   console.log("With error check = " + checkSln);
   if (checkSln=='true') {
      execMe(g2gCmd, ['--transCGNS', sourceNewForm,
