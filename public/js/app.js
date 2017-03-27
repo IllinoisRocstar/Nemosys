@@ -117,6 +117,11 @@ $(document).ready(function(){
 
   // source grid statistics button
   $('#gridStats').click(function(){
+    if(typeof sourceFormatted == "undefined"){
+      $('#outbox').val("Source grid first needs to be selected");
+      alert("Source grid needs to be selected");
+      return;
+    }
     $('#outbox').val("Submitting source grid statistics request");
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
     var xhttp;
@@ -143,6 +148,11 @@ $(document).ready(function(){
 
   // source solution name button
   $('#gridSlnNames').click(function(){
+    if(typeof sourceFormatted == "undefined"){
+      $('#outbox').val("Source grid first needs to be selected");
+      alert("Source grid needs to be selected");
+      return;
+    }
     $('#outbox').val("Submitting source grid solution names request");
     // create CMLHttpRequest object, ActiveX object if old IE5, IE6
     var xhttp;
