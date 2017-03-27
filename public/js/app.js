@@ -169,6 +169,11 @@ $(document).ready(function(){
 
   // transfer solution button click event
   $('#transferSln').bind('click', function( event ){
+    if(typeof sourceFormatted == "undefined" || typeof targetFormatted == "undefined" ){
+      $('#outbox').val("A pair of source and target grid first need to be selected");
+      alert("A pair of source and target grid first need to be selected");
+      return;
+    }
     targetSln = './uploads/target_with_sln_'+targetFormatted;
     ip="_" +document.getElementById("ip").innerHTML + "_" ;
     targetSln = targetSln.replace(ip,'_');
