@@ -5,6 +5,7 @@
 
 // standard
 #include <string>
+#include <fstream>
 
 // Nemosys
 #include <cgnsAnalyzer.H>
@@ -18,6 +19,7 @@
 
 // GMsh
 #include <GModel.h>
+
 
 class gridTransfer: public cgnsAnalyzer {
 public:
@@ -74,7 +76,8 @@ public:
   void exportMeshToMAdLib(std::string gridName);
   void exportMeshBndToMAdLib(std::string gridName);
   void convertToMsh(std::string gridName);
-  void convertToSTL(std::string gridName, std::string prefix);
+  void convertToSTL(std::string gridName, std::string prefix, std::string newName);
+  void convertToJSON(std::string gridName, std::string prefix, bool withSolution = false);
   void convertToVTK(std::string gridName, bool withSolution = false, std::string dist = "");
   void exportNodalDataToMAdLib();
   void exportToGModel(std::string msh);
@@ -84,7 +87,7 @@ public:
   // quality reporting
   void gridStats();
   void gridCheck();
-  
+  void gridHist();
 
   // writing actions
   void writeTrgCg(std::string cgFName);

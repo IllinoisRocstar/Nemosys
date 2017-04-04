@@ -30,6 +30,7 @@ void helpExit()
 	    << " cgns2stl : skins a CGNS grid and writes it into a stl file.\n"
 	    << " cgns2vtk : converts cgns grid into vtk format.\n"
 	    << "  listSln : lists current existing solution names defined on the grid and their type.\n"
+            << " plotHist : generats mesh quality histogram and writes it to hist.json\n"
 	    << std::endl;
   exit(0);
 }
@@ -132,6 +133,24 @@ int main(int argc, char* argv[])
     std::cout << "Statistics generated successfully.\n";
   }
 
+  // --plotHist : added by Woo for generating CGNS
+  else if (!strcmp(cmd[0].c_str(),"--plotHist"))
+  {
+    // input processing
+    if (argc < 3)
+      helpExit();
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::cout << "Acquiring histogram stats ############\n";
+    // reading source CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], "dummy");
+    transObj->loadSrcCg(); 
+    transObj->exportMeshToMAdLib("src");
+    transObj->gridHist();
+    std::cout << "Statistics generated successfully.\n";
+  }
+
+
   // --chkCGNS
   else if (!strcmp(cmd[0].c_str(),"--chkCGNS"))
   {
@@ -163,6 +182,7 @@ int main(int argc, char* argv[])
     cgFileName.push_back(argv[2]);
     std::string dist = argv[3];
     std::string gridName = argv[4];
+    std::string newname = argv[5];
     if (!strcmp(gridName.c_str(), "src") && !strcmp(gridName.c_str(), "trg"))
     {
       std::cout << "The forth switch should be src or trg " << std::endl;
@@ -178,8 +198,41 @@ int main(int argc, char* argv[])
       transObj->loadTrgCg();
     }
     transObj->exportMeshToMAdLib(gridName);
-    transObj->convertToSTL(gridName, dist);
+    transObj->convertToSTL(gridName, dist,newname);
     std::cout << "Finished conversion of " << gridName << " to STL successfully.\n";
+  }
+
+  // --cgns2json
+  else if (!strcmp(cmd[0].c_str(),"--cgns2json"))
+  {
+    // input processing
+    if (argc < 5) {
+      std::cout << "Example : " << argv[0] 
+                << " --cgns2json srouce.cgns output_path [src or trg]"
+                << std::endl;
+      helpExit();
+    }
+    std::vector<std::string> cgFileName;
+    cgFileName.push_back(argv[2]);
+    std::string dist = argv[3];
+    std::string gridName = argv[4];
+    if (!strcmp(gridName.c_str(), "src") && !strcmp(gridName.c_str(), "trg"))
+    {
+      std::cout << "The forth switch should be src or trg " << std::endl;
+      helpExit();
+    }
+    std::cout << "Converting to json ########\n";
+    // reading the CGNS file
+    gridTransfer* transObj = new gridTransfer(cgFileName[0], cgFileName[0]);
+    if (!strcmp(gridName.c_str(), "src")) 
+    {
+      transObj->loadSrcCg(); 
+    } else {
+      transObj->loadTrgCg();
+    }
+    transObj->exportMeshToMAdLib(gridName);
+    transObj->convertToJSON(gridName, dist, false);
+    std::cout << "Finished conversion of " << gridName << " to JSON successfully.\n";
   }
 
   // --cgns2vtk

@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
   MAd::GM_create(&model,"");
   MAd::pMesh mesh = M_new(model);
   cgObj->exportToMAdMesh(mesh);
+  cgObj->classifyMAdMeshOpt(mesh);
 
   // investigating sanity of the mesh
   MAd::M_info(mesh);
