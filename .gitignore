@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Build.dat
 build/*
 *.swp
@@ -5,3 +6,7 @@ build/*
 install/*
 lnInclude/
 build/
+=======
+*.swp
+build*
+>>>>>>> da1a4db7cd77451beba6968fc14535173ea23f2c
