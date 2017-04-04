@@ -136,12 +136,16 @@ int main(int argc, char* argv[])
     src_broker.create_input_mesh();
 
     // Add a nodal field to the source part.
+    //std::cout << src_broker.meta_data().get_part(0).name() << std::endl;
     stk::mesh::Field<double>& source_field =
         src_broker.meta_data().declare_field<stk::mesh::Field<double> >(
             stk::topology::NODE_RANK, "u_src" );
     stk::mesh::Part* src_part =
         src_broker.meta_data().get_part( source_mesh_part_name );
-    //std::cout << src_broker.meta_data().get_part(0).name() << std::endl;
+    if (src_part == NULL){
+      std::cout << "Source part not found\n";
+      throw;
+    }
     
     stk::mesh::put_field( source_field, *src_part );
 

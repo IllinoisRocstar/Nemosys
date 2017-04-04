@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
   // defining addaptive refinement parameters
   MAd::PWLSField * sizeField = new MAd::PWLSField(mesh);
   sizeField->setCurrentSize();
-  sizeField->scale(1.5);
+  sizeField->scale(4.5);
   MAd::MeshAdapter* ma = new MAd::MeshAdapter(mesh,sizeField);
   //ma->uglyTheMesh(0.5,20);
   ma->printParameters();
@@ -289,6 +289,7 @@ int main(int argc, char* argv[])
        cgWrtObj->setSolutionNode(is->first, is->second);
      // write skelleton of the file
      cgWrtObj->writeGridToFile();
+     /* 
      // write individual data fields
      std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
      std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
@@ -335,6 +336,7 @@ int main(int argc, char* argv[])
 	 cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
        }
      }
+     */
      delete cgWrtObj;
   }
   

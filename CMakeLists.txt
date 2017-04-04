@@ -164,7 +164,7 @@ SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
-set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${FLOTSAM_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
+set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)

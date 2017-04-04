@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 	std::cout << setw(3) << slnIdx++ 
 		  << setw(12) << *it 
 		  << setw(12) << ((slnType==0)? "Nodal":"Elemental") 
-		  << setw(14) << accuracy
+		  << setw(13) << accuracy
 		  << std::endl;
       }
     }
