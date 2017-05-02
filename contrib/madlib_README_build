@@ -1,0 +1,1 @@
+./configure --prefix=/home/ec2-user/nemosys/madlib-1.3.0/install --enable-moveIt --enable-benchmarks --enable-gmsh --with-gmsh-prefix=/home/ec2-user/nemosys/gmsh-2.15.0-source/install/ --enable-ann
