@@ -29,7 +29,7 @@ $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/gmsh -DDEFAULT=0
 $ make lib shared install/fast -j8
 ```
 
-Build madlib from the madlib source directory"
+Build madlib from the madlib source directory:
 
 ```
 $ ./configure --prefix=$NEMOSYS_PROJECT_PATH/madlib --enable-moveIt
