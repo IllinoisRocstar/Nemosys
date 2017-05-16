@@ -113,8 +113,8 @@ INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling madlib header references.
-IF(EXISTS ${MADLIB_INCPATH}/gmsh)
-  INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH}/gmsh)
+IF(EXISTS ${GMSH_INCPATH})
+  INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH}/../)
 ENDIF()
 
 # Setting compile and link options ############################################
