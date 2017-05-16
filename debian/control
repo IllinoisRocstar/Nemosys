@@ -1,0 +1,57 @@
+Source: Nemosys
+Section: applications
+Priority: extra
+Maintainer: Larry Price <lrp@illinoisrocstar.com>
+Build-Depends: debhelper (>=9),
+               cmake
+Homepage: https://illinoisrocstar.com
+
+Package: libinterp
+Architecture: any
+Depends: ${misc:Depends},
+        ${shlibs:Depends}
+Description: short description
+long description
+
+Package: libNemosys
+Architecture: any
+Depends: libinterp,
+         libmadlib-rocstar,
+         libgmsh-rocstar,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: short description
+long description
+
+Package: libr8
+Architecture: any
+Depends: ${misc:Depends},
+        ${shlibs:Depends}
+Description: short description
+long description
+
+Package: libRocs
+Architecture: any
+Depends: ${misc:Depends},
+        ${shlibs:Depends}
+Description: short description
+long description
+
+Package: libmadlib
+Architecture: any
+Depends: ${misc:Depends},
+        ${shlibs:Depends}
+Description: short description
+long description
+
+Package: grid2gridTransfer
+Architecture: any
+Depends: libinterp,
+         libNemosys,
+         libr8,
+         libRocs,
+         libmadlib-rocstar,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: short description
+ long description
