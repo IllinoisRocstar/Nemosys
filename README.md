@@ -9,17 +9,42 @@ Need to `apt install` at least the following dependencies:
 * build-essential
 * cmake
 * libvtk6-dev
+* libproj-dev
 * libcgns-dev
 * libmetis-dev
 * libhdf5-dev
 * libfltk1.3-dev
+* liblapack-dev
+* libgmp-dev
+* libjpeg-dev
+* libsm-dev
+* libice-dev
+* gfortran
 
-Your best bet is to build the local versions of gmsh and madlib found at
+Your best bet is to build the local versions of gmsh, madlib, and cgns found at
 /Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz and install them
 locally within this project folder. Assume $NEMOSYS_PROJECT_PATH is the path
 to the local install directory.
 
-Build Gmsh from the gmsh source directory by running the following commands:
+Extract the whole archive as such:
+
+```
+$ cd $HOME/appropriate/project/path
+$ cp /Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz .
+$ tar zxf nemosys_tpls.tar.gz
+$ cd nemosys_tpls
+```
+
+#### Building Gmsh ####
+
+Unpack Gmsh from the `neomsys_tpls` directory:
+
+```
+$ tar zxf gmsh-2.15.0-source.tgz
+$ cd gmsh-2.15.0-source
+```
+
+Build Gmsh by running the following commands:
 
 ```
 $ mkdir lib
@@ -27,9 +52,19 @@ $ cd lib
 $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/gmsh -DDEFAULT=0
         -DENABLE_BUILD_LIB=1 -DENABLE_BUILD_SHARED=1 ..
 $ make lib shared install/fast -j8
+$ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_PROJECT_PATH/gmsh/include/gmsh/
 ```
 
-Build madlib from the madlib source directory"
+#### Building madlib ####
+
+Unpack madlib from the `neomsys_tpls` directory:
+
+```
+$ tar zxf madlib-1.3.0.tar.gz
+$ cd madlib-1.3.0/
+```
+
+Build madlib:
 
 ```
 $ ./configure --prefix=$NEMOSYS_PROJECT_PATH/madlib --enable-moveIt
@@ -40,7 +75,7 @@ $ make install
 ```
 
 Afterwards, a number of header files from the madlib source directory will
-need to be manually copied into `$NEMOSYS_PROJECT_PATH/madlib/include`:
+need to be manually copied into `$NEMOSYS_PROJECT_PATH/madlib/include/MAdLib`:
 
 * Mesh/MeshDataBase.h
 * Mesh/MeshDataBaseInterface.h
@@ -56,13 +91,33 @@ need to be manually copied into `$NEMOSYS_PROJECT_PATH/madlib/include`:
 * Geo/Physical.h
 * Adapt/utils/NodalDataManager.h
 
+#### Building CGNS ####
+
+Unpack Gmsh from the `neomsys_tpls` directory:
+
+```
+$ tar zxf cgns.tar.gz
+$ cd CGNS
+```
+
+Build CGNS:
+
+```
+$ mkdir build && cd build
+$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/cgns ..
+$ make -j8
+$ make install
+```
+
+#### Building Nemosys ####
+
 With the local dependencies in place, you should be able to build Nemosys
 using the following commands:
 
 ```
 $ mkdir build
 $ cd build
-$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh cmake ..
+$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
 $ make -j8
 ```
 
