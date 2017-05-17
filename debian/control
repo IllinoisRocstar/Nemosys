@@ -1,33 +1,35 @@
 Source: nemosys
-Section: non-free/libs
+Section: libs
 Priority: extra
 Maintainer: Larry Price <lrp@illinoisrocstar.com>
 Build-Depends: debhelper (>=9),
                cmake
+Standards-Version: 3.9.8
 Homepage: https://illinoisrocstar.com
 
 Package: libmadlib-rocstar
 Architecture: any
-Depends: ${misc:Depends},
-      ${shlibs:Depends}
+Depends: libgmsh-rocstar,
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
 Package: libgmsh-rocstar
 Architecture: any
 Depends: ${misc:Depends},
       ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
 Package: libcgns-rocstar
 Architecture: any
 Depends: ${misc:Depends},
       ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
-Package: libNemosys
+Package: libnemosys
 Architecture: any
 Depends: libmadlib-rocstar,
          libgmsh-rocstar,
@@ -35,14 +37,14 @@ Depends: libmadlib-rocstar,
          ${misc:Depends},
          ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
 Package: libr8
 Architecture: any
 Depends: ${misc:Depends},
         ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
 Package: libinterp
 Architecture: any
@@ -50,21 +52,22 @@ Depends: libr8,
          ${misc:Depends},
          ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
-Package: libRocs
+Package: librocs
 Architecture: any
-Depends: ${misc:Depends},
-        ${shlibs:Depends}
+Depends: libcgns-rocstar,
+         ${misc:Depends},
+         ${shlibs:Depends}
 Description: short description
-  long description
+ long description
 
-Package: grid2gridTransfer
+Package: grid2gridtransfer
 Architecture: any
 Depends: libinterp,
-         libNemosys,
+         libnemosys,
          libr8,
-         libRocs,
+         librocs,
          ${misc:Depends},
          ${shlibs:Depends}
 Description: short description

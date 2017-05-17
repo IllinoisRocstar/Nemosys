@@ -1,5 +1,5 @@
-usr/lib/libcgns.a
-usr/lib/libcgns.so*
+usr/lib/**/libcgns.a
+usr/lib/**/libcgns.so*
 usr/include/cgns_io.h
 usr/include/cgnsBuild.defs
 usr/include/cgnsconfig.h
