@@ -1,0 +1,5 @@
+usr/include/gmsh/*.h
+usr/lib/libGmsh.a
+usr/lib/libGmsh.so*
+usr/share/doc/gmsh/*
+usr/share/man/man1/gmsh.1

@@ -1,5 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(Nemosys)
+include(GNUInstallDirs)
 
 # this variable controls the default value of the options which are normally set
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
@@ -40,16 +41,31 @@ FIND_LIBRARY(GMSH_LIB Gmsh)
 FIND_FILE(GMSH_HDR gmsh/Gmsh.h)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh
-        DESTINATION )
+# Installation of local gmsh
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/include/gmsh DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB GMSH_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/lib/*)
+install(FILES ${GMSH_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/share/doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/share/man/man1 DESTINATION ${CMAKE_INSTALL_MANDIR})
 
 FIND_LIBRARY(MADLIB_LIB MAdLib)
 FIND_FILE(MADLIB_HDR MAdLib/MAdLib.h)
 GET_FILENAME_COMPONENT(MADLIB_INCPATH ${MADLIB_HDR} PATH)
 
+# Installation of local madlib
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/include/MAdLib DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB MADLIB_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/lib/*)
+install(FILES ${MADLIB_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/share/doc DESTINATION ${CMAKE_INSTALL_DOCDIR})
+
 FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
+
+# Installation of local cgns
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/cgns/include DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB CGNS_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/cgns/lib/*)
+install(FILES ${CGNS_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 FIND_LIBRARY(ANN_LIB ann HINTS /usr/lib/)
 FIND_FILE(ANN_HDR ANN.h HINTS /usr/include/ANN/)
@@ -260,7 +276,7 @@ TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
 INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Building tutorials ###########################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5")
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
 # meshTransfer tutorial
 ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
