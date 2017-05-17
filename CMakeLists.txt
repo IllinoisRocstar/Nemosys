@@ -37,11 +37,11 @@ FIND_PACKAGE(VTK REQUIRED)
 INCLUDE(${VTK_USE_FILE})
 
 FIND_LIBRARY(MADLIB_LIB MAdLib)
-FIND_FILE(MADLIB_HDR MAdLib.h)
+FIND_FILE(MADLIB_HDR MAdLib/MAdLib.h)
 GET_FILENAME_COMPONENT(MADLIB_INCPATH ${MADLIB_HDR} PATH)
 
 FIND_LIBRARY(GMSH_LIB Gmsh)
-FIND_FILE(GMSH_HDR Gmsh.h)
+FIND_FILE(GMSH_HDR gmsh/Gmsh.h)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
 
 FIND_LIBRARY(CGNS_LIB cgns)
@@ -111,17 +111,26 @@ INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${ANN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 
-# Setting compile and link options ############################################## 
+# For some reason, older versions of cmake fail to find the local gmsh include
+# files when compiling madlib header references.
+IF(EXISTS ${GMSH_INCPATH})
+  INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH}/../)
+ENDIF()
+
+# Setting compile and link options ############################################
 INCLUDE(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-IF(COMPILER_SUPPORTS_CXX11)
+IF(COMPILER_SUPPORTS_CXX14)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+ELSEIF(COMPILER_SUPPORTS_CXX11)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ELSEIF(COMPILER_SUPPORTS_CXX0X)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 ELSE()
-    MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has 
-                    no C++11 support. Please use a different C++ compiler.")
+    MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has
+                  no modern C++ support. Please use a different C++ compiler.")
 ENDIF()
 
 # Compiled objects output paths
@@ -131,7 +140,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Set up RPATH
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # the RPATH to be used when installing, but only if it's not a system directory
@@ -156,8 +165,8 @@ FILE(GLOB hpp_FILES include/*.hpp)
 SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
 INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 
-# Setting compile and link flags 
-SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C 
+# Setting compile and link flags
+SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
@@ -207,13 +216,13 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 # Builiding utilities #########################################################
 # There are too many dependencies for gmsh this needs to be populated automatically
 SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} 
-    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext 
-    -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5")
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
+    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
+    -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
-TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp) 
+TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
 SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
 INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
@@ -246,8 +255,8 @@ ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
 TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
 INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
 
-# Builiding tutorials ###########################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5")
+# Building tutorials ###########################################################
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
 # meshTransfer tutorial
 ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
@@ -258,7 +267,7 @@ INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 IF (ENABLE_DTK)
   ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
   SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs 
+  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs
                                              ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
   INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
 ENDIF()
