@@ -1,4 +1,4 @@
 #!/usr/bin/make -f
 
 %:
-  dh $@ 
+	CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns dh $@
