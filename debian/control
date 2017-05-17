@@ -10,22 +10,22 @@ Homepage: https://illinoisrocstar.com
 Package: libmadlib-rocstar
 Architecture: any
 Depends: libgmsh-rocstar,
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
 Package: libgmsh-rocstar
 Architecture: any
-Depends: ${misc:Depends},
-      ${shlibs:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
 Package: libcgns-rocstar
 Architecture: any
-Depends: ${misc:Depends},
-      ${shlibs:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
@@ -34,31 +34,31 @@ Architecture: any
 Depends: libmadlib-rocstar,
          libgmsh-rocstar,
          libcgns-rocstar,
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
 Package: libr8
 Architecture: any
-Depends: ${misc:Depends},
-        ${shlibs:Depends}
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
 Package: libinterp
 Architecture: any
 Depends: libr8,
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
 Package: librocs
 Architecture: any
 Depends: libcgns-rocstar,
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
 
@@ -68,7 +68,7 @@ Depends: libinterp,
          libnemosys,
          libr8,
          librocs,
-         ${misc:Depends},
-         ${shlibs:Depends}
+         ${shlibs:Depends},
+         ${misc:Depends}
 Description: short description
  long description
