@@ -1,3 +1,9 @@
+nemosys (1.0.0) xenial; urgency=low
+
+  * Initial xenial release.
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Thu, 18 May 2017 16:53:40 +0400
+
 nemosys (1.0.0) zesty; urgency=low
 
   * Initial release.
