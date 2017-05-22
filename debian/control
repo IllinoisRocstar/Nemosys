@@ -6,12 +6,13 @@ Build-Depends: debhelper (>=9),
                cmake,
                libvtk6-dev,
                libmetis-dev,
-               libann-dev
+               libann-dev,
+               libproj-dev
 Standards-Version: 3.9.8
 Homepage: https://illinoisrocstar.com
 
 Package: libmadlib-rocstar
-Architecture: any
+Architecture: amd64
 Depends: libgmsh-rocstar,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -19,21 +20,21 @@ Description: short description
  long description
 
 Package: libgmsh-rocstar
-Architecture: any
+Architecture: amd64
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: short description
  long description
 
 Package: libcgns-rocstar
-Architecture: any
+Architecture: amd64
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: short description
  long description
 
 Package: libnemosys
-Architecture: any
+Architecture: amd64
 Depends: libmadlib-rocstar,
          libgmsh-rocstar,
          libcgns-rocstar,
@@ -43,14 +44,14 @@ Description: short description
  long description
 
 Package: libr8
-Architecture: any
+Architecture: amd64
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: short description
  long description
 
 Package: libinterp
-Architecture: any
+Architecture: amd64
 Depends: libr8,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -58,7 +59,7 @@ Description: short description
  long description
 
 Package: librocs
-Architecture: any
+Architecture: amd64
 Depends: libcgns-rocstar,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -66,7 +67,7 @@ Description: short description
  long description
 
 Package: grid2gridtransfer
-Architecture: any
+Architecture: amd64
 Depends: libinterp,
          libnemosys,
          libr8,
