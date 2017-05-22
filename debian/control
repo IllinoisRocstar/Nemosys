@@ -3,7 +3,10 @@ Section: libs
 Priority: extra
 Maintainer: Larry Price <lrp@illinoisrocstar.com>
 Build-Depends: debhelper (>=9),
-               cmake
+               cmake,
+               libvtk6-dev,
+               libmetis-dev,
+               libann-dev
 Standards-Version: 3.9.8
 Homepage: https://illinoisrocstar.com
 

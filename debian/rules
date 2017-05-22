@@ -4,4 +4,10 @@ DPKG_EXPORT_BUILDFLAGS = 1
 include /usr/share/dpkg/default.mk
 
 %:
-	CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns dh $@
+	dh $@
+
+override_dh_auto_configure:
+	CMAKE_PREFIX_PATH=$(PWD)/install/gmsh:$(PWD)/install/cgns:$(PWD)/install/madlib dh_auto_configure
+
+override_dh_auto_build:
+	CMAKE_PREFIX_PATH=$(PWD)/install/gmsh:$(PWD)/install/cgns:$(PWD)/install/madlib dh_auto_build
