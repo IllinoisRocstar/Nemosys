@@ -1,3 +1,9 @@
+nemosys (1.0.1-xenial) xenial; urgency=low
+
+  * Update dependencies.
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:20:40 +0400
+
 nemosys (1.0.5-zesty) zesty; urgency=low
 
   * Missing comma.
