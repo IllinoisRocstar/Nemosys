@@ -13,6 +13,7 @@ Homepage: https://illinoisrocstar.com
 
 Package: libmadlib-rocstar
 Architecture: amd64
+Replaces: libmadlib-dev
 Depends: libgmsh-rocstar,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -21,6 +22,8 @@ Description: short description
 
 Package: libgmsh-rocstar
 Architecture: amd64
+Replaces: libgmsh-dev,
+          gmsh
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: short description
@@ -28,6 +31,12 @@ Description: short description
 
 Package: libcgns-rocstar
 Architecture: amd64
+Replaces: libcgns-dev,
+          cgns,
+          libcgns3.3,
+          libcgns3.1
+Breaks: libcgns3.3,
+        libcgns3.1
 Depends: ${shlibs:Depends},
          ${misc:Depends}
 Description: short description
