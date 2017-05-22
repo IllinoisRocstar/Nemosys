@@ -1,8 +1,32 @@
-nemosys (1.0.0) xenial; urgency=low
+nemosys (1.0.1-ubuntu3) zesty; urgency=low
 
-  * Initial xenial release.
+  * no change rebuild
 
- -- Larry Price <lrp@illinoisrocstar.com>  Thu, 18 May 2017 16:53:40 +0400
+ -- Larry Price <lrp@illinoisrocstar.com>  Fri, 19 May 2017 16:53:40 +0400
+
+nemosys (1.0.1-ubuntu2) zesty; urgency=low
+
+  * no change rebuild
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Fri, 19 May 2017 16:53:40 +0400
+
+nemosys (1.0.1-ubuntu1) zesty; urgency=low
+
+  * no change rebuild
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Fri, 19 May 2017 16:53:40 +0400
+
+nemosys (1.0.1-ubuntu0) zesty; urgency=low
+
+  * no change rebuild
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Fri, 19 May 2017 16:53:40 +0400
+
+nemosys (1.0.1) zesty; urgency=low
+
+  * no change rebuild
+
+ -- Larry Price <lrp@illinoisrocstar.com>  Fri, 19 May 2017 16:53:40 +0400
 
 nemosys (1.0.0) zesty; urgency=low
 
