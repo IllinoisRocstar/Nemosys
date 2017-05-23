@@ -1,39 +1,3 @@
-nemosys (1.0.1-xenial) xenial; urgency=low
-
-  * Update dependencies.
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:20:40 +0400
-
-nemosys (1.0.5-zesty) zesty; urgency=low
-
-  * Missing comma.
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:20:40 +0400
-
-nemosys (1.0.4-zesty) zesty; urgency=low
-
-  * Also breaks libcgns
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:20:40 +0400
-
-nemosys (1.0.3-zesty) zesty; urgency=low
-
-  * Need to also replace libcgns
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:20:40 +0400
-
-nemosys (1.0.2-zesty) zesty; urgency=low
-
-  * Add replaces for non-dev packages.
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 15:00:40 +0400
-
-nemosys (1.0.1-zesty) zesty; urgency=low
-
-  * Add replaces for replacement packages.
-
- -- Larry Price <lrp@illinoisrocstar.com>  Mon, 22 May 2017 14:30:40 +0400
-
 nemosys (1.0.0-zesty) zesty; urgency=low
 
   * Initial zesty release.
