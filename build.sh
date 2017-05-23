@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script will build Nemosys and all of the necessary dependencies
+# given a tarball of projects with gmsh, madlib, and cgns.
+# Usage: ./build.sh PATH_TO_NEMOSYS PATH_TO_NEMOSYS_TPLS_TARBALL
+
 set -x
 
 NEMOSYS_DEPS_BUILD_DIR=/tmp/nemosys_build
