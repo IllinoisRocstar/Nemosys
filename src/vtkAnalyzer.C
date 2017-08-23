@@ -28,8 +28,14 @@ void vtkAnalyzer::read()
     }
     else if (extension == ".vti")
     {
-      //dataSet = ReadAnXMLFile<vtkXMLImageDataReader> (xmlFileName);
-    }
+			// adding support for image file
+			imageDataSetReader = 
+				vtkSmartPointer<vtkXMLImageDataReader>::New();
+			imageDataSetReader->SetFileName(xmlFileName);
+			imageDataSetReader->Update();
+			imageDataSetReader->GetOutput()->Register(imageDataSetReader);
+			dataSet = vtkDataSet::SafeDownCast(imageDataSetReader->GetOutput());
+		}
     else if (extension == ".vto")
     {
       //dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (xmlFileName);
@@ -336,4 +342,5 @@ void vtkAnalyzer::setCellDataArray(const char* name, int numComponent,
    cellData->SetScalars(da);
    }
 }
+
 //-----------------------------------------------------------------------------
