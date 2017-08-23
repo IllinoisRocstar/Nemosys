@@ -131,6 +131,8 @@ private:
    char* xmlFileName;
    vtkSmartPointer<vtkXMLUnstructuredGridReader> unsGridReader;
    vtkSmartPointer<vtkDataSetReader> dataSetReader;
+	 // adding support for image file
+	 vtkSmartPointer<vtkXMLImageDataReader> imageDataSetReader;
    std::string extension; 
    vtkDataSet *dataSet;
    vtkPointData *pointData;

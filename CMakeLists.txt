@@ -220,6 +220,16 @@ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
     -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
     -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
+#vt_mesh_map utility
+ADD_EXECUTABLE(vt_mesh_map utils/vt_mesh_map.C)
+if(VTK_LIBRARIES)
+	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys ${VTK_LIBRARIES} interp)
+else()
+	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys vtkHybrid vtkWidgets interp)
+ENDIF()
+INSTALL(TARGETS vt_mesh_map RUNTIME DESTINATION bin)
+
+
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
 TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
