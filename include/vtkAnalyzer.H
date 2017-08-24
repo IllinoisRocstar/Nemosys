@@ -35,6 +35,9 @@
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
+#include <vtkCellCenters.h>
+#include "vtkCell.h"
+
 // others
 #include <vector>
 #include <fstream>
@@ -91,7 +94,8 @@ public:
    void write(char* outXMLFileName);
 
    // inquiry 
-   // number of points
+   
+	 // number of points
    int getNumberOfPoints();
    // number of cells
    int getNumberOfCells();
@@ -101,7 +105,8 @@ public:
    int getNumberOfCellData();
    //get given point ID coordinates
    double* getPointCoords(int pntId);
-
+	 // Adding function to return coordinates of member points in cell with ID 
+	 double** getCellCoords(int pntId, int& numComponent);
 
    // access to data
    // get a point data array
