@@ -210,13 +210,34 @@ int vtkAnalyzer::getNumberOfCellData()
 double* vtkAnalyzer::getPointCoords(int pntId)
 {
    double* pntCoords;
-   if (pntId <= dataSet->GetNumberOfPoints()) {
+   if (pntId < dataSet->GetNumberOfPoints()) {
      pntCoords = dataSet->GetPoint(pntId);
    } else {
      std::cerr << "Point ID is out of range!" << std::endl;
    }
    return pntCoords;
 }
+
+// Adding function to return coordinates of member points in cell with ID
+double** vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
+{
+	//std::vector<std::vector<double>> cellCoords;
+	double** cellCoords;
+	if (cellId < dataSet->GetNumberOfCells()) {
+		vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
+		numComponent = point_ids->GetNumberOfIds();
+		cellCoords = (double**) malloc(sizeof(double*)*numComponent);
+		for (int i = 0; i < numComponent; ++i) {
+			cellCoords[i] = (double*) malloc(sizeof(double)*3);
+			dataSet->GetPoint(point_ids->GetId(i), cellCoords[i]);	
+		}
+	}
+	else {
+		std::cerr << "Cell ID is out of range!" << std::endl;
+	}
+	return cellCoords;
+}
+
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)
 {
@@ -239,33 +260,34 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
 {
    // TODO: This function is slow
    // check data exists
-   vtkDoubleArray* data;
-   if (!pointData)
-    pointData = dataSet->GetPointData();
+	vtkDoubleArray* data;
+	if (!pointData)
+  	pointData = dataSet->GetPointData();
    // populate user's array
-   if (pointData)
-   {
-   vtkDataArray* da = pointData->GetArray(id);
-   if (da) {
-      numComponent = da->GetNumberOfComponents();
-      numTuple = da->GetNumberOfTuples();
-      pntData.resize(numTuple);
-      for (int iTup=0; iTup<numTuple; iTup++){
-	  double* comps;
-	  pntData[iTup].resize(numComponent);
-	  comps = da->GetTuple(iTup);
-	  for (int iComp=0; iComp<numComponent; iComp++){
-	    pntData[iTup].push_back(comps[iComp]);
-	  }
-      }
-      return(numComponent*numTuple);
-   } else {
-      return(0);
-   }
-   } else {
-   std::cerr << "There is no point data exisiting in" 
-	     << xmlFileName << std::endl;
-   return(0);
+  	if (pointData) {
+   		vtkDataArray* da = pointData->GetArray(id);
+   		if (da) {
+      	numComponent = da->GetNumberOfComponents();
+      	numTuple = da->GetNumberOfTuples();
+      	pntData.resize(numTuple);
+      	for (int iTup=0; iTup<numTuple; iTup++){
+	  			double* comps;
+	  			pntData[iTup].resize(numComponent);
+	  			comps = da->GetTuple(iTup);
+	  			for (int iComp=0; iComp<numComponent; iComp++){
+	    			pntData[iTup].push_back(comps[iComp]);
+	  			}
+      	}
+   			return(numComponent*numTuple);
+   		} 
+			else {
+      	return(0);
+   		}
+   	} 
+		else {
+  	 std::cerr << "There is no point data exisiting in" 
+	     			   << xmlFileName << std::endl;
+   	 return(0);
    }
 }
 
