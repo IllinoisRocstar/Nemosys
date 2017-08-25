@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
 				std::cout << interpData[i] << std::endl;			
 
 		}
+		delete VolPointInterp;
 	}
 
 
