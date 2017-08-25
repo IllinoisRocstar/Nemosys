@@ -119,9 +119,13 @@ int vtkAnalyzer::IsArrayName(std::string name)
 		}
 			// fall through to exit
 			std::cout << "Invalid Species Name" << std::endl;
-			std::cout << "See report for valid options" << std::endl;
+			std::cout << "Valid options are:" << std::endl;
+			for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+				std::cout << (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL")
+									<< std::endl;
+			}
 			exit(1);
-	}
+		}
 	return -1;
 }
 
@@ -263,14 +267,11 @@ std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
 	int num_points = getNumberOfPoints();
 	std::vector<double> VolPointCoords(num_points*nDim);
 	for (int i = 0; i < num_points; ++i) {
-		//VolPointCoords[i].resize(3);
 		double* pntcrds = getPointCoords(i);
 		VolPointCoords[i*nDim] = pntcrds[0];
 		VolPointCoords[i*nDim+1] = pntcrds[1];
 		VolPointCoords[i*nDim+2] = pntcrds[2];
 		
-    //std::cout << VolPointCoords[i][0] << " " << VolPointCoords[i][1] 
-    //          << " " << VolPointCoords[i][2] << std::endl;
 	}
 return VolPointCoords;
 }
@@ -283,21 +284,103 @@ vtkAnalyzer::getCellCenters(int& numComponent, int nDim)
 	std::vector<double> cellCenters(num_cells*nDim,0);
 	for (int i = 0; i < num_cells; ++i) {
 		std::vector<double *> cellCoords = getCellCoords(i, numComponent);
-		//cellCenters[i].resize(3,0);
 		for (int j = 0; j < numComponent ; ++j) {
 			cellCenters[i*nDim] += cellCoords[j][0]/numComponent;
 			cellCenters[i*nDim+1] += cellCoords[j][1]/numComponent;
 			cellCenters[i*nDim+2] += cellCoords[j][2]/numComponent;
-		//	std::cout << cellCoords[j][0] << " " << cellCoords[j][1] 
-    //           	<< " " << cellCoords[j][2] << std::endl;
    		delete cellCoords[j];
 		}
-  	//std::cout << std::endl;
-	//	std::cerr << cellCenters[i*nDim] << " " << cellCenters[i*nDim+1]
-	//						<< " " << cellCenters[i*nDim+2] << std::endl;
 	}
 	return cellCenters;
 }		
+
+// interpolate point data from 3D mesh in neighborhoods of
+// cell centers of planar mesh to those centers.
+std::vector<std::vector<double>>
+vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+													 std::vector<std::vector<double>> volDataMat,
+													 std::vector<double> PlaneCellCenters)
+{
+	std::vector<double> VolPointCoords = getAllPointCoords(nDim);
+	int num_vol_points = getNumberOfPoints();	
+	int num_interp_points = PlaneCellCenters.size()/nDim;	
+
+	basicInterpolant* VolPointInterp = 
+		new basicInterpolant(nDim, num_vol_points, num_neighbors, VolPointCoords);
+
+	std::vector<std::vector<double>> interpData(numComponent);	
+	for (int j = 0; j < numComponent; ++j) {	
+		std::vector<double > volData(numTuple);
+		for (int i = 0; i < numTuple; ++i) {
+    	  volData[i] = volDataMat[i][j];
+  	}   
+  	VolPointInterp->interpolate(num_interp_points, 
+     	                         PlaneCellCenters, volData, interpData[j]);
+	}
+	delete VolPointInterp;
+	return interpData;
+}
+
+void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData, 
+																	std::ostream& outputStream)
+{
+	if (!outputStream.good()) {
+		std::cout << "Output stream is bad" << std::endl;
+		exit(1);
+	}
+  
+	for (int i = 0; i < interpData[0].size(); ++i) {
+    outputStream << i << "\t"; 
+    for (int j = 0; j < interpData.size(); ++j) {
+      outputStream << interpData[j][i] << "\t" << std::endl;
+    } 
+  }   
+
+}
+
+void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+																	std::vector<double> PlaneCellCenters, int nDim,
+																	std::ostream& outputStream)
+{
+  if (!outputStream.good()) {
+    std::cout << "Output stream is bad" << std::endl;
+    exit(1);
+  }
+  
+  for (int i = 0; i < interpData[0].size(); ++i) {
+	  outputStream << i << "\t"
+    						 << "(" << PlaneCellCenters[i*nDim] << ","
+                          << PlaneCellCenters[i*nDim+1] << ","
+                          << PlaneCellCenters[i*nDim+2] << ")";
+    for (int j = 0; j < interpData.size(); ++j) {
+      outputStream << "\t" << interpData[j][i];
+    }  
+		outputStream << std::endl; 
+  }   
+
+}
+
+void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData, std::string filename)
+{
+	std::ofstream outputStream(filename.c_str());
+	if (!outputStream.good()) {
+		std::cout << "Output file stream is bad" << std::endl;
+		exit(1);
+	}
+	writeInterpData(interpData, outputStream);
+}
+
+void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+																	std::vector<double> PlaneCellCenters, int nDim,
+																	std::string filename)
+{
+	std::ofstream outputStream(filename.c_str());
+	if(!outputStream.good()) {
+		std::cout << "Output file stream is bad" << std::endl;
+		exit(1);
+	}
+	writeInterpData(interpData, PlaneCellCenters, nDim, outputStream);
+}																	
 
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)
