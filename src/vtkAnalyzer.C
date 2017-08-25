@@ -106,6 +106,25 @@ int vtkAnalyzer::getNumberOfCells()
    return numberOfCells;
 }
 
+// check for named array in vtk 
+int vtkAnalyzer::IsArrayName(std::string name)
+{
+	vtkPointData* pd = dataSet->GetPointData();
+	if (pd->GetNumberOfArrays()) {
+		for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+			std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
+			if (!name.compare(curr_name)) {
+				return i;
+			}
+		}
+			// fall through to exit
+			std::cout << "Invalid Species Name" << std::endl;
+			std::cout << "See report for valid options" << std::endl;
+			exit(1);
+		}
+	return -1;
+}
+
 void vtkAnalyzer::report() 
 {
    // populate if not yet
@@ -218,25 +237,67 @@ double* vtkAnalyzer::getPointCoords(int pntId)
    return pntCoords;
 }
 
-// Adding function to return coordinates of member points in cell with ID
-double** vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
+// returns coordinates of member points in cell with ID
+std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
 {
-	//std::vector<std::vector<double>> cellCoords;
-	double** cellCoords;
+	std::vector<double *> cellCoords;
 	if (cellId < dataSet->GetNumberOfCells()) {
 		vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
 		numComponent = point_ids->GetNumberOfIds();
-		cellCoords = (double**) malloc(sizeof(double*)*numComponent);
+		cellCoords.resize(numComponent);// = new double*[numComponent];
 		for (int i = 0; i < numComponent; ++i) {
-			cellCoords[i] = (double*) malloc(sizeof(double)*3);
+			cellCoords[i] = new double[3];
 			dataSet->GetPoint(point_ids->GetId(i), cellCoords[i]);	
 		}
 	}
 	else {
 		std::cerr << "Cell ID is out of range!" << std::endl;
+		exit(2);
 	}
 	return cellCoords;
 }
+
+// returns coordinates of all points in mesh
+std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
+{
+	int num_points = getNumberOfPoints();
+	std::vector<double> VolPointCoords(num_points*nDim);
+	for (int i = 0; i < num_points; ++i) {
+		//VolPointCoords[i].resize(3);
+		double* pntcrds = getPointCoords(i);
+		VolPointCoords[i*nDim] = pntcrds[0];
+		VolPointCoords[i*nDim+1] = pntcrds[1];
+		VolPointCoords[i*nDim+2] = pntcrds[2];
+		
+    //std::cout << VolPointCoords[i][0] << " " << VolPointCoords[i][1] 
+    //          << " " << VolPointCoords[i][2] << std::endl;
+	}
+return VolPointCoords;
+}
+
+// returns centers of all cells
+std::vector<double>
+vtkAnalyzer::getCellCenters(int& numComponent, int nDim)
+{
+	int num_cells = getNumberOfCells();
+	std::vector<double> cellCenters(num_cells*nDim,0);
+	for (int i = 0; i < num_cells; ++i) {
+		std::vector<double *> cellCoords = getCellCoords(i, numComponent);
+		//cellCenters[i].resize(3,0);
+		for (int j = 0; j < numComponent ; ++j) {
+			cellCenters[i*nDim] += cellCoords[j][0]/numComponent;
+			cellCenters[i*nDim+1] += cellCoords[j][1]/numComponent;
+			cellCenters[i*nDim+2] += cellCoords[j][2]/numComponent;
+		//	std::cout << cellCoords[j][0] << " " << cellCoords[j][1] 
+    //           	<< " " << cellCoords[j][2] << std::endl;
+   		delete cellCoords[j];
+		}
+  	//std::cout << std::endl;
+	//	std::cerr << cellCenters[i*nDim] << " " << cellCenters[i*nDim+1]
+	//						<< " " << cellCenters[i*nDim+2] << std::endl;
+	}
+	return cellCenters;
+}		
 
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)
@@ -264,31 +325,33 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
 	if (!pointData)
   	pointData = dataSet->GetPointData();
    // populate user's array
-  	if (pointData) {
-   		vtkDataArray* da = pointData->GetArray(id);
-   		if (da) {
-      	numComponent = da->GetNumberOfComponents();
-      	numTuple = da->GetNumberOfTuples();
-      	pntData.resize(numTuple);
-      	for (int iTup=0; iTup<numTuple; iTup++){
-	  			double* comps;
-	  			pntData[iTup].resize(numComponent);
-	  			comps = da->GetTuple(iTup);
-	  			for (int iComp=0; iComp<numComponent; iComp++){
-	    			pntData[iTup].push_back(comps[iComp]);
-	  			}
-      	}
+  if (pointData) {
+   	vtkDataArray* da = pointData->GetArray(id);
+   	if (da) {
+     	numComponent = da->GetNumberOfComponents();
+     	numTuple = da->GetNumberOfTuples();
+     	pntData.resize(numTuple);
+     	for (int iTup=0; iTup<numTuple; iTup++){
+  			double* comps;
+	  		// EDIT: causing indexing issues
+				//       shouldn't resize if pushing back
+				//	pntData[iTup].resize(numComponent);
+	 			comps = da->GetTuple(iTup);
+	 			for (int iComp=0; iComp<numComponent; iComp++){
+    			pntData[iTup].push_back(comps[iComp]);
+					}
+     	}
    			return(numComponent*numTuple);
    		} 
 			else {
       	return(0);
    		}
-   	} 
-		else {
-  	 std::cerr << "There is no point data exisiting in" 
-	     			   << xmlFileName << std::endl;
-   	 return(0);
-   }
+  } 
+	else {
+  	std::cerr << "There is no point data exisiting in" 
+	   		  	  << xmlFileName << std::endl;
+   	return(0);
+  }
 }
 
 int vtkAnalyzer::getCellDataArray(int id, std::vector<std::vector<double> > &cllData, 
