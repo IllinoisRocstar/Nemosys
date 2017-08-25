@@ -121,7 +121,7 @@ int vtkAnalyzer::IsArrayName(std::string name)
 			std::cout << "Invalid Species Name" << std::endl;
 			std::cout << "See report for valid options" << std::endl;
 			exit(1);
-		}
+	}
 	return -1;
 }
 

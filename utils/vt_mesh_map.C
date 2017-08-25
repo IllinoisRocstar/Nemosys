@@ -66,6 +66,10 @@ int main(int argc, char* argv[])
 		}
 		delete VolPointInterp;
 	}
+	else {
+		std::cout << "No data arrays found in " << argv[1] << std::endl;
+		exit(1);
+	}
 
 
 
