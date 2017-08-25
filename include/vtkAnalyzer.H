@@ -36,12 +36,14 @@
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkCellCenters.h>
-#include "vtkCell.h"
+#include <vtkCell.h>
+#include <baseInterp.H>
 
 // others
 #include <vector>
 #include <fstream>
 #include <map>
+#include <string>
 
 template<class TReader> TReader *ReadAnXMLFile(const char*fileName)
 {
@@ -105,10 +107,15 @@ public:
    int getNumberOfCellData();
    //get given point ID coordinates
    double* getPointCoords(int pntId);
-	 // Adding function to return coordinates of member points in cell with ID 
-	 double** getCellCoords(int pntId, int& numComponent);
-
-   // access to data
+	 // returns coordinates of member points in cell with ID 
+	 std::vector<double* > getCellCoords(int pntId, int& numComponent);
+	 // returns coordinates of centers of all cells 
+	 std::vector<double > getCellCenters(int& numComponent, int nDim); 
+	 //return coordinates of all points in mesh
+	 std::vector<double> getAllPointCoords(int nDim); 
+	 // check for named array in vtk
+	 int IsArrayName(std::string name);
+	 // access to data
    // get a point data array
    int getPointDataArray(int id, std::vector<std::vector<double> > &pntData, 
                          int &numTuple, int &numComponent);
