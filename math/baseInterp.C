@@ -62,14 +62,15 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
 	   w[iPnt*nNib+iNib] = (1.0/dists[iNib])/totW;
 	 }
       }
-     }
+    }
      wCalced = true;
   }  
   // performing the interpolation
   for (int iPnt=0; iPnt<ni; iPnt++)
   {
-    newPntData.push_back(0.0);
-    for (int iNib=0; iNib<nNib; iNib++)
+    //newPntData.push_back(0.0);
+    newPntData.resize(ni,0.0);
+		for (int iNib=0; iNib<nNib; iNib++)
     {
       newPntData[iPnt] += pntData[pntNibIdx[iPnt*nNib+iNib] ] 
                    *w[iPnt*nNib+iNib];
