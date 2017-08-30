@@ -20,8 +20,8 @@
 	 TODO: input file validation		
 	 TODO: How many neighbors do we use? Choose based on point density? 
 	 TODO: If point is in sphere, return index of sphere and map that to
-				 the material name */
-
+				 the material name 
+	 TODO: Plot all points and color by whether interpolated value is 0 */
 /************************************
  *Auxilliary classes and functions
 ************************************/
