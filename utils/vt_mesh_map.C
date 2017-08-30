@@ -16,22 +16,29 @@
 /****************************************************/
 /* CURRENTLY ASSUMING USER PROVIDES YOUNG'S MODULUS */
 /****************************************************/
+/* TODO: Check if plane is actually in volume and act accordingly if not
+	 TODO: input file validation		
+	 TODO: How many neighbors do we use? Choose based on point density? 
+	 TODO: If point is in sphere, return index of sphere and map that to
+				 the material name */
 
-// Auxilliary classes and functions
+/************************************
+ *Auxilliary classes and functions
+************************************/
 
-// map between element type and node number 
-// as given in GMSH ASCII documentation
+/* map between element type and node number 
+   as given in GMSH ASCII documentation */
 int nodes_per_type(int type);
 
-// get array of physical names and numeric identifiers 
-// from gmsh .msh file
+/* get array of physical names and numeric identifiers 
+   from gmsh .msh file*/
 std::vector<std::string> get_phys_names(std::string mshFileName);
 
-// get array of numeric identifiers for physical names
-// from gmsh .msh file
+/* get array of numeric identifiers for physical names
+   from gmsh .msh file */
 std::vector<int> get_phys_nums(std::string mshFileName);
 
-// class to read input file- TODO: input file validation
+// class to read input file
 class inputs {
 public:
 	inputs(){};
@@ -74,13 +81,10 @@ int main(int argc, char* argv[])
 							<< "Mc_weight" << std::endl;
 		exit(1);
 	}
-							
+
+	// parsing input file and reading/loading stuff	
 	inputs inp(argv[1]);
 	vector<sphere> spheres = readSpheres(inp.geo_file);
-
-
-
-	// Parsing args and Reading files from command line
 	vtkAnalyzer* VolMesh;
 	vtkAnalyzer* PlaneMesh;
 	VolMesh = new vtkAnalyzer((char*) &(inp.vol_file)[0u]);
@@ -97,7 +101,6 @@ int main(int argc, char* argv[])
 	std::vector<double> PlaneCellCenters = 
 	PlaneMesh->getCellCenters(numComponent, nDim);
 
-	// TODO: HOW MANY NEIGHBORS?
 
 	// creating interpolation for cross_link 
 	// cross_link 'species' name should be passed by cmdline
@@ -109,62 +112,34 @@ int main(int argc, char* argv[])
 		VolMesh->getPointDataArray(species_id, volDataMat, numTuple, numComponent);
 
 		std::vector<std::vector<double> > interpData;
-		// check if coordinate writing on and write accordingly
-		 
-		switch(inp.write_coords) {
-				case 0: { if (inp.has_spheres == 0) { 
-										interpData = 
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
-											 							         volDataMat, PlaneCellCenters);
-									}
-									else {
-										interpData =
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-																						 volDataMat, PlaneCellCenters,
-																						 spheres);
-								 	}	
-									VolMesh->writeInterpData(interpData, inp.Mc_weight, 
-									  											 inp.M_weight, inp.youngs_default[0], 
-																					 inp.out_file);
-									break;
-								}
-				case 1: { if (inp.has_spheres == 0) {
-										interpData = 
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
-											 							         volDataMat, PlaneCellCenters);
-									}
-									else {
-										interpData =
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-																						 volDataMat, PlaneCellCenters,
-																						 spheres);
-								 	}	
-								 	VolMesh->writeInterpData(interpData, inp.Mc_weight,
-																					 inp.M_weight, inp.youngs_default[0],
-																					 PlaneCellCenters, nDim, inp.out_file);
-									break;
-								}
-				default: { 
-									std::cerr << "write_coord must be 0|1" << std::endl;
-									std::cerr << "defaulting to 0\n" << std::endl;
-									if (inp.has_spheres == 0) {
-										interpData = 
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
-											 							         volDataMat, PlaneCellCenters);
-									}
-									else {
-										interpData =
-											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-																						 volDataMat, PlaneCellCenters,
-																						 spheres);
-									}
-									VolMesh->writeInterpData(interpData, inp.Mc_weight, 
-																					 inp.M_weight, inp.youngs_default[0],
-																					 inp.out_file);
-									break;
-								 }
+		// check if spheres are present and do accordingly
+		switch(inp.has_spheres) {
+			case 0: {	interpData=
+									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+																				 volDataMat, PlaneCellCenters);
+								
+								VolMesh->writeInterpData(interpData, inp.Mc_weight, 
+								  											 inp.M_weight, inp.youngs_default[0],
+																				 PlaneCellCenters, nDim, 
+																				 inp.out_file, (bool) inp.write_coords);
+								break;
+							}
+
+			case 1: {	interpData=
+									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+																				 volDataMat, PlaneCellCenters,
+																				 spheres);
+								VolMesh->writeInterpData(interpData, inp.Mc_weight,
+																				 inp.M_weight, inp.youngs_default[0],
+																				 PlaneCellCenters, nDim, spheres, 
+																				 inp.out_file, (bool) inp.write_coords);
+								break;
+							}
+			default: {	std::cerr << "has_spheres must be 0|1" << std::endl;
+									std::cerr << "correct in input file " << std::endl;
+									exit(1);
+							 }
 		}
-		
 	}
 	else {
 		std::cerr << "No point data arrays found in " << inp.vol_file << std::endl;

@@ -132,43 +132,45 @@ public:
    		                        std::vector<std::vector<double>> volDataMat,
       		                    std::vector<double> PlaneCellCenters);
 
-		// consider inclusions in interpolation
-		std::vector<std::vector<double>>
-		getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
-                           std::vector<std::vector<double>> volDataMat,
-                           std::vector<double> PlaneCellCenters,
-                           std::vector<sphere> spheres);
+	// consider inclusions in interpolation
+	std::vector<std::vector<double>>
+	getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+                          std::vector<std::vector<double>> volDataMat,
+                          std::vector<double> PlaneCellCenters,
+                          std::vector<sphere> spheres);
 
  
-   // add data
-   // add point data array
-   void setPointDataArray( const char* name, int numComponent,
+  // add data
+  // add point data array
+  void setPointDataArray( const char* name, int numComponent,
                           std::vector<double> &pntArrData);
-   // add point data array
-   void setCellDataArray( const char* name, int numComponent,
-                          std::vector<double> &pntArrData);
+  // add point data array
+  void setCellDataArray( const char* name, int numComponent,
+                         std::vector<double> &pntArrData);
 
-	 // write interpolated data
+	// write interpolated data
+	// no spheres, don't write coords
 	void writeInterpData(std::vector<std::vector<double>> interpData,
 											 double Mc, double M, double E, 
   	                   std::ostream& outputStream);
-	void writeInterpData(std::vector<std::vector<double>> interpData,
-											 double Mc, double M,	double E,
-  	                   std::string filename);
+	// no spheres, switch to write coords
 	void writeInterpData(std::vector<std::vector<double>> interpData,
     	                 double Mc, double M, double E,
 											 std::vector<double> PlaneCellCenters, int nDim,
-                       std::ostream& outputStream);
+                       std::ostream& outputStream, bool writeCoord);
 	void writeInterpData(std::vector<std::vector<double>> interpData,
 											 double Mc, double M,	double E,
                        std::vector<double> PlaneCellCenters, int nDim,
-                       std::string filename);
+                       std::string filename, bool writeCoord);
+
 	// write interpolated data if spheres
+	// has spheres, don't write coords
 	void writeInterpData(std::vector<std::vector<double>> interpData,
 											 double Mc, double M,	double E,
                        std::vector<double> PlaneCellCenters, int nDim,
                        std::vector<sphere> spheres,
                        std::ostream& outputStream);
+	// has spheres, switch to write coords
 	void writeInterpData(std::vector<std::vector<double>> interpData,
 											 double Mc, double M,	double E,
                        std::vector<double> PlaneCellCenters, int nDim,
