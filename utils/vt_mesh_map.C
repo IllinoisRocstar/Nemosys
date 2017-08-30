@@ -4,6 +4,7 @@
 #include<cstring>
 #include <sstream>
 // third party
+#include <spheres.H>
 #include <vtkAnalyzer.H>
 #include <ModelInterface.h>
 #include <MAdLib.h>
@@ -12,118 +13,78 @@
 #include <CheckOrientation.h>
 #include <GmshEntities.h>
 
-// Auxilliary functions
+/****************************************************/
+/* CURRENTLY ASSUMING USER PROVIDES YOUNG'S MODULUS */
+/****************************************************/
+
+// Auxilliary classes and functions
+
 // map between element type and node number 
 // as given in GMSH ASCII documentation
 int nodes_per_type(int type);
+
+// get array of physical names and numeric identifiers 
+// from gmsh .msh file
+std::vector<std::string> get_phys_names(std::string mshFileName);
+
+// get array of numeric identifiers for physical names
+// from gmsh .msh file
+std::vector<int> get_phys_nums(std::string mshFileName);
+
+// class to read input file- TODO: input file validation
+class inputs {
+public:
+	inputs(){};
+	~inputs(){};
+	inputs(std::string input_file);
+public:
+  std::string vol_file;
+  std::string msh_file;
+  std::string geo_file;
+  std::string plane_file;
+  std::string out_file;
+  vector<std::string> material_names;
+  std::string cross_link_name;
+  int write_coords, has_spheres;
+  vector<double> youngs_default;
+  vector<double> shear_default;
+  double M_weight, Mc_weight;
+};
+
+/*************************************************************************/
+
 int main(int argc, char* argv[])
 {
-  if (argc < 4)
-	{
-		std::cerr << " VTK 3D-2D mesh transfer utility" << std::endl
-							<< " Usage: " << argv[0] << 
-									" VolVTKFile PlaneVTKFile species_name [write_coords=0|1] [outfile] [material_names]" 
-							<< std::endl;
+	if (argc < 2) {
+		std::cerr << "3D-2D mesh transfer utility" << std::endl
+							<< " Usage: " << argv[0] << " inputFile" << std::endl << std::endl
+							<< "inputFile must specify the following, in order: " << std::endl
+							<< "Vol_vti_File" << std::endl 
+							<< "Vol_msh_File" << std::endl
+							<< "Vol_geo_File" << std:: endl
+							<< "Plane_vtk_File" << std::endl
+							<< "outputFile" << std::endl
+							<< "material_names" << std::endl
+							<< "cross_link_name" << std::endl
+							<< "write_coords" << std::endl
+							<< "has_spheres" << std::endl
+							<< "youngs_default" << std::endl
+							<< "shear_default" << std::endl
+							<< "M_weight" << std::endl
+							<< "Mc_weight" << std::endl;
 		exit(1);
 	}
-
-	// TODO: Testing gmsh/madlib stuff
-	if (argc == 7) { 
-		std::string mshFileName = argv[6];
-		std::ifstream mshStream(mshFileName.c_str());
-  	if (!mshStream.good()) {
-    	cout << "Error: " << mshFileName<< " not found" << endl;
-    	exit(1);
-  	}
-		std::string line;
-		std::vector<std::string> phys_names;
-		std::vector<int> phys_nums;
-		while(getline(mshStream, line)) {
-			if (line.find("$PhysicalNames") != -1) {
-				getline(mshStream, line);
-				std::stringstream currline(line);
-				int num_names;
-				currline >> num_names;
-				for (int i = 0; i < num_names; ++i) {
-					getline(mshStream, line);
-					std::stringstream nextline(line);
-					std::string name;
-					int phys_dim;
-					int phys_num;
-
-					nextline >> phys_dim >> phys_num >> name;
-					phys_names.push_back(name);
-					phys_nums.push_back(phys_num);
-				}
-				break;
-			}
-		}
-	
-		std::vector<int> node_list;
-		while (getline(mshStream, line)) {
-			if (line.find("$Elements") != -1) {
-				getline(mshStream, line);
-				std::stringstream currline(line);
-				int num_elem;
-				currline >> num_elem;
-				for (int i = 0; i < num_elem; ++i) {
-					getline(mshStream, line);
-					std::stringstream nextline(line);
-					int elm_num, elm_type, num_tags, phys_tag;
-					nextline >> elm_num >> elm_type >> num_tags >> phys_tag;
-					// skipping other tags
-					for (int j = 0; j < num_tags-1; ++j) { 
-						int tmp_tag;
-						nextline >> tmp_tag;
-					}
-					if (phys_tag == 2) { //TODO: Determine RHS based on user input
-						for (int k = 0; k < nodes_per_type(elm_type); ++k) { 
-							int node;
-							nextline >> node;	
-							node_list.push_back(node);
-						}
-					}
-				}
-				break;
-			}
-		}
-
-		std::cout << node_list.size() << std::endl;
-		for (int i = 0; i < phys_names.size(); ++i)
-			std::cout << phys_names[i] << std::endl;
-		for (int i = 0; i < node_list.size()/3; ++i)
-			std::cout << node_list[i*3] << " " << node_list[i*3 + 1] << " " << node_list[i*3 + 2] << std::endl;		
-		
-						
 							
-		
-	// Reading gmsh file and info
-  	/*MAd::pGModel model = NULL;
-		MAd::GM_create(&model,"initial");
-  	MAd::pMesh mesh = MAd::M_new(model);
-  	MAd::M_load(mesh, mshFileName.c_str());
-		std::cout << "Using tags?: " << MAd::GM_physical(model) << std::endl;
-	*/
-	//	std::cout << model.getNumVertices() << std::endl;
+	inputs inp(argv[1]);
+	vector<sphere> spheres = readSpheres(inp.geo_file);
 
-		/*std::vector<std::vector<double>> curds;
-		MAd::VIter vit = M_vertexIter(mesh);
-		MAd::pVertex pv;
-		while (pv = VIter_next(vit)) {
-			MAd::pPoint pp = MAd::V_point(pv);
-			std::cout << pp->X << " " << pp->Y << " " << pp->Z << std::endl;
-		}*/
-	
-		//MAd::checkMesh(mesh);
-  	//MAd::M_info(mesh);
-	}
 
 
 	// Parsing args and Reading files from command line
 	vtkAnalyzer* VolMesh;
 	vtkAnalyzer* PlaneMesh;
-	VolMesh = new vtkAnalyzer(argv[1]);
-	PlaneMesh = new vtkAnalyzer(argv[2]);
+	VolMesh = new vtkAnalyzer((char*) &(inp.vol_file)[0u]);
+	PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
 	VolMesh->read();
 	PlaneMesh->read();
 
@@ -141,43 +102,72 @@ int main(int argc, char* argv[])
 	// creating interpolation for cross_link 
 	// cross_link 'species' name should be passed by cmdline
 	//int species_id = VolMesh->IsArrayName(std::string(argv[3]));
-	int species_id = VolMesh->IsArrayName(argv[3]);
+	int species_id = VolMesh->IsArrayName(inp.cross_link_name);
 	if (species_id >= 0) {
 		std::vector<std::vector<double>> volDataMat;
 		int numTuple, numComponent;
 		VolMesh->getPointDataArray(species_id, volDataMat, numTuple, numComponent);
-		std::vector<std::vector<double> > interpData = 
-			VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
-											         volDataMat, PlaneCellCenters);
 
+		std::vector<std::vector<double> > interpData;
 		// check if coordinate writing on and write accordingly
-		if (argc >= 5) { 
-			int write_coord = atoi(argv[4]);
-			switch(write_coord) {
-				case 0: { if (argc >= 6)
-										VolMesh->writeInterpData(interpData, argv[5]);
-									else
-										VolMesh->writeInterpData(interpData, std::cout);
+		 
+		switch(inp.write_coords) {
+				case 0: { if (inp.has_spheres == 0) { 
+										interpData = 
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
+											 							         volDataMat, PlaneCellCenters);
+									}
+									else {
+										interpData =
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+																						 volDataMat, PlaneCellCenters,
+																						 spheres);
+								 	}	
+									VolMesh->writeInterpData(interpData, inp.Mc_weight, 
+									  											 inp.M_weight, inp.youngs_default[0], 
+																					 inp.out_file);
 									break;
 								}
-				case 1: { if (argc >= 6)
-										VolMesh->writeInterpData(interpData, PlaneCellCenters, nDim, argv[5]);
-									else
-										VolMesh->writeInterpData(interpData, PlaneCellCenters, nDim, std::cout);
+				case 1: { if (inp.has_spheres == 0) {
+										interpData = 
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
+											 							         volDataMat, PlaneCellCenters);
+									}
+									else {
+										interpData =
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+																						 volDataMat, PlaneCellCenters,
+																						 spheres);
+								 	}	
+								 	VolMesh->writeInterpData(interpData, inp.Mc_weight,
+																					 inp.M_weight, inp.youngs_default[0],
+																					 PlaneCellCenters, nDim, inp.out_file);
 									break;
 								}
-				default: { std::cerr << "write_coord must be 0|1" << std::endl;
-									 std::cerr << "defaulting to 0\n" << std::endl;
-									 VolMesh->writeInterpData(interpData,std::cout);
-									 break;
+				default: { 
+									std::cerr << "write_coord must be 0|1" << std::endl;
+									std::cerr << "defaulting to 0\n" << std::endl;
+									if (inp.has_spheres == 0) {
+										interpData = 
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple, 
+											 							         volDataMat, PlaneCellCenters);
+									}
+									else {
+										interpData =
+											VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+																						 volDataMat, PlaneCellCenters,
+																						 spheres);
+									}
+									VolMesh->writeInterpData(interpData, inp.Mc_weight, 
+																					 inp.M_weight, inp.youngs_default[0],
+																					 inp.out_file);
+									break;
 								 }
-			}
 		}
-		else
-			VolMesh->writeInterpData(interpData, std::cout);
+		
 	}
 	else {
-		std::cerr << "No point data arrays found in " << argv[1] << std::endl;
+		std::cerr << "No point data arrays found in " << inp.vol_file << std::endl;
 		exit(1);
 	}
 
@@ -185,12 +175,76 @@ int main(int argc, char* argv[])
 	delete VolMesh;
 	delete PlaneMesh;
 	return EXIT_SUCCESS;
+
+		//writeSpheres(spheres, std::cout);
+	
+	// TODO: Testing gmsh/madlib stuff
+	/*if (argc == 7) { 
+		std::string mshFileName = argv[6];
+		std::vector<std::string> phys_names = get_phys_names(mshFileName);
+		std::vector<int> phys_nums = get_phys_nums(mshFileName);		
+
+		std::ifstream mshStream(mshFileName.c_str());
+    if (!mshStream.good()) {
+      cout << "Error: " << mshFileName<< " not found" << endl;
+      exit(1);
+    }
+	
+		std::string line;
+		std::vector<int> node_list;
+		std::vector<int> geom_list;
+		while (getline(mshStream, line)) {
+			if (line.find("$Elements") != -1) {
+				getline(mshStream, line);
+				std::stringstream currline(line);
+				int num_elem;
+				currline >> num_elem;
+				for (int i = 0; i < num_elem; ++i) {
+					getline(mshStream, line);
+					std::stringstream nextline(line);
+					int elm_num, elm_type, num_tags, phys_tag, geom_tag;
+					nextline >> elm_num >> elm_type >> num_tags >> phys_tag >> geom_tag;
+					// skipping other tags
+					for (int j = 0; j < num_tags-2; ++j) { 
+						int tmp_tag;
+						nextline >> tmp_tag;
+					}
+					if (phys_tag == 2) { //TODO: Determine RHS based on user input
+						geom_list.push_back(geom_tag);
+						for (int k = 0; k < nodes_per_type(elm_type); ++k) { 
+							int node;
+							nextline >> node;	
+							node_list.push_back(node);
+						}
+					}
+				}
+				break;
+			}
+		}
+
+		std::cout << node_list.size() << std::endl;
+		for (int i = 0; i < phys_names.size(); ++i)
+			std::cout << phys_names[i] << std::endl;
+		for (int i = 0; i < node_list.size()/3; ++i) {
+			std::cout << node_list[i*3] << " " << node_list[i*3 + 1] << " " << node_list[i*3 + 2] <<  " " << geom_list[i] << std::endl;		
+		}*/
+		// TODO: Should the inclusions have interpolated values?
+		
+	//}
 }
 
+/******************************************************************************/
+
 // Auxillary Functions
+
+// map between element type and node number 
+// as given in GMSH ASCII documentation
 int nodes_per_type(int type)
 {
-  std::vector<int> nodes = {2,3,4,4,8,6,5,3,6,9,10,27,18,14,1,8,20,15,13,9,10,12,15,15,21,4,5,6,20,35,56,64,125};
+  std::vector<int> nodes = {2,3,4,4,8,6,5,3,6,9,10,
+														27,18,14,1,8,20,15,13,9,
+														10,12,15,15,21,4,5,6,20,
+														35,56,64,125};
   if (type < 92) 
     return nodes[type-1];
   else if (type == 92) 
@@ -203,3 +257,153 @@ int nodes_per_type(int type)
     exit(1);
   }
 }
+
+
+// get array of physical names and numeric identifiers 
+// from gmsh .msh file
+std::vector<std::string> get_phys_names(std::string mshFileName)
+{
+	std::ifstream mshStream(mshFileName.c_str());
+  if (!mshStream.good()) {
+  	cout << "Error: " << mshFileName<< " not found" << endl;
+   	exit(1);
+  }
+	std::string line;
+  std::vector<std::string> phys_names;
+  while(getline(mshStream, line)) {
+		if (line.find("$PhysicalNames") != -1) {
+    	getline(mshStream, line);
+      std::stringstream currline(line);
+      int num_names;
+      currline >> num_names;
+      for (int i = 0; i < num_names; ++i) {
+      	getline(mshStream, line);
+        std::stringstream nextline(line);
+        std::string name;
+        int phys_dim;
+        int phys_num;
+
+        nextline >> phys_dim >> phys_num >> name;
+        phys_names.push_back(name);
+      }   
+      break;
+    }   
+  }
+		mshStream.close();
+		return phys_names;
+}
+
+
+// get array of numeric identifiers for physical names
+// from gmsh .msh file
+std::vector<int> get_phys_nums(std::string mshFileName)
+{ 	
+	std::ifstream mshStream(mshFileName.c_str());
+  if (!mshStream.good()) {
+    cout << "Error: " << mshFileName<< " not found" << endl;
+    exit(1);
+  }
+  std::string line;
+  std::vector<int> phys_nums;
+  while(getline(mshStream, line)) {
+    if (line.find("$PhysicalNames") != -1) {
+      getline(mshStream, line);
+      std::stringstream currline(line);
+      int num_names;
+      currline >> num_names;
+      for (int i = 0; i < num_names; ++i) {
+        getline(mshStream, line);
+        std::stringstream nextline(line);
+        std::string name;
+        int phys_dim;
+        int phys_num;
+
+        nextline >> phys_dim >> phys_num >> name;
+        phys_nums.push_back(phys_num);
+      }
+      break;
+    }
+  }
+	mshStream.close();
+	return phys_nums;
+}
+
+// input reader constructor with input file
+using std::string; using std::vector; using std::size_t;
+inputs::inputs(string input_file)
+{
+  std::ifstream inputStream(input_file.c_str());
+  if (!inputStream.good()) {
+    std::cout << "Error reading " << input_file << std::endl;
+    exit(1);
+  }
+  string line;
+  int i = 0;
+  while (getline(inputStream, line)) {
+    if (line.find("=") != -1) {
+      size_t beg = line.find("{");
+      size_t end = line.find("}");
+      if (beg != -1 && end != -1) {
+        string data = line.substr(beg+1, end-beg-1);
+        switch(i) {
+          case 0: vol_file=data;
+                  break;
+          case 1: msh_file=data;
+                  break;
+          case 2: geo_file=data;
+                  break;
+          case 3: plane_file=data;
+                  break;
+          case 4: out_file=data;
+                  break;
+          case 5: { std::stringstream ss(data);
+                    while (ss.good()) {
+                      string tmp;
+                      getline(ss, tmp, ',');
+                      material_names.push_back(tmp);
+                    }
+                    break;
+                  } 
+          case 6: cross_link_name=data;
+                  break;
+          case 7: { std::stringstream ss(data);
+                    ss >> write_coords;
+                    break;
+                  } 
+          case 8: { std::stringstream ss(data);
+                    ss >> has_spheres;
+                    break;
+                  } 
+          case 9: { std::stringstream ss(data);
+                    double tmp; 
+                    while(ss >> tmp) {
+                      youngs_default.push_back(tmp);
+                      if (ss.peek() == ',')
+                        ss.ignore();
+                    }
+                    break;
+                  } 
+          case 10:  { std::stringstream ss(data);
+                      double tmp; 
+                      while(ss >> tmp) {
+                      shear_default.push_back(tmp);
+                        if (ss.peek() == ',')
+                          ss.ignore();
+                      }
+                    break;
+                    } 
+          case 11:  { std::stringstream ss(data);
+                      ss >> M_weight;
+                      break;
+                    } 
+          case 12:  { std::stringstream ss(data);
+                      ss >> Mc_weight;
+                      break;
+                    }
+        }
+      }
+    }
+    i+=1;
+  }
+}
+
