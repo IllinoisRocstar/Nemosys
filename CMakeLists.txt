@@ -172,20 +172,30 @@ SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
+SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
 set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 # Builiding libraries #########################################################
+
+# build sphere lib
+IF(NOT BUILD_STATIC)
+  ADD_LIBRARY(sphere SHARED ${SPHERE_SRCS})
+ELSE()
+	ADD_LIBRARY(sphere ${SPHERE_SRCS})
+ENDIF()
+INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
+
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
 ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB})
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere)
 INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
 # Build r8 and rbf library
@@ -203,6 +213,8 @@ ELSE()
 ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
 INSTALL(TARGETS interp LIBRARY DESTINATION lib)
+
+
 
 # Rocstar support library
 IF(NOT BUILD_STATIC)
@@ -223,9 +235,9 @@ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
 #vt_mesh_map utility
 ADD_EXECUTABLE(vt_mesh_map utils/vt_mesh_map.C)
 if(VTK_LIBRARIES)
-	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys ${VTK_LIBRARIES} interp)
+	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys ${VTK_LIBRARIES} interp sphere)
 else()
-	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys vtkHybrid vtkWidgets interp)
+	TARGET_LINK_LIBRARIES(vt_mesh_map Nemosys vtkHybrid vtkWidgets interp sphere)
 ENDIF()
 INSTALL(TARGETS vt_mesh_map RUNTIME DESTINATION bin)
 

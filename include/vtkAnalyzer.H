@@ -38,7 +38,7 @@
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
 #include <baseInterp.H>
-
+#include <spheres.H>
 // others
 #include <vector>
 #include <iostream>
@@ -131,6 +131,14 @@ public:
 	 getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,     
    		                        std::vector<std::vector<double>> volDataMat,
       		                    std::vector<double> PlaneCellCenters);
+
+		// consider inclusions in interpolation
+		std::vector<std::vector<double>>
+		getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+                           std::vector<std::vector<double>> volDataMat,
+                           std::vector<double> PlaneCellCenters,
+                           std::vector<sphere> spheres);
+
  
    // add data
    // add point data array
@@ -141,16 +149,36 @@ public:
                           std::vector<double> &pntArrData);
 
 	 // write interpolated data
-	void writeInterpData(std::vector<std::vector<double>> interpData, 
-  	                               std::ostream& outputStream);
-	void writeInterpData(std::vector<std::vector<double>> interpData, 
-  	                               std::string filename);
 	void writeInterpData(std::vector<std::vector<double>> interpData,
-    	                             std::vector<double> PlaneCellCenters, int nDim,
-                                   std::ostream& outputStream);
+											 double Mc, double M, double E, 
+  	                   std::ostream& outputStream);
 	void writeInterpData(std::vector<std::vector<double>> interpData,
-                                   std::vector<double> PlaneCellCenters, int nDim,
-                                   std::string filename);
+											 double Mc, double M,	double E,
+  	                   std::string filename);
+	void writeInterpData(std::vector<std::vector<double>> interpData,
+    	                 double Mc, double M, double E,
+											 std::vector<double> PlaneCellCenters, int nDim,
+                       std::ostream& outputStream);
+	void writeInterpData(std::vector<std::vector<double>> interpData,
+											 double Mc, double M,	double E,
+                       std::vector<double> PlaneCellCenters, int nDim,
+                       std::string filename);
+	// write interpolated data if spheres
+	void writeInterpData(std::vector<std::vector<double>> interpData,
+											 double Mc, double M,	double E,
+                       std::vector<double> PlaneCellCenters, int nDim,
+                       std::vector<sphere> spheres,
+                       std::ostream& outputStream);
+	void writeInterpData(std::vector<std::vector<double>> interpData,
+											 double Mc, double M,	double E,
+                       std::vector<double> PlaneCellCenters, int nDim,
+                       std::vector<sphere> spheres,
+                       std::ostream& outputStream, bool writeCoord);
+	void writeInterpData(std::vector<std::vector<double>> interpData,
+											 double Mc, double M,	double E,
+                       std::vector<double> PlaneCellCenters, int nDim,
+                       std::vector<sphere> spheres,
+                       std::string filename, bool writeCoord);
 
    // utilities
    // print to output a report about the file
