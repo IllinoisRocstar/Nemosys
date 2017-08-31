@@ -24,8 +24,7 @@ bool sphere::in_sphere(std::vector<double> point)
 	double dist = pow(x-point[0],2) +
 								pow(y-point[1],2) +
 								pow(z-point[2],2);
-	dist = sqrt(dist);
-	if (dist <= r)
+	if (dist <= pow(r,2))
 		return true;
 	return false;
 }
