@@ -117,15 +117,15 @@ int vtkAnalyzer::IsArrayName(std::string name)
 				return i;
 			}
 		}
-			// fall through to exit
-			std::cout << "Invalid Species Name" << std::endl;
-			std::cout << "Valid options are:" << std::endl;
-			for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
-				std::cout << (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL")
-									<< std::endl;
-			}
-			exit(1);
+		// fall through to exit
+		std::cout << "Invalid Species Name" << std::endl;
+		std::cout << "Valid options are:" << std::endl;
+		for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+			std::cout << (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL")
+								<< std::endl;
 		}
+		exit(1);
+	}
 	return -1;
 }
 
@@ -343,20 +343,19 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
     for (int i = 0; i < numTuple; ++i) {
     	bool in_sphere = false;
 			// checking if vol points are in sphere
-			std::vector<double> point;
+			/*std::vector<double> point;
 			point.push_back(VolPointCoords[i*nDim]);
 			point.push_back(VolPointCoords[i*nDim+1]);
 			point.push_back(VolPointCoords[i*nDim+2]);
 			for (int k = 0; k < spheres.size(); ++k) {
-				if (spheres[k].in_sphere(point)) {
-					in_sphere = true;
+				if (in_sphere=spheres[k].in_sphere(point)) {
 					break;
 				}
 			}
 			if (in_sphere) 
 				volData[i] = 0.0;
 			
-			else 
+			else*/ 
 				volData[i] = volDataMat[i][j];
     	
 		}   
@@ -424,8 +423,7 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 			point.push_back(PlaneCellCenters[i*nDim+1]);
 			point.push_back(PlaneCellCenters[i*nDim+2]);
 			for (int k = 0; k < spheres.size(); ++k) {
-				if(spheres[k].in_sphere(point)) {
-					in_sphere=true;
+				if(in_sphere=spheres[k].in_sphere(point)) {
 					break;
 				}
 			}
@@ -486,8 +484,7 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
       	point.push_back(PlaneCellCenters[i*nDim+1]);
       	point.push_back(PlaneCellCenters[i*nDim+2]);
       	for (int k = 0; k < spheres.size(); ++k) {
-        	if(spheres[k].in_sphere(point)) {
-          	in_sphere=true;
+        	if(in_sphere=spheres[k].in_sphere(point)) {
           	break;
         	}
       	}

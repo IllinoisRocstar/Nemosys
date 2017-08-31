@@ -13,8 +13,14 @@
 #include <CheckOrientation.h>
 #include <GmshEntities.h>
 
-/****************************************************/
-/* CURRENTLY ASSUMING USER PROVIDES YOUNG'S MODULUS */
+/********************************************************
+ * Usage: vt_mesh_map file.inp                          *
+ * G = rho*R*T(1 - Mc/M) is calculated                  *
+ * Given E by user, V = EG/(3*(3*G - E)                 *
+ * Given V by user, E = 2G(1 + V)                       *
+ * CURRENTLY ASSUMING USER PROVIDES YOUNG'S MODULUS (E) * 
+ *******************************************************/
+
 /****************************************************/
 /* TODO: Check if plane is actually in volume and act accordingly if not
 	 TODO: input file validation		
