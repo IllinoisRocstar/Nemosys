@@ -21,16 +21,25 @@
  * CURRENTLY ASSUMING USER PROVIDES YOUNG'S MODULUS (E) * 
  *******************************************************/
 
-/****************************************************/
-/* TODO: Check if plane is actually in volume and act accordingly if not
+/************************************************************************/
+/* TODO: Check if plane is contained in volume and act accordingly if not
 	 TODO: input file validation		
-	 TODO: How many neighbors do we use? Choose based on point density? 
 	 TODO: If point is in sphere, return index of sphere and map that to
-				 the material name 
-	 TODO: Plot all points and color by whether interpolated value is 0 */
-/************************************
+				 the material name- pull material names from geo file 
+	 TODO: Generalize for n Dimensions. nDim is useless atm  
+	 TODO: Add support for checking plane points in 
+				 sphere shell using extents as ref
+	
+	 RECENT DEVELOPMENT:
+		- added support to consider radius in nn search of k-d tree
+		  as an overload to interpolate function
+		- improved parameter passing (const ref)
+		- implemented extent discovery to set tol in radius for nn search 
+		- added user input field for fraction of min extent to consider
+			for radius in nn search */
+/************************************************************************
  *Auxilliary classes and functions
-************************************/
+************************************************************************/
 
 /* map between element type and node number 
    as given in GMSH ASCII documentation */
@@ -61,7 +70,7 @@ public:
   int write_coords, has_spheres;
   vector<double> youngs_default;
   vector<double> shear_default;
-  double M_weight, Mc_weight;
+  double M_weight, Mc_weight, NN_TOL;
 };
 
 /*************************************************************************/
@@ -84,7 +93,8 @@ int main(int argc, char* argv[])
 							<< "youngs_default" << std::endl
 							<< "shear_default" << std::endl
 							<< "M_weight" << std::endl
-							<< "Mc_weight" << std::endl;
+							<< "Mc_weight" << std::endl
+							<< "NN_TOL" << std::endl;
 		exit(1);
 	}
 
@@ -106,7 +116,16 @@ int main(int argc, char* argv[])
 	// get centers of cells in plane mesh
 	std::vector<double> PlaneCellCenters = 
 	PlaneMesh->getCellCenters(numComponent, nDim);
+	
+	// get all coordinates in vol mesh
+	std::vector<double> VolPointCoords = 
+	VolMesh->getAllPointCoords(nDim);
 
+	// get min extent
+	double minExtent = VolMesh->getMinExtent(nDim, VolPointCoords);
+
+	// setting tol for knn search in k-d tree
+	double tol = inp.NN_TOL*minExtent;
 
 	// creating interpolation for cross_link 
 	// cross_link 'species' name should be passed by cmdline
@@ -122,7 +141,8 @@ int main(int argc, char* argv[])
 		switch(inp.has_spheres) {
 			case 0: {	interpData=
 									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-																				 volDataMat, PlaneCellCenters);
+																				 volDataMat, PlaneCellCenters,
+																				 VolPointCoords, tol);
 								
 								VolMesh->writeInterpData(interpData, inp.Mc_weight, 
 								  											 inp.M_weight, inp.youngs_default[0],
@@ -134,7 +154,7 @@ int main(int argc, char* argv[])
 			case 1: {	interpData=
 									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
 																				 volDataMat, PlaneCellCenters,
-																				 spheres);
+																				 VolPointCoords, spheres, tol);
 								VolMesh->writeInterpData(interpData, inp.Mc_weight,
 																				 inp.M_weight, inp.youngs_default[0],
 																				 PlaneCellCenters, nDim, spheres, 
@@ -190,7 +210,7 @@ int main(int argc, char* argv[])
 						int tmp_tag;
 						nextline >> tmp_tag;
 					}
-					if (phys_tag == 2) { //TODO: Determine RHS based on user input
+					if (phys_tag == 2) { Determine RHS based on user input
 						geom_list.push_back(geom_tag);
 						for (int k = 0; k < nodes_per_type(elm_type); ++k) { 
 							int node;
@@ -381,6 +401,10 @@ inputs::inputs(string input_file)
                       ss >> Mc_weight;
                       break;
                     }
+					case 13: 	{	std::stringstream ss(data);
+											ss >> NN_TOL;
+											break;
+									 	}
         }
       }
     }
