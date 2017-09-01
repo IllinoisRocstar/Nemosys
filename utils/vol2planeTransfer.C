@@ -14,7 +14,7 @@
 #include <GmshEntities.h>
 
 /********************************************************
- * Usage: vt_mesh_map file.inp                          *
+ * Usage: vol2planeTransfer file.inp                          *
  * G = rho*R*T(1 - Mc/M) is calculated                  *
  * Given E by user, V = EG/(3*(3*G - E)                 *
  * Given V by user, E = 2G(1 + V)                       *
@@ -100,11 +100,18 @@ int main(int argc, char* argv[])
 
 	// parsing input file and reading/loading stuff	
 	inputs inp(argv[1]);
-	vector<sphere> spheres = readSpheres(inp.geo_file);
+	// read geo file for sphere locations
+	sphere_string spherestring = readSpheres(inp.geo_file);
+	vector<sphere> spheres = spherestring.spheres;
+	vector<std::string> mat_names = spherestring.strings;
+	for (int i = 0; i < mat_names.size() ; ++i) {
+		std::cout << mat_names[i] << std::endl;	
+	}
 	vtkAnalyzer* VolMesh;
 	vtkAnalyzer* PlaneMesh;
 	VolMesh = new vtkAnalyzer((char*) &(inp.vol_file)[0u]);
 	PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
+	// reading vtk mesh files
 	VolMesh->read();
 	PlaneMesh->read();
 
