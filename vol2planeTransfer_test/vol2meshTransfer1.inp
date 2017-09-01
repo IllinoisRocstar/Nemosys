@@ -11,5 +11,4 @@ youngs_default = {70}
 shear_default = {26}
 M_weight = {1}
 Mc_weight = {0}
-
-
+NN_TOL = {.01}

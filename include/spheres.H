@@ -10,6 +10,7 @@
 #include <cstring>
 #include <sstream>
 #include <vector>
+#include<string>
 
 using std::cout; using std::endl;
 using std::ofstream; using std::string;
@@ -39,10 +40,18 @@ private:
 	double z;
 	double r;
 };
+
+typedef struct sphere_string sphere_string;
+struct sphere_string 
+{
+	vector<sphere> spheres;
+	vector<std::string> strings;
+};
+
 // read spheres from istream
-vector<sphere> readSpheres(std::istream& inputStream);
+sphere_string readSpheres(std::istream& inputStream);
 // read spheres from file
-vector<sphere> readSpheres(std::string filename);
+sphere_string readSpheres(std::string filename);
 // write spheres to outupt stream
 void writeSpheres(const std::vector<sphere> s, ostream& outputStream);
 #endif
