@@ -276,6 +276,32 @@ std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
 return VolPointCoords;
 }
 
+// find min extent
+double vtkAnalyzer::getMinExtent(int nDim, const std::vector<double>& pntCrds)
+{
+	// creating vector for x, y and z
+	std::vector<double> xCrds, yCrds,zCrds;
+	for (int i = 0; i < pntCrds.size(); i+=nDim) {
+		xCrds.push_back(pntCrds[i]);
+		yCrds.push_back(pntCrds[i+1]);
+		zCrds.push_back(pntCrds[i+2]);
+	}
+	
+	// using minmax_element from stl
+	auto Xminmax = std::minmax_element(xCrds.begin(), xCrds.end());
+	auto Yminmax = std::minmax_element(yCrds.begin(), yCrds.end());
+	auto Zminmax = std::minmax_element(zCrds.begin(), zCrds.end());
+
+	// populating extent vector
+	std::vector<double> extents;
+	extents.push_back(*Xminmax.second - *Xminmax.first);
+	extents.push_back(*Yminmax.second - *Yminmax.first);
+	extents.push_back(*Zminmax.second - *Zminmax.first);
+	// returning value of min element from extent vector
+	return *std::min_element(extents.begin(), extents.end());	
+}	
+
+
 // returns centers of all cells
 std::vector<double>
 vtkAnalyzer::getCellCenters(int& numComponent, int nDim)
@@ -298,10 +324,11 @@ vtkAnalyzer::getCellCenters(int& numComponent, int nDim)
 // cell centers of planar mesh to those centers.
 std::vector<std::vector<double>>
 vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
-													 std::vector<std::vector<double>> volDataMat,
-													 std::vector<double> PlaneCellCenters)
+													 std::vector<std::vector<double>>& volDataMat,
+													 std::vector<double>& VolPointCoords,
+													 std::vector<double>& PlaneCellCenters, double tol)
 {
-	std::vector<double> VolPointCoords = getAllPointCoords(nDim);
+	//std::vector<double> VolPointCoords = getAllPointCoords(nDim);
 	int num_vol_points = getNumberOfPoints();	
 	int num_interp_points = PlaneCellCenters.size()/nDim;	
 
@@ -315,7 +342,7 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 			volData[i] = volDataMat[i][j];
   	}   
   	VolPointInterp->interpolate(num_interp_points, 
-     	                         PlaneCellCenters, volData, interpData[j]);
+     	                         PlaneCellCenters, volData, interpData[j], tol, 0);
 	}
 	delete VolPointInterp;
 	return interpData;
@@ -326,11 +353,12 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 // numTuple should = VolPointCoords.size()/ndim
 std::vector<std::vector<double>>
 vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
-                           std::vector<std::vector<double>> volDataMat,
-                           std::vector<double> PlaneCellCenters,
-													 std::vector<sphere> spheres)
+                           std::vector<std::vector<double>>& volDataMat,
+                           std::vector<double>& PlaneCellCenters,
+													 std::vector<double>& VolPointCoords,
+													 std::vector<sphere>& spheres, double tol)
 {
-  std::vector<double> VolPointCoords = getAllPointCoords(nDim);
+  //std::vector<double> VolPointCoords = getAllPointCoords(nDim);
   int num_vol_points = getNumberOfPoints(); 
   int num_interp_points = PlaneCellCenters.size()/nDim; 
 
@@ -359,15 +387,15 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 				volData[i] = volDataMat[i][j];
     	
 		}   
-    VolPointInterp->interpolate(num_interp_points, 
-                               PlaneCellCenters, volData, interpData[j]);
+    VolPointInterp->interpolate(num_interp_points,					//TODO:CHANGE TOL 
+                               PlaneCellCenters, volData, interpData[j], tol, 0);
   }
   delete VolPointInterp;
   return interpData;
 }
 
 // no spheres, write_coords=0
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E,
 																	std::ostream& outputStream)
 {
@@ -395,10 +423,10 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 }
 
 // has spheres, write_coords=0
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E, 
-																	std::vector<double> PlaneCellCenters, int nDim,
-																	std::vector<sphere> spheres,
+																	const std::vector<double>& PlaneCellCenters, int nDim,
+																	std::vector<sphere>& spheres,
 																	std::ostream& outputStream)
 {
 	if (!outputStream.good()) {
@@ -446,10 +474,10 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 }
 
 // has spheres and coord switch
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E,
-                                  std::vector<double> PlaneCellCenters, int nDim,
-                                  std::vector<sphere> spheres,
+                                  const std::vector<double>& PlaneCellCenters, int nDim,
+                                  std::vector<sphere>& spheres,
                                   std::ostream& outputStream, bool writeCoord)
 {
   if (!outputStream.good()) {
@@ -512,9 +540,9 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 }
 
 // no spheres and coord switch
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E,
-																	std::vector<double> PlaneCellCenters, int nDim,
+																	const std::vector<double>& PlaneCellCenters, int nDim,
 																	std::ostream& outputStream, bool writeCoord)
 {
   if (!outputStream.good()) {
@@ -550,9 +578,9 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 	}	   
 }
 
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E,
-																	std::vector<double> PlaneCellCenters, int nDim,
+																	const std::vector<double>& PlaneCellCenters, int nDim,
 																	std::string filename, bool writeCoord)
 {
 	std::ofstream outputStream(filename.c_str());
@@ -564,10 +592,10 @@ void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
 }																	
 
 
-void vtkAnalyzer::writeInterpData(std::vector<std::vector<double>> interpData,
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
 																	double Mc, double M, double E,
-																	std::vector<double> PlaneCellCenters, int nDim,
-                                  std::vector<sphere> spheres,
+																	const std::vector<double>& PlaneCellCenters, int nDim,
+                                  std::vector<sphere>& spheres,
                                   std::string filename, bool writeCoord)
 {
 	std::ofstream outputStream(filename.c_str());
