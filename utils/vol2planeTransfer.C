@@ -14,7 +14,7 @@
 #include <GmshEntities.h>
 
 /********************************************************
- * Usage: vol2planeTransfer file.inp                          *
+ * Usage: vol2planeTransfer file.inp                    *
  * G = rho*R*T(1 - Mc/M) is calculated                  *
  * Given E by user, V = EG/(3*(3*G - E)                 *
  * Given V by user, E = 2G(1 + V)                       *
@@ -29,14 +29,21 @@
 	 TODO: Generalize for n Dimensions. nDim is useless atm  
 	 TODO: Add support for checking plane points in 
 				 sphere shell using extents as ref
-	
+	 TODO: Input class validation (i.e. if poisson, assert G etc)
+	 TODO: Unit conversion
+	 TODO: Refactor by storing opened objects in inputs class and redefining function	
+				 prototypes accordingly	
 	 RECENT DEVELOPMENT:
 		- added support to consider radius in nn search of k-d tree
 		  as an overload to interpolate function
 		- improved parameter passing (const ref)
 		- implemented extent discovery to set tol in radius for nn search 
 		- added user input field for fraction of min extent to consider
-			for radius in nn search */
+			for radius in nn search 
+		- reading material names from geo file 
+		- added support for specified/unspecified material and domain params 
+		- added exception handling for when neighbors of points on plane outside of
+			inclusion are inside inclusion */
 /************************************************************************
  *Auxilliary classes and functions
 ************************************************************************/
@@ -59,18 +66,24 @@ public:
 	inputs(){};
 	~inputs(){};
 	inputs(std::string input_file);
+	void print();
+	void validate();
 public:
   std::string vol_file;
   std::string msh_file;
   std::string geo_file;
   std::string plane_file;
+	std::string mask_file;
   std::string out_file;
   vector<std::string> material_names;
   std::string cross_link_name;
   int write_coords, has_spheres;
-  vector<double> youngs_default;
-  vector<double> shear_default;
-  double M_weight, Mc_weight, NN_TOL;
+  vector<double> youngs_inc_default;
+  vector<double> shear_inc_default;
+	vector<double> poisson_inc_default;
+  double youngs_dom_default;
+	double poisson_dom_default;
+	double M_weight, Mc_weight, NN_TOL;
 };
 
 /*************************************************************************/
@@ -83,15 +96,19 @@ int main(int argc, char* argv[])
 							<< "inputFile must specify the following, in order: " << std::endl
 							<< "Vol_vti_File" << std::endl 
 							<< "Vol_msh_File" << std::endl
-							<< "Vol_geo_File" << std:: endl
+							<< "geo_File" << std:: endl
 							<< "Plane_vtk_File" << std::endl
+							<< "bbmask_vti_File" << std::endl
 							<< "outputFile" << std::endl
 							<< "material_names" << std::endl
 							<< "cross_link_name" << std::endl
 							<< "write_coords" << std::endl
 							<< "has_spheres" << std::endl
-							<< "youngs_default" << std::endl
-							<< "shear_default" << std::endl
+							<< "youngs_inc_default" << std::endl
+							<< "shear_inc_default" << std::endl
+							<< "poisson_inc_default" << std::endl
+							<< "youngs_dom_default" << std::endl
+							<< "poisson_dom_default" << std::endl
 							<< "M_weight" << std::endl
 							<< "Mc_weight" << std::endl
 							<< "NN_TOL" << std::endl;
@@ -100,20 +117,25 @@ int main(int argc, char* argv[])
 
 	// parsing input file and reading/loading stuff	
 	inputs inp(argv[1]);
+	inp.print();
+	inp.validate();
 	// read geo file for sphere locations
 	sphere_string spherestring = readSpheres(inp.geo_file);
 	vector<sphere> spheres = spherestring.spheres;
-	vector<std::string> mat_names = spherestring.strings;
-	for (int i = 0; i < mat_names.size() ; ++i) {
-		std::cout << mat_names[i] << std::endl;	
+	vector<std::string> mat_sphere_names = spherestring.strings;
+	for (int i = 0; i < mat_sphere_names.size() ; ++i) {
+		std::cout << mat_sphere_names[i] << std::endl;	
 	}
 	vtkAnalyzer* VolMesh;
 	vtkAnalyzer* PlaneMesh;
+	vtkAnalyzer* maskMesh;
 	VolMesh = new vtkAnalyzer((char*) &(inp.vol_file)[0u]);
 	PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
+	maskMesh = new vtkAnalyzer((char*) &(inp.mask_file)[0u]);
 	// reading vtk mesh files
 	VolMesh->read();
 	PlaneMesh->read();
+	maskMesh->read();
 
 	int numComponent;	
 	int num_plane_points = PlaneMesh->getNumberOfPoints();
@@ -135,13 +157,16 @@ int main(int argc, char* argv[])
 	double tol = inp.NN_TOL*minExtent;
 
 	// creating interpolation for cross_link 
-	// cross_link 'species' name should be passed by cmdline
-	//int species_id = VolMesh->IsArrayName(std::string(argv[3]));
 	int species_id = VolMesh->IsArrayName(inp.cross_link_name);
 	if (species_id >= 0) {
 		std::vector<std::vector<double>> volDataMat;
-		int numTuple, numComponent;
+		std::vector<std::vector<double>> maskDatas;
+		int numTuple, numComponent, tmpTuple, tmpComponent;
 		VolMesh->getPointDataArray(species_id, volDataMat, numTuple, numComponent);
+		maskMesh->getPointDataArray(0, maskDatas, tmpTuple, tmpComponent);
+		std::vector<double> maskData(tmpTuple);
+		for (int i = 0; i < tmpTuple; ++i)
+			maskData[i] = maskDatas[i][0];
 
 		std::vector<std::vector<double> > interpData;
 		// check if spheres are present and do accordingly
@@ -152,7 +177,8 @@ int main(int argc, char* argv[])
 																				 VolPointCoords, tol);
 								
 								VolMesh->writeInterpData(interpData, inp.Mc_weight, 
-								  											 inp.M_weight, inp.youngs_default[0],
+								  											 inp.M_weight, inp.youngs_dom_default,
+																				 inp.poisson_dom_default,
 																				 PlaneCellCenters, nDim, 
 																				 inp.out_file, (bool) inp.write_coords);
 								break;
@@ -161,10 +187,14 @@ int main(int argc, char* argv[])
 			case 1: {	interpData=
 									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
 																				 volDataMat, PlaneCellCenters,
-																				 VolPointCoords, spheres, tol);
+																				 VolPointCoords, spheres, maskData, tol);
 								VolMesh->writeInterpData(interpData, inp.Mc_weight,
-																				 inp.M_weight, inp.youngs_default[0],
+																				 inp.M_weight, inp.youngs_dom_default,
+																				 inp.poisson_dom_default,
 																				 PlaneCellCenters, nDim, spheres, 
+																				 mat_sphere_names, inp.material_names,
+																				 inp.youngs_inc_default, inp.shear_inc_default,
+																				 inp.poisson_inc_default,
 																				 inp.out_file, (bool) inp.write_coords);
 								break;
 							}
@@ -182,63 +212,9 @@ int main(int argc, char* argv[])
 
 	delete VolMesh;
 	delete PlaneMesh;
+	delete maskMesh;
 	return EXIT_SUCCESS;
 
-		//writeSpheres(spheres, std::cout);
-	
-	// TODO: Testing gmsh/madlib stuff
-	/*if (argc == 7) { 
-		std::string mshFileName = argv[6];
-		std::vector<std::string> phys_names = get_phys_names(mshFileName);
-		std::vector<int> phys_nums = get_phys_nums(mshFileName);		
-
-		std::ifstream mshStream(mshFileName.c_str());
-    if (!mshStream.good()) {
-      cout << "Error: " << mshFileName<< " not found" << endl;
-      exit(1);
-    }
-	
-		std::string line;
-		std::vector<int> node_list;
-		std::vector<int> geom_list;
-		while (getline(mshStream, line)) {
-			if (line.find("$Elements") != -1) {
-				getline(mshStream, line);
-				std::stringstream currline(line);
-				int num_elem;
-				currline >> num_elem;
-				for (int i = 0; i < num_elem; ++i) {
-					getline(mshStream, line);
-					std::stringstream nextline(line);
-					int elm_num, elm_type, num_tags, phys_tag, geom_tag;
-					nextline >> elm_num >> elm_type >> num_tags >> phys_tag >> geom_tag;
-					// skipping other tags
-					for (int j = 0; j < num_tags-2; ++j) { 
-						int tmp_tag;
-						nextline >> tmp_tag;
-					}
-					if (phys_tag == 2) { Determine RHS based on user input
-						geom_list.push_back(geom_tag);
-						for (int k = 0; k < nodes_per_type(elm_type); ++k) { 
-							int node;
-							nextline >> node;	
-							node_list.push_back(node);
-						}
-					}
-				}
-				break;
-			}
-		}
-
-		std::cout << node_list.size() << std::endl;
-		for (int i = 0; i < phys_names.size(); ++i)
-			std::cout << phys_names[i] << std::endl;
-		for (int i = 0; i < node_list.size()/3; ++i) {
-			std::cout << node_list[i*3] << " " << node_list[i*3 + 1] << " " << node_list[i*3 + 2] <<  " " << geom_list[i] << std::endl;		
-		}*/
-		// TODO: Should the inclusions have interpolated values?
-		
-	//}
 }
 
 /******************************************************************************/
@@ -362,9 +338,11 @@ inputs::inputs(string input_file)
                   break;
           case 3: plane_file=data;
                   break;
-          case 4: out_file=data;
+          case 4:	mask_file=data;
                   break;
-          case 5: { std::stringstream ss(data);
+          case 5: out_file=data;
+                  break;
+          case 6: { std::stringstream ss(data);
                     while (ss.good()) {
                       string tmp;
                       getline(ss, tmp, ',');
@@ -372,50 +350,127 @@ inputs::inputs(string input_file)
                     }
                     break;
                   } 
-          case 6: cross_link_name=data;
+          case 7: cross_link_name=data;
                   break;
-          case 7: { std::stringstream ss(data);
+          case 8: { std::stringstream ss(data);
                     ss >> write_coords;
                     break;
                   } 
-          case 8: { std::stringstream ss(data);
+          case 9: { std::stringstream ss(data);
                     ss >> has_spheres;
                     break;
                   } 
-          case 9: { std::stringstream ss(data);
+          case 10: { std::stringstream ss(data);
                     double tmp; 
                     while(ss >> tmp) {
-                      youngs_default.push_back(tmp);
+                      youngs_inc_default.push_back(tmp);
                       if (ss.peek() == ',')
                         ss.ignore();
                     }
                     break;
                   } 
-          case 10:  { std::stringstream ss(data);
+          case 11:  { std::stringstream ss(data);
                       double tmp; 
                       while(ss >> tmp) {
-                      shear_default.push_back(tmp);
+                      shear_inc_default.push_back(tmp);
                         if (ss.peek() == ',')
                           ss.ignore();
                       }
                     break;
                     } 
-          case 11:  { std::stringstream ss(data);
+          case 12:  { std::stringstream ss(data);
+                      double tmp; 
+                      while(ss >> tmp) {
+                      poisson_inc_default.push_back(tmp);
+                        if (ss.peek() == ',')
+                          ss.ignore();
+                      }
+                    break;
+                    } 
+          case 13:  { std::stringstream ss(data);
+                      ss >> youngs_dom_default;
+                      break;
+                    } 
+          case 14:  { std::stringstream ss(data);
+                      ss >> poisson_dom_default;
+                      break;
+                    } 
+          case 15:  { std::stringstream ss(data);
                       ss >> M_weight;
                       break;
                     } 
-          case 12:  { std::stringstream ss(data);
+          case 16:  { std::stringstream ss(data);
                       ss >> Mc_weight;
                       break;
                     }
-					case 13: 	{	std::stringstream ss(data);
+					case 17: 	{	std::stringstream ss(data);
 											ss >> NN_TOL;
 											break;
 									 	}
+
         }
       }
+			i+=1;
     }
-    i+=1;
   }
 }
 
+void inputs::validate()
+{
+	if (material_names.size() != youngs_inc_default.size() ||
+			material_names.size() != shear_inc_default.size() ||
+			material_names.size() != poisson_inc_default.size()) {
+		std::cerr << "Defaults must be specified for all materials" << std::endl;
+		exit(3);
+	}
+
+	for (int i = 0; i < material_names.size(); ++i) {
+		if (youngs_inc_default[i] == -1 && poisson_inc_default[i] == -1) {
+			std::cerr << "Either Youngs or Poisson defaults must be specified" << std::endl; 
+			exit(3);
+		}
+	}
+		
+	if (youngs_dom_default == -1 && poisson_dom_default == -1) {
+		std::cerr << "Either Youngs or Poisson defaults must be specified" << std::endl; 
+		exit(3);
+		}
+}
+
+
+void inputs::print()
+{
+	std::cout << "Inputs: " << std::endl
+					  << "Vol_file: " << vol_file << std::endl
+						<< "Msh_file: " << msh_file << std::endl
+						<< "geo_file: " << geo_file << std::endl
+						<< "plane_file: " << plane_file << std::endl
+						<< "mask_file: " << mask_file << std::endl
+						<< "out_file: " << out_file << std::endl;
+	std::cout << "Material names: ";
+	for (int i = 0; i < material_names.size() ; ++i) 
+		std::cout << material_names[i] << " ";
+	std::cout << std::endl
+						<< "cross_link name: " << cross_link_name << std::endl
+					  << "write coords: " << write_coords << std::endl
+						<< "has spheres: " << has_spheres << std::endl;
+	std::cout << "youngs_inc_default: ";
+	for (int i = 0; i < youngs_inc_default.size(); ++i)
+		std::cout << youngs_inc_default[i] << " ";
+	std::cout << std::endl;
+	std::cout << "shear_inc_default: ";
+	for (int i = 0; i < shear_inc_default.size(); ++i)
+		std::cout << shear_inc_default[i] << " ";
+	std::cout << std::endl;
+
+	std::cout << "poisson_inc_default: ";
+	for (int i = 0; i < poisson_inc_default.size(); ++i)
+		std::cout << poisson_inc_default[i] << " ";
+	std::cout << std::endl;
+
+	std::cout << "youngs default: " << youngs_dom_default << std::endl
+						<< "poisson default: " << poisson_dom_default << std::endl
+						<< "M_weight: " << M_weight << std::endl
+						<< "Mc_weight: " << Mc_weight << std::endl
+						<< "NN_TOL: " << NN_TOL << std::endl;
+}

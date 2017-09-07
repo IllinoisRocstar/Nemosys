@@ -8,8 +8,8 @@
 #include<vector>
 
 // third party
-#include "ANN.h"
-
+#include <ANN.h>
+#include <spheres.H>
 // types
 
 class basicInterpolant {
@@ -39,6 +39,14 @@ public:
                      std::vector<double>& pntData, 
                      std::vector<double>& newPntData,
                      double tol, int verb = 0);
+
+    void interpolate(int ni, std::vector<double>& xi,
+										 std::vector<sphere>& spheres,
+										 std::vector<double>& maskData, 
+                     std::vector<double>& pntData, 
+                     std::vector<double>& newPntData,
+                     double tol, int verb = 0);
+	
     void clearCache() 
     {wCalced = false;};
 
