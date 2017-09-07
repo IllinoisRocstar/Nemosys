@@ -23,13 +23,9 @@
 
 /************************************************************************/
 /* TODO: Check if plane is contained in volume and act accordingly if not
-	 TODO: input file validation		
-	 TODO: If point is in sphere, return index of sphere and map that to
-				 the material name- pull material names from geo file 
 	 TODO: Generalize for n Dimensions. nDim is useless atm  
 	 TODO: Add support for checking plane points in 
 				 sphere shell using extents as ref
-	 TODO: Input class validation (i.e. if poisson, assert G etc)
 	 TODO: Unit conversion
 	 TODO: Refactor by storing opened objects in inputs class and redefining function	
 				 prototypes accordingly	

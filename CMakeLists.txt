@@ -227,6 +227,9 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 
 # Builiding utilities #########################################################
 # There are too many dependencies for gmsh this needs to be populated automatically
+OPTION(BUILD_UTILS "BUILD_UTILS" ON)
+
+IF(BUILD_UTILS)
 SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
 SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
     -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
@@ -294,6 +297,7 @@ IF (ENABLE_DTK)
   INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
 ENDIF()
 
+ENDIF()
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
