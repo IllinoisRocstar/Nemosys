@@ -10,6 +10,20 @@ the result is assigned to the query point.
 The executable 'vol2planeTransfer' is placed in Nemosys/build/bin. 
 Append this path to $PATH so the executable name is within scope of the shell.
 
+
+################################## Building ######################################
+
+All utilities, including vol2planeTransfer will be built if cmake is invoked as
+follows from within the build directory:
+
+$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
+$ make -j8 (change number of cores if needed)
+
+To turn off (or turn back on) utility building, pass the 'BUILD_UTILS' option:
+
+$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=OFF ..
+$ make -j8
+
 ################################### Usage ########################################
 
 vol2planeTransfer file.inp
