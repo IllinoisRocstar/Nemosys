@@ -6,6 +6,17 @@ cross-section, a nearest neighbor search filtered by a user defined radius is
 performed in the 3D mesh. The data at these neighbors is then averaged, weighted
 by the inverse of their distance from the query point on the cross-section, and 
 the result is assigned to the query point.
+
+The driver for the utility is utils/vol2planeTransfer.C
+
+The following classes were modified or added during development:
+
+- vtkAnalyzer
+- baseInterp
+- spheres (added)
+
+I didn't modify the original interfaces, only overloaded
+and added members.
  
 The executable 'vol2planeTransfer' is placed in Nemosys/build/bin. 
 Append this path to $PATH so the executable name is within scope of the shell.
@@ -23,6 +34,9 @@ To turn off (or turn back on) utility building, pass the 'BUILD_UTILS' option:
 
 $ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=OFF ..
 $ make -j8
+
+To test the utility, run:
+$	make test
 
 ################################### Usage ########################################
 
@@ -87,3 +101,4 @@ V		- Poisson ratio at cell center
 If write_coords is set to 0 in the input file, the output will 
 exclude the X, Y and Z columns. 
 
+An example case can be found in testing/test_data/vol2planeTransfer_test
