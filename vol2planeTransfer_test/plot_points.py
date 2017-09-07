@@ -7,17 +7,22 @@ x1, y1, rho = loadtxt("has_sphere_has_coord", unpack=True, skiprows=2, usecols=(
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 x1_zeroes = []
+x1_others = []
 x1_non_zeroes = []
 y1_zeroes = []
+y1_others = []
 y1_non_zeroes = []
 #for i in range(0,len(x1[0:2822])):
 #	if (rho[i] == 0) :
 #		x1_zeroes.append(x1[i])
 #		y1_zeroes.append(y1[i])
 for i in range(0,len(x1)):
-		if (rho[i] == 0):
+		if (rho[i] == 0 and i < len(x1) - 7):
 			x1_zeroes.append(x1[i])
 			y1_zeroes.append(y1[i])
+		elif (rho[i] == 0 and i >= len(x1) - 7):
+			x1_others.append(x1[i])
+			y1_others.append(y1[i])
 		else:
 			x1_non_zeroes.append(x1[i])
 			y1_non_zeroes.append(y1[i])
@@ -30,6 +35,7 @@ for i in range(0,len(x1)):
 #print len(x1_all_zeroes)
 ax.plot(x1_zeroes,y1_zeroes,.8, 'b.')
 ax.plot(x1_non_zeroes, y1_non_zeroes,.8, 'r.')
+ax.plot(x1_others, y1_others, .8, 'g.')
 #ax.plot(x1_all_zeroes, y1_all_zeroes,.8, 'g.')
 plt.show()
 #ax.plot(x1, -1*fullUx*gradphi[i][:], line_fmts2[int(floor(i/10))], linewidth = 1, label=label2) 	

@@ -1,0 +1,24 @@
+# specifiy "-1" for unknown material parameters
+# parameters must be specified in same order as
+# material names
+
+# DO NOT put spaces b/w elements of a list
+
+Vol_vti_File 					= 	{vtk_diff1_002000.vti}
+Vol_msh_File 					= 	{TEST.msh}
+Vol_geo_File 					= 	{TEST.geo}
+Plane_vtk_File 				= 	{TEST.vtk}
+mask_file 						= 	{vtk_bbmask_diff1.vti}
+outputFile 						= 	{has_sphere_has_coord}
+material_names 				= 	{sphere_1.00,sphere_2.00}
+cross_link_name 			= 	{species3_conc}
+write_coords 					= 	{1}
+has_spheres						= 	{1}
+youngs_inc_default 		= 	{70,-1}
+shear_inc_default 		= 	{26,36}
+poisson_inc_default 	= 	{-1,100}
+youngs_dom_default 		= 	{-1}
+poisson_dom_default 	= 	{105}
+M_weight 							= 	{1}
+Mc_weight 						= 	{0}
+NN_TOL 								= 	{.01}
