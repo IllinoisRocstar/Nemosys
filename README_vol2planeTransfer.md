@@ -22,33 +22,38 @@ The executable 'vol2planeTransfer' is placed in Nemosys/build/bin.
 Append this path to $PATH so the executable name is within scope of the shell.
 
 
-################################## Building ######################################
+### Building ###
 
 All utilities, including vol2planeTransfer will be built if cmake is invoked as
 follows from within the build directory:
 
+```
 $ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
 $ make -j8 (change number of cores if needed)
-
+```
 To turn off (or turn back on) utility building, pass the 'BUILD_UTILS' option:
 
+```
 $ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=OFF ..
 $ make -j8
+```
 
 To test the utility, run:
+```
 $	make test
+```
+### Usage ###
 
-################################### Usage ########################################
-
-vol2planeTransfer file.inp
-
-############################ Input File Specification ############################
+```
+$ vol2planeTransfer file.inp
+```
+### Input File Specification ###
 
 The name of the input file is the only argument passed to the utility.
 Below is an example of the required specifications in the file with
 descriptions of each option:
- 
-****************************************************************************************************************
+
+``` 
 
 	Vol_vti_File          =   {vtk_diff1_002000.vti}    // 3D mesh file
  	Vol_geo_File          =   {TEST.geo}								// 2D geo file (with inclusion definitions)
@@ -67,8 +72,7 @@ descriptions of each option:
 	M_weight              =   {1}                       // Molecular weight of primary polymer before cross linking
 	Mc_weight             =   {0}                       // Molecular weight of polymer chain between cross links
 	NN_TOL                =   {.01}											// Multiplier of min-extent to define radius in k-NN search
-
-******************************************************************************************************************
+```
 
 NOTE: The order of the options matters and must be as given above.
 
@@ -85,10 +89,10 @@ NOTE: A default value of "-1" indicates an unknown parameter that
 
 The output file will have at most 7 columns, as in:
 
-*************************************
+```
 id    X    Y    Z    rho    E    V
  |    |    |    |     |     |    |
-*************************************
+```
 
 id 	- index of cell on cross-section
 X		- X coordinate of cell center
