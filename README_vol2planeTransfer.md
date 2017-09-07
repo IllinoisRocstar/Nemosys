@@ -1,6 +1,6 @@
 vol2planeTransfer
 -----------------
-vol2planeTransfer is utility to transfer data on a 3D mesh (output from RocLB)
+vol2planeTransfer is a utility to transfer data on a 3D mesh (output from RocLB)
 to an arbitrary planar cross-section of the 3D mesh. For each cell in the
 cross-section, a nearest neighbor search filtered by a user defined radius is
 performed in the 3D mesh. The data at these neighbors is then averaged, weighted
@@ -56,7 +56,7 @@ descriptions of each option:
 ``` 
 
 	Vol_vti_File          =   {vtk_diff1_002000.vti}		// 3D mesh file
- 	Vol_geo_File          =   {TEST.geo}								// 2D geo file (with inclusion definitions)
+ 	Vol_geo_File          =   {TEST.geo} 								// 2D geo file (with inclusion definitions)
 	Plane_vtk_File        =   {TEST.vtk}              	// 2D mesh file
 	mask_file             =   {vtk_bbmask_diff1.vti}		// 3D bbmask outupt with RocLB
 	outputFile            =   {has_sphere_has_coord1}  	// output file name
