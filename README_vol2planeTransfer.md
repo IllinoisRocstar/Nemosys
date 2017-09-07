@@ -55,16 +55,16 @@ descriptions of each option:
 
 ``` 
 
-	Vol_vti_File          =   {vtk_diff1_002000.vti}    // 3D mesh file
+	Vol_vti_File          =   {vtk_diff1_002000.vti}		// 3D mesh file
  	Vol_geo_File          =   {TEST.geo}								// 2D geo file (with inclusion definitions)
 	Plane_vtk_File        =   {TEST.vtk}              	// 2D mesh file
 	mask_file             =   {vtk_bbmask_diff1.vti}		// 3D bbmask outupt with RocLB
-	outputFile            =   {has_sphere_has_coord1}   // output file name
-	material_names        =   {sphere_1.00,sphere_2.00} // names of physical surfaces
-	cross_link_name       =   {species3_conc}           // name of crosslink array in 3D mesh file
-	write_coords          =   {1}                       // option to write coordinates
-	has_spheres           =   {1}                       // option to consider spherical inclusions
-	youngs_inc_default    =   {70,-1}                   // youngs moduli defaults for each physical surface 
+	outputFile            =   {has_sphere_has_coord1}  	// output file name
+	material_names        =   {sphere_1.00,sphere_2.00}	// names of physical surfaces
+	cross_link_name       =   {species3_conc}          	// name of crosslink array in 3D mesh file
+	write_coords          =   {1}                      	// option to write coordinates
+	has_spheres           =   {1}                      	// option to consider spherical inclusions
+	youngs_inc_default    =   {70,-1}                  	// youngs moduli defaults for each physical surface 
 	shear_inc_default     =   {26,36}										// shear moduli defaults for each physical surface
 	poisson_inc_default   =   {-1,100}                  // poisson ratio defaults for each physical surcace
 	youngs_dom_default    =   {-1}											// youngs modulus default for domain (non-inclusions)
