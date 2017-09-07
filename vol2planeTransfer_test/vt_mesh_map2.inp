@@ -1,0 +1,15 @@
+Vol_vti_File = {vtk_diff1_002000.vti}
+Vol_msh_File = {aatest_2D_AllWithDomain.msh}
+Vol_geo_File = {aatest_2D_AllWithDomain.geo}
+Plane_vtk_File = {aatest_2D_AllWithDomain.vtk}
+outputFile = {has_sphere_no_coords}
+material_names = {sphere_1.00}
+cross_link_name = {species2_conc}
+write_coords = {0}
+has_spheres = {1}
+youngs_default = {70}
+shear_default = {26}
+M_weight = {1}
+Mc_weight = {0}
+
+
