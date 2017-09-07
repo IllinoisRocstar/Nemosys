@@ -75,7 +75,7 @@ descriptions of each option:
 ```
 
 NOTES: 
-* The order of the options matters and must be as given above.
+* The order of the options matters and MUST be as given above.
 * DO NOT put spaces between elements in a list.
 * The order of default values MUST correspond to the order of the 
 	physical names listed in material_names.
@@ -83,7 +83,7 @@ NOTES:
 	will be calculated by the utility and requires non-negative
 	values for the other two defaults.
 
-############################ Output Specification ################################
+### Output Specification ###
 
 The output file will have at most 7 columns, as in:
 
@@ -92,13 +92,13 @@ id    X    Y    Z    rho    E    V
  |    |    |    |     |     |    |
 ```
 
-id 	- index of cell on cross-section
-X		- X coordinate of cell center
-Y		- Y coordinate of cell center
-Z		- Z coordinate of cell center
-rho	- cross-link density at cell center
-E		- Young's modulus at cell center
-V		- Poisson ratio at cell center
+* id 	- index of cell on cross-section
+* X		- X coordinate of cell center
+* Y		- Y coordinate of cell center
+* Z		- Z coordinate of cell center
+* rho	- cross-link density at cell center
+* E		- Young's modulus at cell center
+* V		- Poisson ratio at cell center
 
 If write_coords is set to 0 in the input file, the output will 
 exclude the X, Y and Z columns. 
