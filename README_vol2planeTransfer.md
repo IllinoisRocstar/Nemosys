@@ -74,16 +74,14 @@ descriptions of each option:
 	NN_TOL                =   {.01}											// Multiplier of min-extent to define radius in k-NN search
 ```
 
-NOTE: The order of the options matters and must be as given above.
-
-NOTE: DO NOT put spaces between elements in a list.
-
-NOTE: The order of default values MUST correspond to the order of
-			the physical names listed in material_names.
-
-NOTE: A default value of "-1" indicates an unknown parameter that 
-			will be calculated by the utility and requires non-negative
-			values for the other two defaults.
+NOTES: 
+* The order of the options matters and must be as given above.
+* DO NOT put spaces between elements in a list.
+* The order of default values MUST correspond to the order of the 
+	physical names listed in material_names.
+* A default value of "-1" indicates an unknown parameter that 
+	will be calculated by the utility and requires non-negative
+	values for the other two defaults.
 
 ############################ Output Specification ################################
 
