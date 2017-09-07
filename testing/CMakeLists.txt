@@ -1,86 +1,35 @@
-cmake_minimum_required (VERSION 2.8)
-project(Nemosys)
-ENABLE_LANGUAGE( CXX Fortran )
-IF(NOT ENABLE_MPI)
-  add_definitions( -DDUMMY_MPI )
-ELSE()
-  FIND_PACKAGE(MPI REQUIRED)
-  add_definitions( -DMPICH_IGNORE_CXX_SEEK )
-#  IF(MPI_CXX_COMPILER)
-#    set (CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-#  ENDIF(MPI_CXX_COMPILER)
-ENDIF()
-#include(FortranCInterface)
-#FortranCInterface_HEADER(${PROJECT_BINARY_DIR}/include/FC.h MACRO_NAMESPACE "FC_")
-#FortranCInterface_VERIFY(CXX QUIET)
-set (BUILD_STATIC FALSE CACHE BOOL "Build static library")
-set (ENABLE_MPI TRUE CACHE BOOL "Build with MPI Support")
-set (EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin CACHE PATH "Single directory for all executables.")
-set (LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib CACHE PATH "Single directory for all libraries and archives.")
-mark_as_advanced (LIBRARY_OUTPUT_PATH EXECUTABLE_OUTPUT_PATH)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+PROJECT(Nemosys)
 
-FIND_LIBRARY(IRAD_LIB IRAD)
-FIND_FILE(IRAD_HDR COMM.H)
-FIND_PROGRAM(RUNTEST runtest)
-FIND_PROGRAM(TESTRESULT testresults)
-GET_FILENAME_COMPONENT(IRAD_LIBPATH ${IRAD_LIB} PATH)
-GET_FILENAME_COMPONENT(IRAD_INCPATH ${IRAD_HDR} PATH)
-GET_FILENAME_COMPONENT(IRAD_EXEPATH ${RUNTEST} PATH)
+MESSAGE(STATUS "ACCESSING TEST DIRECTORY: ${PROJECT_SOURCE_DIR}")
 
-file(GLOB CPP_SRCS "src/*.C")
-file(GLOB F90_SRCS "src/*.f90")
-#set (TESTMOD_SRCS src/TestModule.C)
-#set (FTESTMOD_SRCS src/ModTestObject.f90 src/TestModule.f90)
-set (ALL_SRCS "${F90_SRCS} ${CPP_SRCS}" )
-set_source_files_properties(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC" )
+# macro to list subdirectories of a given current
+MACRO(SUBDIRLIST result curdir)
+  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+  SET(dirlist "")
+  FOREACH(child ${children})
+    IF(IS_DIRECTORY ${curdir}/${child})
+      LIST(APPEND dirlist ${child})
+    ENDIF()
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+ENDMACRO()
 
-# rpath settings
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+SUBDIRLIST(TEST_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/test_data)
 
-include_directories( include ${CMAKE_BINARY_DIR}/include ../include ${IRAD_INCPATH})
+MESSAGE(STATUS "TEST CASES: ${TEST_DIRS}")
+
+FIND_PROGRAM(BASH_PROGRAM bash)
+
+SET(test_in ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/tests_in.sh)
+SET(test ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/tests.sh)
 
 
-# This line runs the unit tests from the "com_test" executable
-ADD_TEST(RunNemosysUnitTests ${EXECUTABLE_OUTPUT_PATH}/nemosys_test -o nemosys_testresults.txt)
-ADD_TEST(RunTestScripts ${RUNTEST} -l ${PROJECT_SOURCE_DIR}/share/Testing/test_scripts/tests.list -s ${PROJECT_SOURCE_DIR} -b ${CMAKE_BINARY_DIR}/bin -a ${IRAD_EXEPATH} -v 2 -o nemosys_testresults.txt)
-ADD_TEST(RunPlatformSpecificTests ${RUNTEST} -p ${PROJECT_SOURCE_DIR}/share/Platforms/platforms -s ${PROJECT_SOURCE_DIR} -b ${PROJECT_BINARY_DIR}/bin -o nemosys_testresults.txt)
-ADD_TEST(RunSpecificTestScript    ${RUNTEST} -f ${PROJECT_SOURCE_DIR}/share/Platforms/test_stub.csh -s ${PROJECT_SOURCE_DIR} -b ${CMAKE_BINARY_DIR}/bin -o nemosys_testresults.txt)
-#Uncomment test below if you have edited and used the regression test script
-#ADD_TEST(RegressionTest:Runs ${RUNTEST} -f ${PROJECT_SOURCE_DIR}/share/Testing/test_scripts/regression.csh -s ${PROJECT_SOURCE_DIR} -b ${CMAKE_BINARY_DIR}/bin -v 2 -o nemosys_testresults.txt -a ${IRAD_EXEPATH})
+CONFIGURE_FILE( ${test_in} ${test} @ONLY )
 
-# Simple test of return code of a program
-ADD_TEST(ExampleProgram:Runs ${EXECUTABLE_OUTPUT_PATH}/sep ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+IF (BASH_PROGRAM)
+  FOREACH(dir ${TEST_DIRS})
+    ADD_TEST(${dir} ${BASH_PROGRAM} ${test} ${dir})
+  ENDFOREACH()
+endif (BASH_PROGRAM)
 
-# "TESTRESULT" just checks to see if the tests worked
-ADD_TEST(TestStubWorks ${TESTRESULT} TestStubWorks nemosys_testresults.txt)
-ADD_TEST(ExampleProgram:Works ${TESTRESULT} ExampleProgram:Works nemosys_testresults.txt)
-ADD_TEST(ExampleFunction:Works ${TESTRESULT} ExampleFunction:Works nemosys_testresults.txt)
-ADD_TEST(TrapezoidQuadrature:Runs ${TESTRESULT} TrapezoidQuadrature:Runs nemosys_testresults.txt)
-ADD_TEST(TrapezoidQuadrature:Accurate ${TESTRESULT} TrapezoidQuadrature:Accurate nemosys_testresults.txt)
-ADD_TEST(TrapezoidQuadrature:Order ${TESTRESULT} TrapezoidQuadrature:Order2 nemosys_testresults.txt)
-ADD_TEST(MidPointQuadrature:Runs ${TESTRESULT} MidPointQuadrature:Runs nemosys_testresults.txt)
-ADD_TEST(MidPointQuadrature:Accurate ${TESTRESULT} MidPointQuadrature:Accurate nemosys_testresults.txt)
-ADD_TEST(MidPointQuadrature:Order ${TESTRESULT} MidPointQuadrature:Order2 nemosys_testresults.txt)
-#Uncomment test below and add your Regression test name in the appropriate
-#spot if you have edited and used the regression test script
-#ADD_TEST(RegressionTest:Works ${TESTRESULT} YouRegressionTestNameHere nemosys_testresults.txt)
-
-IF(MPI_CXX_COMPILER)
-  # The parallel tests are actually run by this command
-  ADD_TEST(Nemosys::RunParallelPlatformTests ${RUNTEST} -p ${PROJECT_SOURCE_DIR}/share/Platforms/parallel_platforms -s ${PROJECT_SOURCE_DIR} -b ${CMAKE_BINARY_DIR}/bin -v 3 -o nemosys_testresults.txt)
-
-  # The remainder use "testresults" utility to check the results of the parallel tests run above
-  ADD_TEST(ParallelExample:Runs ${TESTRESULT} PEPI:Runs nemosys_testresults.txt)
-  ADD_TEST(ParallelExample:Works ${TESTRESULT} PEPI:Works nemosys_testresults.txt)
-  ADD_TEST(ParallelTrapezoidQuadrature:Runs ${TESTRESULT} ParallelTrapezoidQuadrature:Runs nemosys_testresults.txt)
-  ADD_TEST(ParallelTrapezoidQuadrature:Accurate ${TESTRESULT} ParallelTrapezoidQuadrature:Accurate nemosys_testresults.txt)
-  ADD_TEST(ParallelTrapezoidQuadrature:Order ${TESTRESULT} ParallelTrapezoidQuadrature:Order2 nemosys_testresults.txt)
-  ADD_TEST(ParallelTrapezoidQuadrature:WeakScaling ${TESTRESULT} ParallelTrapezoidQuadrature:WeakScaling nemosys_testresults.txt)
-  ADD_TEST(ParallelTrapezoidQuadrature:StrongScaling ${TESTRESULT} ParallelTrapezoidQuadrature:StrongScaling nemosys_testresults.txt)
-  ADD_TEST(ParallelMidPointQuadrature:Runs ${TESTRESULT} ParallelMidPointQuadrature:Runs nemosys_testresults.txt)
-  ADD_TEST(ParallelMidPointQuadrature:Accurate ${TESTRESULT} ParallelMidPointQuadrature:Accurate nemosys_testresults.txt)
-  ADD_TEST(ParallelMidPointQuadrature:Order ${TESTRESULT} ParallelMidPointQuadrature:Order2 nemosys_testresults.txt)
-  ADD_TEST(ParallelMidPointQuadrature:WeakScaling ${TESTRESULT} ParallelMidPointQuadrature:WeakScaling nemosys_testresults.txt)
-  ADD_TEST(ParallelMidPointQuadrature:StrongScaling ${TESTRESULT} ParallelMidPointQuadrature:StrongScaling nemosys_testresults.txt)
-ENDIF()

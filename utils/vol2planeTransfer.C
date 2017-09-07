@@ -66,7 +66,6 @@ public:
 	void validate();
 public:
   std::string vol_file;
-  std::string msh_file;
   std::string geo_file;
   std::string plane_file;
 	std::string mask_file;
@@ -91,7 +90,6 @@ int main(int argc, char* argv[])
 							<< " Usage: " << argv[0] << " inputFile" << std::endl << std::endl
 							<< "inputFile must specify the following, in order: " << std::endl
 							<< "Vol_vti_File" << std::endl 
-							<< "Vol_msh_File" << std::endl
 							<< "geo_File" << std:: endl
 							<< "Plane_vtk_File" << std::endl
 							<< "bbmask_vti_File" << std::endl
@@ -113,22 +111,20 @@ int main(int argc, char* argv[])
 
 	// parsing input file and reading/loading stuff	
 	inputs inp(argv[1]);
-	inp.print();
+	//inp.print();
 	inp.validate();
 	// read geo file for sphere locations
 	sphere_string spherestring = readSpheres(inp.geo_file);
 	vector<sphere> spheres = spherestring.spheres;
 	vector<std::string> mat_sphere_names = spherestring.strings;
-	for (int i = 0; i < mat_sphere_names.size() ; ++i) {
-		std::cout << mat_sphere_names[i] << std::endl;	
-	}
+	
+	// read mesh data
 	vtkAnalyzer* VolMesh;
 	vtkAnalyzer* PlaneMesh;
 	vtkAnalyzer* maskMesh;
 	VolMesh = new vtkAnalyzer((char*) &(inp.vol_file)[0u]);
 	PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
 	maskMesh = new vtkAnalyzer((char*) &(inp.mask_file)[0u]);
-	// reading vtk mesh files
 	VolMesh->read();
 	PlaneMesh->read();
 	maskMesh->read();
@@ -328,17 +324,15 @@ inputs::inputs(string input_file)
         switch(i) {
           case 0: vol_file=data;
                   break;
-          case 1: msh_file=data;
+          case 1: geo_file=data;
                   break;
-          case 2: geo_file=data;
+          case 2: plane_file=data;
                   break;
-          case 3: plane_file=data;
+          case 3:	mask_file=data;
                   break;
-          case 4:	mask_file=data;
+          case 4: out_file=data;
                   break;
-          case 5: out_file=data;
-                  break;
-          case 6: { std::stringstream ss(data);
+          case 5: { std::stringstream ss(data);
                     while (ss.good()) {
                       string tmp;
                       getline(ss, tmp, ',');
@@ -346,17 +340,17 @@ inputs::inputs(string input_file)
                     }
                     break;
                   } 
-          case 7: cross_link_name=data;
+          case 6: cross_link_name=data;
                   break;
-          case 8: { std::stringstream ss(data);
+          case 7: { std::stringstream ss(data);
                     ss >> write_coords;
                     break;
                   } 
-          case 9: { std::stringstream ss(data);
+          case 8: { std::stringstream ss(data);
                     ss >> has_spheres;
                     break;
                   } 
-          case 10: { std::stringstream ss(data);
+          case 9: { std::stringstream ss(data);
                     double tmp; 
                     while(ss >> tmp) {
                       youngs_inc_default.push_back(tmp);
@@ -365,7 +359,7 @@ inputs::inputs(string input_file)
                     }
                     break;
                   } 
-          case 11:  { std::stringstream ss(data);
+          case 10:  { std::stringstream ss(data);
                       double tmp; 
                       while(ss >> tmp) {
                       shear_inc_default.push_back(tmp);
@@ -374,7 +368,7 @@ inputs::inputs(string input_file)
                       }
                     break;
                     } 
-          case 12:  { std::stringstream ss(data);
+          case 11:  { std::stringstream ss(data);
                       double tmp; 
                       while(ss >> tmp) {
                       poisson_inc_default.push_back(tmp);
@@ -383,23 +377,23 @@ inputs::inputs(string input_file)
                       }
                     break;
                     } 
-          case 13:  { std::stringstream ss(data);
+          case 12:  { std::stringstream ss(data);
                       ss >> youngs_dom_default;
                       break;
                     } 
-          case 14:  { std::stringstream ss(data);
+          case 13:  { std::stringstream ss(data);
                       ss >> poisson_dom_default;
                       break;
                     } 
-          case 15:  { std::stringstream ss(data);
+          case 14:  { std::stringstream ss(data);
                       ss >> M_weight;
                       break;
                     } 
-          case 16:  { std::stringstream ss(data);
+          case 15:  { std::stringstream ss(data);
                       ss >> Mc_weight;
                       break;
                     }
-					case 17: 	{	std::stringstream ss(data);
+					case 16: 	{	std::stringstream ss(data);
 											ss >> NN_TOL;
 											break;
 									 	}
@@ -438,7 +432,6 @@ void inputs::print()
 {
 	std::cout << "Inputs: " << std::endl
 					  << "Vol_file: " << vol_file << std::endl
-						<< "Msh_file: " << msh_file << std::endl
 						<< "geo_file: " << geo_file << std::endl
 						<< "plane_file: " << plane_file << std::endl
 						<< "mask_file: " << mask_file << std::endl
