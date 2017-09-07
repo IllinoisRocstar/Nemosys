@@ -23,7 +23,7 @@ int main (int argc, char* argv[])
 	
 	std::string line1, line2, tmp_str;
 	double val1, val2, TOL;
-	TOL = std::stof(argv[3]);
+	TOL = atof(argv[3]);
 	int i = 0;
 	while (getline(inputstream1, line1) && getline(inputstream2, line2)) {
 		++i;
