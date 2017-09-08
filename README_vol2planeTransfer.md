@@ -110,4 +110,4 @@ An example case can be found in testing/test_data/vol2planeTransfer_test
 Currently, unit specifications are as follows:
 * Gas constant R is in units of (m^3 * GPa)/(K * mol)
 * Temperature is in Kelvin
-* All modulii are in GPa 
+* All moduli are in GPa 
