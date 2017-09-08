@@ -101,7 +101,7 @@ public:
 
    // inquiry 
    
-	 // number of points
+   // number of points
    int getNumberOfPoints();
    // number of cells
    int getNumberOfCells();
@@ -111,17 +111,17 @@ public:
    int getNumberOfCellData();
    //get given point ID coordinates
    double* getPointCoords(int pntId);
-	 // returns coordinates of member points in cell with ID 
-	 std::vector<double* > getCellCoords(int pntId, int& numComponent);
-	 // returns coordinates of centers of all cells 
-	 std::vector<double > getCellCenters(int& numComponent, int nDim); 
-	 // returns min extent
-	 double getMinExtent(int nDim, const std::vector<double>& pntCrds);
-	 //return coordinates of all points in mesh
-	 std::vector<double> getAllPointCoords(int nDim); 
-	 // check for named array in vtk
-	 int IsArrayName(std::string name);
-	 // access to data
+   // returns coordinates of member points in cell with ID 
+   std::vector<double* > getCellCoords(int pntId, int& numComponent);
+   // returns coordinates of centers of all cells 
+   std::vector<double > getCellCenters(int& numComponent, int nDim); 
+   // returns min extent
+   double getMinExtent(int nDim, const std::vector<double>& pntCrds);
+   //return coordinates of all points in mesh
+   std::vector<double> getAllPointCoords(int nDim); 
+   // check for named array in vtk
+   int IsArrayName(std::string name);
+   // access to data
    // get a point data array
    int getPointDataArray(int id, std::vector<std::vector<double>> &pntData, 
                          int &numTuple, int &numComponent);
@@ -130,20 +130,20 @@ public:
    int getCellDataArray(int id, std::vector<std::vector<double> > &cllData, 
                         int &numTuple, int &numComponent);
 
-	 std::vector<std::vector<double> >
-	 getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,     
-   		           std::vector<std::vector<double>>& volDataMat,
-      		       std::vector<double>& PlaneCellCenters,
-								 std::vector<double>& VolPointCoords, double tol);
+   std::vector<std::vector<double> >
+   getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,     
+                 std::vector<std::vector<double>>& volDataMat,
+                 std::vector<double>& PlaneCellCenters,
+                 std::vector<double>& VolPointCoords, double tol);
 
-	// consider inclusions in interpolation
-	std::vector<std::vector<double>>
-	getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+  // consider inclusions in interpolation
+  std::vector<std::vector<double>>
+  getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
                 std::vector<std::vector<double>>& volDataMat,
                 std::vector<double>& PlaneCellCenters,
-								std::vector<double>& VolPointCoords,
+                std::vector<double>& VolPointCoords,
                 std::vector<sphere>& spheres, 
-								std::vector<double>& maskData, double tol);
+                std::vector<double>& maskData, double tol);
 
  
   // add data
@@ -154,27 +154,27 @@ public:
   void setCellDataArray( const char* name, int numComponent,
                          std::vector<double> &pntArrData);
 
-	// write interpolated data
-	// no spheres, don't write coords
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
-											 double Mc, double M, double youngs_dom_default,
-											 double poisson_dom_default, 
-  	                   std::ostream& outputStream);
-	// no spheres, switch to write coords
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
-    	                 double Mc, double M, double youngs_dom_default,
-											 double poison_dom_default,
-											 const std::vector<double>& PlaneCellCenters, int nDim,
+  // write interpolated data
+  // no spheres, don't write coords
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
+                       double Mc, double M, double youngs_dom_default,
+                       double poisson_dom_default, 
+                       std::ostream& outputStream);
+  // no spheres, switch to write coords
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
+                       double Mc, double M, double youngs_dom_default,
+                       double poison_dom_default,
+                       const std::vector<double>& PlaneCellCenters, int nDim,
                        std::ostream& outputStream, bool writeCoord);
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
-											 double Mc, double M,	double youngs_dom_default,
-											 double poisson_dom_default,
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
+                       double Mc, double M, double youngs_dom_default,
+                       double poisson_dom_default,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::string filename, bool writeCoord);
 
-	// write interpolated data if spheres
-	// has spheres, don't write coords
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
+  // write interpolated data if spheres
+  // has spheres, don't write coords
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poisson_dom_default,
                        const std::vector<double>& PlaneCellCenters, int nDim,
@@ -185,8 +185,8 @@ public:
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
                        std::ostream& outputStream);
-	// has spheres, switch to write coords
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
+  // has spheres, switch to write coords
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
                        double poisson_dom_default,
                        const std::vector<double>& PlaneCellCenters, int nDim,
@@ -197,8 +197,8 @@ public:
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
                        std::ostream& outputStream, bool writeCoord);
-	
-	void writeInterpData(const std::vector<std::vector<double>>& interpData,
+  
+  void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
                        double poisson_dom_default,
                        const std::vector<double>& PlaneCellCenters, int nDim,
@@ -219,8 +219,8 @@ private:
    char* xmlFileName;
    vtkSmartPointer<vtkXMLUnstructuredGridReader> unsGridReader;
    vtkSmartPointer<vtkDataSetReader> dataSetReader;
-	 // adding support for image file
-	 vtkSmartPointer<vtkXMLImageDataReader> imageDataSetReader;
+   // adding support for image file
+   vtkSmartPointer<vtkXMLImageDataReader> imageDataSetReader;
    std::string extension; 
    vtkDataSet *dataSet;
    vtkPointData *pointData;
