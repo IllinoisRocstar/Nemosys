@@ -109,6 +109,7 @@ An example case can be found in testing/test_data/vol2planeTransfer_test
 
 ### Unit Specification ###
 Currently, unit specifications are as follows:
-* Gas constant R is in units of (m^3 * GPa)/(K * mol)
-* Temperature is in Kelvin
-* All moduli are in GPa 
+* Gas constant R is in units of (m^3 * GPa)/(K * mol) and is specified 
+  in the driver source file: utils/vol2planeTransfer.C
+* Temperature is in Kelvin and is specified in the input file
+* All moduli are in GPa and is specified in the input file
