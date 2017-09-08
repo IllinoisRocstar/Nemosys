@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 		switch(inp.has_spheres) {
 			case 0: {	interpData=
 									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-																				 volDataMat, PlaneCellCenters,
+									                       volDataMat, PlaneCellCenters,
 																				 VolPointCoords, tol);
 								
 								VolMesh->writeInterpData(interpData, inp.Mc_weight, 
