@@ -43,7 +43,8 @@ To test the utility, run:
 $ make test
 ```
 ### Usage ###
-
+After the utility has been compiled, it can be executed from the command
+line with an input file, below named "file.inp" as the only argument.
 ```
 $ vol2planeTransfer file.inp
 ```
