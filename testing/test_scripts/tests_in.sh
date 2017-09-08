@@ -14,9 +14,9 @@ exec_dir=@CMAKE_BINARY_DIR@/bin
 diff_exec=$(find ${source_dir} -name diff_tol)
 if [ ! -e ${diff_exec} ]
 then
-	echo "diff_tol executable does not exist"
-	echo "Compile diff_tol.cpp to generate"
-	exit 1
+  echo "diff_tol executable does not exist"
+  echo "Compile diff_tol.cpp to generate"
+  exit 1
 fi
 
 # passing name of test case folder as command line arg
@@ -38,19 +38,19 @@ ${exec_dir}/vol2planeTransfer ${inp_file}
 
 if [ ! -e ${out_file} ]
 then
-	echo "No ${out_file} results from execution!"
-	exit 1
+  echo "No ${out_file} results from execution!"
+  exit 1
 else
-	# compare output file with gold file
-	${diff_exec} ${out_file} ${ref_file} ${TOL}
-	if [ $? -ne 0 ]
-	then
-		echo "Test Failed: ${out_file} differs from ${ref_file}" | tee -a ../${log_file}
-		printf "\n" >> ../${log_file}
-		exit 1
-	else
-		echo "Test Passed: ${out_file} and ${ref_file} are the same" | tee -a ../${log_file}
-	fi
+  # compare output file with gold file
+  ${diff_exec} ${out_file} ${ref_file} ${TOL}
+  if [ $? -ne 0 ]
+  then
+    echo "Test Failed: ${out_file} differs from ${ref_file}" | tee -a ../${log_file}
+    printf "\n" >> ../${log_file}
+    exit 1
+  else
+    echo "Test Passed: ${out_file} and ${ref_file} are the same" | tee -a ../${log_file}
+  fi
 fi
 printf "\n" >> ../${log_file}
 exit 0
