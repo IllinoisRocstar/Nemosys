@@ -56,6 +56,13 @@ std::vector<std::string> get_phys_names(std::string mshFileName);
    from gmsh .msh file */
 std::vector<int> get_phys_nums(std::string mshFileName);
 
+/* pair struct for physical constants */
+struct physical_constants
+{
+  long double R;
+  double T;  
+};
+
 // class to read input file
 class inputs {
 public:
@@ -79,6 +86,7 @@ public:
   double youngs_dom_default;
   double poisson_dom_default;
   double M_weight, Mc_weight, NN_TOL;
+  double T;
 };
 
 /*************************************************************************/
@@ -105,7 +113,8 @@ int main(int argc, char* argv[])
               << "poisson_dom_default" << std::endl
               << "M_weight" << std::endl
               << "Mc_weight" << std::endl
-              << "NN_TOL" << std::endl;
+              << "NN_TOL" << std::endl
+              << "Temperature" << std::endl;
     exit(1);
   }
 
@@ -126,6 +135,7 @@ int main(int argc, char* argv[])
   PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
   maskMesh = new vtkAnalyzer((char*) &(inp.mask_file)[0u]);
   VolMesh->read();
+  VolMesh->report();
   PlaneMesh->read();
   maskMesh->read();
 
@@ -148,6 +158,11 @@ int main(int argc, char* argv[])
   // setting tol for knn search in k-d tree
   double tol = inp.NN_TOL*minExtent;
 
+  // defining physical constants
+  physical_constants phys_const;
+  phys_const.R = .0000000083144598; // in m^3*GPa/(K*mol)
+  phys_const.T = inp.T;
+  
   // creating interpolation for cross_link 
   int species_id = VolMesh->IsArrayName(inp.cross_link_name);
   if (species_id >= 0) {
@@ -171,6 +186,7 @@ int main(int argc, char* argv[])
                 VolMesh->writeInterpData(interpData, inp.Mc_weight, 
                                          inp.M_weight, inp.youngs_dom_default,
                                          inp.poisson_dom_default,
+                                         phys_const.T, phys_const.R,
                                          PlaneCellCenters, nDim, 
                                          inp.out_file, (bool) inp.write_coords);
                 break;
@@ -183,6 +199,7 @@ int main(int argc, char* argv[])
                 VolMesh->writeInterpData(interpData, inp.Mc_weight,
                                          inp.M_weight, inp.youngs_dom_default,
                                          inp.poisson_dom_default,
+                                         phys_const.T, phys_const.R,
                                          PlaneCellCenters, nDim, spheres, 
                                          mat_sphere_names, inp.material_names,
                                          inp.youngs_inc_default, inp.shear_inc_default,
@@ -395,6 +412,10 @@ inputs::inputs(string input_file)
                     }
           case 16:  { std::stringstream ss(data);
                       ss >> NN_TOL;
+                      break;
+                    }
+          case 17:  { std::stringstream ss(data);
+                      ss >> T;
                       break;
                     }
 
