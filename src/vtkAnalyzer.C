@@ -383,7 +383,7 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 // no spheres, write_coords=0
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
-                                  double poisson_dom_default,
+                                  double poisson_dom_default, double T, double R,
                                   std::ostream& outputStream)
 {
   if (!outputStream.good()) {
@@ -395,8 +395,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                << std::left << std::setw(16) << "rho"
                << std::left << std::setw(16) << "E"
                << std::left << std::setw(16) << "V" << std::endl << std::endl;
-  double R = .000008314;
-  double T = 300.0; 
+  //double R = .000008314;
+  //double T = 300.0; 
   for (int i = 0; i < interpData[0].size(); ++i) {
     outputStream << std::left << std::setw(10) << i << std::left << std::setw(16); 
     for (int j = 0; j < interpData.size(); ++j) {
@@ -426,7 +426,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
 // no spheres and coord switch
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
-                                  double poisson_dom_default,
+                                  double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::ostream& outputStream, bool writeCoord)
 {
@@ -436,7 +436,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   }
   if (!writeCoord)
     writeInterpData(interpData, Mc, M, youngs_dom_default,
-                    poisson_dom_default,
+                    poisson_dom_default, T, R,
                     outputStream);
   else {
     outputStream << std::left << std::setw(10) << "id" 
@@ -446,8 +446,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                  << std::left << std::setw(16) << "rho"   
                  << std::left << std::setw(16) << "E"
                  << std::left << std::setw(16) << "V" << std::endl << std::endl;
-    double R = .000008314;
-    double T = 300.0; 
+    //double R = .000008314;
+    //double T = 300.0; 
     for (int i = 0; i < interpData[0].size(); ++i) {
       outputStream << std::left << std::setw(10) << i 
                    << std::left << std::setw(16) << PlaneCellCenters[i*nDim] 
@@ -482,7 +482,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
 // has spheres, write_coords=0
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
-                                  double poisson_dom_default, 
+                                  double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::vector<sphere>& spheres,
                                   std::vector<string>& mat_sphere_names,
@@ -502,8 +502,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                << std::left << std::setw(16) << "E"
                << std::left << std::setw(16) << "V" << std::endl << std::endl;
   
-  double R = .000008314;
-  double T = 300.0; 
+  //double R = .000008314;
+  //double T = 300.0; 
   for (int i = 0; i < interpData[0].size(); ++i) {
     outputStream << std::left << std::setw(10) << i << std::left << std::setw(16); 
     bool in_sphere = false;
@@ -577,7 +577,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
 // has spheres and coord switch
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default, 
-                                  double poisson_dom_default,
+                                  double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::vector<sphere>& spheres,
                                   std::vector<string>& mat_sphere_names,
@@ -591,11 +591,11 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
     std::cout << "Output stream is bad" << std::endl;
     exit(1);
   } 
-  double R = .000008314;
-  double T = 300.0; 
+  //double R = .000008314;
+  //double T = 300.0; 
   if (!writeCoord)
     writeInterpData(interpData, Mc, M, youngs_dom_default, 
-                    poisson_dom_default,
+                    poisson_dom_default, T, R,
                     PlaneCellCenters, nDim, spheres, 
                     mat_sphere_names, material_names, 
                     youngs_inc_default, shear_inc_default, 
@@ -692,7 +692,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
 
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default, 
-                                  double poisson_dom_default,
+                                  double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::string filename, bool writeCoord)
 {
@@ -702,14 +702,14 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
     exit(1);
   }
   writeInterpData(interpData, Mc, M, youngs_dom_default, 
-                  poisson_dom_default, PlaneCellCenters, nDim, 
+                  poisson_dom_default, T, R, PlaneCellCenters, nDim, 
                   outputStream, writeCoord);
 }                                 
 
 
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
-                       double poisson_dom_default,
+                       double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::vector<sphere>& spheres,
                        std::vector<string>& mat_sphere_names,
@@ -724,7 +724,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
     std::cout << "Output file stream is bad" << std::endl;
     exit(1);
   }
-  writeInterpData(interpData, Mc, M, youngs_dom_default, poisson_dom_default,
+  writeInterpData(interpData, Mc, M, youngs_dom_default, poisson_dom_default, T, R,
                   PlaneCellCenters, nDim, spheres, mat_sphere_names, material_names, 
                   youngs_inc_default, shear_inc_default, poisson_inc_default, 
                   outputStream, writeCoord);

@@ -158,17 +158,17 @@ public:
   // no spheres, don't write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
-                       double poisson_dom_default, 
+                       double poisson_dom_default, double T, double R, 
                        std::ostream& outputStream);
   // no spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
-                       double poison_dom_default,
+                       double poison_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::ostream& outputStream, bool writeCoord);
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
-                       double poisson_dom_default,
+                       double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::string filename, bool writeCoord);
 
@@ -176,7 +176,7 @@ public:
   // has spheres, don't write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
-                       double poisson_dom_default,
+                       double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::vector<sphere>& spheres,
                        std::vector<string>& mat_sphere_names,
@@ -188,7 +188,7 @@ public:
   // has spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
-                       double poisson_dom_default,
+                       double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::vector<sphere>& spheres,
                        std::vector<string>& mat_sphere_names,
@@ -200,7 +200,7 @@ public:
   
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
-                       double poisson_dom_default,
+                       double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::vector<sphere>& spheres,
                        std::vector<string>& mat_sphere_names,

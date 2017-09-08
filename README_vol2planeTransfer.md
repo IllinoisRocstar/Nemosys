@@ -72,6 +72,7 @@ descriptions of each option:
   M_weight              =   {1}                       // Molecular weight of primary polymer before cross linking
   Mc_weight             =   {0}                       // Molecular weight of polymer chain between cross links
   NN_TOL                =   {.01}                     // Multiplier of min-extent to define radius in k-NN search
+  Temperature           =   {300}                     // Temperature in which RocLB sim was conducted
 ```
 
 NOTES: 
@@ -104,3 +105,9 @@ If write_coords is set to 0 in the input file, the output will
 exclude the X, Y and Z columns. 
 
 An example case can be found in testing/test_data/vol2planeTransfer_test
+
+### Unit Specification ###
+Currently, unit specifications are as follows:
+* Gas constant R is in units of (m^3 * GPa)/(K * mol)
+* Temperature is in Kelvin
+* All modulii are in GPa 
