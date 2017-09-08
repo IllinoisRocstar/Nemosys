@@ -20,32 +20,32 @@ using std::size_t; using std::stringstream;
 
 class sphere {
 public:
-	// constructors
-	sphere(){}	
-	sphere(double x_, double y_, double z_, double r_)
-	:	x(x_), y(y_), z(z_), r(r_) {}
-	~sphere(){}
-	// access		
-	double X() const { return x; }
-	double Y() const { return y; }
-	double Z() const { return z; }
-	double R() const { return r; }
+  // constructors
+  sphere(){}  
+  sphere(double x_, double y_, double z_, double r_)
+  : x(x_), y(y_), z(z_), r(r_) {}
+  ~sphere(){}
+  // access   
+  double X() const { return x; }
+  double Y() const { return y; }
+  double Z() const { return z; }
+  double R() const { return r; }
 
-	// member
-	bool in_sphere(std::vector<double> point);		
+  // member
+  bool in_sphere(std::vector<double> point);    
 
 private:
-	double x;
-	double y;
-	double z;
-	double r;
+  double x;
+  double y;
+  double z;
+  double r;
 };
 
 typedef struct sphere_string sphere_string;
 struct sphere_string 
 {
-	vector<sphere> spheres;
-	vector<std::string> strings;
+  vector<sphere> spheres;
+  vector<std::string> strings;
 };
 
 // read spheres from istream
