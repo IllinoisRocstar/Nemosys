@@ -163,11 +163,9 @@ int main(int argc, char* argv[])
 		std::vector<std::vector<double> > interpData;
 		// check if spheres are present and do accordingly
 		switch(inp.has_spheres) {
-			case 0: {	interpData=
-									VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
-									                       volDataMat, PlaneCellCenters,
-																				 VolPointCoords, tol);
-								
+			case 0: {	interpData= VolMesh->getInterpData(nDim, 10, numComponent, numTuple,
+									                                 volDataMat, PlaneCellCenters,
+																			          	 VolPointCoords, tol);
 								VolMesh->writeInterpData(interpData, inp.Mc_weight, 
 								  											 inp.M_weight, inp.youngs_dom_default,
 																				 inp.poisson_dom_default,
