@@ -125,9 +125,11 @@ During the interpolation and subsequent writing of data, the following
 checks are performed:
 * If a point on the cross-section is inside of an inclusion, the properties of the
   material of the inclusion are used for Young's modulus and Poisson ratio; the crosslink
-  density at the point is set to 0. 
+  density at the point is set to 0. This determination is made with the analytic equation
+  describing a given spherical inclusion.
 * Neighbors of a point on the cross-section that are outside of the radius of the search
   (% of extent passed by user) or inside of inclusions are given 0 weight 
-  in the interpolation.
-* If all neighbors of a point on the cross-section are inside of inclusions, an error
-  is thrown and the program halts with non-zero exit status.
+  in the interpolation. The latter determination is made using the bbmask output by RocLB.
+* If all neighbors of a non-inclusion point on the cross-section are inside of inclusions, 
+  an error is thrown and the program halts with non-zero exit status. This determination is
+  made using the bbmask output by RocLB.
