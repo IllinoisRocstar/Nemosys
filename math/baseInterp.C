@@ -202,13 +202,15 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
       nnIdx  = new ANNidx[nNib];
       dists  = new ANNdist[nNib];
       kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
-    
+
       // using tolerance to exclude points with dist>tol
       // by setting them to -1
-      for (int i = 0; i < nNib; ++i) {
-        if (dists[i] > tol)
-          dists[i] = -1;
+      for (int iNib = 0; iNib < nNib; ++iNib) {
+       
+         if (dists[iNib] > tol)
+          dists[iNib] = -1;
       }
+      
       double totW = 0.0;
       // searching for zero-distance points
       int iNibZeroDist = -1;
@@ -231,13 +233,14 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
       else {
         // query point is not repeating
         for (int iNib=0; iNib<nNib; iNib++) {
-          // checking if distance is within tol
-          if (dists[iNib] != -1)
+          // checking if distance is within tol and weather point is in inclusion
+          pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
+          if (dists[iNib] != -1 || maskData[pntNibIdx[iPnt*nNib+iNib]] == 0.0)
             totW +=1.0/dists[iNib];
         }
         for (int iNib=0; iNib<nNib; iNib++) {
-          pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
-            if (dists[iNib] != -1) 
+          //pntNibIdx[iPnt*nNib+iNib] = nnIdx[iNib];
+            if (dists[iNib] != -1 || maskData[pntNibIdx[iPnt*nNib+iNib]] == 0.0) 
               w[iPnt*nNib+iNib] = (1.0/dists[iNib])/totW;
             // if dist to query outside tolerance, weight=0
             else

@@ -39,7 +39,8 @@
     - reading material names from geo file 
     - added support for specified/unspecified material and domain params 
     - added exception handling for when neighbors of points on plane outside of
-      inclusion are inside inclusion */
+      inclusion are inside inclusion 
+    - no longer considers inclusion points in weight calculation*/
 /************************************************************************
  *Auxilliary classes and functions
 ************************************************************************/
@@ -144,6 +145,30 @@ int main(int argc, char* argv[])
   int num_vol_points = VolMesh->getNumberOfPoints();
   int nDim = 3;
 
+  // TEST STUFF
+
+  /*std::vector<std::vector<double>> maskDatas_tmp;
+  int tmpTuples, tmpComponents;
+  maskMesh->getPointDataArray(0, maskDatas_tmp, tmpTuples, tmpComponents);
+  std::vector<double> maskData_tmp(tmpTuples);
+  for (int i = 0; i < tmpTuples; ++i)
+    maskData_tmp[i] = maskDatas_tmp[i][0];
+  
+  vtkDataSet* data = maskMesh->getdataSet();
+  
+  for (int i = 0; i < maskMesh->getNumberOfCells(); ++i) {
+    vtkIdList* point_ids = data->GetCell(i)->GetPointIds();
+    for (int j = 0; j < point_ids->GetNumberOfIds() ; ++j) {
+      if (maskData_tmp[point_ids->GetId(j)] == 1.0) {
+        double* pntcoords = maskMesh->getPointCoords(point_ids->GetId(j));
+        std::cerr << pntcoords[0] << " " 
+                  << pntcoords[1] << " " 
+                  << pntcoords[2] << std::endl;
+      }
+    }
+  }*/
+
+
   // get centers of cells in plane mesh
   std::vector<double> PlaneCellCenters = 
   PlaneMesh->getCellCenters(numComponent, nDim);
@@ -174,6 +199,7 @@ int main(int argc, char* argv[])
     std::vector<double> maskData(tmpTuple);
     for (int i = 0; i < tmpTuple; ++i)
       maskData[i] = maskDatas[i][0];
+  
 
     std::vector<std::vector<double> > interpData;
     // check if spheres are present and do accordingly
