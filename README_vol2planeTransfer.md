@@ -112,7 +112,7 @@ Currently, unit specifications are as follows:
 * Gas constant R is in units of (m^3 * GPa)/(K * mol) and is specified 
   in the driver source file: utils/vol2planeTransfer.C
 * Temperature is in Kelvin and is specified in the input file
-* All moduli are in GPa and is specified in the input file
+* All moduli are in GPa and are specified in the input file
 
 ### Notes to user ###
 During the interpolation and subsequent writing of data, the following
