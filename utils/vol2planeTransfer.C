@@ -24,8 +24,6 @@
 /************************************************************************/
 /* TODO: Check if plane is contained in volume and act accordingly if not
    TODO: Generalize for n Dimensions. nDim is useless atm  
-   TODO: Add support for checking plane points in 
-         sphere shell using extents as ref
    TODO: Unit conversion
    TODO: Refactor by storing opened objects in inputs class and redefining function 
          prototypes accordingly 
