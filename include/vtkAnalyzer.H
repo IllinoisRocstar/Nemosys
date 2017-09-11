@@ -100,7 +100,7 @@ public:
    void write(char* outXMLFileName);
 
    // inquiry 
-   
+
    // number of points
    int getNumberOfPoints();
    // number of cells
