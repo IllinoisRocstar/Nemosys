@@ -42,6 +42,13 @@ To test the utility, run:
 ```
 $ make test
 ```
+This executes a test case found in Nemosys/testing/test_dat/vol2planeTransfer_test.
+There is also a python script to plot the resulting points with values of 0 for crosslink
+density, colored by material:
+```
+$ python plot_points.py
+```
+
 ### Usage ###
 After the utility has been compiled, it can be executed from the command
 line with an input file, below named "file.inp" as the only argument.
