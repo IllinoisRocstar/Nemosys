@@ -113,3 +113,15 @@ Currently, unit specifications are as follows:
   in the driver source file: utils/vol2planeTransfer.C
 * Temperature is in Kelvin and is specified in the input file
 * All moduli are in GPa and is specified in the input file
+
+### Notes to user ###
+During the interpolation and subsequent writing of data, the following
+checks are performed:
+* If a point on the cross-section is inside of an inclusion, the properties of the
+  material of the inclusion are used for Young's modulus and Poisson ratio; the crosslink
+  density at the point is set to 0. 
+* Neighbors of a point on the cross-section that are outside of the radius of the search
+  (% of extent passed by user) or inside of inclusions are given 0 weight 
+  in the interpolation.
+* If all neighbors of a point on the cross-section are inside of inclusions, an error
+  is thrown and the program halts with non-zero exit status.
