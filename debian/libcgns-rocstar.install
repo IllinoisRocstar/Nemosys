@@ -1,0 +1,9 @@
+usr/lib/**/libcgns.a
+usr/lib/**/libcgns.so*
+usr/include/cgns_io.h
+usr/include/cgnsBuild.defs
+usr/include/cgnsconfig.h
+usr/include/cgnslib.h
+usr/include/cgnstypes_f.h
+usr/include/cgnstypes_f03.h
+usr/include/cgnswin_f.h
