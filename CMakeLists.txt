@@ -1,5 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(Nemosys)
+
+ENABLE_TESTING()
 include(GNUInstallDirs)
 
 # this variable controls the default value of the options which are normally set
@@ -193,20 +195,31 @@ SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
+SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
 set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 # Builiding libraries #########################################################
+
+# build sphere lib
+IF(NOT BUILD_STATIC)
+  ADD_LIBRARY(sphere SHARED ${SPHERE_SRCS})
+ELSE()
+	ADD_LIBRARY(sphere ${SPHERE_SRCS})
+ENDIF()
+INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
+
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
 ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB})
+
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere)
 INSTALL(TARGETS Nemosys LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Build r8 and rbf library
@@ -225,6 +238,8 @@ ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
 INSTALL(TARGETS interp LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
+
+
 # Rocstar support library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Rocs SHARED ${ROCSTAR_SRCS})
@@ -236,10 +251,23 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Building utilities #########################################################
 # There are too many dependencies for gmsh this needs to be populated automatically
+OPTION(BUILD_UTILS "BUILD_UTILS" ON)
+
+IF(BUILD_UTILS)
 SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
 SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
     -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext
     -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+
+#vol2planeTransfer utility
+ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
+if(VTK_LIBRARIES)
+	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys ${VTK_LIBRARIES} interp sphere)
+else()
+	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets interp sphere)
+ENDIF()
+INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
+
 
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
@@ -293,6 +321,7 @@ IF (ENABLE_DTK)
   INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 ENDIF()
 
+ENDIF()
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
@@ -319,4 +348,12 @@ IF(BUILD_DOCUMENTATION)
 ENDIF()
 
 # Perform testing ############################################################
-#ADD_SUBDIRECTORY(testing)
+SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
+SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
+SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
+ADD_SUBDIRECTORY(testing)
+INSTALL(FILES ${DIFFTOL} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
