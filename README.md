@@ -21,12 +21,15 @@ Need to `apt install` at least the following dependencies:
 * libice-dev
 * gfortran
 
-Your best bet is to build the local versions of gmsh, madlib, and cgns found at
-/Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz and install them
-locally within this project folder. Assume $NEMOSYS_PROJECT_PATH is the path
-to the local install directory.
+You can use `build.sh` found in the root project directory to automatically
+build the appropriate dependencies given the path to this directory and the
+tarball of dependencies, or you can build each dependency manually. You can
+find all the dependencies at:
 
-Extract the whole archive as such:
+/Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz
+
+Assuming your building everything manually and $NEMOSYS_PROJECT_PATH is the
+path to the local install directory, you start by extracting the whole archive:
 
 ```
 $ cd $HOME/appropriate/project/path
