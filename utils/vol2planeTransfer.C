@@ -133,7 +133,6 @@ int main(int argc, char* argv[])
   PlaneMesh = new vtkAnalyzer((char*) &(inp.plane_file)[0u]);
   maskMesh = new vtkAnalyzer((char*) &(inp.mask_file)[0u]);
   VolMesh->read();
-  VolMesh->report();
   PlaneMesh->read();
   maskMesh->read();
 
@@ -163,7 +162,32 @@ int main(int argc, char* argv[])
                   << pntcoords[2] << std::endl;
       }
     }
-  }*/
+  }
+
+   // Reading gmsh file and info
+    std::string mshFileName = argv[6];
+    std::ifstream mshStream(mshFileName.c_str());
+
+    MAd::pGModel model = NULL;
+    MAd::GM_create(&model,"initial");
+    MAd::pMesh mesh = MAd::M_new(model);
+    MAd::M_load(mesh, mshFileName.c_str());
+    std::cout << "Using tags?: " << MAd::GM_physical(model) << std::endl;
+  
+  //  std::cout << model.getNumVertices() << std::endl;
+
+    std::vector<std::vector<double>> curds;
+    MAd::VIter vit = M_vertexIter(mesh);
+    MAd::pVertex pv;
+    while (pv = VIter_next(vit)) {
+      MAd::pPoint pp = MAd::V_point(pv);
+      std::cout << pp->X << " " << pp->Y << " " << pp->Z << std::endl;
+    }
+  
+    //MAd::checkMesh(mesh);
+    //MAd::M_info(mesh);
+
+*/
 
 
   // get centers of cells in plane mesh

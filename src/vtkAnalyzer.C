@@ -26,6 +26,8 @@ void vtkAnalyzer::read()
     {
       //dataSet = ReadAnXMLFile<vtkXMLRectilinearGridReader> (xmlFileName);
     }
+   
+
     else if (extension == ".vti")
     {
       // adding support for image file
@@ -40,6 +42,7 @@ void vtkAnalyzer::read()
     {
       //dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (xmlFileName);
     }
+    // NOTE: There seems to be an issue with reading array data in .vtk format
     else if (extension == ".vtk")
     {
       //dataSetReader = ReadAnXMLFile<vtkDataSetReader> (xmlFileName);
