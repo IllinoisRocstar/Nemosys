@@ -1,0 +1,4 @@
+usr/include/MAdLib/*.h
+usr/lib/**/libMAdLib.a
+usr/lib/**/libMAdLib.so*
+usr/share/doc/madlib/*

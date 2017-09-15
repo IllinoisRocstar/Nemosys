@@ -1,0 +1,124 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0
+Upstream-Name: nemosys
+Upstream-Contact: Larry Price <lrp@illinoisrocstar.com>
+
+Files: usr/lib/**/libcgns.a;usr/lib/**/libcgns.so*;usr/include/cgns*
+Copyright: 2015 CGNS
+License: zlib
+ This software is provided 'as-is', without any express or implied
+ warranty. In no event will the authors be held liable for any damages
+ arising from the use of this software.
+ .
+ Permission is granted to anyone to use this software for any purpose,
+ including commercial applications, and to alter it and redistribute it
+ freely, subject to the following restrictions:
+ .
+ 1. The origin of this software must not be misrepresented; you must
+    not claim that you wrote the original software. If you use this
+    software in a product, an acknowledgment in the product documentation
+    would be appreciated but is not required.
+ .
+ 2. Altered source versions must be plainly marked as such, and must not
+    be misrepresented as being the original software.
+ .
+ 3. This notice may not be removed or altered from any source distribution.
+
+Files: usr/include/MAdLib/*.h;usr/lib/**/libMAdLib*;usr/share/doc/madlib/*
+Copyright: 2016 The Apache Software Foundation;2014-2015 Pivotal Inc;
+ 2010-2013 by EMC Corporation;
+ 2010-2013 by Regents of the University of California;
+ 2001 Dr Martin Porter;2002 Richard Boulton
+License: apache-2.0
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+ http://www.apache.org/licenses/LICENSE-2.0
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+Files: usr/include/gmsh/*;usr/lib/**/libGmsh*;usr/share/doc/gmsh/*;
+ usr/share/man/man1/gmsh.1
+Copyright: 1997-2017 C. Geuzaine;J.-F. Remacle
+License: GPL-2
+ Gmsh is provided under the terms of the GNU General Public License
+ (GPL), Version 2 or later, with the following exception:
+ .
+ The copyright holders of Gmsh give you permission to combine Gmsh
+ with code included in the standard release of TetGen (from Hang
+ Si), Netgen (from Joachim Sch"oberl), Chaco (from Bruce Hendrickson
+ and Robert Leland at Sandia National Laboratories), METIS (from
+ George Karypis at the University of Minnesota) and OpenCASCADE
+ (from Open CASCADE S.A.S) under their respective licenses. You may
+ copy and distribute such a system following the terms of the GNU
+ GPL for Gmsh and the licenses of the other code concerned, provided
+ that you include the source code of that other code when and as the
+ GNU GPL requires distribution of source code.
+ .
+ Note that people who make modified versions of Gmsh are not
+ obligated to grant this special exception for their modified
+ versions; it is their choice whether to do so. The GNU General
+ Public License gives permission to release a modified version
+ without this exception; this exception also makes it possible to
+ release a modified version which carries forward this exception.
+ .
+ End of exception.
+ .
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/GPL-2'.
+
+Files: *
+Copyright: 2015 Rocstar Illinois LLC
+License: NCSA
+ University of Illinois/NCSA Open Source License
+ http://opensource.org/Licenses/NCSA
+ .
+ Copyright (c) 2015 Illinois Rocstar, LLC
+ All rights reserved.
+ .
+ Developed by:           Illinois Rocstar, LLC
+                         http://illinoisrocstar.com
+ .
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal with the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or
+ sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+ .
+ @ Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimers.
+ .
+ @ Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimers in
+   the documentation and/or other materials provided with the
+   distribution.
+ .
+ @ Neither the names of Illinois Rocstar LLC, University of Illinois,
+   nor the names of its contributors may be used to endorse or promote
+   products derived from this Software without specific prior written
+   permission.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE SOFTWARE.
