@@ -1,0 +1,87 @@
+Source: nemosys
+Section: libs
+Priority: extra
+Maintainer: Larry Price <lrp@illinoisrocstar.com>
+Build-Depends: debhelper (>=9),
+               cmake,
+               libvtk6-dev,
+               libmetis-dev,
+               libann-dev,
+               libproj-dev
+Standards-Version: 3.9.8
+Homepage: https://illinoisrocstar.com
+
+Package: libmadlib-rocstar
+Architecture: amd64
+Replaces: libmadlib-dev
+Depends: libgmsh-rocstar,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: libgmsh-rocstar
+Architecture: amd64
+Replaces: libgmsh-dev,
+          gmsh
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: libcgns-rocstar
+Architecture: amd64
+Replaces: libcgns-dev,
+          cgns,
+          libcgns3.3,
+          libcgns3.1
+Breaks: libcgns3.3,
+        libcgns3.1
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: libnemosys
+Architecture: amd64
+Depends: libmadlib-rocstar,
+         libgmsh-rocstar,
+         libcgns-rocstar,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: libr8
+Architecture: amd64
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: libinterp
+Architecture: amd64
+Depends: libr8,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: librocs
+Architecture: amd64
+Depends: libcgns-rocstar,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
+
+Package: grid2gridtransfer
+Architecture: amd64
+Depends: libinterp,
+         libnemosys,
+         libr8,
+         librocs,
+         ${shlibs:Depends},
+         ${misc:Depends}
+Description: short description
+ long description
