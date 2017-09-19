@@ -244,6 +244,10 @@ else()
 ENDIF()
 INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
 
+#refineMesh utility
+ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
+TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${GMSH_LIB})
+INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
 
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
