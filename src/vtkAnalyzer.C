@@ -60,6 +60,7 @@ void vtkAnalyzer::read()
 
 void vtkAnalyzer::write(char* outXMLFileName) 
 {
+
     // Dispatch based on the file extension
     if (extension == ".vtu")
     {
@@ -263,6 +264,8 @@ std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
   }
   return cellCoords;
 }
+
+
 
 // returns coordinates of all points in mesh
 std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
@@ -859,6 +862,79 @@ void vtkAnalyzer::setCellDataArray(const char* name, int numComponent,
    cellData->SetActiveScalars(name);
    cellData->SetScalars(da);
    }
+}
+
+void vtkAnalyzer::writeMSH(string filename)
+{
+  
+  std::ofstream outputStream(filename.c_str());
+  if(!outputStream.good()) {
+    std::cout << "Output file stream is bad" << std::endl;
+    exit(1);
+  }
+ 
+  if (!dataSet) {
+    std::cout << "No data to write" << std::endl;
+    exit(2);
+  } 
+  // writing gmsh header
+  outputStream << "$MeshFormat" << std::endl
+               << "2.2 0 8" << std::endl
+               << "$EndMeshFormat" << std::endl; 
+ 
+  // get number of points and number of elements
+  getNumberOfCells();
+  getNumberOfPoints();
+
+  // ensure all cell types are vtkTetra
+  CellContainer cellMap;
+  for (int i = 0; i < numberOfCells; i++)
+  {
+    cellMap[dataSet->GetCellType(i)]++;
+  }
+
+  CellContainer::const_iterator it = cellMap.begin();
+  while (it != cellMap.end())
+  {
+    static const char* type = vtkCellTypes::GetClassNameFromTypeId(it->first); 
+    if (strcmp(type,"vtkTetra") != 0 && strcmp(type,"vtkTriangle") != 0) 
+    {
+      std::cout << "Error: Only tetrahedral and triangular" 
+                << " meshes can be written to gmsh format" << std::endl;
+      exit(3);
+    }
+    ++it;
+  }
+
+  // beginning to write point coords
+  outputStream << "$Nodes" << std::endl << numberOfPoints << std::endl;
+  std::vector<double> PointCoords = getAllPointCoords(3);
+  int j = 1;
+  for (int i = 0; i < numberOfPoints*3; i+=3)
+  {
+    outputStream << j++ << " "
+                 << PointCoords[i] << " "
+                 << PointCoords[i+1] << " "
+                 << PointCoords[i+2] << " " << std::endl;
+  }
+  outputStream << "$EndNodes" << std::endl;
+
+  // beginning to write element type and connectivity
+  outputStream << "$Elements" << std::endl << numberOfCells << std::endl;
+  for (int i = 0; i < numberOfCells; ++i)
+  {
+
+    vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
+    int numComponent = point_ids->GetNumberOfIds();
+    outputStream << i + 1 << " "
+                 << (numComponent == 3 ? 2 : 4) << " "
+                 << 2 << " " << 0 << " " << 1 << " ";
+    for (int j = 0; j < numComponent; ++j)
+       outputStream << point_ids->GetId(j) + 1 << " ";
+    outputStream << std::endl;
+  }
+  outputStream << "$EndElements" << std::endl;
+
 }
 
 //-----------------------------------------------------------------------------
