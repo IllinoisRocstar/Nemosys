@@ -246,7 +246,7 @@ INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
 
 #refineMesh utility
 ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${GMSH_LIB})
+TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${VTK_LIBRARIES} ${GMSH_LIB} interp sphere)
 INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
 
 # optimze utility

@@ -210,11 +210,12 @@ public:
                        std::vector<double>& poisson_inc_default,
                        std::string filename, bool writeCoord);
 
+  void writeMSH(std::string filename);
    // utilities
    // print to output a report about the file
    void report();
    void writeCSV(char* fname, std::vector<double> slnVec);
-
+   vtkSmartPointer<vtkDataSetReader> getReader() {return dataSetReader;}
 private:
    char* xmlFileName;
    vtkSmartPointer<vtkXMLUnstructuredGridReader> unsGridReader;
