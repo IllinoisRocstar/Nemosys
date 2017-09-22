@@ -908,14 +908,13 @@ void vtkAnalyzer::writeMSH(string filename)
 
   // beginning to write point coords
   outputStream << "$Nodes" << std::endl << numberOfPoints << std::endl;
-  std::vector<double> PointCoords = getAllPointCoords(3);
-  int j = 1;
-  for (int i = 0; i < numberOfPoints*3; i+=3)
+  for (int i = 0; i < numberOfPoints; ++i)
   {
-    outputStream << j++ << " "
-                 << PointCoords[i] << " "
-                 << PointCoords[i+1] << " "
-                 << PointCoords[i+2] << " " << std::endl;
+    double* pntcrds = getPointCoords(i);
+    outputStream << i + 1 << " "
+                 << pntcrds[0] << " "
+                 << pntcrds[1] << " "
+                 << pntcrds[2] << " " << std::endl;
   }
   outputStream << "$EndNodes" << std::endl;
 
