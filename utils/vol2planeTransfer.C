@@ -118,13 +118,11 @@ int main(int argc, char* argv[])
 
   // parsing input file and reading/loading stuff 
   inputs inp(argv[1]);
-  //inp.print();
   inp.validate();
   // read geo file for sphere locations
   sphere_string spherestring = readSpheres(inp.geo_file);
   vector<sphere> spheres = spherestring.spheres;
   vector<std::string> mat_sphere_names = spherestring.strings;
-  
   // read mesh data
   vtkAnalyzer* VolMesh;
   vtkAnalyzer* PlaneMesh;
@@ -264,7 +262,6 @@ int main(int argc, char* argv[])
     std::cerr << "No point data arrays found in " << inp.vol_file << std::endl;
     exit(1);
   }
-
 
   delete VolMesh;
   delete PlaneMesh;
@@ -478,7 +475,7 @@ void inputs::validate()
   if (material_names.size() != youngs_inc_default.size() ||
       material_names.size() != shear_inc_default.size() ||
       material_names.size() != poisson_inc_default.size()) {
-    std::cerr << "Defaults must be specified for all materials" << std::endl;
+    std::cerr << "Inconsistency with default specification" << std::endl;
     exit(3);
   }
 
