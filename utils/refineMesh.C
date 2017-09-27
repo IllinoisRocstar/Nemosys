@@ -5,8 +5,8 @@
 int main(int argc, char* argv[])
 {
   // Check input
-  if ( argc != 2 ) {
-    std::cout << "Usage Error: " << argv[0] << " meshFile" << std::endl;
+  if ( argc != 3 ) {
+    std::cout << "Usage Error: " << argv[0] << " meshFile outputMesh" << std::endl;
     exit(1);
   }
   std::string meshFile = argv[1];
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
   }
 
 
-  /////////////////// LOCAL SIZEFIELD TESTS /////////////////////////    
+  /*/////////////////// LOCAL SIZEFIELD TESTS /////////////////////////    
   MAd::LocalSizeField* localSF = new MAd::LocalSizeField(mesh);
   //localSF->setIsoSize(0.1,".01");
   localSF->setIsoSize(0.01,"0.01");
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
   localSF->addGeometricEntity(3,4);
   localSF->addGeometricEntity(3,5);
   localSF->updateTree();
-  
+  */
 
   // FOR 2D
   /*localSF->setIsoSize(0.0001,"0.0");
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
   localSF->updateTree();
   */
 
-  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, localSF);
+  /*MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, localSF);
 
 
   // DISCRETE/PWLSF SIZEFIELD
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
   //MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
 
   adapter->addSizeField(pwlSF);
-  
+  */
   // FOR 2D
   /*MAd::LocalSizeField* localSF2 = new MAd::LocalSizeField(mesh);
   localSF2->setIsoSize(0.1,"0.01");
@@ -129,6 +129,16 @@ int main(int argc, char* argv[])
  
   adapter->addSizeField(localSF2);*/ // was used to refine around inclusion, but leave inclusion empty 
   ////////////////////////// END LOCAL SIZEFIELD TESTS ////////////////////
+  
+
+  MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(mesh->model, 0);
+  mesh->classify_grid_boundaries(bnd);
+  mesh->classify_unclassified_entities();
+  mesh->destroyStandAloneEntities();
+  MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
+  pwlSF->setCurrentSize();
+  pwlSF->scale(.5);
+  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
   // Output situation before optimization
   std::cout << "Statistics before optimization: " << std::endl;
   adapter->printStatistics(std::cout);
@@ -142,7 +152,7 @@ int main(int argc, char* argv[])
   std::cout << "Statistics after optimization: " << std::endl;
   adapter->printStatistics(std::cout);
 
-  MAd::M_writeMsh(mesh, "refined.msh", 2);
+  MAd::M_writeMsh(mesh, argv[2], 2);
  
   //if (localSF) delete localSF;
   //if (adapter) delete adapter; 

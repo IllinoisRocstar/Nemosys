@@ -308,19 +308,32 @@ double vtkAnalyzer::getMinExtent(int nDim, const std::vector<double>& pntCrds)
 } 
 
 
-// returns centers of all cells
+// returns centers of all cells w/ numComponents > 2
 std::vector<double>
-vtkAnalyzer::getCellCenters(int& numComponent, int nDim)
+vtkAnalyzer::getCellCenters(int& numComponent)
 {
+
+  
   int num_cells = getNumberOfCells();
-  std::vector<double> cellCenters(num_cells*nDim,0);
+  // enforce that cell types are not lines etc
+  std::vector<double> cellCenters;
+  int k = 0;
   for (int i = 0; i < num_cells; ++i) {
-    std::vector<double *> cellCoords = getCellCoords(i, numComponent);
-    for (int j = 0; j < numComponent ; ++j) {
-      cellCenters[i*nDim] += cellCoords[j][0]/numComponent;
-      cellCenters[i*nDim+1] += cellCoords[j][1]/numComponent;
-      cellCenters[i*nDim+2] += cellCoords[j][2]/numComponent;
-      delete cellCoords[j];
+    if (dataSet->GetCellType(i) > 4)
+    {
+      std::vector<double *> cellCoords = getCellCoords(i, numComponent);
+      double x, y,z;
+      x = y = z = 0;
+      for (int j = 0; j < numComponent ; ++j) {
+        x += cellCoords[j][0]/numComponent;
+        y += cellCoords[j][1]/numComponent;
+        z += cellCoords[j][2]/numComponent;
+        delete cellCoords[j];
+      }
+      cellCenters.push_back(x);
+      cellCenters.push_back(y);
+      cellCenters.push_back(z);
+      k+=1;
     }
   }
   return cellCenters;
@@ -597,8 +610,6 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
     std::cout << "Output stream is bad" << std::endl;
     exit(1);
   } 
-  //double R = .000008314;
-  //double T = 300.0; 
   if (!writeCoord)
     writeInterpData(interpData, Mc, M, youngs_dom_default, 
                     poisson_dom_default, T, R,
@@ -607,7 +618,6 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                     youngs_inc_default, shear_inc_default, 
                     poisson_inc_default, outputStream);
   else {
-
     outputStream << std::left << std::setw(10) << "id" 
                  << std::left << std::setw(16) << "X"
                  << std::left << std::setw(16) << "Y"
@@ -886,25 +896,31 @@ void vtkAnalyzer::writeMSH(string filename)
   getNumberOfCells();
   getNumberOfPoints();
 
-  // ensure all cell types are vtkTetra
-  CellContainer cellMap;
+  // ensure all cell types are tri/tet or below
   for (int i = 0; i < numberOfCells; i++)
   {
-    cellMap[dataSet->GetCellType(i)]++;
+    int type_id = dataSet->GetCellType(i);
+    if (!(type_id == 3 || type_id == 5 || type_id == 10))
+    {
+      std::cout << "Error: Only tetrahedral and triangular" 
+                << " meshes can be written to gmsh format" << std::endl;
+      exit(3);
+    }
   }
 
-  CellContainer::const_iterator it = cellMap.begin();
+ /* CellContainer::const_iterator it = cellMap.begin();
   while (it != cellMap.end())
   {
     static const char* type = vtkCellTypes::GetClassNameFromTypeId(it->first); 
-    if (strcmp(type,"vtkTetra") != 0 && strcmp(type,"vtkTriangle") != 0) 
+    if (strcmp(type,"vtkTetra") != 0 && strcmp(type,"vtkTriangle") != 0
+                                     && strcmp(type,"vtkLine") != 0) 
     {
       std::cout << "Error: Only tetrahedral and triangular" 
                 << " meshes can be written to gmsh format" << std::endl;
       exit(3);
     }
     ++it;
-  }
+  }*/
 
   // beginning to write point coords
   outputStream << "$Nodes" << std::endl << numberOfPoints << std::endl;
@@ -925,9 +941,31 @@ void vtkAnalyzer::writeMSH(string filename)
 
     vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
     int numComponent = point_ids->GetNumberOfIds();
-    outputStream << i + 1 << " "
-                 << (numComponent == 3 ? 2 : 4) << " "
-                 << 2 << " " << 0 << " " << 1 << " ";
+    outputStream << i + 1 << " ";
+    switch(numComponent)
+    {
+      case 2:
+      {
+        outputStream << 1 << " " << 2 << " " << 1 << " " << 1 << " ";
+        break;
+      }
+      case 3:
+      {
+        outputStream << 2 << " " << 2 << " " << 1 << " " << 1 << " ";
+        break;
+      }
+      case 4:
+      {
+        outputStream << 4 << " " << 2 << " " << 1 << " " << 1 << " ";
+        break;
+      }
+      
+      default: 
+      {  
+        std::cerr << "Components in cell should be less than 4"<< std::endl;
+        exit(1);
+      }
+    }
     for (int j = 0; j < numComponent; ++j)
        outputStream << point_ids->GetId(j) + 1 << " ";
     outputStream << std::endl;
