@@ -4,19 +4,34 @@
 
 int main(int argc, char* argv[])
 {
-
-
-   
-
-
   // Check input
   if ( argc != 2 ) {
-    std::cout << "Usage Error: " << argv[0] << "vtkFile" << std::endl;
+    std::cout << "Usage Error: " << argv[0] << " meshFile" << std::endl;
     exit(1);
   }
-  std::string VTKFile = argv[1];
-/*
-   // Reading gmsh file and info
+  std::string meshFile = argv[1];
+
+
+
+  /*size_t beg = 0;
+  size_t end = meshFile.find(".");
+  string name; 
+  if (end != -1) 
+  { 
+    name = meshFile.substr(beg,end);
+    name.append(".vtu");
+    std::cout << "writing vtu ... " << std::endl;
+    tmpmesh->write((char*) &(name)[0u]);
+    std::cout << "done" << std::endl;
+    
+  }
+  else 
+  {
+    std::cout << "Error finding file extension for " << meshFile << std::endl;
+    exit(1);
+  }*/
+
+/*   // Reading gmsh file and info
     std::string mshFileName = argv[6];
     std::ifstream mshStream(mshFileName.c_str());
 
@@ -40,56 +55,97 @@ int main(int argc, char* argv[])
   /*GModel* srcGModel;
   srcGModel = new GModel("source"); 
 
-  srcGModel->readVTK(VTKFile);
+  srcGModel->readVTK(meshFile);
   std::cout << "Num Vertices: " << srcGModel->getNumVertices() << std::endl;
 
   std::set<GVertex*, GEntityLessThan>::iterator iter = srcGModel->firstVertex();  
   */
 
-  vtkAnalyzer* tmpmesh;
-  tmpmesh = new vtkAnalyzer((char*) &(VTKFile)[0u]);
-  tmpmesh->read();
- 
-  /*size_t beg = 0;
-  size_t end = VTKFile.find(".");
-  string name; 
-  if (end != -1) 
-  { 
-    name = VTKFile.substr(beg,end);
-    name.append(".vtu");
-    std::cout << "writing vtu ... " << std::endl;
-    tmpmesh->write((char*) &(name)[0u]);
-    std::cout << "done" << std::endl;
-    
-  }
-  else 
-  {
-    std::cout << "Error finding file extension for " << VTKFile << std::endl;
-    exit(1);
-  }
-
-  srcGModel->writeMSH("vtkConverted.msh", 2.2);*/
-
-  std::string ofname = "converted.msh";
-  tmpmesh->writeMSH(ofname);
- 
-  MAd::pGModel gmodel = NULL;
-  //MAd::GM_create(&gmodel, "GeoModel");
-  //MAd::GM_read(gmodel, argv[1]);
-  
+  MAd::pGModel gmodel = 0;
   MAd::pMesh mesh = MAd::M_new(gmodel);
-  MAd::M_load(mesh, "converted.msh"); 
   
-  MAd::PWLSField* sizeField = new MAd::PWLSField(mesh);
+  if (meshFile.find(".v") != -1 ) 
+  {
+    vtkAnalyzer* tmpmesh;
+    tmpmesh = new vtkAnalyzer((char*) &(meshFile)[0u]);
+    tmpmesh->read();
+    std::string ofname = "converted.msh";
+    tmpmesh->writeMSH(ofname);
+    MAd::M_load(mesh, "converted.msh"); 
+  }
+  else if (meshFile.find(".msh") != -1)
+  {
+    MAd::M_load(mesh, (char*) &(meshFile)[0u]); 
+  }
+
+
+  /////////////////// LOCAL SIZEFIELD TESTS /////////////////////////    
+  MAd::LocalSizeField* localSF = new MAd::LocalSizeField(mesh);
+  //localSF->setIsoSize(0.1,".01");
+  localSF->setIsoSize(0.01,"0.01");
+  localSF->addGeometricEntity(3,1);
+  localSF->addGeometricEntity(3,2);
+  localSF->addGeometricEntity(3,3);
+  localSF->addGeometricEntity(3,4);
+  localSF->addGeometricEntity(3,5);
+  localSF->updateTree();
   
-  sizeField->setCurrentSize();
-  sizeField->scale(0.5);
+
+  // FOR 2D
+  /*localSF->setIsoSize(0.0001,"0.0");
+  localSF->addGeometricEntity(2,33);
+  localSF->addGeometricEntity(2,34);
+  localSF->addGeometricEntity(2,35);
+  localSF->addGeometricEntity(2,36);
+  localSF->addGeometricEntity(2,37);
+  localSF->updateTree();
+  */
+
+  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, localSF);
+
+
+  // DISCRETE/PWLSF SIZEFIELD
+  // Must define if local doesn't cover full domain
+  MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
+  // sets size as mean edge length squared for edges adjacent
+  // to given vertex  
+  pwlSF->setCurrentSize();
+  //pwlSF->setAllVSizes(1.0);
+  pwlSF->scale(1);
   
-  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, sizeField);
+  //MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
+
+  adapter->addSizeField(pwlSF);
+  
+  // FOR 2D
+  /*MAd::LocalSizeField* localSF2 = new MAd::LocalSizeField(mesh);
+  localSF2->setIsoSize(0.1,"0.01");
+  localSF2->addGeometricEntity(2,33);
+  localSF2->addGeometricEntity(2,34);
+  localSF2->addGeometricEntity(2,35);
+  localSF2->addGeometricEntity(2,36);
+  localSF2->addGeometricEntity(2,37);
+  localSF2->updateTree();
+ 
+  adapter->addSizeField(localSF2);*/ // was used to refine around inclusion, but leave inclusion empty 
+  ////////////////////////// END LOCAL SIZEFIELD TESTS ////////////////////
+  // Output situation before optimization
+  std::cout << "Statistics before optimization: " << std::endl;
+  adapter->printStatistics(std::cout);
+
+  // Optimize
+  std::cout << "Optimizing the mesh ..." << std::endl;
   adapter->run();
-  //apater->removeSlivers();
+  //ma->removeSlivers();
+
+  // Outputs final mesh
+  std::cout << "Statistics after optimization: " << std::endl;
+  adapter->printStatistics(std::cout);
+
   MAd::M_writeMsh(mesh, "refined.msh", 2);
-  
+ 
+  //if (localSF) delete localSF;
+  //if (adapter) delete adapter; 
   return 0;
 }
 
