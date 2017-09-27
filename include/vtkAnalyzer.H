@@ -114,7 +114,7 @@ public:
    // returns coordinates of member points in cell with ID 
    std::vector<double* > getCellCoords(int pntId, int& numComponent);
    // returns coordinates of centers of all cells 
-   std::vector<double > getCellCenters(int& numComponent, int nDim); 
+   std::vector<double > getCellCenters(int& numComponent); 
    // returns min extent
    double getMinExtent(int nDim, const std::vector<double>& pntCrds);
    //return coordinates of all points in mesh

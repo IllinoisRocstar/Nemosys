@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
 
   // get centers of cells in plane mesh
   std::vector<double> PlaneCellCenters = 
-  PlaneMesh->getCellCenters(numComponent, nDim);
+  PlaneMesh->getCellCenters(numComponent);
   
   // get all coordinates in vol mesh
   std::vector<double> VolPointCoords = 
@@ -526,5 +526,6 @@ void inputs::print()
             << "poisson default: " << poisson_dom_default << std::endl
             << "M_weight: " << M_weight << std::endl
             << "Mc_weight: " << Mc_weight << std::endl
-            << "NN_TOL: " << NN_TOL << std::endl;
+            << "NN_TOL: " << NN_TOL << std::endl
+            << "Temperature: " << T << std::endl;
 }
