@@ -1,6 +1,9 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(Nemosys)
 
+ENABLE_TESTING()
+include(GNUInstallDirs)
+
 # this variable controls the default value of the options which are normally set
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
 # -DDEFAULT=0 -DENABLE_DTK=1")
@@ -36,17 +39,36 @@ ENDIF (ENABLE_MPI)
 FIND_PACKAGE(VTK REQUIRED)
 INCLUDE(${VTK_USE_FILE})
 
+FIND_LIBRARY(GMSH_LIB Gmsh)
+FIND_FILE(GMSH_HDR gmsh/Gmsh.h)
+GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
+
+# Installation of local gmsh
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/include/gmsh DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB GMSH_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/lib/*)
+install(FILES ${GMSH_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/share/doc DESTINATION ${CMAKE_INSTALL_DATADIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/gmsh/share/man DESTINATION ${CMAKE_INSTALL_DATADIR})
+
 FIND_LIBRARY(MADLIB_LIB MAdLib)
-FIND_FILE(MADLIB_HDR MAdLib.h)
+FIND_FILE(MADLIB_HDR MAdLib/MAdLib.h)
 GET_FILENAME_COMPONENT(MADLIB_INCPATH ${MADLIB_HDR} PATH)
 
-FIND_LIBRARY(GMSH_LIB Gmsh)
-FIND_FILE(GMSH_HDR Gmsh.h)
-GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
+# Installation of local madlib
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/include/MAdLib DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB MADLIB_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/lib/*)
+install(FILES ${MADLIB_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/install/madlib/share/doc DESTINATION ${CMAKE_INSTALL_DATADIR})
 
 FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
+
+# Installation of local cgns
+FILE(GLOB CGNS_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/cgns/include/*)
+install(FILES ${CGNS_H_FILES} DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+FILE(GLOB CGNS_LIB_FILES ${CMAKE_CURRENT_SOURCE_DIR}/install/cgns/lib/*)
+install(FILES ${CGNS_LIB_FILES} DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 FIND_LIBRARY(ANN_LIB ann HINTS /usr/lib/)
 FIND_FILE(ANN_HDR ANN.h HINTS /usr/include/ANN/)
@@ -111,17 +133,26 @@ INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${ANN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 
-# Setting compile and link options ############################################## 
+# For some reason, older versions of cmake fail to find the local gmsh include
+# files when compiling madlib header references.
+IF(EXISTS ${GMSH_INCPATH})
+  INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH}/../)
+ENDIF()
+
+# Setting compile and link options ############################################
 INCLUDE(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-IF(COMPILER_SUPPORTS_CXX11)
+IF(COMPILER_SUPPORTS_CXX14)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+ELSEIF(COMPILER_SUPPORTS_CXX11)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ELSEIF(COMPILER_SUPPORTS_CXX0X)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 ELSE()
-    MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has 
-                    no C++11 support. Please use a different C++ compiler.")
+    MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has
+                  no modern C++ support. Please use a different C++ compiler.")
 ENDIF()
 
 # Compiled objects output paths
@@ -130,8 +161,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Set up RPATH
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # the RPATH to be used when installing, but only if it's not a system directory
@@ -150,34 +181,46 @@ ENDIF(BUILD_TESTING)
 
 # Setting files   ###############################################################
 # Install include files
-FILE(GLOB H_FILES include/*.H)
-FILE(GLOB h_FILES include/*.h)
-FILE(GLOB hpp_FILES include/*.hpp)
-SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
-INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
+FILE(GLOB H_FILES
+          include/*.H
+          include/*.h
+          include/*.hpp)
+INSTALL(FILES ${H_FILES}
+        DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/Nemosys)
 
-# Setting compile and link flags 
-SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C 
+# Setting compile and link flags
+SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C utils/cgnsRocstar2vtu.C)
+SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
+SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
 set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 # Builiding libraries #########################################################
+
+# build sphere lib
+IF(NOT BUILD_STATIC)
+  ADD_LIBRARY(sphere SHARED ${SPHERE_SRCS})
+ELSE()
+	ADD_LIBRARY(sphere ${SPHERE_SRCS})
+ENDIF()
+INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
+
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
 ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB})
-INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
+
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere)
+INSTALL(TARGETS Nemosys LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Build r8 and rbf library
 IF(NOT BUILD_STATIC)
@@ -185,7 +228,7 @@ IF(NOT BUILD_STATIC)
 ELSE()
   ADD_LIBRARY(r8 ${R8_SRCS})
 ENDIF()
-INSTALL(TARGETS r8 LIBRARY DESTINATION lib)
+INSTALL(TARGETS r8 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(interp SHARED ${INTERP_SRCS})
@@ -193,7 +236,9 @@ ELSE()
   ADD_LIBRARY(interp ${R8_SRCS})
 ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
-INSTALL(TARGETS interp LIBRARY DESTINATION lib)
+INSTALL(TARGETS interp LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+
 
 # Rocstar support library
 IF(NOT BUILD_STATIC)
@@ -201,21 +246,34 @@ IF(NOT BUILD_STATIC)
 ELSE()
   ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
 ENDIF()
-INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
+INSTALL(TARGETS Rocs LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 
-# Builiding utilities #########################################################
+# Building utilities #########################################################
 # There are too many dependencies for gmsh this needs to be populated automatically
+OPTION(BUILD_UTILS "BUILD_UTILS" ON)
+
+IF(BUILD_UTILS)
 SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} 
-    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext 
-    -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5")
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
+    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext
+    -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+
+#vol2planeTransfer utility
+ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
+if(VTK_LIBRARIES)
+	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys ${VTK_LIBRARIES} interp sphere)
+else()
+	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets interp sphere)
+ENDIF()
+INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
+
 
 # optimze utility
 ADD_EXECUTABLE(optimize utils/optimize.C)
-TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp) 
+TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
 SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
+INSTALL(TARGETS optimize RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # xmlDump utility
 ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
@@ -224,50 +282,46 @@ if(VTK_LIBRARIES)
 else()
   TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets interp)
 ENDIF()
-INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
+INSTALL(TARGETS xmlDump RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # cgns2gmsh utility
 ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
 TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB} interp)
-INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
+INSTALL(TARGETS cgns2msh RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Rocstart volume remesh utility
 ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
 TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
-INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
-
-# Rocstar cgns to vtu util
-ADD_EXECUTABLE(cgnsRocstar2vtu utils/cgnsRocstar2vtu.C)
-TARGET_LINK_LIBRARIES(cgnsRocstar2vtu Nemosys ${MADLIB_LIB} r8 interp)
-INSTALL(TARGETS cgnsRocstar2vtu RUNTIME DESTINATION bin)
+INSTALL(TARGETS rocRemesh RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Rocstar surface remesh utility
 ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
 TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
-INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
+INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Rocstar surface remesh utility
 ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
 TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
-INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
+INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# Builiding tutorials ###########################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5")
+# Building tutorials ###########################################################
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
 # meshTransfer tutorial
 ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
 TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
-INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
+INSTALL(TARGETS mshTransfer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # DTK tutorial
 IF (ENABLE_DTK)
   ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
   SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs 
+  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs
                                              ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
+  INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 ENDIF()
 
+ENDIF()
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
@@ -294,4 +348,12 @@ IF(BUILD_DOCUMENTATION)
 ENDIF()
 
 # Perform testing ############################################################
-#ADD_SUBDIRECTORY(testing)
+SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
+SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
+SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
+ADD_SUBDIRECTORY(testing)
+INSTALL(FILES ${DIFFTOL} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
