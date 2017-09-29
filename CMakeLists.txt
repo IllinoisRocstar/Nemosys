@@ -192,7 +192,7 @@ INSTALL(FILES ${H_FILES}
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
+SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C utils/cgnsRocstar2vtu.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
@@ -293,6 +293,11 @@ INSTALL(TARGETS cgns2msh RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
 TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
 INSTALL(TARGETS rocRemesh RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# cgns2vtu util
+ADD_EXECUTABLE(cgnsRocstar2vtu utils/cgnsRocstar2vtu.C)
+TARGET_LINK_LIBRARIES(cgnsRocstar2vtu Nemosys ${MADLIB_LIB} r8 interp)
+INSTALL(TARGETS cgnsRocstar2vtu RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Rocstar surface remesh utility
 ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
