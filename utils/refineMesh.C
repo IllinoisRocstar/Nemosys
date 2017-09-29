@@ -1,6 +1,7 @@
 #include <MAdLib.h>
 #include <GModel.h>
 #include <vtkAnalyzer.H>
+#include <NodalDataManager.h>
 
 int main(int argc, char* argv[])
 {
@@ -63,17 +64,16 @@ int main(int argc, char* argv[])
 
   MAd::pGModel gmodel = 0;
   MAd::pMesh mesh = MAd::M_new(gmodel);
-  
-  if (meshFile.find(".v") != -1 ) 
-  {
-    vtkAnalyzer* tmpmesh;
+  vtkAnalyzer* tmpmesh;
+  //if (meshFile.find(".v") != -1 ) 
+  //{
     tmpmesh = new vtkAnalyzer((char*) &(meshFile)[0u]);
     tmpmesh->read();
     std::string ofname = "converted.msh";
     tmpmesh->writeMSH(ofname);
     MAd::M_load(mesh, "converted.msh"); 
-  }
-  else if (meshFile.find(".msh") != -1)
+  //}
+  /*else*/ if (meshFile.find(".msh") != -1)
   {
     MAd::M_load(mesh, (char*) &(meshFile)[0u]); 
   }
@@ -131,6 +131,7 @@ int main(int argc, char* argv[])
   ////////////////////////// END LOCAL SIZEFIELD TESTS ////////////////////
   
 
+  // find 2d boundary elements
   MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(mesh->model, 0);
   mesh->classify_grid_boundaries(bnd);
   mesh->classify_unclassified_entities();
@@ -139,10 +140,26 @@ int main(int argc, char* argv[])
   pwlSF->setCurrentSize();
   pwlSF->scale(.5);
   MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
+
+
+  // attach data to mesh
+  std::vector<std::vector<double>> pntData;
+  int numTuple, numComponent; 
+  tmpmesh->getPointDataArray(0, pntData, numTuple, numComponent);
+  adapter->registerVData("displacement", pntData);
+  MAd::NodalDataManagerSgl::instance().writeData("displacement","solutionPre.pos");
+  std::cout << "done" << std::endl; 
+
+  // check if data is correctly attached
+  std::vector<std::vector<double>> preAMRData;
+  adapter->getMeshVData("Displacement", &preAMRData);
+  std::cout << "preAMRData[0][1] = " << preAMRData[0][1] << std::endl;
+  std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
+
   // Output situation before optimization
   std::cout << "Statistics before optimization: " << std::endl;
   adapter->printStatistics(std::cout);
-
+  
   // Optimize
   std::cout << "Optimizing the mesh ..." << std::endl;
   adapter->run();
