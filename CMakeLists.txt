@@ -185,7 +185,7 @@ ADD_DEFINITIONS(-D_HAVE_GMSH_)
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(sphere SHARED ${SPHERE_SRCS})
 ELSE()
-	ADD_LIBRARY(sphere ${SPHERE_SRCS})
+  ADD_LIBRARY(sphere ${SPHERE_SRCS})
 ENDIF()
 INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
 
@@ -230,77 +230,76 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 OPTION(BUILD_UTILS "BUILD_UTILS" ON)
 
 IF(BUILD_UTILS)
-SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
-    -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
-    -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+  SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
+  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
+     -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
+      -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
-#vol2planeTransfer utility
-ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
-if(VTK_LIBRARIES)
-	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys ${VTK_LIBRARIES} interp sphere)
-else()
-	TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets interp sphere)
-ENDIF()
-INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
+  #vol2planeTransfer utility
+  ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys ${VTK_LIBRARIES} interp sphere)
+  else()
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets interp sphere)
+  ENDIF()
+  INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
 
-#refineMesh utility
-ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${VTK_LIBRARIES} ${GMSH_LIB} interp sphere)
-INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
+  #refineMesh utility
+  ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
+  TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${VTK_LIBRARIES} ${GMSH_LIB} interp sphere)
+  INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
 
-# optimze utility
-ADD_EXECUTABLE(optimize utils/optimize.C)
-TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
-SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
+  # optimze utility
+  ADD_EXECUTABLE(optimize utils/optimize.C)
+  TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
+  SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+  INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
-# xmlDump utility
-ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
-if(VTK_LIBRARIES)
-  TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES} interp)
-else()
-  TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets interp)
-ENDIF()
-INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
+  # xmlDump utility
+  ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES} interp)
+  else()
+    TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets interp)
+  ENDIF()
+  INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
 
-# cgns2gmsh utility
-ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
-TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB} interp)
-INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
+  # cgns2gmsh utility
+  ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
+  TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB} interp)
+  INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
 
-# Rocstart volume remesh utility
-ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
-TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
-INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
+  # Rocstart volume remesh utility
+  ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
+  TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
+  INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
 
-# Rocstar surface remesh utility
-ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
-TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
-INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
+  # Rocstar surface remesh utility
+  ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
+  TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
+  INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
 
-# Rocstar surface remesh utility
-ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
-TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
-INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
+  # Rocstar surface remesh utility
+  ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
+  TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
+  INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
 
-# Building tutorials ###########################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
+  # Building tutorials ###########################################################
+  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
-# meshTransfer tutorial
-ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
-TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
-INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
+  # meshTransfer tutorial
+  ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
+  TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
+  INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
-# DTK tutorial
-IF (ENABLE_DTK)
-  ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
-  SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-  TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs
+  # DTK tutorial
+  IF (ENABLE_DTK)
+    ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
+    SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
+    TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs
                                              ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-  INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
-ENDIF()
-
+    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
+  ENDIF()
 ENDIF()
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
