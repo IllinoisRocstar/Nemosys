@@ -71,6 +71,7 @@ int main(int argc, char* argv[])
     tmpmesh->read();
     std::string ofname = "converted.msh";
     tmpmesh->writeMSH(ofname);
+
     MAd::M_load(mesh, "converted.msh"); 
   }
   else if (meshFile.find(".msh") != -1)
@@ -137,15 +138,22 @@ int main(int argc, char* argv[])
   mesh->classify_unclassified_entities();
   mesh->destroyStandAloneEntities();
   
-  MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
+  /*MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
   pwlSF->setCurrentSize();
   pwlSF->scale(.5);
   MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
+  */
+  
+ // writing background mesh and taking care of non tet/tri entities
+  tmpmesh->writeBackgroundMSH("backgroundSF.msh", .2);
+  MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
+  bSF->loadData("backgroundSF.msh");
+  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, bSF);
 
   // attach data to mesh
   /* TODO: writing vector data not implemented in madlib
            instead, splitting vector data into component vectors */  
-  std::vector<std::vector<double>> pntData;
+  /*std::vector<std::vector<double>> pntData;
   int numTuple, numComponent; 
   tmpmesh->getPointDataArray(0, pntData, numTuple, numComponent);
   std::vector<double> pntDatax, pntDatay, pntDataz;
@@ -169,7 +177,7 @@ int main(int argc, char* argv[])
   adapter->getMeshData("DispY", &preAMRDatay);
   std::cout << "preAMRDatay[1000] = " << preAMRDatay[1000] << std::endl;
   std::cout << "Size of vector = " << preAMRDatay.size() << std::endl; 
-
+*/
   // Output situation before optimization
   std::cout << "Statistics before optimization: " << std::endl;
   adapter->printStatistics(std::cout);
@@ -184,7 +192,8 @@ int main(int argc, char* argv[])
   adapter->printStatistics(std::cout);
 
   MAd::M_writeMsh(mesh, argv[2], 2);
- 
+
+  /* 
   // get data after refinement
   std::vector<double> postAMRDatay;
   adapter->getMeshData("DispY", &postAMRDatay);
@@ -209,12 +218,13 @@ int main(int argc, char* argv[])
   trgVTK->setPointDataArray("DispY", 1, postAMRDatay);
   trgVTK->report();
   trgVTK->write("refined_solution.vtu");
+  */
   //if (localSF) delete localSF;
   //if (adapter) delete adapter;
    
-  if (pwlSF) delete pwlSF;
-  if (trgGModel) delete trgGModel;
-  if (trgVTK) delete trgVTK;
+  if (bSF) delete bSF;
+  //if (trgGModel) delete trgGModel;
+  //if (trgVTK) delete trgVTK;
   return 0;
 }
 

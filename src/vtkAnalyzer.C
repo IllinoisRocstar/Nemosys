@@ -780,8 +780,7 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
       for (int iTup=0; iTup<numTuple; iTup++){
         double* comps;
         // EDIT: causing indexing issues
-        //       shouldn't resize if pushing back
-        //  pntData[iTup].resize(numComponent);
+        //       shouldn't resize if pushing back //  pntData[iTup].resize(numComponent);
         comps = da->GetTuple(iTup);
         for (int iComp=0; iComp<numComponent; iComp++){
           pntData[iTup].push_back(comps[iComp]);
@@ -891,9 +890,8 @@ void vtkAnalyzer::writeMSH(string filename)
   outputStream << "$MeshFormat" << std::endl
                << "2.2 0 8" << std::endl
                << "$EndMeshFormat" << std::endl; 
-  // -------------------------------------------//
 
-  // get number of points and number of elements
+  // ---- get number of points and number of elements ---- //
   getNumberOfCells();
   getNumberOfPoints();
 
@@ -908,7 +906,6 @@ void vtkAnalyzer::writeMSH(string filename)
       exit(3);
     }
   }
-  // ------------------------------------------------------------------ //
 
   // ------------------------ write point coords -------------------------- //
   outputStream << "$Nodes" << std::endl << numberOfPoints << std::endl;
@@ -921,7 +918,6 @@ void vtkAnalyzer::writeMSH(string filename)
                  << pntcrds[2] << " " << std::endl;
   }
   outputStream << "$EndNodes" << std::endl;
-  // ---------------------------------------------------------------------- //
 
   // ------------- write element type and connectivity --------------------- //
   outputStream << "$Elements" << std::endl << numberOfCells << std::endl;
@@ -960,7 +956,6 @@ void vtkAnalyzer::writeMSH(string filename)
     outputStream << std::endl;
   }
   outputStream << "$EndElements" << std::endl;
-  // ----------------------------------------------------------------------- //
     
   // ---------------------------- write point data ------------------------- //
 
@@ -991,7 +986,7 @@ void vtkAnalyzer::writeMSH(string filename)
         for (int j = 0; j < numTuple; ++j)
         {
           double* data = da->GetTuple(j);
-          outputStream << j << " ";
+          outputStream << j + 1 << " ";
           for (int k = 0; k < numComponent; ++k)
           {
             outputStream << data[k] << " ";
@@ -1002,7 +997,6 @@ void vtkAnalyzer::writeMSH(string filename)
       }
     }
   }
-  // ----------------------------------------------------------------------- //
   
   // -------------------------- write cell data ---------------------------- // 
 
@@ -1033,7 +1027,7 @@ void vtkAnalyzer::writeMSH(string filename)
         for (int j = 0; j < numTuple; ++j)
         {
           double* data = da->GetTuple(j);
-          outputStream << j << " ";
+          outputStream << j + 1 << " ";
           for (int k = 0; k < numComponent; ++k)
           {
             outputStream << data[k] << " ";
@@ -1044,6 +1038,137 @@ void vtkAnalyzer::writeMSH(string filename)
       }
     }
   }
-  // ----------------------------------------------------------------------- //
 }
 
+
+void vtkAnalyzer::writeBackgroundMSH(string filename, const double size)
+{
+  
+  std::ofstream outputStream(filename.c_str());
+  if(!outputStream.good()) {
+    std::cout << "Output file stream is bad" << std::endl;
+    exit(1);
+  }
+ 
+  if (!dataSet) {
+    std::cout << "No data to write" << std::endl;
+    exit(2);
+  } 
+  // ---------  writing gmsh header ----------- //
+  outputStream << "$MeshFormat" << std::endl
+               << "2.2 0 8" << std::endl
+               << "$EndMeshFormat" << std::endl; 
+
+  // ---- get number of points and number of elements ---- //
+  getNumberOfCells();
+  getNumberOfPoints();
+
+  // -------- ensure all cell types are tri/tet or below -------------- //
+  int num_bad = 0;
+  for (int i = 0; i < numberOfCells; i++)
+  {
+    int type_id = dataSet->GetCellType(i);
+    if (!(type_id == 3 || type_id == 5 || type_id == 10))
+    {
+      std::cout << "Error: Only tetrahedral and triangular" 
+                << " meshes can be written to gmsh format" << std::endl;
+      exit(3);
+    }
+    if (!(type_id == 5 || type_id == 10))
+      num_bad+=1;
+  }
+
+  // ------------------------ write point coords -------------------------- //
+  outputStream << "$Nodes" << std::endl << numberOfPoints << std::endl;
+  for (int i = 0; i < numberOfPoints; ++i)
+  {
+    double* pntcrds = getPointCoords(i);
+    outputStream << i + 1 << " "
+                 << pntcrds[0] << " "
+                 << pntcrds[1] << " "
+                 << pntcrds[2] << " " << std::endl;
+  }
+  outputStream << "$EndNodes" << std::endl;
+
+  // ------------- write element type and connectivity --------------------- //
+  outputStream << "$Elements" << std::endl << numberOfCells-num_bad << std::endl;
+  int k = 0;
+  for (int i = 0; i < numberOfCells; ++i)
+  {
+
+    vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
+    int numComponent = point_ids->GetNumberOfIds();
+    int type_id = dataSet->GetCellType(i);
+    if (type_id==5 || type_id == 10)
+    {
+      outputStream << k + 1 << " ";
+      switch(numComponent)
+      {
+        case 2:
+        {
+          break;
+        }
+        case 3:
+        {
+          outputStream << 2 << " " << 2 << " " << 1 << " " << 1 << " ";
+          break;
+        }
+        case 4:
+        {
+          outputStream << 4 << " " << 2 << " " << 1 << " " << 1 << " ";
+          break;
+        }
+      
+        default: 
+        {  
+          std::cerr << "Components in cell should be less than 4"<< std::endl;
+          exit(1);
+        }
+      }
+      for (int j = 0; j < numComponent; ++j)
+         outputStream << point_ids->GetId(j) + 1 << " ";
+      outputStream << std::endl;
+      k+=1;
+    }
+  }
+  outputStream << "$EndElements" << std::endl;
+  
+  // -------------------------- write cell data ---------------------------- // 
+
+//  if (!cellData)
+//    cellData = dataSet->GetCellData();
+//  if (cellData)
+//  {
+//    int num_arrays = cellData->GetNumberOfArrays();
+//    for (int i = 0; i < num_arrays; ++i)
+//    {
+//      vtkDataArray* da = cellData->GetArray(i);
+//      if (da)
+//      {
+//        int numComponent = da->GetNumberOfComponents();
+//        int numTuple = da->GetNumberOfTuples();
+
+
+  std::string tmpname = "BackgroundSF";
+  outputStream << "$ElementData" << std::endl
+               << 1 << std::endl // 1 string tag
+               << "\"" << (tmpname) // name of view
+               << "\"" << std::endl 
+               << 0 << std::endl // 0 real tag
+               << 3 << std::endl // 3 int tags (dt index, dim of field, number of fields)
+               << 0 << std::endl // dt index
+               << 1 << std::endl // dim of field
+               << numberOfCells-num_bad << std::endl; // number of fields
+  int i = 0;
+  for (int j = 0; j < numberOfCells; ++j)
+  {
+    int type_id = dataSet->GetCellType(j);
+    if (type_id == 5 || type_id == 10) {
+      outputStream << i+1 << " ";
+      outputStream << size << " ";
+    outputStream << std::endl;
+      i+=1;
+    }
+  }
+  outputStream << "$EndElementData" << std::endl;    
+}

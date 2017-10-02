@@ -211,6 +211,7 @@ public:
                        std::string filename, bool writeCoord);
 
   void writeMSH(std::string filename);
+  void writeBackgroundMSH(string filename, const double size);
    // utilities
    // print to output a report about the file
    void report();
