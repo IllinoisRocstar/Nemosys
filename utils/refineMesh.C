@@ -65,15 +65,15 @@ int main(int argc, char* argv[])
   MAd::pGModel gmodel = 0;
   MAd::pMesh mesh = MAd::M_new(gmodel);
   vtkAnalyzer* tmpmesh;
-  //if (meshFile.find(".v") != -1 ) 
-  //{
+  if (meshFile.find(".v") != -1 ) 
+  {
     tmpmesh = new vtkAnalyzer((char*) &(meshFile)[0u]);
     tmpmesh->read();
     std::string ofname = "converted.msh";
     tmpmesh->writeMSH(ofname);
     MAd::M_load(mesh, "converted.msh"); 
-  //}
-  /*else*/ if (meshFile.find(".msh") != -1)
+  }
+  else if (meshFile.find(".msh") != -1)
   {
     MAd::M_load(mesh, (char*) &(meshFile)[0u]); 
   }
@@ -136,25 +136,39 @@ int main(int argc, char* argv[])
   mesh->classify_grid_boundaries(bnd);
   mesh->classify_unclassified_entities();
   mesh->destroyStandAloneEntities();
+  
   MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
   pwlSF->setCurrentSize();
   pwlSF->scale(.5);
   MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, pwlSF);
 
-
   // attach data to mesh
+  /* TODO: writing vector data not implemented in madlib
+           instead, splitting vector data into component vectors */  
   std::vector<std::vector<double>> pntData;
   int numTuple, numComponent; 
   tmpmesh->getPointDataArray(0, pntData, numTuple, numComponent);
-  adapter->registerVData("displacement", pntData);
-  MAd::NodalDataManagerSgl::instance().writeData("displacement","solutionPre.pos");
+  std::vector<double> pntDatax, pntDatay, pntDataz;
+  for (int i = 0; i < numTuple; ++i)
+  {
+    pntDatax.push_back(pntData[i][0]);
+    pntDatay.push_back(pntData[i][1]);
+    pntDataz.push_back(pntData[i][2]);
+  }
+
+  adapter->registerData("DispX", pntDatax);
+  adapter->registerData("DispY", pntDatay);
+  adapter->registerData("DispZ", pntDataz);
+  MAd::NodalDataManagerSgl::instance().writeData("DispX","solutionPreX.pos");
+  MAd::NodalDataManagerSgl::instance().writeData("DispY","solutionPreY.pos");
+  MAd::NodalDataManagerSgl::instance().writeData("DispZ","solutionPreZ.pos");
   std::cout << "done" << std::endl; 
 
   // check if data is correctly attached
-  std::vector<std::vector<double>> preAMRData;
-  adapter->getMeshVData("Displacement", &preAMRData);
-  std::cout << "preAMRData[0][1] = " << preAMRData[0][1] << std::endl;
-  std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
+  std::vector<double> preAMRDatay;
+  adapter->getMeshData("DispY", &preAMRDatay);
+  std::cout << "preAMRDatay[1000] = " << preAMRDatay[1000] << std::endl;
+  std::cout << "Size of vector = " << preAMRDatay.size() << std::endl; 
 
   // Output situation before optimization
   std::cout << "Statistics before optimization: " << std::endl;
@@ -171,8 +185,36 @@ int main(int argc, char* argv[])
 
   MAd::M_writeMsh(mesh, argv[2], 2);
  
+  // get data after refinement
+  std::vector<double> postAMRDatay;
+  adapter->getMeshData("DispY", &postAMRDatay);
+  std::cout << "postAMRDatay[1000] = " << postAMRDatay[1000] << std::endl;
+  std::cout << "Size of vector = " << postAMRDatay.size() << std::endl; 
+
+  // write mesh with field data to GMSH POS files
+  MAd::NodalDataManagerSgl::instance().writeData("DispY","solutionPost.msh");
+
+  // convert final Gmsh file back to vtk
+  GModel* trgGModel;
+  trgGModel = new GModel("refined"); 
+  trgGModel->readMSH("refined.msh");
+  trgGModel->writeVTK("refined.vtk", false, true);
+  // binary=false, saveall=true
+
+  // write physical quantities to vtk file
+  vtkAnalyzer* trgVTK;
+  trgVTK = new vtkAnalyzer((char*) "refined.vtk");
+  trgVTK->read();
+  trgVTK->report();
+  trgVTK->setPointDataArray("DispY", 1, postAMRDatay);
+  trgVTK->report();
+  trgVTK->write("refined_solution.vtu");
   //if (localSF) delete localSF;
-  //if (adapter) delete adapter; 
+  //if (adapter) delete adapter;
+   
+  if (pwlSF) delete pwlSF;
+  if (trgGModel) delete trgGModel;
+  if (trgVTK) delete trgVTK;
   return 0;
 }
 
