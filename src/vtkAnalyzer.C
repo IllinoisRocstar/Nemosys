@@ -414,8 +414,6 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                << std::left << std::setw(16) << "rho"
                << std::left << std::setw(16) << "E"
                << std::left << std::setw(16) << "V" << std::endl << std::endl;
-  //double R = .000008314;
-  //double T = 300.0; 
   for (int i = 0; i < interpData[0].size(); ++i) {
     outputStream << std::left << std::setw(10) << i << std::left << std::setw(16); 
     for (int j = 0; j < interpData.size(); ++j) {
@@ -836,7 +834,7 @@ int vtkAnalyzer::getCellDataArray(int id, std::vector<std::vector<double> > &cll
    }
 }
 
-
+// fixed error with implementation
 void vtkAnalyzer::setPointDataArray(const char* name, int numComponent, 
                                     std::vector<double> &pntArrData)
 {
@@ -844,17 +842,24 @@ void vtkAnalyzer::setPointDataArray(const char* name, int numComponent,
     pointData = dataSet->GetPointData();
    if (pointData)
    { 
-   vtkSmartPointer<vtkDoubleArray> da = 
-    vtkSmartPointer<vtkDoubleArray>::New();
-   da->SetName(name);
-   da->SetNumberOfComponents(numComponent);
-   for(int i=0; i<getNumberOfPoints(); i++)
-      da->InsertNextTuple(&pntArrData[i]);
-   pointData->SetActiveScalars(name);
-   pointData->SetScalars(da);
-   }
+    vtkSmartPointer<vtkDoubleArray> da = 
+      vtkSmartPointer<vtkDoubleArray>::New();
+    da->SetName(name);
+    da->SetNumberOfComponents(numComponent);
+    for(int i=0; i<getNumberOfPoints(); i++)
+    {
+        double pntData[numComponent];
+        for (int j = 0; j < numComponent; ++j)
+          pntData[j] = pntArrData[i*numComponent + j];
+       da->InsertNextTuple(pntData);
+    }
+    pointData->SetActiveScalars(name);
+    pointData->SetScalars(da);
+   
+  }
 }
 
+// TODO: See if there exists/fix error with implementation
 void vtkAnalyzer::setCellDataArray(const char* name, int numComponent, 
                                     std::vector<double> &cellArrData)
 {
@@ -867,10 +872,15 @@ void vtkAnalyzer::setCellDataArray(const char* name, int numComponent,
    da->SetName(name);
    da->SetNumberOfComponents(numComponent);
    for(int i=0; i<getNumberOfCells(); i++)
-      da->InsertNextTuple(&cellArrData[i]);
+   {
+      double cllData[numComponent];
+      for (int j = 0; j < numComponent; ++j)
+        cllData[j] = cellArrData[i*numComponent +j];
+      da->InsertNextTuple(cllData);
    cellData->SetActiveScalars(name);
    cellData->SetScalars(da);
-   }
+   } 
+  }
 }
 
 void vtkAnalyzer::writeMSH(string filename)

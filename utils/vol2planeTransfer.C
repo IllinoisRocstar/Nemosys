@@ -85,6 +85,7 @@ public:
   double poisson_dom_default;
   double M_weight, Mc_weight, NN_TOL;
   double T;
+  bool writePlaneMesh;
 };
 
 /*************************************************************************/
@@ -234,6 +235,12 @@ int main(int argc, char* argv[])
                                          phys_const.T, phys_const.R,
                                          PlaneCellCenters, nDim, 
                                          inp.out_file, (bool) inp.write_coords);
+                // writing plane cell data to vtk
+                if (inp.writePlaneMesh) 
+                {
+                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]);
+                  PlaneMesh->write("crosslink_on_plane.vtu");
+                }
                 break;
               }
 
@@ -250,18 +257,29 @@ int main(int argc, char* argv[])
                                          inp.youngs_inc_default, inp.shear_inc_default,
                                          inp.poisson_inc_default,
                                          inp.out_file, (bool) inp.write_coords);
+
+                if (inp.writePlaneMesh)
+                {
+                  // writing plane cell data to vtk
+                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]);
+                  PlaneMesh->write("crosslink_on_plane.vtu");
+                }
                 break;
               }
       default: {  std::cerr << "has_spheres must be 0|1" << std::endl;
                   std::cerr << "correct in input file " << std::endl;
                   exit(1);
                }
+      
+
     }
   }
   else {
     std::cerr << "No point data arrays found in " << inp.vol_file << std::endl;
     exit(1);
   }
+
+
 
   delete VolMesh;
   delete PlaneMesh;
@@ -462,7 +480,10 @@ inputs::inputs(string input_file)
                       ss >> T;
                       break;
                     }
-
+          case 18:  { std::stringstream ss(data);
+                      ss >> writePlaneMesh; 
+                      break;
+                    }
         }
       }
       i+=1;
@@ -527,5 +548,6 @@ void inputs::print()
             << "M_weight: " << M_weight << std::endl
             << "Mc_weight: " << Mc_weight << std::endl
             << "NN_TOL: " << NN_TOL << std::endl
-            << "Temperature: " << T << std::endl;
+            << "Temperature: " << T << std::endl
+            << "write Plane Mesh" << writePlaneMesh << std::endl; 
 }
