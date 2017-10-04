@@ -217,7 +217,7 @@ public:
    void report();
    void writeCSV(char* fname, std::vector<double> slnVec);
    vtkSmartPointer<vtkDataSetReader> getReader() {return dataSetReader;}
-private:
+protected:
    char* xmlFileName;
    vtkSmartPointer<vtkXMLUnstructuredGridReader> unsGridReader;
    vtkSmartPointer<vtkDataSetReader> dataSetReader;
