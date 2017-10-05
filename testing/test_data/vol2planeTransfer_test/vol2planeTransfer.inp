@@ -22,3 +22,4 @@ M_weight              =   {1}
 Mc_weight             =   {0}
 NN_TOL                =   {.01}
 Temperature           =   {300}
+writePlaneMesh        =   {1}

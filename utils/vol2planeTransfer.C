@@ -25,7 +25,10 @@
    TODO: Generalize for n Dimensions. nDim is useless atm  
    TODO: Unit conversion
    TODO: Refactor by storing opened objects in inputs class and redefining function 
-         prototypes accordingly 
+         prototypes accordingly
+   TODO: Since the determination of a whether a plane point is in the sphere is made during the interpolation,
+         we can modify the return values of interpolate to include a bbmask type array for the plane.
+         This can be used in the writeInterpData functions instead of the determinations currently made there. 
    RECENT DEVELOPMENT:
     - added support to consider radius in nn search of k-d tree
       as an overload to interpolate function
