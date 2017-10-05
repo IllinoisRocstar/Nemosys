@@ -536,10 +536,10 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
           break;
         }
       }
-      if (in_sphere)
-        outputStream << 0.0 << std::left << std::setw(16);
-      else      
-        outputStream << interpData[j][i] << std::left << std::setw(16);
+      //if (in_sphere)
+      //  outputStream << 0.0 << std::left << std::setw(16);
+      //else      
+      outputStream << interpData[j][i] << std::left << std::setw(16);
     }
     if (in_sphere) {
       for (int i = 0; i < material_names.size(); ++i) {
@@ -644,12 +644,12 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
           }
         }
         // if point in plane is in sphere, crosslink = 0
-        if (in_sphere) 
-          outputStream << std::left << std::setw(16) << 0.0 
-                       << std::left << std::setw(16);
-        else      
-          outputStream << std::left << std::setw(16) << interpData[j][i] 
-                       << std::left << std::setw(16);
+        //if (in_sphere) 
+        //  outputStream << std::left << std::setw(16) << 0.0 
+        //               << std::left << std::setw(16);
+        //else      
+        outputStream << std::left << std::setw(16) << interpData[j][i] 
+                     << std::left << std::setw(16);
       } 
       if (in_sphere) {
         for (int i = 0; i < material_names.size(); ++i) { 
