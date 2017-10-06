@@ -150,10 +150,13 @@ public:
   // add point data array
   void setPointDataArray( const char* name, int numComponent,
                           std::vector<double> &pntArrData);
-  // add point data array
+
+  // add a cell data array
   void setCellDataArray( const char* name, int numComponent,
                          std::vector<double> &pntArrData);
 
+  void setCellDataArray( const char* name, int numComponent, int cellType,
+                         std::vector<double> &pntArrData);
   // write interpolated data
   // no spheres, don't write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,

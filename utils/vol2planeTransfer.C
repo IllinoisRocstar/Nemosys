@@ -40,7 +40,8 @@
     - added support for specified/unspecified material and domain params 
     - added exception handling for when neighbors of points on plane outside of
       inclusion are inside inclusion 
-    - no longer considers inclusion points in weight calculation*/
+    - no longer considers inclusion points in weight calculation
+    - moved sphere checks to interpolate and removed during write*/
 /************************************************************************
  *Auxilliary classes and functions
 ************************************************************************/
@@ -241,7 +242,7 @@ int main(int argc, char* argv[])
                 // writing plane cell data to vtk
                 if (inp.writePlaneMesh) 
                 {
-                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]);
+                  PlaneMesh->setCellDataArray("crosslink", 1, interpData[0]); 
                   PlaneMesh->write("crosslink_on_plane.vtu");
                 }
                 break;
@@ -264,7 +265,7 @@ int main(int argc, char* argv[])
                 if (inp.writePlaneMesh)
                 {
                   // writing plane cell data to vtk
-                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]);
+                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]); //VTK_TRIANGLE=5
                   PlaneMesh->write("crosslink_on_plane.vtu");
                 }
                 break;
