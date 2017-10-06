@@ -29,6 +29,7 @@
    TODO: Since the determination of a whether a plane point is in the sphere is made during the interpolation,
          we can modify the return values of interpolate to include a bbmask type array for the plane.
          This can be used in the writeInterpData functions instead of the determinations currently made there. 
+   TODO: I CHANGED THE WRITEOUT TO INCLUDE LINE CELLS SO THIS WILL PROBABLY BE CHANGED BACK,BUT REQUIRED FOR WRITE OUT
    RECENT DEVELOPMENT:
     - added support to consider radius in nn search of k-d tree
       as an overload to interpolate function
@@ -238,7 +239,7 @@ int main(int argc, char* argv[])
                                          inp.poisson_dom_default,
                                          phys_const.T, phys_const.R,
                                          PlaneCellCenters, nDim, 
-                                         inp.out_file, (bool) inp.write_coords);
+                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri());
                 // writing plane cell data to vtk
                 if (inp.writePlaneMesh) 
                 {
@@ -260,12 +261,12 @@ int main(int argc, char* argv[])
                                          mat_sphere_names, inp.material_names,
                                          inp.youngs_inc_default, inp.shear_inc_default,
                                          inp.poisson_inc_default,
-                                         inp.out_file, (bool) inp.write_coords);
+                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri());
 
                 if (inp.writePlaneMesh)
                 {
                   // writing plane cell data to vtk
-                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]); //VTK_TRIANGLE=5
+                  PlaneMesh->setCellDataArray("crosslink",1,interpData[0]); 
                   PlaneMesh->write("crosslink_on_plane.vtu");
                 }
                 break;

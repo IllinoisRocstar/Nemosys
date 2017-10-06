@@ -265,6 +265,17 @@ std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
   return cellCoords;
 }
 
+int vtkAnalyzer::getNumberOfNonTri()
+{
+  getNumberOfCells(); 
+  int num = 0;
+  for (int j = 0; j < numberOfCells; ++j)
+  {
+    if (dataSet->GetCellType(j) < VTK_TRIANGLE)
+      num++;
+  }
+  return num;
+}
 
 // returns coordinates of all points in mesh
 std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
@@ -402,7 +413,7 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
                                   double poisson_dom_default, double T, double R,
-                                  std::ostream& outputStream)
+                                  std::ostream& outputStream, int numNonTri)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
@@ -414,69 +425,15 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                << std::left << std::setw(16) << "E"
                << std::left << std::setw(16) << "V" << std::endl << std::endl;
   for (int i = 0; i < interpData[0].size(); ++i) {
-    outputStream << std::left << std::setw(10) << i << std::left << std::setw(16); 
-    for (int j = 0; j < interpData.size(); ++j) {
-      outputStream << interpData[j][i] << std::left << std::setw(16);
-    }
-    double G = interpData[0][i]*R*T*(1 - Mc/M);
-    // if V not given, get from G and E
-    if (poisson_dom_default == -1) {
-      double V = (youngs_dom_default*G)/(3*(3*G - youngs_dom_default));
-    // correcting for negative 0 output
-      outputStream << std::left << std::setw(16) << youngs_dom_default 
-                   << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
-    } 
-    // if E not given, get from G and V
-    else if (youngs_dom_default == -1) {
-      double E = 2.0*G*(1.0+poisson_dom_default);
-      outputStream << std::left << std::setw(16) << E 
-                   << std::left << std::setw(16) << poisson_dom_default << std::endl;
-    }
-    else {
-      outputStream << std::left << std::setw(16) << youngs_dom_default
-                   << std::left << std::setw(16) << poisson_dom_default << std::endl;
-    } 
-  }   
-}
-
-// no spheres and coord switch
-void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
-                                  double Mc, double M, double youngs_dom_default,
-                                  double poisson_dom_default, double T, double R,
-                                  const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::ostream& outputStream, bool writeCoord)
-{
-  if (!outputStream.good()) {
-    std::cout << "Output stream is bad" << std::endl;
-    exit(1);
-  }
-  if (!writeCoord)
-    writeInterpData(interpData, Mc, M, youngs_dom_default,
-                    poisson_dom_default, T, R,
-                    outputStream);
-  else {
-    outputStream << std::left << std::setw(10) << "id" 
-                 << std::left << std::setw(16) << "X"
-                 << std::left << std::setw(16) << "Y"
-                 << std::left << std::setw(16) << "Z" 
-                 << std::left << std::setw(16) << "rho"   
-                 << std::left << std::setw(16) << "E"
-                 << std::left << std::setw(16) << "V" << std::endl << std::endl;
-    //double R = .000008314;
-    //double T = 300.0; 
-    for (int i = 0; i < interpData[0].size(); ++i) {
-      outputStream << std::left << std::setw(10) << i 
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim] 
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim+1] 
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim+2] ;
+    if (i > numNonTri - 1) {
+      outputStream << std::left << std::setw(10) << i-numNonTri << std::left << std::setw(16); 
       for (int j = 0; j < interpData.size(); ++j) {
-        outputStream << std::left << std::setw(16) << interpData[j][i]
-                     << std::left << std::setw(16);
-      }  
+        outputStream << interpData[j][i] << std::left << std::setw(16);
+      }
       double G = interpData[0][i]*R*T*(1 - Mc/M);
       // if V not given, get from G and E
       if (poisson_dom_default == -1) {
-        double V = (youngs_dom_default*G)/(3*(3*G - youngs_dom_default));
+        double V = youngs_dom_default/(2*G) - 1;
       // correcting for negative 0 output
         outputStream << std::left << std::setw(16) << youngs_dom_default 
                      << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
@@ -492,128 +449,24 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                      << std::left << std::setw(16) << poisson_dom_default << std::endl;
       } 
     }
-  }    
+  }   
 }
 
-// has spheres, write_coords=0
+// no spheres and coord switch
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::vector<sphere>& spheres,
-                                  std::vector<string>& mat_sphere_names,
-                                  std::vector<string>& material_names,
-                                  std::vector<double>& youngs_inc_default,
-                                  std::vector<double>& shear_inc_default,
-                                  std::vector<double>& poisson_inc_default,
-                                  std::ostream& outputStream)
+                                  std::ostream& outputStream, bool writeCoord, int numNonTri)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
     exit(1);
   }
-  
-  outputStream << std::left << std::setw(10) << "id" 
-               << std::left << std::setw(16) << "rho"
-               << std::left << std::setw(16) << "E"
-               << std::left << std::setw(16) << "V" << std::endl << std::endl;
-  
-  //double R = .000008314;
-  //double T = 300.0; 
-  for (int i = 0; i < interpData[0].size(); ++i) {
-    outputStream << std::left << std::setw(10) << i << std::left << std::setw(16); 
-    bool in_sphere = false;
-    int k;
-    for (int j = 0; j < interpData.size(); ++j) {
-      // checking if plane points are in sphere
-      std::vector<double> point;
-      point.push_back(PlaneCellCenters[i*nDim]);
-      point.push_back(PlaneCellCenters[i*nDim+1]);
-      point.push_back(PlaneCellCenters[i*nDim+2]);
-      for (k = 0; k < spheres.size(); ++k) {
-        if(in_sphere=spheres[k].in_sphere(point)) {
-          break;
-        }
-      }
-      //if (in_sphere)
-      //  outputStream << 0.0 << std::left << std::setw(16);
-      //else      
-      outputStream << interpData[j][i] << std::left << std::setw(16);
-    }
-    if (in_sphere) {
-      for (int i = 0; i < material_names.size(); ++i) {
-          if (!material_names[i].compare(mat_sphere_names[k])) {
-            // if V not given, get from G and E
-            if (poisson_inc_default[i] == -1) {
-              outputStream << std::left << std::setw(16) << youngs_inc_default[i]
-                           << std::left << std::setw(16)
-                           << (youngs_inc_default[i]*shear_inc_default[i])/
-                              (3*(3*shear_inc_default[i] - youngs_inc_default[i]))
-                           << std::endl;
-            }
-            // if E not given, get from G and V
-            else if (youngs_inc_default[i] == -1) {
-              outputStream << std::left << std::setw(16)
-                           << 2.0*shear_inc_default[i]*(1.0 + poisson_inc_default[i])
-                           << std::left << std::setw(16) << poisson_inc_default[i] << std::endl;
-            }
-            // if E and V given, print
-            else {
-              outputStream << std::left << std::setw(16)
-                           << youngs_inc_default[i]
-                           << std::left << std::setw(16)
-                           << poisson_inc_default[i] << std::endl;
-            }
-          }
-        }
-    }
-    else {
-      double G = interpData[0][i]*R*T*(1 - Mc/M);
-      // if V not given, get from G and E
-      if (poisson_dom_default == -1) {
-      double V = (youngs_dom_default*G)/(3*(3*G - youngs_dom_default));
-      // correcting for negative 0 output
-      outputStream << std::left << std::setw(16) << youngs_dom_default
-                   << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
-      }
-      // if E not given, get from G and V
-      else if (youngs_dom_default == -1) {
-      double E = 2.0*G*(1.0+poisson_dom_default);
-      outputStream << std::left << std::setw(16) << E
-                   << std::left << std::setw(16) << poisson_dom_default << std::endl;
-      }
-      else {
-        outputStream << std::left << std::setw(16) << youngs_dom_default
-                     << std::left << std::setw(16) << poisson_dom_default << std::endl;
-      }
-    }
-  }   
-}
-
-// has spheres and coord switch
-void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
-                                  double Mc, double M, double youngs_dom_default, 
-                                  double poisson_dom_default, double T, double R,
-                                  const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::vector<sphere>& spheres,
-                                  std::vector<string>& mat_sphere_names,
-                                  std::vector<string>& material_names,
-                                  std::vector<double>& youngs_inc_default,
-                                  std::vector<double>& shear_inc_default,
-                                  std::vector<double>& poisson_inc_default,
-                                  std::ostream& outputStream, bool writeCoord)
-{
-  if (!outputStream.good()) {
-    std::cout << "Output stream is bad" << std::endl;
-    exit(1);
-  } 
   if (!writeCoord)
-    writeInterpData(interpData, Mc, M, youngs_dom_default, 
+    writeInterpData(interpData, Mc, M, youngs_dom_default,
                     poisson_dom_default, T, R,
-                    PlaneCellCenters, nDim, spheres, 
-                    mat_sphere_names, material_names, 
-                    youngs_inc_default, shear_inc_default, 
-                    poisson_inc_default, outputStream);
+                    outputStream, numNonTri);
   else {
     outputStream << std::left << std::setw(10) << "id" 
                  << std::left << std::setw(16) << "X"
@@ -622,66 +475,22 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                  << std::left << std::setw(16) << "rho"   
                  << std::left << std::setw(16) << "E"
                  << std::left << std::setw(16) << "V" << std::endl << std::endl;
-    
+    //double R = .000008314;
+    //double T = 300.0; 
     for (int i = 0; i < interpData[0].size(); ++i) {
-      outputStream << std::left << std::setw(10) << i  
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim] 
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim+1] 
-                   << std::left << std::setw(16) << PlaneCellCenters[i*nDim+2] ;
-                          //<< std::left << std::setw(16);
-      bool in_sphere = false;
-      int k; // sphere-material identifier
-      for (int j = 0; j < interpData.size(); ++j) {
-        // checking if plane points are in sphere
-        std::vector<double> point;
-        point.push_back(PlaneCellCenters[i*nDim]);
-        point.push_back(PlaneCellCenters[i*nDim+1]);
-        point.push_back(PlaneCellCenters[i*nDim+2]);
-        for (k = 0; k < spheres.size(); ++k) {
-          if(in_sphere=spheres[k].in_sphere(point)) {
-            break;
-          }
-        }
-        // if point in plane is in sphere, crosslink = 0
-        //if (in_sphere) 
-        //  outputStream << std::left << std::setw(16) << 0.0 
-        //               << std::left << std::setw(16);
-        //else      
-        outputStream << std::left << std::setw(16) << interpData[j][i] 
-                     << std::left << std::setw(16);
-      } 
-      if (in_sphere) {
-        for (int i = 0; i < material_names.size(); ++i) { 
-          if (!material_names[i].compare(mat_sphere_names[k])) {
-            // if V not given, get from G and E
-            if (poisson_inc_default[i] == -1) {
-              outputStream << std::left << std::setw(16) << youngs_inc_default[i] 
-                           << std::left << std::setw(16) 
-                           << (youngs_inc_default[i]*shear_inc_default[i])/
-                              (3*(3*shear_inc_default[i] - youngs_inc_default[i]))
-                           << std::endl;
-            }
-            // if E not given, get from G and V
-            else if (youngs_inc_default[i] == -1) {
-              outputStream << std::left << std::setw(16) 
-                           << 2.0*shear_inc_default[i]*(1.0 + poisson_inc_default[i])
-                           << std::left << std::setw(16) << poisson_inc_default[i] << std::endl;
-            }   
-            // if E and V given, print
-            else {
-              outputStream << std::left << std::setw(16) 
-                           << youngs_inc_default[i]
-                           << std::left << std::setw(16) 
-                           << poisson_inc_default[i] << std::endl;
-            }
-          }
-        }
-      }
-      else {
+      if (i > numNonTri-1) {
+        outputStream << std::left << std::setw(10) << i-numNonTri
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim] 
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim+1] 
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim+2] ;
+        for (int j = 0; j < interpData.size(); ++j) {
+          outputStream << std::left << std::setw(16) << interpData[j][i]
+                       << std::left << std::setw(16);
+        }  
         double G = interpData[0][i]*R*T*(1 - Mc/M);
         // if V not given, get from G and E
         if (poisson_dom_default == -1) {
-          double V = (youngs_dom_default*G)/(3*(3*G - youngs_dom_default));
+          double V = youngs_dom_default/(2*G) - 1;
         // correcting for negative 0 output
           outputStream << std::left << std::setw(16) << youngs_dom_default 
                        << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
@@ -698,6 +507,214 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         } 
       }
     }
+  }    
+}
+
+// has spheres, write_coords=0
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
+                                  double Mc, double M, double youngs_dom_default,
+                                  double poisson_dom_default, double T, double R,
+                                  const std::vector<double>& PlaneCellCenters, int nDim,
+                                  std::vector<sphere>& spheres,
+                                  std::vector<string>& mat_sphere_names,
+                                  std::vector<string>& material_names,
+                                  std::vector<double>& youngs_inc_default,
+                                  std::vector<double>& shear_inc_default,
+                                  std::vector<double>& poisson_inc_default,
+                                  std::ostream& outputStream, int numNonTri)
+{
+  if (!outputStream.good()) {
+    std::cout << "Output stream is bad" << std::endl;
+    exit(1);
+  }
+  
+  outputStream << std::left << std::setw(10) << "id" 
+               << std::left << std::setw(16) << "rho"
+               << std::left << std::setw(16) << "E"
+               << std::left << std::setw(16) << "V" << std::endl << std::endl;
+  
+  //double R = .000008314;
+  //double T = 300.0; 
+  for (int i = 0; i < interpData[0].size(); ++i) {
+    if (i > numNonTri - 1) {
+      outputStream << std::left << std::setw(10) << i-numNonTri << std::left << std::setw(16); 
+      bool in_sphere = false;
+      int k;
+      for (int j = 0; j < interpData.size(); ++j) {
+        // checking if plane points are in sphere
+        std::vector<double> point;
+        point.push_back(PlaneCellCenters[i*nDim]);
+        point.push_back(PlaneCellCenters[i*nDim+1]);
+        point.push_back(PlaneCellCenters[i*nDim+2]);
+        for (k = 0; k < spheres.size(); ++k) {
+          if(in_sphere=spheres[k].in_sphere(point)) {
+            break;
+          }
+        }
+      //if (in_sphere)
+      //  outputStream << 0.0 << std::left << std::setw(16);
+      //else      
+        outputStream << interpData[j][i] << std::left << std::setw(16);
+      }
+      if (in_sphere) {
+        for (int i = 0; i < material_names.size(); ++i) {
+          if (!material_names[i].compare(mat_sphere_names[k])) {
+            // if V not given, get from G and E
+            if (poisson_inc_default[i] == -1) {
+              outputStream << std::left << std::setw(16) << youngs_inc_default[i]
+                           << std::left << std::setw(16)
+                           << (youngs_inc_default[i])/(2*shear_inc_default[i]) - 1
+                           << std::endl;
+            }
+            // if E not given, get from G and V
+            else if (youngs_inc_default[i] == -1) {
+              outputStream << std::left << std::setw(16)
+                           << 2.0*shear_inc_default[i]*(1.0 + poisson_inc_default[i])
+                           << std::left << std::setw(16) << poisson_inc_default[i] << std::endl;
+            }
+            // if E and V given, print
+            else {
+              outputStream << std::left << std::setw(16)
+                           << youngs_inc_default[i]
+                           << std::left << std::setw(16)
+                           << poisson_inc_default[i] << std::endl;
+            }
+          }
+        }
+      }
+      else {
+        double G = interpData[0][i]*R*T*(1 - Mc/M);
+        // if V not given, get from G and E
+        if (poisson_dom_default == -1) {
+        double V = youngs_dom_default/(2*G) - 1;
+        // correcting for negative 0 output
+        outputStream << std::left << std::setw(16) << youngs_dom_default
+                     << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+        }
+        // if E not given, get from G and V
+        else if (youngs_dom_default == -1) {
+        double E = 2.0*G*(1.0+poisson_dom_default);
+        outputStream << std::left << std::setw(16) << E
+                     << std::left << std::setw(16) << poisson_dom_default << std::endl;
+        }
+        else {
+          outputStream << std::left << std::setw(16) << youngs_dom_default
+                       << std::left << std::setw(16) << poisson_dom_default << std::endl;
+        }
+      }
+    }
+  }   
+}
+
+// has spheres and coord switch
+void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
+                                  double Mc, double M, double youngs_dom_default, 
+                                  double poisson_dom_default, double T, double R,
+                                  const std::vector<double>& PlaneCellCenters, int nDim,
+                                  std::vector<sphere>& spheres,
+                                  std::vector<string>& mat_sphere_names,
+                                  std::vector<string>& material_names,
+                                  std::vector<double>& youngs_inc_default,
+                                  std::vector<double>& shear_inc_default,
+                                  std::vector<double>& poisson_inc_default,
+                                  std::ostream& outputStream, bool writeCoord, int numNonTri)
+{
+  if (!outputStream.good()) {
+    std::cout << "Output stream is bad" << std::endl;
+    exit(1);
+  } 
+  if (!writeCoord)
+    writeInterpData(interpData, Mc, M, youngs_dom_default, 
+                    poisson_dom_default, T, R,
+                    PlaneCellCenters, nDim, spheres, 
+                    mat_sphere_names, material_names, 
+                    youngs_inc_default, shear_inc_default, 
+                    poisson_inc_default, outputStream, numNonTri);
+  else {
+    outputStream << std::left << std::setw(10) << "id" 
+                 << std::left << std::setw(16) << "X"
+                 << std::left << std::setw(16) << "Y"
+                 << std::left << std::setw(16) << "Z" 
+                 << std::left << std::setw(16) << "rho"   
+                 << std::left << std::setw(16) << "E"
+                 << std::left << std::setw(16) << "V" << std::endl << std::endl;
+    
+    for (int i = 0; i < interpData[0].size(); ++i) {
+      if (i > numNonTri-1) {
+        outputStream << std::left << std::setw(10) << i - numNonTri  
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim] 
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim+1] 
+                     << std::left << std::setw(16) << PlaneCellCenters[i*nDim+2] ;
+                          //<< std::left << std::setw(16);
+        bool in_sphere = false;
+        int k; // sphere-material identifier
+        for (int j = 0; j < interpData.size(); ++j) {
+          // checking if plane points are in sphere
+          std::vector<double> point;
+          point.push_back(PlaneCellCenters[i*nDim]);
+          point.push_back(PlaneCellCenters[i*nDim+1]);
+          point.push_back(PlaneCellCenters[i*nDim+2]);
+          for (k = 0; k < spheres.size(); ++k) {
+            if(in_sphere=spheres[k].in_sphere(point)) {
+              break;
+            }
+          }
+        // if point in plane is in sphere, crosslink = 0
+        //if (in_sphere) 
+        //  outputStream << std::left << std::setw(16) << 0.0 
+        //               << std::left << std::setw(16);
+        //else      
+          outputStream << std::left << std::setw(16) << interpData[j][i] 
+                       << std::left << std::setw(16);
+        } 
+        if (in_sphere) {
+          for (int i = 0; i < material_names.size(); ++i) { 
+            if (!material_names[i].compare(mat_sphere_names[k])) {
+              // if V not given, get from G and E
+              if (poisson_inc_default[i] == -1) {
+                outputStream << std::left << std::setw(16) << youngs_inc_default[i] 
+                             << std::left << std::setw(16) 
+                             << (youngs_inc_default[i])/(2*shear_inc_default[i]) -1
+                             << std::endl;
+              }
+              // if E not given, get from G and V
+              else if (youngs_inc_default[i] == -1) {
+                outputStream << std::left << std::setw(16) 
+                             << 2.0*shear_inc_default[i]*(1.0 + poisson_inc_default[i])
+                             << std::left << std::setw(16) << poisson_inc_default[i] << std::endl;
+              }   
+              // if E and V given, print
+              else {
+                outputStream << std::left << std::setw(16) 
+                             << youngs_inc_default[i]
+                             << std::left << std::setw(16) 
+                             << poisson_inc_default[i] << std::endl;
+              }
+            }
+          }
+        }
+        else {
+          double G = interpData[0][i]*R*T*(1 - Mc/M);
+          // if V not given, get from G and E
+          if (poisson_dom_default == -1) {
+            double V = youngs_dom_default/(2*G) - 1;
+          // correcting for negative 0 output
+            outputStream << std::left << std::setw(16) << youngs_dom_default 
+                         << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+          } 
+          // if E not given, get from G and V
+          else if (youngs_dom_default == -1) {
+            double E = 2.0*G*(1.0+poisson_dom_default);
+            outputStream << std::left << std::setw(16) << E 
+                        << std::left << std::setw(16) << poisson_dom_default << std::endl;
+          }
+          else {
+            outputStream << std::left << std::setw(16) << youngs_dom_default
+                         << std::left << std::setw(16) << poisson_dom_default << std::endl;
+          } 
+        }
+      }
+    }
   }
 }
 
@@ -707,7 +724,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   double Mc, double M, double youngs_dom_default, 
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::string filename, bool writeCoord)
+                                  std::string filename, bool writeCoord, int numNonTri)
 {
   std::ofstream outputStream(filename.c_str());
   if(!outputStream.good()) {
@@ -716,7 +733,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   }
   writeInterpData(interpData, Mc, M, youngs_dom_default, 
                   poisson_dom_default, T, R, PlaneCellCenters, nDim, 
-                  outputStream, writeCoord);
+                  outputStream, writeCoord, numNonTri);
 }                                 
 
 
@@ -730,7 +747,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::string filename, bool writeCoord)
+                       std::string filename, bool writeCoord, int numNonTri)
 {
   std::ofstream outputStream(filename.c_str());
   if(!outputStream.good()) {
@@ -740,7 +757,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   writeInterpData(interpData, Mc, M, youngs_dom_default, poisson_dom_default, T, R,
                   PlaneCellCenters, nDim, spheres, mat_sphere_names, material_names, 
                   youngs_inc_default, shear_inc_default, poisson_inc_default, 
-                  outputStream, writeCoord);
+                  outputStream, writeCoord, numNonTri);
 }                                 
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)

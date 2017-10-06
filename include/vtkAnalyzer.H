@@ -113,6 +113,8 @@ public:
    double* getPointCoords(int pntId);
    // returns coordinates of member points in cell with ID 
    std::vector<double* > getCellCoords(int pntId, int& numComponent);
+   // get number of nonTri
+   int getNumberOfNonTri();
    // returns coordinates of centers of all cells 
    std::vector<double > getCellCenters(int& numComponent); 
    // returns min extent
@@ -162,18 +164,18 @@ public:
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poisson_dom_default, double T, double R, 
-                       std::ostream& outputStream);
+                       std::ostream& outputStream, int numNonTri);
   // no spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poison_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
-                       std::ostream& outputStream, bool writeCoord);
+                       std::ostream& outputStream, bool writeCoord, int numNonTri);
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
-                       std::string filename, bool writeCoord);
+                       std::string filename, bool writeCoord, int numNonTri);
 
   // write interpolated data if spheres
   // has spheres, don't write coords
@@ -187,7 +189,7 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::ostream& outputStream);
+                       std::ostream& outputStream, int numNonTri);
   // has spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
@@ -199,7 +201,7 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::ostream& outputStream, bool writeCoord);
+                       std::ostream& outputStream, bool writeCoord, int numNonTri);
   
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
@@ -211,7 +213,7 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::string filename, bool writeCoord);
+                       std::string filename, bool writeCoord, int numNonTri);
 
   void writeMSH(std::string filename);
   void writeBackgroundMSH(string filename, const double size);
