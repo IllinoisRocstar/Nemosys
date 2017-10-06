@@ -266,7 +266,6 @@ std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
 }
 
 
-
 // returns coordinates of all points in mesh
 std::vector<double> vtkAnalyzer::getAllPointCoords(int nDim)
 {
@@ -308,7 +307,7 @@ double vtkAnalyzer::getMinExtent(int nDim, const std::vector<double>& pntCrds)
 } 
 
 
-// returns centers of all cells w/ numComponents > 2
+// returns centers of all cells
 std::vector<double>
 vtkAnalyzer::getCellCenters(int& numComponent)
 {
@@ -317,24 +316,24 @@ vtkAnalyzer::getCellCenters(int& numComponent)
   int num_cells = getNumberOfCells();
   // enforce that cell types are not lines etc
   std::vector<double> cellCenters;
-  int k = 0;
   for (int i = 0; i < num_cells; ++i) {
-    if (dataSet->GetCellType(i) > VTK_POLY_LINE)
-    {
-      std::vector<double *> cellCoords = getCellCoords(i, numComponent);
-      double x, y,z;
-      x = y = z = 0;
-      for (int j = 0; j < numComponent ; ++j) {
-        x += cellCoords[j][0]/numComponent;
-        y += cellCoords[j][1]/numComponent;
-        z += cellCoords[j][2]/numComponent;
-        delete cellCoords[j];
-      }
-      cellCenters.push_back(x);
-      cellCenters.push_back(y);
-      cellCenters.push_back(z);
-      k+=1;
+   // if (dataSet->GetCellType(i) != VTK_TRIANGLE)
+   //   deleteCell(i);
+   // else {
+    
+    std::vector<double *> cellCoords = getCellCoords(i, numComponent);
+    double x, y,z;
+    x = y = z = 0;
+    for (int j = 0; j < numComponent ; ++j) {
+      x += cellCoords[j][0]/numComponent;
+      y += cellCoords[j][1]/numComponent;
+      z += cellCoords[j][2]/numComponent;
+      delete cellCoords[j];
     }
+    cellCenters.push_back(x);
+    cellCenters.push_back(y);
+    cellCenters.push_back(z);
+   // }
   }
   return cellCenters;
 }   
@@ -859,27 +858,26 @@ void vtkAnalyzer::setPointDataArray(const char* name, int numComponent,
   }
 }
 
-// TODO: See if there exists/fix error with implementation
-void vtkAnalyzer::setCellDataArray(const char* name, int numComponent, 
+void vtkAnalyzer::setCellDataArray(const char* name, int numComponent,
                                     std::vector<double> &cellArrData)
 {
-   if (!cellData)
-    cellData = dataSet->GetCellData();
-   if (cellData)
-   { 
-   vtkSmartPointer<vtkDoubleArray> da = 
+  if (!cellData)
+   cellData = dataSet->GetCellData();
+  if (cellData)
+  { 
+    vtkSmartPointer<vtkDoubleArray> da = 
     vtkSmartPointer<vtkDoubleArray>::New();
-   da->SetName(name);
-   da->SetNumberOfComponents(numComponent);
-   for(int i=0; i<getNumberOfCells(); i++)
-   {
+    da->SetName(name);
+    da->SetNumberOfComponents(numComponent);
+    for(int i=0; i<getNumberOfCells(); i++)
+    {
       double cllData[numComponent];
       for (int j = 0; j < numComponent; ++j)
         cllData[j] = cellArrData[i*numComponent +j];
       da->InsertNextTuple(cllData);
-   cellData->SetActiveScalars(name);
-   cellData->SetScalars(da);
-   } 
+      cellData->SetActiveScalars(name);
+      cellData->SetScalars(da);
+    } 
   }
 }
 
