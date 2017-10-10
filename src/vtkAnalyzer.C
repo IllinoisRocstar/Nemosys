@@ -413,7 +413,8 @@ vtkAnalyzer::getInterpData(int nDim, int num_neighbors, int numComponent, int nu
 void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interpData,
                                   double Mc, double M, double youngs_dom_default,
                                   double poisson_dom_default, double T, double R,
-                                  std::ostream& outputStream, int numNonTri)
+                                  std::ostream& outputStream, int numNonTri,
+                                  const double conc_conv)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
@@ -430,7 +431,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
       for (int j = 0; j < interpData.size(); ++j) {
         outputStream << interpData[j][i] << std::left << std::setw(16);
       }
-      double G = interpData[0][i]*R*T*(1 - Mc/M);
+      double G = interpData[0][i]*R*T*(1 - Mc/M) * conc_conv; //last term converts rho to SI units
       // if V not given, get from G and E
       if (poisson_dom_default == -1) {
         double V = youngs_dom_default/(2*G) - 1;
@@ -457,7 +458,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   double Mc, double M, double youngs_dom_default,
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::ostream& outputStream, bool writeCoord, int numNonTri)
+                                  std::ostream& outputStream, bool writeCoord, int numNonTri,
+                                  const double conc_conv)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
@@ -466,7 +468,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   if (!writeCoord)
     writeInterpData(interpData, Mc, M, youngs_dom_default,
                     poisson_dom_default, T, R,
-                    outputStream, numNonTri);
+                    outputStream, numNonTri, conc_conv);
   else {
     outputStream << std::left << std::setw(10) << "id" 
                  << std::left << std::setw(16) << "X"
@@ -484,10 +486,10 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                      << std::left << std::setw(16) << PlaneCellCenters[i*nDim+1] 
                      << std::left << std::setw(16) << PlaneCellCenters[i*nDim+2] ;
         for (int j = 0; j < interpData.size(); ++j) {
-          outputStream << std::left << std::setw(16) << interpData[j][i]
+          outputStream << std::left << std::setw(16) << interpData[j][i] * conc_conv
                        << std::left << std::setw(16);
         }  
-        double G = interpData[0][i]*R*T*(1 - Mc/M);
+        double G = interpData[0][i]*R*T*(1 - Mc/M) * conc_conv;  //last term converts unit to SI
         // if V not given, get from G and E
         if (poisson_dom_default == -1) {
           double V = youngs_dom_default/(2*G) - 1;
@@ -521,7 +523,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   std::vector<double>& youngs_inc_default,
                                   std::vector<double>& shear_inc_default,
                                   std::vector<double>& poisson_inc_default,
-                                  std::ostream& outputStream, int numNonTri)
+                                  std::ostream& outputStream, int numNonTri,
+                                  const double conc_conv)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
@@ -554,7 +557,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
       //if (in_sphere)
       //  outputStream << 0.0 << std::left << std::setw(16);
       //else      
-        outputStream << interpData[j][i] << std::left << std::setw(16);
+        outputStream << interpData[j][i] * conc_conv << std::left << std::setw(16);
       }
       if (in_sphere) {
         for (int i = 0; i < material_names.size(); ++i) {
@@ -583,7 +586,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         }
       }
       else {
-        double G = interpData[0][i]*R*T*(1 - Mc/M);
+        double G = interpData[0][i]*R*T*(1 - Mc/M) * conc_conv; //last term converts unit to SI
         // if V not given, get from G and E
         if (poisson_dom_default == -1) {
         double V = youngs_dom_default/(2*G) - 1;
@@ -617,7 +620,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   std::vector<double>& youngs_inc_default,
                                   std::vector<double>& shear_inc_default,
                                   std::vector<double>& poisson_inc_default,
-                                  std::ostream& outputStream, bool writeCoord, int numNonTri)
+                                  std::ostream& outputStream, bool writeCoord, int numNonTri,
+                                  const double conc_conv)
 {
   if (!outputStream.good()) {
     std::cout << "Output stream is bad" << std::endl;
@@ -629,7 +633,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                     PlaneCellCenters, nDim, spheres, 
                     mat_sphere_names, material_names, 
                     youngs_inc_default, shear_inc_default, 
-                    poisson_inc_default, outputStream, numNonTri);
+                    poisson_inc_default, outputStream, numNonTri, conc_conv);
   else {
     outputStream << std::left << std::setw(10) << "id" 
                  << std::left << std::setw(16) << "X"
@@ -664,7 +668,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         //  outputStream << std::left << std::setw(16) << 0.0 
         //               << std::left << std::setw(16);
         //else      
-          outputStream << std::left << std::setw(16) << interpData[j][i] 
+          outputStream << std::left << std::setw(16) << interpData[j][i] * conc_conv 
                        << std::left << std::setw(16);
         } 
         if (in_sphere) {
@@ -694,7 +698,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
           }
         }
         else {
-          double G = interpData[0][i]*R*T*(1 - Mc/M);
+          double G = interpData[0][i]*R*T*(1 - Mc/M) * conc_conv; //last term converts unit to SI
           // if V not given, get from G and E
           if (poisson_dom_default == -1) {
             double V = youngs_dom_default/(2*G) - 1;
@@ -724,7 +728,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   double Mc, double M, double youngs_dom_default, 
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
-                                  std::string filename, bool writeCoord, int numNonTri)
+                                  std::string filename, bool writeCoord, int numNonTri,
+                                  const double conc_conv)
 {
   std::ofstream outputStream(filename.c_str());
   if(!outputStream.good()) {
@@ -733,7 +738,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   }
   writeInterpData(interpData, Mc, M, youngs_dom_default, 
                   poisson_dom_default, T, R, PlaneCellCenters, nDim, 
-                  outputStream, writeCoord, numNonTri);
+                  outputStream, writeCoord, numNonTri, conc_conv);
 }                                 
 
 
@@ -747,7 +752,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::string filename, bool writeCoord, int numNonTri)
+                       std::string filename, bool writeCoord, int numNonTri,
+                       const double conc_conv)
 {
   std::ofstream outputStream(filename.c_str());
   if(!outputStream.good()) {
@@ -757,7 +763,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
   writeInterpData(interpData, Mc, M, youngs_dom_default, poisson_dom_default, T, R,
                   PlaneCellCenters, nDim, spheres, mat_sphere_names, material_names, 
                   youngs_inc_default, shear_inc_default, poisson_inc_default, 
-                  outputStream, writeCoord, numNonTri);
+                  outputStream, writeCoord, numNonTri, conc_conv);
 }                                 
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)

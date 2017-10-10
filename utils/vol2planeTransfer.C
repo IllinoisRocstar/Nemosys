@@ -29,7 +29,6 @@
    TODO: Since the determination of a whether a plane point is in the sphere is made during the interpolation,
          we can modify the return values of interpolate to include a bbmask type array for the plane.
          This can be used in the writeInterpData functions instead of the determinations currently made there. 
-   TODO: I CHANGED THE WRITEOUT TO INCLUDE LINE CELLS SO THIS WILL PROBABLY BE CHANGED BACK,BUT REQUIRED FOR WRITE OUT
    RECENT DEVELOPMENT:
     - added support to consider radius in nn search of k-d tree
       as an overload to interpolate function
@@ -66,6 +65,16 @@ struct physical_constants
   double T;  
 };
 
+//unit conversion consts to convert RocLB unit to SI kg/m/s  
+struct unit_convt_consts {
+    //const double convt_conc_rocLB = 10.0;  //10nmol/mm^3 to mol/m^3
+    //const double convt_time_rocLB = 2.592e6; //month to second
+    //const double convt_len_rocLB = 1.e-3;   //mm to m
+    double convt_conc_rocLB;   
+    double convt_time_rocLB;  
+    double convt_len_rocLB;  
+};
+
 // class to read input file
 class inputs {
 public:
@@ -91,6 +100,9 @@ public:
   double M_weight, Mc_weight, NN_TOL;
   double T;
   bool writePlaneMesh;
+  double len_convt;
+  double conc_convt;
+  double t_convt;
 };
 
 /*************************************************************************/
@@ -210,8 +222,13 @@ int main(int argc, char* argv[])
 
   // defining physical constants
   physical_constants phys_const;
-  phys_const.R = .0000000083144598; // in m^3*GPa/(K*mol)
+  //phys_const.R = .0000000083144598; // in m^3*GPa/(K*mol)
+  phys_const.R = 8.3144598; // in J/K/mol)
   phys_const.T = inp.T;
+  
+  // unit conversion consts
+  unit_convt_consts unit_consts;
+  unit_consts.convt_conc_rocLB = inp.conc_convt;
   
   // creating interpolation for cross_link 
   int species_id = VolMesh->IsArrayName(inp.cross_link_name);
@@ -239,7 +256,8 @@ int main(int argc, char* argv[])
                                          inp.poisson_dom_default,
                                          phys_const.T, phys_const.R,
                                          PlaneCellCenters, nDim, 
-                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri());
+                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri(),
+                                         unit_consts.convt_conc_rocLB);
                 // writing plane cell data to vtk
                 if (inp.writePlaneMesh) 
                 {
@@ -261,7 +279,8 @@ int main(int argc, char* argv[])
                                          mat_sphere_names, inp.material_names,
                                          inp.youngs_inc_default, inp.shear_inc_default,
                                          inp.poisson_inc_default,
-                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri());
+                                         inp.out_file, (bool) inp.write_coords, PlaneMesh->getNumberOfNonTri(),
+                                         unit_consts.convt_conc_rocLB);
 
                 if (inp.writePlaneMesh)
                 {
@@ -487,6 +506,18 @@ inputs::inputs(string input_file)
                     }
           case 18:  { std::stringstream ss(data);
                       ss >> writePlaneMesh; 
+                      break;
+                    }
+          case 19:  { std::stringstream ss(data);
+                      ss >> conc_convt;
+                      break;
+                    }
+          case 20:  { std::stringstream ss(data);
+                      ss >> len_convt;
+                      break;
+                    }
+          case 21:  { std::stringstream ss(data);
+                      ss >> t_convt;
                       break;
                     }
         }

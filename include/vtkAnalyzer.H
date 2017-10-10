@@ -164,18 +164,21 @@ public:
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poisson_dom_default, double T, double R, 
-                       std::ostream& outputStream, int numNonTri);
+                       std::ostream& outputStream, int numNonTri,
+                       const double conc_conv);
   // no spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poison_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
-                       std::ostream& outputStream, bool writeCoord, int numNonTri);
+                       std::ostream& outputStream, bool writeCoord, int numNonTri,
+                       const double conc_conv);
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default,
                        double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
-                       std::string filename, bool writeCoord, int numNonTri);
+                       std::string filename, bool writeCoord, int numNonTri,
+                       const double conc_conv);
 
   // write interpolated data if spheres
   // has spheres, don't write coords
@@ -189,7 +192,8 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::ostream& outputStream, int numNonTri);
+                       std::ostream& outputStream, int numNonTri,
+                       const double conc_conv);
   // has spheres, switch to write coords
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
@@ -201,7 +205,8 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::ostream& outputStream, bool writeCoord, int numNonTri);
+                       std::ostream& outputStream, bool writeCoord, int numNonTri,
+                       const double conc_conv);
   
   void writeInterpData(const std::vector<std::vector<double>>& interpData,
                        double Mc, double M, double youngs_dom_default, 
@@ -213,7 +218,8 @@ public:
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
-                       std::string filename, bool writeCoord, int numNonTri);
+                       std::string filename, bool writeCoord, int numNonTri,
+                       const double conc_conv);
 
   void writeMSH(std::string filename);
   void writeBackgroundMSH(string filename, const double size);
