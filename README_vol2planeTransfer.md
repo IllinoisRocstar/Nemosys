@@ -80,6 +80,11 @@ descriptions of each option:
   Mc_weight             =   {0}                       // Molecular weight of polymer chain between cross links
   NN_TOL                =   {.01}                     // Multiplier of min-extent to define radius in k-NN search
   Temperature           =   {300}                     // Temperature in which RocLB sim was conducted
+  writePlaneMesh        =   {1}                       // write interpolated data to vtk for visualization
+  RocLB_conc_2_SI       =   {10.0}                    // convert concentration to SI
+  RocLB_time_2_SI       =   {2.592e6}                 // convert time to SI
+  RocLB_len_2_SI        =   {1.0e-3}                  // convert length to SI
+
 ```
 
 NOTES: 
