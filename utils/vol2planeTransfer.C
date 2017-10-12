@@ -130,7 +130,11 @@ int main(int argc, char* argv[])
               << "M_weight" << std::endl
               << "Mc_weight" << std::endl
               << "NN_TOL" << std::endl
-              << "Temperature" << std::endl;
+              << "Temperature" << std::endl
+              << "writePlaneMesh" << std::endl
+              << "len_convt" << std::endl
+              << "conc_convt" << std::endl
+              << "t_convt" << std::endl;
     exit(1);
   }
 
