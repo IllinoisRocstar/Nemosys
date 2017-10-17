@@ -1,7 +1,9 @@
 #include <MAdLib.h>
 #include <GModel.h>
 #include <vtkAnalyzer.H>
+//#include <meshPhys.H>
 #include <NodalDataManager.h>
+#include <chrono>
 
 int main(int argc, char* argv[])
 {
@@ -13,7 +15,12 @@ int main(int argc, char* argv[])
   std::string meshFile = argv[1];
 
 
-
+/*  std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
+  meshPhys* mshphys;
+  mshphys = new meshPhys((char*) &(meshFile)[0u]);
+  mshphys->report(); 
+  delete mshphys;
+*/
   /*size_t beg = 0;
   size_t end = meshFile.find(".");
   string name; 
@@ -145,18 +152,23 @@ int main(int argc, char* argv[])
   */
   
  // writing background mesh and taking care of non tet/tri entities
-  tmpmesh->writeBackgroundMSH("backgroundSF.msh", .2);
+  tmpmesh->writeBackgroundMSH("backgroundSF.msh", .1);
   MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
   bSF->loadData("backgroundSF.msh");
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
   MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, bSF);
-
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  std::cout << "Time for adapter construction (ms): " 
+            << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() 
+            << std::endl;
   // attach data to mesh
   /* TODO: writing vector data not implemented in madlib
            instead, splitting vector data into component vectors */  
-  /*std::vector<std::vector<double>> pntData;
+  std::vector<std::vector<double>> pntData;
   int numTuple, numComponent; 
   tmpmesh->getPointDataArray(0, pntData, numTuple, numComponent);
-  std::vector<double> pntDatax, pntDatay, pntDataz;
+
+  /*std::vector<double> pntDatax, pntDatay, pntDataz;
   for (int i = 0; i < numTuple; ++i)
   {
     pntDatax.push_back(pntData[i][0]);
@@ -164,20 +176,17 @@ int main(int argc, char* argv[])
     pntDataz.push_back(pntData[i][2]);
   }
 
-  adapter->registerData("DispX", pntDatax);
-  adapter->registerData("DispY", pntDatay);
-  adapter->registerData("DispZ", pntDataz);
-  MAd::NodalDataManagerSgl::instance().writeData("DispX","solutionPreX.pos");
-  MAd::NodalDataManagerSgl::instance().writeData("DispY","solutionPreY.pos");
-  MAd::NodalDataManagerSgl::instance().writeData("DispZ","solutionPreZ.pos");
-  std::cout << "done" << std::endl; 
+  adapter->registerData("VX", pntDatax);
+  adapter->registerData("VY", pntDatay);
+  */
 
+  adapter->registerVData("V", pntData);
   // check if data is correctly attached
-  std::vector<double> preAMRDatay;
-  adapter->getMeshData("DispY", &preAMRDatay);
-  std::cout << "preAMRDatay[1000] = " << preAMRDatay[1000] << std::endl;
+  std::vector<std::vector<double>> preAMRDatay;
+  adapter->getMeshVData("V", &preAMRDatay);
+  std::cout << "preAMRDatay[1000][1] = " << preAMRDatay[1000][1] << std::endl;
   std::cout << "Size of vector = " << preAMRDatay.size() << std::endl; 
-*/
+
   // Output situation before optimization
   std::cout << "Statistics before optimization: " << std::endl;
   adapter->printStatistics(std::cout);
@@ -193,15 +202,12 @@ int main(int argc, char* argv[])
 
   MAd::M_writeMsh(mesh, argv[2], 2);
 
-  /* 
+   
   // get data after refinement
-  std::vector<double> postAMRDatay;
-  adapter->getMeshData("DispY", &postAMRDatay);
-  std::cout << "postAMRDatay[1000] = " << postAMRDatay[1000] << std::endl;
+  std::vector<std::vector<double>> postAMRDatay;
+  adapter->getMeshVData("V", &postAMRDatay);
+  std::cout << "postAMRDatay[1000][1] = " << postAMRDatay[1000][1] << std::endl;
   std::cout << "Size of vector = " << postAMRDatay.size() << std::endl; 
-
-  // write mesh with field data to GMSH POS files
-  MAd::NodalDataManagerSgl::instance().writeData("DispY","solutionPost.msh");
 
   // convert final Gmsh file back to vtk
   GModel* trgGModel;
@@ -215,16 +221,26 @@ int main(int argc, char* argv[])
   trgVTK = new vtkAnalyzer((char*) "refined.vtk");
   trgVTK->read();
   trgVTK->report();
-  trgVTK->setPointDataArray("DispY", 1, postAMRDatay);
+  std::vector<double> postAMRDatas(numComponent*postAMRDatay.size());
+  for (int i = 0; i < postAMRDatay.size(); ++i)
+  {
+    for (int j = 0; j < numComponent; ++j)
+    {
+      postAMRDatas[i*numComponent+j] = postAMRDatay[i][j];
+    }
+  }
+
+  trgVTK->setPointDataArray("V", 3, postAMRDatas);
   trgVTK->report();
   trgVTK->write("refined_solution.vtu");
-  */
+
+
+ 
   //if (localSF) delete localSF;
   //if (adapter) delete adapter;
-   
   if (bSF) delete bSF;
-  //if (trgGModel) delete trgGModel;
-  //if (trgVTK) delete trgVTK;
+  if (trgGModel) delete trgGModel;
+  if (trgVTK) delete trgVTK;
   return 0;
 }
 
