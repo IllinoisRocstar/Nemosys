@@ -1,7 +1,7 @@
 #include <MAdLib.h>
 #include <GModel.h>
 #include <vtkAnalyzer.H>
-//#include <meshPhys.H>
+#include <meshPhys.H>
 #include <NodalDataManager.h>
 #include <chrono>
 
@@ -15,12 +15,23 @@ int main(int argc, char* argv[])
   std::string meshFile = argv[1];
 
 
-/*  std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
+  std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
   meshPhys* mshphys;
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
+  std::vector<double*> parametric_coords = mshphys->getParametricCoords();
+  std::cout << parametric_coords.size() << std::endl;
+  for (int i = 0; i < parametric_coords.size(); ++i)
+  {
+    for (int j = 0; j < 4; ++j) 
+    {
+      for (int k = 0; k < 3; ++k)
+        std::cout << parametric_coords[i][(3*j+k)] << " "; 
+      std::cout << std::endl;
+    }
+  }
   mshphys->report(); 
   delete mshphys;
-*/
+
   /*size_t beg = 0;
   size_t end = meshFile.find(".");
   string name; 
