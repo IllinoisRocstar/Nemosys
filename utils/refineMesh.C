@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
   std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
   meshPhys* mshphys;
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
-  PointDataArray& pntdata = mshphys->getPointData(0);\
+  PointDataArray& pntdata = mshphys->getPointData(0);
  
   std::cout << "Name of arrays " << pntdata.getName() << std::endl; 
   std::cout << "NumComponents: " <<  pntdata.getNumComponent() << std::endl;
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
   { 
     for (int j = 0; j < pntdata.getNumComponent(); ++j)
     {
-      std::cout << pntdata(i,j) << " ";
+      std::cout << mshphys->getPointData(0)(i,j) << " ";
     }
     std::cout << std::endl;
     if (i > 50)

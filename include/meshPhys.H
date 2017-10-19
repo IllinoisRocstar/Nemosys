@@ -26,10 +26,12 @@ class PointDataArray
   int getNumComponent() { return numComponent; }
   int getNumTuple() { return numTuple; }
   std::string getName() { return name; }
+  
+
   private: 
-    int numComponent, numTuple;
-    std::string name;
-    std::vector<std::vector<double>> pntData;
+    int numComponent, numTuple; // dim of data point, number of data points 
+    std::string name;           // name of data array
+    std::vector<std::vector<double>> pntData; // data array
 };
 
 
@@ -100,7 +102,7 @@ class meshPhys: public vtkAnalyzer
       END
   */
 
-  std::vector<std::vector<double>> ComputeGradAtCenter(int cell);
+  std::vector<std::vector<double>> ComputeGradAtPoint(int cell, int array);
 
 
   // returns vector of parametric coords for all cells
