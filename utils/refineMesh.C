@@ -18,17 +18,34 @@ int main(int argc, char* argv[])
   std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
   meshPhys* mshphys;
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
-  std::vector<double*> parametric_coords = mshphys->getParametricCoords();
+  PointDataArray& pntdata = mshphys->getPointData(0);\
+ 
+  std::cout << "Name of arrays " << pntdata.getName() << std::endl; 
+  std::cout << "NumComponents: " <<  pntdata.getNumComponent() << std::endl;
+  std::cout << "NumTuples: " << pntdata.getNumTuple() << std::endl;
+  std::cout << "first few values:" << std::endl;
+  for (int i = 0; i < pntdata.getNumTuple(); ++i)
+  { 
+    for (int j = 0; j < pntdata.getNumComponent(); ++j)
+    {
+      std::cout << pntdata(i,j) << " ";
+    }
+    std::cout << std::endl;
+    if (i > 50)
+      break;
+  }  
+  /*std::vector<double*> parametric_coords = mshphys->getParametricCoords();
   std::cout << parametric_coords.size() << std::endl;
   for (int i = 0; i < parametric_coords.size(); ++i)
   {
-    for (int j = 0; j < 4; ++j) 
+    fo s usually a value between 1.5 and 2.
+It then copies all the values from the old memory buffer to the new memory buffer.(int j = 0; j < 4; ++j) 
     {
       for (int k = 0; k < 3; ++k)
         std::cout << parametric_coords[i][(3*j+k)] << " "; 
       std::cout << std::endl;
     }
-  }
+  }*/
   mshphys->report(); 
   delete mshphys;
 

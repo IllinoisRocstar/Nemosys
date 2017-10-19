@@ -6,6 +6,36 @@
 
 // stl
 
+
+/* holds relevant info for point data and provides access interface*/
+class PointDataArray
+{
+  public:
+  // constructors
+    PointDataArray( std::string _name, int _numComponent, int _numTuple, 
+                    std::vector<std::vector<double>> _pntData):
+                    name(_name), numComponent(_numComponent), numTuple(_numTuple)
+                    { pntData = _pntData; };
+
+    ~PointDataArray(){};
+
+  public:
+  // operators, access
+  double& operator()(int i, int j) { return pntData[i][j]; }
+  const double& operator()(int i, int j) const {return pntData[i][j]; }  
+  int getNumComponent() { return numComponent; }
+  int getNumTuple() { return numTuple; }
+  std::string getName() { return name; }
+  private: 
+    int numComponent, numTuple;
+    std::string name;
+    std::vector<std::vector<double>> pntData;
+};
+
+
+/* meshPhys inherits from vtkAnalyzer and contains methods for
+   evaluating physical data on the mesh. Its core private member
+   is a vector of all pointData arrays on the mesh */
 class meshPhys: public vtkAnalyzer
 {
   public:
@@ -31,13 +61,17 @@ class meshPhys: public vtkAnalyzer
           int numTuple, numComponent;
           std::vector<std::vector<double>> pntData_tmp;
           getPointDataArray(i, pntData_tmp, numTuple, numComponent);
-          //std::string array_name = dataSet->GetPointData()->GetArrayName(i);
-          pntData[i] = pntData_tmp;
+          std::string name = dataSet->GetPointData()->GetArrayName(i);
+          pntData.push_back(PointDataArray(name, numComponent, numTuple, pntData_tmp));
         }
       } 
     };
 
     ~meshPhys(){};
+
+  public:
+  //access to pntData
+    PointDataArray& getPointData(int i) { return pntData[i]; }
 
   public:
   // relevant computations (gradients etc.)
@@ -81,7 +115,7 @@ class meshPhys: public vtkAnalyzer
 
 
   private:
-    std::map<int, std::vector<std::vector<double>>> pntData ;
+    std::vector<PointDataArray> pntData ;
       
 };
 
