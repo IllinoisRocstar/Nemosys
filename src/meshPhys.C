@@ -11,13 +11,13 @@
           |Then, we use the inverse jacobian to transform back to the original coordinates
 
           |derivs[12] -> derivs[4][3] (deriv of shape function for each point)
-          |Consider point data U=(ux,uy,uz)
+          |Consider point data U=(Ux,Uy,Uz)
           
-          dU/dx = dU/dy = dU/dz = 0;
+          dUx/dx = dUx/dy = dUx/dz = 0;
           for each POINT in CELL:
-            dU/dx += derivs[POINT][0]*ux[POINT]; 
-            dU/dy += derivs[POINT][1]*ux[POINT];
-            dU/dy += derivs[POINT][2]*ux[POINT]; 
+            dUx/dx += derivs[POINT][0]*ux[POINT]; 
+            dUx/dy += derivs[POINT][1]*ux[POINT];
+            dUx/dy += derivs[POINT][2]*ux[POINT]; 
 
           [dU/dx dU/dy dU/dz]_orig = inverse*[dU/dx dU/dy dU/dz];              
           return [dU/dx dU/dy dU/dz]_orig; 
@@ -25,21 +25,25 @@
   */
 
 // compute gradient at center of cell
-std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell)
+// for generality, we need all information of data array
+/*std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
 {
   if (!pointData)
     pointData = dataSet->GetPointData();   
   if (pointData)
   {
+    int numTuple, numComponent;
+    std::vector<std::vector<double>> pntData;
+    getPointDataArray(array, pntData, numTuple, numComponent);
     double** invJacobian;
     double  derivs[12];
     // computing inverse jacobian for element
     dataSet->GetCell(i)->JacobianInverse(invJacobian, derivs);
     vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
-    numComponent = point_ids->GetNumberOfIds();
-    for (int i = 0; i < numComponent; ++i)
+    int numPointsInCell = point_ids->GetNumberOfIds();
+    for (int i = 0; i < numPointsInCell; ++i)
     {
-      
+     vtkIdType id = point_ids->GetId(i);
     }
   
   } 
@@ -49,7 +53,7 @@ std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell)
 
 }
 
-
+*/
 
 // returns isoparametric coordinate (for generality)
 // for 1st order tets it's always {0 0 0 1 0 0 0 1 0 0 0 1}
