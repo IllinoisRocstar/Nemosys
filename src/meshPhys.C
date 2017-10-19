@@ -26,24 +26,27 @@
 
 // compute gradient at center of cell
 // for generality, we need all information of data array
-/*std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
+std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
 {
   if (!pointData)
     pointData = dataSet->GetPointData();   
   if (pointData)
   {
-    int numTuple, numComponent;
-    std::vector<std::vector<double>> pntData;
-    getPointDataArray(array, pntData, numTuple, numComponent);
-    double** invJacobian;
-    double  derivs[12];
-    // computing inverse jacobian for element
-    dataSet->GetCell(i)->JacobianInverse(invJacobian, derivs);
+
     vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
     int numPointsInCell = point_ids->GetNumberOfIds();
+    
+    // computing inverse jacobian for element
+    double** invJacobian;
+    double  derivs[numPointsInCell*3];
+    dataSet->GetCell(i)->JacobianInverse(invJacobian, derivs);
+    
+    double df = 0; 
     for (int i = 0; i < numPointsInCell; ++i)
     {
-     vtkIdType id = point_ids->GetId(i);
+      vtkIdType id = point_ids->GetId(i);
+      df += derivs 
+      
     }
   
   } 
@@ -52,8 +55,6 @@
 
 
 }
-
-*/
 
 // returns isoparametric coordinate (for generality)
 // for 1st order tets it's always {0 0 0 1 0 0 0 1 0 0 0 1}
