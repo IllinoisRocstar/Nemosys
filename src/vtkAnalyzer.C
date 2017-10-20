@@ -1,5 +1,10 @@
 #include <vtkAnalyzer.H>
 
+// TODO: We shouldn't be returning double arrays declared in the function
+//       The stack is restored after the function's scope, so the addresses
+//       may point to garbage. Either allocate them on the heap or use an stl container
+//       Things work fine now, but we're just getting lucky with sequential function calls
+
 void vtkAnalyzer::read() 
 {
     extension = vtksys::SystemTools::GetFilenameLastExtension(xmlFileName);
