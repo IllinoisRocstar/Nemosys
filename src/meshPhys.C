@@ -46,8 +46,13 @@ std::vector<double> meshPhys::ComputeGradAtPoint(int pnt, int array)
     pointData = dataSet->GetPointData();
   if (pointData)
   {
-    double* pntCoords = getPointCoords(pnt);
+    vtkIdList* cellids = vtkIdList::New();
+    dataSet->GetPointCells(pnt, cellids);
+    std::cout << "number of id: " << cellids->GetId(0) << std::endl;
+    /*double* pntCoords = getPointCoords(pnt);
     std::cout << pntCoords[0] << " " << pntCoords[1] << " " << pntCoords[2] << std::endl; 
+    std::cout << "cell number: " << dataSet->FindCell(pntCoords, NULL, NULL, 1e-10,*/
+  
   }
  
   std::vector<double> tmp;
