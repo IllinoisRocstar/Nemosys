@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
   }  
   
   std::cout << "\n \n \n ";
-  mshphys->ComputeGradAtPoint(300,0);
+  mshphys->ComputeGradAtPoint(312,0);
   mshphys->report(); 
   delete mshphys;
   
