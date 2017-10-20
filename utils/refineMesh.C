@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
   PointDataArray& pntdata = mshphys->getPointData(0);
  
-  std::cout << "Name of arrays " << pntdata.getName() << std::endl; 
+  /*std::cout << "Name of arrays " << pntdata.getName() << std::endl; 
   std::cout << "NumComponents: " <<  pntdata.getNumComponent() << std::endl;
   std::cout << "NumTuples: " << pntdata.getNumTuple() << std::endl;
   std::cout << "first few values:" << std::endl;
@@ -33,20 +33,22 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
     if (i > 50)
       break;
-  }  
-  /*std::vector<double*> parametric_coords = mshphys->getParametricCoords();
-  std::cout << parametric_coords.size() << std::endl;
-  for (int i = 0; i < parametric_coords.size(); ++i)
+  } */ 
+ 
+  std::cout << "Gradient Test: \n"; 
+  std::vector<double> gradient = mshphys->ComputeGradAtCell(1000,0);
+  for (int i =0; i < 9; ++i)
   {
-    for(int j = 0; j < 4; ++j) 
-    {
-      for (int k = 0; k < 3; ++k)
-        std::cout << parametric_coords[i][(3*j+k)] << " "; 
+    std::cout << gradient[i] << " ";
+    if ((i+1)%3 == 0)
       std::cout << std::endl;
-    }
-  }*/
+  }  
+  
+  std::cout << "\n \n \n ";
+  mshphys->ComputeGradAtPoint(300,0);
   mshphys->report(); 
   delete mshphys;
+  
 
   /*size_t beg = 0;
   size_t end = meshFile.find(".");
