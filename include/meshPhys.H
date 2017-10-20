@@ -7,6 +7,9 @@
 // stl
 
 // Auxiliarry Functions
+#include <functional>
+
+// flattens vector of vectors
 template <typename T>
 std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 {
@@ -20,6 +23,23 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 	return result;
 }
 
+template <typename T>
+std::vector<T> operator+(const std::vector<T>& x, 
+                              const std::vector<T>& y)
+{
+  if (x.size() != y.size())
+  {
+    std::cout << "vectors must be same length for addition" << std::endl;
+    exit(1);
+  }
+  
+  std::vector<T> result;
+  result.reserve(x.size());
+  std::transform(x.begin(), x.end(), y.begin(), 
+                 std::back_inserter(result), std::plus<T>());
+  return result;
+} 
+
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray
 {
@@ -28,7 +48,7 @@ class PointDataArray
     PointDataArray( std::string _name, int _numComponent, int _numTuple, 
                     const std::vector<std::vector<double>>& _pntData):
                     name(_name), numComponent(_numComponent), numTuple(_numTuple)
-                    { pntData = flatten <double> (_pntData) ; };
+                    { pntData = flatten (_pntData) ; };
 
     ~PointDataArray(){};
 
@@ -90,38 +110,10 @@ class meshPhys: public vtkAnalyzer
   public:
   // relevant computations (gradients etc.)
 
-  /*  Algorithm: ComputeGradAtCenter:
-      BEGIN:
-        for each CELL in CELLS:
-          JacboianInverse(double** inverse, double derivs[12]);
-
-          |Now, we have the inverse jacobian (derivatives of shape function in iso-param space)
-          |We use the interpolation derivatives (in iso-param space) to get the value of 
-          |the functions derivative at cell center (in iso-param space)
-          |Then, we use the inverse jacobian to transform back to the original coordinates
-
-          |derivs[12] -> derivs[4][3] (deriv of shape function for each point)
-          |Consider point data U=(ux,uy,uz)
-          
-          dU/dx = dU/dy = dU/dz = 0;
-          for each POINT in CELL:
-            dU/dx += derivs[POINT][0]*ux[POINT]; 
-            dU/dy += derivs[POINT][1]*ux[POINT];
-            dU/dy += derivs[POINT][2]*ux[POINT]; 
-
-          [dU/dx dU/dy dU/dz]_orig = inverse*[dU/dx dU/dy dU/dz];              
-          return [dU/dx dU/dy dU/dz]_orig; 
-      END
-  */
-
-  std::vector<std::vector<double>> ComputeGradAtCenter(int cell, int array);
-
-
-  // returns vector of parametric coords for all cells
-  std::vector<double*> getParametricCoords();
+  std::vector<double> ComputeGradAtCell(int cell, int array);
+  std::vector<double> ComputeGradAtPoint(int pnt, int array);
 
   
- 
   public:
   // write functions
     
@@ -132,7 +124,5 @@ class meshPhys: public vtkAnalyzer
     std::vector<PointDataArray> pntData ;
       
 };
-
-
 
 #endif

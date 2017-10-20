@@ -1,32 +1,8 @@
 #include <meshPhys.H>
 
-  /*  Algorithm: ComputeGradAtCenter:
-      BEGIN:
-        for each CELL in CELLS:
-          JacboianInverse(double** inverse, double derivs[12]);
-
-          |Now, we have the inverse jacobian (derivatives of shape function in iso-param space)
-          |We use the interpolation derivatives (in iso-param space) to get the value of 
-          |the functions derivative at cell center (in iso-param space)
-          |Then, we use the inverse jacobian to transform back to the original coordinates
-
-          |derivs[12] -> derivs[4][3] (deriv of shape function for each point)
-          |Consider point data U=(Ux,Uy,Uz)
-          
-          dUx/dx = dUx/dy = dUx/dz = 0;
-          for each POINT in CELL:
-            dUx/dx += derivs[POINT][0]*ux[POINT]; 
-            dUx/dy += derivs[POINT][1]*ux[POINT];
-            dUx/dy += derivs[POINT][2]*ux[POINT]; 
-
-          [dU/dx dU/dy dU/dz]_orig = inverse*[dU/dx dU/dy dU/dz];              
-          return [dU/dx dU/dy dU/dz]_orig; 
-      END
-  */
-
 // compute gradient at center of cell
 // for generality, we need all information of data array
-/*std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
+vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
 {
   if (!pointData)
     pointData = dataSet->GetPointData();   
@@ -35,54 +11,48 @@
 
     vtkIdList* point_ids = dataSet->GetCell(cell)->GetPointIds();
     int numPointsInCell = point_ids->GetNumberOfIds();
+    int dim = pntData[array].getNumComponent();
     
-    // computing inverse jacobian for element
-    double** invJacobian;
-    double  derivs[numPointsInCell*3];
-    dataSet->GetCell(i)->JacobianInverse(invJacobian, derivs);
+    // populating array with point data of cell
+    double values[dim*numPointsInCell];
+    for (int i = 0; i < numPointsInCell; ++i)
+    {
+			int id = (int) point_ids->GetId(i);
+      for (int j = 0; j < dim; ++j)
+        values[i*dim +j] = pntData[array](id,j); 
+    }
    
-		
-		std::vector<std::vector<double>>
-	
-		
-		TODO: CHECK OUT DERIVATIVES FUNCTION IN VTKTETRA
-		
-		
-		std::vector<std::vector<double>> pnt_grad;
-		for (int i = 0; i < pntData[array].getNumComponent(); ++i)
-		{
-			std::vector<double> pnt_grad_cmps;
-			for (int j = 0; j < numPointsInCell; ++i)
-			{
-				int id = (int) point_ids->GetId(j);
-				double df = 0;
-				// for given point's data component i, interpolate with shape function derivs
-				for (int k = 0; k < numPointsInCell; ++k)
-				{		
-					df += derivs[numPointsInCell * j + k] * pntData[array](id, i);
-				}
-				pnt_grad_cmps.push_back(df);
-			}
-			pnt_grad.push_back(pnt_grad_cmps);
-
-		}
-
-
-
-
+    double derivs[dim*dim];
+    double tmp[3];
+    // getting gradient of field over cell (jacobian matrix for data)
+    dataSet->GetCell(cell)->Derivatives(0,tmp,values,dim,derivs); 
+    /* The Derivatives member for a cell computes the inverse of the jacobian
+       transforming physical coordinates to parametric space, the derivatives of
+       the shape functions in parametric space and the interpolated values of 
+       the derivatives of data for the cell in parametric space. It then computes 
+       the matrix product of the inverse jacobian with the interpolated derivatives 
+       to transform them to physical coordinates */
+    
+    std::vector<double> gradient(derivs, derivs+dim*dim); 
+    return gradient;
   }
-
-
 }
-*/
-// returns isoparametric coordinate (for generality)
-// for 1st order tets it's always {0 0 0 1 0 0 0 1 0 0 0 1}
-vector<double*> meshPhys::getParametricCoords()
+
+// computes gradient at point by averaging gradients at cells 
+// surrounding point
+std::vector<double> meshPhys::ComputeGradAtPoint(int pnt, int array)
 {
-  vector<double*> All_parametric_coords(numberOfCells);
-  for (int i = 0; i < numberOfCells; ++i)
-    All_parametric_coords[i] = dataSet->GetCell(i)->GetParametricCoords();
-  return All_parametric_coords;
+  if (!pointData)
+    pointData = dataSet->GetPointData();
+  if (pointData)
+  {
+    double* pntCoords = getPointCoords(pnt);
+    std::cout << pntCoords[0] << " " << pntCoords[1] << " " << pntCoords[2] << std::endl; 
+  }
+ 
+  std::vector<double> tmp;
+  return tmp; 
+
 }
 
 
