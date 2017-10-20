@@ -17,7 +17,7 @@ void vtkAnalyzer::read()
       unsGridReader->SetFileName(xmlFileName);
       unsGridReader->Update();
       unsGridReader->GetOutput()->Register(unsGridReader);
-      dataSet = vtkDataSet::SafeDownCast(unsGridReader->GetOutput());
+      dataSet = vtkUnstructuredGrid::SafeDownCast(unsGridReader->GetOutput());
     }
     else if (extension == ".vtp")
     {
