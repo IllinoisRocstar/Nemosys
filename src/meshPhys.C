@@ -26,36 +26,55 @@
 
 // compute gradient at center of cell
 // for generality, we need all information of data array
-std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
+/*std::vector<std::vector<double>> meshPhys::ComputeGradAtCenter(int cell, int array)
 {
   if (!pointData)
     pointData = dataSet->GetPointData();   
   if (pointData)
   {
 
-    vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
+    vtkIdList* point_ids = dataSet->GetCell(cell)->GetPointIds();
     int numPointsInCell = point_ids->GetNumberOfIds();
     
     // computing inverse jacobian for element
     double** invJacobian;
     double  derivs[numPointsInCell*3];
     dataSet->GetCell(i)->JacobianInverse(invJacobian, derivs);
-    
-    double df = 0; 
-    for (int i = 0; i < numPointsInCell; ++i)
-    {
-      vtkIdType id = point_ids->GetId(i);
-      df += derivs 
-      
-    }
-  
-  } 
+   
+		
+		std::vector<std::vector<double>>
+	
+		
+		TODO: CHECK OUT DERIVATIVES FUNCTION IN VTKTETRA
+		
+		
+		std::vector<std::vector<double>> pnt_grad;
+		for (int i = 0; i < pntData[array].getNumComponent(); ++i)
+		{
+			std::vector<double> pnt_grad_cmps;
+			for (int j = 0; j < numPointsInCell; ++i)
+			{
+				int id = (int) point_ids->GetId(j);
+				double df = 0;
+				// for given point's data component i, interpolate with shape function derivs
+				for (int k = 0; k < numPointsInCell; ++k)
+				{		
+					df += derivs[numPointsInCell * j + k] * pntData[array](id, i);
+				}
+				pnt_grad_cmps.push_back(df);
+			}
+			pnt_grad.push_back(pnt_grad_cmps);
+
+		}
+
+
+
 
   }
 
 
 }
-
+*/
 // returns isoparametric coordinate (for generality)
 // for 1st order tets it's always {0 0 0 1 0 0 0 1 0 0 0 1}
 vector<double*> meshPhys::getParametricCoords()
@@ -195,6 +214,7 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
   }
   outputStream << "$EndElementData" << std::endl;    
 }
+
 
 
  

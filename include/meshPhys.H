@@ -6,6 +6,19 @@
 
 // stl
 
+// Auxiliarry Functions
+template <typename T>
+std::vector<T> flatten(const std::vector<std::vector<T>>& v)
+{
+	std::size_t size = 0;
+	for (const auto& sub : v)
+		size+= sub.size();
+	std::vector<T> result;
+	result.reserve(size);
+	for (const auto& sub : v)
+		result.insert(result.end(), sub.begin(), sub.end());
+	return result;
+}
 
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray
@@ -13,27 +26,26 @@ class PointDataArray
   public:
   // constructors
     PointDataArray( std::string _name, int _numComponent, int _numTuple, 
-                    std::vector<std::vector<double>> _pntData):
+                    const std::vector<std::vector<double>>& _pntData):
                     name(_name), numComponent(_numComponent), numTuple(_numTuple)
-                    { pntData = _pntData; };
+                    { pntData = flatten <double> (_pntData) ; };
 
     ~PointDataArray(){};
 
   public:
   // operators, access
-  double& operator()(int i, int j) { return pntData[i][j]; }
-  const double& operator()(int i, int j) const {return pntData[i][j]; }  
-  int getNumComponent() { return numComponent; }
-  int getNumTuple() { return numTuple; }
-  std::string getName() { return name; }
+  	double& operator()(int i, int j) { return pntData[i*numComponent +j ]; }
+  	const double& operator()(int i, int j) const { return pntData[i*numComponent + j]; }  
+  	int getNumComponent() { return numComponent; }
+  	int getNumTuple() { return numTuple; }
+  	std::string getName() { return name; }
   
 
   private: 
     int numComponent, numTuple; // dim of data point, number of data points 
     std::string name;           // name of data array
-    std::vector<std::vector<double>> pntData; // data array
+    std::vector<double> pntData; // data array
 };
-
 
 /* meshPhys inherits from vtkAnalyzer and contains methods for
    evaluating physical data on the mesh. Its core private member
@@ -102,7 +114,7 @@ class meshPhys: public vtkAnalyzer
       END
   */
 
-  std::vector<std::vector<double>> ComputeGradAtPoint(int cell, int array);
+  std::vector<std::vector<double>> ComputeGradAtCenter(int cell, int array);
 
 
   // returns vector of parametric coords for all cells
@@ -120,5 +132,7 @@ class meshPhys: public vtkAnalyzer
     std::vector<PointDataArray> pntData ;
       
 };
+
+
 
 #endif
