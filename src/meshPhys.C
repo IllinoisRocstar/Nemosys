@@ -1,7 +1,11 @@
 #include <meshPhys.H>
 
+// TODO: Convert vtk pointer types to vtkSmartPointer<T>
+//			 This will handle memory mangement automatically w/o invocation of delete
 // compute gradient at center of cell
 // for generality, we need all information of data array
+// TODO: Finish metho to find all cells with a given point
+// TODO: Change writebackgroundmsh inmplementation to point data
 vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
 {
   if (!pointData)
@@ -46,20 +50,23 @@ std::vector<double> meshPhys::ComputeGradAtPoint(int pnt, int array)
     pointData = dataSet->GetPointData();
   if (pointData)
   {
-    vtkIdList* cellids = vtkIdList::New();
-    dataSet->GetPointCells(pnt, cellids);
-    std::cout << "number of id: " << cellids->GetId(0) << std::endl;
-    /*double* pntCoords = getPointCoords(pnt);
+    vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
+  	vtkIdType pntId = pnt;
+    dataSet->GetCellPoints(pntId, cellIds);
+		std::cout << "number of id: " << cellIds->GetNumberOfIds() << std::endl;
+    for (int i = 0; i < cellIds->GetNumberOfIds(); ++i)
+			std::cout << cellIds->GetId(i) << " ";
+		std::cout << std::endl;
+		/*double* pntCoords = getPointCoords(pnt);
     std::cout << pntCoords[0] << " " << pntCoords[1] << " " << pntCoords[2] << std::endl; 
-    std::cout << "cell number: " << dataSet->FindCell(pntCoords, NULL, NULL, 1e-10,*/
-  
-  }
+    std::cout << "cell number: " << dataSet->FindCell(pntCoords, NULL, NULL, 1e-10,
+	*/
+	}
  
   std::vector<double> tmp;
   return tmp; 
 
 }
-
 
 // writes a background mesh with sizes as point data
 void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
