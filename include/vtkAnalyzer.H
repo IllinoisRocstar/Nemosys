@@ -116,7 +116,9 @@ public:
    // get number of nonTri
    int getNumberOfNonTri();
    // returns coordinates of centers of all cells 
-   std::vector<double > getCellCenters(int& numComponent); 
+   std::vector<double > getCellCenters(int& numComponent);
+	 // returns cells sharing point (topological search)
+	 void getCellsWithPoint(vtkIdType pnt, vtkIdList* cellIds );
    // returns min extent
    double getMinExtent(int nDim, const std::vector<double>& pntCrds);
    //return coordinates of all points in mesh
