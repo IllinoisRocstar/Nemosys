@@ -23,6 +23,7 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 	return result;
 }
 
+// adds two vectors
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& x, 
                               const std::vector<T>& y)
@@ -39,6 +40,62 @@ std::vector<T> operator+(const std::vector<T>& x,
                  std::back_inserter(result), std::plus<T>());
   return result;
 } 
+
+// multiplies vector by scalar, in place
+template <typename T>
+void operator*(T a, std::vector<T>& x)
+{
+  std::transform(x.begin(), x.end(), x.begin(), std::bind1st(std::multiplies<T>(),a));
+}  
+
+// computes reciprocal of argument
+template <typename T>
+T reciprocal(T x)
+{
+  return (T) 1/x ;
+}
+
+// computes reciprocal of vector elements, in place
+template <typename T>
+void reciprocal_vec(std::vector<T>& x)
+{
+  std::transform(x.begin(), x.end(), x.begin(), reciprocal<T>);
+}
+
+// compute L2 norm of vec
+double L2_Norm(const std::vector<double>& x)
+{
+  double result = 0.0;
+  for (int i = 0; i < x.size(); ++i)
+    result += x[i]*x[i];
+  
+  return std::sqrt(result);
+}
+
+std::vector<double> getMinMax(const std::vector<double>& x)
+{
+  std::vector<double> result(2);
+  auto minmax = std::minmax_element(x.begin(), x.end());
+  result[0] = *minmax.first;
+  result[1] = *minmax.second;
+  return result;
+} 
+
+// scales x from range [xmin, xmax] to within range [ymin, ymax]
+double scale_to_range(double x, const std::vector<double>& xminmax, 
+                                const std::vector<double>& yminmax)
+{
+  return yminmax[0] + (yminmax[1] - yminmax[0])*(x - xminmax[0])/(xminmax[1] - xminmax[0]);
+}
+
+void scale_vec_to_range(std::vector<double>& x, 
+                        const std::vector<double>& xminmax,
+                        const std::vector<double>& yminmax)
+{
+  for (int i = 0; i < x.size(); ++i)
+    x[i] = scale_to_range(x[i], xminmax, yminmax);
+}
+
 
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray
@@ -111,7 +168,9 @@ class meshPhys: public vtkAnalyzer
   // relevant computations (gradients etc.)
 
   std::vector<double> ComputeGradAtCell(int cell, int array);
+  std::vector<double> ComputeL2GradAtAllCells(int array);
   std::vector<double> ComputeGradAtPoint(int pnt, int array);
+  std::vector<double> GetCellLengths();
 
   
   public:
