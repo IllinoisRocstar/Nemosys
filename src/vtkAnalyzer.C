@@ -355,11 +355,28 @@ vtkAnalyzer::getCellCenters(int& numComponent)
 }   
 
 // search for pnt id in each cell and return common
-void vtkAnalyzer::getCellsWithPoint(vtkIdType pnt, vtkIdList* cellIds )
+std::vector<int> vtkAnalyzer::getCellsWithPoint(int pnt)
 {
 	getNumberOfCells();
-	
-{
+    
+  std::vector<int> commonCells;
+  for (int i = 0; i < numberOfCells; ++i)
+  {
+    vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New(); 
+    //point_ids = dataSet->GetCell(i)->GetPointIds();
+    dataSet->GetCellPoints(i, point_ids);
+    int numComponent = point_ids->GetNumberOfIds();
+    for (int j = 0; j < numComponent; ++j)
+    {
+      if (point_ids->GetId(j) == pnt)
+      {
+        commonCells.push_back(i);
+        std::cout << "point is in cell: " << i  << std::endl;
+      }
+    }
+  }
+  return commonCells;  
+}
 		
 
 // interpolate point data from 3D mesh in neighborhoods of
@@ -871,8 +888,7 @@ int vtkAnalyzer::getCellDataArray(int id, std::vector<std::vector<double> > &cll
 
 // fixed error with implementation
 void vtkAnalyzer::setPointDataArray(const char* name, int numComponent, 
-                                    std::vector<double> &pntArrData)
-{
+                                    std::vector<double> &pntArrData) {
    if (!pointData)
     pointData = dataSet->GetPointData();
    if (pointData)
@@ -991,7 +1007,7 @@ void vtkAnalyzer::writeMSH(string filename)
       
       default: 
       {  
-        std::cerr << "Components in cell should be less than 4"<< std::endl;
+        std::cerr << "Components in cell should be <= 4"<< std::endl;
         exit(1);
       }
     }
@@ -1118,7 +1134,7 @@ void vtkAnalyzer::writeBackgroundMSH(string filename, const double size)
                 << " meshes can be written to gmsh format" << std::endl;
       exit(3);
     }
-    if (!(type_id == 5 || type_id == 10))
+    if (!(type_id == 10))
       num_bad+=1;
   }
 
@@ -1136,16 +1152,16 @@ void vtkAnalyzer::writeBackgroundMSH(string filename, const double size)
 
   // ------------- write element type and connectivity --------------------- //
   outputStream << "$Elements" << std::endl << numberOfCells-num_bad << std::endl;
-  int k = 0;
+  //int k = 0;
   for (int i = 0; i < numberOfCells; ++i)
   {
 
     vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
     int numComponent = point_ids->GetNumberOfIds();
     int type_id = dataSet->GetCellType(i);
-    if (type_id==5 || type_id == 10)
+    if (type_id == 10)
     {
-      outputStream << k + 1 << " ";
+      outputStream << i + 1 << " ";
       switch(numComponent)
       {
         case 2:
@@ -1172,47 +1188,33 @@ void vtkAnalyzer::writeBackgroundMSH(string filename, const double size)
       for (int j = 0; j < numComponent; ++j)
          outputStream << point_ids->GetId(j) + 1 << " ";
       outputStream << std::endl;
-      k+=1;
+      //k+=1;
     }
   }
   outputStream << "$EndElements" << std::endl;
-  
   // -------------------------- write cell data ---------------------------- // 
-
-//  if (!cellData)
-//    cellData = dataSet->GetCellData();
-//  if (cellData)
-//  {
-//    int num_arrays = cellData->GetNumberOfArrays();
-//    for (int i = 0; i < num_arrays; ++i)
-//    {
-//      vtkDataArray* da = cellData->GetArray(i);
-//      if (da)
-//      {
-//        int numComponent = da->GetNumberOfComponents();
-//        int numTuple = da->GetNumberOfTuples();
-
 
   std::string tmpname = "BackgroundSF";
   outputStream << "$ElementData" << std::endl
                << 1 << std::endl // 1 string tag
-               << "\"" << (tmpname) // name of view
+               << "\"" << tmpname // name of view
                << "\"" << std::endl 
                << 0 << std::endl // 0 real tag
                << 3 << std::endl // 3 int tags (dt index, dim of field, number of fields)
                << 0 << std::endl // dt index
                << 1 << std::endl // dim of field
                << numberOfCells-num_bad << std::endl; // number of fields
-  int i = 0;
+  //int i = 0;
   for (int j = 0; j < numberOfCells; ++j)
   {
     int type_id = dataSet->GetCellType(j);
-    if (type_id == 5 || type_id == 10) {
-      outputStream << i+1 << " ";
+    if (type_id == 10) {
+      outputStream << j+1 << " ";
       outputStream << size << " ";
-    outputStream << std::endl;
-      i+=1;
+      outputStream << std::endl;
+    //  i+=1;
     }
   }
   outputStream << "$EndElementData" << std::endl;    
+
 }

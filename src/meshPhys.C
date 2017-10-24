@@ -6,7 +6,7 @@
 // for generality, we need all information of data array
 // TODO: Finish metho to find all cells with a given point
 // TODO: Change writebackgroundmsh inmplementation to point data
-vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
+std::vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
 {
   if (!pointData)
     pointData = dataSet->GetPointData();   
@@ -42,6 +42,29 @@ vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
   }
 }
 
+std::vector<double> meshPhys::ComputeL2GradAtAllCells(int array)
+{
+  std::vector<double> result;
+  result.resize(numberOfCells);
+  for (int i = 0; i < numberOfCells; ++i)
+  {
+    result[i] = L2_Norm(meshPhys::ComputeGradAtCell(i, array)); 
+  }
+
+  return result;
+}
+
+std::vector<double> meshPhys::GetCellLengths()
+{
+  std::vector<double> result;
+  result.resize(numberOfCells);
+  for (int i = 0; i < numberOfCells; ++i)
+  {
+    result[i] = std::sqrt(dataSet->GetCell(i)->GetLength2());
+  } 
+  return result;
+}
+
 // computes gradient at point by averaging gradients at cells 
 // surrounding point
 std::vector<double> meshPhys::ComputeGradAtPoint(int pnt, int array)
@@ -71,35 +94,24 @@ std::vector<double> meshPhys::ComputeGradAtPoint(int pnt, int array)
 // writes a background mesh with sizes as point data
 void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
 {
-    
   std::ofstream outputStream(filename.c_str());
-  if(!outputStream.good()) 
-  {
+  if(!outputStream.good()) {
     std::cout << "Output file stream is bad" << std::endl;
     exit(1);
   }
-  
-  if (!dataSet) 
-  {
+ 
+  if (!dataSet) {
     std::cout << "No data to write" << std::endl;
     exit(2);
-  }
-  
-  // ---- get number of points and number of elements ---- //
-  getNumberOfCells();
-  getNumberOfPoints();
-  
-  if (sizes.size() != numberOfCells)
-  {
-    std::cout << "number of sizes is unequal to number of cells!" << std::endl; 
-    exit(3);
-  }
-  
-
+  } 
   // ---------  writing gmsh header ----------- //
   outputStream << "$MeshFormat" << std::endl
                << "2.2 0 8" << std::endl
                << "$EndMeshFormat" << std::endl; 
+
+  // ---- get number of points and number of elements ---- //
+  getNumberOfCells();
+  getNumberOfPoints();
 
   // -------- ensure all cell types are tri/tet or below -------------- //
   int num_bad = 0;
@@ -112,7 +124,7 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
                 << " meshes can be written to gmsh format" << std::endl;
       exit(3);
     }
-    if (!(type_id == 5 || type_id == 10))
+    if (!(type_id == 10))
       num_bad+=1;
   }
 
@@ -130,16 +142,16 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
 
   // ------------- write element type and connectivity --------------------- //
   outputStream << "$Elements" << std::endl << numberOfCells-num_bad << std::endl;
-  int k = 0;
+  //int k = 0;
   for (int i = 0; i < numberOfCells; ++i)
   {
 
     vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
     int numComponent = point_ids->GetNumberOfIds();
     int type_id = dataSet->GetCellType(i);
-    if (type_id==5 || type_id == 10)
+    if (type_id == 10)
     {
-      outputStream << k + 1 << " ";
+      outputStream << i + 1 << " ";
       switch(numComponent)
       {
         case 2:
@@ -166,44 +178,35 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
       for (int j = 0; j < numComponent; ++j)
          outputStream << point_ids->GetId(j) + 1 << " ";
       outputStream << std::endl;
-      k+=1;
+      //k+=1;
     }
   }
   outputStream << "$EndElements" << std::endl;
-  
   // -------------------------- write cell data ---------------------------- // 
 
   std::string tmpname = "BackgroundSF";
   outputStream << "$ElementData" << std::endl
                << 1 << std::endl // 1 string tag
-               << "\"" << (tmpname) // name of view
+               << "\"" << tmpname // name of view
                << "\"" << std::endl 
                << 0 << std::endl // 0 real tag
                << 3 << std::endl // 3 int tags (dt index, dim of field, number of fields)
                << 0 << std::endl // dt index
                << 1 << std::endl // dim of field
                << numberOfCells-num_bad << std::endl; // number of fields
-  int i = 0;
+  //int i = 0;
   for (int j = 0; j < numberOfCells; ++j)
   {
     int type_id = dataSet->GetCellType(j);
-    if (type_id == 5 || type_id == 10) {
-      outputStream << i+1 << " ";
+    if (type_id == 10) {
+      outputStream << j+1 << " ";
       outputStream << sizes[j] << " ";
-    outputStream << std::endl;
-      i+=1;
+      outputStream << std::endl;
+    //  i+=1;
     }
   }
   outputStream << "$EndElementData" << std::endl;    
+
+    
+
 }
-
-
-
- 
-        /*std::map<std::string, std::vector<std::vector<double>>>::iterator it = pntData.begin();
-        while( it != pntData.end())
-        {
-          std::cout << it->first << ": " << (it->second)[1000][2] << std::endl;
-          it++;
-        }
-    */

@@ -118,7 +118,7 @@ public:
    // returns coordinates of centers of all cells 
    std::vector<double > getCellCenters(int& numComponent);
 	 // returns cells sharing point (topological search)
-	 void getCellsWithPoint(vtkIdType pnt, vtkIdList* cellIds );
+	 std::vector<int> getCellsWithPoint(int pnt);
    // returns min extent
    double getMinExtent(int nDim, const std::vector<double>& pntCrds);
    //return coordinates of all points in mesh
@@ -153,8 +153,7 @@ public:
   // add data
   // add point data array
   void setPointDataArray( const char* name, int numComponent,
-                          std::vector<double> &pntArrData);
-
+                          std::vector<double> &pntArrData); 
   // add a cell data array
   void setCellDataArray( const char* name, int numComponent,
                          std::vector<double> &pntArrData);
