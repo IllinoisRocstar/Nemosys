@@ -5,39 +5,51 @@
 #include <NodalDataManager.h>
 #include <chrono>
 
+
+//---------------------Auxiliary Functions--------------------------------//
+// computes reciprocal of argument
+template <typename T>
+T reciprocal(T x);
+
+// computes reciprocal of vector elements, in place
+template <typename T>
+void reciprocal_vec(std::vector<T>& x);
+
+// find minmax of vector, excluding inf 
+std::vector<double> getMinMax(const std::vector<double>& x);
+
+// scales x from range [xmin, xmax] to within range [ymin, ymax]
+// if x is inf, the scaled value will be ymax
+double scale_to_range(double x, const std::vector<double>& xminmax, 
+                                const std::vector<double>& yminmax);
+
+// scales each number in vector in range [xmin, xmax] to [ymin,ymax]
+void scale_vec_to_range(std::vector<double>& x, 
+                        const std::vector<double>& xminmax,
+                        const std::vector<double>& yminmax);
+
+// string trimming for consistent file names 
+std::string trim_fname(std::string name, std::string ext);
+//----------------------------------------------------------------------//
+
+
 int main(int argc, char* argv[])
 {
   // Check input
-  if ( argc != 5 ) {
-    std::cout << "Usage Error: " << argv[0] << " meshFile outputMesh array_id size" << std::endl;
+  if ( argc != 4 ) {
+    std::cout << "Usage Error: " << argv[0] << " meshFile outputMesh array_id" << std::endl;
     exit(1);
   }
   std::string meshFile = argv[1];
-
-
+  std::string outMeshFile = argv[2];
+  
   // ------------------- MESHPHYS TESTS ----------------------------//
   std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
   meshPhys* mshphys;
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
   PointDataArray& pntdata = mshphys->getPointData(0);
- 
-  /*std::cout << "Name of arrays " << pntdata.getName() << std::endl; 
-  std::cout << "NumComponents: " <<  pntdata.getNumComponent() << std::endl;
-  std::cout << "NumTuples: " << pntdata.getNumTuple() << std::endl;
-  std::cout << "first few values:" << std::endl;
-  for (int i = 0; i < pntdata.getNumTuple(); ++i)
-  { 
-    for (int j = 0; j < pntdata.getNumComponent(); ++j)
-    {
-      std::cout << mshphys->getPointData(0)(i,j) << " ";
-    }
-    std::cout << std::endl;
-    if (i > 50)
-      break;
-  } */ 
 
   int array_id = std::stoi(argv[3]);
-  double size = std::stof(argv[4]); 
  
   std::vector<double> gradients = mshphys->ComputeL2GradAtAllCells(array_id);
   reciprocal_vec(gradients); 
@@ -45,27 +57,20 @@ int main(int argc, char* argv[])
   std::vector<double> gradminmax = getMinMax(gradients);
   std::vector<double> lengthminmax = getMinMax(lengths);
   std::cout << "Gradient and Length Tests: \n";
-  for (int i = 0; i < mshphys->numberOfCells; ++i)
-  {   
-    std::cout << lengths[i] << " " << gradients[i] <<  std::endl;
-  }
 
-  lengthminmax[1] -= (lengthminmax[1] - lengthminmax[0])/2.0;
-  std::cout << "\n \n Minmax Lengths " << lengthminmax[0] << " "
+  std::cout << "Minmax Lengths " << lengthminmax[0] << " "
             << lengthminmax[1] << std::endl;  
 
-  std::cout << "\n \n Minmax Gradients " << gradminmax[0] << " "
+  std::cout << "Minmax Gradients " << gradminmax[0] << " "
             << gradminmax[1] << std::endl;  
 
+  lengthminmax[1] = lengthminmax[0];
+  lengthminmax[0] = lengthminmax[0] - lengthminmax[0]/1.5;
+ 
   scale_vec_to_range(gradients, gradminmax, lengthminmax); 
   std::vector<double> scalesminmax = getMinMax(gradients);
-  std::cout << "Scale Min and Max: ";
+  std::cout << "\n Scaled Gradient Min and Max: ";
   std::cout << scalesminmax[0] << " " << scalesminmax[1] << std::endl;
-  for (int i = 0; i < mshphys->numberOfCells; ++i)
-    std::cout << gradients[i] << std::endl;  
-  
-
-  mshphys->getCellsWithPoint(10);
   
   mshphys->report(); 
  // delete mshphys;
@@ -140,7 +145,7 @@ int main(int argc, char* argv[])
   adapter->printStatistics(std::cout);
 
   // writing refined mesh to file in msh format 
-  MAd::M_writeMsh(mesh, argv[2], 2);
+  MAd::M_writeMsh(mesh, (char*) &outMeshFile[0u], 2);
    
   // get data after refinement
   std::vector<std::vector<double>> postAMRData;
@@ -151,20 +156,19 @@ int main(int argc, char* argv[])
   // convert refined msh file back to vtk
   GModel* trgGModel;
   trgGModel = new GModel("refined"); 
-  trgGModel->readMSH("refined.msh");
-  trgGModel->writeVTK("refined.vtk", false, true); // binary=false, saveall=true
+  trgGModel->readMSH((char*) &outMeshFile[0u]);
+  trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
+
 
   // write physical quantities to vtk file
   vtkAnalyzer* trgVTK;
-  trgVTK = new vtkAnalyzer((char*) "refined.vtk");
+  trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
   trgVTK->read();
-  trgVTK->report();
   std::vector<double> postAMRDatas = flatten(postAMRData);
-
   trgVTK->setPointDataArray("displacement", 3, postAMRDatas);
   trgVTK->report();
-  trgVTK->write("refined_solution.vtu");
-  trgVTK->writeMSH("refined_solution.msh");
+  trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
+  trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
 
  
   //if (localSF) delete localSF;
@@ -175,6 +179,78 @@ int main(int argc, char* argv[])
   return 0;
 }
 
+//-------------------------- Auxiliary Functions --------------------------------//
+
+// computes reciprocal of argument
+template <typename T>
+T reciprocal(T x)
+{
+  return (T) 1/x ;
+}
+
+// computes reciprocal of vector elements, in place
+template <typename T>
+void reciprocal_vec(std::vector<T>& x)
+{
+  std::transform(x.begin(), x.end(), x.begin(), reciprocal<T>);
+}
+
+// find minmax of vector, excluding inf 
+std::vector<double> getMinMax(const std::vector<double>& x)
+{
+  std::vector<double> result(2);
+  std::vector<double> tmp;
+  for (int i = 0; i < x.size(); ++i)
+  {
+    if (!std::isinf(x[i])) // exclude inf
+    {
+      tmp.push_back(x[i]); 
+    }
+  }
+  auto minmax = std::minmax_element(tmp.begin(), tmp.end());
+  result[0] = *minmax.first;
+  result[1] = *minmax.second;
+  return result;
+} 
+
+// scales x from range [xmin, xmax] to within range [ymin, ymax]
+// if x is inf, the scaled value will be ymax
+double scale_to_range(double x, const std::vector<double>& xminmax, 
+                                const std::vector<double>& yminmax)
+{
+  if (std::isinf(x))
+    return yminmax[1];
+  return yminmax[0] + (yminmax[1] - yminmax[0])*(x - xminmax[0])/(xminmax[1] - xminmax[0]);
+}
+
+// scales each number in vector in range [xmin, xmax] to [ymin,ymax]
+void scale_vec_to_range(std::vector<double>& x, 
+                        const std::vector<double>& xminmax,
+                        const std::vector<double>& yminmax)
+{
+  for (int i = 0; i < x.size(); ++i)
+    x[i] = scale_to_range(x[i], xminmax, yminmax);
+}
+
+std::string trim_fname(std::string fname, std::string ext)
+{
+  size_t beg = 0;
+  size_t end = fname.find(".");
+  std::string name;
+  if (end != -1)
+  {
+    name = fname.substr(beg,end);
+    name.append(ext);
+    return name;
+  }
+
+  else 
+  {
+    std::cout << "Error finding file extension for " << fname << std::endl;
+    exit(1);
+  }
+}  
+//---------------------------------------------------------------------------//
 
   /*MAd::PWLSField* pwlSF = new MAd::PWLSField(mesh);
   pwlSF->setCurrentSize();
