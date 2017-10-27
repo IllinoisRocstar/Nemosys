@@ -115,9 +115,7 @@ template <typename T>
 std::vector<T> operator+(const std::vector<T>& x, 
                          const std::vector<T>& y);
 
-// multiplies vector by scalar, in place
-template <typename T>
-void operator*(T a, std::vector<T>& x);
+
 
 // compute L2 norm of vec
 double L2_Norm(const std::vector<double>& x);

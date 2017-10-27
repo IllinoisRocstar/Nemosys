@@ -79,6 +79,10 @@ std::vector<double> meshPhys::ComputeValAtCell(int cell, int array)
     double pcoords[3];
     double weights[numPointsInCell];
     dataSet->GetCell(cell)->EvaluatePosition(center, NULL, subId, pcoords, minDist2, weights);    
+    /* The EvaluatePosition member for a cell takes the center in cartesian coordinates
+       and evaluates its location in parametric space as well as the interpolation weights
+       at that point. The NULL parameter prevents computation of closest point on cell
+       and distance from center to cell (because center is in cell already) */
 
     // compute value of data at center of cell
     std::vector<double> values(dim); 
@@ -126,9 +130,6 @@ std::vector<double> meshPhys::ComputeValAtAllCells(int array)
 // compute L2 norm of value of point data at center of each cell
 std::vector<double> meshPhys::ComputeL2ValAtAllCells(int array)
 {
-  int dim = getDimArray(array);
-  if (dim == 1)
-    return ComputeValAtAllCells(array);
   std::vector<double> result(numberOfCells); 
   for (int i = 0; i < numberOfCells; ++i)
     result[i] = L2_Norm(ComputeValAtCell(i, array));
@@ -313,12 +314,7 @@ std::vector<T> operator+(const std::vector<T>& x,
   return result;
 } 
 
-// multiplies vector by scalar, in place
-template <typename T>
-void operator*(T a, std::vector<T>& x)
-{
-  std::transform(x.begin(), x.end(), x.begin(), std::bind1st(std::multiplies<T>(),a));
-}  
+
 
 
 /* computes gradient at point by averaging gradients at cells 
