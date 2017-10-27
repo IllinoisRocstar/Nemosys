@@ -5,6 +5,8 @@
 #include <NodalDataManager.h>
 #include <chrono>
 
+// TODO: Investigate data transfer problem. Check out implementation in other utilities
+//       Maybe you just fucked it up?
 
 //---------------------Auxiliary Functions--------------------------------//
 // computes reciprocal of argument
@@ -28,6 +30,16 @@ void scale_vec_to_range(std::vector<double>& x,
                         const std::vector<double>& xminmax,
                         const std::vector<double>& yminmax);
 
+// multiplies vector by scalar
+template <typename T>
+std::vector<T> operator*(T a, std::vector<T>& x);
+
+// get average and stdev of values
+std::vector<double> getMeanStdev(std::vector<double>& x);
+
+// generates boolean array with 1 if value >= tol, 0 otherwise
+std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
+
 // string trimming for consistent file names 
 std::string trim_fname(std::string name, std::string ext);
 //----------------------------------------------------------------------//
@@ -47,40 +59,48 @@ int main(int argc, char* argv[])
   std::cout << "TESTING MESHPHYS CLASS" << std::endl; 
   meshPhys* mshphys;
   mshphys = new meshPhys((char*) &(meshFile)[0u]);
-  PointDataArray& pntdata = mshphys->getPointData(0);
 
   int array_id = std::stoi(argv[3]);
- 
-  std::vector<double> gradients = mshphys->ComputeL2GradAtAllCells(array_id);
-  reciprocal_vec(gradients); 
+  std::string array_name =  mshphys->getPointData(array_id).getName(); 
+  int dim = mshphys->getDimArray(array_id);
+  
   std::vector<double> lengths = mshphys->GetCellLengths();
-  std::vector<double> gradminmax = getMinMax(gradients);
   std::vector<double> lengthminmax = getMinMax(lengths);
-  std::cout << "Gradient and Length Tests: \n";
-
-  std::cout << "Minmax Lengths " << lengthminmax[0] << " "
-            << lengthminmax[1] << std::endl;  
-
-  std::cout << "Minmax Gradients " << gradminmax[0] << " "
-            << gradminmax[1] << std::endl;  
 
   lengthminmax[1] = lengthminmax[0];
-  lengthminmax[0] = lengthminmax[0] - lengthminmax[0]/1.5;
- 
-  scale_vec_to_range(gradients, gradminmax, lengthminmax); 
-  std::vector<double> scalesminmax = getMinMax(gradients);
-  std::cout << "\n Scaled Gradient Min and Max: ";
-  std::cout << scalesminmax[0] << " " << scalesminmax[1] << std::endl;
- 
+  lengthminmax[0] = lengthminmax[0] - lengthminmax[0]/2;
+  
+  // for 1D data, use L2 to write abs
   std::vector<double> values = mshphys->ComputeL2ValAtAllCells(array_id);
+  // get mean and stdev of values 
+  std::vector<double> meanStdev = getMeanStdev(values);
+  // get bool array of which cells to refine based on multiplier of stdev
+  std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]/2.);
+  // normalize values by mean
+  std::vector<double> values_norm = (1./meanStdev[0])*values;  
+  // take the reciprocal of values for size definition (high value -> smaller size)
   reciprocal_vec(values);
+  // scale values to min max circumsphere diam of cells 
+  // now, values represents a size field
   std::vector<double> valuesMinMax = getMinMax(values);
   scale_vec_to_range(values, valuesMinMax, lengthminmax);
+  // setting sizes (values) to min element diam based on return of cellsToRefine function
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (!cells2Refine[i])
+      values[i] = lengthminmax[1];
+  } 
 
-  mshphys->setCellDataArray("dispMagAtCell", 1, values); 
-  mshphys->report();
-  mshphys->write((char*) &(trim_fname(meshFile, "_dispMagCell.vtu"))[0u]);
  
+  /*mshphys->setCellDataArray(&array_name[0u], dim, values); 
+  mshphys->report();
+  std::string newname;
+  newname.insert(0,array_name);
+  newname.insert(0, "_");
+  newname.append("AtCell.vtu");
+  mshphys->write((char*) &(trim_fname(meshFile, newname))[0u]);
+ */
+  mshphys->report();
  // delete mshphys;
   //--------------------------------- END MESHPHYS TESTS ----------------------//
 
@@ -131,59 +151,112 @@ int main(int argc, char* argv[])
   int numTuple, numComponent; 
   tmpmesh->getPointDataArray(array_id, pntData, numTuple, numComponent);
 
-  // attaching point data to adapter's mesh
-  adapter->registerVData("displacement", pntData);
-  // check if data is correctly attached
-  std::vector<std::vector<double>> preAMRData;
-  adapter->getMeshVData("displacement", &preAMRData);
-  std::cout << "preAMRData[1][1] = " << preAMRData[1][1] << std::endl;
-  std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
+  if (dim > 1)
+  {
+    adapter->registerVData(array_name, pntData);
+    // check if data is correctly attached
+    std::vector<std::vector<double>> preAMRData;
+    adapter->getMeshVData(array_name, &preAMRData);
+    std::cout << "preAMRData[1][1] = " << preAMRData[1][1] << std::endl;
+    std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
 
-  // Output situation before optimization
-  std::cout << "Statistics before optimization: " << std::endl;
-  adapter->printStatistics(std::cout);
+    // Output situation before optimization
+    std::cout << "Statistics before optimization: " << std::endl;
+    adapter->printStatistics(std::cout);
   
-  // Optimize
-  std::cout << "Optimizing the mesh ..." << std::endl;
-  adapter->run();
-  adapter->removeSlivers();
+    // Optimize
+    std::cout << "Optimizing the mesh ..." << std::endl;
+    adapter->run();
+    adapter->removeSlivers();
 
-  // Outputs final mesh
-  std::cout << "Statistics after optimization: " << std::endl;
-  adapter->printStatistics(std::cout);
+    // Outputs final mesh
+    std::cout << "Statistics after optimization: " << std::endl;
+    adapter->printStatistics(std::cout);
 
-  // writing refined mesh to file in msh format 
-  MAd::M_writeMsh(mesh, (char*) &outMeshFile[0u], 2);
+    // writing refined mesh to file in msh format 
+    MAd::M_writeMsh(mesh, (char*) &outMeshFile[0u], 2);
    
-  // get data after refinement
-  std::vector<std::vector<double>> postAMRData;
-  adapter->getMeshVData("displacement", &postAMRData);
-  std::cout << "postAMRData[1][1] = " << postAMRData[1][1] << std::endl;
-  std::cout << "Size of vector = " << postAMRData.size() << std::endl; 
+    // get data after refinement
+    std::vector<std::vector<double>> postAMRData;
+    adapter->getMeshVData(array_name, &postAMRData);
+    std::cout << "postAMRData[1][1] = " << postAMRData[1][1] << std::endl;
+    std::cout << "Size of vector = " << postAMRData.size() << std::endl; 
 
-  // convert refined msh file back to vtk
-  GModel* trgGModel;
-  trgGModel = new GModel("refined"); 
-  trgGModel->readMSH((char*) &outMeshFile[0u]);
-  trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
+    // convert refined msh file back to vtk
+    GModel* trgGModel;
+    trgGModel = new GModel("refined"); 
+    trgGModel->readMSH((char*) &outMeshFile[0u]);
+    trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
 
 
-  // write physical quantities to vtk file
-  vtkAnalyzer* trgVTK;
-  trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
-  trgVTK->read();
-  std::vector<double> postAMRDatas = flatten(postAMRData);
-  trgVTK->setPointDataArray("displacement", 3, postAMRDatas);
-  trgVTK->report();
-  trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
-  trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
+    // write physical quantities to vtk file
+    vtkAnalyzer* trgVTK;
+    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
+    trgVTK->read();
+    std::vector<double> postAMRDatas = flatten(postAMRData);
+    trgVTK->setPointDataArray(&array_name[0u], dim, postAMRDatas);
+    trgVTK->report();
+    trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
+    trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
+    if (trgGModel) delete trgGModel;
+    if (trgVTK) delete trgVTK;
+  }
+  else
+  {  
+    std::cout << "WORKING WITH DIM=1" << std::endl;
+    adapter->registerData(array_name, flatten(pntData));
+    // check if data is correctly attached
+    std::vector<double> preAMRData;
+    adapter->getMeshData(array_name, &preAMRData);
+    std::cout << "preAMRData[1]  = " << preAMRData[1] << std::endl;
+    std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
+
+    // Output situation before optimization
+    std::cout << "Statistics before optimization: " << std::endl;
+    adapter->printStatistics(std::cout);
+  
+    // Optimize
+    std::cout << "Optimizing the mesh ..." << std::endl;
+    adapter->run();
+    adapter->removeSlivers();
+
+    // Outputs final mesh
+    std::cout << "Statistics after optimization: " << std::endl;
+    adapter->printStatistics(std::cout);
+
+    // writing refined mesh to file in msh format 
+    MAd::M_writeMsh(mesh, (char*) &outMeshFile[0u], 2);
+   
+    // get data after refinement
+    std::vector<double> postAMRData;
+    adapter->getMeshData(array_name, &postAMRData);
+    std::cout << "postAMRData[1] = " << postAMRData[1] << std::endl;
+    std::cout << "Size of vector = " << postAMRData.size() << std::endl; 
+
+    // convert refined msh file back to vtk
+    GModel* trgGModel;
+    trgGModel = new GModel("refined"); 
+    trgGModel->readMSH((char*) &outMeshFile[0u]);
+    trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
+
+
+    // write physical quantities to vtk file
+    vtkAnalyzer* trgVTK;
+    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
+    trgVTK->read();
+    trgVTK->setPointDataArray(&array_name[0u], 1, postAMRData);
+    trgVTK->report();
+    trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
+    trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
+    if (trgGModel) delete trgGModel;
+    if (trgVTK) delete trgVTK;
+  }
 
  
   //if (localSF) delete localSF;
   //if (adapter) delete adapter;
   if (bSF) delete bSF;
-  if (trgGModel) delete trgGModel;
-  if (trgVTK) delete trgVTK;
+
   return 0;
 }
 
@@ -238,6 +311,46 @@ void scale_vec_to_range(std::vector<double>& x,
 {
   for (int i = 0; i < x.size(); ++i)
     x[i] = scale_to_range(x[i], xminmax, yminmax);
+}
+
+// multiplies vector by scalar, in place
+template <typename T>
+std::vector<T> operator*(T a, std::vector<T>& x)
+{
+  std::vector<T> result;
+  result.reserve(x.size());
+  std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
+  return result;
+}  
+
+// get average and stdev of values
+std::vector<double> getMeanStdev(std::vector<double>& x)
+{
+  std::vector<double> result(2);
+  double ave = 0;
+  for (int i = 0; i < x.size(); ++i)
+    ave += x[i];
+  ave /= x.size();
+
+  double stdev = 0;
+  for (int i = 0; i < x.size(); ++i)
+    stdev += (x[i] - ave)*(x[i] - ave);
+  stdev = std::sqrt(stdev/x.size());
+  result[0] = ave;
+  result[1] = stdev;
+  return result;
+}
+
+// generates boolean array with 1 if value >= tol, 0 otherwise
+std::vector<int> cellsToRefine(std::vector<double>& values, double tol)
+{
+  std::vector<int> result(values.size(),0);  
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (values[i] > tol)
+      result[i] = 1;
+  }
+  return result;
 }
 
 std::string trim_fname(std::string fname, std::string ext)
