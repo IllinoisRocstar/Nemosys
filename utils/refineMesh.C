@@ -71,8 +71,16 @@ int main(int argc, char* argv[])
   std::vector<double> scalesminmax = getMinMax(gradients);
   std::cout << "\n Scaled Gradient Min and Max: ";
   std::cout << scalesminmax[0] << " " << scalesminmax[1] << std::endl;
-  
-  mshphys->report(); 
+ 
+  std::vector<double> values = mshphys->ComputeL2ValAtAllCells(array_id);
+  reciprocal_vec(values);
+  std::vector<double> valuesMinMax = getMinMax(values);
+  scale_vec_to_range(values, valuesMinMax, lengthminmax);
+
+  mshphys->setCellDataArray("dispMagAtCell", 1, values); 
+  mshphys->report();
+  mshphys->write((char*) &(trim_fname(meshFile, "_dispMagCell.vtu"))[0u]);
+ 
  // delete mshphys;
   //--------------------------------- END MESHPHYS TESTS ----------------------//
 
@@ -101,7 +109,7 @@ int main(int argc, char* argv[])
   mesh->destroyStandAloneEntities();
 
   // writing background mesh and taking care of non tet/tri entities
-  mshphys->writeBackgroundMSH("backgroundSF.msh", gradients);
+  mshphys->writeBackgroundMSH("backgroundSF.msh", values);
   delete mshphys;
   MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
   bSF->loadData("backgroundSF.msh");

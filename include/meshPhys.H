@@ -69,22 +69,32 @@ class meshPhys: public vtkAnalyzer
     ~meshPhys(){};
 
   public:
-  //access to pntData
+  //access stuff
     PointDataArray& getPointData(int i) { return pntData[i]; }
+    int getDimArray(int i) { return pntData[i].getNumComponent(); }
 
   public:
   // relevant computations (gradients etc.)
 
+  // compute gradient of point data at cell
   std::vector<double> ComputeGradAtCell(int cell, int array);
+  // compute value of point data at center of cell
   std::vector<double> ComputeValAtCell(int cell, int array);
+  // compute L2 norm of gradient of point data at each cell 
   std::vector<double> ComputeL2GradAtAllCells(int array);
-//  std::vector<double> ComputeGradAtPoint(int pnt, int array);
+  // compute value of point data at center of each cell
+  std::vector<double> ComputeValAtAllCells(int array);
+  // compute L2 norm of value of point data at center of each cell
+  std::vector<double> ComputeL2ValAtAllCells(int array);
+  // get diameter of circumsphere of each cell
   std::vector<double> GetCellLengths();
 
   
   public:
   // write functions
     
+    // writes a background mesh with sizes defined by 
+    // point data interpolated to cell center
     void writeBackgroundMSH(string filename, std::vector<double> sizes);
 
 
