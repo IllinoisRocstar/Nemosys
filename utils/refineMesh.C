@@ -5,20 +5,33 @@
 #include <NodalDataManager.h>
 #include <chrono>
 
-/* TODO: writing vector data not implemented in madlib
-         instead, split vector data into component vectors
-         if writing data required. This isn't required for anything though.
-   TODO: Register all data with the nodal data manager so that output refined
-         mesh contains everything
-*/  
+/******************************************************************************
+* Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
+                                                                              * 
+* meshFile is the mesh to be refined                                          *
+* outputMesh is the .msh name of the refined mesh                             *
+* array_id is the data on which to base the refinement                        *
+   - use `xmlDump meshFile` for list of available ids                         *
+* refine_method is "val" (value based) or "grad" (gradient based)             *
+* stdev_mult is the multiplier on stdev of data that defines                  *
+  a threshold value. Cells with data values larger than this will be refined  *
+*******************************************************************************
 
+TODO:  writing vector data to pos file not implemented in madlib.
+       instead, split vector data into component vectors
+       if writing data required. This isn't required for anything though.
+TODO:  Register all data with the nodal data manager so that output refined
+       mesh contains everything 
+ 
+******************************************************************************/
 
 //----------------------------------------------------------------------//
 
 int main(int argc, char* argv[])
 {
   // Check input
-  if ( argc != 6 ) {
+  if ( argc != 6 ) 
+  {
     std::cout << "Usage Error: "  << argv[0] 
                                   << " meshFile outputMesh array_id"
                                   << " refine_method stdev_mult" 
