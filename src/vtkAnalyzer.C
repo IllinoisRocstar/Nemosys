@@ -828,10 +828,10 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
       numTuple = da->GetNumberOfTuples();
       pntData.resize(numTuple);
       for (int iTup=0; iTup<numTuple; iTup++){
-        double* comps;
+        double comps[numComponent];
         // EDIT: causing indexing issues
         //       shouldn't resize if pushing back //  pntData[iTup].resize(numComponent);
-        comps = da->GetTuple(iTup);
+        da->GetTuple(iTup, comps);
         for (int iComp=0; iComp<numComponent; iComp++){
           pntData[iTup].push_back(comps[iComp]);
           }
@@ -899,10 +899,10 @@ void vtkAnalyzer::setPointDataArray(const char* name, int numComponent,
     da->SetNumberOfComponents(numComponent);
     for(int i=0; i<getNumberOfPoints(); i++)
     {
-        double pntData[numComponent];
-        for (int j = 0; j < numComponent; ++j)
-          pntData[j] = pntArrData[i*numComponent + j];
-       da->InsertNextTuple(pntData);
+      double pntData[numComponent];
+      for (int j = 0; j < numComponent; ++j)
+        pntData[j] = pntArrData[i*numComponent + j];
+      da->InsertNextTuple(pntData);
     }
     pointData->SetActiveScalars(name);
     pointData->SetScalars(da);
