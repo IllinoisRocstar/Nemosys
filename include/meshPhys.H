@@ -1,8 +1,14 @@
 #ifndef meshPhys_H
 #define meshPhys_H
 
+// Nemosys
 #include <vtkAnalyzer.H>
+
+//MAd Lib
 #include <MAdLib.h>
+#include <ModelInterface.h>
+#include <MeshDataBaseInterface.h>
+#include <GmshEntities.h>
 
 // stl
 #include <functional>
@@ -24,7 +30,8 @@ class PointDataArray
   	int getNumComponent() { return numComponent; }
   	int getNumTuple() { return numTuple; }
   	std::string getName() { return name; }
-  
+    std::vector<double> getData() { return pntData; }
+    std::vector<std::vector<double>> getFoldData();  
 
   private: 
     int numComponent, numTuple; // dim of data point, number of data points 
@@ -65,6 +72,8 @@ class meshPhys: public vtkAnalyzer
         }
       } 
     };
+  
+
 
     ~meshPhys(){};
 
@@ -91,12 +100,19 @@ class meshPhys: public vtkAnalyzer
 
   
   public:
-  // write functions
+  // write functions and mesh processing/adaptation
     
     // writes a background mesh with sizes defined by 
     // point data interpolated to cell center
     void writeBackgroundMSH(string filename, std::vector<double> sizes);
 
+    // generate background size field based on values or gradient
+    // and write it to msh file
+    void createSizeField(int array_id, std::string method, 
+                                        double dev_mult);
+
+    void Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
+                int array_id, int dim, std::string outMeshFile);    
 
   private:
     std::vector<PointDataArray> pntData ;
@@ -109,17 +125,51 @@ class meshPhys: public vtkAnalyzer
 template <typename T>
 std::vector<T> flatten(const std::vector<std::vector<T>>& v);
 
+// folds vector into vector of vectors
+template <typename T>
+std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim);
 
 // adds two vectors
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& x, 
                          const std::vector<T>& y);
 
-
-
 // compute L2 norm of vec
 double L2_Norm(const std::vector<double>& x);
 
+// computes reciprocal of argument
+template <typename T>
+T reciprocal(T x);
+
+// computes reciprocal of vector elements, in place
+template <typename T>
+void reciprocal_vec(std::vector<T>& x);
+
+// find minmax of vector, excluding inf 
+std::vector<double> getMinMax(const std::vector<double>& x);
+
+// scales x from range [xmin, xmax] to within range [ymin, ymax]
+// if x is inf, the scaled value will be ymax
+double scale_to_range(double x, const std::vector<double>& xminmax, 
+                                const std::vector<double>& yminmax);
+
+// scales each number in vector in range [xmin, xmax] to [ymin,ymax]
+void scale_vec_to_range(std::vector<double>& x, 
+                        const std::vector<double>& xminmax,
+                        const std::vector<double>& yminmax);
+
+// multiplies vector by scalar
+template <typename T>
+std::vector<T> operator*(T a, std::vector<T>& x);
+
+// get average and stdev of values
+std::vector<double> getMeanStdev(std::vector<double>& x);
+
+// generates boolean array with 1 if value >= tol, 0 otherwise
+std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
+
+// string trimming for consistent file names 
+std::string trim_fname(std::string name, std::string ext);
 //-------------------------------------------------------------------------//
 
 #endif

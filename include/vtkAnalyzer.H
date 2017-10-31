@@ -92,6 +92,7 @@ public:
    {
 
    };
+
    ~vtkAnalyzer()
      {};
  
