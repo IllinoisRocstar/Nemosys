@@ -86,9 +86,9 @@ public:
 public:
    // constructor stuff
    vtkAnalyzer(char* fName): 
-     xmlFileName(fName), numberOfPoints(0), numberOfCells(0),
-     numberOfPointData(0), numberOfCellData(0), dataSet(NULL),
-     pointData(NULL), cellData(NULL)
+   xmlFileName(fName), numberOfPoints(0), numberOfCells(0),
+   numberOfPointData(0), numberOfCellData(0), dataSet(NULL),
+   pointData(NULL), cellData(NULL)
    {
 
    };
@@ -141,9 +141,9 @@ public:
                  std::vector<double>& PlaneCellCenters,
                  std::vector<double>& VolPointCoords, double tol);
 
-  // consider inclusions in interpolation
-  std::vector<std::vector<double>>
-  getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+   // consider inclusions in interpolation
+   std::vector<std::vector<double>>
+   getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
                 std::vector<std::vector<double>>& volDataMat,
                 std::vector<double>& PlaneCellCenters,
                 std::vector<double>& VolPointCoords,

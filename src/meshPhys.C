@@ -34,7 +34,7 @@ std::vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
         values[i*dim +j] = pntData[array](id,j); 
     }
    
-    double derivs[dim*3];
+    double derivs[dim*3]; // # vals per vertex * # deriv directions (x,y,z)
     double tmp[3];
     // getting gradient of field over cell (jacobian matrix for data)
     dataSet->GetCell(cell)->Derivatives(0,tmp,values,dim,derivs); 
@@ -45,7 +45,7 @@ std::vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
        the matrix product of the inverse jacobian with the interpolated derivatives 
        to transform them to physical coordinates */
     
-    std::vector<double> gradient(derivs, derivs+dim*dim); 
+    std::vector<double> gradient(derivs, derivs+dim*3); 
     return gradient;
   }
 }
@@ -201,7 +201,7 @@ void meshPhys::createSizeField(int array_id, std::string method,
   // now, values represents a size field
   std::vector<double> valuesMinMax = getMinMax(values);
   scale_vec_to_range(values, valuesMinMax, lengthminmax);
-  // setting sizes (values) to min element diam based on return of cellsToRefine function
+  // setting sizes (values) to f*max element diam based on return of cellsToRefine function
   for (int i = 0; i < values.size(); ++i)
   {
     if (!cells2Refine[i])
@@ -334,6 +334,16 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
 
 }
       
+/* This function essentially does the following:
+
+1) Registers the relevant data with the nodal data manager
+2) Runs the adapter
+3) Unclassifies the boundary elements for proper output
+4) Writes the refined mesh to a .msh file without data
+5) Gets the data after refinement
+6) Converts the refined mesh to a vtk file without data
+7) Writes the post-refinement data to a refined vtk and gmsh mesh 
+8) Misc: Memory management, string trimming/file naming      */
 void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
                      int array_id, int dim, std::string outMeshFile)   
 {
@@ -467,7 +477,7 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 	return result;
 }
 
-// folds vector into vector of vectors
+// folds vector into vector of vectors, each of length dim
 template <typename T>
 std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim)
 {
@@ -518,6 +528,15 @@ std::vector<T> operator+(const std::vector<T>& x,
   return result;
 } 
 
+// multiplies vector by scalar, in place
+template <typename T>
+std::vector<T> operator*(T a, std::vector<T>& x)
+{
+  std::vector<T> result;
+  result.reserve(x.size());
+  std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
+  return result;
+}  
 
 // computes reciprocal of argument
 template <typename T>
@@ -570,15 +589,6 @@ void scale_vec_to_range(std::vector<double>& x,
     x[i] = scale_to_range(x[i], xminmax, yminmax);
 }
 
-// multiplies vector by scalar, in place
-template <typename T>
-std::vector<T> operator*(T a, std::vector<T>& x)
-{
-  std::vector<T> result;
-  result.reserve(x.size());
-  std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
-  return result;
-}  
 
 // get average and stdev of values
 std::vector<double> getMeanStdev(std::vector<double>& x)
