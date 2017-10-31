@@ -156,7 +156,7 @@ std::vector<double> meshPhys::GetCellLengths()
 // generate background size field based on values or gradient
 // and write it to msh file
 void meshPhys::createSizeField(int array_id, std::string method, 
-                                              double dev_mult)
+                               double dev_mult)
 {
   // get name of array for proper data naming in output
   std::string array_name =  getPointData(array_id).getName(); 
@@ -345,7 +345,7 @@ void meshPhys::writeBackgroundMSH(string filename, std::vector<double> sizes)
 7) Writes the post-refinement data to a refined vtk and gmsh mesh 
 8) Misc: Memory management, string trimming/file naming      */
 void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
-                     int array_id, int dim, std::string outMeshFile)   
+                      int array_id, int dim, std::string outMeshFile)   
 {
   std::string array_name =  pntData[array_id].getName(); 
   if (dim > 1)
@@ -573,7 +573,7 @@ std::vector<double> getMinMax(const std::vector<double>& x)
 // scales x from range [xmin, xmax] to within range [ymin, ymax]
 // if x is inf, the scaled value will be ymax
 double scale_to_range(double x, const std::vector<double>& xminmax, 
-                                const std::vector<double>& yminmax)
+                      const std::vector<double>& yminmax)
 {
   if (std::isinf(x))
     return yminmax[1];
