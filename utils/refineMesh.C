@@ -1,8 +1,6 @@
-#include <MAdLib.h>
-#include <GModel.h>
-#include <vtkAnalyzer.H>
+// Nemosys
 #include <meshPhys.H>
-#include <NodalDataManager.h>
+// stl
 #include <chrono>
 
 /******************************************************************************
@@ -24,6 +22,25 @@ TODO:  Register all data with the nodal data manager so that output refined
        mesh contains everything 
  
 ******************************************************************************/
+
+//---------------------------Auxiliary Classes---------------------------------//
+
+// class wrapping around chrono for timing methods
+class Timer {
+private:
+  typedef std::chrono::time_point<std::chrono::system_clock> time_t;
+
+public:
+  Timer() : startTime(), stopTime() {}
+
+  time_t start()   { return (startTime = std::chrono::system_clock::now()); }
+  time_t stop()    { return (stopTime  = std::chrono::system_clock::now()); }
+  double elapsed() { return std::chrono::duration_cast<std::chrono::milliseconds>
+                                                      (stopTime-startTime).count(); }
+
+private:
+  time_t startTime, stopTime;
+};
 
 //----------------------------------------------------------------------//
 
@@ -97,15 +114,15 @@ int main(int argc, char* argv[])
   MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
   bSF->loadData("backgroundSF.msh");
 
-  // instantiating adapter with background sizefield
+
   std::cout << "\n \n Beginning Adapter Construction" << std::endl;
   // timing adapter construction
-  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  Timer T;
+  T.start();
+  // instantiating adapter with background sizefield
   MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, bSF);
-  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-  std::cout << "Time for adapter construction (ms): " 
-            << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() 
-            << "\n \n";
+  T.stop();
+  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
  
   // RUNNING ADAPTER TO REFINE MESH 
   mshphys->Refine(adapter, mesh, array_id, dim, outMeshFile);    

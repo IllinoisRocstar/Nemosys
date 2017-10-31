@@ -30,7 +30,9 @@ class PointDataArray
   	int getNumComponent() { return numComponent; }
   	int getNumTuple() { return numTuple; }
   	std::string getName() { return name; }
+    // get 1d pntData ({p11,p12,...,pn1,pn2,...})
     std::vector<double> getData() { return pntData; }
+    // get folded pntData ({{p11,p12,...},...,{pn1,pn2,...})
     std::vector<std::vector<double>> getFoldData();  
 
   private: 
@@ -46,6 +48,7 @@ class meshPhys: public vtkAnalyzer
 {
   public:
   // constructors
+    // constructs instance with vtkAnalyzer instance and populates pntData
     meshPhys(char* fname):vtkAnalyzer(fname)
     {
       read();
@@ -79,7 +82,10 @@ class meshPhys: public vtkAnalyzer
 
   public:
   //access stuff
+
+    // get array i from pntData
     PointDataArray& getPointData(int i) { return pntData[i]; }
+    // get numComponents of array i from pntData
     int getDimArray(int i) { return pntData[i].getNumComponent(); }
 
   public:
@@ -125,7 +131,7 @@ class meshPhys: public vtkAnalyzer
                 int array_id, int dim, std::string outMeshFile);    
 
   private:
-    std::vector<PointDataArray> pntData ;
+    std::vector<PointDataArray> pntData ; // all pointData on mesh
       
 };
 
@@ -161,7 +167,7 @@ std::vector<double> getMinMax(const std::vector<double>& x);
 // scales x from range [xmin, xmax] to within range [ymin, ymax]
 // if x is inf, the scaled value will be ymax
 double scale_to_range(double x, const std::vector<double>& xminmax, 
-                                const std::vector<double>& yminmax);
+                      const std::vector<double>& yminmax);
 
 // scales each number in vector in range [xmin, xmax] to [ymin,ymax]
 void scale_vec_to_range(std::vector<double>& x, 
