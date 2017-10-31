@@ -85,18 +85,18 @@ class meshPhys: public vtkAnalyzer
   public:
   // relevant computations (gradients etc.)
 
-  // compute gradient of point data at cell
-  std::vector<double> ComputeGradAtCell(int cell, int array);
-  // compute value of point data at center of cell
-  std::vector<double> ComputeValAtCell(int cell, int array);
-  // compute L2 norm of gradient of point data at each cell 
-  std::vector<double> ComputeL2GradAtAllCells(int array);
-  // compute value of point data at center of each cell
-  std::vector<double> ComputeValAtAllCells(int array);
-  // compute L2 norm of value of point data at center of each cell
-  std::vector<double> ComputeL2ValAtAllCells(int array);
-  // get diameter of circumsphere of each cell
-  std::vector<double> GetCellLengths();
+    // compute gradient of point data at cell
+    std::vector<double> ComputeGradAtCell(int cell, int array);
+    // compute value of point data at center of cell
+    std::vector<double> ComputeValAtCell(int cell, int array);
+    // compute L2 norm of gradient of point data at each cell 
+    std::vector<double> ComputeL2GradAtAllCells(int array);
+    // compute value of point data at center of each cell
+    std::vector<double> ComputeValAtAllCells(int array);
+    // compute L2 norm of value of point data at center of each cell
+    std::vector<double> ComputeL2ValAtAllCells(int array);
+    // get diameter of circumsphere of each cell
+    std::vector<double> GetCellLengths();
 
   
   public:
@@ -107,10 +107,20 @@ class meshPhys: public vtkAnalyzer
     void writeBackgroundMSH(string filename, std::vector<double> sizes);
 
     // generate background size field based on values or gradient
-    // and write it to msh file
+    // and write it to msh file named backgroundSF.msh
     void createSizeField(int array_id, std::string method, 
                                         double dev_mult);
 
+    /* This function essentially does the following:
+
+    1) Registers the relevant data with the nodal data manager
+    2) Runs the adapter
+    3) Unclassifies the boundary elements for proper output
+    4) Writes the refined mesh to a .msh file without data
+    5) Gets the data after refinement
+    6) Converts the refined mesh to a vtk file without data
+    7) Writes the post-refinement data to a refined vtk and gmsh mesh 
+    8) Misc: Memory management, string trimming/file naming      */
     void Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
                 int array_id, int dim, std::string outMeshFile);    
 

@@ -16,7 +16,7 @@
 /********************************************************
  * Usage: vol2planeTransfer file.inp                    *
  * G = rho*R*T(1 - Mc/M) is calculated                  *
- * Given E by user, V = EG/(3*(3*G - E)                 *
+ * Given E by user, V = E/2G - 1                        *
  * Given V by user, E = 2G(1 + V)                       *
  *******************************************************/
 
