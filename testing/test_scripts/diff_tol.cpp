@@ -27,15 +27,12 @@ int main (int argc, char* argv[])
   int i = 0;
   while (getline(inputstream1, line1) && getline(inputstream2, line2)) {
     ++i;
-    if (i > 2) {
-      std::istringstream in1(line1);
-      std::istringstream in2(line2);
-      while (in1 >> val1 && in2 >> val2) {
-        if (std::abs(val1-val2) > TOL) {
-          std::cout << val2 << std::endl;
-          std::cout << "diff steps out of tolerance" << std::endl;
-          exit(1);
-        }
+    std::istringstream in1(line1);
+    std::istringstream in2(line2);
+    while (in1 >> val1 && in2 >> val2) {
+      if (std::abs(val1-val2) > TOL) {
+        std::cout << "diff steps out of tolerance at line " << i << std::endl;
+        exit(1);
       }
     }
   }

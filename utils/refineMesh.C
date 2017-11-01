@@ -47,14 +47,17 @@ private:
 int main(int argc, char* argv[])
 {
   // Check input
-  if ( argc != 6 ) 
+  if ( argc < 7 ) 
   {
     std::cout << "Usage Error: "  << argv[0] 
                                   << " meshFile outputMesh array_id"
-                                  << " refine_method stdev_mult" 
+                                  << " refine_method stdev_mult maxIsmin <write_test>\n \n" 
+                                  << "where <write_test> is an optional bool (1|0) for testing"
                                   << std::endl;
     exit(1);
   }
+  
+
 
   // input mesh
   std::string meshFile = argv[1];
@@ -66,7 +69,9 @@ int main(int argc, char* argv[])
   std::string method = argv[4];
   // multiplier for stdev of data to filter cells consider for refinement
   double dev_mult = std::stof(argv[5]);
-  
+  // boolean for whether max elem length after refinement is min or multiplier on max
+  bool maxIsmin = (bool) std::stoi(argv[6]);
+ 
   // create gmodel from input mesh
   MAd::pGModel gmodel = 0;
   MAd::pMesh mesh = MAd::M_new(gmodel);
@@ -95,10 +100,12 @@ int main(int argc, char* argv[])
     mshphys = new meshPhys((char*) &new_name[0u]);
   }
 
+
+  
+
+
   // define a size field over the mesh and write to backgroundSF.msh 
-  mshphys->createSizeField(array_id, method, dev_mult); 
-  // extracting array_name for proper naming in output
-  std::string array_name =  mshphys->getPointData(array_id).getName(); 
+  mshphys->createSizeField(array_id, method, dev_mult, maxIsmin); 
   // extracting dimension (values per node) for considered array
   int dim = mshphys->getDimArray(array_id);
   // print a report of the vtk mesh
@@ -136,6 +143,54 @@ int main(int argc, char* argv[])
       7) Writes the post-refinement data to a refined vtk and gmsh mesh 
       8) Misc: Memory management, string trimming/file naming      */
  
+  //--------------- write test files if testing enabled --------------------------------//
+  bool write_test = 0;
+  if (argc == 8)
+    write_test = (bool) std::stoi(argv[7]);
+  
+  if (write_test) 
+  {
+    // extracting array_name for proper naming in output
+    std::string array_name =  mshphys->getPointData(array_id).getName(); 
+    if (method.compare("grad") == 0)
+    {
+      std::vector<double> result = mshphys->ComputeL2GradAtAllCells(array_id);
+      array_name.insert(0,"L2Grad_");
+      mshphys->setCellDataArray(&array_name[0u], 1, result); 
+      array_name.append("AtCell.vtu");
+      mshphys->write((char*) &array_name[0u]);
+      std::ofstream outputStream("GradTest.txt");
+      if (!outputStream.good())
+      {
+        std::cout << "error opening GradTest.txt" << std::endl;
+        exit(2);
+      }
+      for (int i = 0; i < result.size(); ++i)
+        outputStream << result[i] << std::endl;
+    }
+    else if (method.compare("val") == 0)
+    {
+      std::vector<double> result = mshphys->ComputeL2ValAtAllCells(array_id);
+      array_name.insert(0,"L2Val_");
+      mshphys->setCellDataArray(&array_name[0u], 1, result); 
+      array_name.append("AtCell.vtu");
+      mshphys->write((char*) &array_name[0u]);
+      std::ofstream outputStream("ValTest.txt");
+      if (!outputStream.good())
+      {
+        std::cout << "error opening GradTest.txt" << std::endl;
+        exit(2);
+      }
+      for (int i = 0; i < result.size(); ++i)
+        outputStream << result[i] << std::endl;
+    }
+    else
+    {
+      std::cout << "method must be \"val\" or \"grad\" " << std::endl;
+      exit(2);
+    }
+  }
+  
   if (bSF) delete bSF;
   if (mshphys) delete mshphys;
   return 0;
