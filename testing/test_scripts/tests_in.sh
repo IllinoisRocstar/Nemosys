@@ -23,18 +23,47 @@ fi
 folder=${test_dir}/$1
 
 cd $folder
-rm -f $(ls *.out | grep -v REF) # removing existing output
-ref_file=$(ls *REF*)
-inp_file=$(ls *.inp)
-out_file=$(ls *REF* | sed 's/\-REF//g')
-log_file=vol2planeTransfer_testresults.txt
-rm -f ../${log_file}
-echo "Testing ${folder} ..." | tee -a ../${log_file}
+
+if [ $1 == "vol2planeTransfer_test" ]
+then
+  rm -f $(ls *.out | grep -v REF) # removing existing output
+  ref_file=$(ls *REF*)
+  inp_file=$(ls *.inp)
+  out_file=$(ls *REF* | sed 's/\-REF//g')
+  log_file=vol2planeTransfer_testresults.txt
+  rm -f ../${log_file}
+  echo "Testing ${folder} ..." | tee -a ../${log_file}
+  ${exec_dir}/vol2planeTransfer ${inp_file}
+fi
+
+if [ $1 == "RefineMeshGradientInterp_test" ]
+then
+  rm -f $(ls | egrep -v 'case|REF')
+  ref_file=$(ls *REF*.msh)
+  inp_file=$(ls *case*)
+  out_file=refined_solution.msh
+  log_file=RefineMeshGradientInterp_testresults.txt
+  rm -f ../${log_file}
+  echo "Testing ${folder} ..." | tee -a ../${log_file}
+  ${exec_dir}/refineMesh ${inp_file} "refined.msh" 7 "grad" .5 1 1 
+fi
+
+
+if [ $1 == "RefineMeshValueInterp_test" ]
+then
+  rm -f $(ls | egrep -v 'case|REF')
+  ref_file=$(ls *REF*.msh)
+  inp_file=$(ls *case*)
+  out_file=refined_solution.msh
+  log_file=RefineMeshValueInterp_testresults.txt
+  rm -f ../${log_file}
+  echo "Testing ${folder} ..." | tee -a ../${log_file}
+  ${exec_dir}/refineMesh ${inp_file} "refined.msh" 1 "val" .5 1 1 
+fi
+
 
 # SET TOLERANCE
 TOL="1e-6"
-
-${exec_dir}/vol2planeTransfer ${inp_file}
 
 if [ ! -e ${out_file} ]
 then
