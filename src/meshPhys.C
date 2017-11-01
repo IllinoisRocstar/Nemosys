@@ -156,7 +156,7 @@ std::vector<double> meshPhys::GetCellLengths()
 // generate background size field based on values or gradient
 // and write it to msh file
 void meshPhys::createSizeField(int array_id, std::string method, 
-                               double dev_mult)
+                               double dev_mult, bool maxIsmin)
 {
   // get name of array for proper data naming in output
   std::string array_name =  getPointData(array_id).getName(); 
@@ -167,9 +167,13 @@ void meshPhys::createSizeField(int array_id, std::string method,
   // find minmax of diameters
   std::vector<double> lengthminmax = getMinMax(lengths);
   // redefine minmax values for appropriate size definition reference
-  lengthminmax[1] *= 0.65;
+  if (maxIsmin)
+    lengthminmax[1] = lengthminmax[0];
+  else
+    lengthminmax[1] *= 0.65;
   lengthminmax[0] -= lengthminmax[0]/2.; 
 
+  // populate vector with L2 norm of gradient/value of physical variable
   std::vector<double> values;
  
   if (method.compare("grad") == 0)

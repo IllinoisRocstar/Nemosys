@@ -36,8 +36,8 @@ class PointDataArray
     std::vector<std::vector<double>> getFoldData();  
 
   private: 
-    int numComponent, numTuple; // dim of data point, number of data points 
-    std::string name;           // name of data array
+    int numComponent, numTuple;  // dim of data point, number of data points 
+    std::string name;            // name of data array
     std::vector<double> pntData; // data array
 };
 
@@ -115,7 +115,7 @@ class meshPhys: public vtkAnalyzer
     // generate background size field based on values or gradient
     // and write it to msh file named backgroundSF.msh
     void createSizeField(int array_id, std::string method, 
-                                        double dev_mult);
+                                        double dev_mult, bool maxIsmin);
 
     /* This function essentially does the following:
 
