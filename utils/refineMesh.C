@@ -1,5 +1,7 @@
 // Nemosys
 #include <meshPhys.H>
+#include <netgenInterface.H>
+
 // stl
 #include <chrono>
 
@@ -20,7 +22,16 @@ TODO:  writing vector data to pos file not implemented in madlib.
        if writing data required. This isn't required for anything though.
 TODO:  Register all data with the nodal data manager so that output refined
        mesh contains everything 
- 
+TODO:  GModel::writeVTK method only writes points and connectivities to vtk,
+       no data. Possible class hierarchy could begin with providing interface 
+       between all formats (msh, vtk, netgen) for 
+          1) points
+          2) cells and correct connectivities (differ in order by format)
+          3) point data
+          4) cell data
+          5) metadata like material tags etc.
+       Then, we store all of these in one Mesh class and apply various methods
+       based on what is available with the format. 
 ******************************************************************************/
 
 //---------------------------Auxiliary Classes---------------------------------//
@@ -47,7 +58,7 @@ private:
 int main(int argc, char* argv[])
 {
   // Check input
-  if ( argc < 7 ) 
+  if (argc < 7  && strcmp(argv[1], "Nek")) 
   {
     std::cout << "Usage Error: "  << argv[0] 
                                   << " meshFile outputMesh array_id"
@@ -56,9 +67,25 @@ int main(int argc, char* argv[])
                                   << std::endl;
     exit(1);
   }
+
+  // seperate orchestration for nek stuff
+  if (!strcmp(argv[1], "Nek"))
+  {
+    // input mesh
+    meshPhys* mshphys;
+    mshphys = new meshPhys(argv[2]);
+    mshphys->report();
+    // method to determine cells to refine ("grad", "val")
+    std::string method = argv[3];
+    // multiplier for stdev of data to filter cells considered for refinement
+    double dev_mult = std::stof(argv[4]);
+    std::cout << "Writing cells to refine for Nek ..." << std::endl;
+    mshphys->writeCellsToRefine(1, method, dev_mult);
+    std::cout << "Success!" << std::endl; 
+    delete mshphys;
+    return 0;
+  }
   
-
-
   // input mesh
   std::string meshFile = argv[1];
   // output mesh
@@ -67,7 +94,7 @@ int main(int argc, char* argv[])
   int array_id = std::stoi(argv[3]);
   // method to generate sizes ("grad", "val")
   std::string method = argv[4];
-  // multiplier for stdev of data to filter cells consider for refinement
+  // multiplier for stdev of data to filter cells considered for refinement
   double dev_mult = std::stof(argv[5]);
   // boolean for whether max elem length after refinement is min or multiplier on max
   bool maxIsmin = (bool) std::stoi(argv[6]);
@@ -100,10 +127,6 @@ int main(int argc, char* argv[])
     mshphys = new meshPhys((char*) &new_name[0u]);
   }
 
-
-  
-
-
   // define a size field over the mesh and write to backgroundSF.msh 
   mshphys->createSizeField(array_id, method, dev_mult, maxIsmin); 
   // extracting dimension (values per node) for considered array
@@ -120,7 +143,6 @@ int main(int argc, char* argv[])
   // loading size field into background sizefield instantiation
   MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
   bSF->loadData("backgroundSF.msh");
-
 
   std::cout << "\n \n Beginning Adapter Construction" << std::endl;
   // timing adapter construction
@@ -190,9 +212,12 @@ int main(int argc, char* argv[])
       exit(2);
     }
   }
-  
+
   if (bSF) delete bSF;
   if (mshphys) delete mshphys;
+  netgenInterface tmp;
+  tmp.createMeshFromSTL("hinge.stl");   
+  tmp.exportToVTK("hinge.vtk"); 
   return 0;
 }
 
