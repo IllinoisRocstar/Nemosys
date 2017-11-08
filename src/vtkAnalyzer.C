@@ -251,6 +251,7 @@ double* vtkAnalyzer::getPointCoords(int pntId)
 }
 
 // returns coordinates of member points in cell with ID
+// call delete when finished with return
 std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
 {
   std::vector<double *> cellCoords;
@@ -270,6 +271,7 @@ std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
   return cellCoords;
 }
 
+// get number of non triangular/line/point elements
 int vtkAnalyzer::getNumberOfNonTri()
 {
   getNumberOfCells(); 
@@ -280,6 +282,67 @@ int vtkAnalyzer::getNumberOfNonTri()
       num++;
   }
   return num;
+}
+
+
+// get all points of triangular surface elements
+std::vector<std::vector<double*>> vtkAnalyzer::getSurfaceTriElements(int& numComponent)
+{
+  getNumberOfCells();
+  std::vector<std::vector<double*>> coords;
+  for (int j = 0; j < numberOfCells; ++j)
+  {
+    if (dataSet->GetCellType(j) == VTK_TRIANGLE)
+    { 
+      coords.push_back(getCellCoords(j, numComponent));
+    } 
+  }
+  return coords;
+}
+
+void vtkAnalyzer::writeSurfaceTriElements(std::string fname)
+{
+    
+  std::ofstream vtk(fname);
+
+  if (!vtk.good())
+  {
+    std::cout << "Error opening: " << fname << std::endl;
+    exit(1);
+  }
+
+  int numComponent;
+  std::vector<std::vector<double*>> surfTri = getSurfaceTriElements(numComponent);
+  vtk << "# vtk DataFile Version 2.0" << std::endl 
+      << "tmp surf mesh" << std::endl
+      << "ASCII" << std::endl
+      << "DATASET UNSTRUCTURED_GRID" << std::endl 
+      << "POINTS " << surfTri.size()*3 << " double" << std::endl;
+
+  for (int i = 0; i < surfTri.size(); ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      for (int k = 0; k < 3; ++k)
+      {
+        vtk << surfTri[i][j][k] << " ";
+      }
+      delete surfTri[i][j];
+      vtk << std::endl; 
+    }
+  }
+  vtk << "CELLS " << surfTri.size() << " " << surfTri.size()*4 << std::endl;
+  for (int i = 0; i < surfTri.size(); ++i)
+  {
+    vtk << 3 << " ";
+    for (int j = 0; j < 3; ++j)
+      vtk << i*3 +j << " ";
+    vtk << std::endl;
+  }
+  vtk << "CELL_TYPES " << surfTri.size() << std::endl;
+  for (int i = 0; i < surfTri.size(); ++i)
+    vtk << 5 << std::endl; 
+ 
 }
 
 // returns coordinates of all points in mesh
