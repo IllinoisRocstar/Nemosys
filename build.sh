@@ -21,6 +21,14 @@ cd $NEMOSYS_DEPS_BUILD_DIR
 cp $NEMOSYS_TARBALL_PATH .
 tar zxf nemosys_tpls.tar.gz
 
+# build netgen
+cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
+tar xzf netgen-5.3.1.tar.gz
+cd netgen-5.3.1
+./configure --prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --exec-prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --with-tcl=/usr/lib/tcl8.5/ --with-tk=/usr/lib/tk8.5/ --with-togl=/usr/lib --enable-shared --enable-nglib
+make
+make install
+
 # build gmsh
 cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
 tar zxf gmsh-2.15.0-source.tgz
@@ -30,6 +38,7 @@ cd lib
 cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/gmsh -DDEFAULT=0 -DENABLE_BUILD_LIB=1 -DENABLE_BUILD_SHARED=1 ..
 make lib shared install/fast -j8
 cp ../Mesh/meshPartitionObjects.h $NEMOSYS_DEPS_INSTALL_PATH/gmsh/include/gmsh/
+cp ../Mesh/Generator.h $NEMOSYS_DEPS_INSTALL_PATH/gmsh/include/gmsh/
 
 # build madlib
 cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls

@@ -20,6 +20,13 @@ Need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
+* tk8.5
+* tcl8.5
+* tix
+* tcl8.5-dev
+* tk8.5-dev
+* libtogl-dev
+* libxmu-dev
 
 Your best bet is to build the local versions of gmsh, madlib, and cgns found at
 /Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz and install them
