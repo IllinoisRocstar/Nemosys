@@ -43,6 +43,8 @@ GET_FILENAME_COMPONENT(MADLIB_INCPATH ${MADLIB_HDR} PATH)
 FIND_LIBRARY(GMSH_LIB Gmsh)
 FIND_FILE(GMSH_HDR gmsh/Gmsh.h)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
+MESSAGE(STATUS ${GMSH_INCPATH})
+
 
 FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
@@ -55,6 +57,12 @@ GET_FILENAME_COMPONENT(ANN_INCPATH ${ANN_HDR} PATH)
 FIND_LIBRARY(METIS_LIB metis)
 FIND_FILE(METIS_HDR metis.h)
 GET_FILENAME_COMPONENT(METIS_INCPATH ${METIS_HDR} PATH)
+
+FIND_LIBRARY(NETGEN_LIB nglib HINTS ${CMAKE_SOURCE_DIR}/install/netgen/opt/netgen/lib/)
+FIND_FILE(NETGEN_HDR nglib.h HINTS ${CMAKE_SOURCE_DIR}/install/netgen/opt/netgen/include/)
+GET_FILENAME_COMPONENT(NETGEN_INCPATH ${NETGEN_HDR} PATH)
+MESSAGE(STATUS ${NETGEN_INCPATH})
+
 
 IF (ENABLE_DTK)
   #FIND_LIBRARY(DTK_LIB classic_dtk)
@@ -100,16 +108,14 @@ IF (ENABLE_DTK)
   INCLUDE(dtk_stuff.txt)
 ENDIF ()
 
-#FIND_FILE(EIGEN_HDR Eigen)
-#GET_FILENAME_COMPONENT(EIGEN_INCPATH ${EIGEN_HDR} PATH)
-
-# add include files to path
+## add include files to path
 INCLUDE_DIRECTORIES(include)
 INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${ANN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
 
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling madlib header references.
@@ -123,11 +129,11 @@ CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 IF(COMPILER_SUPPORTS_CXX14)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DHAVE_TIMES")
 ELSEIF(COMPILER_SUPPORTS_CXX11)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DHAVE_TIMES")
 ELSEIF(COMPILER_SUPPORTS_CXX0X)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -DHAVE_TIMES")
 ELSE()
     MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has
                   no modern C++ support. Please use a different C++ compiler.")
@@ -157,6 +163,7 @@ IF(BUILD_TESTING)
   MARK_AS_ADVANCED(BUILDNAME)
 ENDIF(BUILD_TESTING)
 
+
 # Setting files   ###############################################################
 # Install include files
 FILE(GLOB H_FILES include/*.H)
@@ -167,15 +174,15 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
-                 src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C)
+                 src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
-set(ALL_SRCS ${MADLIB_SRCS} ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
+set(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}) 
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
@@ -189,14 +196,13 @@ ELSE()
 ENDIF()
 INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
 
-IF(NOT BUILD_STATIC)
-  ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
-ELSE()
-  ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
-  add_definitions( -DSTATIC_LINK )
-ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere)
-INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
+# buid mesquite
+#IF(NOT BUILD_STATIC)
+#  ADD_LIBRARY(mesquite SHARED ${MESQUITE_SRCS})
+#ELSE()
+#  ADD_LIBRARY(mesquite ${MESQUITE_SRCS})
+#ENDIF()
+#INSTALL(TARGETS mesquite LIBRARY DESTINATION lib)
 
 # Build r8 and rbf library
 IF(NOT BUILD_STATIC)
@@ -214,6 +220,14 @@ ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
 INSTALL(TARGETS interp LIBRARY DESTINATION lib)
 
+IF(NOT BUILD_STATIC)
+  ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
+ELSE()
+  ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
+  add_definitions( -DSTATIC_LINK )
+ENDIF()
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere interp)
+INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
 
 # Rocstar support library
@@ -238,50 +252,50 @@ IF(BUILD_UTILS)
   #vol2planeTransfer utility
   ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
   if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys ${VTK_LIBRARIES} interp sphere)
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys)
   else()
-    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets interp sphere)
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets)
   ENDIF()
   INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
 
   #refineMesh utility
   ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-  TARGET_LINK_LIBRARIES(refineMesh Nemosys ${MADLIB_LIB} ${VTK_LIBRARIES} ${GMSH_LIB} interp sphere)
+  TARGET_LINK_LIBRARIES(refineMesh Nemosys ${NETGEN_LIB})
   INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
 
   # optimze utility
   ADD_EXECUTABLE(optimize utils/optimize.C)
-  TARGET_LINK_LIBRARIES(optimize Nemosys ${MADLIB_LIB} ${GMSH_LIB} interp)
+  TARGET_LINK_LIBRARIES(optimize Nemosys)
   SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
   INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
   # xmlDump utility
   ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
   if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(xmlDump Nemosys ${VTK_LIBRARIES} interp)
+    TARGET_LINK_LIBRARIES(xmlDump Nemosys)
   else()
-    TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets interp)
+    TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets)
   ENDIF()
   INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
 
   # cgns2gmsh utility
   ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
-  TARGET_LINK_LIBRARIES(cgns2msh Nemosys ${MADLIB_LIB} interp)
+  TARGET_LINK_LIBRARIES(cgns2msh Nemosys)
   INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
 
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
-  TARGET_LINK_LIBRARIES(rocRemesh Nemosys ${MADLIB_LIB} r8 interp)
+  TARGET_LINK_LIBRARIES(rocRemesh Nemosys)
   INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
-  TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys ${MADLIB_LIB} r8 interp Rocs)
+  TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys Rocs)
   INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
-  TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys ${MADLIB_LIB} r8 interp Rocs)
+  TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys Rocs)
   INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
 
   # Building tutorials ###########################################################
@@ -289,14 +303,14 @@ IF(BUILD_UTILS)
 
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
-  TARGET_LINK_LIBRARIES(mshTransfer Nemosys ${MADLIB_LIB} interp)
+  TARGET_LINK_LIBRARIES(mshTransfer Nemosys)
   INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
 
   # DTK tutorial
   IF (ENABLE_DTK)
     ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-    TARGET_LINK_LIBRARIES(dtkTutorial Nemosys ${MADLIB_LIB} interp Rocs
+    TARGET_LINK_LIBRARIES(dtkTutorial Nemosys Rocs
                                              ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
   ENDIF()
