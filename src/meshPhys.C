@@ -212,10 +212,79 @@ void meshPhys::createSizeField(int array_id, std::string method,
       values[i] = lengthminmax[1]; // if cell shouldn't be refined, size set to min of diams
   } 
 
+  // write cells2Refine to file
+  std::ofstream outputstream("cells2Refine.txt");
+  if (!outputstream.good())
+  { 
+    std::cout << "error opening file cells2Refine.txt" << std::endl;
+  }
+  for (int i = 0; i < cells2Refine.size(); ++i)
+  {
+    if (!cells2Refine[i])
+    {
+      vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
+      outputstream << i << " ";
+      for (int j = 0; j < point_ids->GetNumberOfIds(); ++j)
+      {
+        outputstream << point_ids->GetId(j) << " "; 
+      }
+      outputstream << std::endl;
+    }
+  }  
   // writing background mesh and taking care of non tet/tri entities
   writeBackgroundMSH("backgroundSF.msh", values);
 }
 
+// write cells to refine and connectivities to file
+void meshPhys::writeCellsToRefine(int array_id, std::string method, double dev_mult)
+{
+  // get name of array for proper data naming in output
+  std::string array_name =  getPointData(array_id).getName(); 
+
+  // populate vector with L2 norm of gradient/value of physical variable
+  std::vector<double> values;
+ 
+  if (method.compare("grad") == 0)
+    values = ComputeL2GradAtAllCells(array_id);
+  else if (method.compare("val") == 0)
+    values = ComputeL2ValAtAllCells(array_id); 
+  else
+  {
+    std::cout << "Method must be \"val\" or \"grad\" " << std::endl;
+    exit(1);
+  }
+  
+  if (values.empty())
+  {
+    std::cout << "size array hasn't been populated!" << std::endl;
+    exit(1);
+  }
+
+  // get mean and stdev of values 
+  std::vector<double> meanStdev = getMeanStdev(values);
+  // get bool array of which cells to refine based on multiplier of stdev
+  std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+
+  // write cells2Refine to file
+  std::ofstream outputstream("cells2Refine.txt");
+  if (!outputstream.good())
+  { 
+    std::cout << "error opening file cells2Refine.txt" << std::endl;
+  }
+  for (int i = 0; i < cells2Refine.size(); ++i)
+  {
+    if (!cells2Refine[i])
+    {
+      vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
+      outputstream << i << " ";
+      for (int j = 0; j < point_ids->GetNumberOfIds(); ++j)
+      {
+        outputstream << point_ids->GetId(j) << " "; 
+      }
+      outputstream << std::endl;
+    }
+  }  
+}
 
 // writes a background mesh with sizes defined by 
 // point data interpolated to cell center
@@ -361,15 +430,33 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
     std::cout << "preAMRData[1][1] = " << preAMRData[1][1] << std::endl;
     std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
 
-    // Output situation before optimization
-    std::cout << "Statistics before optimization: " << std::endl;
+    // Output situation before refinement
+    std::cout << "Statistics before refinement: " << std::endl;
     adapter->printStatistics(std::cout);
   
     // Optimize
-    std::cout << "Optimizing the mesh ..." << std::endl;
+    std::cout << "Refining the mesh ..." << std::endl;
     adapter->run();
-    adapter->removeSlivers();
+    std::cout << "Statistics after refinement: " << std::endl;
+    adapter->printStatistics(std::cout);
 
+    // running laplacian smoothing
+    /*std::cout << "Optimizing the mesh" << std::endl;
+    for (int i = 0; i < 5; ++i)
+    {
+      adapter->LaplaceSmoothing();
+      adapter->splitLongestEdges();
+      adapter->removeSlivers();
+      adapter->optimiseEdgeLength();
+      adapter->optimiseElementShape();    
+    }*/
+     /* there is a fast laplace smoothing function available where instead of computing 
+       the optimal position it uses the cavity center. The center is the initial position
+       passed to the routine "computeOptimalLocation" before it calculates optimal. The 
+       optimal way is run by default. If we modify line 714/718 in AdaptInterface.cc to
+       laplOp->runFast we can use the fast method */  
+
+ 
     // Outputs final mesh
     std::cout << "Statistics after optimization: " << std::endl;
     adapter->printStatistics(std::cout);
@@ -389,12 +476,21 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
     GModel* trgGModel;
     trgGModel = new GModel("refined"); 
     trgGModel->readMSH((char*) &outMeshFile[0u]);
+    
+    // optimizing mesh with netgen
+    //std::cout << "optimize return: " << trgGModel->optimizeMesh("Netgen") << std::endl;
+    //std::cout << "refine return: " << trgGModel->refineMesh(1) << std::endl;
+
+
+
     trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
 
 
     // write physical quantities to vtk file
     vtkAnalyzer* trgVTK;
-    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
+    // TODO: Seg fault if name is like refined_smooth.vtk
+    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk"))[0u]);
+
     trgVTK->read();
     std::vector<double> postAMRDatas = flatten(postAMRData);
     trgVTK->setPointDataArray(&array_name[0u], dim, postAMRDatas);
@@ -447,7 +543,7 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
 
     // write physical quantities to vtk file
     vtkAnalyzer* trgVTK;
-    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk")[0u]));
+    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk"))[0u]);
     trgVTK->read();
     trgVTK->setPointDataArray(&array_name[0u], 1, postAMRData);
     trgVTK->report();
@@ -532,7 +628,7 @@ std::vector<T> operator+(const std::vector<T>& x,
   return result;
 } 
 
-// multiplies vector by scalar, in place
+// multiplies vector by scalar
 template <typename T>
 std::vector<T> operator*(T a, std::vector<T>& x)
 {

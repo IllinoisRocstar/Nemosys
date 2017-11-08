@@ -8,7 +8,10 @@
 #include <MAdLib.h>
 #include <ModelInterface.h>
 #include <MeshDataBaseInterface.h>
+
+// gmsh
 #include <GmshEntities.h>
+#include <Generator.h>
 
 // stl
 #include <functional>
@@ -52,7 +55,6 @@ class meshPhys: public vtkAnalyzer
     meshPhys(char* fname):vtkAnalyzer(fname)
     {
       read();
-      
       if (dataSet)
       {
         getNumberOfPointData(); // number of point data arrays
@@ -111,7 +113,8 @@ class meshPhys: public vtkAnalyzer
     // writes a background mesh with sizes defined by 
     // point data interpolated to cell center
     void writeBackgroundMSH(string filename, std::vector<double> sizes);
-
+    // write cells to refine and connectivities to file
+    void writeCellsToRefine(int array_id, std::string method, double dev_mult);
     // generate background size field based on values or gradient
     // and write it to msh file named backgroundSF.msh
     void createSizeField(int array_id, std::string method, 
