@@ -239,53 +239,48 @@ int vtkAnalyzer::getNumberOfCellData()
    return numberOfCellData;
 }
 
-double* vtkAnalyzer::getPointCoords(int pntId)
+// if cell face belongs to only 1 cell, it is a surface element
+std::map<int, std::vector<int> > vtkAnalyzer::findBoundaryFaces()
 {
-   double* pntCoords;
-   if (pntId < dataSet->GetNumberOfPoints()) {
-     pntCoords = dataSet->GetPoint(pntId);
-   } else {
-     std::cerr << "Point ID is out of range!" << std::endl;
-   }
-   return pntCoords;
-}
+  int numCells = getNumberOfCells();
+  vtkCell* cell;
+  vtkCell* face;
 
-// returns coordinates of member points in cell with ID
-// call delete when finished with return
-std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
-{
-  std::vector<double *> cellCoords;
-  if (cellId < dataSet->GetNumberOfCells()) {
-    vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
-    numComponent = point_ids->GetNumberOfIds();
-    cellCoords.resize(numComponent);// = new double*[numComponent];
-    for (int i = 0; i < numComponent; ++i) {
-      cellCoords[i] = new double[3];
-      dataSet->GetPoint(point_ids->GetId(i), cellCoords[i]);  
+  int npts;
+  std::map<int, std::vector<int> > boundaries;
+
+  for (int i = 0; i < numCells; ++i)
+  {
+
+    cell = dataSet->GetCell(i);
+    if (cell->GetCellDimension() == 3)
+    {
+
+      int numFaces = cell->GetNumberOfFaces();
+      for (int j = 0; j < numFaces; ++j)
+      {
+        face = cell->GetFace(j);
+        vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
+        dataSet->GetCellNeighbors(i,face->PointIds,cellIds.GetPointer());
+        if (cellIds->GetNumberOfIds() <= 0 )
+        {
+          npts = face->GetNumberOfPoints();
+          std::vector<int> ptIds(npts);
+          for (int k = 0; k < npts; ++k)
+            ptIds[k] = face->GetPointId(k); 
+          boundaries.insert(std::pair<int,std::vector<int> > (i,ptIds)); 
+        }
+      }
     }
   }
-  else {
-    std::cerr << "Cell ID is out of range!" << std::endl;
-    exit(2);
-  }
-  return cellCoords;
-}
 
-// get number of non triangular/line/point elements
-int vtkAnalyzer::getNumberOfNonTri()
-{
-  getNumberOfCells(); 
-  int num = 0;
-  for (int j = 0; j < numberOfCells; ++j)
-  {
-    if (dataSet->GetCellType(j) < VTK_TRIANGLE)
-      num++;
-  }
-  return num;
+  // for testing
+  writeSurfaceTriElements("test_tri.vtk");
+  return boundaries; 
 }
 
 
-// get all points of triangular surface elements
+ 
 std::vector<std::vector<double*>> vtkAnalyzer::getSurfaceTriElements(int& numComponent)
 {
   getNumberOfCells();
@@ -343,6 +338,52 @@ void vtkAnalyzer::writeSurfaceTriElements(std::string fname)
   for (int i = 0; i < surfTri.size(); ++i)
     vtk << 5 << std::endl; 
  
+}
+
+
+double* vtkAnalyzer::getPointCoords(int pntId)
+{
+   double* pntCoords;
+   if (pntId < dataSet->GetNumberOfPoints()) {
+     pntCoords = dataSet->GetPoint(pntId);
+   } else {
+     std::cerr << "Point ID is out of range!" << std::endl;
+   }
+   return pntCoords;
+}
+
+// returns coordinates of member points in cell with ID
+// call delete when finished with return
+std::vector<double* > vtkAnalyzer::getCellCoords(int cellId, int& numComponent)
+{
+  std::vector<double *> cellCoords;
+  if (cellId < dataSet->GetNumberOfCells()) {
+    vtkIdList* point_ids = dataSet->GetCell(cellId)->GetPointIds();
+    numComponent = point_ids->GetNumberOfIds();
+    cellCoords.resize(numComponent);// = new double*[numComponent];
+    for (int i = 0; i < numComponent; ++i) {
+      cellCoords[i] = new double[3];
+      dataSet->GetPoint(point_ids->GetId(i), cellCoords[i]);  
+    }
+  }
+  else {
+    std::cerr << "Cell ID is out of range!" << std::endl;
+    exit(2);
+  }
+  return cellCoords;
+}
+
+// get number of non triangular/line/point elements
+int vtkAnalyzer::getNumberOfNonTri()
+{
+  getNumberOfCells(); 
+  int num = 0;
+  for (int j = 0; j < numberOfCells; ++j)
+  {
+    if (dataSet->GetCellType(j) < VTK_TRIANGLE)
+      num++;
+  }
+  return num;
 }
 
 // returns coordinates of all points in mesh

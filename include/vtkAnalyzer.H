@@ -110,15 +110,19 @@ public:
    int getNumberOfPointData();
    // number of cell data
    int getNumberOfCellData();
+
+   vtkDataSet* getDataSet() { return dataSet; }
+ 
+   std::map<int, std::vector<int> > findBoundaryFaces();
+
+ 
    //get given point ID coordinates
    double* getPointCoords(int pntId);
    // returns coordinates of member points in cell with ID 
    std::vector<double* > getCellCoords(int pntId, int& numComponent);
    // get number of nonTri
    int getNumberOfNonTri();
-   // get all points of triangular surface elements
    std::vector<std::vector<double*>> getSurfaceTriElements(int& numComponent);
-   // write surface elements to vtk for visualization
    void writeSurfaceTriElements(std::string fname);
    // returns coordinates of centers of all cells 
    std::vector<double > getCellCenters(int& numComponent);

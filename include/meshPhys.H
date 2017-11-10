@@ -133,7 +133,7 @@ class meshPhys: public vtkAnalyzer
     void Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
                 int array_id, int dim, std::string outMeshFile);    
 
-  private:
+  protected:
     std::vector<PointDataArray> pntData ; // all pointData on mesh
       
 };
