@@ -1,4 +1,8 @@
 #include <netgenInterface.H>
+#include <string.h>
+
+//TODO: Figure out why writeBoundaryFaces writes under the number of tris
+//      Add writing surface elements to exportToVTK
 
 using namespace nglib;   
 int netgenInterface::createMeshFromSTL(char* fname)
@@ -136,6 +140,63 @@ int netgenInterface::exportToVTK(char* fname)
     vtk << VTK_TETRA << std::endl; 
  
 }
+
+int netgenInterface::importFromVTK(char* fname)
+{
+  if (numPoints || numCells)
+  {
+    std::cout << "mesh is already populated!\ndelete and proceed" << std::endl;
+    exit(1);      
+  }
+
+  vtkAnalyzer* vtkMesh = new vtkAnalyzer(fname);
+  vtkMesh->report();
+  vtkDataSet* dataSet = vtkMesh->getDataSet();
+  for (int i = 0; i < vtkMesh->numberOfPoints; ++i)
+  {
+    double* pntCrd =  vtkMesh->getPointCoords(i);
+    Ng_AddPoint(mesh, pntCrd);
+  }
+
+  for (int i = 0; i < vtkMesh->numberOfCells; ++i)
+  {
+    vtkIdList* vtkpntIds = dataSet->GetCell(i)->GetPointIds();
+    int numIds = vtkpntIds->GetNumberOfIds();
+    int pntIds[numIds];
+    for (int j = 0; j < numIds; ++j)
+      pntIds[j] = vtkpntIds->GetId(j)+1; // netgen is 1-based index
+    if (numIds == 3)
+      Ng_AddSurfaceElement(mesh,NG_TRIG,pntIds);
+    if (numIds == 4)
+      Ng_AddVolumeElement(mesh,NG_TET,pntIds);  
+  }
+
+ // Ng_Uniform_Refinement (mesh); 
+  numPoints = vtkMesh->numberOfPoints;
+  numCells = vtkMesh->numberOfCells;
+  // testing mesh import
+  std::string old_fname(fname);
+  std::string new_fname = trim_fname(old_fname,".vol");
+  Ng_SaveMesh(mesh, &new_fname[0u]);
+
+  std::map<int, std::vector<int> > boundaries = vtkMesh->findBoundaryFaces();  
+  std::map<int,std::vector<int> >::iterator it;
+  std::cout << boundaries.size() << std::endl;
+  for (it = boundaries.begin(); it!=boundaries.end(); ++it)
+  {
+    //std::cout << '\t' << it->first << '\t';
+    std::cout << 3 << " ";
+    for (int i = 0; i < 3; ++i)
+      std::cout << it->second[i] << " ";
+    std::cout << std::endl;
+  } 
+
+ 
+  delete vtkMesh;  
+  return 0;
+}
+
+
 
 
 
