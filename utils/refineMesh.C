@@ -1,7 +1,7 @@
 // Nemosys
 #include <meshPhys.H>
 #include <netgenInterface.H>
-
+#include <nginterface.h>
 // stl
 #include <chrono>
 
@@ -215,9 +215,12 @@ int main(int argc, char* argv[])
 
   if (bSF) delete bSF;
   if (mshphys) delete mshphys;
-  netgenInterface tmp;
-  tmp.createMeshFromSTL("hinge.stl");   
-  tmp.exportToVTK("hinge.vtk"); 
+  netgenInterface* tmp = new netgenInterface();
+  //tmp->createMeshFromSTL("hinge.stl");   
+  //tmp->exportToVTK("hinge.vtk"); 
+  //Ng_SolutionData* tmp1;
+  //Ng_InitSolutionData (tmp1);
+  tmp->importFromVTK("cube_notri.vtk");
   return 0;
 }
 

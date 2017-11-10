@@ -43,7 +43,7 @@ class netgenInterface
   public:
     int createMeshFromSTL(char* fname);
     int exportToVTK(char* fname);
- 
+    int importFromVTK(char* fname); 
   private:
 //    nglib::Ng_Meshing_Parameters meshParams; // params for netgen meshing  
     nglib::Ng_Mesh* mesh; // netgen mesh object
