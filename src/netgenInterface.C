@@ -8,6 +8,12 @@ using namespace nglib;
 int netgenInterface::createMeshFromSTL(char* fname)
 {
 
+  if (numPoints || numCells)
+  {
+    std::cout << "mesh is already populated!\ndelete and proceed" << std::endl;
+    exit(1);      
+  }
+  
   // Define pointer to STL Geometry
   Ng_STL_Geometry *stl_geom;
 
@@ -91,6 +97,29 @@ int netgenInterface::createMeshFromSTL(char* fname)
   return 0;
 }
 
+int netgenInterface::importFromVol(char* fname)
+{
+  if (numPoints || numCells)
+  {
+    std::cout << "mesh is already populated!\ndelete and proceed" << std::endl;
+    exit(1);      
+  }
+  
+  int status = Ng_MergeMesh(mesh, fname);
+  numPoints = Ng_GetNP(mesh);
+  numCells = Ng_GetNE(mesh);
+
+  if (!(numPoints && numCells))
+  {
+    std::cout << "Error loading file " << fname 
+              << "\nMesh has no points or no cells!\n";
+    exit(1);
+  }
+    
+  return status;
+}
+
+
 int netgenInterface::exportToVTK(char* fname)
 {
   if (!(numPoints && numCells))
@@ -98,7 +127,8 @@ int netgenInterface::exportToVTK(char* fname)
     std::cout << "Mesh has no points or no cells!" << std::endl;
     exit(1);
   }
-    
+   
+ 
   std::ofstream vtk(fname);
 
   if (!vtk.good())
@@ -125,13 +155,18 @@ int netgenInterface::exportToVTK(char* fname)
 
   int numSurfCells = Ng_GetNSE(mesh);
 
-  vtk << "\nCELLS " << numCells << " " << numCells*5 + numSurfCells*3 << std::endl;
-  for (int i = 1; i < numSurfCells; ++i)
+  std::cout << "\tNumber Of Points: " << numPoints << std::endl;
+  std::cout << "\tNumber Of Surface Elements: " << numSurfCells << std::endl;
+  std::cout << "\tNumber Of Volume Elements: " << numCells << std::endl;
+
+
+  vtk << "\nCELLS " << numCells+numSurfCells << " " << numCells*5 + numSurfCells*4 << std::endl;
+  for (int i = 1; i <= numSurfCells; ++i)
   {
     int tri[3];
     Ng_GetSurfaceElement(mesh, i, tri);
     vtk << 3 << " ";
-    for (int j = 0; j < 4; ++j)
+    for (int j = 0; j < 3; ++j)
       vtk << tri[j]-1 << " ";
     vtk << std::endl;
   }
@@ -140,7 +175,6 @@ int netgenInterface::exportToVTK(char* fname)
   { 
     int tet[4];
     Ng_GetVolumeElement(mesh, i, tet);
-    
     vtk << 4 << " ";
     for (int j = 0; j < 4; ++j)
       vtk << tet[j]-1 << " ";
@@ -148,9 +182,10 @@ int netgenInterface::exportToVTK(char* fname)
   }
 
   vtk << "\nCELL_TYPES " << numCells+numSurfCells << std::endl;
-  for (i = 0; i < numCells; ++i)
-    vtk << VTK_TETRA << std::endl; 
- 
+  for (int i = 0; i < numSurfCells; ++i)
+    vtk << VTK_TRIANGLE << std::endl; 
+  for (int i = 0; i < numCells; ++i)
+    vtk << VTK_TETRA << std::endl;
   return 0;
 }
 
