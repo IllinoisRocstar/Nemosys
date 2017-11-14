@@ -240,14 +240,14 @@ int vtkAnalyzer::getNumberOfCellData()
 }
 
 // if cell face belongs to only 1 cell, it is a surface element
-std::map<int, std::vector<int> > vtkAnalyzer::findBoundaryFaces()
+std::multimap<int, std::vector<int> > vtkAnalyzer::findBoundaryFaces()
 {
   int numCells = getNumberOfCells();
   vtkCell* cell;
   vtkCell* face;
 
   int npts;
-  std::map<int, std::vector<int> > boundaries;
+  std::multimap<int, std::vector<int> > boundaries;
 
   for (int i = 0; i < numCells; ++i)
   {
@@ -261,21 +261,42 @@ std::map<int, std::vector<int> > vtkAnalyzer::findBoundaryFaces()
       {
         face = cell->GetFace(j);
         vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
-        dataSet->GetCellNeighbors(i,face->PointIds,cellIds.GetPointer());
+        vtkSmartPointer<vtkIdList> facePntIds = vtkSmartPointer<vtkIdList>::New();
+        facePntIds = face->GetPointIds(); 
+        dataSet->GetCellNeighbors(i,facePntIds,cellIds.GetPointer());
         if (cellIds->GetNumberOfIds() <= 0 )
         {
+
           npts = face->GetNumberOfPoints();
           std::vector<int> ptIds(npts);
           for (int k = 0; k < npts; ++k)
-            ptIds[k] = face->GetPointId(k); 
+          {
+              ptIds[k] = face->GetPointId(k); 
+          }
           boundaries.insert(std::pair<int,std::vector<int> > (i,ptIds)); 
         }
       }
     }
+    else if (cell->GetCellDimension() == 2)
+    {
+      vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
+      vtkSmartPointer<vtkIdList> facePntIds = vtkSmartPointer<vtkIdList>::New();
+      facePntIds = cell->GetPointIds(); 
+      dataSet->GetCellNeighbors(i,facePntIds,cellIds.GetPointer());
+      if (cellIds->GetNumberOfIds() <= 1 )
+      {
+        npts = facePntIds->GetNumberOfIds();
+        std::vector<int> ptIds(npts);
+        for (int k = 0; k < npts; ++k)
+        {
+            ptIds[k] = cell->GetPointId(k); 
+        }
+        boundaries.insert(std::pair<int,std::vector<int> > (i,ptIds)); 
+      }
+      
+    }
   }
 
-  // for testing
-  writeSurfaceTriElements("test_tri.vtk");
   return boundaries; 
 }
 
