@@ -35,7 +35,7 @@ class netgenInterface
     
     ~netgenInterface()
     {
-      nglib::Ng_DeleteMesh(mesh);
+      if(mesh) nglib::Ng_DeleteMesh(mesh);
       nglib::Ng_Exit();
     }      
 

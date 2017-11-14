@@ -430,6 +430,8 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
     std::cout << "preAMRData[1][1] = " << preAMRData[1][1] << std::endl;
     std::cout << "Size of vector = " << preAMRData.size() << std::endl; 
 
+    adapter->setSwapMinImproveRatio(1);
+
     // Output situation before refinement
     std::cout << "Statistics before refinement: " << std::endl;
     adapter->printStatistics(std::cout);
@@ -441,15 +443,17 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
     adapter->printStatistics(std::cout);
 
     // running laplacian smoothing
-    /*std::cout << "Optimizing the mesh" << std::endl;
-    for (int i = 0; i < 5; ++i)
+    std::cout << "Optimizing the mesh" << std::endl;
+
+
+    for (int i = 0; i < 10; ++i)
     {
       adapter->LaplaceSmoothing();
       adapter->splitLongestEdges();
       adapter->removeSlivers();
       adapter->optimiseEdgeLength();
       adapter->optimiseElementShape();    
-    }*/
+    }
      /* there is a fast laplace smoothing function available where instead of computing 
        the optimal position it uses the cavity center. The center is the initial position
        passed to the routine "computeOptimalLocation" before it calculates optimal. The 

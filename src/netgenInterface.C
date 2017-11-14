@@ -1,8 +1,8 @@
 #include <netgenInterface.H>
+#include <meshing.hpp>
 #include <string.h>
 
-//TODO: Figure out why writeBoundaryFaces writes under the number of tris
-//      Add writing surface elements to exportToVTK
+//TODO:      Add writing surface elements to exportToVTK
 
 using namespace nglib;   
 int netgenInterface::createMeshFromSTL(char* fname)
@@ -123,7 +123,19 @@ int netgenInterface::exportToVTK(char* fname)
     vtk << std::endl;         
   }
 
-  vtk << "\nCELLS " << numCells << " " << numCells*5 << std::endl;
+  int numSurfCells = Ng_GetNSE(mesh);
+
+  vtk << "\nCELLS " << numCells << " " << numCells*5 + numSurfCells*3 << std::endl;
+  for (int i = 1; i < numSurfCells; ++i)
+  {
+    int tri[3];
+    Ng_GetSurfaceElement(mesh, i, tri);
+    vtk << 3 << " ";
+    for (int j = 0; j < 4; ++j)
+      vtk << tri[j]-1 << " ";
+    vtk << std::endl;
+  }
+
   for (int i = 1; i <= numCells; ++i)
   { 
     int tet[4];
@@ -135,10 +147,11 @@ int netgenInterface::exportToVTK(char* fname)
     vtk << std::endl;
   }
 
-  vtk << "\nCELL_TYPES " << numCells << std::endl;
-  for (int i = 0; i < numCells; ++i)
+  vtk << "\nCELL_TYPES " << numCells+numSurfCells << std::endl;
+  for (i = 0; i < numCells; ++i)
     vtk << VTK_TETRA << std::endl; 
  
+  return 0;
 }
 
 int netgenInterface::importFromVTK(char* fname)
@@ -152,51 +165,94 @@ int netgenInterface::importFromVTK(char* fname)
   vtkAnalyzer* vtkMesh = new vtkAnalyzer(fname);
   vtkMesh->report();
   vtkDataSet* dataSet = vtkMesh->getDataSet();
+  
+  // add points
   for (int i = 0; i < vtkMesh->numberOfPoints; ++i)
   {
     double* pntCrd =  vtkMesh->getPointCoords(i);
     Ng_AddPoint(mesh, pntCrd);
   }
 
+  // add surface elements (if they exist) and volume elements
+  bool has_surf = 0;
   for (int i = 0; i < vtkMesh->numberOfCells; ++i)
   {
     vtkIdList* vtkpntIds = dataSet->GetCell(i)->GetPointIds();
     int numIds = vtkpntIds->GetNumberOfIds();
     int pntIds[numIds];
     for (int j = 0; j < numIds; ++j)
-      pntIds[j] = vtkpntIds->GetId(j)+1; // netgen is 1-based index
+      pntIds[j] = vtkpntIds->GetId((numIds-1)-j)+1; // netgen is 1-based index
     if (numIds == 3)
+    {
       Ng_AddSurfaceElement(mesh,NG_TRIG,pntIds);
+      has_surf = 1;
+    }
     if (numIds == 4)
       Ng_AddVolumeElement(mesh,NG_TET,pntIds);  
   }
 
- // Ng_Uniform_Refinement (mesh); 
-  numPoints = vtkMesh->numberOfPoints;
-  numCells = vtkMesh->numberOfCells;
+  if (!has_surf)
+  {
+    std::cout << "\tNo surface elements detected in " << fname << std::endl
+              << "\tDetecting and adding boundary elements to mesh ...." << std::endl;
+    std::multimap<int, std::vector<int> > boundaries = vtkMesh->findBoundaryFaces();  
+    std::multimap<int,std::vector<int> >::iterator it;
+    for (it = boundaries.begin(); it!=boundaries.end(); ++it)
+    {
+      int pntIds[3];
+      for (int i = 0; i < 3; ++i)
+        pntIds[i] = it->second[2-i]+1; // netgen is 1-based index
+      Ng_AddSurfaceElement(mesh,NG_TRIG,pntIds); 
+    }
+    std::cout << "\tAdded " << boundaries.size() << " boundary elements" << std::endl;
+  }
+  
+
+
+ 
+  // Set the Meshing Parameters to be used
+  Ng_Meshing_Parameters mp; 
+  mp.maxh = 1;
+  mp.fineness = 1;
+  mp.uselocalh = 1; 
+  mp.optsteps_2d = 1;
+  mp.optsteps_3d = 1;
+  mp.grading = .1;
+  Ng_OptimizeVolume(mesh, &mp);
+   
+  //Ng_Uniform_Refinement (mesh);
+
   // testing mesh import
   std::string old_fname(fname);
   std::string new_fname = trim_fname(old_fname,".vol");
   Ng_SaveMesh(mesh, &new_fname[0u]);
+  numPoints = Ng_GetNP(mesh);
+  numCells = Ng_GetNE(mesh);
 
-  std::map<int, std::vector<int> > boundaries = vtkMesh->findBoundaryFaces();  
-  std::map<int,std::vector<int> >::iterator it;
-  std::cout << boundaries.size() << std::endl;
-  for (it = boundaries.begin(); it!=boundaries.end(); ++it)
-  {
-    //std::cout << '\t' << it->first << '\t';
-    std::cout << 3 << " ";
-    for (int i = 0; i < 3; ++i)
-      std::cout << it->second[i] << " ";
-    std::cout << std::endl;
-  } 
-
- 
   delete vtkMesh;  
   return 0;
 }
 
+  /* Default constructor for the Mesh Parameters class
 
-
-
-
+   Note: This constructor initialises the variables in the 
+   class with the following default values
+   - #uselocalh: 1
+   - #maxh: 1000.0
+   - #fineness: 0.5
+   - #grading: 0.3
+   - #elementsperedge: 2.0
+   - #elementspercurve: 2.0
+   - #closeedgeenable: 0
+   - #closeedgefact: 2.0
+   - #secondorder: 0
+   - #meshsize_filename: null
+   - #quad_dominated: 0
+   - #optsurfmeshenable: 1
+   - #optvolmeshenable: 1
+   - #optsteps_2d: 3
+   - #optsteps_3d: 3
+   - #invert_tets: 0
+   - #invert_trigs:0 
+   - #check_overlap: 1
+   - #check_overlapping_boundary: 1 */

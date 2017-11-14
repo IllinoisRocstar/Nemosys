@@ -113,7 +113,7 @@ public:
 
    vtkDataSet* getDataSet() { return dataSet; }
  
-   std::map<int, std::vector<int> > findBoundaryFaces();
+   std::multimap<int, std::vector<int> > findBoundaryFaces();
 
  
    //get given point ID coordinates
