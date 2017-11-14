@@ -1,7 +1,6 @@
 // Nemosys
 #include <meshPhys.H>
 #include <netgenInterface.H>
-#include <nginterface.h>
 // stl
 #include <chrono>
 
@@ -57,170 +56,173 @@ private:
 
 int main(int argc, char* argv[])
 {
-  // Check input
-  if (argc < 7  && strcmp(argv[1], "Nek")) 
-  {
-    std::cout << "Usage Error: "  << argv[0] 
-                                  << " meshFile outputMesh array_id"
-                                  << " refine_method stdev_mult maxIsmin <write_test>\n \n" 
-                                  << "where <write_test> is an optional bool (1|0) for testing"
-                                  << std::endl;
-    exit(1);
-  }
-
-  // seperate orchestration for nek stuff
-  if (!strcmp(argv[1], "Nek"))
-  {
-    // input mesh
-    meshPhys* mshphys;
-    mshphys = new meshPhys(argv[2]);
-    mshphys->report();
-    // method to determine cells to refine ("grad", "val")
-    std::string method = argv[3];
-    // multiplier for stdev of data to filter cells considered for refinement
-    double dev_mult = std::stof(argv[4]);
-    std::cout << "Writing cells to refine for Nek ..." << std::endl;
-    mshphys->writeCellsToRefine(1, method, dev_mult);
-    std::cout << "Success!" << std::endl; 
-    delete mshphys;
-    return 0;
-  }
-  
-  // input mesh
-  std::string meshFile = argv[1];
-  // output mesh
-  std::string outMeshFile = argv[2];
-  // data array index
-  int array_id = std::stoi(argv[3]);
-  // method to generate sizes ("grad", "val")
-  std::string method = argv[4];
-  // multiplier for stdev of data to filter cells considered for refinement
-  double dev_mult = std::stof(argv[5]);
-  // boolean for whether max elem length after refinement is min or multiplier on max
-  bool maxIsmin = (bool) std::stoi(argv[6]);
- 
-  // create gmodel from input mesh
-  MAd::pGModel gmodel = 0;
-  MAd::pMesh mesh = MAd::M_new(gmodel);
-  meshPhys* mshphys;
-  
-  // check for vtk extension
-  if (meshFile.find(".v") != -1 ) 
-  {
-    mshphys = new meshPhys((char*) &meshFile[0u]);
-    std::string ofname = "converted.msh";
-    // convert vtk to msh for loading into MAdLib format 
-    mshphys->writeMSH(ofname);  
-    MAd::M_load(mesh, "converted.msh"); 
-  }
-  // check for gmsh extension
-  else if (meshFile.find(".msh") != -1) 
-  {
-    MAd::M_load(mesh, (char*) &(meshFile)[0u]); 
-    GModel* tmpGModel;
-    tmpGModel = new GModel("tmp");
-    tmpGModel->readMSH((char*) &meshFile[0u]);
-    std::string new_name = trim_fname(meshFile,".vtk");
-    // convert msh to vtk for instantiation of meshPhys
-    tmpGModel->writeVTK(new_name, false, true); // binary=false, saveall=true
-    delete tmpGModel;
-    mshphys = new meshPhys((char*) &new_name[0u]);
-  }
-
-  // define a size field over the mesh and write to backgroundSF.msh 
-  mshphys->createSizeField(array_id, method, dev_mult, maxIsmin); 
-  // extracting dimension (values per node) for considered array
-  int dim = mshphys->getDimArray(array_id);
-  // print a report of the vtk mesh
-  mshphys->report();
-
-  // finding and classifying boundary elements as 2d 
-  mesh->classify_unclassified_entities();
-  mesh->destroyStandAloneEntities();
-  MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(mesh->model, 0);
-  mesh->classify_grid_boundaries(bnd);
-
-  // loading size field into background sizefield instantiation
-  MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
-  bSF->loadData("backgroundSF.msh");
-
-  std::cout << "\n \n Beginning Adapter Construction" << std::endl;
-  // timing adapter construction
-  Timer T;
-  T.start();
-  // instantiating adapter with background sizefield
-  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, bSF);
-  T.stop();
-  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
- 
-  // RUNNING ADAPTER TO REFINE MESH 
-  mshphys->Refine(adapter, mesh, array_id, dim, outMeshFile);    
-  /* This function essentially does the following:
-      1) Registers the relevant data with the nodal data manager
-      2) Runs the adapter
-      3) Unclassifies the boundary elements for proper output
-      4) Writes the refined mesh to a .msh file without data
-      5) Gets the data after refinement
-      6) Converts the refined mesh to a vtk file without data
-      7) Writes the post-refinement data to a refined vtk and gmsh mesh 
-      8) Misc: Memory management, string trimming/file naming      */
- 
-  //--------------- write test files if testing enabled --------------------------------//
-  bool write_test = 0;
-  if (argc == 8)
-    write_test = (bool) std::stoi(argv[7]);
-  
-  if (write_test) 
-  {
-    // extracting array_name for proper naming in output
-    std::string array_name =  mshphys->getPointData(array_id).getName(); 
-    if (method.compare("grad") == 0)
-    {
-      std::vector<double> result = mshphys->ComputeL2GradAtAllCells(array_id);
-      array_name.insert(0,"L2Grad_");
-      mshphys->setCellDataArray(&array_name[0u], 1, result); 
-      array_name.append("AtCell.vtu");
-      mshphys->write((char*) &array_name[0u]);
-      std::ofstream outputStream("GradTest.txt");
-      if (!outputStream.good())
-      {
-        std::cout << "error opening GradTest.txt" << std::endl;
-        exit(2);
-      }
-      for (int i = 0; i < result.size(); ++i)
-        outputStream << result[i] << std::endl;
-    }
-    else if (method.compare("val") == 0)
-    {
-      std::vector<double> result = mshphys->ComputeL2ValAtAllCells(array_id);
-      array_name.insert(0,"L2Val_");
-      mshphys->setCellDataArray(&array_name[0u], 1, result); 
-      array_name.append("AtCell.vtu");
-      mshphys->write((char*) &array_name[0u]);
-      std::ofstream outputStream("ValTest.txt");
-      if (!outputStream.good())
-      {
-        std::cout << "error opening GradTest.txt" << std::endl;
-        exit(2);
-      }
-      for (int i = 0; i < result.size(); ++i)
-        outputStream << result[i] << std::endl;
-    }
-    else
-    {
-      std::cout << "method must be \"val\" or \"grad\" " << std::endl;
-      exit(2);
-    }
-  }
-
-  if (bSF) delete bSF;
-  if (mshphys) delete mshphys;
+//  // Check input
+//  if (argc < 7  && strcmp(argv[1], "Nek")) 
+//  {
+//    std::cout << "Usage Error: "  << argv[0] 
+//                                  << " meshFile outputMesh array_id"
+//                                  << " refine_method stdev_mult maxIsmin <write_test>\n \n" 
+//                                  << "where <write_test> is an optional bool (1|0) for testing"
+//                                  << std::endl;
+//    exit(1);
+//  }
+//
+//  // seperate orchestration for nek stuff
+//  if (!strcmp(argv[1], "Nek"))
+//  {
+//    // input mesh
+//    meshPhys* mshphys;
+//    mshphys = new meshPhys(argv[2]);
+//    mshphys->report();
+//    // method to determine cells to refine ("grad", "val")
+//    std::string method = argv[3];
+//    // multiplier for stdev of data to filter cells considered for refinement
+//    double dev_mult = std::stof(argv[4]);
+//    std::cout << "Writing cells to refine for Nek ..." << std::endl;
+//    mshphys->writeCellsToRefine(1, method, dev_mult);
+//    std::cout << "Success!" << std::endl; 
+//    delete mshphys;
+//    return 0;
+//  }
+//  
+//  // input mesh
+//  std::string meshFile = argv[1];
+//  // output mesh
+//  std::string outMeshFile = argv[2];
+//  // data array index
+//  int array_id = std::stoi(argv[3]);
+//  // method to generate sizes ("grad", "val")
+//  std::string method = argv[4];
+//  // multiplier for stdev of data to filter cells considered for refinement
+//  double dev_mult = std::stof(argv[5]);
+//  // boolean for whether max elem length after refinement is min or multiplier on max
+//  bool maxIsmin = (bool) std::stoi(argv[6]);
+// 
+//  // create gmodel from input mesh
+//  MAd::pGModel gmodel = 0;
+//  MAd::pMesh mesh = MAd::M_new(gmodel);
+//  meshPhys* mshphys;
+//  
+//  // check for vtk extension
+//  if (meshFile.find(".v") != -1 ) 
+//  {
+//    mshphys = new meshPhys((char*) &meshFile[0u]);
+//    std::string ofname = "converted.msh";
+//    // convert vtk to msh for loading into MAdLib format 
+//    mshphys->writeMSH(ofname);  
+//    MAd::M_load(mesh, "converted.msh"); 
+//  }
+//  // check for gmsh extension
+//  else if (meshFile.find(".msh") != -1) 
+//  {
+//    MAd::M_load(mesh, (char*) &(meshFile)[0u]); 
+//    GModel* tmpGModel;
+//    tmpGModel = new GModel("tmp");
+//    tmpGModel->readMSH((char*) &meshFile[0u]);
+//    std::string new_name = trim_fname(meshFile,".vtk");
+//    // convert msh to vtk for instantiation of meshPhys
+//    tmpGModel->writeVTK(new_name, false, true); // binary=false, saveall=true
+//    delete tmpGModel;
+//    mshphys = new meshPhys((char*) &new_name[0u]);
+//  }
+//
+//  // define a size field over the mesh and write to backgroundSF.msh 
+//  mshphys->createSizeField(array_id, method, dev_mult, maxIsmin); 
+//  // extracting dimension (values per node) for considered array
+//  int dim = mshphys->getDimArray(array_id);
+//  // print a report of the vtk mesh
+//  mshphys->report();
+//
+//  // finding and classifying boundary elements as 2d 
+//  mesh->classify_unclassified_entities();
+//  mesh->destroyStandAloneEntities();
+//  MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(mesh->model, 0);
+//  mesh->classify_grid_boundaries(bnd);
+//
+//  // loading size field into background sizefield instantiation
+//  MAd::BackgroundSF* bSF = new MAd::BackgroundSF("backgroundSF");
+//  bSF->loadData("backgroundSF.msh");
+//
+//  std::cout << "\n \n Beginning Adapter Construction" << std::endl;
+//  // timing adapter construction
+//  Timer T;
+//  T.start();
+//  // instantiating adapter with background sizefield
+//  MAd::MeshAdapter* adapter = new MAd::MeshAdapter(mesh, bSF);
+//  T.stop();
+//  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
+// 
+//  // RUNNING ADAPTER TO REFINE MESH 
+//  mshphys->Refine(adapter, mesh, array_id, dim, outMeshFile);    
+//  /* This function essentially does the following:
+//      1) Registers the relevant data with the nodal data manager
+//      2) Runs the adapter
+//      3) Unclassifies the boundary elements for proper output
+//      4) Writes the refined mesh to a .msh file without data
+//      5) Gets the data after refinement
+//      6) Converts the refined mesh to a vtk file without data
+//      7) Writes the post-refinement data to a refined vtk and gmsh mesh 
+//      8) Misc: Memory management, string trimming/file naming      */
+// 
+//  //--------------- write test files if testing enabled --------------------------------//
+//  bool write_test = 0;
+//  if (argc == 8)
+//    write_test = (bool) std::stoi(argv[7]);
+//  
+//  if (write_test) 
+//  {
+//    // extracting array_name for proper naming in output
+//    std::string array_name =  mshphys->getPointData(array_id).getName(); 
+//    if (method.compare("grad") == 0)
+//    {
+//      std::vector<double> result = mshphys->ComputeL2GradAtAllCells(array_id);
+//      array_name.insert(0,"L2Grad_");
+//      mshphys->setCellDataArray(&array_name[0u], 1, result); 
+//      array_name.append("AtCell.vtu");
+//      mshphys->write((char*) &array_name[0u]);
+//      std::ofstream outputStream("GradTest.txt");
+//      if (!outputStream.good())
+//      {
+//        std::cout << "error opening GradTest.txt" << std::endl;
+//        exit(2);
+//      }
+//      for (int i = 0; i < result.size(); ++i)
+//        outputStream << result[i] << std::endl;
+//    }
+//    else if (method.compare("val") == 0)
+//    {
+//      std::vector<double> result = mshphys->ComputeL2ValAtAllCells(array_id);
+//      array_name.insert(0,"L2Val_");
+//      mshphys->setCellDataArray(&array_name[0u], 1, result); 
+//      array_name.append("AtCell.vtu");
+//      mshphys->write((char*) &array_name[0u]);
+//      std::ofstream outputStream("ValTest.txt");
+//      if (!outputStream.good())
+//      {
+//        std::cout << "error opening GradTest.txt" << std::endl;
+//        exit(2);
+//      }
+//      for (int i = 0; i < result.size(); ++i)
+//        outputStream << result[i] << std::endl;
+//    }
+//    else
+//    {
+//      std::cout << "method must be \"val\" or \"grad\" " << std::endl;
+//      exit(2);
+//    }
+//  }
+//
+//  if (bSF) delete bSF;
+//  if (mshphys) delete mshphys;
   netgenInterface* tmp = new netgenInterface();
   //tmp->createMeshFromSTL("hinge.stl");   
   //tmp->exportToVTK("hinge.vtk"); 
   //Ng_SolutionData* tmp1;
   //Ng_InitSolutionData (tmp1);
-  tmp->importFromVTK("cube_notri.vtk");
+  tmp->importFromVTK(argv[1]);
+  
+  if(tmp) delete tmp;
+
   return 0;
 }
 

@@ -22,10 +22,20 @@ cp $NEMOSYS_TARBALL_PATH .
 tar zxf nemosys_tpls.tar.gz
 
 # build netgen
+#cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
+#tar xzf netgen-5.3.1.tar.gz
+#cd netgen-5.3.1
+#./configure --prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --exec-prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --with-tcl=/usr/lib/tcl8.5/ --with-tk=/usr/lib/tk8.5/ --with-togl=/usr/lib --enable-shared --enable-nglib
+#make
+#make install
+
+# build netgen
 cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
-tar xzf netgen-5.3.1.tar.gz
-cd netgen-5.3.1
-./configure --prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --exec-prefix=$NEMOSYS_DEPS_INSTALL_PATH/netgen/opt/netgen --with-tcl=/usr/lib/tcl8.5/ --with-tk=/usr/lib/tk8.5/ --with-togl=/usr/lib --enable-shared --enable-nglib
+tar xzf netgen-mesher-git.tar.gz
+cd netgen-mesher-git
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/netgen -DUSE_GUI=OFF ..
 make
 make install
 
