@@ -215,14 +215,17 @@ int main(int argc, char* argv[])
 //  if (bSF) delete bSF;
 //  if (mshphys) delete mshphys;
   netgenInterface* tmp = new netgenInterface();
-  //tmp->createMeshFromSTL("hinge.stl");   
-  //tmp->exportToVTK("hinge.vtk"); 
+  tmp->createMeshFromSTL("hinge.stl");   
+  tmp->exportToVTK("hinge.vtk");
+  netgenInterface* tmp1 = new netgenInterface(); 
+  tmp1->importFromVol("hinge.vol");
+  tmp1->exportToVTK("hinge1.vtk");
   //Ng_SolutionData* tmp1;
   //Ng_InitSolutionData (tmp1);
-  tmp->importFromVTK(argv[1]);
+ // tmp->importFromVTK(argv[1]);
   
   if(tmp) delete tmp;
-
+  if(tmp1) delete tmp1;
   return 0;
 }
 
