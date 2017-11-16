@@ -1,9 +1,9 @@
-// Nemosys
-#include <meshPhys.H>
-#include <netgenInterface.H>
 // stl
 #include <chrono>
-
+// Nemosys
+//#include <meshPhys.H>
+//#include <netgenInterface.H>
+#include<meshBase.H>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -56,6 +56,17 @@ private:
 
 int main(int argc, char* argv[])
 {
+
+  meshUser* user = new meshUser("converted.msh");
+  std::cout << user->getNumberOfPoints() << std::endl;
+  std::cout << user->getNumberOfCells() << std::endl;
+
+  user->printPoint(1000);
+  user->printCell(1000);
+
+  delete user;
+  //delete user; 
+
 //  // Check input
 //  if (argc < 7  && strcmp(argv[1], "Nek")) 
 //  {
@@ -214,7 +225,8 @@ int main(int argc, char* argv[])
 //
 //  if (bSF) delete bSF;
 //  if (mshphys) delete mshphys;
-  netgenInterface* tmp = new netgenInterface();
+
+/*  netgenInterface* tmp = new netgenInterface();
   tmp->createMeshFromSTL("hinge.stl");   
   tmp->exportToVTK("hinge.vtk");
   netgenInterface* tmp1 = new netgenInterface(); 
@@ -225,7 +237,8 @@ int main(int argc, char* argv[])
  // tmp->importFromVTK(argv[1]);
   
   if(tmp) delete tmp;
-  if(tmp1) delete tmp1;
+  if(tmp1) delete tmp1;*/
+
   return 0;
 }
 
