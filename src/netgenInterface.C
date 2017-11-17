@@ -183,9 +183,9 @@ int netgenInterface::exportToVTK(char* fname)
 
   vtk << "\nCELL_TYPES " << numCells+numSurfCells << std::endl;
   for (int i = 0; i < numSurfCells; ++i)
-    vtk << VTK_TRIANGLE << std::endl; 
+    vtk << 5 << std::endl; 
   for (int i = 0; i < numCells; ++i)
-    vtk << VTK_TETRA << std::endl;
+    vtk << 10 << std::endl;
   return 0;
 }
 
