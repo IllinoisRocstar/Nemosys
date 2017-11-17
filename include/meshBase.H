@@ -36,6 +36,7 @@
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
+#include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
 #include <baseInterp.H>
@@ -50,11 +51,8 @@
 #include <GmshEntities.h>
 #include <Generator.h>
 
-//netgen
-namespace nglib
-{
-  #include <nglib.h>
-} 
+// other
+#include<netgenInterface.H>
 
 // stl
 #include <functional>
@@ -73,7 +71,7 @@ class meshBase
 
   // constructors and destructors
   public:
-    static meshBase* Create(std::string fname);
+
    
     meshBase():numPoints(0),numCells(0),dataSet(NULL)
     {
@@ -84,7 +82,20 @@ class meshBase
       if(dataSet) dataSet->Delete();
       std::cout << "meshBase destroyed" << std::endl;
     }
-
+  
+  // factory methods (kind of like 'virtual constructors')
+  // these functions return objects derived from meshBase
+  public:
+    // construct vtkMesh from filename
+    // this method calls the other factor methods based on extension
+    static meshBase* Create(std::string fname); 
+    // construct vtkMesh from gmsh msh file
+    static meshBase* exportGmshToVtk(std::string fname);
+    // construct vtkMesh from netgen vol file
+    static meshBase* exportVolToVtk(std::string fname);
+    // construct vtkMesh from stl file through netgen (stl->vol->vtk)
+    static meshBase* exportStlToVtk(std::string fname); 
+  
   // access
   public:
     // get point with id
@@ -92,16 +103,14 @@ class meshBase
     // get cell with id : returns point indices and respective coordinates
     virtual std::map<int, std::vector<double>> getCell(int id){};
    
-  // information
+  // diagnostics
   public:
-    //virtual void report() = 0; 
+    virtual void report(char* fname){}; 
     int getNumberOfPoints() {return numPoints;}
     int getNumberOfCells() { return numCells;}
+    virtual void write(std::string fname){};
 
-  // conversion
-  public:
-    static std::pair<int,int> exportGmshToVtk(std::string fname);
-    int exportVolToVtk();
+
 
   protected:
     int numPoints;
@@ -112,7 +121,7 @@ class meshBase
 class meshUser
 {
   public:
-    meshUser(std::string fname): mesh()
+    meshUser(std::string _fname): mesh(),fname(_fname)
     {
       mesh = meshBase::Create(fname);
       std::cout << "user constructed" << std::endl;
@@ -134,6 +143,8 @@ class meshUser
       int getNumberOfPoints(); 
       // get number of cells in mesh
       int getNumberOfCells();
+      // generate a report of the mesh
+      void report();      
 
     // access
     public:
@@ -151,6 +162,7 @@ class meshUser
 
   private:
     meshBase* mesh;
+    std::string fname;
 
 };
 

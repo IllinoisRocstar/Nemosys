@@ -12,20 +12,23 @@ meshBase* meshBase::Create(std::string fname)
   
   else if (fname.find(".msh") != -1)
   {
-    // convert msh to vtk, trim fname and load
-    exportGmshToVtk(fname);
-    vtkMesh* vtkmesh = new vtkMesh(&(trim_fname(fname,".vtk"))[0u]);
-    return vtkmesh;
+    std::cout << "Detected file in GMSH format" << std::endl;
+    std::cout << "Exporting to VTK ...." << std::endl;
+    return exportGmshToVtk(fname);
   }
 
   else if (fname.find(".vol") != -1)
   {
-    // convert vol to vtk, trim fname and load
+    std::cout << "Detected file in Netgen .vol format" << std::endl;
+    std::cout << "Exporting to VTK ...." << std::endl;
+    return exportVolToVtk(fname);
   }
 
   else if (fname.find(".stl") != -1)
   {
-    // convert stl to vol to vtk, trim fname and load
+    std::cout << "Detected file in STL format" << std::endl;
+    std::cout << "Generating volume mesh with netgen and exporting to VTK ...." << std::endl;
+    return exportStlToVtk(fname);
   }
 
   else
@@ -49,6 +52,11 @@ int meshUser::getNumberOfPoints()
 int meshUser::getNumberOfCells() 
 { 
   return mesh->getNumberOfCells(); 
+}
+
+void meshUser::report()
+{
+  mesh->report(&fname[0u]);
 }
 
 // get point with id
@@ -83,8 +91,7 @@ void meshUser::printCell(int id)
   }
 }
 
-
-std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
+meshBase* meshBase::exportGmshToVtk(std::string fname)
 {
   std::ifstream meshStream(fname);
   if (!meshStream.good())
@@ -102,8 +109,8 @@ std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
     exit(1);
   }
 
-  vtk << "# vtk DataFile Version 2.0" << std::endl 
-      << "Converted From Netgen" << std::endl
+  vtk << "# vtk DataFile Version 3.0" << std::endl 
+      << "Converted From GMSH MSH" << std::endl
       << "ASCII" << std::endl
       << "DATASET UNSTRUCTURED_GRID" << std::endl; 
 
@@ -111,6 +118,10 @@ std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
   int numPoints,numCells, numTri, numTet; 
   numTri = numTet = 0;
   std::vector<std::vector<int>> cells;
+  std::vector<std::vector<std::vector<double>>> pointData;
+  std::vector<std::vector<std::vector<double>>> cellData;
+  std::vector<std::string> pointDataNames;
+  std::vector<std::string> cellDataNames;
   while (getline(meshStream, line))
   {
     if (line.find("$Nodes") != -1)
@@ -175,7 +186,130 @@ std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
           exit(1);
         }
       }
-      break;
+    }
+  
+    if (line.find("$NodeData") != -1)
+    {
+      std::vector<std::vector<double>> currPointData;
+      getline(meshStream,line); // moving to num_string_tags
+      std::stringstream ss(line);
+      int num_string_tags;
+      ss >> num_string_tags;
+      std::string dataname;
+      for (int i = 0; i < num_string_tags; ++i)
+      { 
+        getline(meshStream,line); // get string tag
+        if (i == 0)
+        {
+          std::stringstream ss(line);
+          ss >> dataname;
+        }
+      }
+      dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+      pointDataNames.push_back(dataname);
+      getline(meshStream,line); // moving to num_real_tags
+      std::stringstream ss1(line);
+      int num_real_tags;
+      ss1 >> num_real_tags;
+      for (int i = 0; i < num_real_tags; ++i)
+        getline(meshStream,line);
+ 
+      getline(meshStream,line); // moving to num_int_tags
+      std::stringstream ss2(line);
+      int num_int_tags;
+      ss2 >> num_int_tags;
+      int dt,dim,numFields,tmp;
+      for (int i = 0; i < num_int_tags; ++i)
+      {   
+        getline(meshStream,line); // get int tag
+        std::stringstream ss(line);
+        if (i == 0)
+          ss >> dt;
+        else if (i == 1)
+          ss >> dim;
+        else if (i == 2)
+          ss >> numFields;
+        else
+          ss >> tmp;
+      }
+      for (int i = 0; i < numFields; ++i) 
+      { 
+        std::vector<double> data(dim);
+        int id;
+        double val;
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> id;
+        for (int j = 0; j < dim; ++j)
+        {
+          ss >> val;
+          data[j] = val;
+        }
+        currPointData.push_back(data);
+      }
+      pointData.push_back(currPointData);
+    }
+    
+    if (line.find("$ElementData") != -1)
+    {
+      std::vector<std::vector<double>> currCellData;
+      getline(meshStream,line); // moving to num_string_tags
+      std::stringstream ss(line);
+      int num_string_tags;
+      ss >> num_string_tags;
+      std::string dataname;
+      for (int i = 0; i < num_string_tags; ++i)
+      { 
+        getline(meshStream,line); // get string tag
+        if (i == 0)
+        {
+          std::stringstream ss(line);
+          ss >> dataname;
+        }
+      }
+      dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+      cellDataNames.push_back(dataname);
+      getline(meshStream,line); // moving to num_real_tags
+      std::stringstream ss1(line);
+      int num_real_tags;
+      ss1 >> num_real_tags;
+      for (int i = 0; i < num_real_tags; ++i)
+        getline(meshStream,line);
+ 
+      getline(meshStream,line); // moving to num_int_tags
+      std::stringstream ss2(line);
+      int num_int_tags;
+      ss2 >> num_int_tags;
+      int dt,dim,numFields,tmp;
+      for (int i = 0; i < num_int_tags; ++i)
+      {   
+        getline(meshStream,line); // get int tag
+        std::stringstream ss(line);
+        if (i == 0)
+          ss >> dt;
+        else if (i == 1)
+          ss >> dim;
+        else if (i == 2)
+          ss >> numFields;
+        else
+          ss >> tmp;
+      }
+      for (int i = 0; i < numFields; ++i) 
+      { 
+        std::vector<double> data(dim);
+        int id;
+        double val;
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> id;
+        for (int j = 0; j < dim; ++j)
+        {
+          ss >> val;
+          data[j] = val;
+        }
+        currCellData.push_back(data);
+      }
+      cellData.push_back(currCellData);
     }
   }  
   
@@ -192,7 +326,6 @@ std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
     vtk << std::endl; 
   }
   
-  
   vtk << "\nCELL_TYPES " << cells.size() << std::endl;
   for (int i = 0; i < cells.size(); ++i)
   { 
@@ -203,12 +336,46 @@ std::pair<int,int> meshBase::exportGmshToVtk(std::string fname)
       vtk << VTK_TETRA << std::endl;
   }
 
-  //TODO: ADD POINT AND CELL DATA AS WELL 
- 
-  return std::pair<int,int> (numPoints,numTri+numTet);
+  vtk.close();
+  vtkMesh* vtkmesh = new vtkMesh(&(trim_fname(fname,".vtk"))[0u]);
+  for (int i = 0; i < pointData.size(); ++i)
+    vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
+  for (int i = 0; i < cellData.size(); ++i)
+    vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
+
+  return vtkmesh;
 
 }
 
+meshBase* meshBase::exportVolToVtk(std::string fname)
+{
+  netgenInterface* tmp = new netgenInterface();
+  int status = tmp->importFromVol(&fname[0u]);
+  delete tmp;
+  if (!status)
+  {
+    char* name = &(trim_fname(fname,".vtk"))[0u];
+    tmp->exportToVTK(name);
+    vtkMesh* vtkmesh = new vtkMesh(name);
+    return vtkmesh;
+  }
+  else
+  {
+    std::cout << "error converting file to vtk" << std::endl;
+    exit(1);
+  }
+}
+
+meshBase* meshBase::exportStlToVtk(std::string fname)
+{
+  netgenInterface* tmp = new netgenInterface();
+  tmp->createMeshFromSTL(&fname[0u]);
+  char* name = &(trim_fname(fname,".vtk"))[0u];
+  tmp->exportToVTK(name);
+  delete tmp;
+  vtkMesh* vtkmesh = new vtkMesh(name);
+  return vtkmesh;
+}
 
 
 // --------------- AUXILIARY FUNCTIONS ----------------//

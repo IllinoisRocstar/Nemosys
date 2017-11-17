@@ -189,7 +189,7 @@ int netgenInterface::exportToVTK(char* fname)
   return 0;
 }
 
-int netgenInterface::importFromVTK(char* fname)
+/*int netgenInterface::importFromVTK(char* fname)
 {
   if (numPoints || numCells)
   {
@@ -266,7 +266,7 @@ int netgenInterface::importFromVTK(char* fname)
 
   delete vtkMesh;  
   return 0;
-}
+}*/
 
   /* Default constructor for the Mesh Parameters class
 
