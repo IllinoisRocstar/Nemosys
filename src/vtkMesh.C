@@ -60,6 +60,15 @@ vtkMesh::vtkMesh(const char* fname)
   numPoints = dataSet->GetNumberOfPoints();
 }
 
+void vtkMesh::write(std::string fname)
+{
+  vtkSmartPointer<vtkDataSetWriter> writer = vtkSmartPointer<vtkDataSetWriter>::New();
+  writer->SetInputData(dataSet);
+  writer->SetFileName(fname.c_str());
+  writer->Write();
+}
+
+
 // get point with id
 std::vector<double> vtkMesh::getPoint(int id)
 {
@@ -92,5 +101,110 @@ std::map<int, std::vector<double>> vtkMesh::getCell(int id)
     exit(1);
   }
 }
+
+void vtkMesh::report(char* fname)
+{
+  if (!dataSet)
+  {
+    std::cout << "dataSet has not been populated!" << std::endl;
+    exit(1);
+  }
+   
+  typedef std::map<int,int> CellContainer;
+  // Generate a report
+  std::cout << "Processing the dataset generated from " << fname << std::endl
+     << " dataSet contains a " 
+     << dataSet->GetClassName()
+     <<  " that has " << numCells << " cells"
+     << " and " << numPoints << " points." << std::endl;
+
+  CellContainer cellMap;
+  for (int i = 0; i < numCells; i++)
+  {
+    cellMap[dataSet->GetCellType(i)]++;
+  }
+
+  CellContainer::const_iterator it = cellMap.begin();
+  while (it != cellMap.end())
+  {
+    std::cout << "\tCell type "
+              << vtkCellTypes::GetClassNameFromTypeId(it->first)
+              << " occurs " << it->second << " times." << std::endl;
+    ++it;
+  }
+
+  // Now check for point data
+  vtkPointData *pd = dataSet->GetPointData();
+  if (pd)
+  {
+    std::cout << " contains point data with "
+         << pd->GetNumberOfArrays()
+         << " arrays." << std::endl;
+    for (int i = 0; i < pd->GetNumberOfArrays(); i++)
+    {
+      std::cout << "\tArray " << i << " is named "
+                << (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL") ;
+      vtkDataArray* da = pd->GetArray(i);
+      std::cout << " with " << da->GetNumberOfTuples() 
+                << " values. " << std::endl;
+    }
+  }
+  // Now check for cell data
+  vtkCellData *cd = dataSet->GetCellData();
+  if (cd)
+  {
+    std::cout << " contains cell data with " << cd->GetNumberOfArrays()
+              << " arrays." << std::endl;
+    for (int i = 0; i < cd->GetNumberOfArrays(); i++)
+    {
+      std::cout << "\tArray " << i << " is named "
+                << (cd->GetArrayName(i) ? cd->GetArrayName(i) : "NULL") ;
+      vtkDataArray* da = cd->GetArray(i);
+      std::cout << " with " << da->GetNumberOfTuples() 
+                << " values. " << std::endl;
+    }
+  }
+  // Now check for field data
+  if (dataSet->GetFieldData())
+  {
+    std::cout << " contains field data with "
+              << dataSet->GetFieldData()->GetNumberOfArrays()
+              << " arrays." << std::endl;
+    for (int i = 0; i < dataSet->GetFieldData()->GetNumberOfArrays(); i++)
+    {
+      std::cout << "\tArray " << i
+                << " is named " << dataSet->GetFieldData()->GetArray(i)->GetName();
+      vtkDataArray* da = dataSet->GetFieldData()->GetArray(i);
+      std::cout << " with " << da->GetNumberOfTuples() 
+                << " values. " << std::endl;
+    }
+  }
+}
+
+
+void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
+{
+ vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+ da->SetName(name);
+ da->SetNumberOfComponents(data[0].size());
+ for(int i=0; i < numPoints; i++)
+   da->InsertNextTuple(&(data[i])[0]);
+ dataSet->GetPointData()->SetActiveScalars(name);
+ dataSet->GetPointData()->SetScalars(da);
+}
+
+void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>>& data)
+{
+ vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+ da->SetName(name);
+ da->SetNumberOfComponents(data[0].size());
+ for(int i=0; i < numCells; i++)
+   da->InsertNextTuple(&(data[i])[0]);
+ dataSet->GetPointData()->SetActiveScalars(name);
+ dataSet->GetPointData()->SetScalars(da);
+}
+
+
+
 
 
