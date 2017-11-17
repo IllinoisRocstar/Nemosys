@@ -53,6 +53,9 @@
 
 // other
 #include<netgenInterface.H>
+#include <AuxiliaryFunctions.H>
+
+#include <StlToVtk.H>
 
 // stl
 #include <functional>
@@ -93,7 +96,7 @@ class meshBase
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
-    // construct vtkMesh from stl file through netgen (stl->vol->vtk)
+    // construct vtkMesh surface from STL
     static meshBase* exportStlToVtk(std::string fname); 
   
   // access
@@ -169,7 +172,7 @@ class meshUser
 // Auxiliary Functions
 template<typename T>
 void printVec(const std::vector<T>& v);
-std::string trim_fname(std::string fname, std::string ext);
+//std::string trim_fname(std::string fname, std::string ext);
 
 
 #endif

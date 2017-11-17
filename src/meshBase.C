@@ -26,9 +26,9 @@ meshBase* meshBase::Create(std::string fname)
 
   else if (fname.find(".stl") != -1)
   {
-    std::cout << "Detected file in STL format" << std::endl;
-    std::cout << "Generating volume mesh with netgen and exporting to VTK ...." << std::endl;
-    return exportStlToVtk(fname);
+//    std::cout << "Detected file in STL format" << std::endl;
+//    std::cout << "Generating volume mesh with netgen and exporting to VTK ...." << std::endl;
+//    return exportStlToVtk(fname);
   }
 
   else
@@ -366,7 +366,7 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   }
 }
 
-meshBase* meshBase::exportStlToVtk(std::string fname)
+/*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
   netgenInterface* tmp = new netgenInterface();
   tmp->createMeshFromSTL(&fname[0u]);
@@ -375,8 +375,9 @@ meshBase* meshBase::exportStlToVtk(std::string fname)
   delete tmp;
   vtkMesh* vtkmesh = new vtkMesh(name);
   return vtkmesh;
-}
-
+}*/
+meshBase* meshBase::exportStlToVtk(std::string fname)
+{}
 
 // --------------- AUXILIARY FUNCTIONS ----------------//
 template<typename T>
@@ -405,4 +406,4 @@ void printVec(const std::vector<T>& v)
     std::cout << "Error finding file extension for " << fname << std::endl;
     exit(1);
   }
-} */ 
+} */
