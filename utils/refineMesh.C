@@ -57,12 +57,12 @@ private:
 int main(int argc, char* argv[])
 {
 
-  meshUser* user = new meshUser("converted.msh");
+  meshUser* user = new meshUser("hinge.stl");
   std::cout << user->getNumberOfPoints() << std::endl;
   std::cout << user->getNumberOfCells() << std::endl;
-
-  user->printPoint(1000);
-  user->printCell(1000);
+  user->report(); 
+  user->printPoint(50);
+  user->printCell(50);
 
   delete user;
   //delete user; 
