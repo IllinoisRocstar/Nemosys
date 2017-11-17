@@ -3,6 +3,7 @@
 
 // Nemosys
 #include <vtkAnalyzer.H>
+#include <AuxiliaryFunctions.H>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -138,57 +139,5 @@ class meshPhys: public vtkAnalyzer
       
 };
 
-//---------------------Auxiliarry Functions---------------------------------//
-
-// flattens vector of vectors
-template <typename T>
-std::vector<T> flatten(const std::vector<std::vector<T>>& v);
-
-// folds vector into vector of vectors
-template <typename T>
-std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim);
-
-// adds two vectors
-template <typename T>
-std::vector<T> operator+(const std::vector<T>& x, 
-                         const std::vector<T>& y);
-
-// compute L2 norm of vec
-double L2_Norm(const std::vector<double>& x);
-
-// computes reciprocal of argument
-template <typename T>
-T reciprocal(T x);
-
-// computes reciprocal of vector elements, in place
-template <typename T>
-void reciprocal_vec(std::vector<T>& x);
-
-// find minmax of vector, excluding inf 
-std::vector<double> getMinMax(const std::vector<double>& x);
-
-// scales x from range [xmin, xmax] to within range [ymin, ymax]
-// if x is inf, the scaled value will be ymax
-double scale_to_range(double x, const std::vector<double>& xminmax, 
-                      const std::vector<double>& yminmax);
-
-// scales each number in vector in range [xmin, xmax] to [ymin,ymax]
-void scale_vec_to_range(std::vector<double>& x, 
-                        const std::vector<double>& xminmax,
-                        const std::vector<double>& yminmax);
-
-// multiplies vector by scalar
-template <typename T>
-std::vector<T> operator*(T a, std::vector<T>& x);
-
-// get average and stdev of values
-std::vector<double> getMeanStdev(std::vector<double>& x);
-
-// generates boolean array with 1 if value >= tol, 0 otherwise
-std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
-
-// string trimming for consistent file names 
-std::string trim_fname(std::string name, std::string ext);
 //-------------------------------------------------------------------------//
-
 #endif

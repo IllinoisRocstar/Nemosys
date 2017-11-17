@@ -1,7 +1,6 @@
 #ifndef netgenInterface_H
 #define netgenInterface_H
-// Nemosys
-#include <meshBase.H>
+#include <cstdlib>
 // third party
 namespace nglib
 {

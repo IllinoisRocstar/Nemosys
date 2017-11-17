@@ -175,7 +175,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
-                 src/meshBase.C src/vtkMesh.C)
+                 src/meshBase.C src/vtkMesh.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
@@ -196,14 +196,6 @@ ELSE()
   ADD_LIBRARY(sphere ${SPHERE_SRCS})
 ENDIF()
 INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
-
-# buid mesquite
-#IF(NOT BUILD_STATIC)
-#  ADD_LIBRARY(mesquite SHARED ${MESQUITE_SRCS})
-#ELSE()
-#  ADD_LIBRARY(mesquite ${MESQUITE_SRCS})
-#ENDIF()
-#INSTALL(TARGETS mesquite LIBRARY DESTINATION lib)
 
 # Build r8 and rbf library
 IF(NOT BUILD_STATIC)
@@ -261,7 +253,7 @@ IF(BUILD_UTILS)
 
   #refineMesh utility
   ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-  TARGET_LINK_LIBRARIES(refineMesh Nemosys ${NETGEN_LIB})
+  TARGET_LINK_LIBRARIES(refineMesh Nemosys)
   INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
 
   # optimze utility

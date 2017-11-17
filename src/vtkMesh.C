@@ -1,4 +1,3 @@
-#include<meshBase.H>
 #include<vtkMesh.H>
 
 template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
