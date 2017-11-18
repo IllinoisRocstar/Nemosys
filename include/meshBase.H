@@ -34,6 +34,7 @@
 #include <vtkXMLHyperOctreeWriter.h>
 #include <vtkXMLCompositeDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
+#include <vtkXMLImageDataWriter.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkDataSetWriter.h>
@@ -68,6 +69,12 @@
 #include <cstdlib>
 #include <algorithm>
 
+//TODO: This class is responsible for reading in a *mesh* file and exporting it 
+//      to a vtkMesh object. In this way, we have access to the methods provided
+//      through the vtkDataSet- the core member of a vtkMesh object.
+  
+//      Given a cad file, surface or volume mesh generation will be delegated to 
+//      a separate mesh gen class
 
 class meshBase
 {
@@ -97,8 +104,8 @@ class meshBase
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
     // construct vtkMesh surface from STL
-    static meshBase* exportStlToVtk(std::string fname); 
-  
+   // static meshBase* exportStlToVtk(std::string fname); 
+    
   // access
   public:
     // get point with id
@@ -111,9 +118,10 @@ class meshBase
     virtual void report(char* fname){}; 
     int getNumberOfPoints() {return numPoints;}
     int getNumberOfCells() { return numCells;}
-    virtual void write(std::string fname){};
 
-
+  //write
+  public:
+    virtual void write(std::string fname, std::string extension){};
 
   protected:
     int numPoints;
@@ -127,6 +135,15 @@ class meshUser
     meshUser(std::string _fname): mesh(),fname(_fname)
     {
       mesh = meshBase::Create(fname);
+      std::string ext = find_ext(fname);
+      // setting write extension for proper vtk file type output
+      write_ext = ext; 
+      if (ext == ".vtk" || ext == ".vol") // default is vtu
+      {
+        std::string new_ext(".vtu");
+        write_ext = new_ext;
+      }  
+      
       std::cout << "user constructed" << std::endl;
     }
     
@@ -163,10 +180,14 @@ class meshUser
       // print point ids and coordinates of cell with id
       void printCell(int id);
 
+    // write
+    public:
+      void write(); 
+
   private:
     meshBase* mesh;
     std::string fname;
-
+    std::string write_ext;
 };
 
 // Auxiliary Functions

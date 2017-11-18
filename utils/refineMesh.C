@@ -4,7 +4,6 @@
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
 #include<meshBase.H>
-#include<StlToVtk.H>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -57,17 +56,15 @@ private:
 
 int main(int argc, char* argv[])
 {
-
-  //meshUser* user = new meshUser("hinge.stl");
-  //std::cout << user->getNumberOfPoints() << std::endl;
-  //std::cout << user->getNumberOfCells() << std::endl;
-  //user->report(); 
-  //user->printPoint(50);
-  //user->printCell(50);
-
-  //delete user;
-  exportStlToVtk(argv[1]); 
-  //delete user; 
+  std::string fname(argv[1]);
+  meshUser* user1 = new meshUser(fname);
+  std::cout << user1->getNumberOfPoints() << std::endl;
+  std::cout << user1->getNumberOfCells() << std::endl;
+  user1->report(); 
+  user1->printPoint(50);
+  user1->printCell(50);
+  user1->write();
+  if (user1) delete user1;
 
 //  // Check input
 //  if (argc < 7  && strcmp(argv[1], "Nek")) 
