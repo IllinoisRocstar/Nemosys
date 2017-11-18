@@ -91,6 +91,11 @@ void meshUser::printCell(int id)
   }
 }
 
+void meshUser::write()
+{
+  mesh->write(&(trim_fname(fname,write_ext))[0u], write_ext);
+}
+
 meshBase* meshBase::exportGmshToVtk(std::string fname)
 {
   std::ifstream meshStream(fname);
@@ -350,21 +355,24 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
   netgenInterface* tmp = new netgenInterface();
-  int status = tmp->importFromVol(&fname[0u]);
-  delete tmp;
+  char* name = &fname[0u];
+  int status = tmp->importFromVol(name);
   if (!status)
   {
     char* name = &(trim_fname(fname,".vtk"))[0u];
     tmp->exportToVTK(name);
     vtkMesh* vtkmesh = new vtkMesh(name);
+    if (tmp) delete tmp;
     return vtkmesh;
   }
   else
   {
+    if (tmp) delete tmp;
     std::cout << "error converting file to vtk" << std::endl;
     exit(1);
   }
 }
+
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
@@ -376,8 +384,6 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   vtkMesh* vtkmesh = new vtkMesh(name);
   return vtkmesh;
 }*/
-meshBase* meshBase::exportStlToVtk(std::string fname)
-{}
 
 // --------------- AUXILIARY FUNCTIONS ----------------//
 template<typename T>
@@ -388,22 +394,3 @@ void printVec(const std::vector<T>& v)
   std::cout << std::endl;
 }
 
-// string trimming for consistent file names 
-/*std::string trim_fname(std::string fname, std::string ext)
-{
-  size_t beg = 0;
-  size_t end = fname.find(".");
-  std::string name;
-  if (end != -1)
-  {
-    name = fname.substr(beg,end);
-    name.append(ext);
-    return name;
-  }
-
-  else 
-  {
-    std::cout << "Error finding file extension for " << fname << std::endl;
-    exit(1);
-  }
-} */
