@@ -61,6 +61,8 @@ inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
 
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
+// find file extension
+inline std::string find_ext(std::string fname);
 //-------------------------------------------------------------------------//
 
 
@@ -227,7 +229,7 @@ std::vector<int> cellsToRefine(std::vector<double>& values, double tol)
 std::string trim_fname(std::string fname, std::string ext)
 {
   size_t beg = 0;
-  size_t end = fname.find(".");
+  size_t end = fname.find_last_of('.');
   std::string name;
   if (end != -1)
   {
@@ -243,4 +245,19 @@ std::string trim_fname(std::string fname, std::string ext)
   }
 }  
 
+// find file extension
+inline std::string find_ext(std::string fname)
+{
+  size_t last = fname.find_last_of('.');
+  if (last != -1)
+  {
+    return fname.substr(last);  
+  }
+  else
+  {
+    std::cout << "Error finding file extension for " << fname << std::endl;
+    exit(1);
+  }
+
+}
 #endif

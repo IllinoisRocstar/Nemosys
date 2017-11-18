@@ -24,7 +24,7 @@ class vtkMesh : public meshBase
   // diagnostics
   public:
     void report(char* fname);
-    void write(std::string fname); 
+    void write(std::string fname, std::string extension); 
   
   // set point and cell data
   public:

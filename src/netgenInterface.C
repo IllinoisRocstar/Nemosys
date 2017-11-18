@@ -127,7 +127,6 @@ int netgenInterface::exportToVTK(char* fname)
     std::cout << "Mesh has no points or no cells!" << std::endl;
     exit(1);
   }
-   
  
   std::ofstream vtk(fname);
 
@@ -136,6 +135,7 @@ int netgenInterface::exportToVTK(char* fname)
     std::cout << "Error opening: " << fname << std::endl;
     exit(1);
   }
+
 
   vtk << "# vtk DataFile Version 2.0" << std::endl 
       << "Converted From Netgen" << std::endl

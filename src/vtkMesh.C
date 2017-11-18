@@ -10,6 +10,37 @@ template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
   return vtkDataSet::SafeDownCast(reader->GetOutput());
 }
 
+template<class TWriter> void writeVTFile(std::string fname, vtkDataSet* dataSet)
+{
+  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
+  Writer->SetFileName(&fname[0u]);
+  Writer->SetInputData(dataSet);
+  Writer->Write();
+}
+
+void vtkMesh::write(std::string fname, std::string extension)
+{
+  if (!dataSet)
+  {
+    std::cout << "No dataSet to write!" << std::endl;
+    exit(1);
+  } 
+ 
+  if (extension == ".vtp")
+    writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
+  else if (extension == ".vts")
+    writeVTFile<vtkXMLStructuredGridWriter> (fname, dataSet);
+  else if (extension == ".vtr")
+    writeVTFile<vtkXMLRectilinearGridWriter> (fname,dataSet);
+  else if (extension == ".vti")
+    writeVTFile<vtkXMLImageDataWriter> (fname, dataSet);
+  else if (extension == ".vto")
+    writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
+  else
+    writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
+} 
+
+
 vtkMesh::vtkMesh(const char* fname)
 {
   std::string extension = vtksys::SystemTools::GetFilenameLastExtension(fname);
@@ -58,15 +89,6 @@ vtkMesh::vtkMesh(const char* fname)
   numCells = dataSet->GetNumberOfCells();
   numPoints = dataSet->GetNumberOfPoints();
 }
-
-void vtkMesh::write(std::string fname)
-{
-  vtkSmartPointer<vtkDataSetWriter> writer = vtkSmartPointer<vtkDataSetWriter>::New();
-  writer->SetInputData(dataSet);
-  writer->SetFileName(fname.c_str());
-  writer->Write();
-}
-
 
 // get point with id
 std::vector<double> vtkMesh::getPoint(int id)
