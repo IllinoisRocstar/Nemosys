@@ -66,9 +66,6 @@ int meshNetgen::createMeshFromSTL(char* fname)
   ne = Ng_GetNE(mesh);
   cout << "Elements: " << ne << endl;
 
-
-
-
   // refinement without geomety adaption:
   // Ng_Uniform_Refinement (mesh);
 
