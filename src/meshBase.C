@@ -51,6 +51,7 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
     if(!status) 
     {
       std::string newname = trim_fname(fname,".vol");
+      std::cout << fname << " " << meshEngine << " " << newname << std::endl;
       return exportVolToVtk(newname);    
       
     }
@@ -387,6 +388,7 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
     std::cout << "Could not load " << fname << " into netgen" << std::endl;
     exit(1); 
   } 
+
 
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
