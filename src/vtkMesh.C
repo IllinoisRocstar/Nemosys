@@ -130,7 +130,7 @@ void vtkMesh::report(char* fname)
     std::cout << "dataSet has not been populated!" << std::endl;
     exit(1);
   }
-   
+
   typedef std::map<int,int> CellContainer;
   // Generate a report
   std::cout << "Processing the dataset generated from " << fname << std::endl
@@ -221,8 +221,8 @@ void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>
  da->SetNumberOfComponents(data[0].size());
  for(int i=0; i < numCells; i++)
    da->InsertNextTuple(&(data[i])[0]);
- dataSet->GetPointData()->SetActiveScalars(name);
- dataSet->GetPointData()->SetScalars(da);
+ dataSet->GetCellData()->SetActiveScalars(name);
+ dataSet->GetCellData()->SetScalars(da);
 }
 
 

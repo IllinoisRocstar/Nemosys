@@ -7,7 +7,8 @@ class vtkMesh : public meshBase
 {
   // constructor and destructor
   public:
-
+    
+    vtkMesh(){};
     vtkMesh(const char* fname);
     ~vtkMesh()
     {
