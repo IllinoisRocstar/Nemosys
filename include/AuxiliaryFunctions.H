@@ -63,6 +63,10 @@ inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
 inline std::string trim_fname(std::string name, std::string ext);
 // find file extension
 inline std::string find_ext(std::string fname);
+
+// print a vector
+template<typename T>
+void printVec(const std::vector<T>& v);
 //-------------------------------------------------------------------------//
 
 
@@ -259,5 +263,13 @@ inline std::string find_ext(std::string fname)
     exit(1);
   }
 
+}
+// print vector
+template<typename T>
+void printVec(const std::vector<T>& v)
+{
+  for (int i = 0; i < v.size(); ++i)
+    std::cout << v[i] << " ";
+  std::cout << std::endl;
 }
 #endif
