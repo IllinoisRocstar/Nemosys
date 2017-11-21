@@ -4,6 +4,7 @@
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
 #include<meshBase.H>
+#include<vtkAnalyzer.H>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -56,8 +57,11 @@ private:
 
 int main(int argc, char* argv[])
 {
-  std::string fname(argv[1]);
-  meshUser* user1 = new meshUser(fname);
+  std::string fname = argv[1];
+  std::string netgen = "netgen";
+  //meshUser* user1 = new meshUser(fname);
+  meshUser* user1;
+  user1->generateMesh(fname,netgen);
   std::cout << user1->getNumberOfPoints() << std::endl;
   std::cout << user1->getNumberOfCells() << std::endl;
   user1->report(); 

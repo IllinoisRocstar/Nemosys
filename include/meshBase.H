@@ -52,11 +52,14 @@
 #include <GmshEntities.h>
 #include <Generator.h>
 
-// other
-#include<netgenInterface.H>
-#include <AuxiliaryFunctions.H>
+// netgen
+namespace nglib
+{
+  #include<nglib.h>
+}
 
-#include <StlToVtk.H>
+#include <AuxiliaryFunctions.H>
+#include <meshGen.H>
 
 // stl
 #include <functional>
@@ -92,8 +95,7 @@ class meshBase
   // constructors and destructors
   public:
 
-   
-    meshBase():numPoints(0),numCells(0),dataSet(NULL)
+   meshBase():numPoints(0),numCells(0),dataSet(NULL)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -113,8 +115,9 @@ class meshBase
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
-    // construct vtkMesh surface from STL
-   // static meshBase* exportStlToVtk(std::string fname); 
+    // generate volume mesh from stl
+    static meshBase* generateMesh(std::string fname, std::string meshEngine);    
+
     
   // access
   public:
@@ -142,13 +145,16 @@ class meshBase
 class meshUser
 {
   public:
+    
+    meshUser():mesh(){};
+
     meshUser(std::string _fname): mesh(),fname(_fname)
     {
       mesh = meshBase::Create(fname);
       std::string ext = find_ext(fname);
       // setting write extension for proper vtk file type output
       write_ext = ext; 
-      if (ext == ".vtk" || ext == ".vol") // default is vtu
+      if (ext == ".vtk" || ext == ".vol" || ext == ".msh") // default is vtu
       {
         std::string new_ext(".vtu");
         write_ext = new_ext;
@@ -156,6 +162,8 @@ class meshUser
       
       std::cout << "user constructed" << std::endl;
     }
+
+    int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
     
     ~meshUser()
     {
@@ -199,11 +207,6 @@ class meshUser
     std::string fname;
     std::string write_ext;
 };
-
-// Auxiliary Functions
-template<typename T>
-void printVec(const std::vector<T>& v);
-//std::string trim_fname(std::string fname, std::string ext);
 
 
 #endif

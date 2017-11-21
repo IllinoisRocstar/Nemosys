@@ -41,6 +41,38 @@ meshBase* meshBase::Create(std::string fname)
   
 }
 
+meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
+{
+  if (meshEngine == "netgen")
+  {
+    meshNetgen* generator = new meshNetgen();
+    int status = generator->createMeshFromSTL(&fname[0u]);
+    if (generator) delete generator;
+    if(!status) 
+    {
+      std::string newname = trim_fname(fname,".vol");
+      return exportVolToVtk(newname);    
+      
+    }
+  }
+}
+
+
+int meshUser::generateMesh(std::string filename, std::string meshEngine)
+{
+  if (filename.find(".stl") == -1)
+  {
+    std::cout << "Only CAD files in STL format are supported" << std::endl;
+    exit(1);
+  }
+  mesh = meshBase::generateMesh(filename,meshEngine);
+  write_ext.assign(".vtu");
+  fname.assign(trim_fname(filename,".vol"));
+  std::cout << "user constructed" << std::endl;
+  
+  return 0;
+
+}
 
 // get number of points in mesh
 int meshUser::getNumberOfPoints() 
@@ -105,28 +137,18 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     exit(1);
   }
 
-
-  std::ofstream vtk(trim_fname(fname,".vtk"));
-
-  if (!vtk.good())
-  {
-    std::cout << "Error opening: " << fname << std::endl;
-    exit(1);
-  }
-
-  vtk << "# vtk DataFile Version 3.0" << std::endl 
-      << "Converted From GMSH MSH" << std::endl
-      << "ASCII" << std::endl
-      << "DATASET UNSTRUCTURED_GRID" << std::endl; 
-
   std::string line;
-  int numPoints,numCells, numTri, numTet; 
-  numTri = numTet = 0;
+  int numPoints,numCells; 
   std::vector<std::vector<int>> cells;
   std::vector<std::vector<std::vector<double>>> pointData;
   std::vector<std::vector<std::vector<double>>> cellData;
   std::vector<std::string> pointDataNames;
   std::vector<std::string> cellDataNames;
+
+  // declare points to be pushed into dataSet_tmp
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  // declare dataSet_tmp which will be associated to output vtkMesh
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   while (getline(meshStream, line))
   {
     if (line.find("$Nodes") != -1)
@@ -134,16 +156,23 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       getline(meshStream,line);
       std::stringstream ss(line); 
       ss >> numPoints;
-      vtk << "POINTS " << numPoints << " double" << std::endl;
       int id;
       double x,y,z;
+      // allocate memory for points
+      points->SetNumberOfPoints(numPoints);
       for (int i = 0; i < numPoints; ++i)
       {
         getline(meshStream,line);
         std::stringstream ss(line);
         ss >> id >> x >> y >> z;
-        vtk << x << " " << y << " " << z << std::endl;          
+        double point[3];
+        point[0] = x; point[1] = y; point[2] = z;
+        // insert point i
+        points->SetPoint(i,point);     
       }
+      // inserting point array into dataSet_tmp
+      dataSet_tmp->SetPoints(points);
+
     }
  
 
@@ -153,15 +182,17 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
+      // allocate space for cell connectivities
+      dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i)
       {
         getline(meshStream, line);
         std::stringstream ss(line);
         ss >> id >> type >> numTags;
         std::vector<int> cellIds;
+        vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
         if (type == 2)
         {
-          numTri+=1;
           int tmp;
           for (int j = 0; j < numTags; ++j)
             ss >> tmp;
@@ -169,12 +200,15 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
           {
             ss >> tmp;
             cellIds.push_back(tmp);
-          } 
+            // insert connectivies for cell into cellIds container
+            vtkcellIds->InsertNextId(tmp-1);
+          }
+          // insert connectivies for triangle elements into dataSet 
+          dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds); 
           cells.push_back(cellIds);
         } 
         else if (type == 4)
         {
-          numTet+=1;
           int tmp;
           for (int j = 0; j < numTags; ++j)
             ss >> tmp;
@@ -182,7 +216,11 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
           {
             ss >> tmp;
             cellIds.push_back(tmp);
+            // insert connectivities for cell into cellids container
+            vtkcellIds->InsertNextId(tmp-1);
           } 
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
           cells.push_back(cellIds);
         }
         else
@@ -317,36 +355,20 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       cellData.push_back(currCellData);
     }
   }  
-  
-  vtk << "\nCELLS " << cells.size() << " " << numTri*4 + numTet*5 << std::endl;
-  for (int i = 0; i < cells.size(); ++i)
-  {
-    int size = cells[i].size();
-    if (size == 3)
-      vtk << 3 << " ";
-    else if (size == 4)
-      vtk << 4 << " ";
-    for (int j = 0; j < size; ++j)
-      vtk << cells[i][j] - 1 << " ";
-    vtk << std::endl; 
-  }
-  
-  vtk << "\nCELL_TYPES " << cells.size() << std::endl;
-  for (int i = 0; i < cells.size(); ++i)
-  { 
-    int size = cells[i].size();
-    if (size == 3)
-      vtk << VTK_TRIANGLE << std::endl; 
-    else if (size == 4)
-      vtk << VTK_TETRA << std::endl;
-  }
 
-  vtk.close();
-  vtkMesh* vtkmesh = new vtkMesh(&(trim_fname(fname,".vtk"))[0u]);
+  vtkMesh* vtkmesh = new vtkMesh();
+  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
+  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+  
   for (int i = 0; i < pointData.size(); ++i)
     vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
+ 
+
+  std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
 
@@ -354,24 +376,84 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
 
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
-  netgenInterface* tmp = new netgenInterface();
-  char* name = &fname[0u];
-  int status = tmp->importFromVol(name);
-  if (!status)
+  nglib::Ng_Mesh* Ngmesh;
+  nglib::Ng_Init();
+  Ngmesh = nglib::Ng_NewMesh();
+  
+  int status = nglib::Ng_MergeMesh(Ngmesh, &fname[0u]);
+  if (status)
   {
-    char* name = &(trim_fname(fname,".vtk"))[0u];
-    tmp->exportToVTK(name);
-    vtkMesh* vtkmesh = new vtkMesh(name);
-    if (tmp) delete tmp;
-    return vtkmesh;
-  }
-  else
+    std::cout << "Error: NetGen Returned: " << status << std::endl;
+    std::cout << "Could not load " << fname << " into netgen" << std::endl;
+    exit(1); 
+  } 
+
+  // declare points to be pushed into dataSet_tmp
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  // declare dataSet_tmp which will be associated to output vtkMesh
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  int numNgPoints = nglib::Ng_GetNP(Ngmesh);
+  int numSurfCells = nglib::Ng_GetNSE(Ngmesh); 
+  int numVolCells = nglib::Ng_GetNE(Ngmesh);
+
+  // allocate memory for points
+  points->SetNumberOfPoints(numNgPoints);
+  for (int i = 1; i <= numNgPoints; ++i)
   {
-    if (tmp) delete tmp;
-    std::cout << "error converting file to vtk" << std::endl;
-    exit(1);
+    double point[3];
+    nglib::Ng_GetPoint(Ngmesh,i,point);
+    // insert point i
+    points->SetPoint(i-1,point);     
   }
+  // inserting point array into dataSet_tmp
+  dataSet_tmp->SetPoints(points);
+
+  // allocating space for cell connectivities
+  dataSet_tmp->Allocate(numSurfCells + numVolCells);
+
+  for (int i = 1; i <= numSurfCells; ++i)
+  {
+    vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+    int tri[3];
+    nglib::Ng_GetSurfaceElement(Ngmesh,i,tri);  
+    for (int j = 0; j < 3; ++j)
+    {
+      // insert connectivies for cell into cellIds container
+      vtkcellIds->InsertNextId(tri[j]-1);
+    }
+    // insert connectivies for triangle elements into dataSet 
+    dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds); 
+  }
+
+  for (int i = 1; i <= numVolCells; ++i)
+  { 
+    vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+    int tet[4];
+    nglib::Ng_GetVolumeElement(Ngmesh, i, tet);
+    for (int j = 0; j < 4; ++j)
+    {
+      // insert connectivies for cell into cellIds container
+      vtkcellIds->InsertNextId(tet[j]-1);
+    }
+    // insert connectivies for triangle elements into dataSet 
+    dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds); 
+
+  }
+  
+  vtkMesh* vtkmesh = new vtkMesh();
+  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
+  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+
+  std::cout << "vtkMesh constructed" << std::endl;
+
+  if(Ngmesh) nglib::Ng_DeleteMesh(Ngmesh);
+  nglib::Ng_Exit();
+  return vtkmesh;
+  
 }
+
 
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
@@ -385,12 +467,5 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   return vtkmesh;
 }*/
 
-// --------------- AUXILIARY FUNCTIONS ----------------//
-template<typename T>
-void printVec(const std::vector<T>& v)
-{
-  for (int i = 0; i < v.size(); ++i)
-    std::cout << v[i] << " ";
-  std::cout << std::endl;
-}
+
 
