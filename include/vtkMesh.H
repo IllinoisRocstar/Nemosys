@@ -21,13 +21,16 @@ class vtkMesh : public meshBase
     std::vector<double> getPoint(int id);
     // get cell with id : returns point indices and respective coordinates
     std::map<int, std::vector<double>> getCell(int id);
-     
+	  // returns cells sharing point (topological search)
+	  std::vector<int> getCellsWithPoint(int pnt);
+ 
+ 
   // diagnostics
   public:
     void report(char* fname);
     void write(std::string fname, std::string extension); 
   
-  // set point and cell data
+  // set and get point and cell data
   public:
 
     void setPointDataArray(const char* name, std::vector<std::vector<double>>& data);

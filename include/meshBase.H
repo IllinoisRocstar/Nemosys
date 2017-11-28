@@ -58,8 +58,9 @@ namespace nglib
   #include<nglib.h>
 }
 
+// Nemosys
 #include <AuxiliaryFunctions.H>
-#include <meshGen.H>
+//#include <meshGen.H>
 
 // stl
 #include <functional>
@@ -95,7 +96,7 @@ class meshBase
   // constructors and destructors
   public:
 
-   meshBase():numPoints(0),numCells(0),dataSet(NULL)
+    meshBase():numPoints(0),numCells(0),dataSet(NULL)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -125,7 +126,17 @@ class meshBase
     virtual std::vector<double> getPoint(int id){};
     // get cell with id : returns point indices and respective coordinates
     virtual std::map<int, std::vector<double>> getCell(int id){};
-   
+    vtkDataSet* getDataSet(){ return dataSet; }
+	  // returns cells sharing point (topological search)
+	  virtual std::vector<int> getCellsWithPoint(int pnt){};
+    virtual void setPointDataArray(const char* name, 
+              std::vector<std::vector<double>>& data){};
+                          
+  // data transfer
+  public:
+    // transfer data from this mesh to target
+    int transfer(meshBase* target);
+ 
   // diagnostics
   public:
     virtual void report(char* fname){}; 
@@ -190,7 +201,15 @@ class meshUser
       std::vector<double> getPoint(int id);
       // get cell with id : returns point indices and respective coordinates
       std::map<int,std::vector<double>> getCell(int id); 
+      // get mesh object
+      meshBase* getMesh(){ return mesh; };
+
   
+    // data transfer
+    public:
+      int transfer(meshUser* target);
+
+
     // diagnostics
     public:
       // print coordinates of point with id
@@ -201,7 +220,7 @@ class meshUser
     // write
     public:
       void write(); 
-
+      void write(std::string fname);      
   private:
     meshBase* mesh;
     std::string fname;
