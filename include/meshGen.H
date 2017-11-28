@@ -3,6 +3,9 @@
 
 #include <meshBase.H>
 
+// TODO: Probably don't need base class. Separate meshGens (netgen, etc.)
+//       should be fine
+
 class meshGen 
 {
   public:

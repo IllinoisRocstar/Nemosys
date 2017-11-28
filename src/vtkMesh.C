@@ -202,6 +202,26 @@ void vtkMesh::report(char* fname)
   }
 }
 
+// search for pnt id in each cell and return common
+std::vector<int> vtkMesh::getCellsWithPoint(int pnt)
+{
+    
+  std::vector<int> commonCells;
+  for (int i = 0; i < numCells; ++i)
+  {
+    vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New(); 
+    dataSet->GetCellPoints(i, point_ids);
+    int numComponent = point_ids->GetNumberOfIds();
+    for (int j = 0; j < numComponent; ++j)
+    {
+      if (point_ids->GetId(j) == pnt)
+      {
+        commonCells.push_back(i);
+      }
+    }
+  }
+  return commonCells;  
+}
 
 void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
 {

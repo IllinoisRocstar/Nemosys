@@ -184,7 +184,7 @@ SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
 set(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}) 
-SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC ${MPI_CXX_COMPILE_FLAGS}" )
+SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 # Builiding libraries #########################################################
