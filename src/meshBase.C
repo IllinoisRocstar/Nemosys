@@ -1,6 +1,7 @@
-#include<meshBase.H>
-#include<vtkMesh.H>
-
+#include <meshBase.H>
+#include <vtkMesh.H>
+#include <meshGen.H>
+#include <Transfer.H>
 
 meshBase* meshBase::Create(std::string fname)
 {
@@ -124,9 +125,30 @@ void meshUser::printCell(int id)
   }
 }
 
+// write mesh to file
 void meshUser::write()
 {
   mesh->write(&(trim_fname(fname,write_ext))[0u], write_ext);
+}
+
+void meshUser::write(std::string fname)
+{
+  mesh->write(fname,write_ext);
+}
+
+// transfer data from this user to target
+int meshUser::transfer(meshUser* target)
+{
+  return mesh->transfer(target->getMesh());
+}
+
+int meshBase::transfer(meshBase* target)
+{
+  
+  Transfer* transobj = new Transfer(this, target);
+  int result = transobj->run(); // specify params to run function
+  delete transobj;
+  return result;
 }
 
 meshBase* meshBase::exportGmshToVtk(std::string fname)

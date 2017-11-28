@@ -57,7 +57,7 @@ private:
 
 int main(int argc, char* argv[])
 {
-  std::string fname = argv[1];
+  /*{std::string fname = argv[1];
   std::string netgen = "netgen";
   //meshUser* user1 = new meshUser(fname);
   meshUser* user1 = new meshUser();
@@ -69,6 +69,22 @@ int main(int argc, char* argv[])
   user1->printCell(50);
   user1->write();
   if (user1) delete user1;
+  }*/
+  Timer T;
+  T.start();
+  meshUser* source = new meshUser("case0002.vtu");
+  meshUser* target = new meshUser("refined1.vtk");
+  T.stop();
+  std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
+  T.start();
+  source->transfer(target);
+  T.stop();
+  std::cout << "Time spent transferring data " << T.elapsed() << "\n\n";
+  target->write("refined1_transfer.vtu");
+  delete source;
+  delete target;
+  
+
 
 //  // Check input
 //  if (argc < 7  && strcmp(argv[1], "Nek")) 
