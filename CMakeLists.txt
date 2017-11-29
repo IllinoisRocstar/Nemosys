@@ -175,7 +175,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
-                 src/meshBase.C src/vtkMesh.C src/meshGen.C src/StlToVtk.C)
+                 src/meshBase.C src/vtkMesh.C src/meshGen.C src/Transfer.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)

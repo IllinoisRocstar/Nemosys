@@ -223,6 +223,7 @@ std::vector<int> vtkMesh::getCellsWithPoint(int pnt)
   return commonCells;  
 }
 
+// set point data (numComponets per point determined by dim of data[0] 
 void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
 {
  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
@@ -234,6 +235,7 @@ void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double
  dataSet->GetPointData()->SetScalars(da);
 }
 
+// set cell data (numComponents per cell determined by dim of data[0])
 void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>>& data)
 {
  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
@@ -245,6 +247,20 @@ void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>
  dataSet->GetCellData()->SetScalars(da);
 }
 
+
+// remove point data with given id from target if it exists
+void vtkMesh::unsetPointDataArray(int arrayID)
+{
+  dataSet->GetPointData()->RemoveArray(arrayID); 
+}
+
+void vtkMesh::unsetPointDataArray(const char* name)
+{
+  dataSet->GetPointData()->RemoveArray(name); 
+}
+// remove cell data with given id from target if it exists
+//void vtkMesh::unsetCellDataArray(int arrayID);
+// transfer point data with given id from source to target
 
 
 

@@ -1,5 +1,3 @@
-// stl
-#include <chrono>
 // Nemosys
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
@@ -34,27 +32,6 @@ TODO:  GModel::writeVTK method only writes points and connectivities to vtk,
        based on what is available with the format. 
 ******************************************************************************/
 
-//---------------------------Auxiliary Classes---------------------------------//
-
-// class wrapping around chrono for timing methods
-class Timer {
-private:
-  typedef std::chrono::time_point<std::chrono::system_clock> time_t;
-
-public:
-  Timer() : startTime(), stopTime() {}
-
-  time_t start()   { return (startTime = std::chrono::system_clock::now()); }
-  time_t stop()    { return (stopTime  = std::chrono::system_clock::now()); }
-  double elapsed() { return std::chrono::duration_cast<std::chrono::milliseconds>
-                                                      (stopTime-startTime).count(); }
-
-private:
-  time_t startTime, stopTime;
-};
-
-//----------------------------------------------------------------------//
-
 int main(int argc, char* argv[])
 {
   /*{std::string fname = argv[1];
@@ -72,17 +49,20 @@ int main(int argc, char* argv[])
   }*/
   Timer T;
   T.start();
-  meshUser* source = new meshUser("case0002.vtu");
-  meshUser* target = new meshUser("refined1.vtk");
+  //meshUser* source = new meshUser("case0002.vtu");
+  //meshUser* target = new meshUser("refined1.vtk");
+  meshUser* source = new meshUser("unrefined_beam.vtu");
+  meshUser* target = new meshUser("refined_beam.vtk");
   T.stop();
   std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
   T.start();
-  source->transfer(target);
+  source->transfer(target,"FE");
   T.stop();
   std::cout << "Time spent transferring data " << T.elapsed() << "\n\n";
-  target->write("refined1_transfer.vtu");
-  delete source;
-  delete target;
+  //target->write("refined1_transfer.vtu");
+  target->write("refined_beam_transfer.vtu");
+  if (source) delete source;
+  if (target) delete target;
   
 
 
