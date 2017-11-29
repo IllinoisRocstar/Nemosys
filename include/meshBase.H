@@ -40,6 +40,7 @@
 #include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
+#include <vtkTetra.h>
 #include <baseInterp.H>
 #include <spheres.H>
 
@@ -131,14 +132,15 @@ class meshBase
 	  virtual std::vector<int> getCellsWithPoint(int pnt){};
     virtual void setPointDataArray(const char* name, 
               std::vector<std::vector<double>>& data){};
-                          
+    virtual void unsetPointDataArray(int arrayID){};                       
   // data transfer
   public:
     // transfer data from this mesh to target
-    int transfer(meshBase* target);
+    int transfer(meshBase* target, std::string method);
  
   // diagnostics
   public:
+    
     virtual void report(char* fname){}; 
     int getNumberOfPoints() {return numPoints;}
     int getNumberOfCells() { return numCells;}
@@ -207,7 +209,7 @@ class meshUser
   
     // data transfer
     public:
-      int transfer(meshUser* target);
+      int transfer(meshUser* target, std::string method);
 
 
     // diagnostics

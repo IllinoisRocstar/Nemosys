@@ -48,7 +48,11 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
   {
     meshNetgen* generator = new meshNetgen();
     int status = generator->createMeshFromSTL(&fname[0u]);
-    if (generator) delete generator;
+    if (generator) 
+    { 
+      delete generator;
+      generator=0;
+    }
     if(!status) 
     {
       std::string newname = trim_fname(fname,".vol");
@@ -137,17 +141,21 @@ void meshUser::write(std::string fname)
 }
 
 // transfer data from this user to target
-int meshUser::transfer(meshUser* target)
+int meshUser::transfer(meshUser* target, std::string method)
 {
-  return mesh->transfer(target->getMesh());
+  return mesh->transfer(target->getMesh(), method);
 }
 
-int meshBase::transfer(meshBase* target)
+int meshBase::transfer(meshBase* target, std::string method)
 {
   
-  Transfer* transobj = new Transfer(this, target);
+  Transfer* transobj = Transfer::Create(method, this, target);//new Transfer(this, target);
   int result = transobj->run(); // specify params to run function
-  delete transobj;
+  if (transobj)
+  { 
+    delete transobj;
+    transobj = 0;
+  }
   return result;
 }
 
