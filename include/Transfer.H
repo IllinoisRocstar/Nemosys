@@ -2,8 +2,6 @@
 #define TRANSFER_H
 
 #include <meshBase.H>
-#include <ANN.h>
-#include <chrono>
 
 class Transfer
 {
@@ -26,6 +24,7 @@ class Transfer
   public:
     // transfer point data with given id from source to target
     virtual int runPD(vtkPointData* pd, int arrayID) = 0;
+    virtual int runPD(int arrayID) = 0;
     // transfer cell data with given id from source to target
     virtual int runCD(vtkCellData* cd, int arrayID) = 0;
     // transfer all data from source to target
@@ -51,6 +50,7 @@ class FETransfer : public Transfer
       std::cout << "FETransfer destroyed" << std::endl;
     }
     int runPD(vtkPointData* pd, int arrayID);
+    int runPD(int arrayID);
     int runCD(vtkCellData* cd, int arrayID){}; // TODO: not implemented
     int run();
 };
