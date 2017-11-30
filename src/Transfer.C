@@ -34,9 +34,10 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
   {
     transferData[j].resize(numComponent,0.0);
     // getting point from target and setting as query
-    std::vector<double> queryPt = target->getPoint(j); 
+    //std::vector<double> queryPt = target->getPoint(j); 
     double x[3]; 
-    x[0] = queryPt[0]; x[1] = queryPt[1]; x[2] = queryPt[2];
+    target->getDataSet()->GetPoint(j,x);
+    //x[0] = queryPt[0]; x[1] = queryPt[1]; x[2] = queryPt[2];
     // searching for nearest neighbor of query in source mesh
     int nnID = source->getDataSet()->FindPoint(x);
     if (nnID < 0 )
@@ -48,68 +49,85 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
     else
     {
       // searching for cells in source that contain nn of query
-      std::vector<int> commonCells = source->getCellsWithPoint(nnID);  
-      auto it = commonCells.begin(); 
+      vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New();
+      source->getDataSet()->GetPointCells(nnID, cellIds);
+      // getting first cell from list of cells containing nn of query
+      int it = cellIds->GetId(0);
+      vtkCell* cell = source->getDataSet()->GetCell(it); 
+      int cellType = cell->GetCellType();
+      int numPointsInCell = cell->GetNumberOfPoints();
+      // declaring variables for use in interpolation function
       int subId;
       double minDist2; // not used
       double pcoords[3];
-      vtkCell* cell = source->getDataSet()->GetCell(*it); 
-      int cellType = cell->GetCellType();
-      int numPointsInCell = cell->GetNumberOfPoints();
-      bool finished = 0;
+      double weights[numPointsInCell]; 
+      int result; 
       switch(cellType)
       {
+        /*case VTK_TRIANGLE:
+        { 
+          vtkTriangle* triCell = vtkTriangle::SafeDownCast(cell);
+          vtkIdList* ids = triCell->GetPointIds();
+          double x1[3],x2[3],x3[3];
+          double tol2 = 0.000001;
+          int in = triCell->PointInTriangle(x,x1,x2,x3,tol); 
+          if (in)
+          {
+            // getting interpolation weights at query point in cell
+            result = EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights);
+            if ( result == -1)  
+            {
+              std::cout << "problem encountered evaluating position of point from target"
+                        << " mesh with respect to cell in source mesh" << std::endl;
+              exit(1);
+            }
+            break;
+          }
+        }*/
+        
         case VTK_TETRA:
         {
-          vtkTetra* TetCell = vtkTetra::SafeDownCast(cell);
-          vtkIdList* ids = TetCell->GetPointIds();
+          vtkTetra* tetCell = vtkTetra::SafeDownCast(cell);
+          vtkIdList* ids = tetCell->GetPointIds();
           double x1[3],x2[3],x3[3],x4[4];
           source->getDataSet()->GetPoint(ids->GetId(0),x1);
           source->getDataSet()->GetPoint(ids->GetId(1),x2);
           source->getDataSet()->GetPoint(ids->GetId(2),x3);
           source->getDataSet()->GetPoint(ids->GetId(3),x4);
-          double baryCoord[4]; 
-          TetCell->BarycentricCoords(x,x1,x2,x3,x4,baryCoord);
-          for (int h = 0; h < numComponent; ++h)
+          // getting interpolation weights at query point in cell
+          result = tetCell->BarycentricCoords(x,x1,x2,x3,x4,weights);
+          if ( result == 0)  
           {
-            for (int m = 0; m < 4; ++m)
-            {
-              int pntId = ids->GetId(m);//cell->GetPointId(m);
-              double comps[numComponent];
-              da->GetTuple(pntId, comps);
-              transferData[j][h] += comps[h]*baryCoord[m];
-            }
+            std::cout << "problem encountered evaluating barycentric coordinates. "
+                      << "Tetrahedron is degenerate " << std::endl;
+            exit(1);
           }
-          finished = 1;
           break;
         }
+        
         default:
         {
-          double weights[numPointsInCell];
           // getting interpolation weights at query point in cell
-          int result = cell->
-                          EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights);
-          if (result == 1)
-          {
-            for (int h = 0; h < numComponent; ++h)
-            {
-              for (int m = 0; m < cell->GetNumberOfPoints(); ++m)
-              {
-                int pntId = cell->GetPointId(m);
-                double comps[numComponent];
-                da->GetTuple(pntId, comps);
-                transferData[j][h] += comps[h]*weights[m];
-              }
-            }
-            finished = 1;
-          }
-          else if ( result == -1)  
+          result = cell->EvaluatePosition(x,NULL,subId,pcoords, minDist2,weights);
+          if ( result == -1)  
           {
             std::cout << "problem encountered evaluating position of point from target"
                       << " mesh with respect to cell in source mesh" << std::endl;
             exit(1);
           }
-
+        }
+      }
+      if (result == 1)
+      {
+        for (int m = 0; m < cell->GetNumberOfPoints(); ++m)
+        {
+          int pntId = cell->GetPointId(m);
+          double comps[numComponent];
+          da->GetTuple(pntId, comps);
+          for (int h = 0; h < numComponent; ++h)
+          {
+            transferData[j][h] += comps[h]*weights[m]; 
+          }
         }
 
       }
@@ -119,6 +137,34 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
   return 0;
 }  
 
+int FETransfer::runPD(int arrayID)
+{
+  if (!(source && target))
+  {
+    std::cout << "source and target meshes must be initialized" << std::endl;
+    exit(1);
+  }
+
+    vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
+    pd = source->getDataSet()->GetPointData();
+    if (pd)
+    {
+      int numArr = pd->GetNumberOfArrays();
+      if (arrayID >= numArr)
+      {
+        std::cout << "ERROR: arrayID is out of bounds" << std::endl;
+        std::cout << "There are " << numArr << " point data arrays" << std::endl;
+        exit(1);
+      } 
+      runPD(pd, arrayID);
+    }
+    else
+    {
+      std::cout << "no point data found" << std::endl;
+      return 1;
+    }
+  return 0;
+}
 
 int FETransfer::run()
 {
@@ -141,6 +187,11 @@ int FETransfer::run()
       { 
         runPD(pd, i);
       }
+    }
+    else
+    {
+      std::cout << "no point data found" << std::endl;
+      return 1;
     }
   }
 

@@ -2,6 +2,7 @@
 #include <vtkMesh.H>
 #include <meshGen.H>
 #include <Transfer.H>
+#include <SizeFieldGen.H>
 
 meshBase* meshBase::Create(std::string fname)
 {
@@ -80,6 +81,9 @@ int meshUser::generateMesh(std::string filename, std::string meshEngine)
 
 }
 
+
+
+
 // get number of points in mesh
 int meshUser::getNumberOfPoints() 
 { 
@@ -140,12 +144,32 @@ void meshUser::write(std::string fname)
   mesh->write(fname,write_ext);
 }
 
-// transfer data from this user to target
+// transfer point data with given id from this user to target
+int meshUser::transfer(meshUser* target, std::string method, int arrayID)
+{
+  return mesh->transfer(target->getMesh(),method,arrayID);
+}
+
+// transfer all point data from this user to target
 int meshUser::transfer(meshUser* target, std::string method)
 {
   return mesh->transfer(target->getMesh(), method);
 }
 
+// transfer point data with given id from this mesh to target
+int meshBase::transfer(meshBase* target, std::string method, int arrayID)
+{
+  Transfer* transobj = Transfer::Create(method, this, target);//new Transfer(this, target);
+  int result = transobj->runPD(arrayID); // specify params to run function
+  if (transobj)
+  { 
+    delete transobj;
+    transobj = 0;
+  }
+  return result;
+}
+
+// transfer all point data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
   
@@ -157,6 +181,23 @@ int meshBase::transfer(meshBase* target, std::string method)
     transobj = 0;
   }
   return result;
+}
+
+// size field generation
+void meshUser::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+{
+  mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
+}
+
+void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+{
+  SizeFieldGen* sfobj = SizeFieldGen::Create(this, method, arrayID, dev_mult, maxIsmin); 
+  sfobj->computeSizeField(arrayID);
+  if (sfobj)
+  {
+    delete sfobj;
+    sfobj = 0;
+  }
 }
 
 meshBase* meshBase::exportGmshToVtk(std::string fname)
@@ -423,7 +464,8 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   // declare dataSet_tmp which will be associated to output vtkMesh
-  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = 
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
   int numNgPoints = nglib::Ng_GetNP(Ngmesh);
   int numSurfCells = nglib::Ng_GetNSE(Ngmesh); 
   int numVolCells = nglib::Ng_GetNE(Ngmesh);
