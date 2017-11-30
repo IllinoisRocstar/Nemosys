@@ -41,6 +41,7 @@
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
 #include <vtkTetra.h>
+#include <vtkTriangle.h>
 #include <baseInterp.H>
 #include <spheres.H>
 
@@ -124,20 +125,37 @@ class meshBase
   // access
   public:
     // get point with id
-    virtual std::vector<double> getPoint(int id){};
+    virtual std::vector<double> getPoint(int id){}
     // get cell with id : returns point indices and respective coordinates
-    virtual std::map<int, std::vector<double>> getCell(int id){};
+    virtual std::map<int, std::vector<double>> getCell(int id){}
     vtkDataSet* getDataSet(){ return dataSet; }
 	  // returns cells sharing point (topological search)
-	  virtual std::vector<int> getCellsWithPoint(int pnt){};
+	  virtual std::vector<int> getCellsWithPoint(int pnt){}
+    // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
-              std::vector<std::vector<double>>& data){};
-    virtual void unsetPointDataArray(int arrayID){};                       
+                                   std::vector<std::vector<double>>& data){}
+    // register data to dataSet's cell data
+    virtual void setCellDataArray(const char* name,
+                                  std::vector<std::vector<double>>& data){}
+    virtual void setCellDataArray(const char* name,
+                                  std::vector<double>& data){}
+    // delete array with id from dataSet's point data
+    virtual void unsetPointDataArray(int arrayID){}
+    // delete array with id from dataSet's cell data
+    virtual void unsetCellDataArray(int arrayID){} 
+    // get diameter of circumsphere of each cell
+    virtual std::vector<double> getCellLengths(){}
+
   // data transfer
   public:
     // transfer data from this mesh to target
+    int transfer(meshBase* target, std::string method, int arrayID);
     int transfer(meshBase* target, std::string method);
  
+  // size field generation
+  public:
+    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
+  
   // diagnostics
   public:
     
@@ -147,7 +165,7 @@ class meshBase
 
   //write
   public:
-    virtual void write(std::string fname, std::string extension){};
+    virtual void write(std::string fname, std::string extension){}
 
   protected:
     int numPoints;
@@ -176,7 +194,7 @@ class meshUser
       std::cout << "user constructed" << std::endl;
     }
 
-    int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
+
     
     ~meshUser()
     {
@@ -189,40 +207,48 @@ class meshUser
     }
 
     // information
-    public:
-      // get number of points in mesh
-      int getNumberOfPoints(); 
-      // get number of cells in mesh
-      int getNumberOfCells();
-      // generate a report of the mesh
-      void report();      
+  public:
+    // get number of points in mesh
+    int getNumberOfPoints(); 
+    // get number of cells in mesh
+    int getNumberOfCells();
+    // generate a report of the mesh
+    void report();      
 
-    // access
-    public:
-      // get point with id
-      std::vector<double> getPoint(int id);
-      // get cell with id : returns point indices and respective coordinates
-      std::map<int,std::vector<double>> getCell(int id); 
-      // get mesh object
-      meshBase* getMesh(){ return mesh; };
+  // access
+  public:
+    // get point with id
+    std::vector<double> getPoint(int id);
+    // get cell with id : returns point indices and respective coordinates
+    std::map<int,std::vector<double>> getCell(int id); 
+    // get mesh object
+    meshBase* getMesh(){ return mesh; };
 
+  // mesh generation
+  public:
+    int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
   
-    // data transfer
-    public:
-      int transfer(meshUser* target, std::string method);
+  // data transfer
+  public:
+    int transfer(meshUser* target, std::string method, int arrayID);
+    int transfer(meshUser* target, std::string method);
+
+  // size field generation
+  public:
+    void generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin);
 
 
-    // diagnostics
-    public:
-      // print coordinates of point with id
-      void printPoint(int id);
-      // print point ids and coordinates of cell with id
-      void printCell(int id);
+  // diagnostics
+  public:
+    // print coordinates of point with id
+    void printPoint(int id);
+    // print point ids and coordinates of cell with id
+    void printCell(int id);
 
-    // write
-    public:
-      void write(); 
-      void write(std::string fname);      
+  // write
+  public:
+    void write(); 
+    void write(std::string fname);      
   private:
     meshBase* mesh;
     std::string fname;

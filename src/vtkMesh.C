@@ -223,6 +223,18 @@ std::vector<int> vtkMesh::getCellsWithPoint(int pnt)
   return commonCells;  
 }
 
+// get diameter of circumsphere of each cell
+std::vector<double> vtkMesh::getCellLengths()
+{
+  std::vector<double> result;
+  result.resize(getNumberOfCells());
+  for (int i = 0; i < getNumberOfCells(); ++i)
+  {
+    result[i] = std::sqrt(dataSet->GetCell(i)->GetLength2());
+  } 
+  return result;
+}
+
 // set point data (numComponets per point determined by dim of data[0] 
 void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
 {
@@ -247,6 +259,16 @@ void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>
  dataSet->GetCellData()->SetScalars(da);
 }
 
+void vtkMesh::setCellDataArray(const char* name, std::vector<double>& data)
+{   
+ vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+ da->SetName(name);
+ da->SetNumberOfComponents(1);
+ for(int i=0; i < numCells; i++)
+   da->InsertNextTuple1(data[i]);
+ dataSet->GetCellData()->SetActiveScalars(name);
+ dataSet->GetCellData()->SetScalars(da);
+}
 
 // remove point data with given id from target if it exists
 void vtkMesh::unsetPointDataArray(int arrayID)
@@ -259,8 +281,15 @@ void vtkMesh::unsetPointDataArray(const char* name)
   dataSet->GetPointData()->RemoveArray(name); 
 }
 // remove cell data with given id from target if it exists
-//void vtkMesh::unsetCellDataArray(int arrayID);
-// transfer point data with given id from source to target
+void vtkMesh::unsetCellDataArray(int arrayID)
+{
+  dataSet->GetCellData()->RemoveArray(arrayID);
+}
+
+void vtkMesh::unsetCellDataArray(const char* name)
+{
+  dataSet->GetCellData()->RemoveArray(name);
+}
 
 
 

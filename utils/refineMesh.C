@@ -34,6 +34,7 @@ TODO:  GModel::writeVTK method only writes points and connectivities to vtk,
 
 int main(int argc, char* argv[])
 {
+  //---- MESH GEN TEST -----//
   /*{std::string fname = argv[1];
   std::string netgen = "netgen";
   //meshUser* user1 = new meshUser(fname);
@@ -47,6 +48,9 @@ int main(int argc, char* argv[])
   user1->write();
   if (user1) delete user1;
   }*/
+  // ----- END MESH GEN TEST -----//
+  
+  // -- DATA TRANSFER TEST -----//
   Timer T;
   T.start();
   //meshUser* source = new meshUser("case0002.vtu");
@@ -56,14 +60,24 @@ int main(int argc, char* argv[])
   T.stop();
   std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
   T.start();
-  source->transfer(target,"FE");
+  source->transfer(target,"FE", std::stoi(argv[1]));
   T.stop();
   std::cout << "Time spent transferring data " << T.elapsed() << "\n\n";
   //target->write("refined1_transfer.vtu");
   target->write("refined_beam_transfer.vtu");
   if (source) delete source;
   if (target) delete target;
-  
+  // ---- END DATA TRANSFER TEST ----// 
+
+  // ---- SF GEN TEST ---------//
+ 
+  meshUser* user = new meshUser("unrefined_beam.vtu");
+  user->generateSizeField("value", 2, 1.5, 1);
+  user->report();
+  user->write("unrefined_beamSF.vtu");
+  if (user) delete user;
+ 
+  // ---- END SF GEN TES ------//
 
 
 //  // Check input
