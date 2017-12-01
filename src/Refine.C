@@ -62,25 +62,24 @@ Refine::Refine(meshBase* _mesh, std::string method,
   }
 }
 
-// TODO: FIX THE SHIT
 Refine::~Refine()
 {
-  M_delete(MadMesh);
-  std::cout << "line 68" << std::endl;
-  MadMesh = 0;
-  std::cout << "line 70" << std::endl;
+
   if (adapter)
   { 
     delete adapter;
     adapter = 0;
   }
-  std::cout << "line 76" << std::endl;
+  if (MadMesh)
+  {
+    MAd::M_delete(MadMesh);
+    MadMesh = 0;
+  }
   if (bSF) 
   { 
     delete bSF; 
     bSF = 0; 
   }
-  std::cout << "line 82" << std::endl;
   remove("converted.msh");
   remove("backgroundSF.msh");
   remove("refined.msh");
@@ -125,12 +124,11 @@ void Refine::run()
   unClassifyBoundaries();
   // writing refined mesh to file in msh format 
   MAd::M_writeMsh(MadMesh, "refined.msh", 2);
-
+  
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   mesh->transfer(refinedVTK,"FE");
   std::string newname = mesh->getFileName();
   refinedVTK->write(trim_fname(newname, "_refined.vtu"), ".vtu");
-  
   if (refinedVTK)
   {
     delete refinedVTK;

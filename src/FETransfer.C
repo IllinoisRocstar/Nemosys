@@ -1,13 +1,5 @@
-#include <Transfer.H>
+#include <FETransfer.H>
 
-Transfer* Transfer::Create(std::string method, meshBase* _source, meshBase* _target)
-{
-  if (!method.compare("FE"))
-  {
-    FETransfer* transobj = new FETransfer( _source , _target);
-    return transobj; 
-  }  
-}
 
 int FETransfer::runPD(vtkPointData* pd, int arrayID)
 {

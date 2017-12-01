@@ -1,8 +1,8 @@
 #include <meshBase.H>
 #include <vtkMesh.H>
 #include <meshGen.H>
-#include <Transfer.H>
-#include <SizeFieldGen.H>
+#include <TransferBase.H>
+#include <SizeFieldBase.H>
 #include <Refine.H>
 
 meshBase* meshBase::Create(std::string fname)
@@ -67,101 +67,12 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
 }
 
 
-int meshUser::generateMesh(std::string filename, std::string meshEngine)
-{
-  if (filename.find(".stl") == -1)
-  {
-    std::cout << "Only CAD files in STL format are supported" << std::endl;
-    exit(1);
-  }
-  mesh = meshBase::generateMesh(filename,meshEngine);
-  write_ext.assign(".vtu");
-  fname.assign(trim_fname(filename,".vol"));
-  std::cout << "user constructed" << std::endl;
-  
-  return 0;
 
-}
-
-
-
-
-// get number of points in mesh
-int meshUser::getNumberOfPoints() 
-{ 
-  return mesh->getNumberOfPoints(); 
-}
-
-// get number of cells in mesh
-int meshUser::getNumberOfCells() 
-{ 
-  return mesh->getNumberOfCells(); 
-}
-
-void meshUser::report()
-{
-  mesh->report(&fname[0u]);
-}
-
-// get point with id
-std::vector<double> meshUser::getPoint(int id) 
-{ 
-  return mesh->getPoint(id);
-}
-
-// get cell with id : returns point indices and respective coordinates
-std::map<int,std::vector<double>> meshUser::getCell(int id) 
-{ 
-  return mesh->getCell(id);
-}
-
-// print coordinates of point with id
-void meshUser::printPoint(int id)
-{ 
-  //std::vector<double> coord = mesh->getPoint(id);
-  printVec(mesh->getPoint(id));
-}
-
-// print point ids and coordinates of cell with id
-void meshUser::printCell(int id)
-{
-  std::map<int, std::vector<double>> cell = mesh->getCell(id);        
-  std::map<int, std::vector<double>>::iterator it = cell.begin();
-  while(it != cell.end())
-  {
-    std::cout << it->first << " ";
-    printVec(it->second);
-    it++;
-  }
-}
-
-// write mesh to file
-void meshUser::write()
-{
-  mesh->write(&(trim_fname(fname,write_ext))[0u], write_ext);
-}
-
-void meshUser::write(std::string fname)
-{
-  mesh->write(fname,write_ext);
-}
-
-// transfer point data with given id from this user to target
-int meshUser::transfer(meshUser* target, std::string method, int arrayID)
-{
-  return mesh->transfer(target->getMesh(),method,arrayID);
-}
-
-// transfer all point data from this user to target
-int meshUser::transfer(meshUser* target, std::string method)
-{
-  return mesh->transfer(target->getMesh(), method);
-}
 
 // transfer point data with given id from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method, int arrayID)
 {
-  Transfer* transobj = Transfer::Create(method, this, target);//new Transfer(this, target);
+  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
   int result = transobj->runPD(arrayID); // specify params to run function
   if (transobj)
   { 
@@ -175,7 +86,7 @@ int meshBase::transfer(meshBase* target, std::string method, int arrayID)
 int meshBase::transfer(meshBase* target, std::string method)
 {
   
-  Transfer* transobj = Transfer::Create(method, this, target);//new Transfer(this, target);
+  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
   int result = transobj->run(); // specify params to run function
   if (transobj)
   { 
@@ -185,15 +96,11 @@ int meshBase::transfer(meshBase* target, std::string method)
   return result;
 }
 
-// size field generation
-void meshUser::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
-{
-  mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
-}
+
 
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
-  SizeFieldGen* sfobj = SizeFieldGen::Create(this, method, arrayID, dev_mult, maxIsmin); 
+  SizeFieldBase* sfobj = SizeFieldBase::Create(this, method, arrayID, dev_mult, maxIsmin); 
   sfobj->computeSizeField(arrayID);
   if (sfobj)
   {
@@ -213,7 +120,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
 
   std::string line;
   int numPoints,numCells; 
-  std::vector<std::vector<int>> cells;
   std::vector<std::vector<std::vector<double>>> pointData;
   std::vector<std::vector<std::vector<double>>> cellData;
   std::vector<std::string> pointDataNames;
@@ -223,6 +129,8 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
   // declare dataSet_tmp which will be associated to output vtkMesh
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  // map to hold true index of points (gmsh allows non-contiguous ordering)
+  std::map<int,int> trueIndex;
   while (getline(meshStream, line))
   {
     if (line.find("$Nodes") != -1)
@@ -243,6 +151,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         point[0] = x; point[1] = y; point[2] = z;
         // insert point i
         points->SetPoint(i,point);     
+        trueIndex.insert(std::pair<int,int> (id,i));
       }
       // inserting point array into dataSet_tmp
       dataSet_tmp->SetPoints(points);
@@ -263,7 +172,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         getline(meshStream, line);
         std::stringstream ss(line);
         ss >> id >> type >> numTags;
-        std::vector<int> cellIds;
         vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
         if (type == 2)
         {
@@ -273,13 +181,11 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
           for (int j = 0; j < 3; ++j)
           {
             ss >> tmp;
-            cellIds.push_back(tmp);
             // insert connectivies for cell into cellIds container
-            vtkcellIds->InsertNextId(tmp-1);
+            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
           }
           // insert connectivies for triangle elements into dataSet 
           dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds); 
-          cells.push_back(cellIds);
         } 
         else if (type == 4)
         {
@@ -289,13 +195,11 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
           for (int j = 0; j < 4; ++j)
           {
             ss >> tmp;
-            cellIds.push_back(tmp);
             // insert connectivities for cell into cellids container
-            vtkcellIds->InsertNextId(tmp-1);
+            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
           } 
           // insert connectivities for tet elements into dataSet
           dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
-          cells.push_back(cellIds);
         }
         else
         {
@@ -869,15 +773,7 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
   writeMSH(outputStream, pointOrCell, arrayID);
 }
 
-void meshUser::writeMSH(std::string fname)
-{
-  mesh->writeMSH(fname);
-}
 
-void meshUser::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
-{
-  mesh->writeMSH(fname, pointOrCell, arrayID);
-}
 
 void meshBase::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
@@ -890,10 +786,7 @@ void meshBase::refineMesh(std::string method, int arrayID, double dev_mult, bool
   }
 }
 
-void meshUser::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
-{
-  mesh->refineMesh(method, arrayID, dev_mult, maxIsmin);
-}
+
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
   netgenInterface* tmp = new netgenInterface();
