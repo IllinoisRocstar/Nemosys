@@ -171,12 +171,19 @@ class meshBase
   // write and conversion
   public:
     virtual void write(std::string fname, std::string extension){}
-    // convert to gmsh format without data
+    // convert to gmsh format without data 
     void writeMSH(std::ofstream& outputStream);
     void writeMSH(std::string fname);
     // convert to gmsh format with specified point or cell data
     void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID); 
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID);
+    // convert to gmsh format with specified point or cell data for
+    // only volume elements (USE ONLY FOR MADLIB STUFF)
+    void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID, 
+                  bool onlyVol); // added for overloading, doesn't do anything 
+    void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
+                  bool onlyVol);
+
     void setFileName(std::string fname) { filename = fname; }
     std::string getFileName() { return filename; }
 
@@ -185,7 +192,7 @@ class meshBase
     int numCells;  // number of cells in mesh
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
     vtkDataSet* dataSet; // mesh points, topology and data
-    std::string filename // name of mesh file
+    std::string filename; // name of mesh file
 };
 
 class meshUser
@@ -267,7 +274,7 @@ class meshUser
   public:
     void write(); 
     void write(std::string fname);      
-    // convert to gmsh format without data
+    // convert to gmsh format without data (only volume elements)
     void writeMSH(std::string fname);
     // convert to gmsh format with specified point or cell data
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID); 

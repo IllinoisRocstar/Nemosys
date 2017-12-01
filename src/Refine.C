@@ -13,24 +13,28 @@ Refine::Refine(meshBase* _mesh, std::string method,
   {
     mesh->writeMSH("converted.msh");
     vtkCellData* cd = mesh->getDataSet()->GetCellData();
+    int i;
     if (cd)
     {
       std::string array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
-      int dim = da->GetNumberOfComponents(); 
-      sfname = array_name.append("GradientSF");
-      for (int i = 0; i < cd->GetNumberOfArrays(); ++i)
+      if (!method.compare("gradient"))
+        array_name.append("GradientSF");
+      else if (!method.compare("value"))
+        array_name.append("ValueSF");
+
+      for (i = 0; i < cd->GetNumberOfArrays(); ++i)
       {
         std::string currname = cd->GetArrayName(i);
-        if (!sfname.compare(currname))
+        if (!array_name.compare(currname))
           break;
       }
       if (i == cd->GetNumberOfArrays())
       {
-        std::cout << "Error: Did not find " << sfname << " in cell data set" << std::endl;
+        std::cout << "Error: Did not find " << array_name << " in cell data set" << std::endl;
         exit(1);
       }
     }
-    mesh->writeMSH("backgroundSF.msh", "cell", i);
+    mesh->writeMSH("backgroundSF.msh", "cell", i, 1);
 
     MAd::pGModel gmodel = 0;
     MadMesh = MAd::M_new(gmodel);
@@ -45,7 +49,7 @@ Refine::Refine(meshBase* _mesh, std::string method,
     Timer T;
     T.start();
     // instantiating adapter with background sizefield
-    MAd::MeshAdapter* adapter = new MAd::MeshAdapter(MadMesh, bSF);
+    adapter = new MAd::MeshAdapter(MadMesh, bSF);
     T.stop();
     std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
 
@@ -58,20 +62,25 @@ Refine::Refine(meshBase* _mesh, std::string method,
   }
 }
 
+// TODO: FIX THE SHIT
 Refine::~Refine()
 {
   M_delete(MadMesh);
+  std::cout << "line 68" << std::endl;
   MadMesh = 0;
+  std::cout << "line 70" << std::endl;
   if (adapter)
   { 
     delete adapter;
     adapter = 0;
   }
+  std::cout << "line 76" << std::endl;
   if (bSF) 
   { 
     delete bSF; 
     bSF = 0; 
   }
+  std::cout << "line 82" << std::endl;
   remove("converted.msh");
   remove("backgroundSF.msh");
   remove("refined.msh");
@@ -93,7 +102,7 @@ void Refine::run()
   // running laplacian smoothing
   std::cout << "Optimizing the mesh" << std::endl;
 
-  for (int i = 0; i < 10; ++i)
+  for (int i = 0; i < 1; ++i)
   {
     adapter->LaplaceSmoothing();
     adapter->splitLongestEdges();
@@ -113,15 +122,14 @@ void Refine::run()
   adapter->printStatistics(std::cout);
   
   // unclassifying boundary elements for proper output
-  unclassifyBoundaries();
+  unClassifyBoundaries();
   // writing refined mesh to file in msh format 
   MAd::M_writeMsh(MadMesh, "refined.msh", 2);
 
-  meshBase* refinedVTK = exportGmshToVtk("refined.msh");
+  meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   mesh->transfer(refinedVTK,"FE");
   std::string newname = mesh->getFileName();
-  trim_fname(newname, "_refined.vtu");
-  refinedVTK->write(newname, ".vtu");
+  refinedVTK->write(trim_fname(newname, "_refined.vtu"), ".vtu");
   
   if (refinedVTK)
   {
@@ -135,11 +143,11 @@ void Refine::classifyBoundaries()
   // finding and classifying boundary elements as 2d 
   MadMesh->classify_unclassified_entities();
   MadMesh->destroyStandAloneEntities();
-  MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(mesh->model, 0);
+  MAd::pGEntity bnd = (MAd::pGEntity) MAd::GM_faceByTag(MadMesh->model, 0);
   MadMesh->classify_grid_boundaries(bnd);
 }
 
-void Refine::unclassifyBoundaries()
+void Refine::unClassifyBoundaries()
 {
   // unclassifying boundary elements for proper output
   MadMesh->unclassify_grid_boundaries();
