@@ -26,7 +26,6 @@ class vtkMesh : public meshBase
     // get diameter of circumsphere of each cell
     std::vector<double> getCellLengths();
  
- 
   // diagnostics
   public:
     void report(char* fname);

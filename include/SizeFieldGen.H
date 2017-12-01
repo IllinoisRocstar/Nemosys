@@ -33,6 +33,7 @@ class SizeFieldGen
     meshBase* mesh;
     double dev_mult;
     bool maxIsmin;
+
   // helpers
   protected:
     // identifies cells to refine and mutates current size values
@@ -58,7 +59,7 @@ class GradSF: public SizeFieldGen
     // compute L2 norm of gradient of point data at each cell 
     std::vector<double> computeL2GradAtAllCells(int arrayID);
     // compute size field and insert as cell data into mesh's dataSet
-    void computeSizeField(int arrayID){}
+    void computeSizeField(int arrayID);
 
   private:
     vtkDataArray* da;
@@ -78,7 +79,8 @@ class ValSF: public SizeFieldGen
 
   // methods
   public:
-    // computes value of point data at a cell center using shape interpolation functions
+    // computes value of point data at a cell center using average of data
+    // at points defining cell
     std::vector<double> computeValAtCell(int cellID, int arrayID);
     // compute value of point data at center of each cell
     std::vector<std::vector<double>> computeValAtAllCells(int arrayID);

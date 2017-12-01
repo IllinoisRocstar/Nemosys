@@ -60,6 +60,8 @@ GradSF::GradSF(meshBase* _mesh, int arrayID,double _dev_mult, bool _maxIsmin)
         std::string currname = cd->GetArrayName(i);
         if (!sfname.compare(currname))
         {
+          std::cout << "Found size field identifier in cell data: " << currname << std::endl;
+          std::cout << "Removing " << currname << " from dataSet" << std::endl;
           mesh->unsetCellDataArray(i);
           break;
         }
@@ -105,6 +107,8 @@ ValSF::ValSF(meshBase* _mesh, int arrayID, double _dev_mult, bool _maxIsmin)
         std::string currname = cd->GetArrayName(i);
         if (!sfname.compare(currname))
         {
+          std::cout << "Found size field identifier in cell data: " << currname << std::endl;
+          std::cout << "Removing " << currname << " from dataSet" << std::endl;
           mesh->unsetCellDataArray(i);
           break;
         }
@@ -155,17 +159,44 @@ std::vector<double> GradSF::computeGradAtCell(int cell, int array)
     return gradient;
   
   }
-  
   else
   {
     std::cout << "no point data found" << std::endl;
     exit(1);
   }
-
 }
 
+// compute L2 norm of gradient of point data at each cell
+std::vector<double> GradSF::computeL2GradAtAllCells(int array)
+{
+  std::vector<double> result(mesh->getNumberOfCells()); 
+  for (int i = 0; i < mesh->getNumberOfCells(); ++i)
+  { 
+    result[i] = L2_Norm(computeGradAtCell(i, array));
+  }
+  return result;
+}
  
-// computes value of point data at a cell center using shape interpolation functions
+// compute size field and insert as cell data into mesh's dataSet
+void GradSF::computeSizeField(int arrayID)
+{
+  // populate vector with L2 norm of gradient/value of physical variable
+  std::vector<double> values = computeL2GradAtAllCells(arrayID); 
+ 
+  if (values.empty())
+  {
+    std::cout << "size array hasn't been populated!" << std::endl;
+    exit(1);
+  }
+
+  mutateValues(values);  
+  mesh->setCellDataArray(&sfname[0u], values);
+  mesh->setSFBool(1);
+}
+
+// computes value of point data at a cell center using average of data
+// at points defining cell
+// NOTE: averaging is equivalent to using interpolation weights for cell center
 std::vector<double> ValSF::computeValAtCell(int cell, int array)
 {
   if (!mesh)
@@ -179,52 +210,8 @@ std::vector<double> ValSF::computeValAtCell(int cell, int array)
     vtkIdList* point_ids = mesh->getDataSet()->GetCell(cell)->GetPointIds();
     int numPointsInCell = point_ids->GetNumberOfIds();
     int dim = da->GetNumberOfComponents();
-    // evaluate center of cell in cartesian coords
-    std::map<int, std::vector<double>> cell_coords = mesh->getCell(cell);
-    std::map<int, std::vector<double>>::iterator it = cell_coords.begin();
-
-    double x, y, z;
-    x = y = z = 0;
-    while (it != cell_coords.end())
-    {
-      x += it->second[0];
-      y += it->second[1];
-      z += it->second[2];
-      ++it;
-    }
-    
-    double center[3];
-    center[0] = x/numPointsInCell;
-    center[1] = y/numPointsInCell;
-    center[2] = z/numPointsInCell;
-    
-    // evaluate parametric position of center and compute interpolation weights
-    int subId;
-    double minDist2; // not used
-    double pcoords[3];
-    double weights[numPointsInCell];
-    mesh->getDataSet()->GetCell(cell)->
-      EvaluatePosition(center, NULL, subId, pcoords, minDist2, weights);    
-    /* The EvaluatePosition member for a cell takes the center in cartesian coordinates
-       and evaluates its location in parametric space as well as the interpolation weights
-       at that point. The NULL parameter prevents computation of closest point on cell
-       and distance from center to cell (because center is in cell already) */
-
     // compute value of data at center of cell
     std::vector<double> values(dim,0); 
-/*    for (int i = 0; i < dim; ++i) // loop over values per vertex
-    {
-      double val=0;
-      for (int j = 0; j < numPointsInCell; ++j) // loop over vertices in cell
-      {
-        int id = (int) point_ids->GetId(j);
-        double comps[dim];
-        da->GetTuple(id, comps);
-        val += comps[i]*weights[j];
-      }
-      values[i] = val;
-    }
-*/
     for (int j = 0; j < numPointsInCell; ++j)
     {
       int id = point_ids->GetId(j);
@@ -232,11 +219,9 @@ std::vector<double> ValSF::computeValAtCell(int cell, int array)
       da->GetTuple(id,comps);
       for (int i = 0; i < dim; ++i)
       {
-        values[i] += comps[i]*weights[j];
+        values[i] += comps[i]/numPointsInCell;
       }
-
     }
-
     return values;
   }
   else
@@ -245,6 +230,7 @@ std::vector<double> ValSF::computeValAtCell(int cell, int array)
     exit(1);
   }
 }
+
 // compute value of point data at center of each cell
 std::vector<std::vector<double>> ValSF::computeValAtAllCells(int arrayID)
 {
@@ -272,7 +258,7 @@ void ValSF::computeSizeField(int arrayID)
 {
   // populate vector with L2 norm of gradient/value of physical variable
   std::vector<double> values = computeL2ValAtAllCells(arrayID); 
-  
+ 
   if (values.empty())
   {
     std::cout << "size array hasn't been populated!" << std::endl;
@@ -281,6 +267,7 @@ void ValSF::computeSizeField(int arrayID)
 
   mutateValues(values);  
   mesh->setCellDataArray(&sfname[0u], values);
+  mesh->setSFBool(1);
 }
 
 // identifies cells to refine and mutates current size values
@@ -297,8 +284,6 @@ void SizeFieldGen::mutateValues(std::vector<double>& values)
   else
     lengthminmax[1] *= 0.65;
   lengthminmax[0] -= lengthminmax[0]/2.; 
-
-
 
   // get mean and stdev of values 
   std::vector<double> meanStdev = getMeanStdev(values);

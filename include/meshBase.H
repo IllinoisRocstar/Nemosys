@@ -62,7 +62,6 @@ namespace nglib
 
 // Nemosys
 #include <AuxiliaryFunctions.H>
-//#include <meshGen.H>
 
 // stl
 #include <functional>
@@ -74,6 +73,7 @@ namespace nglib
 #include <string>
 #include <cstdlib>
 #include <algorithm>
+#include <cstdio>
 
 /*TODO: This class is responsible for reading in a *mesh* file and exporting it 
         to a vtkMesh object. In this way, we have access to the methods provided
@@ -98,7 +98,7 @@ class meshBase
   // constructors and destructors
   public:
 
-    meshBase():numPoints(0),numCells(0),dataSet(NULL)
+    meshBase():numPoints(0),numCells(0),hasSizeField(0),dataSet(NULL)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -155,22 +155,37 @@ class meshBase
   // size field generation
   public:
     void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
+    void setSFBool(bool q) { hasSizeField = q; }  
+    bool getSFBool() { return hasSizeField; }
+  
+  // adaptive mesh refinement
+  public:
+    void refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin); 
   
   // diagnostics
   public:
-    
     virtual void report(char* fname){}; 
     int getNumberOfPoints() {return numPoints;}
     int getNumberOfCells() { return numCells;}
 
-  //write
+  // write and conversion
   public:
     virtual void write(std::string fname, std::string extension){}
+    // convert to gmsh format without data
+    void writeMSH(std::ofstream& outputStream);
+    void writeMSH(std::string fname);
+    // convert to gmsh format with specified point or cell data
+    void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID); 
+    void writeMSH(std::string fname, std::string pointOrCell, int arrayID);
+    void setFileName(std::string fname) { filename = fname; }
+    std::string getFileName() { return filename; }
 
   protected:
-    int numPoints;
-    int numCells;
-    vtkDataSet* dataSet; // must manually delete
+    int numPoints; // number of points in mesh
+    int numCells;  // number of cells in mesh
+    bool hasSizeField; // set to 1 if sizeField attached to dataSet
+    vtkDataSet* dataSet; // mesh points, topology and data
+    std::string filename // name of mesh file
 };
 
 class meshUser
@@ -237,6 +252,9 @@ class meshUser
   public:
     void generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin);
 
+  // refinement
+  public:
+    void refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin); 
 
   // diagnostics
   public:
@@ -245,10 +263,15 @@ class meshUser
     // print point ids and coordinates of cell with id
     void printCell(int id);
 
-  // write
+  // write and conversion
   public:
     void write(); 
     void write(std::string fname);      
+    // convert to gmsh format without data
+    void writeMSH(std::string fname);
+    // convert to gmsh format with specified point or cell data
+    void writeMSH(std::string fname, std::string pointOrCell, int arrayID); 
+  
   private:
     meshBase* mesh;
     std::string fname;

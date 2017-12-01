@@ -56,6 +56,7 @@ int main(int argc, char* argv[])
   //meshUser* source = new meshUser("case0002.vtu");
   //meshUser* target = new meshUser("refined1.vtk");
   meshUser* source = new meshUser("unrefined_beam.vtu");
+  source->writeMSH("unrefined_beam.msh", "point", 3);
   meshUser* target = new meshUser("refined_beam.vtk");
   T.stop();
   std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
@@ -72,12 +73,19 @@ int main(int argc, char* argv[])
   // ---- SF GEN TEST ---------//
  
   meshUser* user = new meshUser("unrefined_beam.vtu");
-  user->generateSizeField("value", 2, 1.5, 1);
+  user->generateSizeField("gradient", 7, .5, 1);
   user->report();
   user->write("unrefined_beamSF.vtu");
   if (user) delete user;
  
   // ---- END SF GEN TES ------//
+
+  // --- REFINEMENT TESTS -----//
+  /*
+  meshUser* user = new meshUser("unrefined_beam.vtu");
+  user->Refine("gradient",7,.5,1);
+
+  */
 
 
 //  // Check input
