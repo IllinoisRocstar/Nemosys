@@ -28,7 +28,11 @@ class meshNetgen : public meshGen
     ~meshNetgen()
     {
       std::cout << "finalizing netgen mesh generator" << std::endl;
-      if(mesh) nglib::Ng_DeleteMesh(mesh);
+      if(mesh)
+      {
+        nglib::Ng_DeleteMesh(mesh);
+        mesh = 0; 
+      }
       nglib::Ng_Exit();
     }      
 
