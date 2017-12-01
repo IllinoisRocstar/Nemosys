@@ -34,10 +34,8 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
   {
     transferData[j].resize(numComponent,0.0);
     // getting point from target and setting as query
-    //std::vector<double> queryPt = target->getPoint(j); 
     double x[3]; 
     target->getDataSet()->GetPoint(j,x);
-    //x[0] = queryPt[0]; x[1] = queryPt[1]; x[2] = queryPt[2];
     // searching for nearest neighbor of query in source mesh
     int nnID = source->getDataSet()->FindPoint(x);
     if (nnID < 0 )
@@ -124,6 +122,7 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
           int pntId = cell->GetPointId(m);
           double comps[numComponent];
           da->GetTuple(pntId, comps);
+          
           for (int h = 0; h < numComponent; ++h)
           {
             transferData[j][h] += comps[h]*weights[m]; 
