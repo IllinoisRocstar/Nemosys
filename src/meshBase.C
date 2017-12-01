@@ -691,7 +691,7 @@ void meshBase::writeMSH(std::ofstream& outputStream, std::string pointOrCell, in
       }
       else if (numArr < 1)
       {
-        std::cout << "no point data found" << std::endl;
+        std::cout << "no cell data found" << std::endl;
         exit(1);
       }
       vtkDataArray* da = cellData->GetArray(arrayID);
@@ -727,16 +727,146 @@ void meshBase::writeMSH(std::ofstream& outputStream, std::string pointOrCell, in
   }
 }
 
+// convert to gmsh format with specified point or cell data for
+void meshBase::writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID, 
+                        bool onlyVol)
+{
+  if(!outputStream.good()) {
+    std::cout << "Output file stream is bad" << std::endl;
+    exit(1);
+  }
+ 
+  if (!dataSet) {
+    std::cout << "No data to write" << std::endl;
+    exit(2);
+  } 
+  // ---------  writing gmsh header ----------- //
+  outputStream << "$MeshFormat" << std::endl
+               << "2.2 0 8" << std::endl
+               << "$EndMeshFormat" << std::endl; 
+
+  // ---- get number of points and number of elements ---- //
+  getNumberOfCells();
+  getNumberOfPoints();
+
+  // -------- ensure all cell types are tri/tet or below -------------- //
+  int num_bad = 0;
+  for (int i = 0; i < numCells; i++)
+  {
+    int type_id = dataSet->GetCellType(i);
+    if (!(type_id == 3 || type_id == 5 || type_id == 10))
+    {
+      std::cout << "Error: Only tetrahedral and triangular" 
+                << " meshes can be written to gmsh format" << std::endl;
+      exit(3);
+    }
+    if (!(type_id == 10))
+      num_bad+=1;
+  }
+
+  // ------------------------ write point coords -------------------------- //
+  outputStream << "$Nodes" << std::endl << numPoints << std::endl;
+  for (int i = 0; i < numPoints; ++i)
+  {
+    std::vector<double> pntcrds = getPoint(i);
+    outputStream << i + 1 << " "
+                 << pntcrds[0] << " "
+                 << pntcrds[1] << " "
+                 << pntcrds[2] << " " << std::endl;
+  }
+  outputStream << "$EndNodes" << std::endl;
+
+  // ------------- write element type and connectivity --------------------- //
+  outputStream << "$Elements" << std::endl << numCells-num_bad << std::endl;
+  //int k = 0;
+  for (int i = 0; i < numCells; ++i)
+  {
+
+    vtkIdList* point_ids = dataSet->GetCell(i)->GetPointIds();
+    int numComponent = point_ids->GetNumberOfIds();
+    int type_id = dataSet->GetCellType(i);
+    if (type_id == 10)
+    {
+      outputStream << i + 1 << " ";
+      switch(numComponent)
+      {
+        case 2:
+        {
+          break;
+        }
+        case 3:
+        {
+          outputStream << 2 << " " << 2 << " " << 1 << " " << 1 << " ";
+          break;
+        }
+        case 4:
+        {
+          outputStream << 4 << " " << 2 << " " << 1 << " " << 1 << " ";
+          break;
+        }
+      
+        default: 
+        {  
+          std::cerr << "Components in cell should be less than 4"<< std::endl;
+          exit(1);
+        }
+      }
+      for (int j = 0; j < numComponent; ++j)
+         outputStream << point_ids->GetId(j) + 1 << " ";
+      outputStream << std::endl;
+      //k+=1;
+    }
+  }
+  outputStream << "$EndElements" << std::endl;
+  // -------------------------- write cell data ---------------------------- // 
+  vtkCellData* cellData = dataSet->GetCellData();
+  vtkDataArray* da = cellData->GetArray(arrayID);
+  if (da)
+  {
+    std::string tmpname = "CellArray";
+    tmpname += std::to_string(arrayID);
+    outputStream << "$ElementData" << std::endl
+                 << 1 << std::endl // 1 string tag
+                 << "\"" << (cellData->GetArrayName(arrayID) ? 
+                             cellData->GetArrayName(arrayID) : tmpname) // name of view
+                 << "\"" << std::endl 
+                 << 0 << std::endl // 0 real tag
+                 << 3 << std::endl // 3 int tags (dt index, dim of field, number of fields)
+                 << 0 << std::endl // dt index
+                 << 1 << std::endl // dim of field
+                 << numCells-num_bad << std::endl; // number of fields
+    for (int j = 0; j < numCells; ++j)
+    {
+      int type_id = dataSet->GetCellType(j);
+      if (type_id == 10)
+      {
+        double* data = da->GetTuple(j);
+        outputStream << j + 1 << " ";
+        outputStream << data[0] << " ";
+        outputStream << std::endl;
+      }
+    }
+    outputStream << "$EndElementData" << std::endl;    
+  }
+}
+
+void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID,
+                        bool onlyVol)
+{
+  std::ofstream outputStream(fname.c_str());
+  writeMSH(outputStream, pointOrCell, arrayID, onlyVol);
+}
+
 void meshBase::writeMSH(std::string fname)
 {
   std::ofstream outputStream(fname.c_str());
-  mesh->writeMSH(outputStream);
+  writeMSH(outputStream);
 }
 
 void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
 {
   std::ofstream outputStream(fname.c_str());
-  mesh->writeMSH(outputStream, pointOrCell, arrayID);
+  writeMSH(outputStream, pointOrCell, arrayID);
 }
 
 void meshUser::writeMSH(std::string fname)
@@ -749,8 +879,18 @@ void meshUser::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
   mesh->writeMSH(fname, pointOrCell, arrayID);
 }
 
-void meshBase::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin); 
-void meshBvoid meshUser::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+void meshBase::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+{
+  Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin);
+  refineobj->run();
+  if (refineobj)
+  { 
+    delete refineobj;
+    refineobj = 0;
+  }
+}
+
+void meshUser::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
   mesh->refineMesh(method, arrayID, dev_mult, maxIsmin);
 }

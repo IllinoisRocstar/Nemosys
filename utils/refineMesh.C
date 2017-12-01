@@ -78,14 +78,14 @@ int main(int argc, char* argv[])
   user->write("unrefined_beamSF.vtu");
   if (user) delete user;
  
-  // ---- END SF GEN TES ------//
+  // ---- END SF GEN TEST ------//
 
   // --- REFINEMENT TESTS -----//
-  /*
-  meshUser* user = new meshUser("unrefined_beam.vtu");
-  user->Refine("gradient",7,.5,1);
-
-  */
+  
+  meshUser* user1 = new meshUser("unrefined_beam.vtu");
+  user1->refineMesh("gradient",7,.5,1);
+  if (user1) delete user1;
+  // ---- END REFINEMENT TEST ---//
 
 
 //  // Check input
