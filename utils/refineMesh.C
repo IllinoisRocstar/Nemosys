@@ -1,8 +1,7 @@
 // Nemosys
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
-#include<meshBase.H>
-#include<vtkAnalyzer.H>
+#include<meshUser.H>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -84,7 +83,10 @@ int main(int argc, char* argv[])
   
   meshUser* user1 = new meshUser("unrefined_beam.vtu");
   user1->refineMesh("gradient",7,.5,1);
+  meshUser* user2 = new meshUser("unrefined_beam_refined.vtu");
+  user2->report();
   if (user1) delete user1;
+  if (user2) delete user2;
   // ---- END REFINEMENT TEST ---//
 
 
