@@ -2,6 +2,7 @@
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
 #include<meshUser.H>
+#include <NemDrivers.H>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -60,7 +61,8 @@ int main(int argc, char* argv[])
   T.stop();
   std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
   T.start();
-  source->transfer(target,"FE", std::stoi(argv[1]));
+  std::vector<int> ids = {2,3,4,7};
+  source->transfer(target,"FE", ids);
   T.stop();
   std::cout << "Time spent transferring data " << T.elapsed() << "\n\n";
   //target->write("refined1_transfer.vtu");
@@ -81,13 +83,22 @@ int main(int argc, char* argv[])
 
   // --- REFINEMENT TESTS -----//
   
-  meshUser* user1 = new meshUser("unrefined_beam.vtu");
-  user1->refineMesh("gradient",7,.5,1);
-  meshUser* user2 = new meshUser("unrefined_beam_refined.vtu");
-  user2->report();
+  meshUser* user1 = new meshUser("case0001.vtu");
+  //user1->refineMesh("gradient",7,.5,1,0);
+  //user1->report();
+  user1->refineMesh("uniform",0,0,0,1.5, "refined_case0001.vtu");
+  user1->report();
+  //meshUser* user2 = new meshUser("unrefined_beam_refined.vtu");
+  //user2->report();
   if (user1) delete user1;
-  if (user2) delete user2;
+  //if (user2) delete user2;
   // ---- END REFINEMENT TEST ---//
+
+  TransferDriver* trnsdriver = new TransferDriver("unrefined_beam.vtu", 
+                                                  "refined_beam.vtk",
+                                                  "driver_test.vtu");
+  if (trnsdriver) delete trnsdriver;
+
 
 
 //  // Check input
