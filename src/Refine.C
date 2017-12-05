@@ -1,16 +1,45 @@
 #include <Refine.H>
 
 Refine::Refine(meshBase* _mesh, std::string method, 
-               int arrayID, double dev_mult, bool maxIsmin)
+               int arrayID, double dev_mult, bool maxIsmin, 
+               double edge_scale, std::string _ofname)
 {
   mesh = _mesh;
-  if (!mesh->getSFBool())
+  ofname = _ofname; 
+  if (!mesh->getSFBool() && method.compare("uniform"))
   {
     mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
   }
 
+  if (!method.compare("uniform"))
+  {
+    std::cout << "Uniform Refinement Selected" << std::endl;
+    mesh->writeMSH("converted.msh");
+    MAd::pGModel gmodel = 0;
+    MadMesh = MAd::M_new(gmodel);
+    MAd::M_load(MadMesh,"converted.msh");
+    classifyBoundaries();
+    // DISCRETE/PWLSF SIZEFIELD
+    pwlSF = new MAd::PWLSField(MadMesh);
+    // sets size as mean edge length squared for edges adjacent
+    // to given vertex  
+    pwlSF->setCurrentSize();
+    pwlSF->scale(edge_scale);
+    // timing adapter construction
+    Timer T;
+    T.start();    
+    // instantiating adapter with linear sf
+    adapter = new MAd::MeshAdapter(MadMesh, pwlSF);
+    T.stop();
+    std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
+    std::cout << "Refine constructed" << std::endl;
+    // for safety
+    mesh->setSFBool(0);
+  } 
+
   if (mesh->getSFBool())
   {
+    pwlSF = 0;
     mesh->writeMSH("converted.msh");
     vtkCellData* cd = mesh->getDataSet()->GetCellData();
     int i;
@@ -52,10 +81,9 @@ Refine::Refine(meshBase* _mesh, std::string method,
     adapter = new MAd::MeshAdapter(MadMesh, bSF);
     T.stop();
     std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
-
     std::cout << "Refine constructed" << std::endl;
   }
-  else
+  else if (method.compare("uniform"))
   {
     std::cout << "Unable to generate size field for refinement" << std::endl;
     exit(1);
@@ -64,21 +92,29 @@ Refine::Refine(meshBase* _mesh, std::string method,
 
 Refine::~Refine()
 {
-
+  // destructor for adapter also destroys size field
   if (adapter)
   { 
     delete adapter;
     adapter = 0;
   }
+/*  if (bSF) 
+  { 
+    delete bSF; 
+    bSF = 0;
+    std::cout << "here1" << std::endl; 
+  }
+  if (pwlSF)
+  {
+    delete pwlSF;
+    pwlSF = 0;
+    std::cout << "here2" << std::endl; 
+  }*/
+
   if (MadMesh)
   {
     MAd::M_delete(MadMesh);
     MadMesh = 0;
-  }
-  if (bSF) 
-  { 
-    delete bSF; 
-    bSF = 0; 
   }
   remove("converted.msh");
   remove("backgroundSF.msh");
@@ -88,6 +124,11 @@ Refine::~Refine()
 
 void Refine::run()
 {
+  if (!adapter)
+  {
+    std::cout << "Adapter hasn't been constructed!" << std::endl;
+    exit(1);
+  }
   // Output situation before refinement
   std::cout << "Statistics before refinement: " << std::endl;
   adapter->printStatistics(std::cout);
@@ -127,8 +168,8 @@ void Refine::run()
   
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   mesh->transfer(refinedVTK,"FE");
-  std::string newname = mesh->getFileName();
-  refinedVTK->write(trim_fname(newname, "_refined.vtu"), ".vtu");
+
+  refinedVTK->write(ofname, ".vtu");
   if (refinedVTK)
   {
     delete refinedVTK;

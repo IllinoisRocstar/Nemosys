@@ -59,7 +59,12 @@ class meshUser
   
   // data transfer
   public:
+    // transfer point data with given id from this user to target
     int transfer(meshUser* target, std::string method, int arrayID);
+    // transfer point data with given ids from this user to target
+    int transfer(meshUser* target, std::string method, 
+                           const std::vector<int>& arrayIDs);
+    // transfer all point data from this user to target
     int transfer(meshUser* target, std::string method);
 
   // size field generation
@@ -68,7 +73,8 @@ class meshUser
 
   // refinement
   public:
-    void refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin); 
+    void refineMesh(std::string method, int arrayID, 
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
 
   // diagnostics
   public:

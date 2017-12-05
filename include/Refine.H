@@ -9,20 +9,22 @@ class Refine
   public:
     Refine(){}
     Refine(meshBase* _mesh, std::string method, 
-           int arrayID, double dev_mult, bool maxIsmin);
+           int arrayID, double dev_mult, bool maxIsmin, 
+           double edge_scale, std::string _ofname);
     ~Refine();
 
   // methods
   public:
-    void run();   
-
+    void run();
 
   private:
-    meshBase* mesh;
-    MAd::pMesh MadMesh;
-    MAd::BackgroundSF* bSF;
-    MAd::MeshAdapter* adapter;
-  
+    meshBase* mesh; // mesh to be refined
+    MAd::pMesh MadMesh; // MAdLib mesh object generated from converted meshBase 
+    MAd::BackgroundSF* bSF; // background SizeField 
+    MAd::PWLSField* pwlSF; // piecewise linear size field
+    MAd::MeshAdapter* adapter; // adapter
+    std::string ofname;
+ 
   // helpers
   private:
     void classifyBoundaries();
