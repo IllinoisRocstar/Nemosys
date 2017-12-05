@@ -82,6 +82,24 @@ int meshBase::transfer(meshBase* target, std::string method, int arrayID)
   return result;
 }
 
+// transfer point data with given ids from this mesh to target
+int meshBase::transfer(meshBase* target, std::string method, 
+                       const std::vector<int>& arrayIDs)
+{
+  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  for (int i = 0; i < arrayIDs.size(); ++i)
+  {
+    transobj->runPD(arrayIDs[i]); // specify params to run function
+  }
+  if (transobj)
+  { 
+    delete transobj;
+    transobj = 0;
+  }
+  return 0;
+}
+
+
 // transfer all point data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
@@ -775,9 +793,11 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
 
 
 
-void meshBase::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+void meshBase::refineMesh(std::string method, int arrayID, 
+                          double dev_mult, bool maxIsmin, 
+                          double edge_scale, std::string ofname)
 {
-  Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin);
+  Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
   refineobj->run();
   if (refineobj)
   { 

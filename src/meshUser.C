@@ -83,6 +83,13 @@ int meshUser::transfer(meshUser* target, std::string method, int arrayID)
   return mesh->transfer(target->getMesh(),method,arrayID);
 }
 
+// transfer point data with given ids from this user to target
+int meshUser::transfer(meshUser* target, std::string method, 
+                       const std::vector<int>& arrayIDs)
+{
+  return mesh->transfer(target->getMesh(),method,arrayIDs);
+}
+
 // transfer all point data from this user to target
 int meshUser::transfer(meshUser* target, std::string method)
 {
@@ -107,7 +114,9 @@ void meshUser::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
   mesh->writeMSH(fname, pointOrCell, arrayID);
 }
 
-void meshUser::refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+void meshUser::refineMesh(std::string method, int arrayID, 
+                          double dev_mult, bool maxIsmin, 
+                          double edge_scale, std::string ofname)
 {
-  mesh->refineMesh(method, arrayID, dev_mult, maxIsmin);
+  mesh->refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
 }

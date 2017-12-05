@@ -150,6 +150,10 @@ class meshBase
   public:
     // transfer data from this mesh to target
     int transfer(meshBase* target, std::string method, int arrayID);
+    // transfer point data with given ids from this mesh to target
+    int transfer(meshBase* target, std::string method, 
+                 const std::vector<int>& arrayIDs);
+    // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
  
   // size field generation
@@ -160,7 +164,8 @@ class meshBase
   
   // adaptive mesh refinement
   public:
-    void refineMesh(std::string method, int arrayID, double dev_mult, bool maxIsmin); 
+    void refineMesh(std::string method, int arrayID, 
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
   
   // diagnostics
   public:
