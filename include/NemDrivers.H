@@ -33,7 +33,16 @@ TODO: This class will contain drivers for several utils:
 
 using jsoncons::json;
 
-class TransferDriver
+class NemDriver
+{
+  public:
+    NemDriver(){};
+    virtual ~NemDriver(){}
+    static NemDriver* readJSON(std::string fname);
+};
+
+
+class TransferDriver : public NemDriver
 {
   public:
     TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
@@ -42,6 +51,7 @@ class TransferDriver
     TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
                    std::vector<std::string> arrayNames, std::string ofname);
 
+    static TransferDriver* readJSON(json inputjson);
     static TransferDriver* readJSON(std::string ifname);
 
     ~TransferDriver();
@@ -51,15 +61,17 @@ class TransferDriver
     meshUser* target; 
 };
 
-class RefineDriver
+class RefineDriver : public NemDriver
 {
   public:
     RefineDriver(std::string _mesh, std::string method, std::string arrayName,
                  double dev_mult, bool maxIsmin, double edgescale, std::string ofname);
     RefineDriver(std::string _mesh, std::string method, 
                  double edgescale, std::string ofname);
-
+  
+  static RefineDriver* readJSON(json inputjson);
   static RefineDriver* readJSON(std::string ifname);
+
   ~RefineDriver();
 
   private:

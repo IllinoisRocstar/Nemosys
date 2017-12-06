@@ -244,6 +244,15 @@ IF(BUILD_UTILS)
      -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
       -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
+
+  #Nemosys Core utility
+  ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
+  else()
+    TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
+  endif()
+  INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
   #Transfer utility
   ADD_EXECUTABLE(transferData utils/Transfer.C)
   if(VTK_LIBRARIES)
