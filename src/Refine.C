@@ -167,7 +167,7 @@ void Refine::run()
   MAd::M_writeMsh(MadMesh, "refined.msh", 2);
   
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
-  mesh->transfer(refinedVTK,"FE");
+  mesh->transfer(refinedVTK,"Finite Element");
 
   refinedVTK->write(ofname, ".vtu");
   if (refinedVTK)

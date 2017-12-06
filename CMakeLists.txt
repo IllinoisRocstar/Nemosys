@@ -177,7 +177,7 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
                  src/meshBase.C src/vtkMesh.C src/meshGen.C src/TransferBase.C  src/FETransfer.C
                  src/SizeFieldBase.C src/GradSizeField.C src/ValSizeField.C src/Refine.C 
-                 src/meshUser.C src/StlToVtk.C)
+                 src/meshUser.C src/NemDrivers.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
@@ -243,6 +243,24 @@ IF(BUILD_UTILS)
   SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
      -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
       -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+
+  #Transfer utility
+  ADD_EXECUTABLE(transferData utils/Transfer.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(transferData Nemosys)
+  else()
+    TARGET_LINK_LIBRARIES(transferData Nemosys vtkHybrid vtkWidgets)
+  endif()
+  INSTALL(TARGETS transferData RUNTIME DESTINATION bin)
+
+  #RefineMesh utility
+  ADD_EXECUTABLE(RefineMesh utils/RefineMesh.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(RefineMesh Nemosys)
+  else()
+    TARGET_LINK_LIBRARIES(RefineMesh Nemosys vtkHybrid vtkWidgets)
+  endif()
+  INSTALL(TARGETS RefineMesh RUNTIME DESTINATION bin)
 
   #vol2planeTransfer utility
   ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)

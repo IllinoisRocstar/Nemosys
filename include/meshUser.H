@@ -61,9 +61,14 @@ class meshUser
   public:
     // transfer point data with given id from this user to target
     int transfer(meshUser* target, std::string method, int arrayID);
+    // transfer point data with given name from this user to target
+    int transfer(meshUser* target, std::string method, std::string arrayName);
     // transfer point data with given ids from this user to target
     int transfer(meshUser* target, std::string method, 
-                           const std::vector<int>& arrayIDs);
+                 const std::vector<int>& arrayIDs);
+    // transfer point data with given names fro mthis user to target
+    int transfer(meshUser* target, std::string method, 
+                 const std::vector<string>& arrayNames);
     // transfer all point data from this user to target
     int transfer(meshUser* target, std::string method);
 
@@ -75,7 +80,11 @@ class meshUser
   public:
     void refineMesh(std::string method, int arrayID, 
                     double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
-
+    void refineMesh(std::string method, std::string arrayName, 
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
+    // added for uniform refinement by driver
+    void refineMesh(std::string method, double edge_scale, std::string ofname); 
+  
   // diagnostics
   public:
     // print coordinates of point with id
