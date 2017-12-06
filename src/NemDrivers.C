@@ -1,5 +1,38 @@
 #include <NemDrivers.H>
 
+NemDriver* NemDriver::readJSON(std::string ifname)
+{
+  std::ifstream inputStream(ifname);
+  if (!inputStream.good() || find_ext(ifname) != ".json")
+  {
+    std::cout << "Error opening file " << ifname << std::endl;
+    exit(1);
+  }
+  if (find_ext(ifname) != ".json")
+  {
+    std::cout << "Input File must be in .json format" << std::endl;
+    exit(1);
+  }
+
+  json inputjson;
+  inputStream >> inputjson;
+  std::string program_type = inputjson["Program Type"].as<std::string>();
+  if (!program_type.compare("Transfer"))
+  {
+    return TransferDriver::readJSON(inputjson); 
+  }
+  else if (!program_type.compare("Refinement"))
+  {
+    return RefineDriver::readJSON(inputjson);
+  }
+  else
+  {
+    std::cout << "Program Type " << program_type 
+              << " is not supported by  Nemosys" << std::endl;
+    exit(1);
+  }
+  
+}
 
 TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
                                std::string method, std::string ofname)
@@ -10,7 +43,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
   T.start();
   source->transfer(target, method);
   T.stop();
-  std::cout << "Time spent transferring data (ms)" << T.elapsed() << std::endl;
+  std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
   target->write(ofname); 
 }
 
@@ -24,7 +57,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh, std::stri
   T.start();
   source->transfer(target, method, arrayNames);
   T.stop();
-  std::cout << "Time spent transferring data (ms)" << T.elapsed() << std::endl;
+  std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
   target->write(ofname); 
 }
 
@@ -42,22 +75,8 @@ TransferDriver::~TransferDriver()
   }
 }
 
-TransferDriver* TransferDriver::readJSON(std::string ifname)
+TransferDriver* TransferDriver::readJSON(json inputjson)
 {
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
-  {
-    std::cout << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-  if (find_ext(ifname) != ".json")
-  {
-    std::cout << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
-
-  json inputjson;
-  inputStream >> inputjson;
   std::string srcmsh; 
   std::string trgmsh; 
   std::string outmsh; 
@@ -98,6 +117,26 @@ TransferDriver* TransferDriver::readJSON(std::string ifname)
   }
   
   return trnsdrvobj;
+
+}
+
+TransferDriver* TransferDriver::readJSON(std::string ifname)
+{
+  std::ifstream inputStream(ifname);
+  if (!inputStream.good() || find_ext(ifname) != ".json")
+  {
+    std::cout << "Error opening file " << ifname << std::endl;
+    exit(1);
+  }
+  if (find_ext(ifname) != ".json")
+  {
+    std::cout << "Input File must be in .json format" << std::endl;
+    exit(1);
+  }
+
+  json inputjson;
+  inputStream >> inputjson;
+  return TransferDriver::readJSON(inputjson);
     
 }
 
@@ -150,23 +189,9 @@ RefineDriver::~RefineDriver()
   }
 }
 
-RefineDriver* RefineDriver::readJSON(std::string ifname)
+RefineDriver* RefineDriver::readJSON(json inputjson)
 {
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
-  {
-    std::cout << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-  if (find_ext(ifname) != ".json")
-  {
-    std::cout << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
-
   RefineDriver* refdrvobj;
-  json inputjson;
-  inputStream >> inputjson;
   std::string _mesh;
   std::string ofname;
   std::string method;
@@ -191,6 +216,27 @@ RefineDriver* RefineDriver::readJSON(std::string ifname)
                                  edgescale, ofname);
   }
   return refdrvobj;  
+}
+
+RefineDriver* RefineDriver::readJSON(std::string ifname)
+{
+  std::ifstream inputStream(ifname);
+  if (!inputStream.good() || find_ext(ifname) != ".json")
+  {
+    std::cout << "Error opening file " << ifname << std::endl;
+    exit(1);
+  }
+  if (find_ext(ifname) != ".json")
+  {
+    std::cout << "Input File must be in .json format" << std::endl;
+    exit(1);
+  }
+
+
+  json inputjson;
+  inputStream >> inputjson;
+
+  return RefineDriver::readJSON(inputjson);
 }
 
 

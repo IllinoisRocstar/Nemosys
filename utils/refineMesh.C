@@ -136,7 +136,8 @@ int main(int argc, char* argv[])
 
   std::cout << params["Mesh File Options"]["Output Mesh File"].as<std::string>() << std::endl;
 
-  TransferDriver* trnsdrvobj = TransferDriver::readJSON("transfer.json");
+  std::string ifname = "transfer.json";
+  TransferDriver* trnsdrvobj = TransferDriver::readJSON(ifname);
   if (trnsdrvobj) delete trnsdrvobj;
  
 
