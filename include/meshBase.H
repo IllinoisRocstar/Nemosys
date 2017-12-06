@@ -161,6 +161,8 @@ class meshBase
     void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
     void setSFBool(bool q) { hasSizeField = q; }  
     bool getSFBool() { return hasSizeField; }
+    // check for named array in vtk 
+    int IsArrayName(std::string name);
   
   // adaptive mesh refinement
   public:

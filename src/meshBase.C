@@ -806,6 +806,20 @@ void meshBase::refineMesh(std::string method, int arrayID,
   }
 }
 
+// check for named array in vtk 
+int meshBase::IsArrayName(std::string name)
+{
+  vtkPointData* pd = dataSet->GetPointData();
+  if (pd->GetNumberOfArrays()) {
+    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+      std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
+      if (!name.compare(curr_name)) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
