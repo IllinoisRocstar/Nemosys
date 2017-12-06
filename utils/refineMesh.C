@@ -3,6 +3,7 @@
 //#include <netgenInterface.H>
 #include<meshUser.H>
 #include <NemDrivers.H>
+#include <jsoncons/json.hpp>
 /******************************************************************************
 * Usage: refineMesh meshFile outputMesh array_id refine_method stdev_mult     *
                                                                               * 
@@ -51,7 +52,7 @@ int main(int argc, char* argv[])
   // ----- END MESH GEN TEST -----//
   
   // -- DATA TRANSFER TEST -----//
-  Timer T;
+  /*Timer T;
   T.start();
   //meshUser* source = new meshUser("case0002.vtu");
   //meshUser* target = new meshUser("refined1.vtk");
@@ -62,13 +63,13 @@ int main(int argc, char* argv[])
   std::cout << "Time spent constructing meshUsers " << T.elapsed() << "\n\n";
   T.start();
   std::vector<int> ids = {2,3,4,7};
-  source->transfer(target,"FE", ids);
+  source->transfer(target,"Finite Element", ids);
   T.stop();
   std::cout << "Time spent transferring data " << T.elapsed() << "\n\n";
   //target->write("refined1_transfer.vtu");
   target->write("refined_beam_transfer.vtu");
   if (source) delete source;
-  if (target) delete target;
+  if (target) delete target;*/
   // ---- END DATA TRANSFER TEST ----// 
 
   // ---- SF GEN TEST ---------//
@@ -94,12 +95,50 @@ int main(int argc, char* argv[])
   //if (user2) delete user2;
   // ---- END REFINEMENT TEST ---//
 
-  TransferDriver* trnsdriver = new TransferDriver("unrefined_beam.vtu", 
-                                                  "refined_beam.vtk",
-                                                  "driver_test.vtu");
-  if (trnsdriver) delete trnsdriver;
+//  TransferDriver* trnsdriver = new TransferDriver("unrefined_beam.vtu", 
+//                                                  "refined_beam.vtk",
+//                                                  "driver_test.vtu");
+//  if (trnsdriver) delete trnsdriver;
+
+  using jsoncons::json;
+  json InputMeshes = 
+    json::object
+    { 
+      {"Source Mesh", "unrefined_beam.vtu"},
+      {"Target Mesh", "refined_beam.vtk"},
+    };
+  json meshes;
+  meshes["Input Mesh Files"] = std::move(InputMeshes);
+  meshes["Output Mesh File"] = "driver_test.vtu";
+
+  json transfer;
+  transfer["Transfer All Arrays"] = "False";
+  json array_names = json::array();
+  array_names.add("stress_xx");
+  array_names.add("stress_zz");
+  array_names.add("displacement");
+  transfer["Array Names"] = std::move(array_names);
+  transfer["Method"] = "Finite Element";
+
+  json params;
+  params["Mesh File Options"] = std::move(meshes);
+  params["Transfer Options"] = std::move(transfer); 
+  std::cout << pretty_print(params) << std::endl;
 
 
+  json arrays = json::array();
+  auto d = params["Transfer Options"]["Array Names"].as<std::deque<std::string>>();
+  for (auto x : d)
+  {
+    arrays.add(x);
+  }
+  std::cout << pretty_print(arrays) << std::endl;
+
+  std::cout << params["Mesh File Options"]["Output Mesh File"].as<std::string>() << std::endl;
+
+  TransferDriver* trnsdrvobj = TransferDriver::readJSON("transfer.json");
+  if (trnsdrvobj) delete trnsdrvobj;
+ 
 
 //  // Check input
 //  if (argc < 7  && strcmp(argv[1], "Nek")) 

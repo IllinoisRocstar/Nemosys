@@ -2,6 +2,7 @@
 #define NEMDRIVERS_H
 
 #include <meshUser.H>
+#include <jsoncons/json.hpp>
 
 
 /* ---------------------------------------------------- 
@@ -30,66 +31,39 @@ TODO: This class will contain drivers for several utils:
    -------------------------------------------------- */
 
 
+using jsoncons::json;
 
 class TransferDriver
 {
   public:
-    TransferDriver(std::string srcmsh, std::string trgmsh,
-                   std::string ofname)
-    {
-      source = new meshUser(srcmsh);
-      target = new meshUser(trgmsh);
-      Timer T;
-      T.start();
-      source->transfer(target, "FE");
-      T.stop();
-      std::cout << "Time spent transferring data (ms)" << T.elapsed() << std::endl;
-      target->write(ofname); 
-    }
+    TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
+                   std::string ofname);
 
-    TransferDriver(std::string srcmsh, std::string trgmsh, int arrayID,
-                   std::string ofname)
-    {
-      source = new meshUser(srcmsh);
-      target = new meshUser(trgmsh);
-      Timer T;
-      T.start();
-      source->transfer(target, "FE", arrayID);
-      T.stop();
-      std::cout << "Time spent transferring data (ms)" << T.elapsed() << std::endl;
-      target->write(ofname); 
-    }
+    TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
+                   std::vector<std::string> arrayNames, std::string ofname);
 
-    TransferDriver(std::string srcmsh, std::string trgmsh, std::vector<int> arrayIDs,
-                   std::string ofname)
-    {
-      source = new meshUser(srcmsh);
-      target = new meshUser(trgmsh);
-      Timer T;
-      T.start();
-      source->transfer(target, "FE", arrayIDs);
-      T.stop();
-      std::cout << "Time spent transferring data (ms)" << T.elapsed() << std::endl;
-      target->write(ofname); 
-    }
+    static TransferDriver* readJSON(std::string ifname);
 
-    ~TransferDriver()
-    {
-      if (source)
-      {
-        delete source;
-        source = 0;
-      }
-      if (target)
-      {
-        delete target;
-        target = 0;
-      }
-    }
+    ~TransferDriver();
 
   private:
     meshUser* source;
     meshUser* target; 
+};
+
+class RefineDriver
+{
+  public:
+    RefineDriver(std::string _mesh, std::string method, std::string arrayName,
+                 double dev_mult, bool maxIsmin, double edgescale, std::string ofname);
+    RefineDriver(std::string _mesh, std::string method, 
+                 double edgescale, std::string ofname);
+
+  static RefineDriver* readJSON(std::string ifname);
+  ~RefineDriver();
+
+  private:
+    meshUser* mesh;
 
 };
 

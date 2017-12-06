@@ -96,6 +96,40 @@ int meshUser::transfer(meshUser* target, std::string method)
   return mesh->transfer(target->getMesh(), method);
 }
 
+// TODO: Probably can delete this function
+// transfer point data with given name from this user to target
+int meshUser::transfer(meshUser* target, std::string method, std::string arrayName)
+{
+  int arrayID = mesh->IsArrayName(arrayName);
+  if (arrayID == -1)
+  {
+    std::cout << "Array " << arrayName 
+              << " not found in set of point data arrays" << std::endl;
+    exit(1);
+  }
+  
+  return mesh->transfer(target->getMesh(),method);
+}
+
+// transfer point data with given names fro mthis user to target
+int meshUser::transfer(meshUser* target, std::string method, 
+             const std::vector<string>& arrayNames)
+{
+  std::vector<int> arrayIDs(arrayNames.size());
+  for (int i = 0; i < arrayNames.size(); ++i)
+  {
+    int id = mesh->IsArrayName(arrayNames[i]);
+    if (id == -1)
+    {
+      std::cout << "Array " << arrayNames[i] 
+                << " not found in set of point data arrays" << std::endl;
+      exit(1);
+    }
+    arrayIDs[i] = id;
+  }
+  return mesh->transfer(target->getMesh(),method,arrayIDs);
+}
+
 // size field generation
 void meshUser::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
@@ -119,4 +153,22 @@ void meshUser::refineMesh(std::string method, int arrayID,
                           double edge_scale, std::string ofname)
 {
   mesh->refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
+}
+
+void meshUser::refineMesh(std::string method, std::string arrayName, 
+                          double dev_mult, bool maxIsmin, 
+                          double edge_scale, std::string ofname)
+{
+  int arrayID = mesh->IsArrayName(arrayName);
+  if (arrayID == -1)
+  {
+    std::cout << "Array " << arrayName
+              << " not fuond in set of point data arrays" << std::endl;
+    exit(1);
+  }
+  mesh->refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
+}
+void meshUser::refineMesh(std::string method, double edge_scale, std::string ofname)
+{
+  mesh->refineMesh(method, 0, 0, 0, edge_scale, ofname);
 }
