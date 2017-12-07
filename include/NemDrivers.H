@@ -30,6 +30,14 @@ TODO: This class will contain drivers for several utils:
 
    -------------------------------------------------- */
 
+/*
+  MAJOR TODO: gut meshUser out of Nemosys. the driver classes act   
+              as mesh users, so the user class is redundant
+
+              you'll need to migrate some implementation from user to
+              meshBase, like overloads of transfer for string identifier of array
+
+*/
 
 using jsoncons::json;
 
@@ -83,7 +91,6 @@ class MeshGenDriver : public NemDriver
 {
   public:
     
-    MeshGenDriver(std::string ifname, std::string meshEngine, std::string ofname);
     MeshGenDriver(std::string ifname, std::string meshEngine, 
                   meshingParams* params, std::string ofname);
     ~MeshGenDriver();

@@ -1,7 +1,7 @@
 #include <meshUser.H>
 
 
-int meshUser::generateMesh(std::string filename, std::string meshEngine)
+/*int meshUser::generateMesh(std::string filename, std::string meshEngine)
 {
   if (filename.find(".stl") == -1)
   {
@@ -15,7 +15,7 @@ int meshUser::generateMesh(std::string filename, std::string meshEngine)
   
   return 0;
 
-}
+}*/
 int meshUser::generateMesh(std::string filename, std::string meshEngine, meshingParams* params)
 {
   if (filename.find(".stl") == -1)
