@@ -169,7 +169,7 @@ void Refine::run()
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   mesh->transfer(refinedVTK,"Finite Element");
 
-  refinedVTK->write(ofname, ".vtu");
+  refinedVTK->write(ofname);
   if (refinedVTK)
   {
     delete refinedVTK;

@@ -65,6 +65,13 @@ meshBase* meshBase::Create(std::string fname)
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
                                  meshingParams* params)
 {
+
+  if (fname.find(".stl") == -1)
+  {
+    std::cout << "Only CAD files in STL format are supported" << std::endl;
+    exit(1);
+  }
+
   meshGen* generator = meshGen::Create(fname, meshEngine, params);
   int status = generator->createMeshFromSTL(&fname[0u]);
   if (generator) 
@@ -80,6 +87,21 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   }
 }
 
+
+// check for named array in vtk 
+int meshBase::IsArrayName(std::string name)
+{
+  vtkPointData* pd = dataSet->GetPointData();
+  if (pd->GetNumberOfArrays()) {
+    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
+      std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
+      if (!name.compare(curr_name)) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
 
 
 // transfer point data with given id from this mesh to target
@@ -111,6 +133,26 @@ int meshBase::transfer(meshBase* target, std::string method,
   }
   return 0;
 }
+
+int meshBase::transfer(meshBase* target, std::string method, const std::vector<std::string>& arrayNames)
+{
+  std::vector<int> arrayIDs(arrayNames.size());
+  for (int i = 0; i < arrayNames.size(); ++i)
+  {
+    int id = this->IsArrayName(arrayNames[i]);
+    if (id == -1)
+    {
+      std::cout << "Array " << arrayNames[i] 
+                << " not found in set of point data arrays" << std::endl;
+      exit(1);
+    }
+    arrayIDs[i] = id;
+  }
+  return transfer(target, method,arrayIDs);
+
+}
+
+
 
 
 // transfer all point data from this mesh to target
@@ -376,7 +418,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
-  vtkmesh->setFileName(fname);
+  vtkmesh->setFileName(trim_fname(fname,".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
@@ -457,7 +499,7 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
-  vtkmesh->setFileName(fname);
+  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   if(Ngmesh) nglib::Ng_DeleteMesh(Ngmesh);
@@ -819,20 +861,27 @@ void meshBase::refineMesh(std::string method, int arrayID,
   }
 }
 
-// check for named array in vtk 
-int meshBase::IsArrayName(std::string name)
+void meshBase::refineMesh(std::string method, std::string arrayName, 
+               					  double dev_mult, bool maxIsmin, 
+													double edge_scale, std::string ofname)
 {
-  vtkPointData* pd = dataSet->GetPointData();
-  if (pd->GetNumberOfArrays()) {
-    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
-      std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
-      if (!name.compare(curr_name)) {
-        return i;
-      }
-    }
+  int arrayID = IsArrayName(arrayName);
+  if (arrayID == -1)
+  {
+    std::cout << "Array " << arrayName
+              << " not fuond in set of point data arrays" << std::endl;
+    exit(1);
   }
-  return -1;
+  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
+
 }
+// added for uniform refinement by driver
+void meshBase::refineMesh(std::string method, double edge_scale, std::string ofname)
+{
+  refineMesh(method, 0, 0, 0, edge_scale, ofname);
+}
+
+
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {

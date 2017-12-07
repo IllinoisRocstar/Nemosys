@@ -1,7 +1,7 @@
 #ifndef NEMDRIVERS_H
 #define NEMDRIVERS_H
 
-#include <meshUser.H>
+#include <meshBase.H>
 #include <jsoncons/json.hpp>
 
 
@@ -31,12 +31,15 @@ TODO: This class will contain drivers for several utils:
    -------------------------------------------------- */
 
 /*
-  MAJOR TODO: gut meshUser out of Nemosys. the driver classes act   
+  MAJOR TODO: gut meshBase out of Nemosys. the driver classes act   
               as mesh users, so the user class is redundant
 
               you'll need to migrate some implementation from user to
               meshBase, like overloads of transfer for string identifier of array
 
+
+	ADJUST FE TRANSFER TO LOCATE NEAREST NEIGHBOR OF POINT ON TARGET TO CELL CENTERS OF SOURCE MESH
+	USE THE NEAREST CELL CENTER TO DETERMINE CELLID
 */
 
 using jsoncons::json;
@@ -46,7 +49,7 @@ class NemDriver
   public:
     NemDriver(){};
     virtual ~NemDriver(){}
-    static NemDriver* readJSON(std::string fname);
+    static NemDriver* readJSON(json inputjson);
 };
 
 
@@ -65,8 +68,8 @@ class TransferDriver : public NemDriver
     ~TransferDriver();
 
   private:
-    meshUser* source;
-    meshUser* target; 
+    meshBase* source;
+    meshBase* target; 
 };
 
 class RefineDriver : public NemDriver
@@ -83,7 +86,7 @@ class RefineDriver : public NemDriver
   ~RefineDriver();
 
   private:
-    meshUser* mesh;
+    meshBase* mesh;
 
 };
 
@@ -98,7 +101,7 @@ class MeshGenDriver : public NemDriver
     static MeshGenDriver* readJSON(json inputjson);
 
   private:
-    meshUser* mesh; 
+    meshBase* mesh; 
     meshingParams* params;
 };
 
