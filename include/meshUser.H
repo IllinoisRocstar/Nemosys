@@ -22,8 +22,6 @@ class meshUser
       
       std::cout << "user constructed" << std::endl;
     }
-
-
     
     ~meshUser()
     {
@@ -56,7 +54,9 @@ class meshUser
   // mesh generation
   public:
     int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
-  
+    int generateMesh(std::string filename, std::string meshEngine, meshingParams* params); 
+
+ 
   // data transfer
   public:
     // transfer point data with given id from this user to target
@@ -100,7 +100,8 @@ class meshUser
     void writeMSH(std::string fname);
     // convert to gmsh format with specified point or cell data
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID); 
-  
+    void setFileName(std::string _fname) { fname = _fname; write_ext = find_ext(fname);} 
+ 
   private:
     meshBase* mesh;
     std::string fname;

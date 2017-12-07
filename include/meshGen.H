@@ -3,38 +3,69 @@
 
 #include <meshBase.H>
 
-// TODO: Probably don't need base class. Separate meshGens (netgen, etc.)
-//       should be fine
+class meshingParams
+{
+  public:
+    meshingParams(){};
+    virtual ~meshingParams(){};    
+    
+};
+
+class NetgenParams : public meshingParams
+{
+  
+  public:
+    // initializing params with defaults
+    NetgenParams();
+    ~NetgenParams(){};
+  
+  public:
+    bool uselocalh;
+    double maxh;
+    double fineness;  
+    double grading;
+    double elementsperedge;
+    double elementspercurve;
+    bool closeedgeenable;
+    double closeedgefact;
+    bool second_order;
+    std::string meshsize_filename;
+    bool quad_dominated;
+    bool optvolmeshenable;
+    int optsteps_2d;
+    int optsteps_3d;
+    bool invert_tets;
+    bool invert_trigs;
+    bool check_overlap;
+    bool check_overlapping_boundary;
+};
 
 class meshGen 
 {
   public:
     meshGen(){};
-    ~meshGen(){}; 
+    virtual ~meshGen(){}
+    
+    // creates generator with default parameters
+    static meshGen* Create(std::string fname, std::string meshEngine);
+    // creates generater with specified parameters
+    static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
     virtual int createMeshFromSTL(char* fname) = 0;
+
 };
 
 class meshNetgen : public meshGen
 {
-  // constructor and destructor
+
   public:
-    meshNetgen():mp()
-    {
-      std::cout << "initializing netgen mesh generator" << std::endl;
-      nglib::Ng_Init();
-      mesh = nglib::Ng_NewMesh();
-    }
+    meshNetgen();
+
+    meshNetgen(NetgenParams* params);
     
-    ~meshNetgen()
-    {
-      std::cout << "finalizing netgen mesh generator" << std::endl;
-      if(mesh)
-      {
-        nglib::Ng_DeleteMesh(mesh);
-        mesh = 0; 
-      }
-      nglib::Ng_Exit();
-    }      
+    ~meshNetgen();
+
+    void set_mp(NetgenParams* params);
+      
 
   // netgen mesh creation
   public:
