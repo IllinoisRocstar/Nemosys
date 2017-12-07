@@ -119,12 +119,6 @@ int meshNetgen::createMeshFromSTL(char* fname)
   }   
   cout << "Successfully loaded STL File: " << fname << endl;
 
-  // Set the Meshing Parameters to be used
-  /*mp.maxh = 1.0e+6;
-  mp.fineness = 0.4;
-  mp.second_order = 0;*/
-  //set_mp(params);
-
   cout << "Initialise the STL Geometry structure...." << endl;
   ng_res = Ng_STL_InitSTLGeometry(stl_geom);
   if(ng_res != NG_OK)

@@ -75,23 +75,6 @@ namespace nglib
 #include <algorithm>
 #include <cstdio>
 
-/*TODO: This class is responsible for reading in a *mesh* file and exporting it 
-        to a vtkMesh object. In this way, we have access to the methods provided
-          through the vtkDataSet- the core member of a vtkMesh object.
-  
-  TODO: MESHGEN: Given a cad file, surface or volume mesh generation will be delegated to 
-        a separate mesh gen class
-
-  TODO: TRANSFER: Given two vtkMesh objects of same geometry with point or cell data, 
-        transfer data from one to other. This will be plugged in after the refinement
-        and will be based on MadLibs or implementing using methods from VTK API
-  
-  TODO: SFGEN: This class will provide the interface for generating size fields based
-        on data-> derived classes like gradient, value, error estimator etc
-        output is a vtkMesh object with size field data
-  
-*/
-
 class meshingParams;
 
 class meshBase
@@ -121,7 +104,7 @@ class meshBase
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
     // generate volume mesh from stl
-    static meshBase* generateMesh(std::string fname, std::string meshEngine);    
+    //static meshBase* generateMesh(std::string fname, std::string meshEngine);    
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
     

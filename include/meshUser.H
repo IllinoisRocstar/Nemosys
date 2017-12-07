@@ -53,7 +53,7 @@ class meshUser
 
   // mesh generation
   public:
-    int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
+    //int generateMesh(std::string filename, std::string meshEngine); //meshEngine=netgen||gmsh
     int generateMesh(std::string filename, std::string meshEngine, meshingParams* params); 
 
  

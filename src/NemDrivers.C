@@ -248,15 +248,6 @@ RefineDriver* RefineDriver::readJSON(std::string ifname)
 }
 
 // ----------------------------- MeshGen Driver -----------------------------------//
-MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
-                             std::string ofname)
-{
-  mesh = new meshUser();
-  mesh->generateMesh(ifname, meshEngine);
-  mesh->setFileName(ofname);
-  mesh->report();
-  mesh->write();
-}
 
 MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
                              meshingParams* _params, std::string ofname)
@@ -296,50 +287,53 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
                                     ["Netgen Parameters"].as<std::string>();
     if (!defaults.compare("default"))
     {
-      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, ofname);
+      NetgenParams* params = new NetgenParams();
+      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
     else
     {
+      json ngparams = inputjson["Meshing Parameters"]["Netgen Parameters"];
       
       NetgenParams* params = new NetgenParams();  
-      
-      params->uselocalh = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                   ["uselocalh"].as<bool>();
-      params->maxh = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                              ["maxh"].as<double>();
-      params->fineness = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                  ["fineness"].as<double>();
-      params->grading = inputjson["Meshing Parameters"]["Netgen Parameters"]  
-                                  ["grading"].as<double>();
-      params->elementsperedge = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                         ["elementsperedge"].as<double>();
-      params->elementspercurve = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                          ["elementspercurve"].as<double>();
-      params->closeedgeenable = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                         ["closeedgeenable"].as<bool>();
-      params->closeedgefact  = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                        ["closeedgefact"].as<double>();
-      params->second_order  = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                       ["second_order"].as<bool>();
-      params->meshsize_filename = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                           ["meshsize_filename"].as<std::string>();
-      params->quad_dominated  = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                         ["quad_dominated"].as<bool>();
-      params->optvolmeshenable = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                          ["optvolmeshenable"].as<bool>();
-      params->optsteps_2d = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                     ["optsteps_2d"].as<int>();
-      params->optsteps_3d = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                     ["optsteps_3d"].as<int>();
-      params->invert_tets = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                     ["invert_tets"].as<bool>();
-      params->invert_trigs = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                      ["invert_trigs"].as<bool>();
-      params->check_overlap = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                       ["check_overlap"].as<bool>();
-      params->check_overlapping_boundary = inputjson["Meshing Parameters"]["Netgen Parameters"]
-                                                    ["check_overlapping_boundary"].as<bool>();
+     
+      if (ngparams.has_key("uselocalh")) 
+        params->uselocalh = ngparams["uselocalh"].as<bool>();
+      if (ngparams.has_key("maxh"))
+        params->maxh = ngparams["maxh"].as<double>();
+      if (ngparams.has_key("fineness"))
+        params->fineness = ngparams["fineness"].as<double>();
+      if (ngparams.has_key("grading"))
+        params->grading = ngparams["grading"].as<double>();
+      if (ngparams.has_key("elementsperedge"))
+        params->elementsperedge = ngparams["elementsperedge"].as<double>();
+      if (ngparams.has_key("elementspercurve"))
+        params->elementspercurve = ngparams["elementspercurve"].as<double>();
+      if (ngparams.has_key("closeedgeenable"))
+        params->closeedgeenable = ngparams["closeedgeenable"].as<bool>();
+      if (ngparams.has_key("closeedgefact"))
+        params->closeedgefact  = ngparams["closeedgefact"].as<double>();
+      if (ngparams.has_key("second_order"))
+        params->second_order  = ngparams["second_order"].as<bool>();
+      if (ngparams.has_key("meshsize_filename"))
+        params->meshsize_filename = ngparams["meshsize_filename"].as<std::string>();
+      if (ngparams.has_key("quad_dominated"))
+        params->quad_dominated  = ngparams["quad_dominated"].as<bool>();
+      if (ngparams.has_key("optvolmeshenable"))
+        params->optvolmeshenable = ngparams["optvolmeshenable"].as<bool>();
+      if (ngparams.has_key("optsteps_2d"))
+        params->optsteps_2d = ngparams["optsteps_2d"].as<int>();
+      if (ngparams.has_key("optsteps_3d"))
+        params->optsteps_3d = ngparams["optsteps_3d"].as<int>();
+      if (ngparams.has_key("invert_tets"))
+        params->invert_tets = ngparams["invert_tets"].as<bool>();
+      if (ngparams.has_key("invert_trigs"))
+        params->invert_trigs = ngparams["invert_trigs"].as<bool>();
+      if (ngparams.has_key("check_overlap"))
+        params->check_overlap = ngparams["check_overlap"].as<bool>();
+      if (ngparams.has_key("check_overlapping_boundary"))
+        params->check_overlapping_boundary = ngparams["check_overlapping_boundary"].as<bool>();
+
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }

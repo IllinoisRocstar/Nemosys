@@ -45,7 +45,7 @@ meshBase* meshBase::Create(std::string fname)
   
 }
 
-meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
+/*meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
 {
   meshGen* generator = meshGen::Create(fname, meshEngine);
   int status = generator->createMeshFromSTL(&fname[0u]);
@@ -60,7 +60,7 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
     return exportVolToVtk(newname);    
     
   }
-}
+}*/
 
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
                                  meshingParams* params)
