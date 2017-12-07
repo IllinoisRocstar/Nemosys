@@ -134,11 +134,14 @@ class meshBase
 
   // data transfer
   public:
-    // transfer data from this mesh to target
+    // transfer point data with given id from this user to target
     int transfer(meshBase* target, std::string method, int arrayID);
     // transfer point data with given ids from this mesh to target
     int transfer(meshBase* target, std::string method, 
                  const std::vector<int>& arrayIDs);
+    // transfer point data with given names fro mthis user to target
+    int transfer(meshBase* target, std::string method, 
+                 const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
  
@@ -154,17 +157,22 @@ class meshBase
   public:
     void refineMesh(std::string method, int arrayID, 
                     double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
+    void refineMesh(std::string method, std::string arrayName, 
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
+    // added for uniform refinement by driver
+    void refineMesh(std::string method, double edge_scale, std::string ofname); 
   
   // diagnostics
   public:
-    virtual void report(char* fname){}; 
+    virtual void report(){}; 
     int getNumberOfPoints() {return numPoints;}
     int getNumberOfCells() { return numCells;}
 
   // write and conversion
   public:
-    virtual void write(std::string fname, std::string extension){}
-    // convert to gmsh format without data 
+    virtual void write(){}
+    virtual void write(std::string fname){}
+		// convert to gmsh format without data 
     void writeMSH(std::ofstream& outputStream);
     void writeMSH(std::string fname);
     // convert to gmsh format with specified point or cell data
@@ -186,6 +194,7 @@ class meshBase
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
     vtkDataSet* dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
+
 };
 
 

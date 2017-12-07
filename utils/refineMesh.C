@@ -1,7 +1,6 @@
 // Nemosys
 //#include <meshPhys.H>
 //#include <netgenInterface.H>
-#include<meshUser.H>
 #include <NemDrivers.H>
 #include <jsoncons/json.hpp>
 /******************************************************************************
@@ -74,24 +73,24 @@ int main(int argc, char* argv[])
 
   // ---- SF GEN TEST ---------//
  
-  meshUser* user = new meshUser("unrefined_beam.vtu");
-  user->generateSizeField("gradient", 7, .5, 1);
-  user->report();
-  user->write("unrefined_beamSF.vtu");
-  if (user) delete user;
- 
-  // ---- END SF GEN TEST ------//
-
-  // --- REFINEMENT TESTS -----//
-  
-  meshUser* user1 = new meshUser("case0001.vtu");
-  //user1->refineMesh("gradient",7,.5,1,0);
-  //user1->report();
-  user1->refineMesh("uniform",0,0,0,1.5, "refined_case0001.vtu");
-  user1->report();
-  //meshUser* user2 = new meshUser("unrefined_beam_refined.vtu");
-  //user2->report();
-  if (user1) delete user1;
+//  meshUser* user = new meshUser("unrefined_beam.vtu");
+//  user->generateSizeField("gradient", 7, .5, 1);
+//  user->report();
+//  user->write("unrefined_beamSF.vtu");
+//  if (user) delete user;
+// 
+//  // ---- END SF GEN TEST ------//
+//
+//  // --- REFINEMENT TESTS -----//
+//  
+//  meshUser* user1 = new meshUser("case0001.vtu");
+//  //user1->refineMesh("gradient",7,.5,1,0);
+//  //user1->report();
+//  user1->refineMesh("uniform",0,0,0,1.5, "refined_case0001.vtu");
+//  user1->report();
+//  //meshUser* user2 = new meshUser("unrefined_beam_refined.vtu");
+//  //user2->report();
+//  if (user1) delete user1;
   //if (user2) delete user2;
   // ---- END REFINEMENT TEST ---//
 
