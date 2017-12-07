@@ -1,5 +1,7 @@
 #include <NemDrivers.H>
+#include <meshGen.H>
 
+//------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver* NemDriver::readJSON(std::string ifname)
 {
   std::ifstream inputStream(ifname);
@@ -25,6 +27,10 @@ NemDriver* NemDriver::readJSON(std::string ifname)
   {
     return RefineDriver::readJSON(inputjson);
   }
+  else if (!program_type.compare("Mesh Generation"))
+  {
+    return MeshGenDriver::readJSON(inputjson);
+  }
   else
   {
     std::cout << "Program Type " << program_type 
@@ -34,6 +40,7 @@ NemDriver* NemDriver::readJSON(std::string ifname)
   
 }
 
+//----------------------- Transfer Driver -----------------------------------------//
 TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
                                std::string method, std::string ofname)
 {
@@ -140,6 +147,7 @@ TransferDriver* TransferDriver::readJSON(std::string ifname)
     
 }
 
+// -------------------------------- Refine Driver -------------------------------------//
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName,
                            double dev_mult, bool maxIsmin, double edgescale, std::string ofname)
 {
@@ -239,5 +247,109 @@ RefineDriver* RefineDriver::readJSON(std::string ifname)
   return RefineDriver::readJSON(inputjson);
 }
 
+// ----------------------------- MeshGen Driver -----------------------------------//
+MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
+                             std::string ofname)
+{
+  mesh = new meshUser();
+  mesh->generateMesh(ifname, meshEngine);
+  mesh->setFileName(ofname);
+  mesh->report();
+  mesh->write();
+}
 
+MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
+                             meshingParams* _params, std::string ofname)
+{
+  params = _params;
+  mesh = new meshUser();
+  mesh->generateMesh(ifname, meshEngine, params);
+  mesh->setFileName(ofname);
+  mesh->report();
+  mesh->write();
+}
+
+MeshGenDriver::~MeshGenDriver()
+{
+  if (mesh)
+  {
+    delete mesh;
+    mesh = 0;
+  }
+  if (params)
+  {
+    delete params;
+    params = 0;
+  } 
+}
+
+MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
+{
+  std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
+  std::string ifname = inputjson["Mesh File Options"]
+                                ["Input Geometry File"].as<std::string>();
+  std::string ofname = inputjson["Mesh File Options"]
+                                ["Output Mesh File"].as<std::string>();
+  if (!meshEngine.compare("netgen"))
+  {
+    std::string defaults = inputjson["Meshing Parameters"]
+                                    ["Netgen Parameters"].as<std::string>();
+    if (!defaults.compare("default"))
+    {
+      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, ofname);
+      return mshgndrvobj;
+    }
+    else
+    {
+      
+      NetgenParams* params = new NetgenParams();  
+      
+      params->uselocalh = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                   ["uselocalh"].as<bool>();
+      params->maxh = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                              ["maxh"].as<double>();
+      params->fineness = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                  ["fineness"].as<double>();
+      params->grading = inputjson["Meshing Parameters"]["Netgen Parameters"]  
+                                  ["grading"].as<double>();
+      params->elementsperedge = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                         ["elementsperedge"].as<double>();
+      params->elementspercurve = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                          ["elementspercurve"].as<double>();
+      params->closeedgeenable = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                         ["closeedgeenable"].as<bool>();
+      params->closeedgefact  = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                        ["closeedgefact"].as<double>();
+      params->second_order  = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                       ["second_order"].as<bool>();
+      params->meshsize_filename = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                           ["meshsize_filename"].as<std::string>();
+      params->quad_dominated  = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                         ["quad_dominated"].as<bool>();
+      params->optvolmeshenable = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                          ["optvolmeshenable"].as<bool>();
+      params->optsteps_2d = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                     ["optsteps_2d"].as<int>();
+      params->optsteps_3d = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                     ["optsteps_3d"].as<int>();
+      params->invert_tets = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                     ["invert_tets"].as<bool>();
+      params->invert_trigs = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                      ["invert_trigs"].as<bool>();
+      params->check_overlap = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                       ["check_overlap"].as<bool>();
+      params->check_overlapping_boundary = inputjson["Meshing Parameters"]["Netgen Parameters"]
+                                                    ["check_overlapping_boundary"].as<bool>();
+      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+      return mshgndrvobj;
+    }
+
+
+  }
+  else
+  {
+    std::cout << "Mesh generation engine " << meshEngine << " is not supported" << std::endl;
+    exit(1);
+  }
+}
 

@@ -33,6 +33,24 @@ private:
 
 //---------------------Auxiliarry Function Declarations---------------------------------//
 
+/*
+Reasons for inline functions:
+ 
+  Per C++11 Standard, every program (after linking) shall contain exactly one definition 
+  of every non-inline function or variable that is odr-used (one-definition-rule-used) in the
+  program. An inline function shall be defined in every translation unit in which it 
+  is odr-used.
+
+  So, if functions are non-inline and defined in a header that is included in multiple 
+  translation units (separate source files), the linker will see the same symbol is
+  used more than once when merging object code. This violates odr. 
+  
+  If functions are inline and defined in a header, an exception is made to the odr rule, 
+  and it is defined in every translation unit in which it's used. Although inlining is a
+  non-binding request, the inline keyword succeeds at telling the linker to tolerate
+  multiple symbol definitions.
+*/
+
 // flattens vector of vectors
 template <typename T>
 std::vector<T> flatten(const std::vector<std::vector<T>>& v);
