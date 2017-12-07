@@ -18,13 +18,39 @@ template<class TWriter> void writeVTFile(std::string fname, vtkDataSet* dataSet)
   Writer->Write();
 }
 
-void vtkMesh::write(std::string fname, std::string extension)
+void vtkMesh::write()
 {
   if (!dataSet)
   {
     std::cout << "No dataSet to write!" << std::endl;
     exit(1);
-  } 
+  }
+	 
+	std::string extension = find_ext(filename);
+ 
+  if (extension == ".vtp")
+    writeVTFile<vtkXMLPolyDataWriter> (filename,dataSet);
+  else if (extension == ".vts")
+    writeVTFile<vtkXMLStructuredGridWriter> (filename, dataSet);
+  else if (extension == ".vtr")
+    writeVTFile<vtkXMLRectilinearGridWriter> (filename,dataSet);
+  else if (extension == ".vti")
+    writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
+  else if (extension == ".vto")
+    writeVTFile<vtkXMLHyperOctreeWriter> (filename,dataSet);
+  else
+    writeVTFile<vtkXMLUnstructuredGridWriter> (filename,dataSet);   // default is vtu 
+} 
+
+void vtkMesh::write(std::string fname)
+{
+  if (!dataSet)
+  {
+    std::cout << "No dataSet to write!" << std::endl;
+    exit(1);
+  }
+	 
+	std::string extension = find_ext(fname);
  
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -38,8 +64,8 @@ void vtkMesh::write(std::string fname, std::string extension)
     writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
-} 
-
+	
+}
 
 vtkMesh::vtkMesh(const char* fname)
 {
@@ -85,6 +111,8 @@ vtkMesh::vtkMesh(const char* fname)
     exit(1);
   }
 
+	std::string newname(fname);
+	setFileName(newname);
   std::cout << "vtkMesh constructed" << std::endl;
   numCells = dataSet->GetNumberOfCells();
   numPoints = dataSet->GetNumberOfPoints();
@@ -123,7 +151,7 @@ std::map<int, std::vector<double>> vtkMesh::getCell(int id)
   }
 }
 
-void vtkMesh::report(char* fname)
+void vtkMesh::report()
 {
   if (!dataSet)
   {
@@ -133,7 +161,7 @@ void vtkMesh::report(char* fname)
 
   typedef std::map<int,int> CellContainer;
   // Generate a report
-  std::cout << "Processing the dataset generated from " << fname << std::endl
+  std::cout << "Processing the dataset generated from " << filename << std::endl
      << " dataSet contains a " 
      << dataSet->GetClassName()
      <<  " that has " << numCells << " cells"

@@ -28,9 +28,10 @@ class vtkMesh : public meshBase
  
   // diagnostics
   public:
-    void report(char* fname);
-    void write(std::string fname, std::string extension); 
- 
+		void report();
+		void write();
+		void write(std::string fname); 
+
   // set and get point and cell data
   public:
     // set point data (numComponets per point determined by dim of data[0] 

@@ -2,22 +2,9 @@
 #include <meshGen.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
-NemDriver* NemDriver::readJSON(std::string ifname)
+NemDriver* NemDriver::readJSON(json inputjson)
 {
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
-  {
-    std::cout << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-  if (find_ext(ifname) != ".json")
-  {
-    std::cout << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
 
-  json inputjson;
-  inputStream >> inputjson;
   std::string program_type = inputjson["Program Type"].as<std::string>();
   if (!program_type.compare("Transfer"))
   {
@@ -44,8 +31,8 @@ NemDriver* NemDriver::readJSON(std::string ifname)
 TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
                                std::string method, std::string ofname)
 {
-  source = new meshUser(srcmsh);
-  target = new meshUser(trgmsh);
+  source = meshBase::Create(srcmsh);
+  target = meshBase::Create(trgmsh);
   Timer T;
   T.start();
   source->transfer(target, method);
@@ -58,8 +45,8 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
 TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
                                std::vector<std::string> arrayNames, std::string ofname)
 {
-  source = new meshUser(srcmsh);
-  target = new meshUser(trgmsh);
+  source = meshBase::Create(srcmsh);
+  target = meshBase::Create(trgmsh);
   Timer T;
   T.start();
   source->transfer(target, method, arrayNames);
@@ -151,13 +138,13 @@ TransferDriver* TransferDriver::readJSON(std::string ifname)
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName,
                            double dev_mult, bool maxIsmin, double edgescale, std::string ofname)
 {
-  mesh = new meshUser(_mesh);
+  mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname);  
   
-  meshUser* refinedmesh = new meshUser(ofname);
+  meshBase* refinedmesh = meshBase::Create(ofname);
   std::cout << std::endl;
   refinedmesh->report();
   std::cout << std::endl;
@@ -171,13 +158,13 @@ RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string ar
 
 RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname)
 {
-  mesh = new meshUser(_mesh);
+  mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, edgescale, ofname);
   
-  meshUser* refinedmesh = new meshUser(ofname);
+  meshBase* refinedmesh = meshBase::Create(ofname);
   std::cout << std::endl;
   refinedmesh->report();
   std::cout << std::endl;
@@ -253,7 +240,7 @@ MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine,
                              meshingParams* _params, std::string ofname)
 {
   params = _params;
-  mesh = new meshUser();
+  mesh = new meshBase();
   mesh->generateMesh(ifname, meshEngine, params);
   mesh->setFileName(ofname);
   mesh->report();
