@@ -47,25 +47,38 @@ meshBase* meshBase::Create(std::string fname)
 
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
 {
-  if (meshEngine == "netgen")
+  meshGen* generator = meshGen::Create(fname, meshEngine);
+  int status = generator->createMeshFromSTL(&fname[0u]);
+  if (generator) 
+  { 
+    delete generator;
+    generator=0;
+  }
+  if(!status) 
   {
-    meshNetgen* generator = new meshNetgen();
-    int status = generator->createMeshFromSTL(&fname[0u]);
-    if (generator) 
-    { 
-      delete generator;
-      generator=0;
-    }
-    if(!status) 
-    {
-      std::string newname = trim_fname(fname,".vol");
-      std::cout << fname << " " << meshEngine << " " << newname << std::endl;
-      return exportVolToVtk(newname);    
-      
-    }
+    std::string newname = trim_fname(fname,".vol");
+    return exportVolToVtk(newname);    
+    
   }
 }
 
+meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
+                                 meshingParams* params)
+{
+  meshGen* generator = meshGen::Create(fname, meshEngine, params);
+  int status = generator->createMeshFromSTL(&fname[0u]);
+  if (generator) 
+  { 
+    delete generator;
+    generator=0;
+  }
+  if(!status) 
+  {
+    std::string newname = trim_fname(fname,".vol");
+    return exportVolToVtk(newname);    
+    
+  }
+}
 
 
 

@@ -79,4 +79,20 @@ class RefineDriver : public NemDriver
 
 };
 
+class MeshGenDriver : public NemDriver
+{
+  public:
+    
+    MeshGenDriver(std::string ifname, std::string meshEngine, std::string ofname);
+    MeshGenDriver(std::string ifname, std::string meshEngine, 
+                  meshingParams* params, std::string ofname);
+    ~MeshGenDriver();
+
+    static MeshGenDriver* readJSON(json inputjson);
+
+  private:
+    meshUser* mesh; 
+    meshingParams* params;
+};
+
 #endif

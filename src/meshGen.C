@@ -1,6 +1,105 @@
 #include <meshGen.H>
 
 using namespace nglib;   
+
+NetgenParams::NetgenParams()
+{
+  uselocalh                   = 1;
+  maxh                        = 1000.0;
+  fineness                    = 0.5;
+  grading                     = 0.3;
+  elementsperedge             = 2.0;
+  elementspercurve            = 2.0; 
+  closeedgeenable             = 0;
+  closeedgefact               = 2.0;
+  second_order                 = 0;
+  meshsize_filename           = "null";
+  quad_dominated              = 0;
+  optvolmeshenable            = 1;
+  optsteps_2d                 = 3;
+  optsteps_3d                 = 3;
+  invert_tets                 = 0;
+  invert_trigs                = 0;
+  check_overlap               = 1;
+  check_overlapping_boundary  = 1;
+}
+
+meshGen* meshGen::Create(std::string fname, std::string meshEngine)
+{
+  if (!meshEngine.compare("netgen"))
+  {
+    meshNetgen* generator = new meshNetgen();
+    return generator;
+  }
+  else
+  {
+    std::cout << meshEngine << " is not a supported meshing engine" << std::endl;
+    exit(1);
+  }
+}
+
+meshGen* meshGen::Create(std::string fname, std::string meshEngine, meshingParams* params)
+{
+  if (!meshEngine.compare("netgen"))
+  {
+    meshNetgen* generator = new meshNetgen(dynamic_cast<NetgenParams*>(params));
+    return generator;
+  }
+  else
+  {
+    std::cout << meshEngine << " is not a supported meshing engine" << std::endl;
+    exit(1);
+  }
+}
+
+meshNetgen::meshNetgen():mp()
+{
+  std::cout << "initializing netgen mesh generator" << std::endl;
+  nglib::Ng_Init();
+  mesh = nglib::Ng_NewMesh();
+}
+
+meshNetgen::meshNetgen(NetgenParams* params)
+{
+  std::cout << "initializing netgen mesh generator" << std::endl;
+  nglib::Ng_Init();
+  set_mp(params);
+  mesh = nglib::Ng_NewMesh();
+}   
+
+meshNetgen::~meshNetgen()
+{
+  std::cout << "finalizing netgen mesh generator" << std::endl;
+  if(mesh)
+  {
+    nglib::Ng_DeleteMesh(mesh);
+    mesh = 0; 
+  }
+  nglib::Ng_Exit();
+}
+
+void meshNetgen::set_mp(NetgenParams* params)
+{
+  mp.uselocalh                   = params->uselocalh;                  
+  mp.maxh                        = params->maxh;                       
+  mp.fineness                    = params->fineness;                   
+  mp.grading                     = params->grading;                    
+  mp.elementsperedge             = params->elementsperedge;            
+  mp.elementspercurve            = params->elementspercurve;            
+  mp.closeedgeenable             = params->closeedgeenable;            
+  mp.closeedgefact               = params->closeedgefact;              
+  mp.second_order                = params->second_order;                
+  mp.meshsize_filename           = &(params->meshsize_filename)[0u];          
+  mp.quad_dominated              = params->quad_dominated;             
+  mp.optvolmeshenable            = params->optvolmeshenable;           
+  mp.optsteps_2d                 = params->optsteps_2d;                
+  mp.optsteps_3d                 = params->optsteps_3d;                
+  mp.invert_tets                 = params->invert_tets;                
+  mp.invert_trigs                = params->invert_trigs;               
+  mp.check_overlap               = params->check_overlap;              
+  mp.check_overlapping_boundary  = params->check_overlapping_boundary; 
+}
+
 int meshNetgen::createMeshFromSTL(char* fname)
 {
   // Define pointer to STL Geometry
@@ -21,9 +120,10 @@ int meshNetgen::createMeshFromSTL(char* fname)
   cout << "Successfully loaded STL File: " << fname << endl;
 
   // Set the Meshing Parameters to be used
-  mp.maxh = 1.0e+6;
+  /*mp.maxh = 1.0e+6;
   mp.fineness = 0.4;
-  mp.second_order = 0;
+  mp.second_order = 0;*/
+  //set_mp(params);
 
   cout << "Initialise the STL Geometry structure...." << endl;
   ng_res = Ng_STL_InitSTLGeometry(stl_geom);
@@ -70,7 +170,7 @@ int meshNetgen::createMeshFromSTL(char* fname)
   // Ng_Uniform_Refinement (mesh);
 
   // refinement with geomety adaption:   
-  Ng_STL_Uniform_Refinement (stl_geom, mesh);
+  //Ng_STL_Uniform_Refinement (stl_geom, mesh);
 
   cout << "elements after refinement: " << Ng_GetNE(mesh) << endl;
   cout << "points   after refinement: " << Ng_GetNP(mesh) << endl;

@@ -16,6 +16,20 @@ int meshUser::generateMesh(std::string filename, std::string meshEngine)
   return 0;
 
 }
+int meshUser::generateMesh(std::string filename, std::string meshEngine, meshingParams* params)
+{
+  if (filename.find(".stl") == -1)
+  {
+    std::cout << "Only CAD files in STL format are supported" << std::endl;
+    exit(1);
+  }
+  mesh = meshBase::generateMesh(filename,meshEngine, params);
+  write_ext.assign(".vtu");
+  fname.assign(trim_fname(filename,".vol"));
+  std::cout << "user constructed" << std::endl;
+  
+  return 0;
+}
 
 // get number of points in mesh
 int meshUser::getNumberOfPoints() 

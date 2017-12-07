@@ -92,6 +92,8 @@ namespace nglib
   
 */
 
+class meshingParams;
+
 class meshBase
 {
 
@@ -120,7 +122,8 @@ class meshBase
     static meshBase* exportVolToVtk(std::string fname);
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine);    
-
+    static meshBase* generateMesh(std::string fname, std::string meshEngine,
+                                  meshingParams* params); 
     
   // access
   public:
