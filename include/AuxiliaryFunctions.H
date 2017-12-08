@@ -93,7 +93,7 @@ template <typename T>
 std::vector<T> operator*(T a, std::vector<T>& x);
 
 // get average and stdev of values
-inline std::vector<double> getMeanStdev(std::vector<double>& x);
+inline std::vector<double> getMeanStdev(const std::vector<double>& x);
 
 // generates boolean array with 1 if value >= tol, 0 otherwise
 inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
@@ -239,7 +239,7 @@ void scale_vec_to_range(std::vector<double>& x,
 
 
 // get average and stdev of values
-std::vector<double> getMeanStdev(std::vector<double>& x)
+std::vector<double> getMeanStdev(const std::vector<double>& x)
 {
   std::vector<double> result(2);
   double ave = 0;

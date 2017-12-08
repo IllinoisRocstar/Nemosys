@@ -40,8 +40,10 @@
 #include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
+#include <vtkGenericCell.h>
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
+#include <vtkCellLocator.h>
 #include <baseInterp.H>
 #include <spheres.H>
 

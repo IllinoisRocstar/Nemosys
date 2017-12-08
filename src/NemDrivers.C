@@ -103,10 +103,15 @@ TransferDriver* TransferDriver::readJSON(json inputjson)
   TransferDriver* trnsdrvobj;
   if (transferall)
   {
-    trnsdrvobj = new TransferDriver(srcmsh, trgmsh, method, outmsh);
+	  trnsdrvobj = new TransferDriver(srcmsh, trgmsh, method, outmsh);
   } 
   else
   {
+		std::cout << "Transferring selected arrays:" << std::endl;
+		for (int i = 0; i < arrayNames.size(); ++i)
+		{
+			std::cout << "\t" << arrayNames[i] << std::endl;
+		}
     trnsdrvobj = new TransferDriver(srcmsh, trgmsh, method, arrayNames, outmsh); 
   }
   

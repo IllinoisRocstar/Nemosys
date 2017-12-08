@@ -139,7 +139,7 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
   {
-    int id = this->IsArrayName(arrayNames[i]);
+    int id = IsArrayName(arrayNames[i]);
     if (id == -1)
     {
       std::cout << "Array " << arrayNames[i] 
