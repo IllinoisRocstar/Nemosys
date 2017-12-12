@@ -3,6 +3,8 @@
 
 #include <meshBase.H>
 
+using namespace nemAux;
+
 class vtkMesh : public meshBase
 {
   // constructor and destructor
@@ -21,10 +23,13 @@ class vtkMesh : public meshBase
     std::vector<double> getPoint(int id);
     // get cell with id : returns point indices and respective coordinates
     std::map<int, std::vector<double>> getCell(int id);
+    std::vector<std::vector<double>> getCellVec(int id);
 	  // returns cells sharing point (topological search)
 	  std::vector<int> getCellsWithPoint(int pnt);
     // get diameter of circumsphere of each cell
     std::vector<double> getCellLengths();
+    // get center of a cell
+    std::vector<double> getCellCenter(int cellID);
  
   // diagnostics
   public:

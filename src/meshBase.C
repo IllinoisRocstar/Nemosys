@@ -122,10 +122,12 @@ int meshBase::transfer(meshBase* target, std::string method,
                        const std::vector<int>& arrayIDs)
 {
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
-  for (int i = 0; i < arrayIDs.size(); ++i)
+  transobj->runPD(arrayIDs);
+  /*for (int i = 0; i < arrayIDs.size(); ++i)
   {
+    std::cout << "transferring array " << arrayIDs[i] << std::endl;
     transobj->runPD(arrayIDs[i]); // specify params to run function
-  }
+  }*/
   if (transobj)
   { 
     delete transobj;
@@ -155,7 +157,7 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
 
 
 
-// transfer all point data from this mesh to target
+// transfer all data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
   
