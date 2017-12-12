@@ -17,6 +17,8 @@
 // stl
 #include <functional>
 
+using namespace nemAux;
+
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray
 {
