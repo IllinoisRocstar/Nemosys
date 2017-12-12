@@ -116,6 +116,7 @@ class meshBase
     virtual std::vector<double> getPoint(int id){}
     // get cell with id : returns point indices and respective coordinates
     virtual std::map<int, std::vector<double>> getCell(int id){}
+    virtual std::vector<std::vector<double>> getCellVec(int id){}
     vtkDataSet* getDataSet(){ return dataSet; }
 	  // returns cells sharing point (topological search)
 	  virtual std::vector<int> getCellsWithPoint(int pnt){}
@@ -129,10 +130,15 @@ class meshBase
                                   std::vector<double>& data){}
     // delete array with id from dataSet's point data
     virtual void unsetPointDataArray(int arrayID){}
+    virtual void unsetPointDataArray(const char* name){}
     // delete array with id from dataSet's cell data
     virtual void unsetCellDataArray(int arrayID){} 
+    virtual void unsetCellDataArray(const char* name){}
     // get diameter of circumsphere of each cell
     virtual std::vector<double> getCellLengths(){}
+    // get center of a cell
+    virtual std::vector<double> getCellCenter(int cellID){}
+
 
   // data transfer
   public:

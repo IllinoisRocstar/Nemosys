@@ -3,6 +3,8 @@
 
 #include <meshBase.H>
 
+using namespace nemAux;
+
 class SizeFieldBase
 {
   // constructors and destructors

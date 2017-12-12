@@ -1,5 +1,6 @@
 #include<vtkMesh.H>
 
+
 template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
 {
   vtkSmartPointer<TReader> reader =
@@ -151,6 +152,29 @@ std::map<int, std::vector<double>> vtkMesh::getCell(int id)
   }
 }
 
+std::vector<std::vector<double>> vtkMesh::getCellVec(int id)
+{
+  if (id < numCells) 
+  {
+    std::vector<std::vector<double>> cell;
+    vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New();
+    point_ids = dataSet->GetCell(id)->GetPointIds();
+    int num_ids = point_ids->GetNumberOfIds();
+    cell.resize(num_ids);
+    for (int i = 0; i < num_ids; ++i) 
+    {
+      int pntId = point_ids->GetId(i);
+      cell[i] = getPoint(pntId);
+    }
+    return cell;
+  }
+  else {
+    std::cerr << "Cell ID is out of range!" << std::endl;
+    exit(1);
+  }
+
+}
+
 void vtkMesh::report()
 {
   if (!dataSet)
@@ -252,8 +276,7 @@ std::vector<int> vtkMesh::getCellsWithPoint(int pnt)
 }
 
 // get diameter of circumsphere of each cell
-std::vector<double> vtkMesh::getCellLengths()
-{
+std::vector<double> vtkMesh::getCellLengths() {
   std::vector<double> result;
   result.resize(getNumberOfCells());
   for (int i = 0; i < getNumberOfCells(); ++i)
@@ -263,39 +286,53 @@ std::vector<double> vtkMesh::getCellLengths()
   return result;
 }
 
+// get center of a cell
+std::vector<double> vtkMesh::getCellCenter(int cellID)
+{
+  std::vector<double> center(3);
+  std::vector<std::vector<double>> cell = getCellVec(cellID); 
+ 
+  for (int i = 0; i < cell.size(); ++i)
+  {
+    center = center + cell[i];
+  }
+  return (1./cell.size())*center;
+}
+
+
 // set point data (numComponets per point determined by dim of data[0] 
 void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
 {
- vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
- da->SetName(name);
- da->SetNumberOfComponents(data[0].size());
- for(int i=0; i < numPoints; i++)
-   da->InsertNextTuple(&(data[i])[0]);
- dataSet->GetPointData()->SetActiveScalars(name);
- dataSet->GetPointData()->SetScalars(da);
+  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+  da->SetName(name);
+  da->SetNumberOfComponents(data[0].size());
+  for(int i=0; i < numPoints; i++)
+    da->InsertNextTuple(data[i].data());
+  dataSet->GetPointData()->SetActiveScalars(name);
+  dataSet->GetPointData()->SetScalars(da);
 }
 
 // set cell data (numComponents per cell determined by dim of data[0])
 void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>>& data)
 {
- vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
- da->SetName(name);
- da->SetNumberOfComponents(data[0].size());
- for(int i=0; i < numCells; i++)
-   da->InsertNextTuple(&(data[i])[0]);
- dataSet->GetCellData()->SetActiveScalars(name);
- dataSet->GetCellData()->SetScalars(da);
+  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+  da->SetName(name);
+  da->SetNumberOfComponents(data[0].size());
+  for(int i=0; i < numCells; i++)
+    da->InsertNextTuple(data[i].data());
+  dataSet->GetCellData()->SetActiveScalars(name);
+  dataSet->GetCellData()->SetScalars(da);
 }
 
 void vtkMesh::setCellDataArray(const char* name, std::vector<double>& data)
 {   
- vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
- da->SetName(name);
- da->SetNumberOfComponents(1);
- for(int i=0; i < numCells; i++)
-   da->InsertNextTuple1(data[i]);
- dataSet->GetCellData()->SetActiveScalars(name);
- dataSet->GetCellData()->SetScalars(da);
+  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+  da->SetName(name);
+  da->SetNumberOfComponents(1);
+  for(int i=0; i < numCells; i++)
+    da->InsertNextTuple1(data[i]);
+  dataSet->GetCellData()->SetActiveScalars(name);
+  dataSet->GetCellData()->SetScalars(da);
 }
 
 // remove point data with given id from target if it exists

@@ -43,13 +43,14 @@ Reasons for inline functions:
 
   So, if functions are non-inline and defined in a header that is included in multiple 
   translation units (separate source files), the linker will see the same symbol is
-  used more than once when merging object code. This violates odr. 
+  used more than once when merging object code. This violates the odr. 
   
   If functions are inline and defined in a header, an exception is made to the odr rule, 
   and it is defined in every translation unit in which it's used. Although inlining is a
   non-binding request, the inline keyword succeeds at telling the linker to tolerate
   multiple symbol definitions.
 */
+
 
 // flattens vector of vectors
 template <typename T>
@@ -59,10 +60,19 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v);
 template <typename T>
 std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim);
 
+namespace nemAux {
 // adds two vectors
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& x, 
                          const std::vector<T>& y);
+// sub two vectors
+template <typename T>
+std::vector<T> operator-(const std::vector<T>& x,
+                         const std::vector<T>& y);
+// multiplies vector by scalar
+template <typename T>
+std::vector<T> operator*(T a, std::vector<T>& x);
+}
 
 // compute L2 norm of vec
 inline double L2_Norm(const std::vector<double>& x);
@@ -87,10 +97,6 @@ inline double scale_to_range(double x, const std::vector<double>& xminmax,
 inline void scale_vec_to_range(std::vector<double>& x, 
                         const std::vector<double>& xminmax,
                         const std::vector<double>& yminmax);
-
-// multiplies vector by scalar
-template <typename T>
-std::vector<T> operator*(T a, std::vector<T>& x);
 
 // get average and stdev of values
 inline std::vector<double> getMeanStdev(const std::vector<double>& x);
@@ -158,6 +164,7 @@ double L2_Norm(const std::vector<double>& x)
   return std::sqrt(result);
 }
 
+namespace nemAux {
 // adds two vectors
 template <typename T>
 std::vector<T> operator+(const std::vector<T>& x, 
@@ -169,22 +176,50 @@ std::vector<T> operator+(const std::vector<T>& x,
     exit(1);
   }
   
-  std::vector<T> result;
-  result.reserve(x.size());
+  std::vector<T> result(x.size());
+  for (int i = 0; i < x.size(); ++i)
+    result[i] = x[i] + y[i];
+  /*result.reserve(x.size());
   std::transform(x.begin(), x.end(), y.begin(), 
                  std::back_inserter(result), std::plus<T>());
+  */
   return result;
 } 
+
+// sub two vectors
+template <typename T>
+std::vector<T> operator-(const std::vector<T>& x,
+                         const std::vector<T>& y)
+{
+  if (x.size() != y.size())
+  {
+    std::cout << "vectors must be same length for subtraction" << std::endl;
+    exit(1);
+  }
+  
+  std::vector<T> result(x.size());
+  for (int i = 0; i < x.size(); ++i)
+    result[i] = x[i] - y[i];
+  /*result.reserve(x.size());
+  std::transform(x.begin(),x.end(),y.begin(),
+                 std::back_inserter(result), std::minus<T>());
+  */
+  return result;
+}
 
 // multiplies vector by scalar
 template <typename T>
 std::vector<T> operator*(T a, std::vector<T>& x)
 {
-  std::vector<T> result;
-  result.reserve(x.size());
-  std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
+  std::vector<T> result(x.size());
+  for (int i = 0; i < x.size(); ++i)
+    result[i] = a*x[i];
+  //result.reserve(x.size());
+  //std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
   return result;
 }  
+
+}
 
 // computes reciprocal of argument
 template <typename T>
