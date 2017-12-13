@@ -44,8 +44,6 @@ class FETransfer : public TransferBase
             std::vector<std::vector<double>>& targetPnts);
     // transfer point data with given ids from source to target
     int runPD(const std::vector<int>& arrayIDs);
-    // transfer point data with given id from source to target
-    int runPD(int arrayID);
 
   // cell data transfer
   public:
