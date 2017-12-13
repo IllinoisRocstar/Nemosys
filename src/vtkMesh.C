@@ -254,27 +254,6 @@ void vtkMesh::report()
   }
 }
 
-// search for pnt id in each cell and return common
-std::vector<int> vtkMesh::getCellsWithPoint(int pnt)
-{
-    
-  std::vector<int> commonCells;
-  for (int i = 0; i < numCells; ++i)
-  {
-    vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New(); 
-    dataSet->GetCellPoints(i, point_ids);
-    int numComponent = point_ids->GetNumberOfIds();
-    for (int j = 0; j < numComponent; ++j)
-    {
-      if (point_ids->GetId(j) == pnt)
-      {
-        commonCells.push_back(i);
-      }
-    }
-  }
-  return commonCells;  
-}
-
 // get diameter of circumsphere of each cell
 std::vector<double> vtkMesh::getCellLengths() {
   std::vector<double> result;

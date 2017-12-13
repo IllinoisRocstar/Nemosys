@@ -16,7 +16,7 @@ class TransferBase
       std::cout << "TransferBase destroyed" << std::endl;
     }
  
-  // 'virtual' constructor
+  // TransferBase factory method
   public:
     static TransferBase* Create(std::string method, meshBase* source, meshBase* target);
  
@@ -32,10 +32,13 @@ class TransferBase
     virtual int runCD(const std::vector<int>& arrayIDs) = 0;
     // transfer all data from source to target
     virtual int run() = 0; 
+    // set whether to check transfer quality
+    void setCheckQual(bool x) { checkQual = x; }
 
   protected:
     meshBase* source;
-    meshBase* target;   
+    meshBase* target;  
+    bool checkQual; 
 };
 
 
