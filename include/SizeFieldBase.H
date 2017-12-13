@@ -19,7 +19,7 @@ class SizeFieldBase
       std::cout << "SizeFieldBase destroyed" << std::endl;
     }
 
-  // 'virtual' constructors, i.e. factory methods
+  // SizeFieldBase factory methods
   public:
     // will return derived type GradSizeField|ValSizeField|ErrorSF with SF in mesh's dataSet
     static SizeFieldBase* Create(meshBase* _mesh, std::string method, int arrayID);

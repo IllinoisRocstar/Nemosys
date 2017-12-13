@@ -45,23 +45,6 @@ meshBase* meshBase::Create(std::string fname)
   
 }
 
-/*meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine)
-{
-  meshGen* generator = meshGen::Create(fname, meshEngine);
-  int status = generator->createMeshFromSTL(&fname[0u]);
-  if (generator) 
-  { 
-    delete generator;
-    generator=0;
-  }
-  if(!status) 
-  {
-    std::string newname = trim_fname(fname,".vol");
-    return exportVolToVtk(newname);    
-    
-  }
-}*/
-
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
                                  meshingParams* params)
 {
@@ -108,6 +91,7 @@ int meshBase::IsArrayName(std::string name)
 int meshBase::transfer(meshBase* target, std::string method, int arrayID)
 {
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  transobj->setCheckQual(checkQuality); 
   int result = transobj->runPD(arrayID); // specify params to run function
   if (transobj)
   { 
@@ -122,6 +106,7 @@ int meshBase::transfer(meshBase* target, std::string method,
                        const std::vector<int>& arrayIDs)
 {
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  transobj->setCheckQual(checkQuality);
   transobj->runPD(arrayIDs);
   /*for (int i = 0; i < arrayIDs.size(); ++i)
   {
@@ -154,14 +139,12 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
 
 }
 
-
-
-
 // transfer all data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
   
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  transobj->setCheckQual(checkQuality);
   int result = transobj->run(); // specify params to run function
   if (transobj)
   { 
