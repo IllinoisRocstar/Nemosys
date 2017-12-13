@@ -43,9 +43,10 @@ Refine::Refine(meshBase* _mesh, std::string method,
     mesh->writeMSH("converted.msh");
     vtkCellData* cd = mesh->getDataSet()->GetCellData();
     int i;
+    std::string array_name;
     if (cd)
     {
-      std::string array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
+      array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
       if (!method.compare("gradient"))
         array_name.append("GradientSF");
       else if (!method.compare("value"))
@@ -64,6 +65,7 @@ Refine::Refine(meshBase* _mesh, std::string method,
       }
     }
     mesh->writeMSH("backgroundSF.msh", "cell", i, 1);
+    mesh->unsetCellDataArray(&array_name[0u]); 
 
     MAd::pGModel gmodel = 0;
     MadMesh = MAd::M_new(gmodel);
@@ -167,7 +169,8 @@ void Refine::run()
   MAd::M_writeMsh(MadMesh, "refined.msh", 2);
   
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
-  mesh->transfer(refinedVTK,"Finite Element");
+  //mesh->setCheckQuality(1);
+  //mesh->transfer(refinedVTK,"Finite Element");
 
   refinedVTK->write(ofname);
   if (refinedVTK)

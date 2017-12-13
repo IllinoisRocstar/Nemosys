@@ -44,6 +44,8 @@
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
 #include <vtkCellLocator.h>
+#include <vtkCellTreeLocator.h>
+#include <vtkModifiedBSPTree.h>
 #include <baseInterp.H>
 #include <spheres.H>
 
@@ -85,7 +87,7 @@ class meshBase
   // constructors and destructors
   public:
 
-    meshBase():numPoints(0),numCells(0),hasSizeField(0),dataSet(NULL)
+    meshBase():numPoints(0),numCells(0),hasSizeField(0),dataSet(NULL),checkQuality(0)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -95,8 +97,7 @@ class meshBase
       std::cout << "meshBase destroyed" << std::endl;
     }
   
-  // factory methods (kind of like 'virtual constructors')
-  // these functions return objects derived from meshBase
+  // meshBase factory methods
   public:
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
@@ -106,7 +107,6 @@ class meshBase
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
     // generate volume mesh from stl
-    //static meshBase* generateMesh(std::string fname, std::string meshEngine);    
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
     
@@ -116,10 +116,10 @@ class meshBase
     virtual std::vector<double> getPoint(int id){}
     // get cell with id : returns point indices and respective coordinates
     virtual std::map<int, std::vector<double>> getCell(int id){}
+    // get vector of coords of cell with id
     virtual std::vector<std::vector<double>> getCellVec(int id){}
+    // get this meshes' dataSet
     vtkDataSet* getDataSet(){ return dataSet; }
-	  // returns cells sharing point (topological search)
-	  virtual std::vector<int> getCellsWithPoint(int pnt){}
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    std::vector<std::vector<double>>& data){}
@@ -142,12 +142,12 @@ class meshBase
 
   // data transfer
   public:
-    // transfer point data with given id from this user to target
+    // transfer point data with given id from this mesh to target
+    // method can be "Finite Element", "Mortar Element", "RBF" etc.
+    // only "Finite Element" has been implemented
     int transfer(meshBase* target, std::string method, int arrayID);
-    // transfer point data with given ids from this mesh to target
     int transfer(meshBase* target, std::string method, 
                  const std::vector<int>& arrayIDs);
-    // transfer point data with given names fro mthis user to target
     int transfer(meshBase* target, std::string method, 
                  const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
@@ -155,14 +155,21 @@ class meshBase
  
   // size field generation
   public:
+    // generate size field based on method ("gradient", "value", "error estimator")
+    // and given a point data array. dev_mlt and maxIsmin are used to determine
+    // which cells to consider for refinement
     void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
-    void setSFBool(bool q) { hasSizeField = q; }  
+    // set whether this mesh has a sizefield
+    void setSFBool(bool q) { hasSizeField = q; }
+    // get this meshes' sizefield  
     bool getSFBool() { return hasSizeField; }
-    // check for named array in vtk 
+    // check for named array in vtk and return its integer id 
     int IsArrayName(std::string name);
   
   // adaptive mesh refinement
   public:
+    // perform sizefield-based h-refinement. edge_scale is for uniform refinement and 
+    // is ignored in calls where method is "gradient", "value" etc. instead of "uniform"
     void refineMesh(std::string method, int arrayID, 
                     double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
     void refineMesh(std::string method, std::string arrayName, 
@@ -172,13 +179,18 @@ class meshBase
   
   // diagnostics
   public:
+    // generate a report of the mesh
     virtual void report(){}; 
+    // return the number of points
     int getNumberOfPoints() {return numPoints;}
+    // return the number of cells
     int getNumberOfCells() { return numCells;}
 
   // write and conversion
   public:
+    // write the mesh to file named after the private var 'filename'
     virtual void write(){}
+    // write the mesh to file named fname
     virtual void write(std::string fname){}
 		// convert to gmsh format without data 
     void writeMSH(std::ofstream& outputStream);
@@ -195,6 +207,7 @@ class meshBase
 
     void setFileName(std::string fname) { filename = fname; }
     std::string getFileName() { return filename; }
+    void setCheckQuality(bool x) { checkQuality = x; }
 
   protected:
     int numPoints; // number of points in mesh
@@ -202,7 +215,7 @@ class meshBase
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
     vtkDataSet* dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
-
+    bool checkQuality; // check transfer quality when on
 };
 
 
