@@ -145,7 +145,6 @@ class meshBase
     // transfer point data with given id from this mesh to target
     // method can be "Finite Element", "Mortar Element", "RBF" etc.
     // only "Finite Element" has been implemented
-    int transfer(meshBase* target, std::string method, int arrayID);
     int transfer(meshBase* target, std::string method, 
                  const std::vector<int>& arrayIDs);
     int transfer(meshBase* target, std::string method, 

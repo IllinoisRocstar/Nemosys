@@ -124,37 +124,6 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
   return 0;
 }  
 
-
-
-int FETransfer::runPD(int arrayID)
-{
-  if (!(source && target))
-  {
-    std::cout << "source and target meshes must be initialized" << std::endl;
-    exit(1);
-  }
-
-    vtkSmartPointer<vtkPointData> pd = vtkSmartPointer<vtkPointData>::New();
-    pd = source->getDataSet()->GetPointData();
-    if (pd)
-    {
-      int numArr = pd->GetNumberOfArrays();
-      if (arrayID >= numArr)
-      {
-        std::cout << "ERROR: arrayID is out of bounds" << std::endl;
-        std::cout << "There are " << numArr << " point data arrays" << std::endl;
-        exit(1);
-      } 
-      runPD(pd, arrayID);
-    }
-    else
-    {
-      std::cout << "no point data found" << std::endl;
-      return 1;
-    }
-  return 0;
-}
-
 int FETransfer::runPD(const std::vector<int>& arrayIDs)
 {
   if (!(source && target))
@@ -316,6 +285,43 @@ int FETransfer::runCD(vtkCellData* cd, int arrayID,
 
   std::vector<std::vector<double>> transferData = runPD(source, cellToPointData, targetCenters);
   target->setCellDataArray(&arrName[0u], transferData);
+  if (checkQual)
+  {
+    std::vector<std::vector<double>> sourcePnts(source->getNumberOfPoints());
+    std::vector<double> oldData(source->getNumberOfPoints()*numComponent);
+    for (int i = 0; i < source->getNumberOfPoints(); ++i)
+    {
+      sourcePnts[i] = source->getPoint(i);
+      da->GetTuple(i, comps);
+      for (int j = 0; j < numComponent; ++j)
+      {
+        oldData[i*numComponent + j] = comps[j];
+      }
+    }
+    std::string name = pd->GetArrayName(arrayID);
+    name += "backInterp";
+    std::vector<std::vector<double>> newData = runPD(target, transferData, sourcePnts);
+    std::cout << "L2 Norm of Back Transferred Residuals: " 
+              << L2_Norm(flatten(newData) - oldData) << std::endl; 
+    source->setPointDataArray(&name[0u],newData);
+    //std::vector<double> newData = flatten(runPD(target, transferData, sourcePnts));
+    std::vector<double> newData1 = flatten(newData);
+    double a,b,diff;
+    std::ofstream outputstream("transferQualityCheck.txt");
+    outputstream << "points with shit interpolation" << std::endl;
+    for (int i = 0; i < newData1.size(); ++i)
+    {
+      a = newData1[i];
+      b = oldData[i];
+      diff = std::fabs(a-b);
+      if (diff > 1e-4)
+      {
+        outputstream << i << " " << diff << std::endl;
+      } 
+      //std::cerr << "\t" << b << "\t" << a << "\t" << (a-b)*(a-b) << std::endl;
+    }
+    //std::cerr << std::endl;
+  }
   return 0;
 
 }

@@ -87,20 +87,6 @@ int meshBase::IsArrayName(std::string name)
 }
 
 
-// transfer point data with given id from this mesh to target
-int meshBase::transfer(meshBase* target, std::string method, int arrayID)
-{
-  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
-  transobj->setCheckQual(checkQuality); 
-  int result = transobj->runPD(arrayID); // specify params to run function
-  if (transobj)
-  { 
-    delete transobj;
-    transobj = 0;
-  }
-  return result;
-}
-
 // transfer point data with given ids from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method, 
                        const std::vector<int>& arrayIDs)

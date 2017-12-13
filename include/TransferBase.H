@@ -25,7 +25,6 @@ class TransferBase
     // transfer point data with given id from source to target
     virtual int runPD(vtkPointData* pd, int arrayID) = 0;
     virtual int runPD(const std::vector<int>& arrayIDs) = 0;
-    virtual int runPD(int arrayID) = 0;
     // transfer cell data with given id from source to target
     virtual int runCD(vtkCellData* cd, int arrayID,
                       std::vector<std::vector<double>>& targetCenters) = 0;
