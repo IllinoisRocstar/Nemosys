@@ -72,6 +72,11 @@ std::vector<T> operator-(const std::vector<T>& x,
 // multiplies vector by scalar
 template <typename T>
 std::vector<T> operator*(T a, std::vector<T>& x);
+
+// hadamard product of vectors
+template <typename T>
+std::vector<T> hadamard(const std::vector<T>& x, 
+                        const std::vector<T>& y);
 }
 
 // compute L2 norm of vec
@@ -217,8 +222,23 @@ std::vector<T> operator*(T a, std::vector<T>& x)
   //result.reserve(x.size());
   //std::transform(x.begin(), x.end(), result.begin(), std::bind1st(std::multiplies<T>(),a));
   return result;
-}  
+}
 
+template <typename T>
+std::vector<T> hadamard(const std::vector<T>& x, 
+                        const std::vector<T>& y)
+{
+  if (x.size() != y.size())
+  {
+    std::cout << "vectors must be same length for subtraction" << std::endl;
+    exit(1);
+  }
+  
+  std::vector<T> result(x.size());
+  for (int i = 0; i < x.size(); ++i)
+    result[i] = x[i]*y[i];
+  return result; 
+}
 }
 
 // computes reciprocal of argument
