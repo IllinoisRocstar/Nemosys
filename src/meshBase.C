@@ -4,6 +4,7 @@
 #include <TransferBase.H>
 #include <SizeFieldBase.H>
 #include <Refine.H>
+#include <MeshQuality.H>
 
 meshBase* meshBase::Create(std::string fname)
 {
@@ -852,7 +853,27 @@ void meshBase::refineMesh(std::string method, double edge_scale, std::string ofn
   refineMesh(method, 0, 0, 0, edge_scale, ofname);
 }
 
+vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()
+{
+  vtkSmartPointer<vtkCellLocator> cellLocator = 
+    vtkSmartPointer<vtkCellLocator>::New();
+  cellLocator->SetDataSet(dataSet); 
+  cellLocator->BuildLocator();
+  return cellLocator;
+}
 
+void meshBase::checkMesh(std::string ofname)
+{
+  MeshQuality* qualcheck = new MeshQuality(this);
+  qualcheck->checkMesh(ofname);
+
+  if (qualcheck)
+  {
+    delete qualcheck;
+    qualcheck = 0;
+  }
+
+}
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
