@@ -96,4 +96,17 @@ class MeshGenDriver : public NemDriver
     meshingParams* params;
 };
 
+class MeshQualityDriver : public NemDriver
+{
+  public:
+    
+    MeshQualityDriver(std::string _mesh, std::string ofname); 
+    ~MeshQualityDriver();
+
+    static MeshQualityDriver* readJSON(json inputjson);
+
+  private:
+    meshBase* mesh; 
+};
+
 #endif

@@ -1,5 +1,13 @@
 #include <FETransfer.H>
 
+FETransfer::FETransfer(meshBase* _source, meshBase* _target)
+{
+  source = _source;
+  srcCellLocator = source->buildLocator();
+  target = _target;
+  trgCellLocator = target->buildLocator();
+  std::cout << "FETransfer constructed" << std::endl;
+}
 
 /* transfers point data with arrayID from source mesh to target
    The algorithm is as follows;
@@ -15,48 +23,44 @@
 
 int FETransfer::runPD(vtkPointData* pd, int arrayID)
 {
-  std::cout << "Transferring point array " << arrayID << std::endl;
+  std::cout << "Transferring point array " << pd->GetArrayName(arrayID) << std::endl;
   // extracting data array 
   std::vector<std::vector<double>> transferData;
   vtkDataArray* da = pd->GetArray(arrayID);
   // finding dim of data in array 
   int numComponent = da->GetNumberOfComponents();
   transferData.resize(target->getNumberOfPoints());
-  // constructing cell locator for source mesh
-  vtkSmartPointer<vtkCellLocator> cellLocator = 
-    vtkSmartPointer<vtkCellLocator>::New();
-  cellLocator->SetDataSet(source->getDataSet()); 
-  cellLocator->BuildLocator();
-  // gencell used by locator
-  vtkSmartPointer<vtkGenericCell> gencell = vtkSmartPointer<vtkGenericCell>::New();       
-  // passed to locator and evaulate position if called
-  double pcoords[3];
-  // id of the cell containing source mesh point
-  vtkIdType id;
-  // parameters for interpolation
-  double comps[numComponent];
-  int pntId;
-  int subId;
-  double minDist2; // not used
-  int result = 0;
-  double x[3];
-  double closestPoint[3];
+  // genCell used by locator
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+
   for (int j = 0; j < target->getNumberOfPoints(); ++j)
   {
     transferData[j].resize(numComponent,0.0);
     // getting point from target and setting as query
+    double x[3];
     target->getDataSet()->GetPoint(j,x);
+    // id of the cell containing source mesh point
+    vtkIdType id;
+    int subId;
+    double minDist2; 
+    int result;
     // find closest point and closest cell to x
-    cellLocator->FindClosestPoint(x, closestPoint, gencell,id,subId,minDist2);
+    double closestPoint[3];
+    srcCellLocator->FindClosestPoint(x, closestPoint, genCell,id,subId,minDist2);
     if (id >= 0)
     {
-      double weights[gencell->GetNumberOfPoints()];
-      result = gencell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
+      // passed evaulate position if called
+      double pcoords[3];
+      // parameters for interpolation
+      double comps[numComponent];
+      int pntId;
+      double weights[genCell->GetNumberOfPoints()];
+      result = genCell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
       if (result > 0)
       {
-        for (int m = 0; m < gencell->GetNumberOfPoints(); ++m)
+        for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
         {
-          pntId = gencell->GetPointId(m);
+          pntId = genCell->GetPointId(m);
           da->GetTuple(pntId, comps);
           for (int h = 0; h < numComponent; ++h)
           {
@@ -90,6 +94,7 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
     std::vector<double> oldData(source->getNumberOfPoints()*numComponent);
     for (int i = 0; i < source->getNumberOfPoints(); ++i)
     {
+      double comps[numComponent];
       sourcePnts[i] = source->getPoint(i);
       da->GetTuple(i, comps);
       for (int j = 0; j < numComponent; ++j)
@@ -99,27 +104,29 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
     }
     std::string name = pd->GetArrayName(arrayID);
     name += "backInterp";
-    std::vector<std::vector<double>> newData = runPD(target, transferData, sourcePnts);
-    std::cout << "L2 Norm of Back Transferred Residuals: " 
-              << L2_Norm(flatten(newData) - oldData) << std::endl; 
+    std::vector<std::vector<double>> newData = runPD(trgCellLocator, transferData, sourcePnts);
+    //std::cout << "L2 Norm of Back Transferred Residuals: " 
+    //          << L2_Norm(flatten(newData) - oldData)/L2_Norm(oldData) << std::endl; 
     source->setPointDataArray(&name[0u],newData);
     //std::vector<double> newData = flatten(runPD(target, transferData, sourcePnts));
     std::vector<double> newData1 = flatten(newData);
     double a,b,diff;
     std::ofstream outputstream("transferQualityCheck.txt");
-    outputstream << "points with shit interpolation" << std::endl;
+    outputstream << "points with shit interpolation" << std::endl
+                 << "Point" << " oldVal " << "newVal " << "diff " << std::endl;
+    double sum = 0;
     for (int i = 0; i < newData1.size(); ++i)
     {
       a = newData1[i];
       b = oldData[i];
-      diff = std::fabs(a-b);
+      diff = std::fabs((a-b)/b);
+      sum += diff;
       if (diff > 1e-4)
       {
-        outputstream << i << " " << diff << std::endl;
+        outputstream << i << " " << b << " " << a << " " << diff << std::endl;
       } 
-      //std::cerr << "\t" << b << "\t" << a << "\t" << (a-b)*(a-b) << std::endl;
     }
-    //std::cerr << std::endl;
+    std::cout << "Normalized quality: " << sum/newData1.size() << std::endl;
   }
   return 0;
 }  
@@ -160,7 +167,8 @@ int FETransfer::runPD(const std::vector<int>& arrayIDs)
 }
 
 std::vector<std::vector<double>> 
-  FETransfer::runPD(meshBase* _source, std::vector<std::vector<double>>& sourceData, 
+  FETransfer::runPD(vtkSmartPointer<vtkCellLocator> cellLocator, 
+                    std::vector<std::vector<double>>& sourceData, 
                     std::vector<std::vector<double>>& targetPnts)
 {
   // extracting data array 
@@ -168,41 +176,36 @@ std::vector<std::vector<double>>
   // finding dim of data in array 
   int numComponent = sourceData[0].size();
   transferData.resize(targetPnts.size());
-  // constructing cell locator for source mesh
-  vtkSmartPointer<vtkCellLocator> cellLocator = 
-    vtkSmartPointer<vtkCellLocator>::New();
-  cellLocator->SetDataSet(_source->getDataSet()); 
-  cellLocator->BuildLocator();
-  // gencell used by locator
-  vtkSmartPointer<vtkGenericCell> gencell = vtkSmartPointer<vtkGenericCell>::New();       
-  // passed to locator and evaulate position if called
-  double pcoords[3];
-  // id of the cell containing source mesh point
-  vtkIdType id;
-  // parameters for interpolation
-  double comps[numComponent];
-  int pntId;
-  int subId;
-  double minDist2; // not used
-  int result = 0;
-  double* x;
-  double closestPoint[3];
+  // genCell used by locator
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+
   for (int j = 0; j < targetPnts.size(); ++j)
   {
     transferData[j].resize(numComponent,0.0);
     // getting point from target and setting as query
-    x = targetPnts[j].data();
+    // id of the cell containing source mesh point
+    vtkIdType id;
+    int subId;
+    double minDist2;
     // find closest point and closest cell to x
-    cellLocator->FindClosestPoint(x, closestPoint, gencell,id,subId,minDist2);
+    double closestPoint[3];
+    double* x = targetPnts[j].data();
+    cellLocator->FindClosestPoint(x, closestPoint, genCell,id,subId,minDist2);
     if (id >= 0)
     {
-      double weights[gencell->GetNumberOfPoints()];
-      result = gencell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
+      // passed to evaulate position if called
+      double pcoords[3];
+      // parameters for interpolation
+      double comps[numComponent];
+      int pntId;
+      int result;
+      double weights[genCell->GetNumberOfPoints()];
+      result = genCell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
       if (result > 0)
       {
-        for (int m = 0; m < gencell->GetNumberOfPoints(); ++m)
+        for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
         {
-          pntId = gencell->GetPointId(m);
+          pntId = genCell->GetPointId(m);
           for (int h = 0; h < numComponent; ++h)
           {
             transferData[j][h] += sourceData[pntId][h]*weights[m]; 
@@ -224,7 +227,8 @@ std::vector<std::vector<double>>
     }
     else
     {
-      std::cout << "Could not locate point from target in source mesh" << std::endl;
+      std::cout << "Could not locate point " 
+                << j << " from target in source mesh" << std::endl;
       exit(1);
     }
   }
@@ -249,24 +253,25 @@ int FETransfer::runCD(vtkCellData* cd, int arrayID,
   vtkDataArray* da = cd->GetArray(arrayID);
   // finding dim of data in array 
   int numComponent = da->GetNumberOfComponents();
-  double comps[numComponent];
+
   // cellToPointData holds the cell data converted to points
   std::vector<std::vector<double>> cellToPointData;
   cellToPointData.resize(source->getNumberOfPoints());
   // cellId container for cells sharing a point
   vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New(); 
-  int numSharedCells;
-  double totW, W;
+  
   for (int i = 0; i < source->getNumberOfPoints(); ++i)
   {
     cellToPointData[i].resize(numComponent,0);
     // find cells sharing point i
     source->getDataSet()->GetPointCells(i, cellIds);
-    numSharedCells = cellIds->GetNumberOfIds(); 
-    totW = 0;
+    int numSharedCells = cellIds->GetNumberOfIds(); 
+    double totW = 0;
+    double W;
     for (int j = 0; j < numSharedCells; ++j)
     {
       int cellId = cellIds->GetId(j);
+      double comps[numComponent];
       da->GetTuple(cellId, comps);
       // compute distance from point to cell center
       W = 1./L2_Norm(source->getCellCenter(cellId)
@@ -283,45 +288,8 @@ int FETransfer::runCD(vtkCellData* cd, int arrayID,
   std::string arrName = cd->GetArrayName(arrayID);
   // ------------------- Transfer point data to cell centers of target ------// 
 
-  std::vector<std::vector<double>> transferData = runPD(source, cellToPointData, targetCenters);
+  std::vector<std::vector<double>> transferData = runPD(srcCellLocator, cellToPointData, targetCenters);
   target->setCellDataArray(&arrName[0u], transferData);
-  if (checkQual)
-  {
-    std::vector<std::vector<double>> sourcePnts(source->getNumberOfPoints());
-    std::vector<double> oldData(source->getNumberOfPoints()*numComponent);
-    for (int i = 0; i < source->getNumberOfPoints(); ++i)
-    {
-      sourcePnts[i] = source->getPoint(i);
-      da->GetTuple(i, comps);
-      for (int j = 0; j < numComponent; ++j)
-      {
-        oldData[i*numComponent + j] = comps[j];
-      }
-    }
-    std::string name = pd->GetArrayName(arrayID);
-    name += "backInterp";
-    std::vector<std::vector<double>> newData = runPD(target, transferData, sourcePnts);
-    std::cout << "L2 Norm of Back Transferred Residuals: " 
-              << L2_Norm(flatten(newData) - oldData) << std::endl; 
-    source->setPointDataArray(&name[0u],newData);
-    //std::vector<double> newData = flatten(runPD(target, transferData, sourcePnts));
-    std::vector<double> newData1 = flatten(newData);
-    double a,b,diff;
-    std::ofstream outputstream("transferQualityCheck.txt");
-    outputstream << "points with shit interpolation" << std::endl;
-    for (int i = 0; i < newData1.size(); ++i)
-    {
-      a = newData1[i];
-      b = oldData[i];
-      diff = std::fabs(a-b);
-      if (diff > 1e-4)
-      {
-        outputstream << i << " " << diff << std::endl;
-      } 
-      //std::cerr << "\t" << b << "\t" << a << "\t" << (a-b)*(a-b) << std::endl;
-    }
-    //std::cerr << std::endl;
-  }
   return 0;
 
 }

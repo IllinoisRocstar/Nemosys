@@ -46,6 +46,7 @@
 #include <vtkCellLocator.h>
 #include <vtkCellTreeLocator.h>
 #include <vtkModifiedBSPTree.h>
+#include <vtkMeshQuality.h>
 #include <baseInterp.H>
 #include <spheres.H>
 
@@ -87,7 +88,7 @@ class meshBase
   // constructors and destructors
   public:
 
-    meshBase():numPoints(0),numCells(0),hasSizeField(0),dataSet(NULL),checkQuality(0)
+    meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -138,6 +139,9 @@ class meshBase
     virtual std::vector<double> getCellLengths(){}
     // get center of a cell
     virtual std::vector<double> getCellCenter(int cellID){}
+    // build locators for efficient search operations
+    vtkSmartPointer<vtkCellLocator> buildLocator();
+
 
 
   // data transfer
@@ -184,6 +188,8 @@ class meshBase
     int getNumberOfPoints() {return numPoints;}
     // return the number of cells
     int getNumberOfCells() { return numCells;}
+    void checkMesh(std::string ofname);
+
 
   // write and conversion
   public:

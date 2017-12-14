@@ -10,12 +10,7 @@ using namespace nemAux;
 class FETransfer : public TransferBase
 {
   public:
-    FETransfer(meshBase* _source, meshBase* _target)
-    {
-      source = _source;
-      target = _target;
-      std::cout << "FETransfer constructed" << std::endl;
-    }
+    FETransfer(meshBase* _source, meshBase* _target);
 
     ~FETransfer()
     {
@@ -40,7 +35,8 @@ class FETransfer : public TransferBase
     // this method is used when transferring converted cellToPoint data
     // from source to cell centers in target 
     std::vector<std::vector<double>> 
-      runPD(meshBase* _source, std::vector<std::vector<double>>& sourceData, 
+      runPD(vtkSmartPointer<vtkCellLocator> cellLocator,
+            std::vector<std::vector<double>>& sourceData, 
             std::vector<std::vector<double>>& targetPnts);
     // transfer point data with given ids from source to target
     int runPD(const std::vector<int>& arrayIDs);

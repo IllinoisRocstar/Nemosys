@@ -7,7 +7,7 @@ class TransferBase
 {
   // constructors and destructors
   public:
-    TransferBase():source(NULL),target(NULL)
+    TransferBase():source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL)
     { 
       std::cout << "TransferBase constructed" << std::endl;
     }
@@ -36,7 +36,9 @@ class TransferBase
 
   protected:
     meshBase* source;
+    vtkSmartPointer<vtkCellLocator> srcCellLocator; // search structure 
     meshBase* target;  
+    vtkSmartPointer<vtkCellLocator> trgCellLocator;
     bool checkQual; 
 };
 
