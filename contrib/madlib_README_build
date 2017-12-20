@@ -1,1 +1,0 @@
-./configure --prefix=./install --enable-moveIt --enable-benchmarks --enable-gmsh --with-gmsh-prefix=../gmsh/install/ --enable-ann
