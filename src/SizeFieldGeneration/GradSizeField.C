@@ -67,7 +67,7 @@ std::vector<double> GradSizeField::computeGradAtCell(int cell, int array)
     double values[dim*numPointsInCell];
     for (int i = 0; i < numPointsInCell; ++i)
     {
-			int id = (int) point_ids->GetId(i);
+      int id = (int) point_ids->GetId(i);
       double comps[dim];
       da->GetTuple(id,comps);
       for (int j = 0; j < dim; ++j)
