@@ -23,22 +23,22 @@ int main(int argc, char* argv[])
 
   json inputjson;
   inputStream >> inputjson;
-	for(const auto& prog : inputjson.array_range())
-	{
+  for(const auto& prog : inputjson.array_range())
+  {
 
-  		NemDriver* nemdrvobj = NemDriver::readJSON(prog);
-  		if (nemdrvobj) 
-  		{ 
-  		  delete nemdrvobj;
-  		  nemdrvobj = 0;
-  		}
-	}
+      NemDriver* nemdrvobj = NemDriver::readJSON(prog);
+      if (nemdrvobj) 
+      { 
+        delete nemdrvobj;
+        nemdrvobj = 0;
+      }
+  }
   return 0;
 
 }
 
-			//TODO
-			// also overload each driver constructor with one that takes pointer to resuling mesh
-			// with that, we can maybe do more things in memory
+      //TODO
+      // also overload each driver constructor with one that takes pointer to resuling mesh
+      // with that, we can maybe do more things in memory
 
-			// add netgen uniform option to Refinement program (i.e. Refinement Method = "uniformMAd" || "uniformNG")
+      // add netgen uniform option to Refinement program (i.e. Refinement Method = "uniformMAd" || "uniformNG")
