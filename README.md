@@ -20,25 +20,23 @@ Need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
-* tk8.5
-* tcl8.5
-* tix
-* tcl8.5-dev
-* tk8.5-dev
-* libtogl-dev
-* libxmu-dev
 
-Your best bet is to build the local versions of gmsh, madlib, and cgns found at
-/Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz and install them
-locally within this project folder. Assume $NEMOSYS_PROJECT_PATH is the path
-to the local install directory.
+Once these dependencies are installed, the easiest way to build the rest of the 
+package is with the script 'build.sh'. Assume $NEMOSYS_PROJECT_PATH is the path to
+the local install directory. Execute the following:
 
+```
+$ cd /path/to/Nemosys
+$ ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
+
+```
+
+If this fails, you can try building the tpls independently
 Extract the whole archive as such:
 
 ```
-$ cd $HOME/appropriate/project/path
-$ cp /Projects/IR/Users/msafdari/share/nemosys_tpls.tar.gz .
-$ tar zxf nemosys_tpls.tar.gz
+$ cd $NEMOSYS_PROJECT_PATH/
+$ tar zxf contrib/nemosys_tpls.tar.gz 
 $ cd nemosys_tpls
 ```
 
@@ -56,10 +54,10 @@ Build Gmsh by running the following commands:
 ```
 $ mkdir lib
 $ cd lib
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/gmsh -DDEFAULT=0
+$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/gmsh -DDEFAULT=0
         -DENABLE_BUILD_LIB=1 -DENABLE_BUILD_SHARED=1 ..
 $ make lib shared install/fast -j8
-$ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_PROJECT_PATH/gmsh/include/gmsh/
+$ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_PROJECT_PATH/install/gmsh/include/gmsh/
 ```
 
 #### Building madlib ####
@@ -74,15 +72,15 @@ $ cd madlib-1.3.0/
 Build madlib:
 
 ```
-$ ./configure --prefix=$NEMOSYS_PROJECT_PATH/madlib --enable-moveIt
+$ ./configure --prefix=$NEMOSYS_PROJECT_PATH/install/madlib --enable-moveIt
               --enable-benchmarks --enable-ann
-              --enable-gmsh --with-gmsh-prefix=$NEMOSYS_PROJECT_PATH/gmsh
+              --enable-gmsh --with-gmsh-prefix=$NEMOSYS_PROJECT_PATH/install/gmsh
 $ make -j8
 $ make install
 ```
 
 Afterwards, a number of header files from the madlib source directory will
-need to be manually copied into `$NEMOSYS_PROJECT_PATH/madlib/include/MAdLib`:
+need to be manually copied into `$NEMOSYS_PROJECT_PATH/install/madlib/include/MAdLib`:
 
 * Mesh/MeshDataBase.h
 * Mesh/MeshDataBaseInterface.h
@@ -111,24 +109,36 @@ Build CGNS:
 
 ```
 $ mkdir build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/cgns ..
+$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/cgns ..
 $ make -j8
+$ make install
+```
+
+#### Building Netgen ####
+```
+Unpack Netgen from the `nemosys_tpls` directory:
+
+```
+$ tar xzf netgen-meshter-git.tar.gz
+$ cd netgen-mesher-git
+```
+
+Build Netgen:
+
+$ mkdir build && cd build
+$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen -DUSE_GUI=OFF ..
+$ make
 $ make install
 ```
 
 #### Building Nemosys ####
 
-With the local dependencies in place, you should be able to build Nemosys
+With the local dependencies in place, you should be able to build Nemosys and all utilities
 using the following commands:
 
 ```
 $ mkdir build
 $ cd build
-$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
+$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=ON ..
 $ make -j8
 ```
-
-There may be some cmake and build warnings. You can get rid of the cmake
-warnings by building all of the dependencies from /Projects, installing them
-locally, and configuring with cmake, but this is unnecessary and some projects
-will take an extremely long time to build.
