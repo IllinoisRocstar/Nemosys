@@ -126,14 +126,14 @@ void printVec(const std::vector<T>& v);
 template <typename T>
 std::vector<T> flatten(const std::vector<std::vector<T>>& v)
 {
-	std::size_t size = 0;
-	for (const auto& sub : v)
-		size+= sub.size();
-	std::vector<T> result;
-	result.reserve(size);
-	for (const auto& sub : v)
-		result.insert(result.end(), sub.begin(), sub.end());
-	return result;
+  std::size_t size = 0;
+  for (const auto& sub : v)
+    size+= sub.size();
+  std::vector<T> result;
+  result.reserve(size);
+  for (const auto& sub : v)
+    result.insert(result.end(), sub.begin(), sub.end());
+  return result;
 }
 
 // folds vector into vector of vectors, each of length dim

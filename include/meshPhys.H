@@ -31,11 +31,11 @@ class PointDataArray
 
   public:
   // operators, access
-  	double& operator()(int i, int j) { return pntData[i*numComponent +j ]; }
-  	const double& operator()(int i, int j) const { return pntData[i*numComponent + j]; }  
-  	int getNumComponent() { return numComponent; }
-  	int getNumTuple() { return numTuple; }
-  	std::string getName() { return name; }
+    double& operator()(int i, int j) { return pntData[i*numComponent +j ]; }
+    const double& operator()(int i, int j) const { return pntData[i*numComponent + j]; }  
+    int getNumComponent() { return numComponent; }
+    int getNumTuple() { return numTuple; }
+    std::string getName() { return name; }
     // get 1d pntData ({p11,p12,...,pn1,pn2,...})
     std::vector<double> getData() { return pntData; }
     // get folded pntData ({{p11,p12,...},...,{pn1,pn2,...})

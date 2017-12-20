@@ -202,7 +202,7 @@ class meshBase
     virtual void write(){}
     // write the mesh to file named fname
     virtual void write(std::string fname){}
-		// convert to gmsh format without data 
+    // convert to gmsh format without data 
     void writeMSH(std::ofstream& outputStream);
     void writeMSH(std::string fname);
     // convert to gmsh format with specified point or cell data
