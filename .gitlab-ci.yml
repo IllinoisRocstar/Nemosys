@@ -1,0 +1,6 @@
+before_script:
+ - apt-get update
+
+job1:
+ script:
+  - echo "hello this is a test"
