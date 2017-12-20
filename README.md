@@ -133,6 +133,7 @@ $ cd netgen-mesher-git
 
 Build Netgen:
 
+```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen -DUSE_GUI=OFF ..
 $ make
@@ -161,8 +162,8 @@ This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the test
 here for more details.
 
 ## Authors ##
-* Masoud Safdari
 * Sachin Natesh
+* Masoud Safdari
 
 ## License ##
 This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for
