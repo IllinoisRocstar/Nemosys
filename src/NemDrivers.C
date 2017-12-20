@@ -58,7 +58,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh, std::stri
   T.start();
   source->setCheckQuality(checkQuality);
   source->transfer(target, method, arrayNames);
-  source->write("new.vtu");
+  //source->write("new.vtu");
   T.stop();
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
   target->write(ofname); 
@@ -264,7 +264,7 @@ MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine,
 {
   params = _params;
   mesh = new meshBase();
-  mesh->generateMesh(ifname, meshEngine, params);
+  mesh = meshBase::generateMesh(ifname, meshEngine, params);
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();

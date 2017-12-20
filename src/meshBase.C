@@ -29,13 +29,6 @@ meshBase* meshBase::Create(std::string fname)
     return exportVolToVtk(fname);
   }
 
-  else if (fname.find(".stl") != -1)
-  {
-//    std::cout << "Detected file in STL format" << std::endl;
-//    std::cout << "Generating volume mesh with netgen and exporting to VTK ...." << std::endl;
-//    return exportStlToVtk(fname);
-  }
-
   else
   {
     int dot = fname.find_last_of('.');
@@ -67,7 +60,6 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   {
     std::string newname = trim_fname(fname,".vol");
     return exportVolToVtk(newname);    
-    
   }
 }
 
@@ -95,11 +87,6 @@ int meshBase::transfer(meshBase* target, std::string method,
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
   transobj->setCheckQual(checkQuality);
   transobj->runPD(arrayIDs);
-  /*for (int i = 0; i < arrayIDs.size(); ++i)
-  {
-    std::cout << "transferring array " << arrayIDs[i] << std::endl;
-    transobj->runPD(arrayIDs[i]); // specify params to run function
-  }*/
   if (transobj)
   { 
     delete transobj;
@@ -123,7 +110,6 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
     arrayIDs[i] = id;
   }
   return transfer(target, method,arrayIDs);
-
 }
 
 // transfer all data from this mesh to target
@@ -132,7 +118,7 @@ int meshBase::transfer(meshBase* target, std::string method)
   
   TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
   transobj->setCheckQual(checkQuality);
-  int result = transobj->run(); // specify params to run function
+  int result = transobj->run(); 
   if (transobj)
   { 
     delete transobj;
