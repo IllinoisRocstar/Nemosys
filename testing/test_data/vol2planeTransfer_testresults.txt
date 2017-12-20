@@ -1,3 +1,0 @@
-Testing /home/users/snatesh/Nemosys/testing/test_data/vol2planeTransfer_test ...
-Test Passed: plane_interp.out and plane_interp-REF.out are the same
-

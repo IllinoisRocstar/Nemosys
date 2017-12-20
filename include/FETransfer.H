@@ -28,8 +28,7 @@ class FETransfer : public TransferBase
               and all cells sharing this neighbor point. Check if the target point is 
               in any of these neighboring cells
         2) When the cell is identified, evaluate the weights for interpolation of the 
-           solution to the target point and perform the interpolation.
-    */
+           solution to the target point and perform the interpolation. */
     int runPD(vtkPointData* pd, int arrayID);
     // transfer point data from source to provided target points
     // this method is used when transferring converted cellToPoint data
@@ -50,8 +49,7 @@ class FETransfer : public TransferBase
               - cell data is assumed to be perscribed at cell centers
         2)  Compute the centers of cell in the target mesh
         3)  Transfer the converted cell-point data from the source mesh
-            to the cell centers of the target mesh using the runPD methods
-    */
+            to the cell centers of the target mesh using the runPD methods*/
     int runCD(vtkCellData* cd, int arrayID, 
               std::vector<std::vector<double>>& targetCenters);
     // transfer cell data with given ids from source to target

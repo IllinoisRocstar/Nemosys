@@ -280,7 +280,7 @@ std::vector<double> vtkMesh::getCellCenter(int cellID)
 
 
 // set point data (numComponets per point determined by dim of data[0] 
-void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double>>& data)
+void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<double>>& data)
 {
   vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
   da->SetName(name);
@@ -292,7 +292,7 @@ void vtkMesh::setPointDataArray(const char* name, std::vector<std::vector<double
 }
 
 // set cell data (numComponents per cell determined by dim of data[0])
-void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>>& data)
+void vtkMesh::setCellDataArray(const char* name, const std::vector<std::vector<double>>& data)
 {
   vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
   da->SetName(name);
@@ -303,7 +303,7 @@ void vtkMesh::setCellDataArray(const char* name, std::vector<std::vector<double>
   dataSet->GetCellData()->SetScalars(da);
 }
 
-void vtkMesh::setCellDataArray(const char* name, std::vector<double>& data)
+void vtkMesh::setCellDataArray(const char* name, const std::vector<double>& data)
 {   
   vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
   da->SetName(name);
@@ -314,7 +314,7 @@ void vtkMesh::setCellDataArray(const char* name, std::vector<double>& data)
   dataSet->GetCellData()->SetScalars(da);
 }
 
-// remove point data with given id from target if it exists
+// remove point data with given id from dataSet if it exists
 void vtkMesh::unsetPointDataArray(int arrayID)
 {
   dataSet->GetPointData()->RemoveArray(arrayID); 
@@ -324,7 +324,7 @@ void vtkMesh::unsetPointDataArray(const char* name)
 {
   dataSet->GetPointData()->RemoveArray(name); 
 }
-// remove cell data with given id from target if it exists
+// remove cell data with given id from dataSet if it exists
 void vtkMesh::unsetCellDataArray(int arrayID)
 {
   dataSet->GetCellData()->RemoveArray(arrayID);
@@ -335,6 +335,10 @@ void vtkMesh::unsetCellDataArray(const char* name)
   dataSet->GetCellData()->RemoveArray(name);
 }
 
-
-
+// remove field data with given id from dataSet
+void vtkMesh::unsetFieldDataArray(const char* name)
+{
+  int i;
+  dataSet->GetFieldData()->RemoveArray(name);
+}
 

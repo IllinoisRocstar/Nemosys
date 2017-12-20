@@ -32,6 +32,8 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
   transferData.resize(target->getNumberOfPoints());
   // genCell used by locator
   vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+  // TODO REMOVE
+  //std::ofstream outputStream1("pointInterpTest");
 
   for (int j = 0; j < target->getNumberOfPoints(); ++j)
   {
@@ -56,6 +58,25 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
       int pntId;
       double weights[genCell->GetNumberOfPoints()];
       result = genCell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
+
+    //////////////////////////////////////////////////////
+   /*   {
+      std::vector<double> y(3);
+      std::vector<double> xVec(x,x+3);
+      for (int f = 0; f < genCell->GetNumberOfPoints(); ++f)
+      { 
+        pntId = genCell->GetPointId(f);
+        std::vector<double> coords;
+        coords = source->getPoint(pntId);
+        for (int g = 0; g < 3; ++g)
+        {
+          y[g] += coords[g]*weights[f];
+        }
+      }
+      std::vector<double> diff = y-xVec;
+      outputStream1 << L2_Norm(diff) << " " << diff[0] << " " << diff[1] << " " << diff[2] << std::endl;
+      }*/
+    ///////////////////////////////////////////////////////
       if (result > 0)
       {
         for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
@@ -102,18 +123,21 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
         oldData[i*numComponent + j] = comps[j];
       }
     }
-    std::string name = pd->GetArrayName(arrayID);
-    name += "backInterp";
-    std::vector<std::vector<double>> newData = runPD(trgCellLocator, transferData, sourcePnts);
-    //std::cout << "L2 Norm of Back Transferred Residuals: " 
-    //          << L2_Norm(flatten(newData) - oldData)/L2_Norm(oldData) << std::endl; 
-    source->setPointDataArray(&name[0u],newData);
+    //std::string name = pd->GetArrayName(arrayID);
+    //name += "backInterp";
+    //std::vector<std::vector<double>> newData = runPD(trgCellLocator, transferData, sourcePnts);
+    //source->setPointDataArray(&name[0u],newData);
+    //std::vector<double> scaleSourcePnts = flatten(sourcePnts);
+    //scaleSourcePnts = hadamard(scaleSourcePnts,scaleSourcePnts);
+    //scaleSourcePnts = 298374.0*scaleSourcePnts;
+    //std::vector<std::vector<double>> scaleSourcePntsFold = fold(scaleSourcePnts,3);
+    //source->setPointDataArray("pointCoords", scaleSourcePntsFold);
     //std::vector<double> newData = flatten(runPD(target, transferData, sourcePnts));
-    std::vector<double> newData1 = flatten(newData);
+    std::vector<double> newData1 = flatten(runPD(trgCellLocator, transferData, sourcePnts));//newData);
     double a,b,diff;
-    std::ofstream outputstream("transferQualityCheck.txt");
-    outputstream << "points with shit interpolation" << std::endl
-                 << "Point" << " oldVal " << "newVal " << "diff " << std::endl;
+    //std::ofstream outputstream("transferQualityCheck.txt");
+    //outputstream << "points with shit interpolation for " << pd->GetArrayName(arrayID) << std::endl
+    //             << "Point" << " oldVal " << "newVal " << "diff " << std::endl;
     double sum = 0;
     for (int i = 0; i < newData1.size(); ++i)
     {
@@ -121,12 +145,12 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
       b = oldData[i];
       diff = std::fabs((a-b)/b);
       sum += diff;
-      if (diff > 1e-4)
-      {
-        outputstream << i << " " << b << " " << a << " " << diff << std::endl;
-      } 
+      //if (diff > 1e-4)
+      //{
+      //  outputstream << i << " " << b << " " << a << " " << diff << std::endl;
+      //} 
     }
-    std::cout << "Normalized quality: " << sum/newData1.size() << std::endl;
+    std::cout << "Average Error in Nodal Transfer: " << sum/newData1.size() << std::endl;
   }
   return 0;
 }  
@@ -291,7 +315,6 @@ int FETransfer::runCD(vtkCellData* cd, int arrayID,
   std::vector<std::vector<double>> transferData = runPD(srcCellLocator, cellToPointData, targetCenters);
   target->setCellDataArray(&arrName[0u], transferData);
   return 0;
-
 }
 
 int FETransfer::runCD(const std::vector<int>& arrayIDs)

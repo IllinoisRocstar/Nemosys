@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 # setting source dir as determined by cmake (@...@)
 source_dir=@CMAKE_SOURCE_DIR@
 
@@ -11,9 +11,8 @@ test_dir=$(find ${source_dir} -name test_data)
 exec_dir=@CMAKE_BINARY_DIR@/bin
 
 # check for diff_tol executable
-diff_exec=$(find ${source_dir} -name diff_tol)
-if [ ! -e ${diff_exec} ]
-then
+diff_tol=$(find ${source_dir} -name diff_tol)
+if [ ! -e ${diff_tol} ]; then
   echo "diff_tol executable does not exist"
   echo "Compile diff_tol.cpp to generate"
   exit 1
@@ -22,64 +21,71 @@ fi
 # passing name of test case folder as command line arg
 folder=${test_dir}/$1
 
-cd $folder
-
-if [ $1 == "vol2planeTransfer_test" ]
-then
-  rm -f $(ls *.out | grep -v REF) # removing existing output
-  ref_file=$(ls *REF*)
-  inp_file=$(ls *.inp)
-  out_file=$(ls *REF* | sed 's/\-REF//g')
-  log_file=vol2planeTransfer_testresults.txt
-  rm -f ../${log_file}
-  echo "Testing ${folder} ..." | tee -a ../${log_file}
-  ${exec_dir}/vol2planeTransfer ${inp_file}
-fi
-
-if [ $1 == "RefineMeshGradientInterp_test" ]
-then
-  rm -f $(ls | egrep -v 'case|REF')
-  ref_file=$(ls *REF*.msh)
-  inp_file=$(ls *case*)
-  out_file=refined_solution.msh
-  log_file=RefineMeshGradientInterp_testresults.txt
-  rm -f ../${log_file}
-  echo "Testing ${folder} ..." | tee -a ../${log_file}
-  ${exec_dir}/refineMesh ${inp_file} "refined.msh" 7 "grad" .5 1 1 
-fi
-
-
-if [ $1 == "RefineMeshValueInterp_test" ]
-then
-  rm -f $(ls | egrep -v 'case|REF')
-  ref_file=$(ls *REF*.msh)
-  inp_file=$(ls *case*)
-  out_file=refined_solution.msh
-  log_file=RefineMeshValueInterp_testresults.txt
-  rm -f ../${log_file}
-  echo "Testing ${folder} ..." | tee -a ../${log_file}
-  ${exec_dir}/refineMesh ${inp_file} "refined.msh" 1 "val" .5 1 1 
-fi
-
-
 # SET TOLERANCE
 TOL="1e-6"
 
-if [ ! -e ${out_file} ]
-then
-  echo "No ${out_file} results from execution!"
-  exit 1
-else
-  # compare output file with gold file
-  ${diff_exec} ${out_file} ${ref_file} ${TOL}
-  if [ $? -ne 0 ]
-  then
-    echo "Test Failed: ${out_file} differs from ${ref_file}" | tee -a ../${log_file}
-    printf "\n" >> ../${log_file}
+cd $folder
+
+if [ $1 == "Refine_Quality_Transfer_test" ]; then
+  rm -f driver_test.vtu refined_case0001.vtu meshQual.txt
+  ref_mesh=$(ls *REF*.vtu)
+  inp_file=$(ls *.json)
+  out_mesh=refined_case0001.vtu
+  ref_text=$(ls *REF*.txt)
+  out_text=meshQual.txt
+  log_file=Refine_Quality_Transfer_test.txt
+  rm -f ../${log_file}
+  echo "Testing ${folder} ..." | tee -a ../${log_file}
+  ${exec_dir}/nemosysRun ${inp_file} | tee -a ../${log_file}
+  if [ ! -e ${out_mesh} ] || [ ! -e ${out_text} ]; then
+    echo "Either ${out_mesh} or ${out_text} did not result from execution!"
     exit 1
   else
-    echo "Test Passed: ${out_file} and ${ref_file} are the same" | tee -a ../${log_file}
+    ${diff_vtu} ${out_mesh} ${ref_mesh} ${TOL} && 
+    if [ $? -ne 0 ]; then
+      echo "Test Failed: ${out_mesh} differs from ${ref_mesh}" | tee -a ../${log_file}
+      printf "\n" >> ../${log_file}
+      exit 1
+    else
+      echo "Test Passed: ${out_mesh} and ${ref_mesh} are the same" | tee -a ../${log_file}
+    fi
+    ${diff_tol} ${out_text} ${ref_text} ${TOL} &&
+    if [ $? -ne 0 ]; then
+      echo "Test Failed: ${out_text} differs from ${ref_text}" | tee -a ../${log_file}
+      printf "\n" >> ../${log_file}
+      exit 1
+    else
+      echo "Test Passed: ${out_text} and ${ref_text} are the same" | tee -a ../${log_file}
+    fi
+    exit 0
   fi
+  printf "\n" >> ../${log_file}
+elif [ $1 == "MeshGen_UnifRefine_test" ]; then
+  rm -f $(ls | egrep -v 'stl|REF|json')
+  ref_mesh=$(ls *REF*.vtu)
+  inp_file=$(ls *.json)
+  out_mesh=refined_uniform_hinge.vtu
+  log_file=MeshGen_UnifRefine_test.txt
+  rm -f ../${log_file}
+  echo "Testing ${folder} ..." | tee -a ../${log_file}
+  ${exec_dir}/nemosysRun ${inp_file} | tee -a ../${log_file}
+  if [ ! -e ${out_mesh} ]; then
+    echo "${out_mesh} did not result from execution!"
+    exit 1
+  else
+    ${diff_vtu} ${out_mesh} ${ref_mesh} ${TOL} && 
+    if [ $? -ne 0 ]; then
+      echo "Test Failed: ${out_mesh} differs from ${ref_mesh}" | tee -a ../${log_file}
+      printf "\n" >> ../${log_file}
+      exit 1
+    else
+      echo "Test Passed: ${out_mesh} and ${ref_mesh} are the same" | tee -a ../${log_file}
+    fi
+    exit 0
+  fi
+  printf "\n" >> ../${log_file}
 fi
-printf "\n" >> ../${log_file}
-exit 0
+exit 1
+
+
+
