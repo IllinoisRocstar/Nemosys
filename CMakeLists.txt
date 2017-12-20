@@ -181,7 +181,9 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/SizeFieldGeneration/GradSizeField.C 
                  src/SizeFieldGeneration/ValSizeField.C 
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
-                 src/Drivers/NemDrivers.C src/StlToVtk.C)
+                 src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
+                 src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
+                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
