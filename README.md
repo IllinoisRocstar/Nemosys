@@ -1,13 +1,13 @@
 NEMoSys
 ----------
 The **N**uclear **E**nergy **Mo**deling **Sys**tem is a modular, extensible resource 
-designed to be used in typlical application developemnt systems as well as in distributed
+designed to be used in typical application development systems as well as in distributed
 web-services environments. The focus of the project is on providing a framework for robust,
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
 between arbitrary meshes.
 
 ## Getting Started ##
------------------------
+----------
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
 ```
@@ -15,7 +15,7 @@ $ git clone https://github.com/IllinoisRocstar/Nemosys.git
 ```
 
 ## Build Instructions ##
----------------------------
+----------
 Need to `apt install` at least the following dependencies:
 
 * build-essential
