@@ -26,7 +26,7 @@ package is with the script 'build.sh'. Assume $NEMOSYS_PROJECT_PATH is the path 
 the local install directory. Execute the following:
 
 ```
-$ cd /path/to/Nemosys
+$ cd $NEMOSYS_PROJECT_PATH
 $ ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
 
 ```
