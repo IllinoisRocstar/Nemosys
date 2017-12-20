@@ -175,17 +175,22 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
-                 src/meshBase.C src/vtkMesh.C src/meshGen.C src/TransferBase.C  src/FETransfer.C
-                 src/SizeFieldBase.C src/GradSizeField.C src/ValSizeField.C src/Refine.C 
-                 src/NemDrivers.C src/MeshQuality.C src/StlToVtk.C)
+                 src/Mesh/meshBase.C src/Mesh/vtkMesh.C src/MeshGeneration/meshGen.C 
+                 src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
+                 src/SizeFieldGeneration/SizeFieldBase.C 
+                 src/SizeFieldGeneration/GradSizeField.C 
+                 src/SizeFieldGeneration/ValSizeField.C 
+                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
+                 src/Drivers/NemDrivers.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
+SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
 set(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}) 
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
+             testing/test_scripts/diff_vtu.cpp testing/test_scripts/diff_tol.cpp)
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
@@ -207,6 +212,7 @@ ELSE()
 ENDIF()
 INSTALL(TARGETS r8 LIBRARY DESTINATION lib)
 
+# build interp lib
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(interp SHARED ${INTERP_SRCS})
 ELSE()
@@ -215,6 +221,7 @@ ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
 INSTALL(TARGETS interp LIBRARY DESTINATION lib)
 
+# build nemosys lib
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
 ELSE()
@@ -236,60 +243,21 @@ INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 
 # Builiding utilities #########################################################
 # There are too many dependencies for gmsh this needs to be populated automatically
-OPTION(BUILD_UTILS "BUILD_UTILS" ON)
+OPTION(BUILD_UTILS "BUILD_UTILS" OFF)
+
+SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
+SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+
+# Building Nemosys Core utility ###########################################
+ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
+if(VTK_LIBRARIES)
+  TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
+else()
+  TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
+endif()
+INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
 
 IF(BUILD_UTILS)
-  SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}
-     -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm
-      -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
-
-
-  #Nemosys Core utility
-  ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
-  if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
-  else()
-    TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
-  endif()
-  INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
-  #Transfer utility
-  ADD_EXECUTABLE(transferData utils/Transfer.C)
-  if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(transferData Nemosys)
-  else()
-    TARGET_LINK_LIBRARIES(transferData Nemosys vtkHybrid vtkWidgets)
-  endif()
-  INSTALL(TARGETS transferData RUNTIME DESTINATION bin)
-
-  #RefineMesh utility
-  ADD_EXECUTABLE(RefineMesh utils/RefineMesh.C)
-  if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(RefineMesh Nemosys)
-  else()
-    TARGET_LINK_LIBRARIES(RefineMesh Nemosys vtkHybrid vtkWidgets)
-  endif()
-  INSTALL(TARGETS RefineMesh RUNTIME DESTINATION bin)
-
-  #vol2planeTransfer utility
-  ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
-  if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys)
-  else()
-    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets)
-  ENDIF()
-  INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
-
-  #refineMesh utility
-  ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-  TARGET_LINK_LIBRARIES(refineMesh Nemosys)
-  INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
-
-  # optimze utility
-  ADD_EXECUTABLE(optimize utils/optimize.C)
-  TARGET_LINK_LIBRARIES(optimize Nemosys)
-  SET_TARGET_PROPERTIES(optimize PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-  INSTALL(TARGETS optimize RUNTIME DESTINATION bin)
 
   # xmlDump utility
   ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
@@ -320,8 +288,8 @@ IF(BUILD_UTILS)
   TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys Rocs)
   INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
 
-  # Building tutorials ###########################################################
-  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
+ # Building tutorials ###########################################################
+ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
@@ -336,7 +304,11 @@ IF(BUILD_UTILS)
                                              ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
   ENDIF()
-ENDIF()
+
+ENDIF(BUILD_UTILS) 
+
+
+
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
@@ -363,6 +335,7 @@ IF(BUILD_DOCUMENTATION)
 ENDIF()
 
 # Perform testing ############################################################
+SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
 SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
 SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
 SET(DIFFVTU ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_vtu)
