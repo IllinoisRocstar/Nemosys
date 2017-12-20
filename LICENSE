@@ -1,8 +1,5 @@
 ****************************************************************************
-* University of Illinois/NCSA Open Source License                          *
-* http://opensource.org/Licenses/NCSA                                      *
-*                                                                          *
-* Copyright (c) 2015 Illinois Rocstar, LLC                                 *  
+* Copyright (c) 2017 Illinois Rocstar, LLC                                 *  
 * All rights reserved.                                                     *
 *                                                                          *
 * Developed by:           Illinois Rocstar, LLC                            *
@@ -24,10 +21,9 @@
 *   the documentation and/or other materials provided with the             *
 *   distribution.                                                          *
 *                                                                          *
-* @ Neither the names of Illinois Rocstar LLC, University of Illinois,     *
-*   nor the names of its contributors may be used to endorse or promote    * 
-*   products derived from this Software without specific prior written     *
-*   permission.                                                            *
+* @ Neither the names of Illinois Rocstar LLC, nor the names of its        *
+*   contributors may be used to endorse or promote products derived        * 
+*   from this Software without specific prior written  permission.         *
 *                                                                          * 
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,          *
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF       *  
