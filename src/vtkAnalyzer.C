@@ -482,7 +482,7 @@ vtkAnalyzer::getCellCenters(int& numComponent)
 // search for pnt id in each cell and return common
 std::vector<int> vtkAnalyzer::getCellsWithPoint(int pnt)
 {
-	getNumberOfCells();
+  getNumberOfCells();
     
   std::vector<int> commonCells;
   for (int i = 0; i < numberOfCells; ++i)
@@ -502,7 +502,7 @@ std::vector<int> vtkAnalyzer::getCellsWithPoint(int pnt)
   }
   return commonCells;  
 }
-		
+    
 
 // interpolate point data from 3D mesh in neighborhoods of
 // cell centers of planar mesh to those centers.

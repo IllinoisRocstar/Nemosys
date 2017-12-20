@@ -26,8 +26,8 @@ void vtkMesh::write()
     std::cout << "No dataSet to write!" << std::endl;
     exit(1);
   }
-	 
-	std::string extension = find_ext(filename);
+   
+  std::string extension = find_ext(filename);
  
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (filename,dataSet);
@@ -50,8 +50,8 @@ void vtkMesh::write(std::string fname)
     std::cout << "No dataSet to write!" << std::endl;
     exit(1);
   }
-	 
-	std::string extension = find_ext(fname);
+   
+  std::string extension = find_ext(fname);
  
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -65,7 +65,7 @@ void vtkMesh::write(std::string fname)
     writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
-	
+  
 }
 
 vtkMesh::vtkMesh(const char* fname)
@@ -112,8 +112,8 @@ vtkMesh::vtkMesh(const char* fname)
     exit(1);
   }
 
-	std::string newname(fname);
-	setFileName(newname);
+  std::string newname(fname);
+  setFileName(newname);
   std::cout << "vtkMesh constructed" << std::endl;
   numCells = dataSet->GetNumberOfCells();
   numPoints = dataSet->GetNumberOfPoints();
