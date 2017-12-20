@@ -142,7 +142,7 @@ $ make install
 
 #### Building Nemosys ####
 
-With the local dependencies in place, you should be able to build Nemosys and all utilities
+With the local dependencies installed, you should be able to build Nemosys and all utilities
 using the following commands:
 
 ```
