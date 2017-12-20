@@ -187,9 +187,9 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
-SET(R8_SRCS math/r8lib.cpp)
+SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
-SET(INTERP_SRCS math/rbf_interp_nd.cpp math/rbfInterp.C math/baseInterp.C)
+SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
 set(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
              testing/test_scripts/diff_vtu.cpp testing/test_scripts/diff_tol.cpp)
