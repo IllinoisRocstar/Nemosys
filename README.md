@@ -1,9 +1,21 @@
 NEMoSys
 ----------
-This is the NEMoSys.
+The **N**uclear **E**nergy **Mo**deling **Sys**tem is a modular, extensible resource 
+designed to be used in typlical application developemnt systems as well as in distributed
+web-services environments. The focus of the project is on providing a framework for robust,
+automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
+between arbitrary meshes.
 
-### Build Instructions ###
+## Getting Started ##
+-----------------------
+To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
+or clone it with the following command:
+```
+$ git clone https://github.com/IllinoisRocstar/Nemosys.git
+```
 
+## Build Instructions ##
+---------------------------
 Need to `apt install` at least the following dependencies:
 
 * build-essential
@@ -22,7 +34,7 @@ Need to `apt install` at least the following dependencies:
 * gfortran
 
 Once these dependencies are installed, the easiest way to build the rest of the 
-package is with the script 'build.sh'. Assume $NEMOSYS_PROJECT_PATH is the path to
+package is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to
 the local install directory. Execute the following:
 
 ```
@@ -142,3 +154,4 @@ $ cd build
 $ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=ON ..
 $ make -j8
 ```
+
