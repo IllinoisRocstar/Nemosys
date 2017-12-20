@@ -126,8 +126,8 @@ public:
    void writeSurfaceTriElements(std::string fname);
    // returns coordinates of centers of all cells 
    std::vector<double > getCellCenters(int& numComponent);
-	 // returns cells sharing point (topological search)
-	 std::vector<int> getCellsWithPoint(int pnt);
+   // returns cells sharing point (topological search)
+   std::vector<int> getCellsWithPoint(int pnt);
    // returns min extent
    double getMinExtent(int nDim, const std::vector<double>& pntCrds);
    //return coordinates of all points in mesh
