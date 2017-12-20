@@ -15,11 +15,10 @@ MeshQuality::MeshQuality(meshBase* _mesh)
 MeshQuality::~MeshQuality()
 {
   mesh->unsetCellDataArray("Quality");
-  // TODO: Implement unsetFieldData for
-  // "Mesh Triangle Quality," 
-  // "Mesh Quadrilateral Quality," 
-  // "Mesh Tetrahedron Quality," and 
-  // "Mesh Hexahedron Quality."
+  mesh->unsetFieldDataArray("Mesh Triangle Quality");
+  mesh->unsetFieldDataArray("Mesh Quadrilateral Quality"); 
+  mesh->unsetFieldDataArray("Mesh Tetrahedron Quality");  
+  mesh->unsetFieldDataArray("Mesh Hexahedron Quality");
 }
 
 void MeshQuality::checkMesh(std::ostream& outputStream)

@@ -38,18 +38,19 @@ class vtkMesh : public meshBase
   // set and get point and cell data
   public:
     // set point data (numComponets per point determined by dim of data[0] 
-    void setPointDataArray(const char* name, std::vector<std::vector<double>>& data);
+    void setPointDataArray(const char* name, const std::vector<std::vector<double>>& data);
     // set cell data (numComponents per cell determined by dim of data[0])
-    void setCellDataArray(const char* name, std::vector<std::vector<double>>& data);
+    void setCellDataArray(const char* name, const std::vector<std::vector<double>>& data);
     // set scalar cell data
-    void setCellDataArray(const char* name, std::vector<double>& data);
-    // remove point data with given id from target if it exists
+    void setCellDataArray(const char* name, const std::vector<double>& data);
+    // remove point data with given id from dataSet if it exists
     void unsetPointDataArray(int arrayID);
     void unsetPointDataArray(const char* name);
-    // remove cell data with given id from target if it exists
+    // remove cell data with given id from dataSet if it exists
     void unsetCellDataArray(int arrayID);
     void unsetCellDataArray(const char* name);
-
+    // remove field data with given id from dataSet
+    void unsetFieldDataArray(const char* name);
 
 };
 

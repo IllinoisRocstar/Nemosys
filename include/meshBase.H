@@ -80,6 +80,9 @@ namespace nglib
 #include <algorithm>
 #include <cstdio>
 
+
+// Virtual functions are implemented in vtkMesh.C
+
 class meshingParams;
 
 class meshBase
@@ -123,18 +126,20 @@ class meshBase
     vtkDataSet* getDataSet(){ return dataSet; }
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
-                                   std::vector<std::vector<double>>& data){}
+                                   const std::vector<std::vector<double>>& data){}
     // register data to dataSet's cell data
     virtual void setCellDataArray(const char* name,
-                                  std::vector<std::vector<double>>& data){}
+                                  const std::vector<std::vector<double>>& data){}
     virtual void setCellDataArray(const char* name,
-                                  std::vector<double>& data){}
+                                  const std::vector<double>& data){}
     // delete array with id from dataSet's point data
     virtual void unsetPointDataArray(int arrayID){}
     virtual void unsetPointDataArray(const char* name){}
     // delete array with id from dataSet's cell data
     virtual void unsetCellDataArray(int arrayID){} 
     virtual void unsetCellDataArray(const char* name){}
+    // delete array with id from dataSet's field data
+    virtual void unsetFieldDataArray(const char* name){}
     // get diameter of circumsphere of each cell
     virtual std::vector<double> getCellLengths(){}
     // get center of a cell
