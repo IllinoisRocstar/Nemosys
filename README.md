@@ -7,7 +7,6 @@ automated mesh generation, mesh quality analysis, adaptive mesh refinement and d
 between arbitrary meshes.
 
 ## Getting Started ##
-----------
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
 ```
@@ -15,8 +14,7 @@ $ git clone https://github.com/IllinoisRocstar/Nemosys.git
 ```
 
 ## Build Instructions ##
-----------
-Need to `apt install` at least the following dependencies:
+You will need to `apt install` at least the following dependencies:
 
 * build-essential
 * cmake
@@ -155,3 +153,19 @@ $ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBU
 $ make -j8
 ```
 
+## Testing Nemosys ##
+
+From the build directory, execute the following command to test the installation:
+```
+$ make test
+```
+This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
+here for more details.
+
+## Authors ##
+* Masoud Safdari
+* Sachin Natesh
+
+## License ##
+This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for
+more details.
