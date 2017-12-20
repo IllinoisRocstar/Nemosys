@@ -125,9 +125,7 @@ $ make install
 ```
 
 #### Building Netgen ####
-```
 Unpack Netgen from the `nemosys_tpls` directory:
-
 ```
 $ tar xzf netgen-meshter-git.tar.gz
 $ cd netgen-mesher-git
