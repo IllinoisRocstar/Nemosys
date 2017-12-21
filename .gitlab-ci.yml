@@ -1,11 +1,11 @@
+image: snatesh/testdoc:testimg
+
 before_script:
+ - cd /builds
+ - touch tmp.txt
 
 job1:
  script:
   - echo "hello this is a test"
-  - cd
-  - pwd
-  - ls
-  - cd ..
   - pwd
   - ls
