@@ -1,7 +1,7 @@
 before_script:
- - apt-get update
- - apt-get -y install build-essential cmake libvtk6-dev libproj-dev libcgns-dev libmetis-dev libhdf5-dev libfltk1.3-dev liblapack-dev libgmp-dev libice-dev gfortran libsm-dev libjpeg-dev
 
 job1:
  script:
   - echo "hello this is a test"
+  - cd Nemosys
+  - ls
