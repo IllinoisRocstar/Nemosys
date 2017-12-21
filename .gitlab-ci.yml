@@ -3,5 +3,4 @@ before_script:
 job1:
  script:
   - echo "hello this is a test"
-  - cd Nemosys
   - ls
