@@ -3,4 +3,8 @@ before_script:
 job1:
  script:
   - echo "hello this is a test"
+  - pwd
+  - ls
+  - cd ..
+  - pwd
   - ls
