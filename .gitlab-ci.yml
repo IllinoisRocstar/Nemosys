@@ -1,8 +1,10 @@
 image: snatesh/testdoc:testimg
 
 before_script:
-
+ - cp -r /tmp/install .
+ - mkdir build && cd build
+ - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
+ 
 job1:
  script:
-  - pwd
-  - ls
+  - make test
