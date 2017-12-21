@@ -11,6 +11,7 @@ MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine,
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();
+  std::cout << "MeshGenDriver created" << std::endl;
 }
 
 MeshGenDriver::~MeshGenDriver()
@@ -25,6 +26,7 @@ MeshGenDriver::~MeshGenDriver()
     delete params;
     params = 0;
   } 
+  std::cout << "MeshGenDriver destroyed" << std::endl;
 }
 
 MeshGenDriver* MeshGenDriver::readJSON(json inputjson)

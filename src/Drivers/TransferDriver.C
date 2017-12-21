@@ -7,6 +7,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
 {
   source = meshBase::Create(srcmsh);
   target = meshBase::Create(trgmsh);
+  std::cout << "TransferDriver created" << std::endl;
   Timer T;
   T.start();
   source->setCheckQuality(checkQuality);
@@ -14,6 +15,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
   T.stop();
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
   target->write(ofname); 
+
 }
 
 
@@ -31,6 +33,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh, std::stri
   T.stop();
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
   target->write(ofname); 
+  std::cout << "TransferDriver created" << std::endl;
 }
 
 TransferDriver::~TransferDriver()
@@ -45,6 +48,7 @@ TransferDriver::~TransferDriver()
     delete target;
     target = 0;
   }
+  std::cout << "TransferDriver destroyed" << std::endl;
 }
 
 TransferDriver* TransferDriver::readJSON(json inputjson)
