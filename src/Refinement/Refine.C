@@ -172,7 +172,10 @@ void Refine::run()
   //mesh->setCheckQuality(1);
   //mesh->transfer(refinedVTK,"Finite Element");
 
-  refinedVTK->write(ofname);
+  refinedVTK->setFileName(ofname);
+  refinedVTK->report();
+  refinedVTK->write();
+   
   if (refinedVTK)
   {
     delete refinedVTK;

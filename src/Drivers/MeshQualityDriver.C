@@ -4,6 +4,7 @@ MeshQualityDriver::MeshQualityDriver(std::string _mesh, std::string ofname)
 {
   mesh = meshBase::Create(_mesh);
   mesh->checkMesh(ofname);
+  std::cout << "MeshQualityDriver created" << std::endl;
 }
 
 MeshQualityDriver::~MeshQualityDriver()
@@ -13,6 +14,7 @@ MeshQualityDriver::~MeshQualityDriver()
     delete mesh;
     mesh = 0;
   }
+  std::cout << "MeshQualityDriver destroyed" << std::endl;
 }
 
 MeshQualityDriver* MeshQualityDriver::readJSON(json inputjson)
