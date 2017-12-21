@@ -161,10 +161,6 @@ $ make test
 This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
 here for more details.
 
-## Authors ##
-* Sachin Natesh
-* Masoud Safdari
-
 ## License ##
 This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for
 more details.
