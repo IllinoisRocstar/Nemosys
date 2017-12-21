@@ -185,7 +185,8 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
+SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
+    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
@@ -289,6 +290,15 @@ IF(BUILD_UTILS)
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
   TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys Rocs)
   INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
+  
+  #vol2planeTransfer utility
+  ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys)
+  else()
+    TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets)
+  ENDIF()
+  INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
 
  # Building tutorials ###########################################################
  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
