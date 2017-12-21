@@ -9,17 +9,7 @@ RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string ar
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname);  
-  
-  meshBase* refinedmesh = meshBase::Create(ofname);
-  std::cout << std::endl;
-  refinedmesh->report();
-  std::cout << std::endl;
-  if (refinedmesh)
-  {
-    delete refinedmesh;
-    refinedmesh = 0;
-  }
-  
+  std::cout << "RefineDriver created" << std::endl;
 }
 
 RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname)
@@ -29,16 +19,7 @@ RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgesca
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, edgescale, ofname);
-  
-  meshBase* refinedmesh = meshBase::Create(ofname);
-  std::cout << std::endl;
-  refinedmesh->report();
-  std::cout << std::endl;
-  if (refinedmesh)
-  {
-    delete refinedmesh;
-    refinedmesh = 0;
-  }
+  std::cout << "RefineDriver created" << std::endl;
 }
 
 RefineDriver::~RefineDriver()
@@ -48,6 +29,7 @@ RefineDriver::~RefineDriver()
     delete mesh;
     mesh = 0;
   }
+  std::cout << "RefineDriver destroyed" << std::endl;
 }
 
 RefineDriver* RefineDriver::readJSON(json inputjson)
