@@ -15,11 +15,6 @@ int main(int argc, char* argv[])
     std::cout << "Error opening file " << fname << std::endl;
     exit(1);
   }
-  if (find_ext(fname) != ".json")
-  {
-    std::cout << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
 
   json inputjson;
   inputStream >> inputjson;
