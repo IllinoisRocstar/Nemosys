@@ -1,24 +1,5 @@
 #include<vtkMesh.H>
 
-
-template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
-{
-  vtkSmartPointer<TReader> reader =
-    vtkSmartPointer<TReader>::New();
-  reader->SetFileName(fileName);
-  reader->Update();
-  reader->GetOutput()->Register(reader);
-  return vtkDataSet::SafeDownCast(reader->GetOutput());
-}
-
-template<class TWriter> void writeVTFile(std::string fname, vtkDataSet* dataSet)
-{
-  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
-  Writer->SetFileName(&fname[0u]);
-  Writer->SetInputData(dataSet);
-  Writer->Write();
-}
-
 void vtkMesh::write()
 {
   if (!dataSet)
