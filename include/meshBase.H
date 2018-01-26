@@ -43,10 +43,17 @@
 #include <vtkGenericCell.h>
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
+#include <vtkIdTypeArray.h>
+#include <vtkInformation.h>
 #include <vtkCellLocator.h>
 #include <vtkCellTreeLocator.h>
 #include <vtkModifiedBSPTree.h>
 #include <vtkMeshQuality.h>
+#include <vtkQuadratureSchemeDefinition.h>
+#include <vtkQuadratureSchemeDictionaryGenerator.h>
+#include <vtkQuadraturePointsGenerator.h>
+#include <vtkQuadraturePointInterpolator.h>
+#include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
 #include <spheres.H>
 
@@ -67,6 +74,7 @@ namespace nglib
 
 // Nemosys
 #include <AuxiliaryFunctions.H>
+#include <Quadrature.H>
 
 // stl
 #include <functional>
@@ -81,6 +89,8 @@ namespace nglib
 #include <cstdio>
 
 
+// TODO: 1) Implment copy and assignment constructors for all classes/subs
+//       2) Migrate implementations to use smart pointer types 
 // Virtual functions are implemented in vtkMesh.C
 
 class meshingParams;
@@ -147,7 +157,7 @@ class meshBase
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
-
+    virtual void getIntegrationPointsAtCell(int cellID){}
 
   // data transfer
   public:

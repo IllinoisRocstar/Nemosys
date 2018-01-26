@@ -6,6 +6,23 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 
+double TRI3[] = 
+{
+.666666666666666, .166666666666666, .166666666666666,
+.166666666666666, .666666666666666, .166666666666666,
+.166666666666666, .166666666666666, .666666666666666
+};
+double TRI3W = 0.333333333333333;
+
+double TET4[] = 
+{
+.585410196624968, .138196601125010, .138196601125010, .138196601125010,
+.138196601125010, .585410196624968, .138196601125010, .138196601125010,
+.138196601125010, .138196601125010, .585410196624968, .138196601125010,
+.138196601125010, .138196601125010, .138196601125010, .585410196624968 
+};
+double TET4W = 0.25;
+
 meshBase* meshBase::Create(std::string fname)
 {
   if (fname.find(".vt") != -1 ) 
@@ -366,8 +383,8 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   }  
 
   vtkMesh* vtkmesh = new vtkMesh();
-  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
-  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  vtkmesh->dataSet = dataSet_tmp->NewInstance();
+  vtkmesh->dataSet->DeepCopy(dataSet_tmp);
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
   
