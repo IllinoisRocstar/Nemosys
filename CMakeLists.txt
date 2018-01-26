@@ -260,6 +260,15 @@ else()
 endif()
 INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
 
+ADD_EXECUTABLE(nemTest utils/nemTest.C)
+if(VTK_LIBRARIES)
+  TARGET_LINK_LIBRARIES(nemTest Nemosys)
+else()
+  TARGET_LINK_LIBRARIES(nemTest Nemosys vtkHybrid vtkWidgets)
+endif()
+INSTALL(TARGETS nemTest RUNTIME DESTINATION bin)
+
+
 IF(BUILD_UTILS)
 
   # xmlDump utility
