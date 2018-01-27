@@ -48,80 +48,11 @@ class vtkMesh : public meshBase
     // get center of a cell
     std::vector<double> getCellCenter(int cellID);
 
-
-
   // integration
   public:
-      
-    std::vector<double> getGaussWeightTet4(int I)
-    {
-      double baryWeights4[2] = {.585410196624968, .138196601125010};
-      std::vector<double> sfWeights(4);
-      if (I == 1)
-      {
-        sfWeights[0] = baryWeights4[0];
-        sfWeights[1] = baryWeights4[1];
-        sfWeights[2] = baryWeights4[1];
-        sfWeights[3] = baryWeights4[1];
-      }
-      else if (I == 2)
-      {
-        sfWeights[0] = baryWeights4[1];
-        sfWeights[1] = baryWeights4[0];
-        sfWeights[2] = baryWeights4[1];
-        sfWeights[3] = baryWeights4[1];
-      }
-      else if (I == 3)
-      {
-        sfWeights[0] = baryWeights4[1];
-        sfWeights[1] = baryWeights4[1];
-        sfWeights[2] = baryWeights4[0];
-        sfWeights[3] = baryWeights4[1];
-      }
-      else if (I == 4)
-      {
-        sfWeights[0] = baryWeights4[1];
-        sfWeights[1] = baryWeights4[1];
-        sfWeights[2] = baryWeights4[1];
-        sfWeights[3] = baryWeights4[0];
-      }
-      return sfWeights;
-    }   
- 
-    std::vector<double> getIntegrationPointAtCell(int I, 
-                                                  const std::vector<std::vector<double>>& cellPoints)
-        
-    {
-      std::vector<double> sfWeights = getGaussWeightTet4(I);
-
-      std::vector<double> gaussPoint(3,0);
-      for (int j = 0; j < cellPoints.size(); ++j)
-      { 
-        for (int i = 0; i < 3; ++i)
-        {
-            gaussPoint[i] += sfWeights[j]*cellPoints[j][i];
-        }
-      }
-      return gaussPoint;
-    }    
  
     void getIntegrationPointsAtCell(int cellID)
     {
-
-      if (dataSet->GetCell(cellID)->GetCellType() == VTK_TETRA)
-      {
-        int numGaussPoints = 4;
-        std::vector<std::vector<double>> gaussPoints(numGaussPoints);
-        std::vector<std::vector<double>> cellCoords = getCellVec(cellID);
-        for (int i = 0; i < numGaussPoints; ++i)
-        {
-          gaussPoints[i] = getIntegrationPointAtCell(i+1,cellCoords);
-          printVec(gaussPoints[i]);
-        }
-
-      }
-      
-
       // Get the dictionary key     
       vtkInformationQuadratureSchemeDefinitionVectorKey *key = 
           vtkQuadratureSchemeDefinition::DICTIONARY(); 
@@ -189,8 +120,6 @@ class vtkMesh : public meshBase
         vtkQuadratureSchemeDefinition* celldef = dict[cellType];
         offset += celldef->GetNumberOfQuadraturePoints();
       }  
-    
-
 
       vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
         vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
@@ -216,7 +145,7 @@ class vtkMesh : public meshBase
       daGauss->SetNumberOfComponents(numComponent);
       // generic cell to store given cell in dataSet
       vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
-      // number of points in poly data to which data has been interpolated
+      // number of points in polydata to which data has been interpolated
       int polyPnt = 0;
       for (int i = 0; i < numCells; ++i)
       {
@@ -259,35 +188,6 @@ class vtkMesh : public meshBase
       writeVTFile<vtkXMLPolyDataWriter> ("refined_beamGaussPoints.vtp",output);
       
       delete [] dict;
-      
-
-
-
-      //vtkDataSet* dataSet_tmp = fieldInterp->GetOutput();
-      //fieldInterp->Update();
-
-      //dataSet->CopyAttributes(dataSet_tmp);    
-      //       
-     //// vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp
-     ////   = vtkSmartPointer<vtkUnstructuredGrid>::New();
-     //// dataSet_tmp = vtkUnstructuredGrid::SafeDownCast(fieldInterp->GetOutput());
-     //// fieldInterp->Update();
-      //
-      //writeVTFile<vtkXMLUnstructuredGridWriter> ("refined_beamGaussFieldInterp.vtu",dataSet);
-
-      //vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
-      //  vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
-      //pointGen->SetInputArrayToProcess
-      //          (0, 0, 0, 
-      //           vtkDataObject::FIELD_ASSOCIATION_CELLS, 
-      //           "QuadratureOffset");
-      //pointGen->SetInputData(dataSet);
-      ////vtkSmartPointer<vtkPolyData> output = vtkSmartPointer<vtkPolyData>::New();
-      ////pointGen->Update();
-      //vtkPolyData* output=vtkPolyData::SafeDownCast(pointGen->GetOutput());
-
-      //writeVTFile<vtkXMLPolyDataWriter> ("refined_beamGaussPoints.vtp",output);
-      
     
     }
  
