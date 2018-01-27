@@ -1,0 +1,2 @@
+g++ -std=c++11 -I/home/users/snatesh/orthoPoly -O2 -DNDEBUG    -c -o orthoPoly1D.o orthoPoly1D.C
+<builtin>: recipe for target 'orthoPoly1D.o' failed
