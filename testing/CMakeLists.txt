@@ -33,3 +33,4 @@ IF (BASH_PROGRAM)
   ENDFOREACH()
 endif (BASH_PROGRAM)
 
+ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transfer.vtu ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transferGaussPoints.vtp)

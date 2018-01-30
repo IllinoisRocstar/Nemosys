@@ -74,7 +74,6 @@ namespace nglib
 
 // Nemosys
 #include <AuxiliaryFunctions.H>
-#include <Quadrature.H>
 
 // stl
 #include <functional>
