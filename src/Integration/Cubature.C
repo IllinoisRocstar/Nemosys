@@ -5,7 +5,7 @@ GaussCubature::GaussCubature(meshBase* _nodeMesh)
 {
   nodeMesh = _nodeMesh;
   nodeMesh->unsetCellDataArray("QuadratureOffset");
-  constructGaussMesh(); 
+	constructGaussMesh(); 
 } 
 
 void GaussCubature::constructGaussMesh()
@@ -90,20 +90,21 @@ void GaussCubature::constructGaussMesh()
 
 void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
 {
+
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
   for (int id = 0; id < arrayIDs.size(); ++id)
   {
     // get desired point data array to be interpolated to gauss points
-    vtkSmartPointer<vtkDataArray> da 
-      = nodeMesh->getDataSet()->GetPointData()->GetArray(arrayIDs[id]);
+    vtkSmartPointer<vtkDataArray> da = nodeMesh->getDataSet()->GetPointData()->GetArray(arrayIDs[id]);
     // get tuple length of given data
     int numComponent = da->GetNumberOfComponents();
     // declare data array to be populated for polydata
-    vtkSmartPointer<vtkDoubleArray> daGauss = vtkSmartPointer<vtkDoubleArray>::New();
+	  vtkSmartPointer<vtkDoubleArray> daGauss = vtkSmartPointer<vtkDoubleArray>::New();
     // names and sizing
     daGauss->SetName(nodeMesh->getDataSet()->GetPointData()->GetArrayName(arrayIDs[id]));
     daGauss->SetNumberOfComponents(numComponent);
     // generic cell to store given cell in nodeMesh->getDataSet()
-    vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+
     // number of points in polydata to which data has been interpolated
     int polyPnt = 0;
     // allocate storate for polygons
@@ -150,13 +151,4 @@ void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
       ->SetActiveScalars(nodeMesh->getDataSet()->GetPointData()->GetArrayName(arrayIDs[id]));
     gaussMesh->GetPointData()->SetScalars(daGauss);    
   }      
-//  std::string oldfname = nodeMesh->getFileName();
-//  size_t end = oldfname.find_last_of('.');
-//  std::string fname;
-//  if (end != -1)
-//  {
-//    fname = oldfname.substr(0,end);
-//  }
-//  fname.append("GaussPoints.vtp");
-  
 }
