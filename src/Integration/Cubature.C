@@ -25,8 +25,6 @@ void GaussCubature::constructGaussMesh()
     = vtkSmartPointer<vtkIdTypeArray>::New();
   
   std::string basename = "QuadratureOffset";
-//  vtkSmartPointer<vtkDataArray> data 
-//    = nodeMesh->getDataSet()->GetCellData()->GetArray(basename.c_str());
 
   offsets->SetName(basename.c_str());
 
@@ -114,7 +112,7 @@ void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
   // number of points in polydata to which data has been interpolated
   int polyPnt = 0;
   // allocate storate for polygons
-  gaussMesh->Allocate();
+//  gaussMesh->Allocate();
   for (int i = 0; i < nodeMesh->getNumberOfCells(); ++i)
   {
     // putting current cell into genCell
@@ -124,10 +122,10 @@ void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
     // number of gauss points in this cell
     int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
     // id list for 'gauss' cells in polydata 
-    vtkSmartPointer<vtkIdList> polyCellIds = vtkSmartPointer<vtkIdList>::New();
+  //  vtkSmartPointer<vtkIdList> polyCellIds = vtkSmartPointer<vtkIdList>::New();
     for (int j = 0; j < numGaussPoints; ++j)
     {
-      polyCellIds->InsertNextId(j+polyPnt); 
+    //  polyCellIds->InsertNextId(j+polyPnt); 
       double x[3];
       gaussMesh->GetPoint(j+polyPnt,x); 
       // parameters for interpolation
@@ -152,7 +150,7 @@ void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
       	daGausses[id]->InsertNextTuple(interps.data());
     	}
 		}
-    gaussMesh->InsertNextCell(VTK_POLYGON,polyCellIds); 
+    //gaussMesh->InsertNextCell(VTK_POLYGON,polyCellIds); 
     polyPnt += numGaussPoints;
   }
   std::cout << "NUM POLY POINTS: " << polyPnt << std::endl; 
