@@ -82,10 +82,8 @@ int diffVTU(meshBase* mesh1, meshBase* mesh2)
       }
     }
   }
-  if (mesh1) delete mesh1;
-  if (mesh2) delete mesh2;
   std::cerr << "Meshes are the same" << std::endl;
-  return EXIT_SUCCESS;
+	exit(0);
 }
 
 const char* nodeMesh;
@@ -100,13 +98,13 @@ class CubatureTest : public ::testing::Test
     CubatureTest()
     {
       mesh = meshBase::Create(nodeMesh);
-      GaussCubature* cuby = new  GaussCubature(mesh);
-    }
+      cuby = new GaussCubature(mesh);
+		}
   
     virtual ~CubatureTest()
     {
-      delete mesh;
-      delete cuby;
+      if (mesh) delete mesh;
+      if (cuby) delete cuby;
     }
   
     // If the constructor and destructor are not enough for setting up
@@ -135,6 +133,8 @@ TEST_F(CubatureTest, InterpolateToGauss)
   meshBase* refGaussMesh = meshBase::Create(refGauss);
   EXPECT_EXIT(diffVTU(gaussMesh,refGaussMesh), ::testing::ExitedWithCode(0),
               "Meshes are the same"); 
+	if (gaussMesh) delete gaussMesh;
+	if (refGaussMesh) delete refGaussMesh;
 }
 
 int main(int argc, char** argv) {

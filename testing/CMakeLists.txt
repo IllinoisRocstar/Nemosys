@@ -27,10 +27,10 @@ SET(test ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/tests.sh)
 
 CONFIGURE_FILE( ${test_in} ${test} @ONLY )
 
-IF (BASH_PROGRAM)
-  FOREACH(dir ${TEST_DIRS})
-    ADD_TEST(${dir} ${BASH_PROGRAM} ${test} ${dir})
-  ENDFOREACH()
-endif (BASH_PROGRAM)
+#IF (BASH_PROGRAM)
+#  FOREACH(dir ${TEST_DIRS})
+#    ADD_TEST(${dir} ${BASH_PROGRAM} ${test} ${dir})
+#  ENDFOREACH()
+#endif (BASH_PROGRAM)
 
 ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transfer.vtu ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transferGaussPoints.vtp)
