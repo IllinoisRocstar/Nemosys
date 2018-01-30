@@ -237,7 +237,7 @@ class meshBase
     bool checkQuality; // check transfer quality when on
 };
 
-
+int diffVTU(meshBase* mesh1, meshBase* mesh2);
 
 
 #endif
