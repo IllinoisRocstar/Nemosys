@@ -183,7 +183,7 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
-                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C)
+                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
     utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
@@ -356,6 +356,11 @@ IF(BUILD_DOCUMENTATION)
 ENDIF()
 
 # Perform testing ############################################################
+# adding gtest subdir with its own cmake file
+add_subdirectory(${CMAKE_SOURCE_DIR}/testing/lib/gtest-1.6.0)
+# include gtest library. gtest_SOURCE_DIR is availble from subdir addition
+include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
+
 SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
 SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
 SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
@@ -366,7 +371,10 @@ SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
 ADD_EXECUTABLE(diff_vtu ${DIFFVTUSOURCE})
+ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
+TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
 ADD_SUBDIRECTORY(testing)
 INSTALL(FILES ${DIFFTOL} ${DIFFVTU} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
