@@ -103,8 +103,16 @@ class CubatureTest : public ::testing::Test
   
     virtual ~CubatureTest()
     {
-      if (mesh) delete mesh;
-      if (cuby) delete cuby;
+      if (mesh) 
+      {
+        delete mesh;
+        mesh = 0;
+      }
+      if (cuby) 
+      {
+        delete cuby;
+        cuby = 0;
+      }
     }
   
     // If the constructor and destructor are not enough for setting up
