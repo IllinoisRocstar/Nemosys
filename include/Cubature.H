@@ -17,7 +17,6 @@ class GaussCubature
 
     ~GaussCubature()
     { 
-      nodeMesh->unsetCellDataArray("QuadratureOffset");
       delete [] dict;
     }
 
