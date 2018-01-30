@@ -319,7 +319,6 @@ void vtkMesh::unsetCellDataArray(const char* name)
 // remove field data with given id from dataSet
 void vtkMesh::unsetFieldDataArray(const char* name)
 {
-  int i;
   dataSet->GetFieldData()->RemoveArray(name);
 }
 
