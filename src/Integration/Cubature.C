@@ -25,11 +25,11 @@ void GaussCubature::constructGaussMesh()
     = vtkSmartPointer<vtkIdTypeArray>::New();
   
   std::string basename = "QuadratureOffset";
-  vtkSmartPointer<vtkDataArray> data 
-    = nodeMesh->getDataSet()->GetCellData()->GetArray(basename.c_str());
+//  vtkSmartPointer<vtkDataArray> data 
+//    = nodeMesh->getDataSet()->GetCellData()->GetArray(basename.c_str());
 
   offsets->SetName(basename.c_str());
-  nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
+
   
   vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
   info = offsets->GetInformation();
@@ -74,6 +74,7 @@ void GaussCubature::constructGaussMesh()
     vtkQuadratureSchemeDefinition* celldef = dict[cellType];
     offset += celldef->GetNumberOfQuadraturePoints();
   }  
+  nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
 
   vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
     vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
