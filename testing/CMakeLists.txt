@@ -33,4 +33,4 @@ CONFIGURE_FILE( ${test_in} ${test} @ONLY )
 #  ENDFOREACH()
 #endif (BASH_PROGRAM)
 
-ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transfer.vtu ${CMAKE_CURRENT_LIST_DIR}/test_data/refined1_transferGaussPoints.vtp)
+ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CMAKE_CURRENT_LIST_DIR}/test_data/CubatureTest/cube_refined.vtu ${CMAKE_CURRENT_LIST_DIR}/test_data/CubatureTest/cube_refinedGaussPoints.vtp)
