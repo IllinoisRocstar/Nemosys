@@ -16,7 +16,7 @@ class GaussCubature
     GaussCubature(meshBase* _nodeMesh);  
 
     ~GaussCubature()
-    { 
+    {
       delete [] dict;
     }
 
