@@ -6,23 +6,6 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 
-double TRI3[] = 
-{
-.666666666666666, .166666666666666, .166666666666666,
-.166666666666666, .666666666666666, .166666666666666,
-.166666666666666, .166666666666666, .666666666666666
-};
-double TRI3W = 0.333333333333333;
-
-double TET4[] = 
-{
-.585410196624968, .138196601125010, .138196601125010, .138196601125010,
-.138196601125010, .585410196624968, .138196601125010, .138196601125010,
-.138196601125010, .138196601125010, .585410196624968, .138196601125010,
-.138196601125010, .138196601125010, .138196601125010, .585410196624968 
-};
-double TET4W = 0.25;
-
 meshBase* meshBase::Create(std::string fname)
 {
   if (fname.find(".vt") != -1 ) 
@@ -71,7 +54,7 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   if (generator) 
   { 
     delete generator;
-    generator=0;
+    generator=nullptr;
   }
   if(!status) 
   {
@@ -107,7 +90,7 @@ int meshBase::transfer(meshBase* target, std::string method,
   if (transobj)
   { 
     delete transobj;
-    transobj = 0;
+    transobj = nullptr;
   }
   return 0;
 }
@@ -139,7 +122,7 @@ int meshBase::transfer(meshBase* target, std::string method)
   if (transobj)
   { 
     delete transobj;
-    transobj = 0;
+    transobj = nullptr;
   }
   return result;
 }
@@ -153,7 +136,7 @@ void meshBase::generateSizeField(std::string method, int arrayID, double dev_mul
   if (sfobj)
   {
     delete sfobj;
-    sfobj = 0;
+    sfobj = nullptr;
   }
 }
 
@@ -832,7 +815,7 @@ void meshBase::refineMesh(std::string method, int arrayID,
   if (refineobj)
   { 
     delete refineobj;
-    refineobj = 0;
+    refineobj = nullptr;
   }
 }
 
@@ -873,13 +856,13 @@ void meshBase::checkMesh(std::string ofname)
   if (qualcheck)
   {
     delete qualcheck;
-    qualcheck = 0;
+    qualcheck = nullptr;
   }
 
 }
 
 
-int diffVTU(meshBase* mesh1, meshBase* mesh2)
+int diffMesh(meshBase* mesh1, meshBase* mesh2)
 {
   double tol = 1e-6;
 

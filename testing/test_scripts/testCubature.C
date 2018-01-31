@@ -52,11 +52,10 @@ class CubatureTest : public ::testing::Test
 // tests construction, writeout, loading and interpolation
 TEST_F(CubatureTest, InterpolateToGauss)
 {
-  cuby->interpolateToGaussPoints(arrayIDs);   
-  cuby->writeGaussMesh();
+  cuby->constructGaussMesh(arrayIDs);
   meshBase* gaussMesh = meshBase::Create("gaussTest.vtp");
   meshBase* refGaussMesh = meshBase::Create(refGauss);
-  EXPECT_EQ(0,diffVTU(gaussMesh,refGaussMesh));
+  EXPECT_EQ(0,diffMesh(gaussMesh,refGaussMesh));
 	if (gaussMesh) delete gaussMesh;
 	if (refGaussMesh) delete refGaussMesh;
 }

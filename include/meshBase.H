@@ -40,6 +40,7 @@
 #include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
+#include <vtkCellArray.h>
 #include <vtkGenericCell.h>
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
@@ -106,7 +107,11 @@ class meshBase
     }
     virtual ~meshBase()
     {
-      if(dataSet) dataSet->Delete();
+      if (dataSet) 
+      {
+        dataSet->Delete();
+        dataSet = nullptr;
+      } 
       std::cout << "meshBase destroyed" << std::endl;
     }
   
@@ -115,6 +120,7 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
+    static meshBase* Create(vtkDataSet* _dataSet);
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
@@ -237,7 +243,7 @@ class meshBase
     bool checkQuality; // check transfer quality when on
 };
 
-int diffVTU(meshBase* mesh1, meshBase* mesh2);
+int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
 
 #endif

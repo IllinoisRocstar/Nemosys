@@ -268,8 +268,9 @@ void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<
   da->SetNumberOfComponents(data[0].size());
   for(int i=0; i < numPoints; i++)
     da->InsertNextTuple(data[i].data());
-  dataSet->GetPointData()->SetActiveScalars(name);
-  dataSet->GetPointData()->SetScalars(da);
+  dataSet->GetPointData()->AddArray(da);
+  //dataSet->GetPointData()->SetActiveScalars(name);
+  //dataSet->GetPointData()->SetScalars(da);
 }
 
 // set cell data (numComponents per cell determined by dim of data[0])
@@ -280,8 +281,9 @@ void vtkMesh::setCellDataArray(const char* name, const std::vector<std::vector<d
   da->SetNumberOfComponents(data[0].size());
   for(int i=0; i < numCells; i++)
     da->InsertNextTuple(data[i].data());
-  dataSet->GetCellData()->SetActiveScalars(name);
-  dataSet->GetCellData()->SetScalars(da);
+  dataSet->GetCellData()->AddArray(da);
+  //dataSet->GetCellData()->SetActiveScalars(name);
+  //dataSet->GetCellData()->SetScalars(da);
 }
 
 void vtkMesh::setCellDataArray(const char* name, const std::vector<double>& data)
@@ -291,8 +293,9 @@ void vtkMesh::setCellDataArray(const char* name, const std::vector<double>& data
   da->SetNumberOfComponents(1);
   for(int i=0; i < numCells; i++)
     da->InsertNextTuple1(data[i]);
-  dataSet->GetCellData()->SetActiveScalars(name);
-  dataSet->GetCellData()->SetScalars(da);
+  dataSet->GetCellData()->AddArray(da);
+  //dataSet->GetCellData()->SetActiveScalars(name);
+  //dataSet->GetCellData()->SetScalars(da);
 }
 
 // remove point data with given id from dataSet if it exists
