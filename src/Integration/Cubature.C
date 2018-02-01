@@ -17,45 +17,56 @@ double TET4[] =
 };
 double TET4W = 0.25;
 
-int GaussCubature::getNumGaussPointsForCellType(int cellType)
+GaussCubature::GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh)
+{ 
+  nodeMesh->unsetCellDataArray("QuadratureOffSet");
+  constructGaussMesh();
+} 
+
+GaussCubature::GaussCubature(meshBase* _nodeMesh, const std::vector<int>& arrayIDs)
+  : nodeMesh(_nodeMesh)
 {
-  int numGaussPoints;
-  switch(cellType)
-  {
-    case VTK_TRIANGLE:
-    {
-      numGaussPoints = 3;
-      break;
-    }
-    case VTK_TETRA:
-    { 
-      numGaussPoints = 4;
-      break;
-    }
-    default:
-    {
-      std::cout << "Error: Cell type: " << cellType << "found "
-                << "with no quadrature definition provided" << std::endl;
-      exit(1);
-    }
-  }
-  return numGaussPoints; 
+  nodeMesh->unsetCellDataArray("QuadratureOffSet");
+  constructGaussMesh();
+  interpolateToGaussPoints(arrayIDs); 
+} 
+
+GaussCubature* GaussCubature::Create(meshBase* nodeMesh)
+{
+  return new GaussCubature(nodeMesh);
 }
 
-void GaussCubature::buildMap()
+GaussCubature* GaussCubature::Create(meshBase* nodeMesh, const std::vector<int>& arrayIDs)
 {
-  // building quadrature scheme map
-  vtkSmartPointer<vtkCellTypes> cellTypes 
-    = vtkSmartPointer<vtkCellTypes>::New();
-  nodeMesh->getDataSet()->GetCellTypes(cellTypes);
-  int nCellTypes = cellTypes->GetNumberOfTypes(); 
-  for (int i = 0; i < nCellTypes; ++i)
-  {
-    int cellType = cellTypes->GetCellType(i);
-    nGaussForCellTMap[cellType] = getNumGaussPointsForCellType(cellType);
-  }
+  return new GaussCubature(nodeMesh, arrayIDs);
 }
 
+std::unique_ptr<GaussCubature> GaussCubature::CreateUnique(meshBase* nodeMesh)
+{
+  return std::unique_ptr<GaussCubature>(GaussCubature::Create(nodeMesh));
+}
+
+std::unique_ptr<GaussCubature>
+GaussCubature::CreateUnique(meshBase* nodeMesh, const std::vector<int>& arrayIDs)
+{
+  return std::unique_ptr<GaussCubature>(GaussCubature::Create(nodeMesh, arrayIDs));
+}
+
+std::shared_ptr<GaussCubature> 
+GaussCubature::CreateShared(meshBase* nodeMesh)
+{
+  std::shared_ptr<GaussCubature> cuby;
+  cuby.reset(GaussCubature::Create(nodeMesh));
+  return cuby; 
+}
+
+std::shared_ptr<GaussCubature>
+GaussCubature::CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs)
+{
+  std::shared_ptr<GaussCubature> cuby;
+  cuby.reset(GaussCubature::Create(nodeMesh,arrayIDs));
+  return cuby;
+}
 
 std::vector<std::vector<double>> GaussCubature::getGaussPointsAtCell(int cellID)
 {
@@ -125,7 +136,7 @@ int GaussCubature::interpolateToGaussPointsAtCell
   int cellType = nodeMesh->getDataSet()->GetCellType(cellID);
   // number of gauss points in this cell
   //int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
-  int numGaussPoints = nGaussForCellTMap[cellType];
+  int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // id list for 'gauss' cells in polydata 
   //  vtkSmartPointer<vtkIdList> polyCellIds = vtkSmartPointer<vtkIdList>::New();
   for (int j = 0; j < numGaussPoints; ++j)
@@ -244,8 +255,7 @@ double GaussCubature::computeVolume(vtkSmartPointer<vtkGenericCell> genCell, con
 //	}
 //}
 
-void GaussCubature::interpolateToGaussPoints(vtkSmartPointer<vtkPolyData> gaussMesh,
-                                             const std::vector<int>& arrayIDs)
+void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
 {
   std::vector<vtkSmartPointer<vtkDoubleArray>> daGausses(arrayIDs.size());
 	std::vector<vtkSmartPointer<vtkDataArray>> das(arrayIDs.size());
@@ -280,27 +290,114 @@ void GaussCubature::interpolateToGaussPoints(vtkSmartPointer<vtkPolyData> gaussM
   }
 }
 
-void GaussCubature::constructGaussMesh(const std::vector<int>& arrayIDs)
+void GaussCubature::constructGaussMesh()
 {
-  // building poly data
-  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-  vtkSmartPointer<vtkCellArray> vertices = vtkSmartPointer<vtkCellArray>::New();
-  for (int i = 0; i < nodeMesh->getDataSet()->GetNumberOfCells(); ++i)
+  // Get the dictionary key     
+  vtkInformationQuadratureSchemeDefinitionVectorKey *key = 
+      vtkQuadratureSchemeDefinition::DICTIONARY(); 
+
+  // Get the cell types used by the data set
+  vtkSmartPointer<vtkCellTypes> cellTypes 
+    = vtkSmartPointer<vtkCellTypes>::New();
+  nodeMesh->getDataSet()->GetCellTypes(cellTypes);
+  int nCellTypes = cellTypes->GetNumberOfTypes(); 
+
+  // create offset array and store the dictionary within
+  vtkSmartPointer<vtkIdTypeArray> offsets 
+    = vtkSmartPointer<vtkIdTypeArray>::New();
+  
+  std::string basename = "QuadratureOffset";
+
+  offsets->SetName(basename.c_str());
+
+  
+  vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
+  info = offsets->GetInformation();
+  for (int typeId = 0; typeId < nCellTypes; ++typeId)
   {
-    std::vector<std::vector<double>> gaussPoints = getGaussPointsAtCell(i);
-    for (int j = 0; j < gaussPoints.size(); ++j)
+    int cellType = cellTypes->GetCellType(typeId);
+    // Initialize quadrature scheme definition for given cell type
+    vtkSmartPointer<vtkQuadratureSchemeDefinition> def
+      = vtkSmartPointer<vtkQuadratureSchemeDefinition>::New();
+    switch(cellType)
     {
-      vtkIdType id[1];
-      id[0] = points->InsertNextPoint(gaussPoints[j].data());
-      vertices->InsertNextCell(1,id);
-    }  
+      case VTK_TRIANGLE:
+        def->Initialize(VTK_TRIANGLE,3,3,TRI3);
+        break;
+      case VTK_TETRA:
+        def->Initialize(VTK_TETRA, 4, 4, TET4);
+        break;
+      default:
+        std::cout << "Error: Cell type: " << cellType << "found "
+                  << "with no quadrature definition provided" << std::endl;
+        exit(1);
+    }
+    // the definition must apear in the dictionary associated with 
+    // the offset array
+    key->Set(info, def, cellType); 
   }
-  vtkSmartPointer<vtkPolyData> gaussMesh = vtkSmartPointer<vtkPolyData>::New();
-  gaussMesh->SetPoints(points);
-  gaussMesh->SetVerts(vertices);
-  interpolateToGaussPoints(gaussMesh,arrayIDs);
-  writeVTFile<vtkXMLPolyDataWriter> ("gaussTest.vtp",gaussMesh);   
+  // get dictionary size 
+  int dictSize = key->Size(info);
+  dict = new vtkQuadratureSchemeDefinition * [dictSize];
+  key->GetRange(info, dict, 0, 0, dictSize);
+  offsets->SetNumberOfTuples(nodeMesh->getDataSet()->GetNumberOfCells());
+  vtkIdType offset = 0;
+  
+  for (int cellid = 0; cellid < nodeMesh->getDataSet()->GetNumberOfCells() ; ++cellid)
+  {
+    offsets->SetValue(cellid, offset);
+    vtkCell* cell = nodeMesh->getDataSet()->GetCell(cellid);
+    int cellType = cell->GetCellType();
+    vtkQuadratureSchemeDefinition* celldef = dict[cellType];
+    offset += celldef->GetNumberOfQuadraturePoints();
+  }  
+  nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
+
+  vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
+    vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
+
+  pointGen->SetInputArrayToProcess
+            (0, 0, 0, 
+             vtkDataObject::FIELD_ASSOCIATION_CELLS, 
+             "QuadratureOffset");
+  pointGen->SetInputData(nodeMesh->getDataSet());
+  gaussMesh = vtkSmartPointer<vtkPolyData>::New();
+  gaussMesh = vtkPolyData::SafeDownCast(pointGen->GetOutput());
+  pointGen->Update();
+} 
+
+void GaussCubature::writeGaussMesh(const char* name)
+{
+  if (gaussMesh)
+    writeVTFile<vtkXMLPolyDataWriter> (name,gaussMesh);   
+  else
+  {
+    std::cout << "Gauss point mesh has not been constructed" << std::endl;
+    exit(1);
+  }
 }
+
+//void GaussCubature::constructGaussMesh(const std::vector<int>& arrayIDs)
+//{
+//  // building poly data
+//  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+//  vtkSmartPointer<vtkCellArray> vertices = vtkSmartPointer<vtkCellArray>::New();
+//  for (int i = 0; i < nodeMesh->getDataSet()->GetNumberOfCells(); ++i)
+//  {
+//    std::vector<std::vector<double>> gaussPoints = getGaussPointsAtCell(i);
+//    for (int j = 0; j < gaussPoints.size(); ++j)
+//    {
+//      vtkIdType id[1];
+//      id[0] = points->InsertNextPoint(gaussPoints[j].data());
+//      vertices->InsertNextCell(1,id);
+//    }  
+//  }
+//  vtkSmartPointer<vtkPolyData> gaussMesh = vtkSmartPointer<vtkPolyData>::New();
+//  gaussMesh->SetPoints(points);
+//  gaussMesh->SetVerts(vertices);
+//  interpolateToGaussPoints(gaussMesh,arrayIDs);
+//  writeVTFile<vtkXMLPolyDataWriter> ("gaussTest.vtp",gaussMesh);   
+//}
 
 
 //  // allocate storate for polygons
@@ -312,79 +409,41 @@ void GaussCubature::constructGaussMesh(const std::vector<int>& arrayIDs)
 //    //polyPnt += numGaussPoints;
 //  }
 //
-//void GaussCubature::constructGaussMesh()
+//int GaussCubature::getNumGaussPointsForCellType(int cellType)
 //{
-//  // Get the dictionary key     
-//  vtkInformationQuadratureSchemeDefinitionVectorKey *key = 
-//      vtkQuadratureSchemeDefinition::DICTIONARY(); 
-//
-//  // Get the cell types used by the data set
+//  int numGaussPoints;
+//  switch(cellType)
+//  {
+//    case VTK_TRIANGLE:
+//    {
+//      numGaussPoints = 3;
+//      break;
+//    }
+//    case VTK_TETRA:
+//    { 
+//      numGaussPoints = 4;
+//      break;
+//    }
+//    default:
+//    {
+//      std::cout << "Error: Cell type: " << cellType << "found "
+//                << "with no quadrature definition provided" << std::endl;
+//      exit(1);
+//    }
+//  }
+//  return numGaussPoints; 
+//}
+
+//void GaussCubature::buildMap()
+//{
+//  // building quadrature scheme map
 //  vtkSmartPointer<vtkCellTypes> cellTypes 
 //    = vtkSmartPointer<vtkCellTypes>::New();
 //  nodeMesh->getDataSet()->GetCellTypes(cellTypes);
 //  int nCellTypes = cellTypes->GetNumberOfTypes(); 
-//
-//  // create offset array and store the dictionary within
-//  vtkSmartPointer<vtkIdTypeArray> offsets 
-//    = vtkSmartPointer<vtkIdTypeArray>::New();
-//  
-//  std::string basename = "QuadratureOffset";
-//
-//  offsets->SetName(basename.c_str());
-//
-//  
-//  vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
-//  info = offsets->GetInformation();
-//  for (int typeId = 0; typeId < nCellTypes; ++typeId)
+//  for (int i = 0; i < nCellTypes; ++i)
 //  {
-//    int cellType = cellTypes->GetCellType(typeId);
-//    // Initialize quadrature scheme definition for given cell type
-//    vtkSmartPointer<vtkQuadratureSchemeDefinition> def
-//      = vtkSmartPointer<vtkQuadratureSchemeDefinition>::New();
-//    switch(cellType)
-//    {
-//      case VTK_TRIANGLE:
-//        def->Initialize(VTK_TRIANGLE,3,3,TRI3);
-//        break;
-//      case VTK_TETRA:
-//        def->Initialize(VTK_TETRA, 4, 4, TET4);
-//        break;
-//      default:
-//        std::cout << "Error: Cell type: " << cellType << "found "
-//                  << "with no quadrature definition provided" << std::endl;
-//        exit(1);
-//    }
-//    // the definition must apear in the dictionary associated with 
-//    // the offset array
-//    key->Set(info, def, cellType); 
+//    int cellType = cellTypes->GetCellType(i);
+//    nGaussForCellTMap[cellType] = getNumGaussPointsForCellType(cellType);
 //  }
-//  // get dictionary size 
-//  int dictSize = key->Size(info);
-//  dict = new vtkQuadratureSchemeDefinition * [dictSize];
-//  key->GetRange(info, dict, 0, 0, dictSize);
-//  offsets->SetNumberOfTuples(nodeMesh->getDataSet()->GetNumberOfCells());
-//  vtkIdType offset = 0;
-//  
-//  for (int cellid = 0; cellid < nodeMesh->getDataSet()->GetNumberOfCells() ; ++cellid)
-//  {
-//    offsets->SetValue(cellid, offset);
-//    vtkCell* cell = nodeMesh->getDataSet()->GetCell(cellid);
-//    int cellType = cell->GetCellType();
-//    vtkQuadratureSchemeDefinition* celldef = dict[cellType];
-//    offset += celldef->GetNumberOfQuadraturePoints();
-//  }  
-//  nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
-//
-//  vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
-//    vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
-//
-//  pointGen->SetInputArrayToProcess
-//            (0, 0, 0, 
-//             vtkDataObject::FIELD_ASSOCIATION_CELLS, 
-//             "QuadratureOffset");
-//  pointGen->SetInputData(nodeMesh->getDataSet());
-//  gaussMesh = vtkSmartPointer<vtkPolyData>::New();
-//  gaussMesh = vtkPolyData::SafeDownCast(pointGen->GetOutput());
-//  pointGen->Update();
-//} 
-
+//}

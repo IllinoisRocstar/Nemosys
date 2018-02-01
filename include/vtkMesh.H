@@ -15,7 +15,7 @@ template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
   return vtkDataSet::SafeDownCast(reader->GetOutput());
 }
 
-template<class TWriter> void writeVTFile(std::string fname, vtkDataSet* dataSet)
+template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
 {
   vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
   Writer->SetFileName(&fname[0u]);
