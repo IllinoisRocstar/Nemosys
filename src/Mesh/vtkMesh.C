@@ -55,31 +55,31 @@ vtkMesh::vtkMesh(const char* fname)
   // Dispatch based on the file extension
   if (extension == ".vtu")
   {
-    dataSet = ReadAnXMLFile<vtkXMLUnstructuredGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLUnstructuredGridReader> (fname));
   }
   else if (extension == ".vtp")
   {
-    dataSet = ReadAnXMLFile<vtkXMLPolyDataReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLPolyDataReader> (fname));
   }
   else if (extension == ".vts")
   {
-    dataSet = ReadAnXMLFile<vtkXMLStructuredGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLStructuredGridReader> (fname));
   }
   else if (extension == ".vtr")
   {
-    dataSet = ReadAnXMLFile<vtkXMLRectilinearGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLRectilinearGridReader> (fname));
   }
   else if (extension == ".vti")
   {
-    dataSet = ReadAnXMLFile<vtkXMLImageDataReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLImageDataReader> (fname));
   }
   else if (extension == ".vto")
   {
-    dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLHyperOctreeReader> (fname));
   }
   else if (extension == ".vtk")
   {
-    dataSet = ReadAnXMLFile<vtkDataSetReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkDataSetReader> (fname));
   }
   else
   {

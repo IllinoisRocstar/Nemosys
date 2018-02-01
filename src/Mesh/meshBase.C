@@ -366,8 +366,9 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   }  
 
   vtkMesh* vtkmesh = new vtkMesh();
-  vtkmesh->dataSet = dataSet_tmp->NewInstance();
-  vtkmesh->dataSet->DeepCopy(dataSet_tmp);
+  //vtkmesh->dataSet = dataSet_tmp->NewInstance();
+  //vtkmesh->dataSet->DeepCopy(dataSet_tmp);
+  vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
   
@@ -452,8 +453,9 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   }
   
   vtkMesh* vtkmesh = new vtkMesh();
-  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
-  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  //vtkmesh->dataSet = dataSet_tmp->NewInstance();//
+  //vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
