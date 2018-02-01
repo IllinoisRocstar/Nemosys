@@ -62,6 +62,13 @@ TEST_F(CubatureTest, InterpolateToGauss)
   std::unique_ptr<meshBase> gaussMesh = meshBase::CreateUnique("gaussTest.vtp");
   std::unique_ptr<meshBase> refGaussMesh = meshBase::CreateUnique(refGauss);
   EXPECT_EQ(0,diffMesh(gaussMesh.get(),refGaussMesh.get()));
+  
+  for (int i = 0; i < cuby->getNodeMesh()->getNumberOfCells(); ++i)
+  {
+    pntDataPairVec shit = cuby->getGaussPointsAndDataAtCell(i);
+    for (int k = 0; k < shit.size(); ++k)
+      printVec(shit[k].second[3]); 
+  }
 }
 
 int main(int argc, char** argv) {
