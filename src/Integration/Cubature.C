@@ -23,12 +23,12 @@ GaussCubature::GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh)
   constructGaussMesh();
 } 
 
-GaussCubature::GaussCubature(meshBase* _nodeMesh, const std::vector<int>& arrayIDs)
-  : nodeMesh(_nodeMesh)
+GaussCubature::GaussCubature(meshBase* _nodeMesh, const std::vector<int>& _arrayIDs)
+  : nodeMesh(_nodeMesh), arrayIDs(_arrayIDs)
 {
   nodeMesh->unsetCellDataArray("QuadratureOffSet");
   constructGaussMesh();
-  interpolateToGaussPoints(arrayIDs); 
+  interpolateToGaussPoints(); 
 } 
 
 GaussCubature* GaussCubature::Create(meshBase* nodeMesh)
@@ -68,108 +68,6 @@ GaussCubature::CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs
   return cuby;
 }
 
-std::vector<std::vector<double>> GaussCubature::getGaussPointsAtCell(int cellID)
-{
-  // get cell type for quadrature scheme definition
-  int cellType = nodeMesh->getDataSet()->GetCellType(cellID);
-  // this vector holds the shape function evaluated at parametric coord of gauss point
-  std::vector<double> shapeFuncAtGauss;
-  std::vector<double>::iterator beg = shapeFuncAtGauss.begin();
-  // dispatch number of gauss points by cell type
-  int numGaussPoints;
-  switch(cellType)
-  {
-    case VTK_TRIANGLE:
-    {
-      shapeFuncAtGauss.insert(beg, TRI3, TRI3+9);
-      numGaussPoints = 3;
-      break;
-    }
-    case VTK_TETRA:
-    { 
-      shapeFuncAtGauss.insert(beg, TET4, TET4+16); 
-      numGaussPoints = 4;
-      break;
-    }
-    default:
-    {
-      std::cout << "Error: Cell type: " << cellType << "found "
-                << "with no quadrature definition provided" << std::endl;
-      exit(1);
-    }
-  }
-
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-  nodeMesh->getDataSet()->GetCell(cellID,genCell);
-  int numPointsInCell = genCell->GetNumberOfPoints();
-  std::vector<std::vector<double>> gaussPoints;
-  gaussPoints.resize(numGaussPoints);
-  for (int j = 0; j < gaussPoints.size(); ++j)
-  {
-    gaussPoints[j].resize(3,0);
-    for (int k = 0; k < numPointsInCell; ++k)
-    {
-      int pntID = genCell->GetPointId(k);
-      double x[3];
-      nodeMesh->getDataSet()->GetPoint(pntID,x); 
-      for (int i = 0; i < 3; ++i)
-      {
-        gaussPoints[j][i] += shapeFuncAtGauss[j*numGaussPoints + k]*x[i]; 
-      }
-    }
-  }
-  return gaussPoints; 
-}
-
-int GaussCubature::interpolateToGaussPointsAtCell
-                    (const int cellID,
-                     vtkSmartPointer<vtkGenericCell> genCell,
-                     const std::vector<vtkSmartPointer<vtkDataArray>>& das,
-                     std::vector<vtkSmartPointer<vtkDoubleArray>>& daGausses,
-                     const std::vector<int>& numComponents, const int polyPnt)
-{
-  // computing gauss points at cell
-  std::vector<std::vector<double>> gaussPoints = getGaussPointsAtCell(cellID);
-  // putting current cell into genCell
-  nodeMesh->getDataSet()->GetCell(cellID, genCell);
-  // getting cellType information for lookup in map
-  int cellType = nodeMesh->getDataSet()->GetCellType(cellID);
-  // number of gauss points in this cell
-  //int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
-  int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
-  // id list for 'gauss' cells in polydata 
-  //  vtkSmartPointer<vtkIdList> polyCellIds = vtkSmartPointer<vtkIdList>::New();
-  for (int j = 0; j < numGaussPoints; ++j)
-  {
-    //  polyCellIds->InsertNextId(j+polyPnt); 
-    //double x[3];
-    //gaussMesh->GetPoint(j+polyPnt,x); 
-    // parameters for interpolation
-    int subId; // not used
-    double minDist2; // not used
-    double pcoords[3];
-    double weights[genCell->GetNumberOfPoints()];
-    genCell->EvaluatePosition(gaussPoints[j].data(),NULL,subId,pcoords,minDist2,weights);
-    for (int id = 0; id < das.size(); ++id)
-		{
-      double comps[numComponents[id]];
-    	std::vector<double> interps(numComponents[id],0.0);
-    	for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
-    	{
-    	  int pntId = genCell->GetPointId(m);
-    	  das[id]->GetTuple(pntId, comps);
-    	  for (int h = 0; h < numComponents[id]; ++h)
-    	  {
-    	    interps[h] += comps[h]*weights[m]; 
-    	  }
-    	}
-  	  daGausses[id]->SetTuple(j+polyPnt,interps.data());
-    }
-	}
-  return numGaussPoints;
-}
-
-
 double GaussCubature::computeVolume(vtkSmartPointer<vtkGenericCell> genCell, const int cellType)
 {
   double vol = 0;
@@ -202,13 +100,12 @@ double GaussCubature::computeVolume(vtkSmartPointer<vtkGenericCell> genCell, con
       nodeMesh->getDataSet()->GetPoint(shit4, x4);
 
       vol = tetcell->ComputeVolume(x1,x2,x3,x4);
-      std::cout << vol << std::endl;
 
       break;
     }
     default:
     {
-      std::cout << "Error: Cell type: " << cellType << "found "
+      std::cerr << "Error: Cell type: " << cellType << "found "
                 << "with no quadrature definition provided" << std::endl;
       exit(1);
     }
@@ -255,11 +152,114 @@ double GaussCubature::computeVolume(vtkSmartPointer<vtkGenericCell> genCell, con
 //	}
 //}
 
-void GaussCubature::interpolateToGaussPoints(const std::vector<int>& arrayIDs)
+pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
 {
+  if (arrayIDs.size() == 0)
+  {
+    std::cerr << "no array have been selected for interpolation" << std::endl;
+    exit(1);
+  }
+  
+  int numDataArr = gaussMesh->GetPointData()->GetNumberOfArrays();
+
+  if (numDataArr == 0)
+  {
+    interpolateToGaussPoints();
+  }
+
+
+  // get number of gauss points in cell from dictionary
+  int numGaussPoints = dict[nodeMesh->getDataSet()->GetCell(cellID)->GetCellType()]
+                        ->GetNumberOfQuadraturePoints();
+  // get offset from nodeMesh for lookup of gauss points in polydata
+  int offset;
+  {
+    double offsets[1];
+    nodeMesh->getDataSet()->GetCellData()->GetArray("QuadratureOffset")->GetTuple(cellID,offsets);
+    offset = offsets[0];
+  }
+  pntDataPairVec container;
+  for (int i = 0; i < numGaussPoints; ++i)
+  {
+    double x_tmp[3];
+    gaussMesh->GetPoint(offset+i,x_tmp);
+    std::vector<double> gaussPnt(x_tmp,x_tmp + 3); 
+    //x[0] = x_tmp[0]; x[1] = x_tmp[1]; x[2] = x_tmp[2];
+    std::vector<std::vector<double>> data(numComponents.size());
+    for (int j = 0; j < numComponents.size(); ++j)
+    {
+      data[j].resize(numComponents[j]);
+      double comps_tmp[numComponents[j]];
+      gaussMesh->GetPointData()->GetArray(j)->GetTuple(offset+i,comps_tmp);
+      std::vector<double> comps(comps_tmp,comps_tmp+numComponents[j]);
+      for (int k = 0; k < numComponents[j]; ++k)
+      {
+        data[j][k] = comps[k];
+      } 
+    }
+    
+    container.emplace_back(gaussPnt,data);//push_back(std::make_pair(gaussPnt,data)); 
+  }
+  
+  return container;
+}
+
+int GaussCubature::interpolateToGaussPointsAtCell
+                    (const int cellID,
+                     vtkSmartPointer<vtkGenericCell> genCell,
+                     const std::vector<vtkSmartPointer<vtkDataArray>>& das,
+                     std::vector<vtkSmartPointer<vtkDoubleArray>>& daGausses,
+                     const std::vector<int>& numComponents, const int polyPnt)
+{
+  // putting current cell into genCell
+  nodeMesh->getDataSet()->GetCell(cellID, genCell);
+  // getting cellType information for lookup in map
+  int cellType = nodeMesh->getDataSet()->GetCellType(cellID);
+  // number of gauss points in this cell
+  //int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
+  int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
+  // id list for 'gauss' cells in polydata 
+  //  vtkSmartPointer<vtkIdList> polyCellIds = vtkSmartPointer<vtkIdList>::New();
+  for (int j = 0; j < numGaussPoints; ++j)
+  {
+    //  polyCellIds->InsertNextId(j+polyPnt); 
+    double x[3];
+    gaussMesh->GetPoint(j+polyPnt,x); 
+    // parameters for interpolation
+    int subId; // not used
+    double minDist2; // not used
+    double pcoords[3];
+    double weights[genCell->GetNumberOfPoints()];
+    genCell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights);
+    for (int id = 0; id < das.size(); ++id)
+		{
+      double comps[numComponents[id]];
+    	std::vector<double> interps(numComponents[id],0.0);
+    	for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
+    	{
+    	  int pntId = genCell->GetPointId(m);
+    	  das[id]->GetTuple(pntId, comps);
+    	  for (int h = 0; h < numComponents[id]; ++h)
+    	  {
+    	    interps[h] += comps[h]*weights[m]; 
+    	  }
+    	}
+  	  daGausses[id]->SetTuple(j+polyPnt,interps.data());
+    }
+	}
+  return numGaussPoints;
+}
+
+void GaussCubature::interpolateToGaussPoints()
+{
+  if (arrayIDs.size() == 0)
+  {
+    std::cerr << "no arrays selected for interpolation" << std::endl;
+    exit(1);
+  }
   std::vector<vtkSmartPointer<vtkDoubleArray>> daGausses(arrayIDs.size());
 	std::vector<vtkSmartPointer<vtkDataArray>> das(arrayIDs.size());
-	std::vector<int> numComponents(arrayIDs.size());
+	numComponents.resize(arrayIDs.size());
 	for (int id = 0; id < arrayIDs.size(); ++id)
 	{
     // get desired point data array to be interpolated to gauss points
@@ -328,7 +328,7 @@ void GaussCubature::constructGaussMesh()
         def->Initialize(VTK_TETRA, 4, 4, TET4);
         break;
       default:
-        std::cout << "Error: Cell type: " << cellType << "found "
+        std::cerr << "Error: Cell type: " << cellType << "found "
                   << "with no quadrature definition provided" << std::endl;
         exit(1);
     }
@@ -366,13 +366,16 @@ void GaussCubature::constructGaussMesh()
   pointGen->Update();
 } 
 
+
+
+
 void GaussCubature::writeGaussMesh(const char* name)
 {
   if (gaussMesh)
     writeVTFile<vtkXMLPolyDataWriter> (name,gaussMesh);   
   else
   {
-    std::cout << "Gauss point mesh has not been constructed" << std::endl;
+    std::cerr << "Gauss point mesh has not been constructed" << std::endl;
     exit(1);
   }
 }
@@ -426,7 +429,7 @@ void GaussCubature::writeGaussMesh(const char* name)
 //    }
 //    default:
 //    {
-//      std::cout << "Error: Cell type: " << cellType << "found "
+//      std::cerr << "Error: Cell type: " << cellType << "found "
 //                << "with no quadrature definition provided" << std::endl;
 //      exit(1);
 //    }
@@ -447,3 +450,59 @@ void GaussCubature::writeGaussMesh(const char* name)
 //    nGaussForCellTMap[cellType] = getNumGaussPointsForCellType(cellType);
 //  }
 //}
+
+
+//std::vector<std::vector<double>> GaussCubature::getGaussPointsAtCell(int cellID)
+//{
+//  // get cell type for quadrature scheme definition
+//  int cellType = nodeMesh->getDataSet()->GetCellType(cellID);
+//  // this vector holds the shape function evaluated at parametric coord of gauss point
+//  std::vector<double> shapeFuncAtGauss;
+//  std::vector<double>::iterator beg = shapeFuncAtGauss.begin();
+//  // dispatch number of gauss points by cell type
+//  int numGaussPoints;
+//  switch(cellType)
+//  {
+//    case VTK_TRIANGLE:
+//    {
+//      shapeFuncAtGauss.insert(beg, TRI3, TRI3+9);
+//      numGaussPoints = 3;
+//      break;
+//    }
+//    case VTK_TETRA:
+//    { 
+//      shapeFuncAtGauss.insert(beg, TET4, TET4+16); 
+//      numGaussPoints = 4;
+//      break;
+//    }
+//    default:
+//    {
+//      std::cerr << "Error: Cell type: " << cellType << "found "
+//                << "with no quadrature definition provided" << std::endl;
+//      exit(1);
+//    }
+//  }
+//
+//  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+//  nodeMesh->getDataSet()->GetCell(cellID,genCell);
+//  int numPointsInCell = genCell->GetNumberOfPoints();
+//  std::vector<std::vector<double>> gaussPoints;
+//  gaussPoints.resize(numGaussPoints);
+//  for (int j = 0; j < gaussPoints.size(); ++j)
+//  {
+//    gaussPoints[j].resize(3,0);
+//    for (int k = 0; k < numPointsInCell; ++k)
+//    {
+//      int pntID = genCell->GetPointId(k);
+//      double x[3];
+//      nodeMesh->getDataSet()->GetPoint(pntID,x); 
+//      for (int i = 0; i < 3; ++i)
+//      {
+//        gaussPoints[j][i] += shapeFuncAtGauss[j*numGaussPoints + k]*x[i]; 
+//      }
+//    }
+//  }
+//  return gaussPoints; 
+//}
+
+
