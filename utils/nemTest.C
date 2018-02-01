@@ -4,10 +4,10 @@ int main(int argc, char* argv[])
   
   meshBase* mesh = meshBase::Create("refined1_transfer.vtu");
   //mesh->getIntegrationPointsAtCell(50);
-  GaussCubature* cuby = new  GaussCubature(mesh);
+  GaussCubature* cuby = new  GaussCubature(mesh,{0,2,3,7});
   //std::vector<int> tmp = {0,2,3,7};
   //cuby->interpolateToGaussPoints(tmp);
-	cuby->constructGaussMesh({0,2,3,7});
+	cuby->constructGaussMesh();
   //meshBase* mesh1 = meshBase::Create("refined1_transferGaussPoints.vtp");
   //mesh1->write("tmptmptmp.vtp");
   delete cuby;

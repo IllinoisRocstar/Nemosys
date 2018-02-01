@@ -87,7 +87,7 @@ namespace nglib
 #include <cstdlib>
 #include <algorithm>
 #include <cstdio>
-
+#include <memory>
 
 // TODO: 1) Implment copy and assignment constructors for all classes/subs
 //       2) Migrate implementations to use smart pointer types 
@@ -107,12 +107,12 @@ class meshBase
     }
     virtual ~meshBase()
     {
-      if (dataSet) 
-      {
-        dataSet->Delete();
-        dataSet = nullptr;
-      } 
-      std::cout << "meshBase destroyed" << std::endl;
+    //  if (dataSet) 
+    //  {
+    //    dataSet->Delete();
+    //    dataSet = nullptr;
+    //  } 
+    //  std::cout << "meshBase destroyed" << std::endl;
     }
   
   // meshBase factory methods
@@ -120,7 +120,16 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
-    static meshBase* Create(vtkDataSet* _dataSet);
+    static std::shared_ptr<meshBase> CreateShared(std::string fname)
+    {
+      std::shared_ptr<meshBase> mesh;
+      mesh.reset(meshBase::Create(fname));
+      return mesh;
+    }
+    static std::unique_ptr<meshBase> CreateUnique(std::string fname)
+    {
+      return std::unique_ptr<meshBase>(meshBase::Create(fname));
+    }
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
@@ -138,7 +147,7 @@ class meshBase
     // get vector of coords of cell with id
     virtual std::vector<std::vector<double>> getCellVec(int id){}
     // get this meshes' dataSet
-    vtkDataSet* getDataSet(){ return dataSet; }
+    vtkSmartPointer<vtkDataSet> getDataSet(){ return dataSet; }
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
@@ -238,11 +247,12 @@ class meshBase
     int numPoints; // number of points in mesh
     int numCells;  // number of cells in mesh
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
-    vtkDataSet* dataSet; // mesh points, topology and data
+    vtkSmartPointer<vtkDataSet> dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
 };
 
+// compares two meshBases- used in testing
 int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
 
