@@ -88,6 +88,7 @@ namespace nglib
 #include <algorithm>
 #include <cstdio>
 #include <memory>
+#include <utility>
 
 // TODO: 1) Implment copy and assignment constructors for all classes/subs
 //       2) Migrate implementations to use smart pointer types 
