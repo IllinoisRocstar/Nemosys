@@ -13,9 +13,10 @@ extern double TET4W;
 class GaussCubature
 {
   public:
-    GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh){ buildMap();} 
-
-    ~GaussCubature(){}
+    //GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh){ buildMap();} 
+    GaussCubature(meshBase* _nodeMesh);
+    GaussCubature(meshBase* _nodeMesh, const std::vector<int>& arrayIDs);
+    ~GaussCubature(){ delete [] dict;}
 
   public:
     // returns coordinates of gauss points at cell
@@ -34,24 +35,40 @@ class GaussCubature
     // returns pointer to mesh object
     meshBase* getNodeMesh() { return nodeMesh; }
     // for testing; writes a vtp (polydata) of gauss points and interpolated values
-    void constructGaussMesh(const std::vector<int>& arrayIDs);
-  
+    //void constructGaussMesh(const std::vector<int>& arrayIDs);
+    void constructGaussMesh();
+    void writeGaussMesh(const char* name);
+
+  public:
+    static GaussCubature* Create(meshBase* nodeMesh);
+    static GaussCubature* Create(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
+    static std::unique_ptr<GaussCubature> CreateUnique(meshBase* nodeMesh);
+    static std::unique_ptr<GaussCubature>
+      CreateUnique(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
+    static std::shared_ptr<GaussCubature>
+      CreateShared(meshBase* nodeMesh);
+    static std::shared_ptr<GaussCubature>
+      CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
 
   private:
     // we want gauss points of this mesh
     meshBase* nodeMesh;
-    // map relating cell type and number of gauss points for that type
-    std::map<int,int> nGaussForCellTMap;
+    // we put the gauss points and interpolated data into this mesh
+    vtkSmartPointer<vtkPolyData> gaussMesh;
+    // dictionary relating cell type quadrature scheme info for that type
+    vtkQuadratureSchemeDefinition** dict;   
+    // std::map<int,int> nGaussForCellTMap;
     // used to generate the above map
-    int getNumGaussPointsForCellType(int cellType);
-    void buildMap();
+    //int getNumGaussPointsForCellType(int cellType);
+    //void buildMap();
     // used by constructGaussMesh to get interpolated values at gauss points
-    void interpolateToGaussPoints(vtkSmartPointer<vtkPolyData> gaussMesh,
-                                  const std::vector<int>& arrayIDs);
+    void interpolateToGaussPoints(const std::vector<int>& arrayIDs);
     double computeVolume(vtkSmartPointer<vtkGenericCell> genCell, const int cellType); 
     // disabled
     GaussCubature(const GaussCubature& that) = delete;
     GaussCubature& operator=(const GaussCubature& that) = delete; 
 };
+
+
 
 #endif
