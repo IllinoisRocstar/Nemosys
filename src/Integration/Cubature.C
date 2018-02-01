@@ -178,13 +178,13 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
     nodeMesh->getDataSet()->GetCellData()->GetArray("QuadratureOffset")->GetTuple(cellID,offsets);
     offset = offsets[0];
   }
-  pntDataPairVec container;
+  //pntDataPairVec container;
+  pntDataPairVec container(numGaussPoints);
   for (int i = 0; i < numGaussPoints; ++i)
   {
     double x_tmp[3];
     gaussMesh->GetPoint(offset+i,x_tmp);
     std::vector<double> gaussPnt(x_tmp,x_tmp + 3); 
-    //x[0] = x_tmp[0]; x[1] = x_tmp[1]; x[2] = x_tmp[2];
     std::vector<std::vector<double>> data(numComponents.size());
     for (int j = 0; j < numComponents.size(); ++j)
     {
@@ -192,13 +192,9 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
       double comps_tmp[numComponents[j]];
       gaussMesh->GetPointData()->GetArray(j)->GetTuple(offset+i,comps_tmp);
       std::vector<double> comps(comps_tmp,comps_tmp+numComponents[j]);
-      for (int k = 0; k < numComponents[j]; ++k)
-      {
-        data[j][k] = comps[k];
-      } 
+      data[j] = std::move(comps);
     }
-    
-    container.emplace_back(gaussPnt,data);//push_back(std::make_pair(gaussPnt,data)); 
+    container[i] = std::move(std::make_pair(gaussPnt,data));
   }
   
   return container;
