@@ -33,10 +33,13 @@ class GaussCubature
     std::vector<std::vector<double>> integrateOverAllCells();
     // get interpolated values at gauss points
     void interpolateToGaussPoints();
+
   // access
   public:
     // returns pointer to mesh object
     meshBase* getNodeMesh() { return nodeMesh; }
+		vtkQuadratureSchemeDefinition** getDict() { return dict; }
+		std::vector<int> getNumComponents(){ return numComponents; }		
 
     // writes a vtp (polydata) of gauss points 
     // interpolated values also written if interpolateToGaussPoitns(...) has been called
