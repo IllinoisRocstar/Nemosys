@@ -30,15 +30,6 @@ class GaussCubature
   public:
     // returns coordinates of gauss points at cell
     pntDataPairVec getGaussPointsAndDataAtCell(int cellID);
-
-
-    // integrates provided data over cell
-    void integrateOverCell(int cellID,
-                           vtkSmartPointer<vtkGenericCell> genCell,
-                           vtkSmartPointer<vtkPointData> pd,
-                           std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
-                           std::vector<std::vector<double>>& totalIntegralData);
-
     std::vector<std::vector<double>> integrateOverAllCells();
     // get interpolated values at gauss points
     void interpolateToGaussPoints();
@@ -84,6 +75,12 @@ class GaussCubature
                                        vtkSmartPointer<vtkGenericCell> genCell,
                                        const std::vector<vtkSmartPointer<vtkDataArray>>& das,
                                        std::vector<vtkSmartPointer<vtkDoubleArray>>& daGausses);
+    // integrates provided data over cell
+    void integrateOverCell(int cellID,
+                           vtkSmartPointer<vtkGenericCell> genCell,
+                           vtkSmartPointer<vtkPointData> pd,
+                           std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
+                           std::vector<std::vector<double>>& totalIntegralData);
 
 
 
