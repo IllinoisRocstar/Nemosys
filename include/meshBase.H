@@ -57,6 +57,7 @@
 #include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
 #include <spheres.H>
+#include <vtkMath.h>
 
 //MAd Lib
 #include <MAdLib.h>
