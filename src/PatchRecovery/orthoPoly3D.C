@@ -78,13 +78,8 @@ orthoPoly3D::orthoPoly3D():finished(0),
   a.resize(0); 
 }
 
-// complete ctor
-orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma, 
-												 const std::vector<double>& x, 
-                         const std::vector<double>& y, 
-												 const std::vector<double>& z) :
-                          order(_order)
-{ 
+void orthoPoly3D::initCheck()
+{
   if (order == 1)
     toRemove = {3,5,6,7};
   else if (order == 2)
@@ -99,13 +94,43 @@ orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma,
     std::cout << "Polynomial order greater than 3 is not supported" << std::endl;
     exit(1);
   }
+}
+
+// complete ctor
+orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma, 
+												 const std::vector<double>& x, 
+                         const std::vector<double>& y, 
+												 const std::vector<double>& z) :
+                          order(_order)
+{ 
+	initCheck();
 
 	opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
 	opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
 	opz = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,z));
-	computeA(x,y,z, sigma); 
+	computeA(sigma); 
 }
 
+orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>& coords)
+	: order(_order)
+{
+	initCheck();
+	std::vector<double> x(coords.size());
+	std::vector<double> y(coords.size());
+	std::vector<double> z(coords.size());
+
+	for (int i = 0; i < coords.size(); ++i)
+	{
+		x[i] = coords[i][0];
+		y[i] = coords[i][1];
+		z[i] = coords[i][2];
+	}
+
+	opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
+	opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
+	opz = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,z));
+
+}
 // move ctor
 orthoPoly3D::orthoPoly3D(orthoPoly3D&& op) 
   : finished(op.finished),
@@ -142,8 +167,7 @@ orthoPoly3D& orthoPoly3D::operator=(orthoPoly3D&& op)
 }
 
 // compute coefficients for polynomial expansion of sampled function
-void orthoPoly3D::computeA(const std::vector<double>& x, const std::vector<double>& y,
-													 const std::vector<double>& z, const VectorXd& sigma)
+void orthoPoly3D::computeA(const VectorXd& sigma)
 {
 	#ifdef DEBUG
     Timer T;
