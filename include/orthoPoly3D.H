@@ -60,7 +60,7 @@ class orthoPoly3D
 		// move assignment	
     orthoPoly3D& operator=(orthoPoly3D&& op);
 
- 		// dtor
+		// dtor
     ~orthoPoly3D(){}
 
   // methods
