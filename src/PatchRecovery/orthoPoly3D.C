@@ -72,7 +72,7 @@ void removeRowT(const MatrixXd& matrix,
 // default ctor
 orthoPoly3D::orthoPoly3D():finished(0), 
                            opx(new orthoPoly1D()),
-									         opy(new orthoPoly1D()), 
+													 opy(new orthoPoly1D()), 
                            opz(new orthoPoly1D())
 { 
   a.resize(0); 
@@ -134,7 +134,7 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>& coo
 // move ctor
 orthoPoly3D::orthoPoly3D(orthoPoly3D&& op) 
   : finished(op.finished),
-	  opx(std::move(op.opx)),
+		opx(std::move(op.opx)),
 		opy(std::move(op.opy)),
 		opz(std::move(op.opz)),
 		a(op.a),toRemove(op.toRemove),
@@ -153,9 +153,9 @@ orthoPoly3D& orthoPoly3D::operator=(orthoPoly3D&& op)
 		// release held resources
 		this->Reset();
 		// move resoures from op to this (i.e. pilfer)
-  	opx = std::move(op.opx);
-  	opy = std::move(op.opy);
-  	opz = std::move(op.opz);
+		opx = std::move(op.opx);
+		opy = std::move(op.opy);
+		opz = std::move(op.opz);
 		a = op.a;
 		toRemove = op.toRemove;
 		finished = op.finished;
@@ -163,7 +163,7 @@ orthoPoly3D& orthoPoly3D::operator=(orthoPoly3D&& op)
 		// set op to default state	
 		op.Reset();
 	}
-  	return *this;
+		return *this;
 }
 
 // compute coefficients for polynomial expansion of sampled function
@@ -186,7 +186,7 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
     T1.stop();
     std::cout << "Time for building kronprod in constructor: " << T1.elapsed() << std::endl;
     std::cout << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
-	  std::cout << "Removing stuff" << std::endl;
+		std::cout << "Removing stuff" << std::endl;
   #endif
 	MatrixXdRM kronProd_red(kronProd_full.cols()-toRemove.size(),kronProd_full.rows());
 	#ifdef DEBUG
@@ -196,8 +196,8 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
   
 	a = kronProd_red*sigma;
   #ifdef DEBUG
-	  T.stop();
-	  std::cout << "Time: " << T.elapsed() << std::endl;
+		T.stop();
+		std::cout << "Time: " << T.elapsed() << std::endl;
     std::cout << "kronProd shape: " << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
 	#endif
   finished = 1;	

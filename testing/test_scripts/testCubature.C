@@ -15,7 +15,7 @@ class CubatureTest : public ::testing::Test
     {
       //mesh = meshBase::Create(nodeMesh);
       //cuby = new GaussCubature(mesh,arrayIDs);
-		  mesh = meshBase::CreateShared(nodeMesh);
+			mesh = meshBase::CreateShared(nodeMesh);
       cuby = GaussCubature::CreateShared(mesh.get(), arrayIDs);
     }
   
