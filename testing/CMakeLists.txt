@@ -36,7 +36,11 @@ CONFIGURE_FILE( ${test_in} ${test} @ONLY )
 SET(TEST_DATA ${CMAKE_CURRENT_LIST_DIR}/test_data)
 SET(CUBATURE_TESTDIR ${TEST_DATA}/CubatureTest)
 SET(CONVERSION_TESTDIR ${TEST_DATA}/ConversionTest)
+SET(ORTHOPOLY_TESTDIR ${TEST_DATA}/OrthoPolyTest)
 
 ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp) 
 
 ADD_TEST(NAME conversionTest COMMAND runConversionTest ${CONVERSION_TESTDIR}/case0001_ref.vtu ${CONVERSION_TESTDIR}/case0001.msh ${CONVERSION_TESTDIR}/hinge.vtu ${CONVERSION_TESTDIR}/hinge.vol)
+
+
+add_test(NAME orthoPolyTest COMMAND runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt)
