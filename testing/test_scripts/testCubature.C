@@ -62,13 +62,32 @@ TEST_F(CubatureTest, InterpolateToGauss)
   std::unique_ptr<meshBase> gaussMesh = meshBase::CreateUnique("gaussTest.vtp");
   std::unique_ptr<meshBase> refGaussMesh = meshBase::CreateUnique(refGauss);
   EXPECT_EQ(0,diffMesh(gaussMesh.get(),refGaussMesh.get()));
-  
-  for (int i = 0; i < cuby->getNodeMesh()->getNumberOfCells(); ++i)
+
+  std::vector<std::vector<double>> totalIntegralData(cuby->integrateOverAllCells());
+  std::string fname("integrationTest.vtu");
+  cuby->getNodeMesh()->write(fname);
+
+  for (int i = 0; i < totalIntegralData.size(); ++i)
   {
-    pntDataPairVec shit = cuby->getGaussPointsAndDataAtCell(i);
-    for (int k = 0; k < shit.size(); ++k)
-      printVec(shit[k].second[3]); 
+    for (int j = 0; j < totalIntegralData[i].size(); ++j)
+    {
+      std::cout << totalIntegralData[i][j] << " ";
+    }
+    std::cout << std::endl;
   }
+
+  //vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  //for (int i = 0; i < cuby->getNodeMesh()->getNumberOfCells(); ++i)
+  //{
+  //  cuby->getNodeMesh()->getDataSet()->GetCell(i,genCell);
+  //  double jacobi = cuby->computeScaledJacobian(genCell,VTK_TETRA);
+  //  std::cout << jacobi << std::endl;
+  //}
+  //{
+  //  pntDataPairVec shit = cuby->getGaussPointsAndDataAtCell(i);
+  //  for (int k = 0; k < shit.size(); ++k)
+  //    printVec(shit[k].second[3]); 
+  //}
 }
 
 int main(int argc, char** argv) {

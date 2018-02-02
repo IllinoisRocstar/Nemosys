@@ -2,13 +2,14 @@
 #define CUBATURE_H
 #include <meshBase.H>
 #include <vtkMesh.H>
+#include <Eigen/Dense>
 
 // 3 point symmetric gaussian quadrature for triangle element
 extern double TRI3 [];
-extern double TRI3W;
+extern double TRI3W [];
 // 4 point symmetric gaussian quadrature for tetrahedral element
 extern double TET4 [];
-extern double TET4W;
+extern double TET4W [];
 
 // pair type for coordinate and data there
 typedef std::pair<std::vector<double>,std::vector<std::vector<double>>> pntDataPair;
@@ -30,16 +31,15 @@ class GaussCubature
     // returns coordinates of gauss points at cell
     pntDataPairVec getGaussPointsAndDataAtCell(int cellID);
 
-    // interpolates provided data (das) to gauss points in cell
-    int interpolateToGaussPointsAtCell(const int cellID,
-                                       vtkSmartPointer<vtkGenericCell> genCell,
-                                       const std::vector<vtkSmartPointer<vtkDataArray>>& das,
-                                       std::vector<vtkSmartPointer<vtkDoubleArray>>& daGausses,
-                                       const std::vector<int>& numComponents, 
-                                       const int polyPnt);
-    // integrates provided data over cell
-    void integrateOverCell(int cellID,const std::vector<int>& arrayIDs);
 
+    // integrates provided data over cell
+    void integrateOverCell(int cellID,
+                           vtkSmartPointer<vtkGenericCell> genCell,
+                           vtkSmartPointer<vtkPointData> pd,
+                           std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
+                           std::vector<std::vector<double>>& totalIntegralData);
+
+    std::vector<std::vector<double>> integrateOverAllCells();
     // get interpolated values at gauss points
     void interpolateToGaussPoints();
   // access
@@ -64,6 +64,7 @@ class GaussCubature
       CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
 
     void setArrayIDs(const std::vector<int>& _arrayIDs) { arrayIDs = _arrayIDs; }
+    double computeScaledJacobian(vtkSmartPointer<vtkGenericCell>genCell, int cellType);
 
   private:
     // we want gauss points of this mesh
@@ -75,14 +76,17 @@ class GaussCubature
     // array ids of data to be interpolated
     std::vector<int> arrayIDs;
     std::vector<int> numComponents;
-    
-    // std::map<int,int> nGaussForCellTMap;
-    // used to generate the above map
-    //int getNumGaussPointsForCellType(int cellType);
-    //void buildMap();
+
+    // get offset from nodeMesh for lookup of gauss points in polydata
+    int getOffset(int cellID);
+    // interpolates provided data (das) to gauss points in cell
+    int interpolateToGaussPointsAtCell(const int cellID,
+                                       vtkSmartPointer<vtkGenericCell> genCell,
+                                       const std::vector<vtkSmartPointer<vtkDataArray>>& das,
+                                       std::vector<vtkSmartPointer<vtkDoubleArray>>& daGausses);
 
 
-    double computeVolume(vtkSmartPointer<vtkGenericCell> genCell, const int cellType); 
+
     // disabled
     GaussCubature(const GaussCubature& that) = delete;
     GaussCubature& operator=(const GaussCubature& that) = delete; 
