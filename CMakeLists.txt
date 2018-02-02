@@ -183,7 +183,9 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
-                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C)
+                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
+                 src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
+                 src/PatchRecovery/patchRecovery.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
     utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
@@ -373,10 +375,14 @@ ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
 ADD_EXECUTABLE(diff_vtu ${DIFFVTUSOURCE})
 ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
 ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testConversion.C)
+ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
+TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
+
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
 ADD_SUBDIRECTORY(testing)
 INSTALL(FILES ${DIFFTOL} ${DIFFVTU} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
