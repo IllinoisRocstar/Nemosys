@@ -50,6 +50,9 @@ class orthoPoly3D
     orthoPoly3D(int _order, const VectorXd& _sigma, 
 								const std::vector<double>& _x, const std::vector<double>& _y, 
 								const std::vector<double>& _z);
+		
+		// partial ctor, must manually call computeA
+		orthoPoly3D(int _order, const std::vector<std::vector<double>>& coords);
 
 		// move constructor
     orthoPoly3D(orthoPoly3D&& op); 
@@ -67,8 +70,7 @@ class orthoPoly3D
     void run1(const VectorXd& sigma);
     #endif
     // compute coefficients for polynomial expansion of sampled function
-		void computeA(const std::vector<double>& x, const std::vector<double>& y,
-									const std::vector<double>& z, const VectorXd& sigma);
+		void computeA(const VectorXd& sigma);
     // evaluate the fitting polynomial at coord
     const double operator()(const std::vector<double>& coord);
     // return the status of the approximant object
@@ -99,7 +101,8 @@ class orthoPoly3D
 		orthoPoly3D(const orthoPoly3D&) = delete;
     // private lvalue copy assignment ctor disables it (not implemented)
     orthoPoly3D& operator=(const orthoPoly3D&) = delete; 
-
+		// checks order compatiblity and determines toRemove array
+		void initCheck();
 };
 
 #endif
