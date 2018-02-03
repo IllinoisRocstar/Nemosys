@@ -1,5 +1,7 @@
 #include <Cubature.H>
 
+
+
 double TRI3 [] = 
 {
 .666666666666666, .166666666666666, .166666666666666,
@@ -69,7 +71,7 @@ GaussCubature::CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs
 }
 
 
-using Eigen::Matrix3d;
+
 double GaussCubature::computeScaledJacobian(vtkSmartPointer<vtkGenericCell> genCell, int cellType)
 {
   double jacobi = 0;
@@ -176,15 +178,20 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
     double x_tmp[3];
     gaussMesh->GetPoint(offset+i,x_tmp);
     std::vector<double> gaussPnt(x_tmp,x_tmp + 3); 
-    std::vector<std::vector<double>> data(numComponents.size());
-    for (int j = 0; j < numComponents.size(); ++j)
+    //std::vector<std::vector<double>> data(numComponents.size());
+    std::vector<VectorXd> data(numComponents.size());
+		for (int j = 0; j < numComponents.size(); ++j)
     {
       data[j].resize(numComponents[j]);
-      double comps_tmp[numComponents[j]];
-      pd->GetArray(j)->GetTuple(offset+i,comps_tmp);
-      std::vector<double> comps(comps_tmp,comps_tmp+numComponents[j]);
-      data[j] = std::move(comps);
-    }
+      double comps[numComponents[j]];
+      pd->GetArray(j)->GetTuple(offset+i,comps);
+      //std::vector<double> comps(comps_tmp,comps_tmp+numComponents[j]);
+      //data[j] = std::move(comps);
+    	for (int k = 0; k < numComponents[j]; ++k)
+			{
+				data[j](k) = comps[k];
+			}
+		}
     container[i] = std::move(std::make_pair(gaussPnt,data));
   }
   
