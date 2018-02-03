@@ -11,8 +11,12 @@ extern double TRI3W [];
 extern double TET4 [];
 extern double TET4W [];
 
+using Eigen::Matrix3d;
+using Eigen::VectorXd;
+
 // pair type for coordinate and data there
-typedef std::pair<std::vector<double>,std::vector<std::vector<double>>> pntDataPair;
+//typedef std::pair<std::vector<double>,std::vector<std::vector<double>>> pntDataPair;
+typedef std::pair<std::vector<double>, std::vector<VectorXd>> pntDataPair;
 
 // holds gauss points and data at these points as pairs
 typedef std::vector<pntDataPair> pntDataPairVec;
