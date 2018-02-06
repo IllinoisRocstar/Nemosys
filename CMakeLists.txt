@@ -139,6 +139,9 @@ ELSE()
                   no modern C++ support. Please use a different C++ compiler.")
 ENDIF()
 
+### adding flags to debug
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -Wall")
+
 # Compiled objects output paths
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -376,9 +379,11 @@ ADD_EXECUTABLE(diff_vtu ${DIFFVTUSOURCE})
 ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
 ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testConversion.C)
 ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
+ADD_EXECUTABLE(runPatchRecoveryTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testPatchRecovery.C)
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
+TARGET_LINK_LIBRARIES(runPatchRecoveryTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
@@ -386,3 +391,4 @@ ADD_SUBDIRECTORY(testing)
 INSTALL(FILES ${DIFFTOL} ${DIFFVTU} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+INSTALL(TARGETS runPatchRecoveryTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
