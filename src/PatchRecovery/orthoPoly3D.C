@@ -166,6 +166,19 @@ orthoPoly3D& orthoPoly3D::operator=(orthoPoly3D&& op)
 		return *this;
 }
 
+orthoPoly3D* orthoPoly3D::Create(int _order, const std::vector<std::vector<double>>& coords)
+{
+  return new orthoPoly3D(_order, coords);
+}
+
+std::unique_ptr<orthoPoly3D> 
+  orthoPoly3D::CreateUnique(int _order, const std::vector<std::vector<double>>& coords)
+{
+  return std::unique_ptr<orthoPoly3D> (orthoPoly3D::Create(_order, coords));
+}
+
+
+
 // compute coefficients for polynomial expansion of sampled function
 void orthoPoly3D::computeA(const VectorXd& sigma)
 {
@@ -193,7 +206,10 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
     T.start();
   #endif  
 	removeRowT(kronProd_full, kronProd_red,toRemove);
-  
+
+  std::cout << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
+  std::cout << sigma.size() << std::endl; 
+ 
 	a = kronProd_red*sigma;
   #ifdef DEBUG
 		T.stop();
@@ -203,8 +219,7 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
   finished = 1;	
 }
 
-// evaluate the fitting polynomial at coord
-const double orthoPoly3D::operator()(const std::vector<double>& coord)
+const double orthoPoly3D::eval(const std::vector<double>& coord)
 {
 	if (!finished) 
 	{
@@ -236,6 +251,11 @@ const double orthoPoly3D::operator()(const std::vector<double>& coord)
   #endif
 
   return (Phi_red*a)(0,0);
+}
+// evaluate the fitting polynomial at coord
+const double orthoPoly3D::operator()(const std::vector<double>& coord)
+{
+  return eval(coord);
 }
 
 #ifdef DEBUG

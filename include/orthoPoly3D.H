@@ -60,6 +60,14 @@ class orthoPoly3D
 		// move assignment	
     orthoPoly3D& operator=(orthoPoly3D&& op);
 
+    // factories
+    static orthoPoly3D* Create(int _order, const std::vector<std::vector<double>>& coords);
+    static std::unique_ptr<orthoPoly3D> 
+      CreateUnique(int _order, const std::vector<std::vector<double>>& coords);
+
+
+
+
 		// dtor
     ~orthoPoly3D(){}
 
@@ -73,6 +81,7 @@ class orthoPoly3D
 		void computeA(const VectorXd& sigma);
     // evaluate the fitting polynomial at coord
     const double operator()(const std::vector<double>& coord);
+    const double eval(const std::vector<double>& coord);
     // return the status of the approximant object
     // 1 indicates approximant is available, 0 otherwise 
 		const bool status() const {return finished;}	
