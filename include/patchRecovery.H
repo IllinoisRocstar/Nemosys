@@ -9,16 +9,21 @@ class PatchRecovery
   
   public:
     PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<int>& arrayIDs);
-     
-		void extractAxes(pntDataPairVec& pntsAndData, 
-										 std::vector<std::vector<double>>& coords);
+    ~PatchRecovery(){} 
+    void extractAxesAndData(pntDataPairVec& pntsAndData, 
+														std::vector<std::vector<double>>& coords,
+                            std::vector<VectorXd>& data,
+                            const std::vector<int>& numComponents,
+                            int& pntNum);
+
+    void recoverNodalSolution();
 
   private:
     std::unique_ptr<GaussCubature> cubature;     
     std::vector<orthoPoly3D> polyApproximants;
 		int order;
 
-    void recoverNodalSolution(const std::vector<int>& arrayIDs);
+
 
     // disabled
     PatchRecovery(const PatchRecovery& that) = delete;
