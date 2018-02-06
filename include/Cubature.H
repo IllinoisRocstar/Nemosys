@@ -16,7 +16,8 @@ using Eigen::VectorXd;
 
 // pair type for coordinate and data there
 //typedef std::pair<std::vector<double>,std::vector<std::vector<double>>> pntDataPair;
-typedef std::pair<std::vector<double>, std::vector<VectorXd>> pntDataPair;
+typedef std::pair<std::vector<double>,std::vector<double>> pntDataPair;
+//typedef std::pair<std::vector<double>, std::vector<VectorXd>> pntDataPair;
 
 // holds gauss points and data at these points as pairs
 typedef std::vector<pntDataPair> pntDataPairVec;
@@ -44,6 +45,8 @@ class GaussCubature
     meshBase* getNodeMesh() { return nodeMesh; }
 		vtkQuadratureSchemeDefinition** getDict() { return dict; }
 		std::vector<int> getNumComponents(){ return numComponents; }		
+    std::vector<int> getArrayIDs() { return arrayIDs; }
+    int getTotalComponents() { return totalComponents; }
 
     // writes a vtp (polydata) of gauss points 
     // interpolated values also written if interpolateToGaussPoitns(...) has been called
@@ -74,6 +77,7 @@ class GaussCubature
     // array ids of data to be interpolated
     std::vector<int> arrayIDs;
     std::vector<int> numComponents;
+    int totalComponents;
 
     // get offset from nodeMesh for lookup of gauss points in polydata
     int getOffset(int cellID);

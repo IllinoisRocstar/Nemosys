@@ -87,10 +87,11 @@ TEST_F(CubatureTest, InterpolateToGauss)
     pntDataPairVec shit = cuby->getGaussPointsAndDataAtCell(300);
     for (int k = 0; k < shit.size(); ++k)
 		{
-			for (int j = 0; j < 3; ++j)
-				std::cout << shit[k].second[3](j) << " ";
+			//for (int j = 0; j < 3; ++j)
+		  std::cout << shit[k].second[3] << " "  << shit[k].second[4] << " " << shit[k].second[5] << std::endl;
+        //std::cout << shit[k].second[3][j] << " ";
       //printVec(shit[k].second[3]); 
-  		std::cout << std::endl;
+  		//std::cout << std::endl;
 		}
 	}
 }

@@ -19,14 +19,14 @@ double TET4 [] =
 };
 double TET4W [] = {0.25,0.25,0.25,0.25};
 
-GaussCubature::GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh)
+GaussCubature::GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh),totalComponents(0)
 { 
   nodeMesh->unsetCellDataArray("QuadratureOffSet");
   constructGaussMesh();
 } 
 
 GaussCubature::GaussCubature(meshBase* _nodeMesh, const std::vector<int>& _arrayIDs)
-  : nodeMesh(_nodeMesh), arrayIDs(_arrayIDs)
+  : nodeMesh(_nodeMesh), arrayIDs(_arrayIDs),totalComponents(0)
 {
   nodeMesh->unsetCellDataArray("QuadratureOffSet");
   constructGaussMesh();
@@ -179,18 +179,22 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
     gaussMesh->GetPoint(offset+i,x_tmp);
     std::vector<double> gaussPnt(x_tmp,x_tmp + 3); 
     //std::vector<std::vector<double>> data(numComponents.size());
-    std::vector<VectorXd> data(numComponents.size());
-		for (int j = 0; j < numComponents.size(); ++j)
+    std::vector<double> data(totalComponents);
+    //std::vector<VectorXd> data(numComponents.size());
+		int currcomp = 0;
+    for (int j = 0; j < numComponents.size(); ++j)
     {
-      data[j].resize(numComponents[j]);
+      //data[j].resize(numComponents[j]);
       double comps[numComponents[j]];
       pd->GetArray(j)->GetTuple(offset+i,comps);
       //std::vector<double> comps(comps_tmp,comps_tmp+numComponents[j]);
-      //data[j] = std::move(comps);
+     // data[j] = std::move(comps);
     	for (int k = 0; k < numComponents[j]; ++k)
 			{
-				data[j](k) = comps[k];
-			}
+        data[currcomp] = comps[k];
+				//data[j](k) = comps[k];
+			  ++currcomp;
+      }
 		}
     container[i] = std::move(std::make_pair(gaussPnt,data));
   }
@@ -347,7 +351,8 @@ void GaussCubature::interpolateToGaussPoints()
     das[id] = da;
 		daGausses[id] = daGauss;
 		numComponents[id] = numComponent;	
-	}
+	  totalComponents += numComponent;
+  }
   // generic cell to store given cell in nodeMesh->getDataSet()
   vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
   // number of points in polydata to which data has been interpolated
