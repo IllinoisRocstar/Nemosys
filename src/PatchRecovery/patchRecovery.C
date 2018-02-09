@@ -58,12 +58,13 @@ void PatchRecovery::recoverNodalSolution()
 	
 	std::vector<int> numComponents = cubature->getNumComponents();
   int totalComponents = cubature->getTotalComponents();
-
-	for (int i = 0; i < numPoints; ++i)
+  // TODO: CHANGEME
+	for (int i = 929; i < numPoints; ++i)
   {
    
     double tmp[1];
-    nodeMesh->getDataSet()->GetPointData()->GetArray(1)->GetTuple(i,tmp);
+    nodeMesh->getDataSet()->GetPointData()->GetArray(3)->GetTuple(i,tmp);
+    std::cout << "Data at point: " << tmp[0] << std::endl; 
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
     // get total number of gauss points in patch 
@@ -87,10 +88,13 @@ void PatchRecovery::recoverNodalSolution()
     {
       pntDataPairVec pntsAndData = cubature->getGaussPointsAndDataAtCell(patchCellIDs->GetId(j));
 			extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
-
     }
+      for (int k = 0; k < numPatchPoints; ++k)
+      {
+        std::cout << data[2](k) << std::endl;
+      }
 
-		// construct orthopoly from coords
+		// construct orthopoly from coord2
 		std::unique_ptr<orthoPoly3D> patchPolyApprox 
       = orthoPoly3D::CreateUnique(order,coords);//(new orthoPoly3D(order, coords));
 		// get coordinate of node generating patch
