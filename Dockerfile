@@ -14,6 +14,6 @@ WORKDIR /Nemosys/
 
 RUN pip3 install -r requirements.txt
 
-#RUN ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
+RUN ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
 
 ENTRYPOINT /bin/bash
