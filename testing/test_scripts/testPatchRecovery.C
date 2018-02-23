@@ -13,6 +13,7 @@ TEST(PatchRecoveryConstructor, ConstructWithoutArray)
   std::unique_ptr<PatchRecovery> recoverObj
     = std::unique_ptr<PatchRecovery> (new PatchRecovery(mesh.get(),order,arrayIDs));
   recoverObj->recoverNodalSolution();
+  mesh->write("test.vtu");
 }
 
  

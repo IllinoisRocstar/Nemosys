@@ -188,7 +188,7 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
-                 src/PatchRecovery/patchRecovery.C)
+                 src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
     utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)

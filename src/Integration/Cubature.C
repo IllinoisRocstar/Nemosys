@@ -163,7 +163,6 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
     interpolateToGaussPoints();
   }
 
-
   // get number of gauss points in cell from dictionary
   int numGaussPoints = dict[nodeMesh->getDataSet()->GetCell(cellID)->GetCellType()]
                         ->GetNumberOfQuadraturePoints();
