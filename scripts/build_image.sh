@@ -13,5 +13,5 @@ docker run -itd -v /Projects/IR/Users/misenholt/dev/Nemosys/Nemosys/python:/Nemo
                 -v /Projects/IR/Users/misenholt/dev/Nemosys/Nemosys/testing:/Nemosys/testing \
                 --name $CONTAINER_NAME $IMAGE_NAME
 
-docker exec -it $CONTAINER_NAME bash -c "./build.sh /Nemosys /Nemosys/contrib/nemosys_tpls.tar.gz"
+docker exec -it $CONTAINER_NAME bash -c "./scripts/build.sh /Nemosys /Nemosys/contrib/nemosys_tpls.tar.gz"
 docker exec -it $CONTAINER_NAME bash -c "cd build && make test VERBOSE=1"
