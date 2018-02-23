@@ -74,5 +74,5 @@ cd $NEMOSYS_PROJECT_PATH
 rm -rf build
 mkdir build
 cd build
-CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
+CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DCMAKE_CXX_FLAGS=-Wall ..
 make -j8

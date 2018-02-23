@@ -1,6 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(Nemosys)
 ENABLE_TESTING()
+
 # this variable controls the default value of the options which are normally set
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
 # -DDEFAULT=0 -DENABLE_DTK=1")
@@ -16,13 +17,16 @@ opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
 
+option(RUN_SWIG "Generate language bindings with SWIG" OFF)
+option(PYTHON_BINDINGS "Build Python bindings" OFF)
+
 # set up version
 set(NEMOSYS_MAJOR_VERSION 1)
 set(NEMOSYS_MINOR_VERSION 2)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
-set(NEMOSYS_VERSION "${GMSH_MAJOR_VERSION}.${GMSH_MINOR_VERSION}")
-set(NEMOSYS_VERSION "${GMSH_VERSION}.${GMSH_PATCH_VERSION}${GMSH_EXTRA_VERSION}")
+set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
+set(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
 set(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
 
 # finding libraries ###############################################################
@@ -178,19 +182,19 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
-                 src/Mesh/meshBase.C src/Mesh/vtkMesh.C src/MeshGeneration/meshGen.C 
+                 src/Mesh/meshBase.C src/Mesh/vtkMesh.C src/MeshGeneration/meshGen.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
-                 src/SizeFieldGeneration/SizeFieldBase.C 
-                 src/SizeFieldGeneration/GradSizeField.C 
-                 src/SizeFieldGeneration/ValSizeField.C 
-                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
+                 src/SizeFieldGeneration/SizeFieldBase.C
+                 src/SizeFieldGeneration/GradSizeField.C
+                 src/SizeFieldGeneration/ValSizeField.C
+                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
+                 src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/patchRecovery.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
+SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C
     utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
@@ -304,7 +308,7 @@ IF(BUILD_UTILS)
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
   TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys Rocs)
   INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
-  
+
   #vol2planeTransfer utility
   ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
   if(VTK_LIBRARIES)
@@ -331,9 +335,12 @@ IF(BUILD_UTILS)
     INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
   ENDIF()
 
-ENDIF(BUILD_UTILS) 
+ENDIF(BUILD_UTILS)
 
-
+# Building python wrapper #####################################################
+#set(Python_ADDITIONAL_VERSIONS 3.5)
+#add_subdirectory(scripts)
+add_subdirectory(python)
 
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
