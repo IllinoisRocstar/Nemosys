@@ -1,7 +1,7 @@
 #ifndef PATCHRECOVERY_H
 #define PATCHRECOVERY_H
 
-#include <orthoPoly3D.H>
+#include <polyApprox.H>
 #include <Cubature.H>
 
 class PatchRecovery
@@ -20,7 +20,8 @@ class PatchRecovery
 
   private:
     std::unique_ptr<GaussCubature> cubature;     
-    std::vector<orthoPoly3D> polyApproximants;
+    std::vector<polyApprox> polyApproximants;
+     
 		int order;
 
 

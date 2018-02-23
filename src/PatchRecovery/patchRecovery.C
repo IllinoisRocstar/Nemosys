@@ -5,10 +5,9 @@ PatchRecovery::PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<i
 	: order(_order)
 {
   cubature = GaussCubature::CreateUnique(nodeMesh, arrayIDs);
-    
 }
 
-//TODO: stop being an idiot and change the type of pntDataPairVec to hold eigen vec type for data
+
 
 // extract coordinates and data from cell by pushing into coords and data
 // vectors accross patch
@@ -26,7 +25,7 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
 	{
 		//coords.push_back(std::move(pntsAndData[i].first));
     coords[pntNum] = std::move(pntsAndData[i].first);
-    printVec(coords[pntNum]);
+   // printVec(coords[pntNum]);
     int currcomp = 0;
     for (int j = 0; j < numComponents.size(); ++j)
     {
@@ -58,13 +57,22 @@ void PatchRecovery::recoverNodalSolution()
 	
 	std::vector<int> numComponents = cubature->getNumComponents();
   int totalComponents = cubature->getTotalComponents();
-  // TODO: CHANGEME
-	for (int i = 929; i < numPoints; ++i)
+  std::cout << "total components: " << totalComponents << std::endl;  
+  
+  // new point data
+  std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
+  for (int i = 0; i < numComponents.size(); ++i)
   {
-   
-    double tmp[1];
-    nodeMesh->getDataSet()->GetPointData()->GetArray(3)->GetTuple(i,tmp);
-    std::cout << "Data at point: " << tmp[0] << std::endl; 
+    std::string name = nodeMesh->getDataSet()->GetPointData()
+                               ->GetArrayName(cubature->getArrayIDs()[i]);
+    name += "New";
+    newPntData[i] = vtkSmartPointer<vtkDoubleArray>::New();
+    newPntData[i]->SetName(&name[0u]);
+    newPntData[i]->SetNumberOfComponents(numComponents[i]);  
+  }
+
+	for (int i = 0; i < numPoints; ++i)
+  {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
     // get total number of gauss points in patch 
@@ -89,27 +97,44 @@ void PatchRecovery::recoverNodalSolution()
       pntDataPairVec pntsAndData = cubature->getGaussPointsAndDataAtCell(patchCellIDs->GetId(j));
 			extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
     }
-      for (int k = 0; k < numPatchPoints; ++k)
-      {
-        std::cout << data[2](k) << std::endl;
-      }
 
-		// construct orthopoly from coord2
-		std::unique_ptr<orthoPoly3D> patchPolyApprox 
-      = orthoPoly3D::CreateUnique(order,coords);//(new orthoPoly3D(order, coords));
+		// construct polyapprox from coords
+		std::unique_ptr<polyApprox> patchPolyApprox 
+      = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
 		// get coordinate of node generating patch
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
-		for (int k = 0; k < totalComponents; ++k)
-		{
-      // get polynomial approximant of component over patch
-      patchPolyApprox->computeA(data[k]);
-      std::cout << patchPolyApprox->eval(genNodeCoord) << std::endl;
+    
+    int currComp = 0;
+    for (int k = 0; k < numComponents.size(); ++k)
+    {
+      double comps[numComponents[k]];
+      for (int l = 0; l < numComponents[k]; ++l)
+      {
+        std::cout << currComp << std::endl;
+        patchPolyApprox->computeCoeff(data[currComp++]);
+        comps[l] = patchPolyApprox->eval(genNodeCoord);
+      }
+      newPntData[k]->InsertNextTuple(comps);
     }
-
-  } 
+  }
+  for (int k = 0; k < numComponents.size(); ++k)
+  {
+    nodeMesh->getDataSet()->GetPointData()->AddArray(newPntData[k]);
+  }
 }
 
-		//int numGaussPoints = 0;
+		//for (int k = 0; k < totalComponents; ++k)
+		//{
+
+    //  // get polynomial approximant of component over patch
+    //  patchPolyApprox->computeCoeff(data[k]);
+    //  for (; currArr < numComponents[currArr]; ++currArr)
+    //  newPntData[currArr]->InsertNextTuple(patchPolyApprox->eval(genNodeCoord));
+    //    
+    //  //std::cout << patchPolyApprox->eval(genNodeCoord) << std::endl;
+    //}
+		
+    //int numGaussPoints = 0;
 		//for (int j = 0; j < patchCellIDs->GetNumberOfIds(); ++j)
 		//{
 		//	int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(j))->GetCellType();
