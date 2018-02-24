@@ -17,13 +17,8 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
                                        const std::vector<int>& numComponents,
                                        int& pntNum)
 {
-
-	// number of components for each data being considered
-	// {x,y,z} -> {{d1_1, ... ,d1_m} , ... , {dk_1, ... , dk_m}} ; i_m != k_m in general
-
 	for (int i = 0; i < pntsAndData.size(); ++i)
 	{
-		//coords.push_back(std::move(pntsAndData[i].first));
     coords[pntNum] = std::move(pntsAndData[i].first);
    // printVec(coords[pntNum]);
     int currcomp = 0;
@@ -50,17 +45,20 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
 void PatchRecovery::recoverNodalSolution()
 {
   std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;
+  // getting node mesh from cubature
   meshBase* nodeMesh = cubature->getNodeMesh();
   int numPoints = nodeMesh->getNumberOfPoints();
+  // initializing id list for patch cells
   vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
+  // getting cubature scheme dictionary for indexing
   vtkQuadratureSchemeDefinition** dict = cubature->getDict();
-	
 	std::vector<int> numComponents = cubature->getNumComponents();
+  // getting number of doubles representing all data at point
   int totalComponents = cubature->getTotalComponents();
-  std::cout << "total components: " << totalComponents << std::endl;  
-  
-  // new point data
+  // storage for new point data
   std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
+ 
+  // initializing double arrays for new data 
   for (int i = 0; i < numComponents.size(); ++i)
   {
     std::string name = nodeMesh->getDataSet()->GetPointData()
@@ -69,8 +67,10 @@ void PatchRecovery::recoverNodalSolution()
     newPntData[i] = vtkSmartPointer<vtkDoubleArray>::New();
     newPntData[i]->SetName(&name[0u]);
     newPntData[i]->SetNumberOfComponents(numComponents[i]);  
+    newPntData[i]->SetNumberOfTuples(numPoints); 
   }
 
+  // looping over all points, looping over patches per point
 	for (int i = 0; i < numPoints; ++i)
   {
     // get ids of cells in patch of node
@@ -101,20 +101,18 @@ void PatchRecovery::recoverNodalSolution()
 		// construct polyapprox from coords
 		std::unique_ptr<polyApprox> patchPolyApprox 
       = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
-		// get coordinate of node generating patch
+		// get coordinate of node that generates patch
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
-    
     int currComp = 0;
     for (int k = 0; k < numComponents.size(); ++k)
     {
       double comps[numComponents[k]];
       for (int l = 0; l < numComponents[k]; ++l)
       {
-        std::cout << currComp << std::endl;
         patchPolyApprox->computeCoeff(data[currComp++]);
         comps[l] = patchPolyApprox->eval(genNodeCoord);
       }
-      newPntData[k]->InsertNextTuple(comps);
+      newPntData[k]->InsertTuple(i,comps);
     }
   }
   for (int k = 0; k < numComponents.size(); ++k)
