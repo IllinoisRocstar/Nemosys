@@ -939,7 +939,8 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
       {
         if (std::fabs(comps1[k] - comps2[k]) > tol)
         {
-          std::cerr << "Meshes differ in point data values" << std::endl;
+          std::cerr << "Meshes differ in point data values at point " << j <<  std::endl;
+          std::cerr << comps1[k] << " " << comps2[k] << std::endl;
           return 1;
         }
       }

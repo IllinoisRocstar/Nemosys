@@ -18,11 +18,13 @@ class polyApprox
     
     // compute coefficients for polynomial expansion of sampled function
     void computeCoeff(const VectorXd& data);
+    void resetCoeff();
     double eval(const std::vector<double>& coord);
  
     static std::unique_ptr<polyApprox> 
     CreateUnique(const int order, 
                  const std::vector<std::vector<double>>&& coords);
+
  
   private:
     int order;
