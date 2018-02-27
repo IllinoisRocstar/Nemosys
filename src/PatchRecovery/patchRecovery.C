@@ -104,7 +104,7 @@ void PatchRecovery::recoverNodalSolution()
     newPntData[i]->SetNumberOfTuples(numPoints); 
   }
 
-  
+
   // FIXME: for testing
   //std::vector<double> rmse(totalComponents,0);
   int totPatchPoints = 0; 
@@ -186,4 +186,109 @@ void PatchRecovery::recoverNodalSolution()
   //  rmse[k] = std::sqrt(rmse[k]/totPatchPoints);
   //}
   //printVec(rmse);
+}
+
+// TODO: check for whether recovered solution exists
+std::vector<std::vector<double>> PatchRecovery::computeNodalError()
+{
+  std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;
+  // getting node mesh from cubature
+  meshBase* nodeMesh = cubature->getNodeMesh();
+  std::vector<int> arrayIDs = cubature->getArrayIDs();
+  int numPoints = nodeMesh->getNumberOfPoints();
+  // initializing id list for patch cells
+  vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
+  // getting cubature scheme dictionary for indexing
+  vtkQuadratureSchemeDefinition** dict = cubature->getDict();
+	std::vector<int> numComponents = cubature->getNumComponents();
+  // getting number of doubles representing all data at point
+  int totalComponents = cubature->getTotalComponents();
+  // storage for new point data
+  std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
+  // storage for error data
+  std::vector<vtkSmartPointer<vtkDoubleArray>> errorPntData(numComponents.size());
+  // reference point data
+  vtkSmartPointer<vtkPointData> pd = nodeMesh->getDataSet()->GetPointData(); 
+
+  std::vector<std::string> errorNames(numComponents.size());
+ 
+  // initializing double arrays for new data
+  for (int i = 0; i < numComponents.size(); ++i)
+  {
+    std::string name = pd->GetArrayName(arrayIDs[i]);
+    std::string newName = name + "New";
+    newPntData[i] = vtkSmartPointer<vtkDoubleArray>::New();
+    newPntData[i]->SetName(&newName[0u]);
+    newPntData[i]->SetNumberOfComponents(numComponents[i]);  
+    newPntData[i]->SetNumberOfTuples(numPoints); 
+  
+    std::string errName = name + "Error";
+    errorPntData[i] = vtkSmartPointer<vtkDoubleArray>::New();
+    errorPntData[i]->SetName(&errName[0u]);
+    errorPntData[i]->SetNumberOfComponents(numComponents[i]);  
+    errorPntData[i]->SetNumberOfTuples(numPoints);
+    errorNames[i] = errName; 
+  }
+  
+  // looping over all points, looping over patches per point
+	for (int i = 0; i < numPoints; ++i)
+  {
+    // get ids of cells in patch of node
+    nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
+    // get total number of gauss points in patch 
+    int numPatchPoints = 0;
+    for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
+		{
+      int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
+      numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints(); 
+    }
+    // coordinates of each gauss point in patch
+    std::vector<std::vector<double>> coords(numPatchPoints);
+		// vector of components of data at all gauss points in patch
+    std::vector<VectorXd> data(totalComponents);
+    for (int k = 0; k < totalComponents; ++k)
+    {
+      data[k].resize(numPatchPoints);
+    }
+
+    int pntNum = 0;
+    for (int j = 0; j < patchCellIDs->GetNumberOfIds(); ++j)
+    {
+      pntDataPairVec pntsAndData = cubature->getGaussPointsAndDataAtCell(patchCellIDs->GetId(j));
+      extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
+    }
+
+		// get coordinate of node that generates patch
+    std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
+    // regularizing coordinates for preconditioning of basis matrix
+    regularizeCoords(coords, genNodeCoord);
+		std::vector<std::vector<double>> tmpCoords = coords;
+    // construct polyapprox from coords
+		std::unique_ptr<polyApprox> patchPolyApprox 
+      = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
+    int currComp = 0;
+    for (int k = 0; k < numComponents.size(); ++k)
+    {
+      double comps[numComponents[k]];
+      double refComps[numComponents[k]];
+      double errorComps[numComponents[k]];
+      pd->GetArray(arrayIDs[k])->GetTuple(i,refComps);
+      for (int l = 0; l < numComponents[k]; ++l)
+      {
+        patchPolyApprox->computeCoeff(data[currComp]);
+        comps[l] = patchPolyApprox->eval(genNodeCoord);
+        errorComps[l] = std::pow(comps[l] - refComps[l],2);  
+        patchPolyApprox->resetCoeff();
+        ++currComp;
+      }
+      newPntData[k]->InsertTuple(i,comps);
+      errorPntData[k]->InsertTuple(i,errorComps);
+    }
+  }
+  for (int k = 0; k < numComponents.size(); ++k)
+  {
+    pd->AddArray(newPntData[k]);
+    pd->AddArray(errorPntData[k]);
+  }
+  return cubature->integrateOverAllCells(errorNames, 1);  
 }

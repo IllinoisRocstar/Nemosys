@@ -18,8 +18,14 @@ class PatchRecovery
     PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<int>& arrayIDs);
     ~PatchRecovery(){} 
 
-
+    // approximates nodal values with polynomial approximant over patch of node
+    // sets recovered nodal values as new point data
     void recoverNodalSolution();
+    // approximates nodal values with polynomial approximant over patch of node
+    // sets recovered nodal values and error as new point data
+    // sets errors integrated over each cell, normalized by cell vol as new cell data
+    // returns errors integrated over entire mesh
+    std::vector<std::vector<double>> computeNodalError();
 
   private:
     std::unique_ptr<GaussCubature> cubature;     

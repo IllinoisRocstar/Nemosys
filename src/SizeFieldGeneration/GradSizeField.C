@@ -95,13 +95,13 @@ std::vector<double> GradSizeField::computeGradAtCell(int cell, int array)
   }
 }
 
-// compute L2 norm of gradient of point data at each cell
+// compute 2 norm of gradient of point data at each cell
 std::vector<double> GradSizeField::computeL2GradAtAllCells(int array)
 {
   std::vector<double> result(mesh->getNumberOfCells()); 
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
   { 
-    result[i] = L2_Norm(computeGradAtCell(i, array));
+    result[i] = l2_Norm(computeGradAtCell(i, array));
   }
   return result;
 }
@@ -109,7 +109,7 @@ std::vector<double> GradSizeField::computeL2GradAtAllCells(int array)
 // compute size field and insert as cell data into mesh's dataSet
 void GradSizeField::computeSizeField(int arrayID)
 {
-  // populate vector with L2 norm of gradient/value of physical variable
+  // populate vector with 2 norm of gradient/value of physical variable
   std::vector<double> values = computeL2GradAtAllCells(arrayID); 
  
   if (values.empty())

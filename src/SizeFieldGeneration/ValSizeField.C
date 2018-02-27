@@ -98,19 +98,19 @@ std::vector<std::vector<double>> ValSizeField::computeValAtAllCells(int arrayID)
   return result;
 }
 
-// compute L2 norm of value of point data at center of each cell
+// compute 2 norm of value of point data at center of each cell
 std::vector<double> ValSizeField::computeL2ValAtAllCells(int array)
 {
   std::vector<double> result(mesh->getNumberOfCells()); 
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
-    result[i] = L2_Norm(computeValAtCell(i, array));
+    result[i] = l2_Norm(computeValAtCell(i, array));
   return result;
 }
 
 // compute size field and insert as cell data into mesh's dataSet
 void ValSizeField::computeSizeField(int arrayID)
 {
-  // populate vector with L2 norm of gradient/value of physical variable
+  // populate vector with 2 norm of gradient/value of physical variable
   std::vector<double> values = computeL2ValAtAllCells(arrayID); 
  
   if (values.empty())
