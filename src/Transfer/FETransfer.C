@@ -74,7 +74,7 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
         }
       }
       std::vector<double> diff = y-xVec;
-      outputStream1 << L2_Norm(diff) << " " << diff[0] << " " << diff[1] << " " << diff[2] << std::endl;
+      outputStream1 << l2_Norm(diff) << " " << diff[0] << " " << diff[1] << " " << diff[2] << std::endl;
       }*/
     ///////////////////////////////////////////////////////
       if (result > 0)
@@ -302,7 +302,7 @@ int FETransfer::runCD(vtkCellData* cd, int arrayID,
       double comps[numComponent];
       da->GetTuple(cellId, comps);
       // compute distance from point to cell center
-      W = 1./L2_Norm(source->getCellCenter(cellId)
+      W = 1./l2_Norm(source->getCellCenter(cellId)
                      - source->getPoint(i));
       // average over shared cells, weighted by inverse distance to center
       for (int k = 0; k < numComponent; ++k)

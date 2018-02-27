@@ -79,8 +79,8 @@ std::vector<T> hadamard(const std::vector<T>& x,
                         const std::vector<T>& y);
 }
 
-// compute L2 norm of vec
-inline double L2_Norm(const std::vector<double>& x);
+// compute 2 norm of vec
+inline double l2_Norm(const std::vector<double>& x);
 
 // computes reciprocal of argument
 template <typename T>
@@ -159,8 +159,8 @@ std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim)
 }
 
 
-// compute L2 norm of vec
-double L2_Norm(const std::vector<double>& x)
+// compute 2 norm of vec
+double l2_Norm(const std::vector<double>& x)
 {
   double result = 0.0;
   for (int i = 0; i < x.size(); ++i)
