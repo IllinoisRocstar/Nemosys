@@ -147,6 +147,36 @@ void GaussCubature::constructGaussMesh()
   pointGen->Update();
 } 
 
+double GaussCubature::computeCellVolume(vtkSmartPointer<vtkGenericCell> genCell, int cellType)
+{
+  double volume;
+  switch(cellType)
+  {
+    case VTK_TRIANGLE:
+    {
+      volume = vtkMeshQuality::TriangleArea(genCell);
+      break;
+    } 
+    case VTK_TETRA:
+    {
+      volume = vtkMeshQuality::TetVolume(genCell);
+      break;
+    }
+    case VTK_HEXAHEDRON:
+    {
+      volume = vtkMeshQuality::HexVolume(genCell);
+      break;
+    }
+    default:
+    {
+      std::cerr << "Error: Cell type: " << cellType << "found "
+                << "with no quadrature definition provided" << std::endl;
+      exit(1);
+    }
+  }
+  return volume;
+}
+
 // FIXME: Can remove switch if you just use the general method implemented in tetra's case
 double GaussCubature::computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, int cellType)
 {
@@ -263,7 +293,7 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
   }
   return container;
 }
-
+// TODO:Make the per cell methods data and object instance agnostic
 int GaussCubature::interpolateToGaussPointsAtCell
                     (const int cellID,
                      vtkSmartPointer<vtkGenericCell> genCell,
@@ -285,14 +315,18 @@ int GaussCubature::interpolateToGaussPointsAtCell
   {
     for (int id = 0; id < das.size(); ++id)
 		{
-      double comps[numComponents[id]];
-			std::vector<double> interps(numComponents[id],0.0);
+      int numComponent = das[id]->GetNumberOfComponents();
+      double comps[numComponent];
+      std::vector<double> interps(numComponent);
+      //double comps[numComponents[id]];
+			//std::vector<double> interps(numComponents[id],0.0);
 			for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
 			{
 				int pntId = genCell->GetPointId(m);
 				das[id]->GetTuple(pntId, comps);
-				for (int h = 0; h < numComponents[id]; ++h)
-				{
+				//for (int h = 0; h < numComponents[id]; ++h)
+				for (int h = 0; h < numComponent; ++h)
+        {
 					interps[h] += comps[h]*shapeFunctionWeights[j*genCell->GetNumberOfPoints()+m]; 
 				}
 			}
@@ -343,6 +377,47 @@ void GaussCubature::interpolateToGaussPoints()
   }
 }
 
+void GaussCubature::interpolateToGaussPoints(const std::vector<std::string>& newArrayNames)
+{
+  if (newArrayNames.size() == 0)
+  {
+    std::cerr << "no arrays selected for interpolation" << std::endl;
+    exit(1);
+  }
+
+  std::vector<vtkSmartPointer<vtkDoubleArray>> daGausses(newArrayNames.size());
+	std::vector<vtkSmartPointer<vtkDataArray>> das(newArrayNames.size());
+	// initializing arrays storing interpolated data
+  for (int id = 0; id < newArrayNames.size(); ++id)
+	{
+    // get desired point data array to be interpolated to gauss points
+    vtkSmartPointer<vtkDataArray> da 
+      = nodeMesh->getDataSet()->GetPointData()->GetArray(&(newArrayNames[id])[0u]);
+    // get tuple length of given data
+    int numComponent = da->GetNumberOfComponents();
+    // declare data array to be populated with values at gauss points
+		vtkSmartPointer<vtkDoubleArray> daGauss = vtkSmartPointer<vtkDoubleArray>::New();
+    // names and sizing
+    daGauss->SetName(&(newArrayNames[id])[0u]);
+    daGauss->SetNumberOfComponents(numComponent);
+		daGauss->SetNumberOfTuples(gaussMesh->GetNumberOfPoints());
+    das[id] = da;
+		daGausses[id] = daGauss;
+  }
+  // generic cell to store given cell in nodeMesh->getDataSet()
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+  for (int i = 0; i < nodeMesh->getNumberOfCells(); ++i)
+  {
+    interpolateToGaussPointsAtCell(i,genCell,das,daGausses);
+  }
+	for (int id = 0; id < arrayIDs.size(); ++id)
+  {	
+    gaussMesh->GetPointData()->AddArray(daGausses[id]);
+  }
+}
+
+
+
 void GaussCubature::integrateOverCell
                       (int cellID,
                        vtkSmartPointer<vtkGenericCell> genCell,
@@ -366,16 +441,67 @@ void GaussCubature::integrateOverCell
   // holds integrated data for each array
   std::vector<std::vector<double>> data(arrayIDs.size());
   // integration loop
-  for (int j = 0; j < arrayIDs.size(); ++j)
+  //for (int j = 0; j < arrayIDs.size(); ++j)
+  for (int j = 0; j < integralData.size(); ++j)
   {
-    data[j].resize(numComponents[j]);
-    double comps[numComponents[j]];
+
+    int numComponent = integralData[j]->GetNumberOfComponents();
+    data[j].resize(numComponent);
+    double comps[numComponent];
+    //data[j].resize(numComponents[j]);
+    //double comps[numComponents[j]];
     for (int i = 0; i < numGaussPoints; ++i)
     {
       pd->GetArray(j)->GetTuple(offset+i,comps);
       for (int k = 0; k < numComponents[j]; ++k)
       {
         data[j][k] += comps[k]*quadWeights[i]*jacobian;
+        totalIntegralData[j][k] += data[j][k]; 
+      }
+    }
+    // adding integrated value to data of cell
+    integralData[j]->SetTuple(cellID, data[j].data()); 
+  }
+}
+
+void GaussCubature::integrateOverCell
+                      (int cellID,
+                       vtkSmartPointer<vtkGenericCell> genCell,
+                       vtkSmartPointer<vtkPointData> pd,
+                       std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
+                       std::vector<std::vector<double>>& totalIntegralData,
+                       const std::vector<std::string>& newArrayNames,
+                       bool normalizeByVol)
+{
+  // putting cell from nodemesh into gencell
+  nodeMesh->getDataSet()->GetCell(cellID,genCell);
+  // getting celltype for looking up numGaussPoints in dictionary 
+  // as well as computing scaled jacobian
+  int cellType = nodeMesh->getDataSet()->GetCell(cellID)->GetCellType();
+  // get number of gauss points in cell from dictionary
+  int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
+  // computing jacobian for integration
+  double jacobian = computeJacobian(genCell,cellType);
+  double volume = (normalizeByVol ? computeCellVolume(genCell,cellType) : 1.0);
+  // get quadrature weights for this cell type
+  const double* quadWeights = dict[cellType]->GetQuadratureWeights();
+  // get offset from nodeMesh for lookup of gauss points in polydata
+  int offset = getOffset(cellID);
+  // holds integrated data for each array
+  std::vector<std::vector<double>> data(arrayIDs.size());
+  // integration loop
+  for (int j = 0; j < integralData.size(); ++j)
+  {
+
+    int numComponent = integralData[j]->GetNumberOfComponents();
+    data[j].resize(numComponent);
+    double comps[numComponent];
+    for (int i = 0; i < numGaussPoints; ++i)
+    {
+      pd->GetArray(&(newArrayNames[j])[0u])->GetTuple(offset+i,comps);
+      for (int k = 0; k < numComponents[j]; ++k)
+      {
+        data[j][k] += comps[k]*quadWeights[i]*jacobian/volume;
         totalIntegralData[j][k] += data[j][k]; 
       }
     }
@@ -413,6 +539,39 @@ std::vector<std::vector<double>> GaussCubature::integrateOverAllCells()
   }
   
 	for (int id = 0; id < arrayIDs.size(); ++id)
+  {	
+    nodeMesh->getDataSet()->GetCellData()->AddArray(integralData[id]);
+  }
+  return totalIntegralData;
+}
+
+std::vector<std::vector<double>> 
+GaussCubature::integrateOverAllCells(const std::vector<std::string>& newArrayNames,
+                                     bool normalizeByVol)
+{
+  interpolateToGaussPoints(newArrayNames);
+  
+  vtkSmartPointer<vtkPointData> pd = gaussMesh->GetPointData();
+  std::vector<vtkSmartPointer<vtkDoubleArray>> integralData(newArrayNames.size());
+  std::vector<std::vector<double>> totalIntegralData(newArrayNames.size());
+  for (int id = 0; id < newArrayNames.size(); ++id)
+  { 
+    std::string name = newArrayNames[id] + "Integral";
+    vtkSmartPointer<vtkDoubleArray> integralDatum = vtkSmartPointer<vtkDoubleArray>::New();
+    integralDatum->SetName(&name[0u]);
+    int numComponent = pd->GetArray(&(newArrayNames[id])[0u])->GetNumberOfComponents();
+    integralDatum->SetNumberOfComponents(numComponent);
+    integralDatum->SetNumberOfTuples(nodeMesh->getNumberOfCells());
+    integralData[id] = integralDatum;
+    totalIntegralData[id].resize(numComponent,0);
+  }
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < nodeMesh->getNumberOfCells(); ++i)
+  {
+    integrateOverCell(i,genCell,pd,integralData,totalIntegralData,newArrayNames, normalizeByVol);
+  }
+  
+	for (int id = 0; id < newArrayNames.size(); ++id)
   {	
     nodeMesh->getDataSet()->GetCellData()->AddArray(integralData[id]);
   }
