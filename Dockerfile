@@ -16,7 +16,9 @@ COPY . /Nemosys
 
 WORKDIR /Nemosys/
 
-RUN pip3 install -r requirements.txt
+#RUN pip3 install -r requirements.txt
+
+ENV PYTHONPATH=/Nemosys/python LD_LIBRARY_PATH=/Nemosys/build/lib
 
 #RUN ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
 
