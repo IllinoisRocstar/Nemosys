@@ -43,7 +43,8 @@ class GaussCubature
   public:
     // returns pointer to mesh object
     meshBase* getNodeMesh() { return nodeMesh; }
-		vtkQuadratureSchemeDefinition** getDict() { return dict; }
+    vtkSmartPointer<vtkPolyData> getGaussMesh() { return gaussMesh; }	
+  	vtkQuadratureSchemeDefinition** getDict() { return dict; }
 		std::vector<int> getNumComponents(){ return numComponents; }		
     std::vector<int> getArrayIDs() { return arrayIDs; }
     int getTotalComponents() { return totalComponents; }
@@ -58,14 +59,14 @@ class GaussCubature
     static GaussCubature* Create(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
     static std::unique_ptr<GaussCubature> CreateUnique(meshBase* nodeMesh);
     static std::unique_ptr<GaussCubature>
-      CreateUnique(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
+    CreateUnique(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
     static std::shared_ptr<GaussCubature>
-      CreateShared(meshBase* nodeMesh);
+    CreateShared(meshBase* nodeMesh);
     static std::shared_ptr<GaussCubature>
-      CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
+    CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
 
     void setArrayIDs(const std::vector<int>& _arrayIDs) { arrayIDs = _arrayIDs; }
-    double computeScaledJacobian(vtkSmartPointer<vtkGenericCell>genCell, int cellType);
+    double computeJacobian(vtkSmartPointer<vtkGenericCell>genCell, int cellType);
 
   private:
     // we want gauss points of this mesh
