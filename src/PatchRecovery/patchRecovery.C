@@ -1,6 +1,5 @@
 #include <patchRecovery.H>
 
-
 PatchRecovery::PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<int>& arrayIDs)
 	: order(_order)
 {
@@ -8,9 +7,6 @@ PatchRecovery::PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<i
 }
 
 
-
-// extract coordinates and data from cell by pushing into coords and data
-// vectors accross patch
 void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData, 
 																       std::vector<std::vector<double>>& coords,
                                        std::vector<VectorXd>& data,
@@ -34,13 +30,51 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
   }
 }
 													
+std::vector<double> 
+PatchRecovery::getMinMaxCoords(const std::vector<std::vector<double>>& coords)
+{
+  std::vector<double> minMaxXYZ(6);
+  for (int i = 0; i < 3; ++i)
+  {
+    minMaxXYZ[2*i] = coords[0][i];
+    minMaxXYZ[2*i + 1] = minMaxXYZ[2*i];
+  }
 
+  for (int i = 0; i < coords.size(); ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      // min
+      if (minMaxXYZ[2*j] > coords[i][j])
+      {
+        minMaxXYZ[2*j] = coords[i][j];
+      }
+      // max
+      else if (minMaxXYZ[2*j+1] < coords[i][j])
+      {
+        minMaxXYZ[2*j+1] = coords[i][j];
+      }
+    }  
+  }  
+  return minMaxXYZ;
+}
 
-// pair type for coordinate and data there
-//typedef std::pair<std::vector<double>, std::vector<double>> pntDataPair;
+void PatchRecovery::regularizeCoords(std::vector<std::vector<double>>& coords,
+                                     std::vector<double>& genNodeCoord)
+{ 
+  std::vector<double> minMaxXYZ = getMinMaxCoords(coords);
+  for (int i = 0; i < coords.size(); ++i)
+  {
+    for (int j = 0; j < 3; ++j)
+    {
+      coords[i][j] = -1 + 2*(coords[i][j] - minMaxXYZ[2*j])/(minMaxXYZ[2*j + 1] - minMaxXYZ[2*j]);
+    }
+  }
+  genNodeCoord[0] = -1 + 2*(genNodeCoord[0] - minMaxXYZ[0])/(minMaxXYZ[1] - minMaxXYZ[0]);
+  genNodeCoord[1] = -1 + 2*(genNodeCoord[1] - minMaxXYZ[2])/(minMaxXYZ[3] - minMaxXYZ[2]);
+  genNodeCoord[2] = -1 + 2*(genNodeCoord[2] - minMaxXYZ[4])/(minMaxXYZ[5] - minMaxXYZ[4]);
+}
 
-// holds gauss points and data at these points as pairs
-//typedef std::vector<pntDataPair> pntDataPairVec;
 
 void PatchRecovery::recoverNodalSolution()
 {
@@ -58,7 +92,7 @@ void PatchRecovery::recoverNodalSolution()
   // storage for new point data
   std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
  
-  // initializing double arrays for new data 
+  // initializing double arrays for new data
   for (int i = 0; i < numComponents.size(); ++i)
   {
     std::string name = nodeMesh->getDataSet()->GetPointData()
@@ -70,6 +104,10 @@ void PatchRecovery::recoverNodalSolution()
     newPntData[i]->SetNumberOfTuples(numPoints); 
   }
 
+  
+  // FIXME: for testing
+  //std::vector<double> rmse(totalComponents,0);
+  int totPatchPoints = 0; 
   // looping over all points, looping over patches per point
 	for (int i = 0; i < numPoints; ++i)
   {
@@ -95,47 +133,57 @@ void PatchRecovery::recoverNodalSolution()
     for (int j = 0; j < patchCellIDs->GetNumberOfIds(); ++j)
     {
       pntDataPairVec pntsAndData = cubature->getGaussPointsAndDataAtCell(patchCellIDs->GetId(j));
-			extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
+      extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
     }
 
-		// construct polyapprox from coords
-		std::unique_ptr<polyApprox> patchPolyApprox 
-      = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
 		// get coordinate of node that generates patch
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
+    // regularizing coordinates for preconditioning of basis matrix
+    regularizeCoords(coords, genNodeCoord);
+		std::vector<std::vector<double>> tmpCoords = coords;
+    // construct polyapprox from coords
+		std::unique_ptr<polyApprox> patchPolyApprox 
+      = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
     int currComp = 0;
     for (int k = 0; k < numComponents.size(); ++k)
     {
       double comps[numComponents[k]];
       for (int l = 0; l < numComponents[k]; ++l)
       {
-        patchPolyApprox->computeCoeff(data[currComp++]);
+        patchPolyApprox->computeCoeff(data[currComp]);
         comps[l] = patchPolyApprox->eval(genNodeCoord);
+        // FIXME: for testing
+        //for (int g = 0; g < coords.size(); ++g)
+        //{
+        //  rmse[currComp] += 
+        //    std::pow(patchPolyApprox->eval(tmpCoords[g]) - data[currComp](g),2);
+        //}
+        patchPolyApprox->resetCoeff();
+        ++currComp;
       }
       newPntData[k]->InsertTuple(i,comps);
     }
+  
+    // FIXME: for testing
+    //for (int k = 0; k < totalComponents; ++k)
+    //{
+    //  rmse[k] = std::sqrt(rmse[k]/coords.size());
+    //}
+
+    //printVec(rmse);
+    //std::fill(rmse.begin(),rmse.end(),0.0);
+
+    //totPatchPoints += numPatchPoints;
+
   }
   for (int k = 0; k < numComponents.size(); ++k)
   {
     nodeMesh->getDataSet()->GetPointData()->AddArray(newPntData[k]);
   }
+  // FIXME: for testing
+  //for (int k = 0; k < totalComponents; ++k)
+  //{
+  //  rmse[k] = std::sqrt(rmse[k]/totPatchPoints);
+  //}
+  //printVec(rmse);
 }
-
-		//for (int k = 0; k < totalComponents; ++k)
-		//{
-
-    //  // get polynomial approximant of component over patch
-    //  patchPolyApprox->computeCoeff(data[k]);
-    //  for (; currArr < numComponents[currArr]; ++currArr)
-    //  newPntData[currArr]->InsertNextTuple(patchPolyApprox->eval(genNodeCoord));
-    //    
-    //  //std::cout << patchPolyApprox->eval(genNodeCoord) << std::endl;
-    //}
-		
-    //int numGaussPoints = 0;
-		//for (int j = 0; j < patchCellIDs->GetNumberOfIds(); ++j)
-		//{
-		//	int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(j))->GetCellType();
-		//	numGaussPoints += dict[cellType]->GetNUmberOfQuadraturePoints();
-		//}		
-

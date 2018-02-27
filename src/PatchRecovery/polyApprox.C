@@ -41,6 +41,7 @@ polyApprox::CreateUnique(const int order,
   return std::unique_ptr<polyApprox>( new polyApprox(order, std::move(coords)));
 }
 
+
 void polyApprox::computeCoeff(const VectorXd& data)
 {
   for (int i = 0; i < basis.size(); ++i)
@@ -49,6 +50,12 @@ void polyApprox::computeCoeff(const VectorXd& data)
   }
   a = A.partialPivLu().solve(b);
 }
+
+void polyApprox::resetCoeff()
+{
+  a.setZero();
+  b.setZero(); 
+} 
 
 double polyApprox::eval(const std::vector<double>& coord)
 {

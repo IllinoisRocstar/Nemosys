@@ -76,24 +76,6 @@ TEST_F(CubatureTest, InterpolateToGauss)
     std::cout << std::endl;
   }
 
-  //vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-  //for (int i = 0; i < cuby->getNodeMesh()->getNumberOfCells(); ++i)
-  //{
-  //  cuby->getNodeMesh()->getDataSet()->GetCell(i,genCell);
-  //  double jacobi = cuby->computeScaledJacobian(genCell,VTK_TETRA);
-  //  std::cout << jacobi << std::endl;
-  //}
-  {
-    pntDataPairVec shit = cuby->getGaussPointsAndDataAtCell(300);
-    for (int k = 0; k < shit.size(); ++k)
-		{
-			//for (int j = 0; j < 3; ++j)
-		  std::cout << shit[k].second[3] << " "  << shit[k].second[4] << " " << shit[k].second[5] << std::endl;
-        //std::cout << shit[k].second[3][j] << " ";
-      //printVec(shit[k].second[3]); 
-  		//std::cout << std::endl;
-		}
-	}
 }
 
 int main(int argc, char** argv) {
