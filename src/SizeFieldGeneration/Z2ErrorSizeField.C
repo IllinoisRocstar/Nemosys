@@ -56,7 +56,7 @@ void Z2ErrorSizeField::computeSizeField(int arrayID)
     sizeField[i] = interpSize/(std::pow(error[0]/aveError,order)); 
   }
   
-  mutateValues(sizeField);  
+  //mutateValues(sizeField);  
   mesh->setCellDataArray(&sfname[0u], sizeField);
   mesh->setSFBool(1);
 }

@@ -236,7 +236,8 @@ void vtkMesh::report()
 }
 
 // get diameter of circumsphere of each cell
-std::vector<double> vtkMesh::getCellLengths() {
+std::vector<double> vtkMesh::getCellLengths() 
+{
   std::vector<double> result;
   result.resize(getNumberOfCells());
   for (int i = 0; i < getNumberOfCells(); ++i)
