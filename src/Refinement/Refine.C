@@ -8,6 +8,7 @@ Refine::Refine(meshBase* _mesh, std::string method,
   ofname = _ofname; 
   if (!mesh->getSFBool() && method.compare("uniform"))
   {
+    // creates sizefield and switches sfbool
     mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
   }
 
@@ -51,7 +52,8 @@ Refine::Refine(meshBase* _mesh, std::string method,
         array_name.append("GradientSF");
       else if (!method.compare("value"))
         array_name.append("ValueSF");
-
+      else if (!method.compare("Z2 Error Estimator"))
+        array_name.append("Z2ErrorSF");
       for (i = 0; i < cd->GetNumberOfArrays(); ++i)
       {
         std::string currname = cd->GetArrayName(i);
