@@ -229,19 +229,36 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     errorPntData[i]->SetNumberOfTuples(numPoints);
     errorNames[i] = errName; 
   }
-  
+ 
+  // storage for nodal average element sizes
+  vtkSmartPointer<vtkDoubleArray> nodeSizes = vtkSmartPointer<vtkDoubleArray>::New();
+  nodeSizes->SetName("nodeSizes");
+  nodeSizes->SetNumberOfComponents(1);
+  nodeSizes->SetNumberOfTuples(numPoints);
+
+  // storage for generic cell if needed
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New(); 
+
   // looping over all points, looping over patches per point
 	for (int i = 0; i < numPoints; ++i)
   {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
-    // get total number of gauss points in patch 
+    // get total number of gauss points in patch and assign element size to 
+    // patch generating node 
     int numPatchPoints = 0;
+    // also get average size of elements in patch
+    double nodeSize = 0;
     for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
 		{
+      // put current patch cell into gencell
+      nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k),genCell);
       int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
-      numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints(); 
+      numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints();
+      nodeSize += cbrt(2.356194490192344*cubature->computeCellVolume(genCell, cellType));   
     }
+    nodeSize /= patchCellIDs->GetNumberOfIds();
+    nodeSizes->InsertTuple(i, &nodeSize);
     // coordinates of each gauss point in patch
     std::vector<std::vector<double>> coords(numPatchPoints);
 		// vector of components of data at all gauss points in patch
@@ -287,8 +304,10 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   }
   for (int k = 0; k < numComponents.size(); ++k)
   {
-    pd->AddArray(newPntData[k]);
+//    pd->AddArray(newPntData[k]);
     pd->AddArray(errorPntData[k]);
   }
+ 
+  pd->AddArray(nodeSizes); 
   return cubature->integrateOverAllCells(errorNames, 1);  
 }

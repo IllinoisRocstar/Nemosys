@@ -453,7 +453,7 @@ void GaussCubature::integrateOverCell
     for (int i = 0; i < numGaussPoints; ++i)
     {
       pd->GetArray(j)->GetTuple(offset+i,comps);
-      for (int k = 0; k < numComponents[j]; ++k)
+      for (int k = 0; k < numComponent; ++k)
       {
         data[j][k] += comps[k]*quadWeights[i]*jacobian;
         totalIntegralData[j][k] += data[j][k]; 
@@ -471,7 +471,7 @@ void GaussCubature::integrateOverCell
                        std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
                        std::vector<std::vector<double>>& totalIntegralData,
                        const std::vector<std::string>& newArrayNames,
-                       bool normalizeByVol)
+                       bool computeRMSE)
 {
   // putting cell from nodemesh into gencell
   nodeMesh->getDataSet()->GetCell(cellID,genCell);
@@ -482,7 +482,7 @@ void GaussCubature::integrateOverCell
   int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // computing jacobian for integration
   double jacobian = computeJacobian(genCell,cellType);
-  double volume = (normalizeByVol ? computeCellVolume(genCell,cellType) : 1.0);
+  double volume = (computeRMSE ? computeCellVolume(genCell,cellType) : 1.0);
   // get quadrature weights for this cell type
   const double* quadWeights = dict[cellType]->GetQuadratureWeights();
   // get offset from nodeMesh for lookup of gauss points in polydata
@@ -499,12 +499,22 @@ void GaussCubature::integrateOverCell
     for (int i = 0; i < numGaussPoints; ++i)
     {
       pd->GetArray(&(newArrayNames[j])[0u])->GetTuple(offset+i,comps);
-      for (int k = 0; k < numComponents[j]; ++k)
+      for (int k = 0; k < numComponent; ++k)
       {
-        data[j][k] += comps[k]*quadWeights[i]*jacobian/volume;
-        totalIntegralData[j][k] += data[j][k]; 
+        //data[j][k] += comps[k]*quadWeights[i]*jacobian/volume;
+        data[j][k] += comps[k]*quadWeights[i]*jacobian;
+      //  totalIntegralData[j][k] += data[j][k]; 
       }
     }
+    
+    // normalizing by volume and taking sqrt of integrated value (rmse)
+    for (int k = 0; k < numComponent; ++k)
+    {
+      if (computeRMSE)
+        data[j][k] = std::sqrt(data[j][k]/volume);
+      totalIntegralData[j][k] += data[j][k];
+    }
+  
     // adding integrated value to data of cell
     integralData[j]->SetTuple(cellID, data[j].data()); 
   }
@@ -547,7 +557,7 @@ std::vector<std::vector<double>> GaussCubature::integrateOverAllCells()
 
 std::vector<std::vector<double>> 
 GaussCubature::integrateOverAllCells(const std::vector<std::string>& newArrayNames,
-                                     bool normalizeByVol)
+                                     bool computeRMSE)
 {
   interpolateToGaussPoints(newArrayNames);
   
@@ -568,7 +578,7 @@ GaussCubature::integrateOverAllCells(const std::vector<std::string>& newArrayNam
   vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
   for (int i = 0; i < nodeMesh->getNumberOfCells(); ++i)
   {
-    integrateOverCell(i,genCell,pd,integralData,totalIntegralData,newArrayNames, normalizeByVol);
+    integrateOverCell(i,genCell,pd,integralData,totalIntegralData,newArrayNames, computeRMSE);
   }
   
 	for (int id = 0; id < newArrayNames.size(); ++id)
