@@ -1,6 +1,7 @@
 #include <SizeFieldBase.H>
 #include <GradSizeField.H>
 #include <ValSizeField.H>
+#include <Z2ErrorSizeField.H>
 
 SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int arrayID,
                                    double _dev_mult, bool _maxIsmin)
@@ -17,7 +18,13 @@ SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int ar
     gradsf->computeSizeField(arrayID);
     return gradsf;
   }
-  else if (!method.compare("error")){}
+  else if (!method.compare("Z2 Error Estimator"))
+  {
+    // TODO: hardcoding order parameter for now -----------------------|
+    Z2ErrorSizeField* z2errorsf = new Z2ErrorSizeField(_mesh, arrayID, 1, _dev_mult, _maxIsmin);
+    z2errorsf->computeSizeField(arrayID);
+    return z2errorsf;
+  }
   else
   {
     std::cout << "Specified method " << method << " is not supported" << std::endl;
@@ -25,6 +32,53 @@ SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int ar
     exit(1);
   }
   
+}
+
+// initializes derived class, only difference is tmp arrName 
+void SizeFieldBase::initialize(meshBase* _mesh, int arrayID, double _dev_mult, 
+                               bool _maxIsmin, const std::string& arrName)
+{
+  // setting private vars
+  mesh = _mesh;
+  dev_mult = _dev_mult;
+  maxIsmin = _maxIsmin;
+  // checking for point data
+  int numArr = mesh->getDataSet()->GetPointData()->GetNumberOfArrays();
+  if (arrayID >= numArr)
+  {
+    std::cout << "ERROR: arrayID is out of bounds" << std::endl;
+    std::cout << "There are " << numArr << " point data arrays" << std::endl;
+    exit(1);
+  }
+  else if (numArr < 1)
+  {
+    std::cout << "no point data found" << std::endl;
+    exit(1);
+  }
+  // setting data array member
+  if (arrName.compare("Z2ErrorSF"))
+    da = mesh->getDataSet()->GetPointData()->GetArray(arrayID); 
+  // setting name of size field
+  std::string array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
+  sfname = array_name.append(arrName);
+  
+  { // checking for name conflicts and removing SF with same name if it exists
+    vtkSmartPointer<vtkCellData> cd = mesh->getDataSet()->GetCellData();
+    if (cd->GetNumberOfArrays())
+    { 
+      for (int i = 0; i < cd->GetNumberOfArrays(); ++i)
+      {
+        std::string currname = cd->GetArrayName(i);
+        if (!sfname.compare(currname))
+        {
+          std::cout << "Found size field identifier in cell data: " << currname << std::endl;
+          std::cout << "Removing " << currname << " from dataSet" << std::endl;
+          mesh->unsetCellDataArray(i);
+          break;
+        }
+      }
+    }
+  }
 }
 
 // identifies cells to refine and mutates current size values

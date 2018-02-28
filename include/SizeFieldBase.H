@@ -35,12 +35,17 @@ class SizeFieldBase
     meshBase* mesh;
     double dev_mult;
     bool maxIsmin;
+    vtkSmartPointer<vtkDataArray> da;
+    std::string sfname;
+
 
   // helpers
   protected:
     // identifies cells to refine and mutates current size values
     // into a compatible size field for the mesh
     void mutateValues(std::vector<double>& values);
+    void initialize(meshBase* _mesh, int arrayID, double _dev_mult, 
+                    bool _maxIsmin, const std::string& arrName);
 };
 
 

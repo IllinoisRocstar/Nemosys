@@ -182,7 +182,8 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C 
                  src/SizeFieldGeneration/GradSizeField.C 
-                 src/SizeFieldGeneration/ValSizeField.C 
+                 src/SizeFieldGeneration/ValSizeField.C
+                 src/SizeFieldGeneration/Z2ErrorSizeField.C 
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
@@ -191,7 +192,7 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
-    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
+    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C utils/refineMesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
@@ -275,6 +276,16 @@ INSTALL(TARGETS nemTest RUNTIME DESTINATION bin)
 
 
 IF(BUILD_UTILS)
+
+  # refineMesh utility
+  ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
+  if(VTK_LIBRARIES)
+    TARGET_LINK_LIBRARIES(refineMesh Nemosys)
+  else()
+    TARGET_LINK_LIBRARIES(refineMesh Nemosys vtkHybrid vtkWidgets)
+  ENDIF()
+  INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
+  
 
   # xmlDump utility
   ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)

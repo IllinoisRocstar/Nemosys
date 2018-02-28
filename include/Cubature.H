@@ -43,7 +43,10 @@ class GaussCubature
     std::vector<std::vector<double>> integrateOverAllCells();
     // integrate arrays specified by name over all cells
     std::vector<std::vector<double>> 
-      integrateOverAllCells(const std::vector<std::string>& newArrayNames, bool normalizeByVol);
+      integrateOverAllCells(const std::vector<std::string>& newArrayNames, bool computeRMSE);
+    void setArrayIDs(const std::vector<int>& _arrayIDs) { arrayIDs = _arrayIDs; }
+    double computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, int cellType);
+    double computeCellVolume(vtkSmartPointer<vtkGenericCell> genCell, int cellType);
 
   // access
   public:
@@ -71,9 +74,7 @@ class GaussCubature
     static std::shared_ptr<GaussCubature>
     CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
 
-    void setArrayIDs(const std::vector<int>& _arrayIDs) { arrayIDs = _arrayIDs; }
-    double computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, int cellType);
-    double computeCellVolume(vtkSmartPointer<vtkGenericCell> genCell, int cellType);
+
   private:
     // we want gauss points of this mesh
     meshBase* nodeMesh;

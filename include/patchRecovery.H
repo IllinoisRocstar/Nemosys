@@ -21,10 +21,11 @@ class PatchRecovery
     // approximates nodal values with polynomial approximant over patch of node
     // sets recovered nodal values as new point data
     void recoverNodalSolution();
-    // approximates nodal values with polynomial approximant over patch of node
-    // sets recovered nodal values and error as new point data
-    // sets errors integrated over each cell, normalized by cell vol as new cell data
-    // returns errors integrated over entire mesh
+    /* 1) approximates nodal values with polynomial approximant over patch of node
+       2) sets error^2 in recovered values as new point data
+       3) sets RMSE integrated over each cell, normalized by cell vol as new cell data
+       4) sets patch averaged element size as new point data
+       returns array of integrals of errors over entire mesh */
     std::vector<std::vector<double>> computeNodalError();
 
   private:
