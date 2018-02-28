@@ -255,7 +255,8 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
       nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k),genCell);
       int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
       numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints();
-      nodeSize += cbrt(2.356194490192344*cubature->computeCellVolume(genCell, cellType));   
+      //nodeSize += cbrt(2.356194490192344*cubature->computeCellVolume(genCell, cellType));   
+      nodeSize += std::sqrt(genCell->GetLength2());
     }
     nodeSize /= patchCellIDs->GetNumberOfIds();
     nodeSizes->InsertTuple(i, &nodeSize);
