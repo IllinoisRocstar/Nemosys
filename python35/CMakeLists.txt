@@ -1,4 +1,4 @@
-find_package(PythonInterp 2.7 REQUIRED)
+find_package(PythonInterp 3.5 REQUIRED)
 
 if (PYTHONINTERP_FOUND)
     set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
