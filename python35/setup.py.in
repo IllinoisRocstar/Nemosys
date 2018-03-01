@@ -9,7 +9,7 @@ pyNemosys = Extension('_pyNemosys',
                                '${METIS_INCPATH}', '${NETGEN_INCPATH}'],
                     libraries = ['Nemosys'],
                     library_dirs = ['${CMAKE_BINARY_DIR}/lib/'],
-                    swig_opts=['-c++'],
+                    swig_opts=['-c++', '-py3'],
                     extra_compile_args = ['-std=c++11']
                     )
 

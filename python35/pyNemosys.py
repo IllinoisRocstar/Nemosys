@@ -102,52 +102,52 @@ class SwigPyIterator(_object):
     __swig_destroy__ = _pyNemosys.delete_SwigPyIterator
     __del__ = lambda self: None
 
-    def value(self):
+    def value(self) -> "PyObject *":
         return _pyNemosys.SwigPyIterator_value(self)
 
-    def incr(self, n=1):
+    def incr(self, n: 'size_t'=1) -> "swig::SwigPyIterator *":
         return _pyNemosys.SwigPyIterator_incr(self, n)
 
-    def decr(self, n=1):
+    def decr(self, n: 'size_t'=1) -> "swig::SwigPyIterator *":
         return _pyNemosys.SwigPyIterator_decr(self, n)
 
-    def distance(self, x):
+    def distance(self, x: 'SwigPyIterator') -> "ptrdiff_t":
         return _pyNemosys.SwigPyIterator_distance(self, x)
 
-    def equal(self, x):
+    def equal(self, x: 'SwigPyIterator') -> "bool":
         return _pyNemosys.SwigPyIterator_equal(self, x)
 
-    def copy(self):
+    def copy(self) -> "swig::SwigPyIterator *":
         return _pyNemosys.SwigPyIterator_copy(self)
 
-    def next(self):
+    def next(self) -> "PyObject *":
         return _pyNemosys.SwigPyIterator_next(self)
 
-    def __next__(self):
+    def __next__(self) -> "PyObject *":
         return _pyNemosys.SwigPyIterator___next__(self)
 
-    def previous(self):
+    def previous(self) -> "PyObject *":
         return _pyNemosys.SwigPyIterator_previous(self)
 
-    def advance(self, n):
+    def advance(self, n: 'ptrdiff_t') -> "swig::SwigPyIterator *":
         return _pyNemosys.SwigPyIterator_advance(self, n)
 
-    def __eq__(self, x):
+    def __eq__(self, x: 'SwigPyIterator') -> "bool":
         return _pyNemosys.SwigPyIterator___eq__(self, x)
 
-    def __ne__(self, x):
+    def __ne__(self, x: 'SwigPyIterator') -> "bool":
         return _pyNemosys.SwigPyIterator___ne__(self, x)
 
-    def __iadd__(self, n):
+    def __iadd__(self, n: 'ptrdiff_t') -> "swig::SwigPyIterator &":
         return _pyNemosys.SwigPyIterator___iadd__(self, n)
 
-    def __isub__(self, n):
+    def __isub__(self, n: 'ptrdiff_t') -> "swig::SwigPyIterator &":
         return _pyNemosys.SwigPyIterator___isub__(self, n)
 
-    def __add__(self, n):
+    def __add__(self, n: 'ptrdiff_t') -> "swig::SwigPyIterator *":
         return _pyNemosys.SwigPyIterator___add__(self, n)
 
-    def __sub__(self, *args):
+    def __sub__(self, *args) -> "ptrdiff_t":
         return _pyNemosys.SwigPyIterator___sub__(self, *args)
     def __iter__(self):
         return self
@@ -161,75 +161,75 @@ class vectorString(_object):
     __getattr__ = lambda self, name: _swig_getattr(self, vectorString, name)
     __repr__ = _swig_repr
 
-    def iterator(self):
+    def iterator(self) -> "swig::SwigPyIterator *":
         return _pyNemosys.vectorString_iterator(self)
     def __iter__(self):
         return self.iterator()
 
-    def __nonzero__(self):
+    def __nonzero__(self) -> "bool":
         return _pyNemosys.vectorString___nonzero__(self)
 
-    def __bool__(self):
+    def __bool__(self) -> "bool":
         return _pyNemosys.vectorString___bool__(self)
 
-    def __len__(self):
+    def __len__(self) -> "std::vector< std::string >::size_type":
         return _pyNemosys.vectorString___len__(self)
 
-    def __getslice__(self, i, j):
+    def __getslice__(self, i: 'std::vector< std::string >::difference_type', j: 'std::vector< std::string >::difference_type') -> "std::vector< std::string,std::allocator< std::string > > *":
         return _pyNemosys.vectorString___getslice__(self, i, j)
 
-    def __setslice__(self, *args):
+    def __setslice__(self, *args) -> "void":
         return _pyNemosys.vectorString___setslice__(self, *args)
 
-    def __delslice__(self, i, j):
+    def __delslice__(self, i: 'std::vector< std::string >::difference_type', j: 'std::vector< std::string >::difference_type') -> "void":
         return _pyNemosys.vectorString___delslice__(self, i, j)
 
-    def __delitem__(self, *args):
+    def __delitem__(self, *args) -> "void":
         return _pyNemosys.vectorString___delitem__(self, *args)
 
-    def __getitem__(self, *args):
+    def __getitem__(self, *args) -> "std::vector< std::string >::value_type const &":
         return _pyNemosys.vectorString___getitem__(self, *args)
 
-    def __setitem__(self, *args):
+    def __setitem__(self, *args) -> "void":
         return _pyNemosys.vectorString___setitem__(self, *args)
 
-    def pop(self):
+    def pop(self) -> "std::vector< std::string >::value_type":
         return _pyNemosys.vectorString_pop(self)
 
-    def append(self, x):
+    def append(self, x: 'std::vector< std::string >::value_type const &') -> "void":
         return _pyNemosys.vectorString_append(self, x)
 
-    def empty(self):
+    def empty(self) -> "bool":
         return _pyNemosys.vectorString_empty(self)
 
-    def size(self):
+    def size(self) -> "std::vector< std::string >::size_type":
         return _pyNemosys.vectorString_size(self)
 
-    def swap(self, v):
+    def swap(self, v: 'vectorString') -> "void":
         return _pyNemosys.vectorString_swap(self, v)
 
-    def begin(self):
+    def begin(self) -> "std::vector< std::string >::iterator":
         return _pyNemosys.vectorString_begin(self)
 
-    def end(self):
+    def end(self) -> "std::vector< std::string >::iterator":
         return _pyNemosys.vectorString_end(self)
 
-    def rbegin(self):
+    def rbegin(self) -> "std::vector< std::string >::reverse_iterator":
         return _pyNemosys.vectorString_rbegin(self)
 
-    def rend(self):
+    def rend(self) -> "std::vector< std::string >::reverse_iterator":
         return _pyNemosys.vectorString_rend(self)
 
-    def clear(self):
+    def clear(self) -> "void":
         return _pyNemosys.vectorString_clear(self)
 
-    def get_allocator(self):
+    def get_allocator(self) -> "std::vector< std::string >::allocator_type":
         return _pyNemosys.vectorString_get_allocator(self)
 
-    def pop_back(self):
+    def pop_back(self) -> "void":
         return _pyNemosys.vectorString_pop_back(self)
 
-    def erase(self, *args):
+    def erase(self, *args) -> "std::vector< std::string >::iterator":
         return _pyNemosys.vectorString_erase(self, *args)
 
     def __init__(self, *args):
@@ -239,28 +239,28 @@ class vectorString(_object):
         except Exception:
             self.this = this
 
-    def push_back(self, x):
+    def push_back(self, x: 'std::vector< std::string >::value_type const &') -> "void":
         return _pyNemosys.vectorString_push_back(self, x)
 
-    def front(self):
+    def front(self) -> "std::vector< std::string >::value_type const &":
         return _pyNemosys.vectorString_front(self)
 
-    def back(self):
+    def back(self) -> "std::vector< std::string >::value_type const &":
         return _pyNemosys.vectorString_back(self)
 
-    def assign(self, n, x):
+    def assign(self, n: 'std::vector< std::string >::size_type', x: 'std::vector< std::string >::value_type const &') -> "void":
         return _pyNemosys.vectorString_assign(self, n, x)
 
-    def resize(self, *args):
+    def resize(self, *args) -> "void":
         return _pyNemosys.vectorString_resize(self, *args)
 
-    def insert(self, *args):
+    def insert(self, *args) -> "void":
         return _pyNemosys.vectorString_insert(self, *args)
 
-    def reserve(self, n):
+    def reserve(self, n: 'std::vector< std::string >::size_type') -> "void":
         return _pyNemosys.vectorString_reserve(self, n)
 
-    def capacity(self):
+    def capacity(self) -> "std::vector< std::string >::size_type":
         return _pyNemosys.vectorString_capacity(self)
     __swig_destroy__ = _pyNemosys.delete_vectorString
     __del__ = lambda self: None
@@ -289,102 +289,102 @@ class meshBase(_object):
     if _newclass:
         CreateShared = staticmethod(_pyNemosys.meshBase_CreateShared)
 
-    def getPoint(self, id):
+    def getPoint(self, id: 'int') -> "std::vector< double,std::allocator< double > >":
         return _pyNemosys.meshBase_getPoint(self, id)
 
-    def getCell(self, id):
+    def getCell(self, id: 'int') -> "std::map< int,std::vector< double,std::allocator< double > > >":
         return _pyNemosys.meshBase_getCell(self, id)
 
-    def getCellVec(self, id):
+    def getCellVec(self, id: 'int') -> "std::vector< std::vector< double,std::allocator< double > >,std::allocator< std::vector< double,std::allocator< double > > > >":
         return _pyNemosys.meshBase_getCellVec(self, id)
 
-    def getDataSet(self):
+    def getDataSet(self) -> "vtkSmartPointer< vtkDataSet >":
         return _pyNemosys.meshBase_getDataSet(self)
 
-    def setPointDataArray(self, name, data):
+    def setPointDataArray(self, name: 'char const *', data: 'std::vector< std::vector< double,std::allocator< double > >,std::allocator< std::vector< double,std::allocator< double > > > > const &') -> "void":
         return _pyNemosys.meshBase_setPointDataArray(self, name, data)
 
-    def setCellDataArray(self, *args):
+    def setCellDataArray(self, *args) -> "void":
         return _pyNemosys.meshBase_setCellDataArray(self, *args)
 
-    def unsetPointDataArray(self, *args):
+    def unsetPointDataArray(self, *args) -> "void":
         return _pyNemosys.meshBase_unsetPointDataArray(self, *args)
 
-    def unsetCellDataArray(self, *args):
+    def unsetCellDataArray(self, *args) -> "void":
         return _pyNemosys.meshBase_unsetCellDataArray(self, *args)
 
-    def unsetFieldDataArray(self, name):
+    def unsetFieldDataArray(self, name: 'char const *') -> "void":
         return _pyNemosys.meshBase_unsetFieldDataArray(self, name)
 
-    def getCellLengths(self):
+    def getCellLengths(self) -> "std::vector< double,std::allocator< double > >":
         return _pyNemosys.meshBase_getCellLengths(self)
 
-    def getCellCenter(self, cellID):
+    def getCellCenter(self, cellID: 'int') -> "std::vector< double,std::allocator< double > >":
         return _pyNemosys.meshBase_getCellCenter(self, cellID)
 
-    def buildLocator(self):
+    def buildLocator(self) -> "vtkSmartPointer< vtkCellLocator >":
         return _pyNemosys.meshBase_buildLocator(self)
 
-    def getIntegrationPointsAtCell(self, cellID):
+    def getIntegrationPointsAtCell(self, cellID: 'int') -> "void":
         return _pyNemosys.meshBase_getIntegrationPointsAtCell(self, cellID)
 
-    def transfer(self, *args):
+    def transfer(self, *args) -> "int":
         return _pyNemosys.meshBase_transfer(self, *args)
 
-    def generateSizeField(self, method, arrayID, dev_mlt, maxIsmin):
+    def generateSizeField(self, method: 'std::string', arrayID: 'int', dev_mlt: 'double', maxIsmin: 'bool') -> "void":
         return _pyNemosys.meshBase_generateSizeField(self, method, arrayID, dev_mlt, maxIsmin)
 
-    def setSFBool(self, q):
+    def setSFBool(self, q: 'bool') -> "void":
         return _pyNemosys.meshBase_setSFBool(self, q)
 
-    def getSFBool(self):
+    def getSFBool(self) -> "bool":
         return _pyNemosys.meshBase_getSFBool(self)
 
-    def IsArrayName(self, name):
+    def IsArrayName(self, name: 'std::string') -> "int":
         return _pyNemosys.meshBase_IsArrayName(self, name)
 
-    def refineMesh(self, *args):
+    def refineMesh(self, *args) -> "void":
         return _pyNemosys.meshBase_refineMesh(self, *args)
 
-    def report(self):
+    def report(self) -> "void":
         return _pyNemosys.meshBase_report(self)
 
-    def getNumberOfPoints(self):
+    def getNumberOfPoints(self) -> "int":
         return _pyNemosys.meshBase_getNumberOfPoints(self)
 
-    def getNumberOfCells(self):
+    def getNumberOfCells(self) -> "int":
         return _pyNemosys.meshBase_getNumberOfCells(self)
 
-    def checkMesh(self, ofname):
+    def checkMesh(self, ofname: 'std::string') -> "void":
         return _pyNemosys.meshBase_checkMesh(self, ofname)
 
-    def write(self, *args):
+    def write(self, *args) -> "void":
         return _pyNemosys.meshBase_write(self, *args)
 
-    def writeMSH(self, *args):
+    def writeMSH(self, *args) -> "void":
         return _pyNemosys.meshBase_writeMSH(self, *args)
 
-    def setFileName(self, fname):
+    def setFileName(self, fname: 'std::string') -> "void":
         return _pyNemosys.meshBase_setFileName(self, fname)
 
-    def getFileName(self):
+    def getFileName(self) -> "std::string":
         return _pyNemosys.meshBase_getFileName(self)
 
-    def setCheckQuality(self, x):
+    def setCheckQuality(self, x: 'bool') -> "void":
         return _pyNemosys.meshBase_setCheckQuality(self, x)
 meshBase_swigregister = _pyNemosys.meshBase_swigregister
 meshBase_swigregister(meshBase)
 
-def meshBase_Create(fname):
+def meshBase_Create(fname: 'std::string') -> "meshBase *":
     return _pyNemosys.meshBase_Create(fname)
 meshBase_Create = _pyNemosys.meshBase_Create
 
-def meshBase_CreateShared(fname):
+def meshBase_CreateShared(fname: 'std::string') -> "std::shared_ptr< meshBase >":
     return _pyNemosys.meshBase_CreateShared(fname)
 meshBase_CreateShared = _pyNemosys.meshBase_CreateShared
 
 
-def diffMesh(mesh1, mesh2):
+def diffMesh(mesh1: 'meshBase', mesh2: 'meshBase') -> "int":
     return _pyNemosys.diffMesh(mesh1, mesh2)
 diffMesh = _pyNemosys.diffMesh
 class TransferDriver(_object):
@@ -423,7 +423,7 @@ class TransferDriver(_object):
 TransferDriver_swigregister = _pyNemosys.TransferDriver_swigregister
 TransferDriver_swigregister(TransferDriver)
 
-def TransferDriver_py_readJSON(serialized_json, ifname, serialized):
+def TransferDriver_py_readJSON(serialized_json: 'std::string', ifname: 'std::string', serialized: 'bool') -> "TransferDriver *":
     return _pyNemosys.TransferDriver_py_readJSON(serialized_json, ifname, serialized)
 TransferDriver_py_readJSON = _pyNemosys.TransferDriver_py_readJSON
 
@@ -466,11 +466,11 @@ class NemDriver(_object):
 NemDriver_swigregister = _pyNemosys.NemDriver_swigregister
 NemDriver_swigregister(NemDriver)
 
-def NemDriver_readJSON(inputjson):
+def NemDriver_readJSON(inputjson: 'json') -> "NemDriver *":
     return _pyNemosys.NemDriver_readJSON(inputjson)
 NemDriver_readJSON = _pyNemosys.NemDriver_readJSON
 
-def NemDriver_py_readJSON(serialized_json, ifname, serialized):
+def NemDriver_py_readJSON(serialized_json: 'std::string', ifname: 'std::string', serialized: 'bool') -> "NemDriver *":
     return _pyNemosys.NemDriver_py_readJSON(serialized_json, ifname, serialized)
 NemDriver_py_readJSON = _pyNemosys.NemDriver_py_readJSON
 
@@ -514,7 +514,7 @@ class RefineDriver(NemDriver):
 RefineDriver_swigregister = _pyNemosys.RefineDriver_swigregister
 RefineDriver_swigregister(RefineDriver)
 
-def RefineDriver_py_readJSON(serialized_json, ifname, serialized):
+def RefineDriver_py_readJSON(serialized_json: 'std::string', ifname: 'std::string', serialized: 'bool') -> "RefineDriver *":
     return _pyNemosys.RefineDriver_py_readJSON(serialized_json, ifname, serialized)
 RefineDriver_py_readJSON = _pyNemosys.RefineDriver_py_readJSON
 
@@ -529,7 +529,7 @@ class MeshGenDriver(NemDriver):
     __getattr__ = lambda self, name: _swig_getattr(self, MeshGenDriver, name)
     __repr__ = _swig_repr
 
-    def __init__(self, ifname, meshEngine, params, ofname):
+    def __init__(self, ifname: 'std::string', meshEngine: 'std::string', params: 'meshingParams *', ofname: 'std::string'):
         this = _pyNemosys.new_MeshGenDriver(ifname, meshEngine, params, ofname)
         try:
             self.this.append(this)
@@ -563,11 +563,11 @@ class MeshGenDriver(NemDriver):
 MeshGenDriver_swigregister = _pyNemosys.MeshGenDriver_swigregister
 MeshGenDriver_swigregister(MeshGenDriver)
 
-def MeshGenDriver_readJSON(inputjson):
+def MeshGenDriver_readJSON(inputjson: 'json') -> "MeshGenDriver *":
     return _pyNemosys.MeshGenDriver_readJSON(inputjson)
 MeshGenDriver_readJSON = _pyNemosys.MeshGenDriver_readJSON
 
-def MeshGenDriver_py_readJSON(serialized_json, ifname, serialized):
+def MeshGenDriver_py_readJSON(serialized_json: 'std::string', ifname: 'std::string', serialized: 'bool') -> "MeshGenDriver *":
     return _pyNemosys.MeshGenDriver_py_readJSON(serialized_json, ifname, serialized)
 MeshGenDriver_py_readJSON = _pyNemosys.MeshGenDriver_py_readJSON
 
@@ -582,7 +582,7 @@ class MeshQualityDriver(NemDriver):
     __getattr__ = lambda self, name: _swig_getattr(self, MeshQualityDriver, name)
     __repr__ = _swig_repr
 
-    def __init__(self, _mesh, ofname):
+    def __init__(self, _mesh: 'std::string', ofname: 'std::string'):
         this = _pyNemosys.new_MeshQualityDriver(_mesh, ofname)
         try:
             self.this.append(this)
@@ -596,7 +596,7 @@ class MeshQualityDriver(NemDriver):
 MeshQualityDriver_swigregister = _pyNemosys.MeshQualityDriver_swigregister
 MeshQualityDriver_swigregister(MeshQualityDriver)
 
-def MeshQualityDriver_readJSON(inputjson):
+def MeshQualityDriver_readJSON(inputjson: 'json') -> "MeshQualityDriver *":
     return _pyNemosys.MeshQualityDriver_readJSON(inputjson)
 MeshQualityDriver_readJSON = _pyNemosys.MeshQualityDriver_readJSON
 

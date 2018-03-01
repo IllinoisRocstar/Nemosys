@@ -16,9 +16,7 @@ endmacro(opt)
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
-
-option(RUN_SWIG "Generate language bindings with SWIG" OFF)
-option(PYTHON_BINDINGS "Build Python bindings" OFF)
+opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 
 # set up version
 set(NEMOSYS_MAJOR_VERSION 1)
@@ -338,14 +336,14 @@ IF(BUILD_UTILS)
 ENDIF(BUILD_UTILS)
 
 # Building python wrapper #####################################################
-#set(Python_ADDITIONAL_VERSIONS 3.5)
-#add_subdirectory(scripts)
-add_subdirectory(python)
+IF (ENABLE_PYTHON_BINDINGS)
+    ADD_SUBDIRECTORY(python)
+ENDIF()
 
 # Building converters ##########################################################
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
-ENDIF ()
+ENDIF()
 
 # Builiding documentation #####################################################
 OPTION(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)

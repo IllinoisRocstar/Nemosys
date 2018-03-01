@@ -48,14 +48,19 @@ ADD_TEST(NAME orthoPolyTest COMMAND runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt)
 
 #Python wrapper testing
 
-find_package(PythonInterp 3.5 REQUIRED)
-
-if (NOT PYTHONINTERP_FOUND)
-  message(STATUS "Python interpreter NOT found")
-else(NOT PYTHONINTERP_FOUND)
-  message(STATUS "Python interpreter found")
-  ADD_TEST(NAME testPyNemosys
-           COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys.py
-           )
-  set_property(TEST testPyNemosys PROPERTY ENVIRONMENT LD_LIBRARY_PATH="${CMAKE_BINARY_DIR}/lib/")
-endif (NOT PYTHONINTERP_FOUND)
+FIND_PACKAGE(PythonInterp 2.7 REQUIRED)
+IF (ENABLE_PYTHON_BINDINGS)
+    if (NOT PYTHONINTERP_FOUND)
+      message(STATUS "Python interpreter NOT found")
+    else(NOT PYTHONINTERP_FOUND)
+      message(STATUS "Python interpreter found")
+      ADD_TEST(NAME testPyNemosys
+               COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys27.py
+               --topsrcdir ${CMAKE_CURRENT_SOURCE_DIR} )
+           set_property(TEST testPyNemosys
+                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/")
+           set_property(TEST testPyNemosys
+                        APPEND
+                        PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_SOURCE_DIR}/python")
+    endif (NOT PYTHONINTERP_FOUND)
+ENDIF()
