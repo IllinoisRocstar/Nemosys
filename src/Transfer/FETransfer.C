@@ -138,19 +138,23 @@ int FETransfer::runPD(vtkPointData* pd, int arrayID)
     //std::ofstream outputstream("transferQualityCheck.txt");
     //outputstream << "points with shit interpolation for " << pd->GetArrayName(arrayID) << std::endl
     //             << "Point" << " oldVal " << "newVal " << "diff " << std::endl;
-    double sum = 0;
+    long double sum = 0;
     for (int i = 0; i < newData1.size(); ++i)
     {
       a = newData1[i];
       b = oldData[i];
       diff = std::fabs((a-b)/b);
-      sum += diff;
+      if (!std::isnan(diff))
+        sum += diff*diff;
       //if (diff > 1e-4)
       //{
       //  outputstream << i << " " << b << " " << a << " " << diff << std::endl;
       //} 
     }
-    std::cout << "Average Error in Nodal Transfer: " << sum/newData1.size() << std::endl;
+    long double rmse = std::sqrt(sum/newData1.size());
+    std::cout << "Average RMS Error in Nodal Transfer: " 
+              << (!(std::isnan(rmse) || std::isinf(rmse)) ? rmse : 0)
+              << std::endl;
   }
   return 0;
 }  
