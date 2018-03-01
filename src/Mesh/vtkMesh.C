@@ -1,24 +1,5 @@
 #include<vtkMesh.H>
 
-
-template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
-{
-  vtkSmartPointer<TReader> reader =
-    vtkSmartPointer<TReader>::New();
-  reader->SetFileName(fileName);
-  reader->Update();
-  reader->GetOutput()->Register(reader);
-  return vtkDataSet::SafeDownCast(reader->GetOutput());
-}
-
-template<class TWriter> void writeVTFile(std::string fname, vtkDataSet* dataSet)
-{
-  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
-  Writer->SetFileName(&fname[0u]);
-  Writer->SetInputData(dataSet);
-  Writer->Write();
-}
-
 void vtkMesh::write()
 {
   if (!dataSet)
@@ -74,31 +55,31 @@ vtkMesh::vtkMesh(const char* fname)
   // Dispatch based on the file extension
   if (extension == ".vtu")
   {
-    dataSet = ReadAnXMLFile<vtkXMLUnstructuredGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLUnstructuredGridReader> (fname));
   }
   else if (extension == ".vtp")
   {
-    dataSet = ReadAnXMLFile<vtkXMLPolyDataReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLPolyDataReader> (fname));
   }
   else if (extension == ".vts")
   {
-    dataSet = ReadAnXMLFile<vtkXMLStructuredGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLStructuredGridReader> (fname));
   }
   else if (extension == ".vtr")
   {
-    dataSet = ReadAnXMLFile<vtkXMLRectilinearGridReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLRectilinearGridReader> (fname));
   }
   else if (extension == ".vti")
   {
-    dataSet = ReadAnXMLFile<vtkXMLImageDataReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLImageDataReader> (fname));
   }
   else if (extension == ".vto")
   {
-    dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkXMLHyperOctreeReader> (fname));
   }
   else if (extension == ".vtk")
   {
-    dataSet = ReadAnXMLFile<vtkDataSetReader> (fname);
+    dataSet.TakeReference(ReadAnXMLFile<vtkDataSetReader> (fname));
   }
   else
   {
@@ -287,8 +268,9 @@ void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<
   da->SetNumberOfComponents(data[0].size());
   for(int i=0; i < numPoints; i++)
     da->InsertNextTuple(data[i].data());
-  dataSet->GetPointData()->SetActiveScalars(name);
-  dataSet->GetPointData()->SetScalars(da);
+  dataSet->GetPointData()->AddArray(da);
+  //dataSet->GetPointData()->SetActiveScalars(name);
+  //dataSet->GetPointData()->SetScalars(da);
 }
 
 // set cell data (numComponents per cell determined by dim of data[0])
@@ -299,8 +281,9 @@ void vtkMesh::setCellDataArray(const char* name, const std::vector<std::vector<d
   da->SetNumberOfComponents(data[0].size());
   for(int i=0; i < numCells; i++)
     da->InsertNextTuple(data[i].data());
-  dataSet->GetCellData()->SetActiveScalars(name);
-  dataSet->GetCellData()->SetScalars(da);
+  dataSet->GetCellData()->AddArray(da);
+  //dataSet->GetCellData()->SetActiveScalars(name);
+  //dataSet->GetCellData()->SetScalars(da);
 }
 
 void vtkMesh::setCellDataArray(const char* name, const std::vector<double>& data)
@@ -310,8 +293,9 @@ void vtkMesh::setCellDataArray(const char* name, const std::vector<double>& data
   da->SetNumberOfComponents(1);
   for(int i=0; i < numCells; i++)
     da->InsertNextTuple1(data[i]);
-  dataSet->GetCellData()->SetActiveScalars(name);
-  dataSet->GetCellData()->SetScalars(da);
+  dataSet->GetCellData()->AddArray(da);
+  //dataSet->GetCellData()->SetActiveScalars(name);
+  //dataSet->GetCellData()->SetScalars(da);
 }
 
 // remove point data with given id from dataSet if it exists
@@ -338,7 +322,6 @@ void vtkMesh::unsetCellDataArray(const char* name)
 // remove field data with given id from dataSet
 void vtkMesh::unsetFieldDataArray(const char* name)
 {
-  int i;
   dataSet->GetFieldData()->RemoveArray(name);
 }
 

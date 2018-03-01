@@ -5,11 +5,28 @@
 
 using namespace nemAux;
 
+template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
+{
+  vtkSmartPointer<TReader> reader =
+    vtkSmartPointer<TReader>::New();
+  reader->SetFileName(fileName);
+  reader->Update();
+  reader->GetOutput()->Register(reader);
+  return vtkDataSet::SafeDownCast(reader->GetOutput());
+}
+
+template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
+{
+  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
+  Writer->SetFileName(&fname[0u]);
+  Writer->SetInputData(dataSet);
+  Writer->Write();
+}
+
 class vtkMesh : public meshBase
 {
   // constructor and destructor
   public:
-    
     vtkMesh(){};
     vtkMesh(const char* fname);
     ~vtkMesh()
@@ -51,6 +68,9 @@ class vtkMesh : public meshBase
     void unsetCellDataArray(const char* name);
     // remove field data with given id from dataSet
     void unsetFieldDataArray(const char* name);
+
+
+    
 
 };
 

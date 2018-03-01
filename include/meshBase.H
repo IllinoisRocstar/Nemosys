@@ -40,15 +40,24 @@
 #include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
+#include <vtkCellArray.h>
 #include <vtkGenericCell.h>
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
+#include <vtkIdTypeArray.h>
+#include <vtkInformation.h>
 #include <vtkCellLocator.h>
 #include <vtkCellTreeLocator.h>
 #include <vtkModifiedBSPTree.h>
 #include <vtkMeshQuality.h>
+#include <vtkQuadratureSchemeDefinition.h>
+#include <vtkQuadratureSchemeDictionaryGenerator.h>
+#include <vtkQuadraturePointsGenerator.h>
+#include <vtkQuadraturePointInterpolator.h>
+#include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
 #include <spheres.H>
+#include <vtkMath.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -79,8 +88,11 @@ namespace nglib
 #include <cstdlib>
 #include <algorithm>
 #include <cstdio>
+#include <memory>
+#include <utility>
 
-
+// TODO: 1) Implment copy and assignment constructors for all classes/subs
+//       2) Migrate implementations to use smart pointer types 
 // Virtual functions are implemented in vtkMesh.C
 
 class meshingParams;
@@ -97,8 +109,12 @@ class meshBase
     }
     virtual ~meshBase()
     {
-      if(dataSet) dataSet->Delete();
-      std::cout << "meshBase destroyed" << std::endl;
+    //  if (dataSet) 
+    //  {
+    //    dataSet->Delete();
+    //    dataSet = nullptr;
+    //  } 
+    //  std::cout << "meshBase destroyed" << std::endl;
     }
   
   // meshBase factory methods
@@ -106,6 +122,16 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
+    static std::shared_ptr<meshBase> CreateShared(std::string fname)
+    {
+      std::shared_ptr<meshBase> mesh;
+      mesh.reset(meshBase::Create(fname));
+      return mesh;
+    }
+    static std::unique_ptr<meshBase> CreateUnique(std::string fname)
+    {
+      return std::unique_ptr<meshBase>(meshBase::Create(fname));
+    }
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
@@ -123,7 +149,7 @@ class meshBase
     // get vector of coords of cell with id
     virtual std::vector<std::vector<double>> getCellVec(int id){}
     // get this meshes' dataSet
-    vtkDataSet* getDataSet(){ return dataSet; }
+    vtkSmartPointer<vtkDataSet> getDataSet(){ return dataSet; }
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
@@ -147,7 +173,7 @@ class meshBase
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
-
+    virtual void getIntegrationPointsAtCell(int cellID){}
 
   // data transfer
   public:
@@ -223,12 +249,13 @@ class meshBase
     int numPoints; // number of points in mesh
     int numCells;  // number of cells in mesh
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
-    vtkDataSet* dataSet; // mesh points, topology and data
+    vtkSmartPointer<vtkDataSet> dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
 };
 
-
+// compares two meshBases- used in testing
+int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
 
 #endif
