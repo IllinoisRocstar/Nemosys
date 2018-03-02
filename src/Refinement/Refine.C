@@ -1,6 +1,6 @@
 #include <Refine.H>
 
-Refine::Refine(meshBase* _mesh, std::string method, 
+Refine::Refine(meshBase* _mesh, const std::string& method, 
                int arrayID, double dev_mult, bool maxIsmin, 
                double edge_scale, std::string _ofname)
 {
@@ -11,81 +11,13 @@ Refine::Refine(meshBase* _mesh, std::string method,
     // creates sizefield and switches sfbool
     mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
   }
-
   if (!method.compare("uniform"))
   {
-    std::cout << "Uniform Refinement Selected" << std::endl;
-    mesh->writeMSH("converted.msh");
-    MAd::pGModel gmodel = 0;
-    MadMesh = MAd::M_new(gmodel);
-    MAd::M_load(MadMesh,"converted.msh");
-    classifyBoundaries();
-    // DISCRETE/PWLSF SIZEFIELD
-    pwlSF = new MAd::PWLSField(MadMesh);
-    // sets size as mean edge length squared for edges adjacent
-    // to given vertex  
-    pwlSF->setCurrentSize();
-    pwlSF->scale(edge_scale);
-    // timing adapter construction
-    Timer T;
-    T.start();    
-    // instantiating adapter with linear sf
-    adapter = new MAd::MeshAdapter(MadMesh, pwlSF);
-    T.stop();
-    std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
-    std::cout << "Refine constructed" << std::endl;
-    // for safety
-    mesh->setSFBool(0);
+		initUniform(edge_scale);
   } 
-
   if (mesh->getSFBool())
   {
-    pwlSF = 0;
-    mesh->writeMSH("converted.msh");
-    vtkCellData* cd = mesh->getDataSet()->GetCellData();
-    int i;
-    std::string array_name;
-    if (cd)
-    {
-      array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
-      if (!method.compare("gradient"))
-        array_name.append("GradientSF");
-      else if (!method.compare("value"))
-        array_name.append("ValueSF");
-      else if (!method.compare("Z2 Error Estimator"))
-        array_name.append("Z2ErrorSF");
-      for (i = 0; i < cd->GetNumberOfArrays(); ++i)
-      {
-        std::string currname = cd->GetArrayName(i);
-        if (!array_name.compare(currname))
-          break;
-      }
-      if (i == cd->GetNumberOfArrays())
-      {
-        std::cout << "Error: Did not find " << array_name << " in cell data set" << std::endl;
-        exit(1);
-      }
-    }
-    mesh->writeMSH("backgroundSF.msh", "cell", i, 1);
-    mesh->unsetCellDataArray(&array_name[0u]); 
-
-    MAd::pGModel gmodel = 0;
-    MadMesh = MAd::M_new(gmodel);
-    MAd::M_load(MadMesh,"converted.msh");
-    classifyBoundaries();
-         
-    bSF = new MAd::BackgroundSF("backgroundSF");
-    bSF->loadData("backgroundSF.msh"); 
-    
-    std::cout << "\n \n Beginning Adapter Construction" << std::endl;
-    // timing adapter construction
-    Timer T;
-    T.start();
-    // instantiating adapter with background sizefield
-    adapter = new MAd::MeshAdapter(MadMesh, bSF);
-    T.stop();
-    std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
-    std::cout << "Refine constructed" << std::endl;
+		initAdaptive(arrayID,method);
   }
   else if (method.compare("uniform"))
   {
@@ -126,7 +58,83 @@ Refine::~Refine()
   std::cout << "Refined destroyed" << std::endl;
 }
 
-void Refine::run()
+void Refine::initUniform(double edge_scale)
+{
+	std::cout << "Uniform Refinement Selected" << std::endl;
+  mesh->writeMSH("converted.msh");
+  MAd::pGModel gmodel = 0;
+  MadMesh = MAd::M_new(gmodel);
+  MAd::M_load(MadMesh,"converted.msh");
+  classifyBoundaries();
+  // DISCRETE/PWLSF SIZEFIELD
+  pwlSF = new MAd::PWLSField(MadMesh);
+  // sets size as mean edge length squared for edges adjacent
+  // to given vertex  
+  pwlSF->setCurrentSize();
+  pwlSF->scale(edge_scale);
+  // timing adapter construction
+  Timer T;
+  T.start();    
+  // instantiating adapter with linear sf
+  adapter = new MAd::MeshAdapter(MadMesh, pwlSF);
+  T.stop();
+  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
+  std::cout << "Refine constructed" << std::endl;
+  // for safety
+  mesh->setSFBool(0);
+}
+
+void Refine::initAdaptive(int arrayID, const std::string& method)
+{
+  pwlSF = 0;
+  mesh->writeMSH("converted.msh");
+  vtkCellData* cd = mesh->getDataSet()->GetCellData();
+  int i;
+  std::string array_name;
+  if (cd)
+  {
+    array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
+    if (!method.compare("gradient"))
+      array_name.append("GradientSF");
+    else if (!method.compare("value"))
+      array_name.append("ValueSF");
+    else if (!method.compare("Z2 Error Estimator"))
+      array_name.append("Z2ErrorSF");
+    for (i = 0; i < cd->GetNumberOfArrays(); ++i)
+    {
+      std::string currname = cd->GetArrayName(i);
+      if (!array_name.compare(currname))
+        break;
+    }
+    if (i == cd->GetNumberOfArrays())
+    {
+      std::cout << "Error: Did not find " << array_name << " in cell data set" << std::endl;
+      exit(1);
+    }
+  }
+  mesh->writeMSH("backgroundSF.msh", "cell", i, 1);
+  mesh->unsetCellDataArray(&array_name[0u]); 
+
+  MAd::pGModel gmodel = 0;
+  MadMesh = MAd::M_new(gmodel);
+  MAd::M_load(MadMesh,"converted.msh");
+  classifyBoundaries();
+       
+  bSF = new MAd::BackgroundSF("backgroundSF");
+  bSF->loadData("backgroundSF.msh"); 
+  
+  std::cout << "\n \n Beginning Adapter Construction" << std::endl;
+  // timing adapter construction
+  Timer T;
+  T.start();
+  // instantiating adapter with background sizefield
+  adapter = new MAd::MeshAdapter(MadMesh, bSF);
+  T.stop();
+  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
+  std::cout << "Refine constructed" << std::endl;
+}
+
+void Refine::run(bool transferData)
 {
   if (!adapter)
   {
@@ -172,7 +180,8 @@ void Refine::run()
   
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   //mesh->setCheckQuality(1);
-  //mesh->transfer(refinedVTK,"Finite Element");
+  if (transferData)
+		mesh->transfer(refinedVTK,"Finite Element");
 
   refinedVTK->setFileName(ofname);
   refinedVTK->report();

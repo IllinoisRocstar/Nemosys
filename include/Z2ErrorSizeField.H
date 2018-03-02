@@ -7,7 +7,7 @@ class Z2ErrorSizeField: public SizeFieldBase
 {
   // constructors and destructors
   public:
-    Z2ErrorSizeField(meshBase* _mesh, int arrayID, int order, double _dev_mult, bool _maxIsmin);
+    Z2ErrorSizeField(meshBase* _mesh, int arrayID);
     ~Z2ErrorSizeField()
     {
       std::cout << "Z2ErrorSizeField destroyed" << std::endl;

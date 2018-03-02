@@ -2,23 +2,36 @@
 
 // -------------------------------- Refine Driver -------------------------------------//
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName,
-                           double dev_mult, bool maxIsmin, double edgescale, std::string ofname)
+                           double dev_mult, bool maxIsmin, double edgescale, std::string ofname,
+													 bool transferData)
 {
   mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
-  mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname);  
+  mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname, transferData);  
   std::cout << "RefineDriver created" << std::endl;
 }
 
-RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname)
+RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname,
+													 bool transferData)
 {
   mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
-  mesh->refineMesh(method, edgescale, ofname);
+  mesh->refineMesh(method, edgescale, ofname, transferData);
+  std::cout << "RefineDriver created" << std::endl;
+}
+
+RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName, int order,
+													 std::string ofname, bool transferData)
+{
+	mesh = meshBase::Create(_mesh);
+	std::cout << std::endl;
+	mesh->report();
+	std::cout << std::endl;
+	mesh->refineMesh(method, arrayName, order, ofname, transferData);
   std::cout << "RefineDriver created" << std::endl;
 }
 
@@ -40,23 +53,30 @@ RefineDriver* RefineDriver::readJSON(json inputjson)
   std::string method;
   std::string arrayName;
   double dev_mult;
-  bool maxIsmin;
+  bool maxIsmin, transferData;
   double edgescale = 0;
   _mesh = inputjson["Mesh File Options"]["Input Mesh File"].as<std::string>();
   ofname = inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>();
   method = inputjson["Refinement Options"]["Refinement Method"].as<std::string>();
+	transferData = inputjson["Refinement Options"]["Transfer Data"].as<bool>();	
   if (!method.compare("uniform"))
   {
     edgescale = inputjson["Refinement Options"]["Edge Scaling"].as<double>();
-    refdrvobj = new RefineDriver(_mesh, method, edgescale, ofname);   
-  }
+    refdrvobj = new RefineDriver(_mesh, method, edgescale, ofname, transferData);   
+	}
+	else if (!method.compare("Z2 Error Estimator"))
+	{
+    arrayName = inputjson["Refinement Options"]["Array Name"].as<std::string>();
+		int order = inputjson["Refinement Options"]["Shape Function Order"].as<int>();
+		refdrvobj = new RefineDriver(_mesh,method,arrayName,order,ofname, transferData);
+	}
   else
   {
     arrayName = inputjson["Refinement Options"]["Array Name"].as<std::string>();
     dev_mult = inputjson["Refinement Options"]["StdDev Multiplier"].as<double>();
     maxIsmin = inputjson["Refinement Options"]["Max Is Min for Scaling"].as<bool>();
     refdrvobj = new RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin, 
-                                 edgescale, ofname);
+                                 edgescale, ofname, transferData);
   }
   return refdrvobj;  
 }
