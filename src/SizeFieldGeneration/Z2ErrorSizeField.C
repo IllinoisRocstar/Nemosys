@@ -1,11 +1,10 @@
 #include <Z2ErrorSizeField.H>
 #include <patchRecovery.H>
 
-Z2ErrorSizeField::Z2ErrorSizeField(meshBase* _mesh, int arrayID, int _order, 
-                                   double _dev_mult, bool _maxIsmin)
-  : order(_order)
+Z2ErrorSizeField::Z2ErrorSizeField(meshBase* _mesh, int arrayID)
 {
-  initialize(_mesh, arrayID, _dev_mult, _maxIsmin, "Z2ErrorSF");
+  initialize(_mesh, arrayID, 0,0, "Z2ErrorSF");
+	order = mesh->getOrder();
   std::cout << "Z2ErrorSizeField constructed" << std::endl; 
 }
 
@@ -55,8 +54,6 @@ void Z2ErrorSizeField::computeSizeField(int arrayID)
     errorIntegrals->GetTuple(i,error);
     sizeField[i] = interpSize/(std::pow(error[0]/aveError,order)); 
   }
-  
-  //mutateValues(sizeField);  
   mesh->setCellDataArray(&sfname[0u], sizeField);
   mesh->setSFBool(1);
 }

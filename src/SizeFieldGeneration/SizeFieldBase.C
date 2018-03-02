@@ -20,8 +20,7 @@ SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int ar
   }
   else if (!method.compare("Z2 Error Estimator"))
   {
-    // TODO: hardcoding order parameter for now -----------------------|
-    Z2ErrorSizeField* z2errorsf = new Z2ErrorSizeField(_mesh, arrayID, 1, _dev_mult, _maxIsmin);
+    Z2ErrorSizeField* z2errorsf = new Z2ErrorSizeField(_mesh, arrayID);
     z2errorsf->computeSizeField(arrayID);
     return z2errorsf;
   }

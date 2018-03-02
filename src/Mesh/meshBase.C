@@ -810,10 +810,10 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
 
 void meshBase::refineMesh(std::string method, int arrayID, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname)
+                          double edge_scale, std::string ofname, bool transferData)
 {
   Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
-  refineobj->run();
+  refineobj->run(transferData);
   if (refineobj)
   { 
     delete refineobj;
@@ -821,9 +821,22 @@ void meshBase::refineMesh(std::string method, int arrayID,
   }
 }
 
+void meshBase::refineMesh(std::string method, int arrayID, int _order, 
+													std::string ofname, bool transferData)
+{
+	setOrder(_order);	
+	Refine* refineobj = new Refine(this, method, arrayID, 0,0,0,ofname);
+	refineobj->run(transferData);
+	if(refineobj)
+	{
+		delete refineobj;
+		refineobj = nullptr;
+	}  
+}
+
 void meshBase::refineMesh(std::string method, std::string arrayName, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname)
+                          double edge_scale, std::string ofname, bool transferData)
 {
   int arrayID = IsArrayName(arrayName);
   if (arrayID == -1)
@@ -832,13 +845,27 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
               << " not fuond in set of point data arrays" << std::endl;
     exit(1);
   }
-  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
-
+  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData);
 }
-// added for uniform refinement by driver
-void meshBase::refineMesh(std::string method, double edge_scale, std::string ofname)
+
+void meshBase::refineMesh(std::string method, std::string arrayName, int order, 
+													std::string ofname, bool transferData)
 {
-  refineMesh(method, 0, 0, 0, edge_scale, ofname);
+  int arrayID = IsArrayName(arrayName);
+  if (arrayID == -1)
+  {
+    std::cout << "Array " << arrayName
+              << " not fuond in set of point data arrays" << std::endl;
+    exit(1);
+  }
+
+	refineMesh(method, arrayID, order, ofname, transferData);
+}
+
+// added for uniform refinement by driver
+void meshBase::refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData)
+{
+  refineMesh(method, 0, 0, 0, edge_scale, ofname, transferData);
 }
 
 vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()

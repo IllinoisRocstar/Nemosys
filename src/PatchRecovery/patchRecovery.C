@@ -201,7 +201,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   // getting cubature scheme dictionary for indexing
   vtkQuadratureSchemeDefinition** dict = cubature->getDict();
 	std::vector<int> numComponents = cubature->getNumComponents();
-  // getting number of doubles representing all data at point
+  // getting number of doubles representing all data at a given point
   int totalComponents = cubature->getTotalComponents();
   // storage for new point data
   std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
