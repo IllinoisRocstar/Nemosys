@@ -192,7 +192,7 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
-    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C utils/refineMesh.C)
+    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C) #utils/refineMesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
@@ -278,13 +278,13 @@ INSTALL(TARGETS nemTest RUNTIME DESTINATION bin)
 IF(BUILD_UTILS)
 
   # refineMesh utility
-  ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-  if(VTK_LIBRARIES)
-    TARGET_LINK_LIBRARIES(refineMesh Nemosys)
-  else()
-    TARGET_LINK_LIBRARIES(refineMesh Nemosys vtkHybrid vtkWidgets)
-  ENDIF()
-  INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
+  #ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
+  #if(VTK_LIBRARIES)
+  #  TARGET_LINK_LIBRARIES(refineMesh Nemosys)
+  #else()
+  #  TARGET_LINK_LIBRARIES(refineMesh Nemosys vtkHybrid vtkWidgets)
+  #ENDIF()
+  #INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
   
 
   # xmlDump utility
