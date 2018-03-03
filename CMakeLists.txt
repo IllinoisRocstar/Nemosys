@@ -392,11 +392,13 @@ ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCo
 ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
 ADD_EXECUTABLE(runPatchRecoveryTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testPatchRecovery.C)
 ADD_EXECUTABLE(runTransferTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testTransfer.C)
+ADD_EXECUTABLE(runMeshGenTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testMeshGen.C)
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runPatchRecoveryTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
+TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
@@ -406,3 +408,4 @@ INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/te
 INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 INSTALL(TARGETS runPatchRecoveryTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
 INSTALL(TARGETS runTransferTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+INSTALL(TARGETS runMeshGenTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
