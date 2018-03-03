@@ -19,6 +19,11 @@ class TransferBase
   // TransferBase factory method
   public:
     static TransferBase* Create(std::string method, meshBase* source, meshBase* target);
+		static std::unique_ptr<TransferBase> 
+		CreateUnique(std::string method, meshBase* source, meshBase* target)
+		{
+			return std::unique_ptr<TransferBase>(TransferBase::Create(method,source,target));
+		}
  
   // transfer methods
   public:
