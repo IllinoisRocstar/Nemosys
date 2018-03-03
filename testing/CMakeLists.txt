@@ -38,6 +38,7 @@ SET(CUBATURE_TESTDIR ${TEST_DATA}/CubatureTest)
 SET(CONVERSION_TESTDIR ${TEST_DATA}/ConversionTest)
 SET(ORTHOPOLY_TESTDIR ${TEST_DATA}/OrthoPolyTest)
 SET(PATCHRECOVERY_TESTDIR ${TEST_DATA}/PatchRecoveryTest)
+SET(TRANSFER_TESTDIR ${TEST_DATA}/TransferTest)
 
 ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp) 
 
@@ -45,3 +46,4 @@ ADD_TEST(NAME conversionTest COMMAND runConversionTest ${CONVERSION_TESTDIR}/cas
 
 ADD_TEST(NAME orthoPolyTest COMMAND runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt)
 ADD_TEST(NAME patchRecoveryTest COMMAND runPatchRecoveryTest ${PATCHRECOVERY_TESTDIR}/case0001.vtu ${PATCHRECOVERY_TESTDIR}/testRef.vtu)
+ADD_TEST(NAME transferTest COMMAND runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu ${TRANSFER_TESTDIR}/cellSource.vtu ${TRANSFER_TESTDIR}/target.vtk ${TRANSFER_TESTDIR}/pntRef.vtu ${TRANSFER_TESTDIR}/cellRef.vtu)

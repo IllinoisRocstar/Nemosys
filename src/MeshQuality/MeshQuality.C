@@ -1,8 +1,8 @@
 #include <MeshQuality.H>
 
 MeshQuality::MeshQuality(meshBase* _mesh)
+	: mesh(_mesh)
 {
-  mesh = _mesh;
   qualityFilter = vtkSmartPointer<vtkMeshQuality>::New();
   qualityFilter->SetInputData(mesh->getDataSet());
   qualityFilter->SetTriangleQualityMeasureToShape();

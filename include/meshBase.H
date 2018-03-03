@@ -97,7 +97,7 @@ namespace nglib
 
 class meshingParams;
 
-class meshBase
+class meshBase 
 {
 
   // constructors and destructors
@@ -109,12 +109,7 @@ class meshBase
     }
     virtual ~meshBase()
     {
-    //  if (dataSet) 
-    //  {
-    //    dataSet->Delete();
-    //    dataSet = nullptr;
-    //  } 
-    //  std::cout << "meshBase destroyed" << std::endl;
+    	std::cout << "meshBase destroyed" << std::endl;
     }
   
   // meshBase factory methods

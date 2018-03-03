@@ -30,7 +30,6 @@ class PatchRecovery
 
   private:
     std::unique_ptr<GaussCubature> cubature;     
-    std::vector<polyApprox> polyApproximants;
 		int order;
 
     // get min max of each coord (for regularization)

@@ -104,7 +104,6 @@ void PatchRecovery::recoverNodalSolution()
     newPntData[i]->SetNumberOfTuples(numPoints); 
   }
 
-
   // FIXME: for testing
   //std::vector<double> rmse(totalComponents,0);
   int totPatchPoints = 0; 
