@@ -32,7 +32,6 @@ TEST_F(TransferTest, pntDataTransfer)
 	source.get()->transfer(target.get(),method);
 	std::shared_ptr<meshBase> ref = meshBase::CreateShared(pntRef);
 	EXPECT_EQ(0,diffMesh(target.get(),ref.get()));
-	
 } 
 
 TEST_F(TransferTest, cellDataTransfer)
