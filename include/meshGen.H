@@ -38,6 +38,8 @@ class NetgenParams : public meshingParams
     bool invert_trigs;
     bool check_overlap;
     bool check_overlapping_boundary;
+		bool refine_with_geom;
+		bool refine_without_geom;
 };
 
 class meshGen 
@@ -73,6 +75,8 @@ class meshNetgen : public meshGen
   private:
     nglib::Ng_Meshing_Parameters mp; // params for netgen meshing  
     nglib::Ng_Mesh* mesh; // netgen mesh object
+		bool refine_with_geom; // if refinement enabled, adapt to geom
+		bool refine_without_geom;	// if refinement enabled, just do uniform
 };
 
 #endif
