@@ -63,7 +63,6 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   }
 }
 
-
 // check for named array in vtk 
 int meshBase::IsArrayName(std::string name)
 {
@@ -84,15 +83,9 @@ int meshBase::IsArrayName(std::string name)
 int meshBase::transfer(meshBase* target, std::string method, 
                        const std::vector<int>& arrayIDs)
 {
-  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+	std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  transobj->runPD(arrayIDs);
-  if (transobj)
-  { 
-    delete transobj;
-    transobj = nullptr;
-  }
-  return 0;
+  return transobj->runPD(arrayIDs);
 }
 
 int meshBase::transfer(meshBase* target, std::string method, const std::vector<std::string>& arrayNames)
@@ -115,29 +108,15 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
 // transfer all data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
-  
-  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+	std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  int result = transobj->run(); 
-  if (transobj)
-  { 
-    delete transobj;
-    transobj = nullptr;
-  }
-  return result;
+  return transobj->run(); 
 }
-
-
 
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
-  SizeFieldBase* sfobj = SizeFieldBase::Create(this, method, arrayID, dev_mult, maxIsmin); 
+	std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin);
   sfobj->computeSizeField(arrayID);
-  if (sfobj)
-  {
-    delete sfobj;
-    sfobj = nullptr;
-  }
 }
 
 meshBase* meshBase::exportGmshToVtk(std::string fname)
@@ -812,26 +791,19 @@ void meshBase::refineMesh(std::string method, int arrayID,
                           double dev_mult, bool maxIsmin, 
                           double edge_scale, std::string ofname, bool transferData)
 {
-  Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
+
+	std::unique_ptr<Refine> refineobj
+		= std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname));
   refineobj->run(transferData);
-  if (refineobj)
-  { 
-    delete refineobj;
-    refineobj = nullptr;
-  }
 }
 
 void meshBase::refineMesh(std::string method, int arrayID, int _order, 
 													std::string ofname, bool transferData)
 {
 	setOrder(_order);	
-	Refine* refineobj = new Refine(this, method, arrayID, 0,0,0,ofname);
+	std::unique_ptr<Refine> refineobj
+		= std::unique_ptr<Refine>(new Refine(this,method,arrayID,0,0,0,ofname));
 	refineobj->run(transferData);
-	if(refineobj)
-	{
-		delete refineobj;
-		refineobj = nullptr;
-	}  
 }
 
 void meshBase::refineMesh(std::string method, std::string arrayName, 
@@ -879,15 +851,9 @@ vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()
 
 void meshBase::checkMesh(std::string ofname)
 {
-  MeshQuality* qualcheck = new MeshQuality(this);
-  qualcheck->checkMesh(ofname);
-
-  if (qualcheck)
-  {
-    delete qualcheck;
-    qualcheck = nullptr;
-  }
-
+	std::unique_ptr<MeshQuality> qualCheck
+		= std::unique_ptr<MeshQuality>(new MeshQuality(this)); 
+  qualCheck->checkMesh(ofname);
 }
 
 
