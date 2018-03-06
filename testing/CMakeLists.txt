@@ -51,7 +51,7 @@ CONFIGURE_FILE( ${meshgendefault_in} ${meshgendefault} @ONLY )
 CONFIGURE_FILE( ${meshgenunif_in} ${meshgenunif} @ONLY )
 CONFIGURE_FILE( ${meshgengeom_in} ${meshgengeom} @ONLY )
 
-ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp) 
+ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp ${CUBATURE_TESTDIR}/cube.vtu) 
 
 ADD_TEST(NAME conversionTest COMMAND runConversionTest ${CONVERSION_TESTDIR}/case0001_ref.vtu ${CONVERSION_TESTDIR}/case0001.msh ${CONVERSION_TESTDIR}/hinge.vtu ${CONVERSION_TESTDIR}/hinge.vol)
 

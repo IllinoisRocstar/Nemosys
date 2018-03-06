@@ -1,0 +1,48 @@
+[
+		{
+		    "Program Type": "Mesh Generation",
+		    "Mesh Generation Engine": "netgen",
+		    "Mesh File Options": {
+		        "Input Geometry File": "sphereMesh.stl",
+		        "Output Mesh File": "sphereMesh.vtu"
+		    },
+		    "Meshing Parameters": {
+		        "Netgen Parameters": {
+		            "uselocalh": 0.5,
+		            "maxh": 1000,
+		            "fineness": 0.5,
+		            "grading": 0.3,
+		            "elementsperedge": 2.0,
+		            "elementspercurve": 2.0,
+		            "closeedgeenable": 0,
+		            "closeedgefact": 2.0,
+		            "second_order": 0,
+		            "meshsize_filename": "null",
+		            "quad_dominated": 0,
+		            "optvolmeshenable": 1,
+		            "optsteps_2d": 3,
+		            "optsteps_3d": 3,
+		            "invert_tets": 0,
+		            "invert_trigs": 0,
+		            "check_overlap": 1,
+		            "check_overlapping_boundary": 1,
+		      			"refine_with_geometry_adaptation": 1   
+					}
+		    }
+		},
+		{
+		    "Program Type": "Transfer",
+		    "Mesh File Options": {
+		        "Input Mesh Files": {
+		            "Source Mesh": "cubeWithIntegral.vtu",
+		            "Target Mesh": "sphereMesh.vtu"
+		        },
+		        "Output Mesh File": "sphereMeshWithIntegral1.vtu"
+		    },
+		    "Transfer Options": {
+		        "Method": "Finite Element",
+		        "Transfer All Arrays": "true",
+            "Check Transfer Quality": "true"
+		    }
+		}
+]

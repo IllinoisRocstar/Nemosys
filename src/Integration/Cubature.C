@@ -1,24 +1,28 @@
 #include <Cubature.H>
 
 // Table 10.4 Quadrature for unit tetrahedra in http://me.rice.edu/~akin/Elsevier/Chap_10.pdf
+// OR
+// Table 6.3.1 and 6.3.1 in http://www.cs.rpi.edu/~flaherje/pdf/fea6.pdf
 
 // second order
 double TRI3 [] = 
 {
-.666666666666666, .166666666666666, .166666666666666,
-.166666666666666, .666666666666666, .166666666666666,
-.166666666666666, .166666666666666, .666666666666666
+.666666666666667, .166666666666667, .166666666666667,
+.166666666666667, .666666666666667, .166666666666667,
+.166666666666667, .166666666666667, .666666666666667
 };
-double TRI3W [] = {0.166666666666666, 0.166666666666666, 0.166666666666666};
+//double TRI3W [] = {0.166666666666666, 0.166666666666666, 0.166666666666666};
+double TRI3W [] = {0.333333333333333,0.333333333333333,0.333333333333333};
 // second order
 double TET4 [] = 
 {
-.585410196624968, .138196601125010, .138196601125010, .138196601125010,
-.138196601125010, .585410196624968, .138196601125010, .138196601125010,
-.138196601125010, .138196601125010, .585410196624968, .138196601125010,
-.138196601125010, .138196601125010, .138196601125010, .585410196624968 
+.585410196624969, .138196601125011, .138196601125011, .138196601125011,
+.138196601125011, .585410196624969, .138196601125011, .138196601125011,
+.138196601125011, .138196601125011, .585410196624969, .138196601125011,
+.138196601125011, .138196601125011, .138196601125011, .585410196624969 
 };
-double TET4W [] = {0.041666666666667,0.041666666666667,0.041666666666667,0.041666666666667};
+//double TET4W [] = {0.041666666666667,0.041666666666667,0.041666666666667,0.041666666666667};
+double TET4W [] = {0.25, 0.25, 0.25, 0.25};
 
 GaussCubature::GaussCubature(meshBase* _nodeMesh):nodeMesh(_nodeMesh),totalComponents(0)
 { 
@@ -71,6 +75,7 @@ GaussCubature::CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs
   return cuby;
 }
 
+// TODO: need to add a check here whether the array ids exist in mesh
 void GaussCubature::constructGaussMesh()
 {
   // Get the dictionary key     
@@ -132,7 +137,8 @@ void GaussCubature::constructGaussMesh()
     vtkQuadratureSchemeDefinition* celldef = dict[cellType];
     offset += celldef->GetNumberOfQuadraturePoints();
   }  
-  nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
+  
+	nodeMesh->getDataSet()->GetCellData()->AddArray(offsets);
 
   vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen = 
     vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
@@ -227,7 +233,7 @@ double GaussCubature::computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, i
       //genCell->Points->GetPoint(3, x4);
 
       //jacobi = tetcell->ComputeVolume(x1,x2,x3,x4);
-      jacobi = jacobianMat.determinant();
+      jacobi = jacobianMat.determinant()/6.0;
      //jacobi = vtkMath::Determinant3x3(m[0],m[1],m[2]);
       break;
     }
@@ -317,7 +323,7 @@ int GaussCubature::interpolateToGaussPointsAtCell
 		{
       int numComponent = das[id]->GetNumberOfComponents();
       double comps[numComponent];
-      std::vector<double> interps(numComponent);
+      std::vector<double> interps(numComponent,0.0);
       //double comps[numComponents[id]];
 			//std::vector<double> interps(numComponents[id],0.0);
 			for (int m = 0; m < genCell->GetNumberOfPoints(); ++m)
@@ -433,8 +439,10 @@ void GaussCubature::integrateOverCell
   // get number of gauss points in cell from dictionary
   int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // computing jacobian for integration
-  double jacobian = computeJacobian(genCell,cellType);
-  // get quadrature weights for this cell type
+  //TODO: MEssing with this
+	//double jacobian = computeJacobian(genCell,cellType);
+  double jacobian = computeCellVolume(genCell,cellType);
+	// get quadrature weights for this cell type
   const double* quadWeights = dict[cellType]->GetQuadratureWeights();
   // get offset from nodeMesh for lookup of gauss points in polydata
   int offset = getOffset(cellID);
@@ -447,11 +455,11 @@ void GaussCubature::integrateOverCell
 
     int numComponent = integralData[j]->GetNumberOfComponents();
     data[j].resize(numComponent);
-    double comps[numComponent];
     //data[j].resize(numComponents[j]);
     //double comps[numComponents[j]];
     for (int i = 0; i < numGaussPoints; ++i)
     {
+    	double comps[numComponent];
       pd->GetArray(j)->GetTuple(offset+i,comps);
       for (int k = 0; k < numComponent; ++k)
       {
