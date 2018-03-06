@@ -1,0 +1,7 @@
+[
+		{
+		    "Program Type": "Mesh Quality",
+		    "Input Mesh File": "sphereMesh.vtu",
+        "Output File": "meshQual.txt"
+		}
+]
