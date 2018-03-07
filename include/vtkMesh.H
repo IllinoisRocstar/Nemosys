@@ -21,6 +21,24 @@ template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
 // contains more than one point or cell data array
 vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
 
+// helpers for reading legacy vtk 
+void readLegacyVTKFieldData(std::ifstream& meshStream, std::string& line, 
+														vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+
+void readLegacyVTKPoints(std::ifstream& meshStream, std::string& line, int& numPoints,
+												 vtkSmartPointer<vtkPoints> points,
+											   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+
+void readLegacyVTKCells(std::ifstream& meshStream, std::string& line, int& numCells, 
+											  std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds);
+
+void readLegacyVTKData(std::ifstream& meshStream, std::string& line, 
+											 const int numPoints, const int numCells, const bool pointOrCell,
+											 const std::string& dataType, vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+
+void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
+											vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+
 template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
 {
   vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
