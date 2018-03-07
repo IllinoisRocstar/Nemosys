@@ -13,6 +13,7 @@
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
+#include <vtkGenericDataObjectReader.h>
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkRectilinearGrid.h>
@@ -38,6 +39,7 @@
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkDataSetWriter.h>
+#include <vtkIntArray.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
 #include <vtkCellArray.h>
