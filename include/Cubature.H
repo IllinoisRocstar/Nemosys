@@ -78,6 +78,8 @@ class GaussCubature
   private:
     // we want gauss points of this mesh
     meshBase* nodeMesh;
+    // number of volume elements in nodemesh
+    int numVolCells;
     // we put the gauss points and interpolated data into this mesh
     vtkSmartPointer<vtkPolyData> gaussMesh;
     // dictionary relating cell type quadrature scheme info for that type
@@ -87,7 +89,7 @@ class GaussCubature
     std::vector<int> numComponents;
     int totalComponents;
 
-    // get offset from nodeMesh for lookup of gauss points in polydata
+    // get offset from nodeMesh for lookup of gauss points in gaussMesh
     int getOffset(int cellID);
     // interpolates provided data (das) to gauss points in cell
     int interpolateToGaussPointsAtCell(const int cellID,

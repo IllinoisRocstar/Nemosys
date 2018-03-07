@@ -5,6 +5,7 @@
 
 using namespace nemAux;
 
+// read files from any vtk format (except legacy .vtk)
 template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
 {
   vtkSmartPointer<TReader> reader =
@@ -14,6 +15,11 @@ template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
   reader->GetOutput()->Register(reader);
   return vtkDataSet::SafeDownCast(reader->GetOutput());
 }
+
+// read an ASCII legacy vtk file containing an unstructured grid
+// the available vtk readers do not suffice for this purpose if the file
+// contains more than one point or cell data array
+vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
 
 template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
 {
@@ -68,10 +74,6 @@ class vtkMesh : public meshBase
     void unsetCellDataArray(const char* name);
     // remove field data with given id from dataSet
     void unsetFieldDataArray(const char* name);
-
-
-    
-
 };
 
 
