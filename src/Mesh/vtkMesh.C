@@ -101,6 +101,160 @@ vtkMesh::vtkMesh(const char* fname)
   numPoints = dataSet->GetNumberOfPoints();
 }
 
+void readLegacyVTKFieldData(std::ifstream& meshStream, std::string& line, 
+														vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+{
+	getline(meshStream,line);
+  std::string arrname, type;
+  int numComponent, numTuple;
+  {
+		std::stringstream ss(line);
+  	ss >> arrname >> numComponent >> numTuple >> type;
+  }
+	vtkSmartPointer<vtkDoubleArray> arr = vtkSmartPointer<vtkDoubleArray>::New();
+  arr->SetName(&arrname[0u]);
+  arr->SetNumberOfComponents(numComponent);
+  arr->SetNumberOfTuples(numTuple);
+  getline(meshStream,line);
+  std::stringstream ss(line);
+  double val;
+  for (int i = 0; i < numTuple; ++i)
+  {
+    ss >> val;
+    arr->InsertTuple(i,&val);
+  }
+  dataSet_tmp->GetFieldData()->AddArray(arr);
+}
+
+void readLegacyVTKPoints(std::ifstream& meshStream, std::string& line, int& numPoints, 
+												 vtkSmartPointer<vtkPoints> points,
+												 vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+{
+  std::stringstream ss(line);
+  std::string tmp;
+  ss >> tmp >> numPoints;
+  points->SetNumberOfPoints(numPoints);
+	double point[3];
+  for (int i = 0; i < numPoints; ++i)
+  {
+    getline(meshStream,line);
+    stringstream ss(line);
+    ss >> point[0] >> point[1] >> point[2];
+    points->SetPoint(i,point);
+  }
+  dataSet_tmp->SetPoints(points);
+}
+
+void readLegacyVTKCells(std::ifstream& meshStream, std::string& line, int& numCells, 
+											  std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds)
+{
+  std::stringstream ss(line);
+  std::string tmp;
+  ss >> tmp >> numCells;
+  vtkCellIds.resize(numCells);
+  for (int i = 0; i < numCells; ++i)
+  {
+    getline(meshStream,line);
+    std::stringstream ss(line);
+    int numId;
+    double id;
+    ss >> numId;
+    vtkCellIds[i] = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds[i]->SetNumberOfIds(numId);
+    for (int j = 0; j < numId; ++j)
+    {
+      ss >> id;
+      vtkCellIds[i]->SetId(j,id);
+    } 
+  } 
+}
+
+void readLegacyVTKData(std::ifstream& meshStream, std::string& line, 
+											 const int numPoints, const int numCells, const bool pointOrCell,
+											 const std::string& dataType, vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+{
+	int numTuple = (pointOrCell ? numPoints : numCells);
+  std::stringstream ss(line);
+  std::string attribute, name, type;
+  int numComponent;
+	if (!dataType.compare("SCALARS"))
+	{
+		numComponent = 1;
+  	ss >> attribute >> name >> type >> numComponent;
+  	numComponent = (numComponent > 4 || numComponent < 1 ? 1 : numComponent);
+  }
+	else if (!dataType.compare("VECTORS") || !dataType.compare("NORMALS"))
+	{
+		numComponent = 3;
+		ss >> attribute >> name >> type;
+	}
+	vtkDataArray* arr;
+	arr->SetName(&name[0u]);
+  arr->SetNumberOfComponents(numComponent);
+  arr->SetNumberOfTuples(numTuple);
+  getline(meshStream,line);
+  for (int i = 0; i < numTuple; ++i)
+  {
+    getline(meshStream,line);
+    std::stringstream ss(line);
+    double vals[numComponent];
+    for (int j = 0; j < numComponent; ++j)
+    {
+      ss >> vals[j];
+    }
+    arr->InsertTuple(i,vals); 
+  }
+	addLegacyVTKData(arr, type, pointOrCell, dataSet_tmp);
+}
+
+void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
+										  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+{
+	// casting to appropriate type array
+	if (!type.compare("unsigned_int"))
+	{
+		vtkUnsignedIntArray* typedArr 
+			= vtkUnsignedIntArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+	else if (!type.compare("int"))
+	{
+		vtkIntArray* typedArr 
+			= vtkIntArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+	else if (!type.compare("unsigned_long"))
+	{
+		vtkUnsignedLongArray* typedArr 
+			= vtkUnsignedLongArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+	else if (!type.compare("long"))
+	{
+		vtkLongArray* typedArr 
+			= vtkLongArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+	else if (!type.compare("float"))
+	{
+		vtkFloatArray* typedArr 
+			= vtkFloatArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+	else if (!type.compare("double"))
+	{
+		vtkDoubleArray* typedArr 
+			= vtkDoubleArray::SafeDownCast(arr);
+		pointOrCell ? dataSet_tmp->GetPointData()->AddArray(typedArr)
+								: dataSet_tmp->GetCellData()->AddArray(typedArr);
+	}
+}
+
 vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
 {
   std::ifstream meshStream(fileName);
@@ -117,10 +271,10 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
   // declare dataSet_tmp which will be associated to output vtkMesh
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   int numPoints, numCells;
-  double point[3];
-  
+	bool onCellData(0), onPointData(0);
   std::string line;
-  while (getline(meshStream,line))
+  
+	while (getline(meshStream,line))
   {
     // assert that file contains an unstructured grid
     if (line.find("DATASET") != -1)
@@ -133,80 +287,23 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
     }
 
     if (line.find("FIELD") != -1)
-    {
-      std::cout <<" in field" << std::endl;
-      {
-        std::stringstream ss(line);
-        std::string dataname;
-        int numarr;
-        ss >> dataname >> numarr;
-      }
-      getline(meshStream,line);
-      std::stringstream ss(line);
-      std::string arrname, type;
-      int numComponent, numTuple;
-      ss >> arrname >> numComponent >> numTuple >> type;
-      // TODO: extend this to support other types
-      if (!type.compare("int"))
-      {
-        vtkSmartPointer<vtkIntArray> arr = vtkSmartPointer<vtkIntArray>::New();
-        arr->SetName(&arrname[0u]);
-        arr->SetNumberOfComponents(numComponent);
-        arr->SetNumberOfTuples(numTuple);
-        getline(meshStream,line);
-        std::stringstream ss(line);
-        int val;
-        for (int i = 0; i < numTuple; ++i)
-        {
-          ss >> val;
-          arr->InsertValue(i,val);
-        }
-        dataSet_tmp->GetFieldData()->AddArray(arr);
-      }  
-
+    {	
+			readLegacyVTKFieldData(meshStream, line, dataSet_tmp);
     }    
  
     if (line.find("POINTS") != - 1)
     {
-      std::stringstream ss(line);
-      std::string tmp;
-      ss >> tmp >> numPoints;
-      points->SetNumberOfPoints(numPoints);
-      for (int i = 0; i < numPoints; ++i)
-      {
-        getline(meshStream,line);
-        stringstream ss(line);
-        ss >> point[0] >> point[1] >> point[2];
-        points->SetPoint(i,point);
-      }
-      dataSet_tmp->SetPoints(points);
+			readLegacyVTKPoints(meshStream, line, numPoints, points, dataSet_tmp);
     }
 
     if (line.find("CELLS") != -1)
     {
-      std::stringstream ss(line);
-      std::string tmp;
-      ss >> tmp >> numCells;
-      dataSet_tmp->Allocate(numCells);
-      vtkCellIds.resize(numCells);
-      for (int i = 0; i < numCells; ++i)
-      {
-        getline(meshStream,line);
-        std::stringstream ss(line);
-        int numId;
-        double id;
-        ss >> numId;
-        vtkCellIds[i] = vtkSmartPointer<vtkIdList>::New();
-        vtkCellIds[i]->SetNumberOfIds(numId);
-        for (int j = 0; j < numId; ++j)
-        {
-          ss >> id;
-          vtkCellIds[i]->SetId(j,id);
-        } 
-      } 
+			readLegacyVTKCells(meshStream, line, numCells, vtkCellIds); 
     }
+
     if (line.find("CELL_TYPES") != -1)
     {
+  		dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i)
       {
         getline(meshStream,line);
@@ -219,110 +316,36 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
   
     if (line.find("CELL_DATA") != -1)
     {
-      getline(meshStream,line);
-      std::stringstream ss(line);
-      std::string attribute, name, type;
-      int numComponent = 1;
-      ss >> attribute >> name >> type >> numComponent;
-      // TODO: extend by iterating over permutations of attribute types
-      if (!attribute.compare("SCALARS"))
-      {
-        numComponent = (numComponent > 4 || numComponent < 1 ? 1 : numComponent);
-        vtkSmartPointer<vtkDoubleArray> arr = vtkSmartPointer<vtkDoubleArray>::New();
-        arr->SetName(&name[0u]);
-        arr->SetNumberOfComponents(numComponent);
-        arr->SetNumberOfTuples(numCells);
-        // skip lookup table line
-        getline(meshStream,line);
-        for (int i = 0; i < numCells; ++i)
-        {
-          getline(meshStream,line);
-          std::stringstream ss(line);
-          double vals[numComponent];
-          for (int j = 0; j < numComponent; ++j)
-          {
-            ss >> vals[j];
-          }
-          arr->InsertTuple(i,vals); 
-        }
-        dataSet_tmp->GetCellData()->AddArray(arr);
-        getline(meshStream,line);
-        std::stringstream ss(line);
-        ss >> attribute >> name >> type >> numComponent; 
-        if (!attribute.compare("SCALARS"))
-        {
-          numComponent = (numComponent > 4 || numComponent < 1 ? 1 : numComponent);
-          vtkSmartPointer<vtkDoubleArray> arr = vtkSmartPointer<vtkDoubleArray>::New();
-          arr->SetName(&name[0u]);
-          arr->SetNumberOfComponents(numComponent);
-          arr->SetNumberOfTuples(numCells);
-          // skip lookup table line
-          getline(meshStream,line);
-          for (int i = 0; i < numCells; ++i)
-          {
-            getline(meshStream,line);
-            std::stringstream ss(line);
-            double vals[numComponent];
-            for (int j = 0; j < numComponent; ++j)
-            {
-              ss >> vals[j];
-            }
-            arr->InsertTuple(i,vals); 
-          }
-          dataSet_tmp->GetCellData()->AddArray(arr);
-        }  
-      } 
+			onCellData = 1;
+			getline(meshStream,line);
+		}
+
+		if (onCellData && line.find("SCALARS") != -1) 
+		{	
+			readLegacyVTKData(meshStream, line, numPoints, numCells, 0, "SCALARS", dataSet_tmp); 
     }
-    if (line.find("POINT_DATA")  != -1)
-    {
-      getline(meshStream,line); 
-      std::stringstream ss(line);
-      std::string attribute, name, type;
-      ss >> attribute >> name >> type;
-      if (!attribute.compare("VECTORS"))
-      {
-        vtkSmartPointer<vtkDoubleArray> arr = vtkSmartPointer<vtkDoubleArray>::New();
-        arr->SetName(&name[0u]);
-        arr->SetNumberOfComponents(3);
-        arr->SetNumberOfTuples(numPoints);
-        for (int i = 0; i < numPoints; ++i)
-        {
-          getline(meshStream, line);
-          std::stringstream ss(line);
-          double vec[3];
-          for (int j = 0; j < 3; ++j)
-          {
-            ss >> vec[j];
-          } 
-          arr->InsertTuple(i,vec);
-        }
-        dataSet_tmp->GetPointData()->AddArray(arr);
-        getline(meshStream,line); 
-        std::stringstream ss(line);
-        std::string attribute, name, type;
-        ss >> attribute >> name >> type;
-        if (!attribute.compare("VECTORS"))
-        {
-          vtkSmartPointer<vtkDoubleArray> arr = vtkSmartPointer<vtkDoubleArray>::New();
-          arr->SetName(&name[0u]);
-          arr->SetNumberOfComponents(3);
-          arr->SetNumberOfTuples(numPoints);
-          for (int i = 0; i < numPoints; ++i)
-          {
-            getline(meshStream, line);
-            std::stringstream ss(line);
-            double vec[3];
-            for (int j = 0; j < 3; ++j)
-            {
-              ss >> vec[j];
-            } 
-            arr->InsertTuple(i,vec);
-          }
-          dataSet_tmp->GetPointData()->AddArray(arr);
-          
-        }
-      } 
-    }  
+
+		if (onCellData && (line.find("VECTORS") != -1 || line.find("NORMALS") != -1))
+		{
+			readLegacyVTKData(meshStream, line, numPoints, numCells, 0, "VECTORS", dataSet_tmp);
+		}
+
+		if (line.find("POINT_DATA") != -1)
+		{
+			onPointData = 1;
+			onCellData = 0;
+			getline(meshStream,line);
+		}
+
+		if (onPointData && line.find("SCALARS") != -1) 
+		{	
+			readLegacyVTKData(meshStream, line, numPoints, numCells, 1, "SCALARS", dataSet_tmp); 
+    }
+
+		if (onPointData && (line.find("VECTORS") != -1 || line.find("NORMALS") != -1))
+		{
+			readLegacyVTKData(meshStream, line, numPoints, numCells, 1, "VECTORS", dataSet_tmp);
+		}
 
   }
   return dataSet_tmp;

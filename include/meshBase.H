@@ -26,6 +26,12 @@
 #include <vtkFieldData.h>
 #include <vtkCellTypes.h>
 #include <vtksys/SystemTools.hxx>
+#include <vtkDataArray.h>
+#include <vtkUnsignedIntArray.h>
+#include <vtkIntArray.h>
+#include <vtkUnsignedLongArray.h>
+#include <vtkLongArray.h>
+#include <vtkFloatArray.h>
 #include <vtkDoubleArray.h>
 #include <vtkXMLWriter.h>
 #include <vtkXMLUnstructuredGridWriter.h>
@@ -39,7 +45,6 @@
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkDataSetWriter.h>
-#include <vtkIntArray.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
 #include <vtkCellArray.h>
