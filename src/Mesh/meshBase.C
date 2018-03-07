@@ -6,6 +6,9 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 
+// TODO: Stop using setPoint/CellDataArray in export methods
+//        - instead, use the faster vtkDataArray creation and insertion
+
 meshBase* meshBase::Create(std::string fname)
 {
   if (fname.find(".vt") != -1 ) 

@@ -257,6 +257,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
       //nodeSize += cbrt(2.356194490192344*cubature->computeCellVolume(genCell, cellType));   
       nodeSize += std::sqrt(genCell->GetLength2());
     }
+    // patch-averaged node size
     nodeSize /= patchCellIDs->GetNumberOfIds();
     nodeSizes->InsertTuple(i, &nodeSize);
     // coordinates of each gauss point in patch
