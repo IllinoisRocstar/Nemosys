@@ -184,62 +184,70 @@ void readLegacyVTKCells(std::istream& meshStream, std::string& line, int& numCel
   }
 }
 
-int readLegacyVTKData(std::istream& meshStream, std::string& line, 
-											 const int numPoints, const int numCells, const bool pointOrCell,
+void readLegacyVTKData(std::ifstream& meshStream, const int numPoints, 
+		 									 const int numCells, const bool pointOrCell,
 											 vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
-
-	int numTuple = (pointOrCell ? numPoints : numCells);\
+	int numTuple = (pointOrCell ? numPoints : numCells);
+	std::string line;
   std::string attribute;
   std::string name;
   std::string  type;
   int numComponent;
   std::istringstream ss;
-  ss.str(line);
-  ss >> attribute >> name >> type;//>> numComponent;
-  ss.clear();
-  if (!attribute.compare("SCALARS"))
+ 	while(getline(meshStream,line))
 	{
-  	numComponent = (numComponent > 4 || numComponent < 1 ? 1 : numComponent);
-  }
-	else if (!attribute.compare("VECTORS") || !attribute.compare("NORMALS"))
-	{
-		numComponent = 3;
+  	ss.str(line);
+  	ss >> attribute >> name >> type >> numComponent;
+  	ss.clear();
+  	if (!attribute.compare("SCALARS"))
+		{
+  		numComponent = (numComponent > 4 || numComponent < 1 ? 1 : numComponent);
+  	}
+		else if (!attribute.compare("VECTORS") || !attribute.compare("NORMALS"))
+		{
+			numComponent = 3;
+		}
+
+	//	std::cout << attribute << " " <<  name << " " << type << " " << std::endl;
+  	vtkDataArray* arr;
+		arr->SetName(&name[0u]);
+  	arr->SetNumberOfComponents(numComponent);
+  	arr->SetNumberOfTuples(numTuple);
+  	
+		getline(meshStream,line); // skipping lookup table
+		int i = 0;
+		while (getline(meshStream,line) && i++ < numTuple)
+  				//for (int i = 0; i < numTuple; ++i)
+  	{
+  	  //getline(meshStream,line);
+  	  ss.str(line);
+  	  double vals[numComponent];
+  	  for (int j = 0; j < numComponent; ++j)
+  	  {
+  	    ss >> vals[j];
+  	  }
+  	  arr->InsertTuple(i,vals); 
+  	}
+		
+		addLegacyVTKData(arr, type, pointOrCell, dataSet_tmp);
+  	break;	
+		//if (getline(meshStream,line))
+		//{
+  	//	if (line.find("SCALARS") != -1 ||
+  	//	    line.find("VECTORS") != -1 ||
+  	//	    line.find("NORMALS") != -1)
+  	//	{
+		//		readLegacyVTKData(meshStream, numPoints, numCells, pointOrCell, dataSet_tmp) ;
+  	//	}
+  	//	else
+  	//	  return;
+		//}
+		//else
+		//	return;;
 	}
-	
-  std::cout << line << std::endl; 
-  vtkDataArray* arr;
-	arr->SetName(&name[0u]);
-  arr->SetNumberOfComponents(numComponent);
-  arr->SetNumberOfTuples(numTuple);
-  getline(meshStream,line);
-  
- 
-  for (int i = 0; i < numTuple; ++i)
-  {
-    getline(meshStream,line);
-    ss.str(line);
-    double vals[numComponent];
-    for (int j = 0; j < numComponent; ++j)
-    {
-      ss >> vals[j];
-    }
-    arr->InsertTuple(i,vals); 
-  }
+	std::cout << "over here" << std::endl;
 
-  std::cout << "HERE" << std::endl;
-
-	addLegacyVTKData(arr, type, pointOrCell, dataSet_tmp);
-  getline(meshStream,line);
-
-  if (line.find("SCALARS") != -1 ||
-      line.find("VECTORS") != -1 ||
-      line.find("NORMALS") != -1)
-  {
-    return readLegacyVTKData(meshStream,line,numPoints,numCells,pointOrCell,dataSet_tmp);
-  }
-  else
-    return 0;
 }
 
 void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
@@ -359,8 +367,7 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
       if (line.find("CELL_DATA") != -1)
       {
         foundCellData = 1;
-        getline(meshStream,line);
-        int ret = readLegacyVTKData(meshStream,line,numPoints,numCells,0,dataSet_tmp);
+        readLegacyVTKData(meshStream,numPoints,numCells,0,dataSet_tmp);
       }
     }
 		
