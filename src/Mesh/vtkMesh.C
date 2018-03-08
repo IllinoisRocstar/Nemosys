@@ -189,8 +189,10 @@ int readLegacyVTKData(std::istream& meshStream, std::string& line,
 											 vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
 
-	int numTuple = (pointOrCell ? numPoints : numCells);
-  std::string attribute, name, type;
+	int numTuple = (pointOrCell ? numPoints : numCells);\
+  std::string attribute;
+  std::string name;
+  std::string  type;
   int numComponent;
   std::istringstream ss;
   ss.str(line);
@@ -205,12 +207,14 @@ int readLegacyVTKData(std::istream& meshStream, std::string& line,
 		numComponent = 3;
 	}
 	
+  std::cout << line << std::endl; 
   vtkDataArray* arr;
 	arr->SetName(&name[0u]);
   arr->SetNumberOfComponents(numComponent);
   arr->SetNumberOfTuples(numTuple);
   getline(meshStream,line);
   
+ 
   for (int i = 0; i < numTuple; ++i)
   {
     getline(meshStream,line);
