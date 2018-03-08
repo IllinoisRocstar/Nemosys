@@ -24,11 +24,9 @@ int main (int argc, char *argv[])
   int f = 1;
   while (f < argc)
   {
-    std::unique_ptr<meshBase> myVTK = meshBase::CreateUnique(argv[f]);
-    //vtkAnalyzer* myVTK;
-    //myVTK = new vtkAnalyzer(argv[f]);
-    //myVTK->read();
-     
+    std::string fname(argv[f]);
+    std::unique_ptr<meshBase> myVTK = meshBase::CreateUnique(fname);
+
     // report statistics
     myVTK->report();
 

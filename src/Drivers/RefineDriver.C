@@ -5,23 +5,23 @@ RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string ar
                            double dev_mult, bool maxIsmin, double edgescale, std::string ofname,
 													 bool transferData)
 {
+  std::cout << "RefineDriver created" << std::endl;
   mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname, transferData);  
-  std::cout << "RefineDriver created" << std::endl;
 }
 
 RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname,
 													 bool transferData)
 {
+  std::cout << "RefineDriver created" << std::endl;
   mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
   mesh->refineMesh(method, edgescale, ofname, transferData);
-  std::cout << "RefineDriver created" << std::endl;
 }
 
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName, int order,
