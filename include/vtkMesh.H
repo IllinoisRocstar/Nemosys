@@ -22,21 +22,21 @@ template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
 vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
 
 // helpers for reading legacy vtk 
-void readLegacyVTKFieldData(std::ifstream& meshStream, std::string& line, 
+static void readLegacyVTKFieldData(std::istream& meshStream, std::string& line, 
 														vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
-void readLegacyVTKPoints(std::ifstream& meshStream, std::string& line, int& numPoints,
+static void readLegacyVTKPoints(std::istream& meshStream, std::string& line, int& numPoints,
 												 vtkSmartPointer<vtkPoints> points,
 											   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
-void readLegacyVTKCells(std::ifstream& meshStream, std::string& line, int& numCells, 
-											  std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds);
+static void readLegacyVTKCells(std::istream& meshStream, std::string& line, int& numCells, 
+											  std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds,
+                        vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+static int readLegacyVTKData(std::istream& meshStream, std::string& line, 
+								 const int numPoints, const int numCells, const bool pointOrCell,
+								 vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
-void readLegacyVTKData(std::ifstream& meshStream, std::string& line, 
-											 const int numPoints, const int numCells, const bool pointOrCell,
-											 const std::string& dataType, vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
-
-void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
+static void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
 											vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
 template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)

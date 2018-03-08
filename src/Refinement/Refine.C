@@ -55,7 +55,7 @@ Refine::~Refine()
   remove("converted.msh");
   remove("backgroundSF.msh");
   remove("refined.msh");
-  std::cout << "Refined destroyed" << std::endl;
+  std::cout << "Refine destroyed" << std::endl;
 }
 
 void Refine::initUniform(double edge_scale)
