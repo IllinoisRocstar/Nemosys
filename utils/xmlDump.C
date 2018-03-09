@@ -26,10 +26,8 @@ int main (int argc, char *argv[])
   {
     std::string fname(argv[f]);
     std::unique_ptr<meshBase> myVTK = meshBase::CreateUnique(fname);
-
-//    myVTK->write("test.vtu");
-
-    // report statistics
+    
+		// report statistics
     myVTK->report();
 
     vtkSmartPointer<vtkPointData> arr = myVTK->getDataSet()->GetPointData();
