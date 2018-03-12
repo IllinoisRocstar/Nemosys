@@ -34,8 +34,6 @@ TEST(Conversion, ConvertLegacyVTKToVTU)
   std::cout << mesh_ref->getNumberOfCells() << std::endl;
   std::cout << mesh1->getNumberOfCells() << std::endl;
   std::cout << mesh1_ref->getNumberOfCells() << std::endl;
-  //mesh1->write("legacyVTK2_ref.vtu");
-  //mesh->write("legacyVTK1_ref.vtu");
   EXPECT_EQ(0, diffMesh(mesh.get(), mesh_ref.get()));
   EXPECT_EQ(0, diffMesh(mesh1.get(), mesh1_ref.get()));
 }

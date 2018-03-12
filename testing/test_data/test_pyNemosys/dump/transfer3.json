@@ -1,0 +1,16 @@
+		{
+		    "Program Type": "Transfer",
+		    "Mesh File Options": {
+		        "Input Mesh Files": {
+		            "Source Mesh": "case0001.vtu",
+		            "Target Mesh": "refined_case0001.vtu"
+		        },
+		        "Output Mesh File": "driver_test.vtu"
+		    },
+		    "Transfer Options": {
+		        "Array Names": ["displacement","stress_xx","stress_zz"],
+		        "Method": "Finite Element",
+		        "Transfer All Arrays": "false",
+            "Check Transfer Quality": "true"
+		    }
+		}

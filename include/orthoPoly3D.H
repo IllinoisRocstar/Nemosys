@@ -65,9 +65,6 @@ class orthoPoly3D
     static std::unique_ptr<orthoPoly3D> 
       CreateUnique(int _order, const std::vector<std::vector<double>>& coords);
 
-
-
-
     // dtor
     ~orthoPoly3D(){}
 
@@ -88,7 +85,7 @@ class orthoPoly3D
     // reset the object to its default state
     void Reset();
     VectorXd getCoeffs() { return a; }
-      
+
   private:
     // total order of basis
     int order;
