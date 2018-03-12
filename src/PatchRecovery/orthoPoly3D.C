@@ -129,7 +129,6 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>& coo
   opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
   opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
   opz = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,z));
-
 }
 // move ctor
 orthoPoly3D::orthoPoly3D(orthoPoly3D&& op) 
@@ -206,7 +205,6 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
     T.start();
   #endif  
   removeRowT(kronProd_full, kronProd_red,toRemove);
-
   std::cout << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
   std::cout << sigma.size() << std::endl; 
  
@@ -226,6 +224,7 @@ const double orthoPoly3D::eval(const std::vector<double>& coord)
     std::cerr << "Coefficients to basis have not been generated" << std::endl;
     exit(1);
   }
+  
   MatrixXd phix(1,order+1);
   MatrixXd phiy(1,order+1);
   MatrixXd phiz(1,order+1); 
@@ -241,7 +240,6 @@ const double orthoPoly3D::eval(const std::vector<double>& coord)
   #ifdef DEBUG
     std::cout << Phi.rows() << " " << Phi.cols() << std::endl;
   #endif
-
   MatrixXd Phi_red(Phi.rows(), Phi.cols()-toRemove.size()); 
   removeColumn(Phi,Phi_red,toRemove);
   
@@ -269,6 +267,7 @@ void orthoPoly3D::run1(const VectorXd& sigma)
   Timer T;
   std::cout << "Removing stuff" << std::endl;
   T.start();  
+
   MatrixXd NewPhi_red(NewPhi.rows(),NewPhi.cols()-toRemove.size());
 
   removeColumn(NewPhi,NewPhi_red,toRemove); 
@@ -277,6 +276,7 @@ void orthoPoly3D::run1(const VectorXd& sigma)
   std::cout << "Time spent removing: " << T.elapsed() << std::endl;
   
   VectorXd sigma_approx = NewPhi_red*a;
+
   VectorXd error = (sigma_approx - sigma).cwiseAbs();
   std::cout << "max error " << error.maxCoeff() << std::endl; 
   std::cout << "min error " << error.minCoeff() << std::endl; 

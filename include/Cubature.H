@@ -74,7 +74,6 @@ class GaussCubature
     static std::shared_ptr<GaussCubature>
     CreateShared(meshBase* nodeMesh, const std::vector<int>& arrayIDs);
 
-
   private:
     // we want gauss points of this mesh
     meshBase* nodeMesh;
@@ -102,14 +101,12 @@ class GaussCubature
                            vtkSmartPointer<vtkPointData> pd,
                            std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
                            std::vector<std::vector<double>>& totalIntegralData);
-
     void integrateOverCell(int cellID,
                            vtkSmartPointer<vtkGenericCell> genCell,
                            vtkSmartPointer<vtkPointData> pd,
                            std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
                            std::vector<std::vector<double>>& totalIntegralData,
                            const std::vector<std::string>& newArrayNames, bool normalizeByVol);
-
 
     // disabled
     GaussCubature(const GaussCubature& that) = delete;
