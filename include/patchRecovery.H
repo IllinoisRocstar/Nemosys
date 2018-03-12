@@ -30,7 +30,7 @@ class PatchRecovery
 
   private:
     std::unique_ptr<GaussCubature> cubature;     
-		int order;
+    int order;
 
     // get min max of each coord (for regularization)
     std::vector<double> getMinMaxCoords(const std::vector<std::vector<double>>& coords); 
@@ -41,7 +41,7 @@ class PatchRecovery
 
     // extract coordinates and data from pntDataPair
     void extractAxesAndData(pntDataPairVec& pntsAndData, 
-														std::vector<std::vector<double>>& coords,
+                            std::vector<std::vector<double>>& coords,
                             std::vector<VectorXd>& data,
                             const std::vector<int>& numComponents,
                             int& pntNum);

@@ -1,10 +1,10 @@
 #include <FETransfer.H>
 
 // FIXME: Loop orders are pretty inefficient here. See Cubature.C for refactoring
-// 			  - basically want to loop over all data arrays per point instead of all points per array
-// 				- data locality improved in former case
-//				- stop using setPointDataArray and such methods. declare vtkSmartPointer<vtkDouble(orData)Array>
-//					 and populate them, then use AddArray method to set it in dataSet
+//        - basically want to loop over all data arrays per point instead of all points per array
+//        - data locality improved in former case
+//        - stop using setPointDataArray and such methods. declare vtkSmartPointer<vtkDouble(orData)Array>
+//           and populate them, then use AddArray method to set it in dataSet
 FETransfer::FETransfer(meshBase* _source, meshBase* _target)
 {
   source = _source;

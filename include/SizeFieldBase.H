@@ -25,11 +25,11 @@ class SizeFieldBase
     static SizeFieldBase* Create(meshBase* _mesh, std::string method, int arrayID);
     static SizeFieldBase* Create(meshBase* _mesh, std::string method, int arrayID,
                                 double _dev_mult, bool _maxIsmin);
-		static std::unique_ptr<SizeFieldBase> 
-		CreateUnique(meshBase* _mesh, std::string method, int arrayID, double _dev_mult, bool _maxIsmin)
-		{
-			return std::unique_ptr<SizeFieldBase>(SizeFieldBase::Create(_mesh,method,arrayID,_dev_mult,_maxIsmin));
-		}
+    static std::unique_ptr<SizeFieldBase> 
+    CreateUnique(meshBase* _mesh, std::string method, int arrayID, double _dev_mult, bool _maxIsmin)
+    {
+      return std::unique_ptr<SizeFieldBase>(SizeFieldBase::Create(_mesh,method,arrayID,_dev_mult,_maxIsmin));
+    }
 
   // method
   public:

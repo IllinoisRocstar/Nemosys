@@ -4,7 +4,7 @@
 Z2ErrorSizeField::Z2ErrorSizeField(meshBase* _mesh, int arrayID)
 {
   initialize(_mesh, arrayID, 0,0, "Z2ErrorSF");
-	order = mesh->getOrder();
+  order = mesh->getOrder();
   std::cout << "Z2ErrorSizeField constructed" << std::endl; 
 }
 

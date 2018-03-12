@@ -28,7 +28,7 @@ std::vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
     double values[dim*numPointsInCell];
     for (int i = 0; i < numPointsInCell; ++i)
     {
-			int id = (int) point_ids->GetId(i);
+      int id = (int) point_ids->GetId(i);
       for (int j = 0; j < dim; ++j)
         values[i*dim +j] = pntData[array](id,j); 
     }

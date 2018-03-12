@@ -13,11 +13,11 @@ Refine::Refine(meshBase* _mesh, const std::string& method,
   }
   if (!method.compare("uniform"))
   {
-		initUniform(edge_scale);
+    initUniform(edge_scale);
   } 
   if (mesh->getSFBool())
   {
-		initAdaptive(arrayID,method);
+    initAdaptive(arrayID,method);
   }
   else if (method.compare("uniform"))
   {
@@ -60,7 +60,7 @@ Refine::~Refine()
 
 void Refine::initUniform(double edge_scale)
 {
-	std::cout << "Uniform Refinement Selected" << std::endl;
+  std::cout << "Uniform Refinement Selected" << std::endl;
   mesh->writeMSH("converted.msh");
   MAd::pGModel gmodel = 0;
   MadMesh = MAd::M_new(gmodel);
@@ -181,7 +181,7 @@ void Refine::run(bool transferData)
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   //mesh->setCheckQuality(1);
   if (transferData)
-		mesh->transfer(refinedVTK,"Finite Element");
+    mesh->transfer(refinedVTK,"Finite Element");
 
   refinedVTK->setFileName(ofname);
   refinedVTK->report();

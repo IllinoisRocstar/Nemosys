@@ -14,10 +14,10 @@ class orthoPoly1D
   // ctors and dtor
   public:
     orthoPoly1D(int _order, const std::vector<double>& x);
-		orthoPoly1D(){}
-		orthoPoly1D(const orthoPoly1D& op);
-		orthoPoly1D& operator=(const orthoPoly1D& op);		
-		~orthoPoly1D(){}
+    orthoPoly1D(){}
+    orthoPoly1D(const orthoPoly1D& op);
+    orthoPoly1D& operator=(const orthoPoly1D& op);    
+    ~orthoPoly1D(){}
 
   // methods invoked in constructor
   public:

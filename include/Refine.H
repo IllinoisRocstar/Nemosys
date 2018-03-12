@@ -27,9 +27,9 @@ class Refine
  
   // helpers
   private:
-		void initUniform(double edge_scale);
-		void initAdaptive(int arrayID, const std::string& method);
-	
+    void initUniform(double edge_scale);
+    void initAdaptive(int arrayID, const std::string& method);
+  
     void classifyBoundaries();
     void unClassifyBoundaries();
 };
