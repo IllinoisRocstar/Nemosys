@@ -52,9 +52,9 @@ class GaussCubature
   public:
     // returns pointer to mesh object
     meshBase* getNodeMesh() { return nodeMesh; }
-    vtkSmartPointer<vtkPolyData> getGaussMesh() { return gaussMesh; }	
-  	vtkQuadratureSchemeDefinition** getDict() { return dict; }
-		std::vector<int> getNumComponents(){ return numComponents; }		
+    vtkSmartPointer<vtkPolyData> getGaussMesh() { return gaussMesh; } 
+    vtkQuadratureSchemeDefinition** getDict() { return dict; }
+    std::vector<int> getNumComponents(){ return numComponents; }    
     std::vector<int> getArrayIDs() { return arrayIDs; }
     int getTotalComponents() { return totalComponents; }
 

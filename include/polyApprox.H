@@ -41,7 +41,7 @@ class polyApprox
 
 
     // private lvalue copy ctor disables it (not implemented)
-		polyApprox(const polyApprox&) = delete;
+    polyApprox(const polyApprox&) = delete;
     // private lvalue copy assignment ctor disables it (not implemented)
     polyApprox& operator=(const polyApprox&) = delete; 
     
