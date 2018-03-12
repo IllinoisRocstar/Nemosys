@@ -117,7 +117,7 @@ class meshBase
     }
     virtual ~meshBase()
     {
-    	std::cout << "meshBase destroyed" << std::endl;
+      std::cout << "meshBase destroyed" << std::endl;
     }
   
   // meshBase factory methods
@@ -202,9 +202,9 @@ class meshBase
     bool getSFBool() { return hasSizeField; }
     // check for named array in vtk and return its integer id 
     int IsArrayName(std::string name);
-		// set mesh order
-		void setOrder(int _order) { order = _order;}
-		int getOrder() { return order; } 
+    // set mesh order
+    void setOrder(int _order) { order = _order;}
+    int getOrder() { return order; } 
  
   // adaptive mesh refinement
   public:
@@ -212,16 +212,16 @@ class meshBase
     // is ignored in calls where method is "gradient", "value" etc. instead of "uniform"
     void refineMesh(std::string method, int arrayID, 
                     double dev_mult, bool maxIsmin, double edge_scale, 
-										std::string ofname, bool transferData); 
+                    std::string ofname, bool transferData); 
     void refineMesh(std::string method, std::string arrayName, 
                     double dev_mult, bool maxIsmin, double edge_scale, 
-										std::string ofname, bool transferData); 
+                    std::string ofname, bool transferData); 
     // added for uniform refinement by driver
     void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData); 
-		void refineMesh(std::string method, int arrayID, int order, 
-									  std::string ofname, bool transferData);
-		void refineMesh(std::string method, std::string arrayName, int order, 
-									  std::string ofname, bool transferData);
+    void refineMesh(std::string method, int arrayID, int order, 
+                    std::string ofname, bool transferData);
+    void refineMesh(std::string method, std::string arrayName, int order, 
+                    std::string ofname, bool transferData);
   // diagnostics
   public:
     // generate a report of the mesh
@@ -263,7 +263,7 @@ class meshBase
     vtkSmartPointer<vtkDataSet> dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
-		int order; // shape function order
+    int order; // shape function order
 };
 
 // compares two meshBases- used in testing
