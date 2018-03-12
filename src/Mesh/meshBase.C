@@ -86,7 +86,7 @@ int meshBase::IsArrayName(std::string name)
 int meshBase::transfer(meshBase* target, std::string method, 
                        const std::vector<int>& arrayIDs)
 {
-	std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
+  std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
   return transobj->runPD(arrayIDs);
 }
@@ -111,14 +111,14 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
 // transfer all data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
-	std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
+  std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
   return transobj->run(); 
 }
 
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
 {
-	std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin);
+  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin);
   sfobj->computeSizeField(arrayID);
 }
 
@@ -795,18 +795,18 @@ void meshBase::refineMesh(std::string method, int arrayID,
                           double edge_scale, std::string ofname, bool transferData)
 {
 
-	std::unique_ptr<Refine> refineobj
-		= std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname));
+  std::unique_ptr<Refine> refineobj
+    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname));
   refineobj->run(transferData);
 }
 
 void meshBase::refineMesh(std::string method, int arrayID, int _order, 
-													std::string ofname, bool transferData)
+                          std::string ofname, bool transferData)
 {
-	setOrder(_order);	
-	std::unique_ptr<Refine> refineobj
-		= std::unique_ptr<Refine>(new Refine(this,method,arrayID,0,0,0,ofname));
-	refineobj->run(transferData);
+  setOrder(_order); 
+  std::unique_ptr<Refine> refineobj
+    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,0,0,0,ofname));
+  refineobj->run(transferData);
 }
 
 void meshBase::refineMesh(std::string method, std::string arrayName, 
@@ -824,7 +824,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
 }
 
 void meshBase::refineMesh(std::string method, std::string arrayName, int order, 
-													std::string ofname, bool transferData)
+                          std::string ofname, bool transferData)
 {
   int arrayID = IsArrayName(arrayName);
   if (arrayID == -1)
@@ -834,7 +834,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName, int order,
     exit(1);
   }
 
-	refineMesh(method, arrayID, order, ofname, transferData);
+  refineMesh(method, arrayID, order, ofname, transferData);
 }
 
 // added for uniform refinement by driver
@@ -854,8 +854,8 @@ vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()
 
 void meshBase::checkMesh(std::string ofname)
 {
-	std::unique_ptr<MeshQuality> qualCheck
-		= std::unique_ptr<MeshQuality>(new MeshQuality(this)); 
+  std::unique_ptr<MeshQuality> qualCheck
+    = std::unique_ptr<MeshQuality>(new MeshQuality(this)); 
   qualCheck->checkMesh(ofname);
 }
 
@@ -943,7 +943,7 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
     }
   }
   std::cerr << "Meshes are the same" << std::endl;
-	return 0;
+  return 0;
 }
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
