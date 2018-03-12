@@ -399,14 +399,19 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
     }
 
     // call functions based on which data appears first in file
-    cellDataFirst = (line.find("CELL_DATA") != std::string::npos && !pointDataFirst) ? 1 : 0;
-    pointDataFirst = (line.find("POINT_DATA") != std::string::npos && !cellDataFirst) ? 1: 0;
-
+    if (!readCellData && !readPointData)
+    {
+      cellDataFirst 
+        = (line.find("CELL_DATA") != std::string::npos && !pointDataFirst) ? 1 : 0;
+      pointDataFirst  
+        = (line.find("POINT_DATA") != std::string::npos && !cellDataFirst) ? 1: 0;
+    }
+    
     // read cell data then point data if it exists
     if (cellDataFirst)
     { 
       if (!readCellData) 
-      {
+      {                      // boolean telling us if there is point data ------|
         if (readCellData = readLegacyVTKData(meshStream, line, numCells, 0, hasPointData, dataSet_tmp))
         {
           std::cout << "read cell data" << std::endl;
