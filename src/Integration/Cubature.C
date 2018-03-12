@@ -286,6 +286,8 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
                         ->GetNumberOfQuadraturePoints();
   // get offset from nodeMesh for lookup of gauss points in polydata
   int offset = getOffset(cellID);
+
+  //pntDataPairVec container;
   pntDataPairVec container(numGaussPoints);
 
   vtkSmartPointer<vtkPointData> pd = gaussMesh->GetPointData();
@@ -429,8 +431,6 @@ void GaussCubature::interpolateToGaussPoints(const std::vector<std::string>& new
     gaussMesh->GetPointData()->AddArray(daGausses[id]);
   }
 }
-
-
 
 void GaussCubature::integrateOverCell
                       (int cellID,

@@ -75,7 +75,6 @@ void PatchRecovery::regularizeCoords(std::vector<std::vector<double>>& coords,
   genNodeCoord[2] = -1 + 2*(genNodeCoord[2] - minMaxXYZ[4])/(minMaxXYZ[5] - minMaxXYZ[4]);
 }
 
-
 void PatchRecovery::recoverNodalSolution()
 {
   std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;

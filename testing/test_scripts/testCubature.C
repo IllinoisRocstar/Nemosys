@@ -6,6 +6,7 @@ const char* refGauss;
 const char* refGauss1;
 const char* refInt;
 
+
 // The fixture for testing class orthoPoly. From google test primer.
 class CubatureTest : public ::testing::Test 
 {
@@ -17,7 +18,8 @@ class CubatureTest : public ::testing::Test
     {
       //mesh = meshBase::Create(nodeMesh);
       //cuby = new GaussCubature(mesh,arrayIDs);
-      mesh = meshBase::CreateShared(nodeMesh);
+
+			mesh = meshBase::CreateShared(nodeMesh);
       cuby = GaussCubature::CreateShared(mesh.get(), arrayIDs);
     }
   
@@ -70,18 +72,6 @@ TEST_F(CubatureTest, InterpolateToGauss)
 TEST_F(CubatureTest, integrateOverAllCells)
 {
   std::vector<std::vector<double>> totalIntegralData(cuby->integrateOverAllCells());
-  //std::vector<std::vector<double>> refTotalIntegralData(totalIntegralData.size());
-
-  //for (int i = 0; i < totalIntegralData.size(); ++i)
-  //{
-  //  refTotalIntegralData[i].resize(totalIntegralData[i].size());
-  //}
-  //refTotalIntegralData[0][0] = 28385.2;
-  //refTotalIntegralData[1][0] = 12718.5;
-  //refTotalIntegralData[2][0] = 0.00042734;
-  //refTotalIntegralData[2][1] = -5.75403e-08;
-  //refTotalIntegralData[2][2] = -5.99377e-08;
-
   std::vector<std::vector<double>> refTotalIntegralData 
     = {{28385.234}, {12718.489}, {10811986}, {0.00042734, -5.754033e-08, -5.99377e-08}};
 
@@ -97,7 +87,6 @@ TEST_F(CubatureTest, integrateOverAllCells)
   
   std::unique_ptr<meshBase> integralMesh = meshBase::CreateUnique(refInt);
   EXPECT_EQ(0,diffMesh(cuby->getNodeMesh(),integralMesh.get())); 
-  
 }
 
 int main(int argc, char** argv) {

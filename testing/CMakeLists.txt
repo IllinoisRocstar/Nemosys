@@ -59,3 +59,22 @@ ADD_TEST(NAME orthoPolyTest COMMAND runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt)
 ADD_TEST(NAME patchRecoveryTest COMMAND runPatchRecoveryTest ${PATCHRECOVERY_TESTDIR}/case0001.vtu ${PATCHRECOVERY_TESTDIR}/testRef.vtu)
 ADD_TEST(NAME transferTest COMMAND runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu ${TRANSFER_TESTDIR}/cellSource.vtu ${TRANSFER_TESTDIR}/target.vtu ${TRANSFER_TESTDIR}/pntRef.vtu ${TRANSFER_TESTDIR}/cellRef.vtu)
 ADD_TEST(NAME meshGenTest COMMAND runMeshGenTest ${MESHGEN_TESTDIR}/default.json ${MESHGEN_TESTDIR}/hingeRef.vtu ${MESHGEN_TESTDIR}/unif.json ${MESHGEN_TESTDIR}/hingeUnifRef.vtu ${MESHGEN_TESTDIR}/geom.json ${MESHGEN_TESTDIR}/hingeGeomRef.vtu)
+
+#Python wrapper testing
+
+FIND_PACKAGE(PythonInterp 2.7 REQUIRED)
+IF (ENABLE_PYTHON_BINDINGS)
+    if (NOT PYTHONINTERP_FOUND)
+      message(STATUS "Python interpreter NOT found")
+    else(NOT PYTHONINTERP_FOUND)
+      message(STATUS "Python interpreter found")
+      ADD_TEST(NAME testPyNemosys
+               COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys27.py
+               --topsrcdir ${CMAKE_CURRENT_SOURCE_DIR} )
+           set_property(TEST testPyNemosys
+                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/")
+           set_property(TEST testPyNemosys
+                        APPEND
+                        PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_SOURCE_DIR}/python")
+    endif (NOT PYTHONINTERP_FOUND)
+ENDIF()

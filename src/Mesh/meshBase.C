@@ -794,7 +794,6 @@ void meshBase::refineMesh(std::string method, int arrayID,
                           double dev_mult, bool maxIsmin, 
                           double edge_scale, std::string ofname, bool transferData)
 {
-
   std::unique_ptr<Refine> refineobj
     = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname));
   refineobj->run(transferData);
@@ -945,6 +944,7 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
   std::cerr << "Meshes are the same" << std::endl;
   return 0;
 }
+
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {

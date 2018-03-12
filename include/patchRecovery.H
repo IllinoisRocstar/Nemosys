@@ -10,7 +10,6 @@
 // holds gauss points and data at these points as pairs
 //typedef std::vector<pntDataPair> pntDataPairVec;
 
-
 class PatchRecovery
 {
   
