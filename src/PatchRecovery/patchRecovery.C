@@ -1,20 +1,20 @@
 #include <patchRecovery.H>
 
 PatchRecovery::PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<int>& arrayIDs)
-	: order(_order)
+  : order(_order)
 {
   cubature = GaussCubature::CreateUnique(nodeMesh, arrayIDs);
 }
 
 
 void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData, 
-																       std::vector<std::vector<double>>& coords,
+                                       std::vector<std::vector<double>>& coords,
                                        std::vector<VectorXd>& data,
                                        const std::vector<int>& numComponents,
                                        int& pntNum)
 {
-	for (int i = 0; i < pntsAndData.size(); ++i)
-	{
+  for (int i = 0; i < pntsAndData.size(); ++i)
+  {
     coords[pntNum] = std::move(pntsAndData[i].first);
    // printVec(coords[pntNum]);
     int currcomp = 0;
@@ -26,10 +26,10 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
         ++currcomp;
       }
     }
-	  pntNum += 1;
+    pntNum += 1;
   }
 }
-													
+                          
 std::vector<double> 
 PatchRecovery::getMinMaxCoords(const std::vector<std::vector<double>>& coords)
 {
@@ -86,7 +86,7 @@ void PatchRecovery::recoverNodalSolution()
   vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
   // getting cubature scheme dictionary for indexing
   vtkQuadratureSchemeDefinition** dict = cubature->getDict();
-	std::vector<int> numComponents = cubature->getNumComponents();
+  std::vector<int> numComponents = cubature->getNumComponents();
   // getting number of doubles representing all data at point
   int totalComponents = cubature->getTotalComponents();
   // storage for new point data
@@ -108,20 +108,20 @@ void PatchRecovery::recoverNodalSolution()
   //std::vector<double> rmse(totalComponents,0);
   int totPatchPoints = 0; 
   // looping over all points, looping over patches per point
-	for (int i = 0; i < numPoints; ++i)
+  for (int i = 0; i < numPoints; ++i)
   {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
     // get total number of gauss points in patch 
     int numPatchPoints = 0;
     for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
-		{
+    {
       int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
       numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints(); 
     }
     // coordinates of each gauss point in patch
     std::vector<std::vector<double>> coords(numPatchPoints);
-		// vector of components of data at all gauss points in patch
+    // vector of components of data at all gauss points in patch
     std::vector<VectorXd> data(totalComponents);
     for (int k = 0; k < totalComponents; ++k)
     {
@@ -135,13 +135,13 @@ void PatchRecovery::recoverNodalSolution()
       extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
     }
 
-		// get coordinate of node that generates patch
+    // get coordinate of node that generates patch
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
-		std::vector<std::vector<double>> tmpCoords = coords;
+    std::vector<std::vector<double>> tmpCoords = coords;
     // construct polyapprox from coords
-		std::unique_ptr<polyApprox> patchPolyApprox 
+    std::unique_ptr<polyApprox> patchPolyApprox 
       = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
     int currComp = 0;
     for (int k = 0; k < numComponents.size(); ++k)
@@ -199,7 +199,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
   // getting cubature scheme dictionary for indexing
   vtkQuadratureSchemeDefinition** dict = cubature->getDict();
-	std::vector<int> numComponents = cubature->getNumComponents();
+  std::vector<int> numComponents = cubature->getNumComponents();
   // getting number of doubles representing all data at a given point
   int totalComponents = cubature->getTotalComponents();
   // storage for new point data
@@ -239,7 +239,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New(); 
 
   // looping over all points, looping over patches per point
-	for (int i = 0; i < numPoints; ++i)
+  for (int i = 0; i < numPoints; ++i)
   {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
@@ -249,7 +249,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     // also get average size of elements in patch
     double nodeSize = 0;
     for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
-		{
+    {
       // put current patch cell into gencell
       nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k),genCell);
       int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
@@ -262,7 +262,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     nodeSizes->InsertTuple(i, &nodeSize);
     // coordinates of each gauss point in patch
     std::vector<std::vector<double>> coords(numPatchPoints);
-		// vector of components of data at all gauss points in patch
+    // vector of components of data at all gauss points in patch
     std::vector<VectorXd> data(totalComponents);
     for (int k = 0; k < totalComponents; ++k)
     {
@@ -276,13 +276,13 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
       extractAxesAndData(pntsAndData, coords, data, numComponents, pntNum);
     }
 
-		// get coordinate of node that generates patch
+    // get coordinate of node that generates patch
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
-		std::vector<std::vector<double>> tmpCoords = coords;
+    std::vector<std::vector<double>> tmpCoords = coords;
     // construct polyapprox from coords
-		std::unique_ptr<polyApprox> patchPolyApprox 
+    std::unique_ptr<polyApprox> patchPolyApprox 
       = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
     int currComp = 0;
     for (int k = 0; k < numComponents.size(); ++k)

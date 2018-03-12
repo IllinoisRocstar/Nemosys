@@ -87,10 +87,10 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
         params->check_overlap = ngparams["check_overlap"].as<bool>();
       if (ngparams.has_key("check_overlapping_boundary"))
         params->check_overlapping_boundary = ngparams["check_overlapping_boundary"].as<bool>();
-			if (ngparams.has_key("refine_with_geometry_adaptation"))
-				params->refine_with_geom = ngparams["refine_with_geometry_adaptation"].as<bool>();
-			if (ngparams.has_key("refine_without_geometry_adaptation"))
-				params->refine_without_geom = ngparams["refine_without_geometry_adaptation"].as<bool>(); 
+      if (ngparams.has_key("refine_with_geometry_adaptation"))
+        params->refine_with_geom = ngparams["refine_with_geometry_adaptation"].as<bool>();
+      if (ngparams.has_key("refine_without_geometry_adaptation"))
+        params->refine_without_geom = ngparams["refine_without_geometry_adaptation"].as<bool>(); 
 
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;

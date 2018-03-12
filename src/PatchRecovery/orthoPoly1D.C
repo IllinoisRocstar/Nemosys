@@ -12,25 +12,25 @@ orthoPoly1D::orthoPoly1D(int _order, const std::vector<double>& x) : order(_orde
 
 orthoPoly1D::orthoPoly1D(const orthoPoly1D& op)
 {
-	order = op.order;
-	a = op.a;
-	b = op.b;
-	phi = op.phi;
-	phiTphiInv = op.phiTphiInv;
+  order = op.order;
+  a = op.a;
+  b = op.b;
+  phi = op.phi;
+  phiTphiInv = op.phiTphiInv;
 }
 
 orthoPoly1D& orthoPoly1D::operator=(const orthoPoly1D& op)
 {
-	if (this != &op)
-	{
-		order = op.order;
-		a = op.a;
-		b = op.b;
-		phi = op.phi;
-		phiTphiInv = op.phiTphiInv;
-	}
-	return *this;
-}		
+  if (this != &op)
+  {
+    order = op.order;
+    a = op.a;
+    b = op.b;
+    phi = op.phi;
+    phiTphiInv = op.phiTphiInv;
+  }
+  return *this;
+}   
 
 double orthoPoly1D::EvaluateOrthogonal(int power, double xk)
 {
