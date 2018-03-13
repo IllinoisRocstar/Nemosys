@@ -5,6 +5,7 @@ import sys
 import tempfile
 from shutil import copy2
 import argparse
+from inspect import currentframe, getframeinfo
 
 global topsrcdir
 
@@ -15,6 +16,8 @@ class TestPyNemosys(unittest.TestCase):
     #     self.datadir_path = os.path.join(self.CMAKE_CURRENT_SOURCE_DIR, 'test_data/test_pyNemosys/')
 
     def testMeshBase(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import meshBase, diffMesh
         tmpdirname=tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -43,6 +46,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testTransferDriver(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
         tmpdirname=tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -67,6 +72,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testTransferDriver_load_json_obj(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
         tmpdirname = tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -85,6 +92,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testTransferDriver_load_json_filename(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
         tmpdirname = tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -100,11 +109,15 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testNemDriver_readJSON(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import NemDriver
         #TODO: this
 
 
     def testRefineDriver_value(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
         tmpdirname = tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -127,11 +140,13 @@ class TestPyNemosys(unittest.TestCase):
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin,
-                                 edgescale, ofname)
+                                 edgescale, ofname, True)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
 
     def testRefineDriver_uniform(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
         tmpdirname = tempfile.mkdtemp()
         os.chdir(tmpdirname)
@@ -149,11 +164,13 @@ class TestPyNemosys(unittest.TestCase):
 
         gold_output_file = 'gold_refined_beam_uniform.vtu'
 
-        refdrvobj = RefineDriver(_mesh, method, edgescale, ofname)
+        refdrvobj = RefineDriver(_mesh, method, edgescale, ofname, True)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
 
     def testRefineDriver_readJSON_obj(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
 
         tmpdirname = tempfile.mkdtemp()
@@ -174,6 +191,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testRefineDriver_readJSON_filename(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
 
         tmpdirname = tempfile.mkdtemp()
@@ -191,6 +210,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testMeshGenDriver_readJSON_obj(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import MeshGenDriver, diffMesh, meshBase
 
         tmpdirname = tempfile.mkdtemp()
@@ -211,6 +232,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testMeshGenDriver_readJSON_filename(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import MeshGenDriver, diffMesh, meshBase
 
         tmpdirname = tempfile.mkdtemp()
@@ -228,6 +251,8 @@ class TestPyNemosys(unittest.TestCase):
 
 
     def testMeshQualityDriver(self):
+        frameinfo = getframeinfo(currentframe())
+        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
         from pyNemosys import MeshQualityDriver, meshBase
 
         tmpdirname = tempfile.mkdtemp()
