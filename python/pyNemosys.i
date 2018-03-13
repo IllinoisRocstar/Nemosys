@@ -57,10 +57,10 @@ class meshBase
     int IsArrayName(std::string name);
 
     void refineMesh(std::string method, int arrayID,
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname);
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData);
     void refineMesh(std::string method, std::string arrayName,
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname);
-    void refineMesh(std::string method, double edge_scale, std::string ofname);
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData);
+    void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData);
 
     virtual void report();
     int getNumberOfPoints();
@@ -171,9 +171,9 @@ class RefineDriver : public NemDriver
 {
   public:
     RefineDriver(std::string _mesh, std::string method, std::string arrayName,
-                 double dev_mult, bool maxIsmin, double edgescale, std::string ofname);
+                 double dev_mult, bool maxIsmin, double edgescale, std::string ofname, bool transferData);
     RefineDriver(std::string _mesh, std::string method,
-                 double edgescale, std::string ofname);
+                 double edgescale, std::string ofname, bool transferData);
 
   ~RefineDriver();
 

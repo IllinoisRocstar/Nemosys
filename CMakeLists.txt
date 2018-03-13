@@ -5,27 +5,28 @@ ENABLE_TESTING()
 # this variable controls the default value of the options which are normally set
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
 # -DDEFAULT=0 -DENABLE_DTK=1")
-set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+SET(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
 
-macro(opt OPTION HELP VALUE)
-  option(ENABLE_${OPTION} ${HELP} ${VALUE})
-  set(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
-endmacro(opt)
+MACRO(opt OPTION HELP VALUE)
+  OPTION(ENABLE_${OPTION} ${HELP} ${VALUE})
+  SET(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
+ENDMACRO(opt)
 
 # set to $DEFAULT to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
+opt(TESTING "Enable testing" ON)
 
 # set up version
-set(NEMOSYS_MAJOR_VERSION 1)
-set(NEMOSYS_MINOR_VERSION 2)
-set(NEMOSYS_PATCH_VERSION 0)
-set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
-set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
-set(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
-set(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
+SET(NEMOSYS_MAJOR_VERSION 1)
+SET(NEMOSYS_MINOR_VERSION 2)
+SET(NEMOSYS_PATCH_VERSION 0)
+SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
+SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
+SET(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
+SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
 
 # finding libraries ###############################################################
 IF (ENABLE_MPI)
@@ -47,7 +48,6 @@ FIND_FILE(GMSH_HDR gmsh/Gmsh.h)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
 MESSAGE(STATUS ${GMSH_INCPATH})
 
-
 FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
@@ -67,39 +67,10 @@ MESSAGE(STATUS ${NETGEN_INCPATH})
 
 
 IF (ENABLE_DTK)
-  #FIND_LIBRARY(DTK_LIB classic_dtk)
-  #FIND_FILE(DTK_HDR DTK_GeometryManager.hpp)
-  #GET_FILENAME_COMPONENT(DTK_INCPATH ${DTK_HDR} PATH)
-  #MESSAGE(${TRILINOS_PATH})
   FIND_PACKAGE(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos ${TRILINOS_PATH})
-  IF(Trilinos_FOUND)
-     #MESSAGE("\nFound Trilinos!  Here are the details: ")
-     #MESSAGE("   Trilinos_DIR = ${Trilinos_DIR}")
-     #MESSAGE("   Trilinos_VERSION = ${Trilinos_VERSION}")
-     #MESSAGE("   Trilinos_PACKAGE_LIST = ${Trilinos_PACKAGE_LIST}")
-     #MESSAGE("   Trilinos_LIBRARIES = ${Trilinos_LIBRARIES}")
-     #MESSAGE("   Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS}")
-     #MESSAGE("   Trilinos_TPL_LIST = ${Trilinos_TPL_LIST}")
-     #MESSAGE("   Trilinos_TPL_INCLUDE_DIRS = ${Trilinos_TPL_INCLUDE_DIRS}")
-     #MESSAGE("   Trilinos_TPL_LIBRARIES = ${Trilinos_TPL_LIBRARIES}")
-     #MESSAGE("   Trilinos_BUILD_SHARED_LIBS = ${Trilinos_BUILD_SHARED_LIBS}")
-     #MESSAGE("   Trilinos_CXX_COMPILER = ${Trilinos_CXX_COMPILER}")
-     #MESSAGE("   Trilinos_C_COMPILER = ${Trilinos_C_COMPILER}")
-     #MESSAGE("   Trilinos_Fortran_COMPILER = ${Trilinos_Fortran_COMPILER}")
-     #MESSAGE("   Trilinos_CXX_COMPILER_FLAGS = ${Trilinos_CXX_COMPILER_FLAGS}")
-     #MESSAGE("   Trilinos_C_COMPILER_FLAGS = ${Trilinos_C_COMPILER_FLAGS}")
-     #MESSAGE("   Trilinos_Fortran_COMPILER_FLAGS =
-     #  ${Trilinos_Fortran_COMPILER_FLAGS}")
-     #MESSAGE("   Trilinos_LINKER = ${Trilinos_LINKER}")
-     #MESSAGE("   Trilinos_EXTRA_LD_FLAGS = ${Trilinos_EXTRA_LD_FLAGS}")
-     #MESSAGE("   Trilinos_AR = ${Trilinos_AR}")
-     #MESSAGE("End of Trilinos details\n")
-  ELSE()
+  IF(NOT Trilinos_FOUND)
     MESSAGE(FATAL_ERROR "Could not find Trilinos!")
   ENDIF()
-  #INCLUDE_DIRECTORIES(".")
-  #INCLUDE_DIRECTORIES(${Trilinos_TPL_INCLUDE_DIRS})
-  #INCLUDE_DIRECTORIES(${Trilinos_INCLUDE_DIRS})
   MESSAGE (Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS})
   LINK_DIRECTORIES(${Trilinos_LIBRARY_DIRS})
   LINK_DIRECTORIES(${Trilinos_TPL_LIBRARY_DIRS})
@@ -145,9 +116,9 @@ ENDIF()
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
 
 # Compiled objects output paths
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Set up RPATH
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -160,14 +131,11 @@ IF("${isSystemDir}" STREQUAL "-1")
    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 ENDIF("${isSystemDir}" STREQUAL "-1")
 
-# Set up testing
-OPTION(BUILD_TESTING "Build tests" OFF)
-IF(BUILD_TESTING)
-  INCLUDE(CTest)
-  SET(BUILDNAME "${BUILDNAME}" CACHE STRING "Name of build on the dashboard")
-  MARK_AS_ADVANCED(BUILDNAME)
-ENDIF(BUILD_TESTING)
-
+# turning off warninings
+IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  # Update if necessary
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+ENDIF()
 
 # Setting files   ###############################################################
 # Install include files
@@ -182,19 +150,16 @@ SET(NEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                  src/cgnsWriter.C  src/gridTransfer.C src/meshPhys.C src/netgenInterface.C
                  src/Mesh/meshBase.C src/Mesh/vtkMesh.C src/MeshGeneration/meshGen.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
-                 src/SizeFieldGeneration/SizeFieldBase.C 
-                 src/SizeFieldGeneration/GradSizeField.C 
+                 src/SizeFieldGeneration/SizeFieldBase.C
+                 src/SizeFieldGeneration/GradSizeField.C
                  src/SizeFieldGeneration/ValSizeField.C
-                 src/SizeFieldGeneration/Z2ErrorSizeField.C 
-                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C 
+                 src/SizeFieldGeneration/Z2ErrorSizeField.C
+                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C 
+                 src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
-SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C 
-    utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C) #utils/refineMesh.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/vol2planeTransfer.C
     utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
@@ -202,7 +167,7 @@ SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.cpp)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
-set(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
+SET(ALL_SRCS ${NEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
              testing/test_scripts/diff_vtu.cpp testing/test_scripts/diff_tol.cpp)
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
@@ -245,7 +210,6 @@ ENDIF()
 TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} sphere interp)
 INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
-
 # Rocstar support library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Rocs SHARED ${ROCSTAR_SRCS})
@@ -264,33 +228,14 @@ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk
 
 # Building Nemosys Core utility ###########################################
 ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
-if(VTK_LIBRARIES)
+IF(VTK_LIBRARIES)
   TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
-else()
+ELSE()
   TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
-endif()
+ENDIF()
 INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
 
-ADD_EXECUTABLE(nemTest utils/nemTest.C)
-if(VTK_LIBRARIES)
-  TARGET_LINK_LIBRARIES(nemTest Nemosys)
-else()
-  TARGET_LINK_LIBRARIES(nemTest Nemosys vtkHybrid vtkWidgets)
-endif()
-INSTALL(TARGETS nemTest RUNTIME DESTINATION bin)
-
-
 IF(BUILD_UTILS)
-
-  # refineMesh utility
-  #ADD_EXECUTABLE(refineMesh utils/refineMesh.C)
-  #if(VTK_LIBRARIES)
-  #  TARGET_LINK_LIBRARIES(refineMesh Nemosys)
-  #else()
-  #  TARGET_LINK_LIBRARIES(refineMesh Nemosys vtkHybrid vtkWidgets)
-  #ENDIF()
-  #INSTALL(TARGETS refineMesh RUNTIME DESTINATION bin)
-  
 
   # xmlDump utility
   ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
@@ -325,7 +270,7 @@ IF(BUILD_UTILS)
   ADD_EXECUTABLE(vol2planeTransfer utils/vol2planeTransfer.C)
   if(VTK_LIBRARIES)
     TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys)
-  else()
+  ELSE()
     TARGET_LINK_LIBRARIES(vol2planeTransfer Nemosys vtkHybrid vtkWidgets)
   ENDIF()
   INSTALL(TARGETS vol2planeTransfer RUNTIME DESTINATION bin)
@@ -343,7 +288,7 @@ IF(BUILD_UTILS)
     ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
     TARGET_LINK_LIBRARIES(dtkTutorial Nemosys Rocs
-                                             ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
+        ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
   ENDIF()
 
@@ -378,42 +323,44 @@ IF(BUILD_DOCUMENTATION)
   ADD_CUSTOM_TARGET( docs DEPENDS ${documentation} )
   INSTALL( DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION share/Nemosys )
 ENDIF()
+SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
 
 # Perform testing ############################################################
-# adding gtest subdir with its own cmake file
-add_subdirectory(${CMAKE_SOURCE_DIR}/testing/lib/gtest-1.6.0)
-# include gtest library. gtest_SOURCE_DIR is availble from subdir addition
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
+IF (ENABLE_TESTING)
+    # adding gtest subdir with its own cmake file
+    ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/testing/lib/gtest-1.6.0)
+    # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
+    INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
 
-SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
-SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
-SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
-SET(DIFFVTU ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_vtu)
-SET(DIFFVTUSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_vtu.cpp)
-SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    SET(DIFFTOL ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol)
+    SET(DIFFTOLSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_tol.cpp)
+    SET(DIFFVTU ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_vtu)
+    SET(DIFFVTUSOURCE ${CMAKE_SOURCE_DIR}/testing/test_scripts/diff_vtu.cpp)
+    SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
-ADD_EXECUTABLE(diff_vtu ${DIFFVTUSOURCE})
-ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
-ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testConversion.C)
-ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
-ADD_EXECUTABLE(runPatchRecoveryTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testPatchRecovery.C)
-ADD_EXECUTABLE(runTransferTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testTransfer.C)
-ADD_EXECUTABLE(runMeshGenTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testMeshGen.C)
-TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(runPatchRecoveryTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
-TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
+    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    ADD_EXECUTABLE(diff_tol ${DIFFTOLSOURCE})
+    ADD_EXECUTABLE(diff_vtu ${DIFFVTUSOURCE})
+    ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
+    ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testConversion.C)
+    ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
+    ADD_EXECUTABLE(runPatchRecoveryTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testPatchRecovery.C)
+    ADD_EXECUTABLE(runTransferTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testTransfer.C)
+    ADD_EXECUTABLE(runMeshGenTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testMeshGen.C)
+    TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runPatchRecoveryTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(diff_vtu Nemosys)
 
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
-ADD_SUBDIRECTORY(testing)
-INSTALL(FILES ${DIFFTOL} ${DIFFVTU} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-INSTALL(TARGETS runPatchRecoveryTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-INSTALL(TARGETS runTransferTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-INSTALL(TARGETS runMeshGenTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
+    ADD_SUBDIRECTORY(testing)
+    INSTALL(FILES ${DIFFTOL} ${DIFFVTU} PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    INSTALL(TARGETS runPatchRecoveryTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    INSTALL(TARGETS runTransferTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+    INSTALL(TARGETS runMeshGenTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+ENDIF ()
