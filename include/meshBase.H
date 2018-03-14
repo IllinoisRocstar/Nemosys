@@ -12,6 +12,7 @@
 #include <vtkXMLCompositeDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLImageDataReader.h>
+#include <vtkSTLReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkGenericDataObjectReader.h>
 #include <vtkDataSet.h>
@@ -41,6 +42,7 @@
 #include <vtkXMLHyperOctreeWriter.h>
 #include <vtkXMLCompositeDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
+#include <vtkSTLWriter.h>
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>

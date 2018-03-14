@@ -20,6 +20,11 @@ void vtkMesh::write()
     writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
   else if (extension == ".vto")
     writeVTFile<vtkXMLHyperOctreeWriter> (filename,dataSet);
+  else if (extension == ".stl") // stl written to vtp
+  {
+    filename = trim_fname(filename , ".vtp");
+    writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
+  }
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (filename,dataSet);   // default is vtu 
 } 
@@ -33,7 +38,8 @@ void vtkMesh::write(std::string fname)
   }
    
   std::string extension = find_ext(fname);
- 
+  std::cout << "Extension: " << extension << std::endl; 
+
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
   else if (extension == ".vts")
@@ -44,6 +50,8 @@ void vtkMesh::write(std::string fname)
     writeVTFile<vtkXMLImageDataWriter> (fname, dataSet);
   else if (extension == ".vto")
     writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
+  else if (extension == ".stl")
+    writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
   
@@ -55,27 +63,31 @@ vtkMesh::vtkMesh(const char* fname)
   // Dispatch based on the file extension
   if (extension == ".vtu")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLUnstructuredGridReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLUnstructuredGridReader> (fname));
   }
   else if (extension == ".vtp")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLPolyDataReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLPolyDataReader> (fname));
   }
   else if (extension == ".vts")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLStructuredGridReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLStructuredGridReader> (fname));
   }
   else if (extension == ".vtr")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLRectilinearGridReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLRectilinearGridReader> (fname));
   }
   else if (extension == ".vti")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLImageDataReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLImageDataReader> (fname));
   }
   else if (extension == ".vto")
   {
-    dataSet.TakeReference(ReadAnXMLFile<vtkXMLHyperOctreeReader> (fname));
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLHyperOctreeReader> (fname));
+  }
+  else if (extension == ".stl")
+  {
+    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkSTLReader> (fname));
   }
   else if (extension == ".vtk")
   {
