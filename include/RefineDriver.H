@@ -14,11 +14,14 @@ class RefineDriver : public NemDriver
   
     RefineDriver(std::string _mesh, std::string method, std::string arrayName, int order,
                  std::string ofname, bool transferData);
+    
 
-  static RefineDriver* readJSON(json inputjson);
-  static RefineDriver* readJSON(std::string ifname);
+    static RefineDriver* readJSON(json inputjson);
+    static RefineDriver* readJSON(std::string ifname);
 
-  ~RefineDriver();
+    ~RefineDriver();
+
+    meshBase* getMesh() { return mesh; }
 
   private:
     meshBase* mesh;
