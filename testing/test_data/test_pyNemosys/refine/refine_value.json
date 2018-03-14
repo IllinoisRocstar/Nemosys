@@ -9,6 +9,6 @@
         "Array Name": "stress_zz",
         "StdDev Multiplier": 0.5,
         "Max Is Min for Scaling": 1,
-        "Transfer Data": 1
+        "Transfer Data": 0
     }
 }

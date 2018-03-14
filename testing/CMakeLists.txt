@@ -17,22 +17,6 @@ ENDMACRO()
 
 SUBDIRLIST(TEST_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/test_data)
 
-MESSAGE(STATUS "TEST CASES: ${TEST_DIRS}")
-
-FIND_PROGRAM(BASH_PROGRAM bash)
-
-SET(test_in ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/tests_in.sh)
-SET(test ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/tests.sh)
-
-
-CONFIGURE_FILE( ${test_in} ${test} @ONLY )
-
-#IF (BASH_PROGRAM)
-#  FOREACH(dir ${TEST_DIRS})
-#    ADD_TEST(${dir} ${BASH_PROGRAM} ${test} ${dir})
-#  ENDFOREACH()
-#endif (BASH_PROGRAM)
-
 SET(TEST_DATA ${CMAKE_CURRENT_LIST_DIR}/test_data)
 SET(CUBATURE_TESTDIR ${TEST_DATA}/CubatureTest)
 SET(CONVERSION_TESTDIR ${TEST_DATA}/ConversionTest)
