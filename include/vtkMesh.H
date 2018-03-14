@@ -6,7 +6,7 @@
 using namespace nemAux;
 
 // read files from any vtk format (except legacy .vtk)
-template<class TReader> vtkDataSet* ReadAnXMLFile(const char* fileName)
+template<class TReader> vtkDataSet* ReadAnXMLOrSTLFile(const char* fileName)
 {
   vtkSmartPointer<TReader> reader =
     vtkSmartPointer<TReader>::New();

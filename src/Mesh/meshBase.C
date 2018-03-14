@@ -11,7 +11,7 @@
 
 meshBase* meshBase::Create(std::string fname)
 {
-  if (fname.find(".vt") != -1 ) 
+  if (fname.find(".vt") != -1 || fname.find(".stl") != -1 ) 
   {
     vtkMesh* vtkmesh = new vtkMesh(&fname[0u]);
     vtkmesh->setFileName(fname);
