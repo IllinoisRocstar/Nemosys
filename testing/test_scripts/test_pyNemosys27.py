@@ -134,13 +134,14 @@ class TestPyNemosys(unittest.TestCase):
         arrayName = str(inputjson["Refinement Options"]["Array Name"])
         dev_mult = inputjson["Refinement Options"]["StdDev Multiplier"]
         maxIsmin = inputjson["Refinement Options"]["Max Is Min for Scaling"] in [1, 'true', 'True']
+        transferData = inputjson["Refinement Options"]["Transfer Data"] in [1, 'true', 'True']
         print(maxIsmin)
         edgescale = 0.0
 
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin,
-                                 edgescale, ofname, True)
+                                 edgescale, ofname, transferData)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
 
@@ -161,10 +162,11 @@ class TestPyNemosys(unittest.TestCase):
         ofname = str(inputjson["Mesh File Options"]["Output Mesh File"])
         method = str(inputjson["Refinement Options"]["Refinement Method"])
         edgescale = inputjson["Refinement Options"]["Edge Scaling"]
+        transferData = inputjson["Refinement Options"]["Transfer Data"] in [1, 'true', 'True']
 
         gold_output_file = 'gold_refined_beam_uniform.vtu'
 
-        refdrvobj = RefineDriver(_mesh, method, edgescale, ofname, True)
+        refdrvobj = RefineDriver(_mesh, method, edgescale, ofname, transferData)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
 
@@ -186,7 +188,6 @@ class TestPyNemosys(unittest.TestCase):
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver.readJSON(inputjson)
-
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
 
@@ -205,7 +206,6 @@ class TestPyNemosys(unittest.TestCase):
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver.readJSON('refine_value.json')
-
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
 
