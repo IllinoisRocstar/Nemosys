@@ -3,7 +3,7 @@ image: snatesh/testdoc:testimg
 before_script:
  - cp -r /tmp/install .
  - mkdir build && cd build
- - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
+ - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake .. -DPYTHON_BINDINGS=ON
  - make 
  
 job1:
