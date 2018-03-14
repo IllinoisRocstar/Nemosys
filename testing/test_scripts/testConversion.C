@@ -9,6 +9,7 @@ const char* legacyVTK1;
 const char* legacyVTK2;
 const char* legacyVTK1_ref;
 const char* legacyVTK2_ref;
+const char* stlvtp;
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -38,9 +39,22 @@ TEST(Conversion, ConvertLegacyVTKToVTU)
   EXPECT_EQ(0, diffMesh(mesh1.get(), mesh1_ref.get()));
 }
 
+TEST(Conversion, ConvertVTPToSTLAndBack)
+{
+  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(stlvtp);
+  mesh->write("gorilla-test.stl");
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique("gorilla-test.stl");
+  EXPECT_EQ(0, diffMesh(mesh.get(), refMesh.get()));
+  if (remove("gorilla-test.stl"))
+  {
+    std::cerr << "Error removing gorilla-test.stl" << std::endl;
+    exit(1);
+  } 
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 9);
+  assert(argc == 10);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -49,6 +63,7 @@ int main(int argc, char** argv) {
   legacyVTK2 = argv[6];
   legacyVTK1_ref = argv[7];
   legacyVTK2_ref = argv[8];
+  stlvtp = argv[9];
   return RUN_ALL_TESTS();
 }
 
