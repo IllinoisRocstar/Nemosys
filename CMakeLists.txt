@@ -119,11 +119,10 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/lib")
-#set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/Nemosys/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# turning off warninings
+# turning off warnings
 IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
@@ -135,7 +134,7 @@ FILE(GLOB H_FILES include/*.H)
 FILE(GLOB h_FILES include/*.h)
 FILE(GLOB hpp_FILES include/*.hpp)
 SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
-INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION include)
+INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C 
@@ -151,7 +150,7 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
-SET(OLDNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
+SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                 src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
@@ -159,7 +158,7 @@ SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.C)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
-SET(ALL_SRCS ${NEMOSYS_SRCS} ${OLDNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
+SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
@@ -192,12 +191,12 @@ TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBR
 
 # build old nemosys lib
 IF(NOT BUILD_STATIC)
-  ADD_LIBRARY(OldNemosys SHARED ${OLDNEMOSYS_SRCS})
+  ADD_LIBRARY(AltNemosys SHARED ${ALTNEMOSYS_SRCS})
 ELSE()
-  ADD_LIBRARY(OldNemosys ${OLDNEMOSYS_SRCS})
+  ADD_LIBRARY(AltNemosys ${ALTNEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(OldNemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
+TARGET_LINK_LIBRARIES(AltNemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
 
 # Rocstar support library
 IF(NOT BUILD_STATIC)
@@ -206,8 +205,8 @@ ELSE()
   ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
 ENDIF()
 
-INSTALL(TARGETS r8 interp Nemosys OldNemosys Rocs
-        LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs
+        LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Builiding utilities #########################################################
@@ -222,7 +221,7 @@ IF(VTK_LIBRARIES)
 ELSE()
   TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
 ENDIF()
-INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin
+INSTALL(TARGETS nemosysRun RUNTIME DESTINATION Nemosys/bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -235,55 +234,41 @@ IF(ENABLE_BUILD_UTILS)
   else()
     TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets)
   ENDIF()
-  INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                    GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # cgns2gmsh utility
   ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
-  TARGET_LINK_LIBRARIES(cgns2msh OldNemosys)
-  INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  TARGET_LINK_LIBRARIES(cgns2msh AltNemosys)
 
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
-  TARGET_LINK_LIBRARIES(rocRemesh OldNemosys)
-  INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  TARGET_LINK_LIBRARIES(rocRemesh AltNemosys)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
-  TARGET_LINK_LIBRARIES(rocSurfRemesh OldNemosys Rocs)
-  INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  TARGET_LINK_LIBRARIES(rocSurfRemesh AltNemosys Rocs)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
-  TARGET_LINK_LIBRARIES(grid2gridTransfer OldNemosys Rocs)
-  INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  TARGET_LINK_LIBRARIES(grid2gridTransfer AltNemosys Rocs)
 
   # Building tutorials ###########################################################
   SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
-  TARGET_LINK_LIBRARIES(mshTransfer OldNemosys)
-  INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin
-          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  TARGET_LINK_LIBRARIES(mshTransfer AltNemosys)
+  
+  INSTALL(TARGETS xmlDump cgns2msh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer 
+          RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+          GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # DTK tutorial
   IF (ENABLE_DTK)
     ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-    TARGET_LINK_LIBRARIES(dtkTutorial OldNemosys Rocs
+    TARGET_LINK_LIBRARIES(dtkTutorial AltNemosys Rocs
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin
+    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION Nemosys/bin
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   ENDIF()
@@ -293,6 +278,8 @@ ENDIF(ENABLE_BUILD_UTILS)
 # Building python wrapper #####################################################
 IF (ENABLE_PYTHON_BINDINGS)
     ADD_SUBDIRECTORY(python)
+    file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/Nemosys/python/src)
+    file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib)
 ENDIF()
 
 # Building converters ##########################################################
@@ -317,7 +304,7 @@ IF(BUILD_DOCUMENTATION)
                       DEPENDS Nemosys ${doxy_extra_files}
                       COMMENT "Generating documentation")
   ADD_CUSTOM_TARGET( docs DEPENDS ${documentation} )
-  INSTALL( DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION share/Nemosys )
+  INSTALL( DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION Nemosys/share )
 ENDIF()
 
 # Perform testing ############################################################
