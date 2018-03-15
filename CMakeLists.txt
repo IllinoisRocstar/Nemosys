@@ -53,10 +53,6 @@ FIND_LIBRARY(CGNS_LIB cgns)
 FIND_FILE(CGNS_HDR cgnslib.h)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
 
-#FIND_LIBRARY(ANN_LIB ann HINTS /usr/lib/)
-#FIND_FILE(ANN_HDR ANN.h HINTS /usr/include/ANN/)
-#GET_FILENAME_COMPONENT(ANN_INCPATH ${ANN_HDR} PATH)
-
 FIND_LIBRARY(METIS_LIB metis)
 FIND_FILE(METIS_HDR metis.h)
 GET_FILENAME_COMPONENT(METIS_INCPATH ${METIS_HDR} PATH)
@@ -87,7 +83,6 @@ INCLUDE_DIRECTORIES(include)
 INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
-#INCLUDE_DIRECTORIES(AFTER ${ANN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
 
@@ -121,10 +116,10 @@ SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Set up RPATH
+
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # the RPATH to be used when installing, but only if it's not a system directory
 LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
@@ -175,21 +170,12 @@ ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 # Builiding libraries #########################################################
 
-# build sphere lib
-#IF(NOT BUILD_STATIC)
-#  ADD_LIBRARY(sphere SHARED ${SPHERE_SRCS})
-#ELSE()
-#  ADD_LIBRARY(sphere ${SPHERE_SRCS})
-#ENDIF()
-#INSTALL(TARGETS sphere LIBRARY DESTINATION lib)
-
 # Build r8 and rbf library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(r8 SHARED ${R8_SRCS})
 ELSE()
   ADD_LIBRARY(r8 ${R8_SRCS})
 ENDIF()
-INSTALL(TARGETS r8 LIBRARY DESTINATION lib)
 
 # build interp lib
 IF(NOT BUILD_STATIC)
@@ -198,7 +184,6 @@ ELSE()
   ADD_LIBRARY(interp ${R8_SRCS})
 ENDIF()
 TARGET_LINK_LIBRARIES(interp r8)
-INSTALL(TARGETS interp LIBRARY DESTINATION lib)
 
 # build nemosys lib
 IF(NOT BUILD_STATIC)
@@ -208,7 +193,6 @@ ELSE()
   add_definitions( -DSTATIC_LINK )
 ENDIF()
 TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES})
-INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
 # build old nemosys lib
 IF(NOT BUILD_STATIC)
@@ -218,7 +202,6 @@ ELSE()
   add_definitions( -DSTATIC_LINK )
 ENDIF()
 TARGET_LINK_LIBRARIES(OldNemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
-INSTALL(TARGETS Nemosys LIBRARY DESTINATION lib)
 
 # Rocstar support library
 IF(NOT BUILD_STATIC)
@@ -226,8 +209,10 @@ IF(NOT BUILD_STATIC)
 ELSE()
   ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
 ENDIF()
-INSTALL(TARGETS Rocs LIBRARY DESTINATION lib)
 
+INSTALL(TARGETS r8 interp Nemosys OldNemosys Rocs
+        LIBRARY DESTINATION lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Builiding utilities #########################################################
 
@@ -241,7 +226,9 @@ IF(VTK_LIBRARIES)
 ELSE()
   TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
 ENDIF()
-INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin)
+INSTALL(TARGETS nemosysRun RUNTIME DESTINATION bin
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 IF(ENABLE_BUILD_UTILS)
 
@@ -252,27 +239,37 @@ IF(ENABLE_BUILD_UTILS)
   else()
     TARGET_LINK_LIBRARIES(xmlDump Nemosys vtkHybrid vtkWidgets)
   ENDIF()
-  INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin)
+  INSTALL(TARGETS xmlDump RUNTIME DESTINATION bin
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # cgns2gmsh utility
   ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
   TARGET_LINK_LIBRARIES(cgns2msh OldNemosys)
-  INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin)
+  INSTALL(TARGETS cgns2msh RUNTIME DESTINATION bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh OldNemosys)
-  INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin)
+  INSTALL(TARGETS rocRemesh RUNTIME DESTINATION bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
   TARGET_LINK_LIBRARIES(rocSurfRemesh OldNemosys Rocs)
-  INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin)
+  INSTALL(TARGETS rocSurfRemesh RUNTIME DESTINATION bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
   TARGET_LINK_LIBRARIES(grid2gridTransfer OldNemosys Rocs)
-  INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin)
+  INSTALL(TARGETS grid2gridTransfer RUNTIME DESTINATION bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # Building tutorials ###########################################################
   SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
@@ -280,7 +277,9 @@ IF(ENABLE_BUILD_UTILS)
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
   TARGET_LINK_LIBRARIES(mshTransfer OldNemosys)
-  INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin)
+  INSTALL(TARGETS mshTransfer RUNTIME DESTINATION bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # DTK tutorial
   IF (ENABLE_DTK)
@@ -288,7 +287,9 @@ IF(ENABLE_BUILD_UTILS)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
     TARGET_LINK_LIBRARIES(dtkTutorial OldNemosys Rocs
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin)
+    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION bin
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   ENDIF()
 
 ENDIF(ENABLE_BUILD_UTILS)
@@ -327,17 +328,18 @@ ENDIF()
 SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
 IF (ENABLE_TESTING)
     # adding gtest subdir with its own cmake file
-    ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/testing/lib/gtest-1.6.0)
+    ADD_SUBDIRECTORY(testing)
+    ADD_SUBDIRECTORY(testing/lib/gtest-1.6.0)
     # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
     INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
     SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-    ADD_EXECUTABLE(runCubatureInterpTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testCubature.C)
-    ADD_EXECUTABLE(runConversionTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testConversion.C)
-    ADD_EXECUTABLE(runOrthoPolyTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testOrthoPoly.C)
-    ADD_EXECUTABLE(runPatchRecoveryTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testPatchRecovery.C)
-    ADD_EXECUTABLE(runTransferTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testTransfer.C)
-    ADD_EXECUTABLE(runMeshGenTest ${CMAKE_SOURCE_DIR}/testing/test_scripts/testMeshGen.C)
+    ADD_EXECUTABLE(runCubatureInterpTest testing/test_scripts/testCubature.C)
+    ADD_EXECUTABLE(runConversionTest testing/test_scripts/testConversion.C)
+    ADD_EXECUTABLE(runOrthoPolyTest testing/test_scripts/testOrthoPoly.C)
+    ADD_EXECUTABLE(runPatchRecoveryTest testing/test_scripts/testPatchRecovery.C)
+    ADD_EXECUTABLE(runTransferTest testing/test_scripts/testTransfer.C)
+    ADD_EXECUTABLE(runMeshGenTest testing/test_scripts/testMeshGen.C)
     TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
@@ -345,10 +347,4 @@ IF (ENABLE_TESTING)
     TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
-    ADD_SUBDIRECTORY(testing)
-    INSTALL(TARGETS runCubatureInterpTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-    INSTALL(TARGETS runOrthoPolyTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-    INSTALL(TARGETS runPatchRecoveryTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-    INSTALL(TARGETS runTransferTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-    INSTALL(TARGETS runMeshGenTest RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-ENDIF ()
+ENDIF(ENABLE_TESTING)
