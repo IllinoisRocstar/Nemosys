@@ -2,13 +2,14 @@
 
 # This script will build Nemosys and all of the necessary dependencies
 # given a tarball of projects with gmsh, madlib, and cgns.
-# Usage: ./build.sh PATH_TO_NEMOSYS PATH_TO_NEMOSYS_TPLS_TARBALL
+# Usage: ./build.sh PATH_TO_NEMOSYS PATH_TO_NEMOSYS_TPLS_TARBALL PATH_TO_INSTALL_DIR
 
 set -x
 
 NEMOSYS_DEPS_BUILD_DIR=/tmp/nemosys_build
 NEMOSYS_PROJECT_PATH=$1
-NEMOSYS_DEPS_INSTALL_PATH=$NEMOSYS_PROJECT_PATH/install
+#NEMOSYS_DEPS_INSTALL_PATH=$NEMOSYS_PROJECT_PATH/install
+NEMOSYS_DEPS_INSTALL_PATH=$3
 NEMOSYS_TARBALL_PATH=$2
 
 # clean
@@ -74,5 +75,9 @@ cd $NEMOSYS_PROJECT_PATH
 rm -rf build
 mkdir build
 cd build
-CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DCMAKE_CXX_FLAGS=-Wall ..
-make -j8
+CMAKE_PREFIX_PATH=$NEMOSYS_DEPS_INSTALL_PATH/madlib:$NEMOSYS_DEPS_INSTALL_PATH/gmsh:$NEMOSYS_DEPS_INSTALL_PATH/cgns cmake -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH -DBUILD_UTILS=ON .. 
+make -j
+make install
+export LD_LIBRARY_PATH=$NEMOSYS_DEPS_INSTALL_PATH/Nemosys/lib:$LD_LIBRARY_PATH
+export PYTHONPATH=$NEMOSYS_DEPS_INSTALL_PATH/Nemosys/python/src:$PYTHONPATH
+

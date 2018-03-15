@@ -10,7 +10,7 @@ pyNemosys = Extension('_pyNemosys',
                     libraries = ['Nemosys'],
                     library_dirs = ['${CMAKE_BINARY_DIR}/lib/'],
                     swig_opts=['-c++'],
-                    extra_compile_args = ['-std=c++11']
+                    extra_compile_args = ['-std=c++11', '-w']
                     )
 
 
