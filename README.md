@@ -4,7 +4,7 @@ The **N**uclear **E**nergy **Mo**deling **Sys**tem is a modular, extensible reso
 designed to be used in typical application development systems as well as in distributed
 web-services environments. The focus of the project is on providing a framework for robust,
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
-between arbitrary meshes.
+between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
 ## Getting Started ##
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
@@ -30,18 +30,48 @@ You will need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
+* swig (if you want python bindings)
 
 Once these dependencies are installed, the easiest way to build the rest of the 
 package is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to
-the local install directory. Execute the following:
+the top of Nemosys' source tree and $NEMOSYS_INSTALL_PATH is the desired installation
+location. Execute the following:
 
 ```
 $ cd $NEMOSYS_PROJECT_PATH
-$ ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
+$ ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz $NEMOSYS_INSTALL_PATH
 
 ```
 
-If this fails, you can try building the tpls independently
+#### Building Nemosys ####
+
+With the local dependencies installed, you should be able to build Nemosys, its 
+python bindings and all utilities using the following commands:
+
+```
+$ mkdir build
+$ cd build
+$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns \
+> cmake -DCMAKE_INSTALL_PREFIX=../install -DENABLE_PYTHON_BINDINGS=ON -DBUILD_UTILS=ON .. 
+$ make -j8
+$ make install
+```
+Building the python bindings or utilities can be enabled/disabled either through 
+the CMake curses interface (ccmake) or by passing the corresponding command line 
+definitions to cmake, as shown above. By default, utilities and bindings
+are not built. 
+
+## Testing Nemosys ##
+
+From the build directory, execute the following command to test the installation:
+```
+$ make test
+```
+This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
+here for more details.
+
+#### Manually Building Third Party Libs ####
+If execution of `build.sh` fails, you can try building the tpls independently
 Extract the whole archive as such:
 
 ```
@@ -139,27 +169,6 @@ $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen -DUSE_GUI=OF
 $ make
 $ make install
 ```
-
-#### Building Nemosys ####
-
-With the local dependencies installed, you should be able to build Nemosys and all utilities
-using the following commands:
-
-```
-$ mkdir build
-$ cd build
-$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=ON ..
-$ make -j8
-```
-
-## Testing Nemosys ##
-
-From the build directory, execute the following command to test the installation:
-```
-$ make test
-```
-This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
-here for more details.
 
 ## License ##
 This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for

@@ -59,6 +59,6 @@ IF (ENABLE_PYTHON_BINDINGS)
                         PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/")
            set_property(TEST testPyNemosys
                         APPEND
-                        PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_SOURCE_DIR}/python")
+                        PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/Nemosys/python/src")
     endif (NOT PYTHONINTERP_FOUND)
 ENDIF()
