@@ -21,7 +21,7 @@ set( env(PYTHONPATH ${CMAKE_CURRENT_SOURCE_DIR}))
 
 set(source1 ${CMAKE_SOURCE_DIR}/python/pyNemosys.py)
 set(source2 ${CMAKE_SOURCE_DIR}/python/pyNemosys_wrap.cpp)
-set(destination ${CMAKE_INSTALL_PREFIX}/Nemosys/python/src)
+set(destination ${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib/python2.7/site-packages)
 
 # writing scripts at config time so we can add them
 # as commands to be executed contingent on whether pyNemosys has been built
