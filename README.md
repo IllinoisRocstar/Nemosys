@@ -33,8 +33,8 @@ You will need to `apt install` at least the following dependencies:
 * swig (if you want python bindings)
 
 Once these dependencies are installed, the easiest way to build the required third party
-libraries is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to Nemosys
-$NEMOSYS_INSTALL_PATH is the desired installation location. Make sure to use absolute paths 
+libraries is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to Nemosys, 
+and $NEMOSYS_INSTALL_PATH is the desired installation location. Make sure to use absolute paths 
 and execute the following:
 ```
 $ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys
