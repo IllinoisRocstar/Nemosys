@@ -111,7 +111,7 @@ orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma,
   computeA(sigma); 
 }
 
-orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>& coords)
+orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& coords)
   : order(_order)
 {
   initCheck();
@@ -165,15 +165,15 @@ orthoPoly3D& orthoPoly3D::operator=(orthoPoly3D&& op)
     return *this;
 }
 
-orthoPoly3D* orthoPoly3D::Create(int _order, const std::vector<std::vector<double>>& coords)
+orthoPoly3D* orthoPoly3D::Create(int _order, const std::vector<std::vector<double>>&& coords)
 {
-  return new orthoPoly3D(_order, coords);
+  return new orthoPoly3D(_order, std::move(coords));
 }
 
 std::unique_ptr<orthoPoly3D> 
-  orthoPoly3D::CreateUnique(int _order, const std::vector<std::vector<double>>& coords)
+  orthoPoly3D::CreateUnique(int _order, const std::vector<std::vector<double>>&& coords)
 {
-  return std::unique_ptr<orthoPoly3D> (orthoPoly3D::Create(_order, coords));
+  return std::unique_ptr<orthoPoly3D> (orthoPoly3D::Create(_order, std::move(coords)));
 }
 
 
@@ -181,41 +181,53 @@ std::unique_ptr<orthoPoly3D>
 // compute coefficients for polynomial expansion of sampled function
 void orthoPoly3D::computeA(const VectorXd& sigma)
 {
-  #ifdef DEBUG
-    Timer T;
-  #endif
+  if (!finished)
+  {
+    #ifdef DEBUG
+      Timer T;
+    #endif
 
-  MatrixXd tmp1 = opx->phi*opx->phiTphiInv; 
-  MatrixXd tmp2 = opy->phi*opy->phiTphiInv;
-  MatrixXd tmp3 = opz->phi*opz->phiTphiInv;
-  #ifdef DEBUG
-    Timer T1;
-    T1.start();
-  #endif
-  MatrixXd kronProd_full = kroneckerProduct(tmp1,tmp2); 
-  kronProd_full = kroneckerProduct(kronProd_full, tmp3).eval();      
-  #ifdef DEBUG
-    T1.stop();
-    std::cout << "Time for building kronprod in constructor: " << T1.elapsed() << std::endl;
-    std::cout << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
-    std::cout << "Removing stuff" << std::endl;
-  #endif
-  MatrixXdRM kronProd_red(kronProd_full.cols()-toRemove.size(),kronProd_full.rows());
-  #ifdef DEBUG
-    T.start();
-  #endif  
-  removeRowT(kronProd_full, kronProd_red,toRemove);
-  std::cout << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
-  std::cout << sigma.size() << std::endl; 
+    MatrixXd tmp1 = opx->phi*opx->phiTphiInv; 
+    MatrixXd tmp2 = opy->phi*opy->phiTphiInv;
+    MatrixXd tmp3 = opz->phi*opz->phiTphiInv;
+    #ifdef DEBUG
+      Timer T1;
+      T1.start();
+    #endif
+    MatrixXd kronProd_full = kroneckerProduct(tmp1,tmp2); 
+    kronProd_full = kroneckerProduct(kronProd_full, tmp3).eval();      
+    #ifdef DEBUG
+      T1.stop();
+      std::cout << "Time for building kronprod in constructor: " << T1.elapsed() << std::endl;
+      std::cout << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
+      std::cout << "Removing stuff" << std::endl;
+    #endif
+    MatrixXdRM kronProd_red(kronProd_full.cols()-toRemove.size(),kronProd_full.rows());
+    #ifdef DEBUG
+      T.start();
+    #endif  
+    removeRowT(kronProd_full, kronProd_red,toRemove);
+    std::cout << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
+    std::cout << sigma.size() << std::endl; 
  
-  a = kronProd_red*sigma;
-  #ifdef DEBUG
-    T.stop();
-    std::cout << "Time: " << T.elapsed() << std::endl;
-    std::cout << "kronProd shape: " << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
-  #endif
-  finished = 1; 
+    a = kronProd_red*sigma;
+    #ifdef DEBUG
+      T.stop();
+      std::cout << "Time: " << T.elapsed() << std::endl;
+      std::cout << "kronProd shape: " << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
+    #endif
+    finished = 1; 
+  }
 }
+
+void orthoPoly3D::resetA()
+{
+  if (finished)
+  {
+    a.resize(0);
+  }
+}
+
 
 const double orthoPoly3D::eval(const std::vector<double>& coord)
 {

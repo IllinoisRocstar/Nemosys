@@ -75,7 +75,7 @@ void PatchRecovery::regularizeCoords(std::vector<std::vector<double>>& coords,
   genNodeCoord[2] = -1 + 2*(genNodeCoord[2] - minMaxXYZ[4])/(minMaxXYZ[5] - minMaxXYZ[4]);
 }
 
-void PatchRecovery::recoverNodalSolution()
+void PatchRecovery::recoverNodalSolution(bool ortho)
 {
   std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;
   // getting node mesh from cubature
@@ -138,52 +138,54 @@ void PatchRecovery::recoverNodalSolution()
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
-    std::vector<std::vector<double>> tmpCoords = coords;
-    // construct polyapprox from coords
-    std::unique_ptr<polyApprox> patchPolyApprox 
-      = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
-    int currComp = 0;
-    for (int k = 0; k < numComponents.size(); ++k)
+    if (!ortho)
     {
-      double comps[numComponents[k]];
-      for (int l = 0; l < numComponents[k]; ++l)
+      // construct polyapprox from coords
+      std::unique_ptr<polyApprox> patchPolyApprox 
+        = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));
+      int currComp = 0;
+      for (int k = 0; k < numComponents.size(); ++k)
       {
-        patchPolyApprox->computeCoeff(data[currComp]);
-        comps[l] = patchPolyApprox->eval(genNodeCoord);
-        // FIXME: for testing
-        //for (int g = 0; g < coords.size(); ++g)
-        //{
-        //  rmse[currComp] += 
-        //    std::pow(patchPolyApprox->eval(tmpCoords[g]) - data[currComp](g),2);
-        //}
-        patchPolyApprox->resetCoeff();
-        ++currComp;
+        double comps[numComponents[k]];
+        for (int l = 0; l < numComponents[k]; ++l)
+        {
+          patchPolyApprox->computeCoeff(data[currComp]);
+          comps[l] = patchPolyApprox->eval(genNodeCoord);
+          patchPolyApprox->resetCoeff();
+          ++currComp;
+        }
+        newPntData[k]->InsertTuple(i,comps);
       }
-      newPntData[k]->InsertTuple(i,comps);
     }
-  
-    // FIXME: for testing
-    //for (int k = 0; k < totalComponents; ++k)
-    //{
-    //  rmse[k] = std::sqrt(rmse[k]/coords.size());
-    //}
-
-    //printVec(rmse);
-    //std::fill(rmse.begin(),rmse.end(),0.0);
-
-    //totPatchPoints += numPatchPoints;
-
+    else
+    {
+      // TODO TODO FIXME: need to classify boundary volume elements and ignore
+      // in this case-> probably only corners 
+      for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
+      {
+        std::cout << patchCellIDs->GetId(k) << std::endl;
+      }
+      std::unique_ptr<orthoPoly3D> patchPolyApprox
+        = orthoPoly3D::CreateUnique(order,std::move(coords)); 
+      int currComp = 0;
+      for (int k = 0; k < numComponents.size(); ++k)
+      {
+        double comps[numComponents[k]];
+        for (int l = 0; l < numComponents[k]; ++l)
+        {
+          patchPolyApprox->computeA(data[currComp]);
+          comps[l] = patchPolyApprox->eval(genNodeCoord);
+          patchPolyApprox->resetA();
+          ++currComp;
+        }
+        newPntData[k]->InsertTuple(i,comps);
+      }
+    }
   }
   for (int k = 0; k < numComponents.size(); ++k)
   {
     nodeMesh->getDataSet()->GetPointData()->AddArray(newPntData[k]);
   }
-  // FIXME: for testing
-  //for (int k = 0; k < totalComponents; ++k)
-  //{
-  //  rmse[k] = std::sqrt(rmse[k]/totPatchPoints);
-  //}
-  //printVec(rmse);
 }
 
 // TODO: check for whether recovered solution exists
@@ -279,7 +281,6 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
-    std::vector<std::vector<double>> tmpCoords = coords;
     // construct polyapprox from coords
     std::unique_ptr<polyApprox> patchPolyApprox 
       = polyApprox::CreateUnique(order,std::move(coords));//(new orthoPoly3D(order, coords));

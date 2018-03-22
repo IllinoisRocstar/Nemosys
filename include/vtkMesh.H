@@ -76,6 +76,8 @@ class vtkMesh : public meshBase
     std::vector<double> getCellLengths();
     // get center of a cell
     std::vector<double> getCellCenter(int cellID);
+    // get edge lengths of dataSet
+    void inspectEdges(const std::string& ofname);
  
   // diagnostics
   public:
