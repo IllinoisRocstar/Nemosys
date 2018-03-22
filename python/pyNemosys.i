@@ -1,6 +1,7 @@
 %module pyNemosys
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_map.i"
 %{
 #include "meshBase.H"
 #include "TransferDriver.H"
@@ -13,8 +14,9 @@
 
 
 %template(vectorString) std::vector<std::string>;
-
-
+%template(doubleV) std::vector<double>;
+%template(doubleVV) std::vector<std::vector<double>>;
+%template(cellMap) std::map<int, std::vector<double>>;
 class meshBase
 {
 
@@ -31,6 +33,7 @@ class meshBase
     virtual std::map<int, std::vector<double>> getCell(int id);
     virtual std::vector<std::vector<double>> getCellVec(int id);
     vtkSmartPointer<vtkDataSet> getDataSet();
+    virtual void inspectEdges(const std::string& ofname);
     virtual void setPointDataArray(const char* name,
                                      const std::vector<std::vector<double>>& data);
     virtual void setCellDataArray(const char* name,
@@ -45,7 +48,7 @@ class meshBase
     virtual std::vector<double> getCellLengths();
     virtual std::vector<double> getCellCenter(int cellID);
     vtkSmartPointer<vtkCellLocator> buildLocator();
-    virtual void getIntegrationPointsAtCell(int cellID);int transfer(meshBase* target, std::string method,
+    int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
     int transfer(meshBase* target, std::string method,
                  const std::vector<std::string>& arrayNames);
