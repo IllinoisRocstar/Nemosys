@@ -66,6 +66,7 @@
 #include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
 #include <vtkMath.h>
+#include <vtkExtractEdges.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -156,6 +157,8 @@ class meshBase
     virtual std::map<int, std::vector<double>> getCell(int id) const {}
     // get vector of coords of cell with id
     virtual std::vector<std::vector<double>> getCellVec(int id) const {}
+    // get edge lengths of dataSet
+    virtual void inspectEdges(const std::string& ofname){}
     // get this meshes' dataSet
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // register data to dataSet's point data
@@ -181,7 +184,6 @@ class meshBase
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
-    virtual void getIntegrationPointsAtCell(int cellID) const {}
     // get cell type as an integer
     // assumes all elements are the same type
     virtual int getCellType() const = 0;

@@ -28,7 +28,10 @@ void vtkMesh::write()
     writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
   }
   else
-    writeVTFile<vtkXMLUnstructuredGridWriter> (filename,dataSet);   // default is vtu 
+  {
+    std::string fname = trim_fname(filename, ".vtu");
+    writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
+  }
 } 
 
 void vtkMesh::write(std::string fname)
@@ -40,7 +43,6 @@ void vtkMesh::write(std::string fname)
   }
    
   std::string extension = find_ext(fname);
-  std::cout << "Extension: " << extension << std::endl; 
 
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -570,6 +572,33 @@ std::vector<std::vector<double>> vtkMesh::getCellVec(int id) const
     exit(1);
   }
 
+}
+
+void vtkMesh::inspectEdges(const std::string& ofname)
+{
+  std::ofstream outputStream(ofname);
+  if (!outputStream.good())
+  {
+    std::cerr << "error opening " << ofname << std::endl;
+    exit(1);
+  }
+
+  vtkSmartPointer<vtkExtractEdges> extractEdges 
+    = vtkSmartPointer<vtkExtractEdges>::New();
+  extractEdges->SetInputData(dataSet);
+  extractEdges->Update();
+  
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < extractEdges->GetOutput()->GetNumberOfCells(); ++i)
+  {
+    extractEdges->GetOutput()->GetCell(i, genCell);
+    vtkPoints* points = genCell->GetPoints();
+    double p1[3], p2[3];
+    points->GetPoint(0,p1);
+    points->GetPoint(1,p2);
+    double len = sqrt(pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2));
+    outputStream << len << std::endl;
+  } 
 }
 
 void vtkMesh::report()
