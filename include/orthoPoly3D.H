@@ -52,7 +52,7 @@ class orthoPoly3D
                 const std::vector<double>& _z);
     
     // partial ctor, must manually call computeA
-    orthoPoly3D(int _order, const std::vector<std::vector<double>>& coords);
+    orthoPoly3D(int _order, const std::vector<std::vector<double>>&& coords);
 
     // move constructor
     orthoPoly3D(orthoPoly3D&& op); 
@@ -61,9 +61,9 @@ class orthoPoly3D
     orthoPoly3D& operator=(orthoPoly3D&& op);
 
     // factories
-    static orthoPoly3D* Create(int _order, const std::vector<std::vector<double>>& coords);
+    static orthoPoly3D* Create(int _order, const std::vector<std::vector<double>>&& coords);
     static std::unique_ptr<orthoPoly3D> 
-      CreateUnique(int _order, const std::vector<std::vector<double>>& coords);
+      CreateUnique(int _order, const std::vector<std::vector<double>>&& coords);
 
     // dtor
     ~orthoPoly3D(){}
@@ -82,6 +82,8 @@ class orthoPoly3D
     // return the status of the approximant object
     // 1 indicates approximant is available, 0 otherwise 
     const bool status() const {return finished;}  
+    // reset coefficients to default state
+    void resetA();
     // reset the object to its default state
     void Reset();
     VectorXd getCoeffs() { return a; }
