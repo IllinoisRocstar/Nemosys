@@ -2,6 +2,7 @@
 #define PATCHRECOVERY_H
 
 #include <polyApprox.H>
+#include <orthoPoly3D.H>
 #include <Cubature.H>
 
 // pair type for coordinate and data there
@@ -19,7 +20,7 @@ class PatchRecovery
 
     // approximates nodal values with polynomial approximant over patch of node
     // sets recovered nodal values as new point data
-    void recoverNodalSolution();
+    void recoverNodalSolution(bool ortho);
     /* 1) approximates nodal values with polynomial approximant over patch of node
        2) sets error^2 in recovered values as new point data
        3) sets RMSE integrated over each cell, normalized by cell vol as new cell data
