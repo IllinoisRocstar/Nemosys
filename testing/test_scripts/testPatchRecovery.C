@@ -6,7 +6,7 @@ const char* nodeMesh;
 const char* recoveredMesh;
 const char* hexmesh;
 
-TEST(PatchRecoveryConstructor, ConstructWithoutArray)
+TEST(PatchRecoveryConstructor, ConstructWithArray)
 {
   // load reference node mesh
   std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(nodeMesh);
