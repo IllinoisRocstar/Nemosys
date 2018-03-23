@@ -1,5 +1,10 @@
 #include <patchRecovery.H>
 
+//TODO: To define orthogonal polynomials over patches of a structured grid that has
+//      deformed from a rectilinear grid, a conformal mapping must be applied to transform
+//      the deformed mesh back to a rectilinear grid. Only then can we satisfy the 
+//      requirements for a tensor-product construction of multivariate orthogonal polynomials.
+
 PatchRecovery::PatchRecovery(meshBase* nodeMesh, int _order, const std::vector<int>& arrayIDs)
   : order(_order)
 {
@@ -63,16 +68,16 @@ void PatchRecovery::regularizeCoords(std::vector<std::vector<double>>& coords,
                                      std::vector<double>& genNodeCoord)
 { 
   std::vector<double> minMaxXYZ = getMinMaxCoords(coords);
-  for (int i = 0; i < coords.size(); ++i)
+  for (int j = 0; j < 3; ++j)
   {
-    for (int j = 0; j < 3; ++j)
+    double coord_min = minMaxXYZ[2*j];
+    double bound = minMaxXYZ[2*j+1] - coord_min;
+    for (int i = 0; i < coords.size(); ++i)
     {
-      coords[i][j] = -1 + 2*(coords[i][j] - minMaxXYZ[2*j])/(minMaxXYZ[2*j + 1] - minMaxXYZ[2*j]);
+      coords[i][j] = -1 + 2*(coords[i][j] - coord_min)/bound;
     }
+    genNodeCoord[j] = -1 + 2*(genNodeCoord[j] - coord_min)/bound;
   }
-  genNodeCoord[0] = -1 + 2*(genNodeCoord[0] - minMaxXYZ[0])/(minMaxXYZ[1] - minMaxXYZ[0]);
-  genNodeCoord[1] = -1 + 2*(genNodeCoord[1] - minMaxXYZ[2])/(minMaxXYZ[3] - minMaxXYZ[2]);
-  genNodeCoord[2] = -1 + 2*(genNodeCoord[2] - minMaxXYZ[4])/(minMaxXYZ[5] - minMaxXYZ[4]);
 }
 
 void PatchRecovery::recoverNodalSolution(bool ortho)
@@ -103,11 +108,9 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     newPntData[i]->SetNumberOfTuples(numPoints); 
   }
 
-  // FIXME: for testing
-  //std::vector<double> rmse(totalComponents,0);
   int totPatchPoints = 0; 
   // looping over all points, looping over patches per point
-  for (int i = 0; i < numPoints; ++i)
+  for (int i = 1; i < numPoints; ++i) //FIXME
   {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
@@ -118,6 +121,13 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
       int cellType = nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k))->GetCellType();
       numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints(); 
     }
+
+    if (patchCellIDs->GetNumberOfIds() < 2)
+    {
+      std::cerr << "Only " << patchCellIDs->GetNumberOfIds() 
+                << " cell in patch of point " << i << std::endl;
+    }
+
     // coordinates of each gauss point in patch
     std::vector<std::vector<double>> coords(numPatchPoints);
     // vector of components of data at all gauss points in patch
@@ -159,12 +169,11 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     }
     else
     {
-      // TODO TODO FIXME: need to classify boundary volume elements and ignore
-      // in this case-> probably only corners 
       for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
       {
-        std::cout << patchCellIDs->GetId(k) << std::endl;
+        std::cout << "point " << i << " patch cell: " << patchCellIDs->GetId(k) << std::endl;
       }
+
       std::unique_ptr<orthoPoly3D> patchPolyApprox
         = orthoPoly3D::CreateUnique(order,std::move(coords)); 
       int currComp = 0;
@@ -173,6 +182,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
         double comps[numComponents[k]];
         for (int l = 0; l < numComponents[k]; ++l)
         {
+          std::cout << "computing coefficients of ortho polys" << std::endl;
           patchPolyApprox->computeA(data[currComp]);
           comps[l] = patchPolyApprox->eval(genNodeCoord);
           patchPolyApprox->resetA();

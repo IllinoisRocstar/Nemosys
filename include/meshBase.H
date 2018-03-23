@@ -67,6 +67,7 @@
 #include <baseInterp.H>
 #include <vtkMath.h>
 #include <vtkExtractEdges.h>
+#include <vtkConnectivityFilter.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -178,6 +179,7 @@ class meshBase
     virtual std::vector<double> getCellLengths(){}
     // get center of a cell
     virtual std::vector<double> getCellCenter(int cellID){}
+    virtual void classifyAndAddBoundaries(){}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 

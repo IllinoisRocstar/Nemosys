@@ -101,7 +101,7 @@ orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma,
                          const std::vector<double>& x, 
                          const std::vector<double>& y, 
                          const std::vector<double>& z) :
-                          order(_order)
+                          order(_order),finished(0)
 { 
   initCheck();
 
@@ -112,9 +112,18 @@ orthoPoly3D::orthoPoly3D(int _order, const VectorXd& sigma,
 }
 
 orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& coords)
-  : order(_order)
+  : finished(0),order(_order)
 {
+  //int root(round(cbrt(coords.size())));
+  //if (coords.size() != root*root*root &&
+  //    coords.size() != (root+1)*(root+1)*(root+1))
+  //{
+  //  std::cerr << "coords are definitely not in a cartesian product set" << std::endl;
+  //  exit(1);
+  //} 
+  
   initCheck();
+
   std::vector<double> x(coords.size());
   std::vector<double> y(coords.size());
   std::vector<double> z(coords.size());
@@ -125,6 +134,23 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& co
     y[i] = coords[i][1];
     z[i] = coords[i][2];
   }
+  std::cout << "non-unique coords\n";
+  printVec(x); //printVec(y); printVec(z);
+
+  std::vector<double> x_unique;
+  for (int i = 0; i < x.size(); ++i)
+  {
+    x_unique.push_back(x[i]);
+    for (int j = i+1; j < x.size(); ++j)
+    {
+      if (x_unique[i] != x[j])
+    }
+  }
+
+  std::sort(x.begin(),x.end());
+  x.erase(std::unique(x.begin(),x.end(),Pred),x.end());
+  std::cout << "unique coords\n";
+  printVec(x); //printVec(y); printVec(z);
 
   opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
   opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
@@ -199,22 +225,21 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
     #ifdef DEBUG
       T1.stop();
       std::cout << "Time for building kronprod in constructor: " << T1.elapsed() << std::endl;
-      std::cout << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
-      std::cout << "Removing stuff" << std::endl;
+      std::cout << "kronProd_full: " << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
+      std::cout << "Removing rows: "; printVec(toRemove);
     #endif
     MatrixXdRM kronProd_red(kronProd_full.cols()-toRemove.size(),kronProd_full.rows());
     #ifdef DEBUG
-      T.start();
+        T.start();
     #endif  
     removeRowT(kronProd_full, kronProd_red,toRemove);
-    std::cout << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
-    std::cout << sigma.size() << std::endl; 
- 
+    std::cout << "kronProd_red: " << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
+    std::cout << "sigma size: " << sigma.size() << std::endl; 
     a = kronProd_red*sigma;
     #ifdef DEBUG
       T.stop();
       std::cout << "Time: " << T.elapsed() << std::endl;
-      std::cout << "kronProd shape: " << kronProd_red.rows() << " " << kronProd_red.cols() << std::endl;
+    std::cout << "shape of a: " << a.rows() << " " << a.cols() << std::endl;
     #endif
     finished = 1; 
   }
@@ -225,6 +250,7 @@ void orthoPoly3D::resetA()
   if (finished)
   {
     a.resize(0);
+    finished = 0;
   }
 }
 
