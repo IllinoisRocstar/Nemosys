@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <chrono>
+#include <iomanip>
 //---------------------------Auxiliary Classes---------------------------------//
 
 // class wrapping around chrono for timing methods
@@ -363,7 +364,7 @@ template<typename T>
 void printVec(const std::vector<T>& v)
 {
   for (int i = 0; i < v.size(); ++i)
-    std::cout << v[i] << " ";
+    std::cout << std::setprecision(15) << v[i] << " ";
   std::cout << std::endl;
 }
 #endif
