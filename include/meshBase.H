@@ -83,6 +83,7 @@ namespace nglib
 }
 
 // Nemosys
+#include <pntMesh.H>
 #include <AuxiliaryFunctions.H>
 
 // stl
@@ -141,6 +142,8 @@ class meshBase
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
+    // construct vtkMesh from netgen vol file
+    static meshBase* exportPntToVtk(std::string fname);
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
@@ -148,13 +151,13 @@ class meshBase
   // access
   public:
     // get point with id
-    virtual std::vector<double> getPoint(int id){}
+    virtual std::vector<double> getPoint(int id) const {}
     // get cell with id : returns point indices and respective coordinates
-    virtual std::map<int, std::vector<double>> getCell(int id){}
+    virtual std::map<int, std::vector<double>> getCell(int id) const {}
     // get vector of coords of cell with id
-    virtual std::vector<std::vector<double>> getCellVec(int id){}
+    virtual std::vector<std::vector<double>> getCellVec(int id) const {}
     // get this meshes' dataSet
-    vtkSmartPointer<vtkDataSet> getDataSet(){ return dataSet; }
+    vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
@@ -172,13 +175,13 @@ class meshBase
     // delete array with id from dataSet's field data
     virtual void unsetFieldDataArray(const char* name){}
     // get diameter of circumsphere of each cell
-    virtual std::vector<double> getCellLengths(){}
+    virtual std::vector<double> getCellLengths() const {}
     // get center of a cell
-    virtual std::vector<double> getCellCenter(int cellID){}
+    virtual std::vector<double> getCellCenter(int cellID) const {}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
-    virtual void getIntegrationPointsAtCell(int cellID){}
+    virtual void getIntegrationPointsAtCell(int cellID) const {}
 
   // data transfer
   public:
@@ -201,12 +204,12 @@ class meshBase
     // set whether this mesh has a sizefield
     void setSFBool(bool q) { hasSizeField = q; }
     // get this meshes' sizefield  
-    bool getSFBool() { return hasSizeField; }
+    bool getSFBool() const { return hasSizeField; }
     // check for named array in vtk and return its integer id 
     int IsArrayName(std::string name);
     // set mesh order
     void setOrder(int _order) { order = _order;}
-    int getOrder() { return order; } 
+    int getOrder() const { return order; } 
  
   // adaptive mesh refinement
   public:
@@ -229,9 +232,9 @@ class meshBase
     // generate a report of the mesh
     virtual void report(){}; 
     // return the number of points
-    int getNumberOfPoints() {return numPoints;}
+    int getNumberOfPoints() const {return numPoints;}
     // return the number of cells
-    int getNumberOfCells() { return numCells;}
+    int getNumberOfCells() const { return numCells;}
     void checkMesh(std::string ofname);
 
 
@@ -255,7 +258,7 @@ class meshBase
                   bool onlyVol);
 
     void setFileName(std::string fname) { filename = fname; }
-    std::string getFileName() { return filename; }
+    std::string getFileName() const { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
 
   protected:

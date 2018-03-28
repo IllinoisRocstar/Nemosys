@@ -3,6 +3,7 @@
 #include <MeshQualityDriver.H>
 #include <MeshGenDriver.H>
 #include <RefineDriver.H>
+#include <ConversionDriver.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver* NemDriver::readJSON(json inputjson)
@@ -25,10 +26,14 @@ NemDriver* NemDriver::readJSON(json inputjson)
   {
     return MeshQualityDriver::readJSON(inputjson);
   }
+  else if (!program_type.compare("Conversion"))
+  {
+    return ConversionDriver::readJSON(inputjson);
+  }
   else
   {
     std::cout << "Program Type " << program_type 
-              << " is not supported by  Nemosys" << std::endl;
+              << " is not supported by Nemosys" << std::endl;
     exit(1);
   }
   

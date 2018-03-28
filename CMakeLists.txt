@@ -11,7 +11,7 @@ MACRO(opt OPTION HELP VALUE)
   OPTION(ENABLE_${OPTION} ${HELP} ${VALUE})
   SET(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
 ENDMACRO(opt)
-     
+
 # set to $DEFAULT to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
@@ -139,7 +139,7 @@ SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
 INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 
 # Setting compile and link flags
-SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C 
+SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/netgenInterface.C src/MeshGeneration/meshGen.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C
@@ -151,7 +151,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Drivers/RefineDriver.C src/Drivers/MeshGenDriver.C
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
-                 src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C)
+                 src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
+                 src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C)
 SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                 src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
@@ -259,8 +260,8 @@ IF(ENABLE_BUILD_UTILS)
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
   TARGET_LINK_LIBRARIES(mshTransfer AltNemosys)
-  
-  INSTALL(TARGETS xmlDump cgns2msh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer 
+
+  INSTALL(TARGETS xmlDump cgns2msh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
