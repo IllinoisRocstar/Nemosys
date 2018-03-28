@@ -99,6 +99,15 @@ RefineDriver* RefineDriver::readJSON(std::string ifname)
   json inputjson;
   inputStream >> inputjson;
 
-  return RefineDriver::readJSON(inputjson);
+  // checking if array
+  if (inputjson.is_array())
+  {
+    std::cout << "Warning: Input is an array. Only first element will be processed\n";
+    return RefineDriver::readJSON(inputjson[0]);
+  } 
+  else
+  {
+    return RefineDriver::readJSON(inputjson);
+  }
 }
 

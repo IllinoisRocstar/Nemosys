@@ -8,6 +8,7 @@
 #include "RefineDriver.H"
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
+#include "ConversionDriver.H"
 #include "jsoncons/json.hpp"
 %}
 
@@ -258,4 +259,44 @@ class MeshQualityDriver : public NemDriver
     ~MeshQualityDriver();
 
     static MeshQualityDriver* readJSON(json inputjson);
+};
+
+class ConversionDriver : public NemDriver
+{
+  public:
+
+    ConversionDriver(std::string srcmsh, std::string trgmsh, std::string method,
+                   std::string ofname, json inputjson);
+
+    ~ConversionDriver();
+};
+
+%extend ConversionDriver {
+
+    static ConversionDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
+      if (serialized) {
+        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
+        return ConversionDriver::readJSON(inputjson);
+      }
+      else if (!serialized) {
+        return ConversionDriver::readJSON(ifname);
+      }
+      return NULL;
+    }
+
+    %pythoncode %{
+
+    @staticmethod
+    def readJSON( json_obj):
+      import json
+      if type(json_obj) is list:
+        serialized_json = json.dumps(json_obj[0])
+        return ConversionDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is dict:
+        serialized_json = json.dumps(json_obj)
+        return ConversionDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is str:
+        return ConversionDriver.py_readJSON('', json_obj, False)
+
+    %}
 };

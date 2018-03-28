@@ -76,16 +76,13 @@ ConversionDriver::~ConversionDriver()
     delete source;
     source = 0;
   }
-  if (target)
-  {
-    delete target;
-    target = 0;
-  }
   std::cout << "ConversionDriver destroyed" << std::endl;
 }
 
 ConversionDriver* ConversionDriver::readJSON(json inputjson)
 {
+
+  std::cout << "Reading JSON object\n";
   std::string srcmsh; 
   std::string trgmsh; 
   std::string outmsh; 
@@ -110,6 +107,7 @@ ConversionDriver* ConversionDriver::readJSON(json inputjson)
 
 ConversionDriver* ConversionDriver::readJSON(std::string ifname)
 {
+  std::cout << "Reading JSON file\n";
   std::ifstream inputStream(ifname);
   if (!inputStream.good() || find_ext(ifname) != ".json")
   {
@@ -124,6 +122,16 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
 
   json inputjson;
   inputStream >> inputjson;
-  return ConversionDriver::readJSON(inputjson);
+  
+  // checking if array
+  if (inputjson.is_array())
+  {
+    std::cout << "Warning: Input is an array. Only first element will be processed\n";
+    return ConversionDriver::readJSON(inputjson[0]);
+  } 
+  else
+  {
+    return ConversionDriver::readJSON(inputjson);
+  }
     
 }

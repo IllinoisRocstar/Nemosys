@@ -9,6 +9,7 @@ class ConversionDriver : public NemDriver
     
     ConversionDriver(std::string srcmsh, std::string trgmsh, std::string method,
                    std::string ofname, json inputjson);
+
     static ConversionDriver* readJSON(json inputjson);
     static ConversionDriver* readJSON(std::string ifname);
 
@@ -16,7 +17,6 @@ class ConversionDriver : public NemDriver
 
   private:
     meshBase* source;
-    meshBase* target; 
 };
 
 
