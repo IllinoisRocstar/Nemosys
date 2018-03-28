@@ -501,6 +501,7 @@ meshBase* meshBase::exportPntToVtk(std::string fname)
   dataSet_tmp->Allocate(numVolCells);
   for (int i = 0; i < numVolCells; ++i)
   {
+    std::cout << "Element " << i << std::endl;
     vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
     std::vector<int> conn;
     VTKCellType vct= 

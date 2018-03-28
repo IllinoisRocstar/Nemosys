@@ -10,6 +10,14 @@ const char* legacyVTK2;
 const char* legacyVTK1_ref;
 const char* legacyVTK2_ref;
 const char* stlvtp;
+const char* pnttri;
+const char* pnttri_ref;
+const char* pntquad;
+const char* pntquad_ref;
+const char* pnthex;
+const char* pnthex_ref;
+const char* pntmix;
+const char* pntmix_ref;
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -52,9 +60,61 @@ TEST(Conversion, ConvertVTPToSTLAndBack)
   } 
 }
 
+TEST(Conversion, ConvertPNTTriToVTU)
+{
+  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(pnttri);
+  mesh->write("pnt-tri-test.vtu");
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(pnttri_ref);
+  EXPECT_EQ(0, diffMesh(mesh.get(), refMesh.get()));
+  if (remove("pnt-tri-test.vtu"))
+  {
+    std::cerr << "Error removing pnt-tri-test.vtu" << std::endl;
+    exit(1);
+  } 
+}
+
+TEST(Conversion, ConvertPNTQuadToVTU)
+{
+  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(pntquad);
+  mesh->write("pnt-quad-test.vtu");
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(pntquad_ref);
+  EXPECT_EQ(0, diffMesh(mesh.get(), refMesh.get()));
+  if (remove("pnt-quad-test.vtu"))
+  {
+    std::cerr << "Error removing pnt-quad-test.vtu" << std::endl;
+    exit(1);
+  } 
+}
+
+TEST(Conversion, ConvertPNTHexToVTU)
+{
+  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(pnthex);
+  mesh->write("pnt-hex-test.vtu");
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(pnthex_ref);
+  EXPECT_EQ(0, diffMesh(mesh.get(), refMesh.get()));
+  if (remove("pnt-hex-test.vtu"))
+  {
+    std::cerr << "Error removing pnt-hex-test.vtu" << std::endl;
+    exit(1);
+  } 
+}
+
+TEST(Conversion, ConvertPNTMixToVTU)
+{
+  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(pntmix);
+  mesh->write("pnt-mix-test.vtu");
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(pntmix_ref);
+  EXPECT_EQ(0, diffMesh(mesh.get(), refMesh.get()));
+  if (remove("pnt-mix-test.vtu"))
+  {
+    std::cerr << "Error removing pnt-mix-test.vtu" << std::endl;
+    exit(1);
+  } 
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 10);
+  assert(argc == 18);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -64,6 +124,14 @@ int main(int argc, char** argv) {
   legacyVTK1_ref = argv[7];
   legacyVTK2_ref = argv[8];
   stlvtp = argv[9];
+  pnttri = argv[10];
+  pnttri_ref = argv[11];
+  pntquad = argv[12];
+  pntquad_ref = argv[13];
+  pnthex = argv[14];
+  pnthex_ref = argv[15];
+  pntmix = argv[16];
+  pntmix_ref = argv[17];
   return RUN_ALL_TESTS();
 }
 
