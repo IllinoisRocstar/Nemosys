@@ -68,14 +68,14 @@ class vtkMesh : public meshBase
   // access
   public:
     // get point with id
-    std::vector<double> getPoint(int id);
+    std::vector<double> getPoint(int id)  const;
     // get cell with id : returns point indices and respective coordinates
-    std::map<int, std::vector<double>> getCell(int id);
-    std::vector<std::vector<double>> getCellVec(int id);
+    std::map<int, std::vector<double>> getCell(int id) const;
+    std::vector<std::vector<double>> getCellVec(int id) const;
     // get diameter of circumsphere of each cell
-    std::vector<double> getCellLengths();
+    std::vector<double> getCellLengths() const;
     // get center of a cell
-    std::vector<double> getCellCenter(int cellID);
+    std::vector<double> getCellCenter(int cellID) const;
  
   // diagnostics
   public:
