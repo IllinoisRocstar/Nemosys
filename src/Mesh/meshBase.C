@@ -948,12 +948,14 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
     return 1;
   }
 
+  std::cout << mesh1->getNumberOfPoints() << std::endl;
   for (int i = 0; i < mesh1->getNumberOfPoints(); ++i)
   {
     std::vector<double> coord1 = mesh1->getPoint(i);
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j)
     {
+      std::cout << coord1[j] << std::endl;
       if (std::fabs(coord1[j]-coord2[j]) > tol)
       {
         std::cerr << "Meshes differ in point coordinates" << std::endl;
