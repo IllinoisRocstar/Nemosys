@@ -462,7 +462,7 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
 }
 
 // get point with id
-std::vector<double> vtkMesh::getPoint(int id)
+std::vector<double> vtkMesh::getPoint(int id) const
 {
   double coords[3];
   dataSet->GetPoint(id, coords);
@@ -471,7 +471,7 @@ std::vector<double> vtkMesh::getPoint(int id)
 }
 
 // get cell with id : returns point indices and respective coordinates
-std::map<int, std::vector<double>> vtkMesh::getCell(int id)
+std::map<int, std::vector<double>> vtkMesh::getCell(int id) const
 {
   if (id < numCells) 
   {
@@ -494,7 +494,7 @@ std::map<int, std::vector<double>> vtkMesh::getCell(int id)
   }
 }
 
-std::vector<std::vector<double>> vtkMesh::getCellVec(int id)
+std::vector<std::vector<double>> vtkMesh::getCellVec(int id) const
 {
   if (id < numCells) 
   {
@@ -597,7 +597,7 @@ void vtkMesh::report()
 }
 
 // get diameter of circumsphere of each cell
-std::vector<double> vtkMesh::getCellLengths() 
+std::vector<double> vtkMesh::getCellLengths() const
 {
   std::vector<double> result;
   result.resize(getNumberOfCells());
@@ -609,7 +609,7 @@ std::vector<double> vtkMesh::getCellLengths()
 }
 
 // get center of a cell
-std::vector<double> vtkMesh::getCellCenter(int cellID)
+std::vector<double> vtkMesh::getCellCenter(int cellID) const
 {
   std::vector<double> center(3);
   std::vector<std::vector<double>> cell = getCellVec(cellID); 
