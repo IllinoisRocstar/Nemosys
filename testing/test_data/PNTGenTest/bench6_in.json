@@ -3,10 +3,10 @@
         "Program Type": "Conversion",
         "Mesh File Options": {
             "Input Mesh Files": {
-                "Source Mesh": "bench6.vtu",
+                "Source Mesh": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/PNTGenTest/bench6.vtu",
                 "Target Mesh": "bench6_conv.pntmesh"
             },
-            "Output Mesh File": "dummy.vtu"
+            "Output Mesh File": ""
         },
         "Conversion Options": {
             "Method": "VTK->PNT",
@@ -18,7 +18,13 @@
                  "Element Order": 2,
                  "Equation Order": 2,
                  "BC Tag": "REFLECTIVE",
-                 "Element ID": [0,1,2,3,4,5,6,7]}
+                 "Element ID": [0,1,2,3,4,5,6,7]},
+                {"Name": "REGION_000000003", 
+                 "Element Type": "LAGRANGE_BRICK",
+                 "Element Order": 2,
+                 "Equation Order": 2,
+                 "BC Tag": "VOID",
+                 "Element ID Range": [8,47]}
             ]
         }
     }
