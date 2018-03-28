@@ -32,6 +32,13 @@ meshBase* meshBase::Create(std::string fname)
     return exportVolToVtk(fname);
   }
 
+  else if (fname.find(".pntmesh") != -1)
+  {
+    std::cout << "Detected file in PNTmesh format" << std::endl;
+    std::cout << "Processing the file ...." << std::endl;
+    return exportPntToVtk(fname);
+  }
+
   else
   {
     int dot = fname.find_last_of('.');
@@ -450,6 +457,77 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   
 }
 
+// exports pntMesh to vtk format
+meshBase* meshBase::exportPntToVtk(std::string fname)
+{
+  PNTMesh::pntMesh* pMesh;
+  pMesh = new PNTMesh::pntMesh(fname);
+
+  vtkMesh* vtkmesh = new vtkMesh();
+  
+  /*
+  if (!pMesh->isCompatible())
+  {
+    std::cerr << "Mesh contains unsupported element types.\n";
+    std::cerr << "Only 3-Node TRIs and 4-Node TETs are supported.\n";
+    vtkmesh->numCells = 0;
+    vtkmesh->numPoints = 0;
+    return vtkmesh;
+  }
+  */
+
+  // declare points to be pushed into dataSet_tmp
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  // declare dataSet_tmp which will be associated to output vtkMesh
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = 
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  
+  int numPoints = pMesh->getNumberOfPoints();
+  int numVolCells =  pMesh->getNumberOfCells();
+
+  // allocate memory for points
+  points->SetNumberOfPoints(numPoints);
+  for (int i = 0; i < numPoints; ++i)
+  {
+    std::vector<double> point;
+    point = pMesh->getPointCrd(i);
+    // insert point i
+    points->SetPoint(i,&point[0]);     
+  }
+  // inserting point array into dataSet_tmp
+  dataSet_tmp->SetPoints(points);
+
+  // allocating space for cell connectivities
+  dataSet_tmp->Allocate(numVolCells);
+  for (int i = 0; i < numVolCells; ++i)
+  {
+    vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+    std::vector<int> conn;
+    VTKCellType vct= 
+        pMesh->getVtkCellTag(pMesh->getElmType(i), pMesh->getElmOrder(i));
+    conn = pMesh->getElmConn(i, vct);
+    for (int j = 0; j < conn.size(); ++j)
+    {
+      // insert connectivies for cell into cellIds container
+      vtkcellIds->InsertNextId(conn[j]);
+    }
+    // insert connectivies
+    dataSet_tmp->InsertNextCell(vct, vtkcellIds); 
+  }
+  
+  vtkmesh->dataSet = dataSet_tmp;
+  vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+
+  std::cout << "Trimmed name = "
+      << trim_fname(fname, ".vtu") << std::endl;
+  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+  vtkmesh->write();
+  std::cout << "vtkMesh constructed" << std::endl;
+
+  return vtkmesh;
+
+}
 
 // convert to gmsh format without data
 void meshBase::writeMSH(std::ofstream& outputStream)
