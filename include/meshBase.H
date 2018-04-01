@@ -182,6 +182,9 @@ class meshBase
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
     virtual void getIntegrationPointsAtCell(int cellID) const {}
+    // get cell type as an integer
+    // assumes all elements are the same type
+    virtual int getCellType() const = 0;
 
   // data transfer
   public:

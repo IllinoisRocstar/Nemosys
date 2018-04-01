@@ -523,7 +523,7 @@ meshBase* meshBase::exportPntToVtk(std::string fname)
   std::cout << "Trimmed name = "
       << trim_fname(fname, ".vtu") << std::endl;
   vtkmesh->setFileName(trim_fname(fname, ".vtu"));
-  vtkmesh->write();
+  //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
