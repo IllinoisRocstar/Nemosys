@@ -1,4 +1,6 @@
 #include<vtkMesh.H>
+#include <vtkDataSetSurfaceFilter.h>
+#include <vtkTriangleFilter.h>
 
 void vtkMesh::write()
 {
@@ -51,7 +53,9 @@ void vtkMesh::write(std::string fname)
   else if (extension == ".vto")
     writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else if (extension == ".stl")
+  {
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
+  }
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
   
@@ -111,6 +115,57 @@ vtkMesh::vtkMesh(const char* fname)
   std::cout << "vtkMesh constructed" << std::endl;
   numCells = dataSet->GetNumberOfCells();
   numPoints = dataSet->GetNumberOfPoints();
+}
+
+vtkMesh::vtkMesh(const char* fname1, const char* fname2)
+{
+  std::string ext_in = vtksys::SystemTools::GetFilenameLastExtension(fname1);
+  std::string ext_out = vtksys::SystemTools::GetFilenameLastExtension(fname2);
+
+  // sanity check 
+  if ( !(ext_in == ".vtu" && ext_out == ".stl") )
+  {
+    std::cerr << "vtkMesh: Currently only support conversion between vtu and stl.\n";
+    exit(1);
+  }
+
+  vtkSmartPointer<vtkXMLUnstructuredGridReader> reader =
+    vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+  reader->SetFileName(fname1);
+  reader->Update();
+  reader->GetOutput()->Register(reader);
+
+  // obtaining dataset
+  dataSet.TakeReference(vtkDataSet::SafeDownCast(reader->GetOutput()));
+  if (!dataSet)
+  {
+    std::cout << "Error populating dataSet" << std::endl;
+    exit(1);
+  }
+  std::string newname(fname1);
+  setFileName(newname);
+  std::cout << "vtkMesh constructed" << std::endl;
+  numCells = dataSet->GetNumberOfCells();
+  numPoints = dataSet->GetNumberOfPoints();
+
+  // skinn to the surface
+  vtkSmartPointer<vtkDataSetSurfaceFilter> surfFilt =
+    vtkSmartPointer<vtkDataSetSurfaceFilter>::New();
+  surfFilt->SetInputConnection(reader->GetOutputPort());
+  surfFilt->Update();
+
+  // triangulate the surface
+  vtkSmartPointer<vtkTriangleFilter> triFilt =
+    vtkSmartPointer<vtkTriangleFilter>::New();
+  triFilt->SetInputConnection(surfFilt->GetOutputPort());
+  triFilt->Update();
+
+  // write to stl file
+  vtkSmartPointer<vtkSTLWriter> stlWriter =
+    vtkSmartPointer<vtkSTLWriter>::New();
+  stlWriter->SetFileName(fname2);
+  stlWriter->SetInputConnection(triFilt->GetOutputPort());
+  stlWriter->Write();
 }
 
 bool readLegacyVTKHeader(const std::string& line)
@@ -619,6 +674,12 @@ std::vector<double> vtkMesh::getCellCenter(int cellID) const
     center = center + cell[i];
   }
   return (1./cell.size())*center;
+}
+
+// returns the cell type
+int vtkMesh::getCellType() const
+{
+  return dataSet->GetCellType(0);
 }
 
 
