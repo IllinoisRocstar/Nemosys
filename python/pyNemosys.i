@@ -3,6 +3,7 @@
 %include "std_vector.i"
 %{
 #include "meshBase.H"
+#include "vtkMesh.H"
 #include "TransferDriver.H"
 #include "NemDriver.H"
 #include "RefineDriver.H"
@@ -48,6 +49,7 @@ class meshBase
     vtkSmartPointer<vtkCellLocator> buildLocator();
     virtual void getIntegrationPointsAtCell(int cellID);int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
+    virtual int getCellType() const = 0;
     int transfer(meshBase* target, std::string method,
                  const std::vector<std::string>& arrayNames);
     int transfer(meshBase* target, std::string method);
@@ -56,6 +58,8 @@ class meshBase
     void setSFBool(bool q);
     bool getSFBool();
     int IsArrayName(std::string name);
+    void setOrder(int _order); 
+    int getOrder() const; 
 
     void refineMesh(std::string method, int arrayID,
                     double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData);
@@ -83,6 +87,56 @@ class meshBase
     std::string getFileName();
     void setCheckQuality(bool x);
 };
+
+
+class vtkMesh : public meshBase
+{
+  // constructor and destructor
+  public:
+    vtkMesh();
+    vtkMesh(const char* fname);
+    vtkMesh(const char* fname1, const char* fname2);
+    ~vtkMesh();
+
+  // access
+  public:
+    // get point with id
+    std::vector<double> getPoint(int id)  const;
+    // get cell with id : returns point indices and respective coordinates
+    std::map<int, std::vector<double>> getCell(int id) const;
+    std::vector<std::vector<double>> getCellVec(int id) const;
+    // get diameter of circumsphere of each cell
+    std::vector<double> getCellLengths() const;
+    // get center of a cell
+    std::vector<double> getCellCenter(int cellID) const;
+    // get cell type as an integer
+    // assumes all elements are the same type
+    int getCellType() const;
+ 
+  // diagnostics
+  public:
+    void report();
+    void write();
+    void write(std::string fname); 
+
+  // set and get point and cell data
+  public:
+    // set point data (numComponets per point determined by dim of data[0] 
+    void setPointDataArray(const char* name, const std::vector<std::vector<double>>& data);
+    // set cell data (numComponents per cell determined by dim of data[0])
+    void setCellDataArray(const char* name, const std::vector<std::vector<double>>& data);
+    // set scalar cell data
+    void setCellDataArray(const char* name, const std::vector<double>& data);
+    // remove point data with given id from dataSet if it exists
+    void unsetPointDataArray(int arrayID);
+    void unsetPointDataArray(const char* name);
+    // remove cell data with given id from dataSet if it exists
+    void unsetCellDataArray(int arrayID);
+    void unsetCellDataArray(const char* name);
+    // remove field data with given id from dataSet
+    void unsetFieldDataArray(const char* name);
+};
+
 
 int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
@@ -125,7 +179,12 @@ class TransferDriver //: public NemDriver
         serialized_json = json.dumps(json_obj)
         return TransferDriver.py_readJSON(serialized_json, '', True)
       elif type(json_obj) is str:
-        return TransferDriver.py_readJSON('', json_obj, False)
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return TransferDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return TransferDriver.py_readJSON('', json_obj, False)
 
     %}
 };
@@ -163,7 +222,12 @@ class NemDriver
         serialized_json = json.dumps(json_obj)
         return NemDriver.py_readJSON(serialized_json, '', True)
       elif type(json_obj) is str:
-        return NemDriver.py_readJSON('', json_obj, False)
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return NemDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return NemDriver.py_readJSON('', json_obj, False)
 
     %}
 };
@@ -205,7 +269,12 @@ class RefineDriver : public NemDriver
         serialized_json = json.dumps(json_obj)
         return RefineDriver.py_readJSON(serialized_json, '', True)
       elif type(json_obj) is str:
-        return RefineDriver.py_readJSON('', json_obj, False)
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return RefineDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return RefineDriver.py_readJSON('', json_obj, False)
 
     %}
 };
@@ -243,8 +312,12 @@ class MeshGenDriver : public NemDriver
         serialized_json = json.dumps(json_obj)
         return MeshGenDriver.py_readJSON(serialized_json, '', True)
       elif type(json_obj) is str:
-        with open(json_obj, 'r') as jsonfile:
-          serialized_json = json.dumps(json.load(jsonfile))
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+        except:
+            with open(json_obj, 'r') as jsonfile:
+                serialized_json = json.dumps(json.load(jsonfile))
         return MeshGenDriver.py_readJSON(serialized_json, '', True)
 
     %}
@@ -260,6 +333,44 @@ class MeshQualityDriver : public NemDriver
 
     static MeshQualityDriver* readJSON(json inputjson);
 };
+
+
+
+%extend MeshQualityDriver {
+
+    static MeshQualityDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
+      if (serialized) {
+        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
+        return MeshQualityDriver::readJSON(inputjson);
+      }
+      else if (!serialized) {
+        return MeshQualityDriver::readJSON(ifname);
+      }
+      return NULL;
+    }
+
+    %pythoncode %{
+
+    @staticmethod
+    def readJSON( json_obj):
+      import json
+      if type(json_obj) is list:
+        serialized_json = json.dumps(json_obj[0])
+        return MeshQualityDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is dict:
+        serialized_json = json.dumps(json_obj)
+        return MeshQualityDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is str:
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return MeshQualityDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return MeshQualityDriver.py_readJSON('', json_obj, False)
+
+    %}
+};
+
 
 class ConversionDriver : public NemDriver
 {
@@ -296,7 +407,12 @@ class ConversionDriver : public NemDriver
         serialized_json = json.dumps(json_obj)
         return ConversionDriver.py_readJSON(serialized_json, '', True)
       elif type(json_obj) is str:
-        return ConversionDriver.py_readJSON('', json_obj, False)
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return ConversionDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return ConversionDriver.py_readJSON('', json_obj, False)
 
     %}
 };

@@ -60,6 +60,8 @@ class vtkMesh : public meshBase
   public:
     vtkMesh(){};
     vtkMesh(const char* fname);
+    // limited support for conversion between formats
+    vtkMesh(const char* fname1, const char* fname2);
     ~vtkMesh()
     {
       std::cout << "vtkMesh destroyed" << std::endl;
@@ -76,6 +78,9 @@ class vtkMesh : public meshBase
     std::vector<double> getCellLengths() const;
     // get center of a cell
     std::vector<double> getCellCenter(int cellID) const;
+    // get cell type as an integer
+    // assumes all elements are the same type
+    int getCellType() const;
  
   // diagnostics
   public:
@@ -99,6 +104,7 @@ class vtkMesh : public meshBase
     void unsetCellDataArray(const char* name);
     // remove field data with given id from dataSet
     void unsetFieldDataArray(const char* name);
+
 };
 
 
