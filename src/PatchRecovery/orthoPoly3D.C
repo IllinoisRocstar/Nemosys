@@ -135,8 +135,9 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& co
     z[i] = coords[i][2];
   }
   std::cout << "non-unique coords\n";
-  printVec(x); //printVec(y); printVec(z);
-
+  #ifdef DEBUG
+    printVec(x); //printVec(y); printVec(z);
+  #endif
   //std::vector<double> x_unique;
   //for (int i = 0; i < x.size(); ++i)
   //{
