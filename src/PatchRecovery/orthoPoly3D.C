@@ -137,20 +137,20 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& co
   std::cout << "non-unique coords\n";
   printVec(x); //printVec(y); printVec(z);
 
-  std::vector<double> x_unique;
-  for (int i = 0; i < x.size(); ++i)
-  {
-    x_unique.push_back(x[i]);
-    for (int j = i+1; j < x.size(); ++j)
-    {
-      if (x_unique[i] != x[j])
-    }
-  }
+  //std::vector<double> x_unique;
+  //for (int i = 0; i < x.size(); ++i)
+  //{
+  //  x_unique.push_back(x[i]);
+  //  for (int j = i+1; j < x.size(); ++j)
+  //  {
+  //    if (x_unique[i] != x[j])
+  //  }
+  //}
 
-  std::sort(x.begin(),x.end());
-  x.erase(std::unique(x.begin(),x.end(),Pred),x.end());
-  std::cout << "unique coords\n";
-  printVec(x); //printVec(y); printVec(z);
+//  std::sort(x.begin(),x.end());
+//  x.erase(std::unique(x.begin(),x.end(),Pred),x.end());
+//  std::cout << "unique coords\n";
+//  printVec(x); //printVec(y); printVec(z);
 
   opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
   opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
