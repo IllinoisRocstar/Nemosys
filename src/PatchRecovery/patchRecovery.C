@@ -110,7 +110,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
 
   int totPatchPoints = 0; 
   // looping over all points, looping over patches per point
-  for (int i = 1; i < numPoints; ++i) //FIXME
+  for (int i = 0; i < numPoints; ++i) //FIXME
   {
     // get ids of cells in patch of node
     nodeMesh->getDataSet()->GetPointCells(i,patchCellIDs);
