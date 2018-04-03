@@ -22,6 +22,8 @@ template<class TReader> vtkDataSet* ReadAnXMLOrSTLFile(const char* fileName)
 // tested on vtk output from MFEM
 vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
 
+vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName);
+
 // helpers for reading legacy vtk 
 
 // helper that reads/checks header from legacy vtk
@@ -62,6 +64,9 @@ class vtkMesh : public meshBase
     vtkMesh(const char* fname);
     // limited support for conversion between formats
     vtkMesh(const char* fname1, const char* fname2);
+    // put existing vtkDataSet into meshBase
+    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname);
+
     ~vtkMesh()
     {
       std::cout << "vtkMesh destroyed" << std::endl;
@@ -87,43 +92,43 @@ class vtkMesh : public meshBase
 
   // manip
   public:
-    void classifyAndAddBoundaries()
-    {
-      double center[3], bounds[6];
-      dataSet->GetCenter(center);
-      dataSet->GetBounds(bounds);
-      vtkSmartPointer<vtkCellLocator> cellLocator = buildLocator(); 
-      double rayStart[3];
-      for (unsigned int i = 0; i < 3; i++)
-      {
-        rayStart[i] = bounds[2 * i + 1] * 1.1;
-      }
+    //void classifyAndAddBoundaries()
+    //{
+    //  double center[3], bounds[6];
+    //  dataSet->GetCenter(center);
+    //  dataSet->GetBounds(bounds);
+    //  vtkSmartPointer<vtkCellLocator> cellLocator = buildLocator(); 
+    //  double rayStart[3];
+    //  for (unsigned int i = 0; i < 3; i++)
+    //  {
+    //    rayStart[i] = bounds[2 * i + 1] * 1.1;
+    //  }
  
-      vtkIdType cellId = -1;
-      double xyz[3], t, pcoords[3];
-      int subId;
+    //  vtkIdType cellId = -1;
+    //  double xyz[3], t, pcoords[3];
+    //  int subId;
  
-      cellLocator->IntersectWithLine(
-        rayStart,
-        center,
-        0.0001,
-        t,
-        xyz,
-        pcoords,
-        subId,
-        cellId);
-      std::cout << "Id of cell on outside surface: " << cellId << std::endl;
-      vtkSmartPointer<vtkConnectivityFilter> connectivityFilter
-        = vtkSmartPointer<vtkConnectivityFilter>::New();
-      connectivityFilter->SetInputData(dataSet);
-      connectivityFilter->SetExtractionModeToCellSeededRegions(); 
-      connectivityFilter->InitializeSeedList();
-      connectivityFilter->AddSeed(cellId);
-      connectivityFilter->Update();
-      vtkSmartPointer<vtkDataSet> dataSet_tmp;
-      dataSet_tmp.TakeReference(connectivityFilter->GetOutput());
-      writeVTFile<vtkXMLUnstructuredGridWriter>("test_surf.vtu", dataSet_tmp); 
-    }
+    //  cellLocator->IntersectWithLine(
+    //    rayStart,
+    //    center,
+    //    0.0001,
+    //    t,
+    //    xyz,
+    //    pcoords,
+    //    subId,
+    //    cellId);
+    //  std::cout << "Id of cell on outside surface: " << cellId << std::endl;
+    //  vtkSmartPointer<vtkConnectivityFilter> connectivityFilter
+    //    = vtkSmartPointer<vtkConnectivityFilter>::New();
+    //  connectivityFilter->SetInputData(dataSet);
+    //  connectivityFilter->SetExtractionModeToCellSeededRegions(); 
+    //  connectivityFilter->InitializeSeedList();
+    //  connectivityFilter->AddSeed(cellId);
+    //  connectivityFilter->Update();
+    //  vtkSmartPointer<vtkDataSet> dataSet_tmp;
+    //  dataSet_tmp.TakeReference(connectivityFilter->GetOutput());
+    //  writeVTFile<vtkXMLUnstructuredGridWriter>("test_surf.vtu", dataSet_tmp); 
+    //}
 
  
   // diagnostics

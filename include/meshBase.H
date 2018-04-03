@@ -120,6 +120,20 @@ class meshBase
     {
       std::cout << "meshBase constructed" << std::endl;
     }
+
+    // put existing vtkDataSet into meshBase
+    meshBase(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname)
+    {
+      dataSet = dataSet_tmp;
+      std::string newname(fname);
+      setFileName(newname);
+      numCells = dataSet->GetNumberOfCells();
+      numPoints = dataSet->GetNumberOfPoints();
+      std::cout << numCells << " " << numPoints << std::endl;
+      std::cout << "meshBase constructed" << std::endl;
+      
+    }
+
     virtual ~meshBase()
     {
       std::cout << "meshBase destroyed" << std::endl;
