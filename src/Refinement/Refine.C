@@ -2,14 +2,14 @@
 
 Refine::Refine(meshBase* _mesh, const std::string& method, 
                int arrayID, double dev_mult, bool maxIsmin, 
-               double edge_scale, std::string _ofname)
+               double edge_scale, std::string _ofname, double sizeFactor)
 {
   mesh = _mesh;
   ofname = _ofname; 
   if (!mesh->getSFBool() && method.compare("uniform"))
   {
     // creates sizefield and switches sfbool
-    mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin);
+    mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin, sizeFactor);
   }
   if (!method.compare("uniform"))
   {

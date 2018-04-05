@@ -90,6 +90,10 @@ T reciprocal(T x);
 template <typename T>
 void reciprocal_vec(std::vector<T>& x);
 
+// checks if vector has zeros
+inline bool hasZero(std::vector<double>& x);
+
+
 // find minmax of vector, excluding inf 
 inline std::vector<double> getMinMax(const std::vector<double>& x);
 
@@ -108,6 +112,12 @@ inline std::vector<double> getMeanStdev(const std::vector<double>& x);
 
 // generates boolean array with 1 if value >= tol, 0 otherwise
 inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
+
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+inline std::vector<int> cellsToRefineStdev(std::vector<double>& values, double mean, double dev);
+
+// return selects cells if their value is above some threshold of the maximum
+inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double dev);
 
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
@@ -255,6 +265,14 @@ void reciprocal_vec(std::vector<T>& x)
   std::transform(x.begin(), x.end(), x.begin(), reciprocal<T>);
 }
 
+bool hasZero(std::vector<double>& x)
+{
+    for (auto it=x.begin(); it!=x.end(); it++)
+        if (*it==0.)
+            return true;
+    return false;
+}
+
 // find minmax of vector, excluding inf 
 std::vector<double> getMinMax(const std::vector<double>& x)
 {
@@ -318,6 +336,42 @@ std::vector<int> cellsToRefine(std::vector<double>& values, double tol)
   for (int i = 0; i < values.size(); ++i)
   {
     if (values[i] > tol)
+      result[i] = 1;
+  }
+  return result;
+}
+
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+std::vector<int> cellsToRefineStdev(std::vector<double>& values, double mean, double dev)
+{
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  if (std::abs(dev/mean) >= 1.0)
+  {
+    dev = 0.99*mean;
+  }
+  double th = mean + dev;
+  double tl = mean - dev;
+  std::vector<int> result(values.size(),0);  
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (values[i] > th || values[i] < tl)
+      result[i] = 1;
+  }
+  return result;
+}
+
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double dev)
+{
+  dev = std::abs(dev);
+  if (dev > 1.)
+      dev = 1.;
+  double max = *std::max_element(values.begin(), values.end());
+  double hl = (1-dev)*max;
+  std::vector<int> result(values.size(),0);  
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (values[i] > hl)
       result[i] = 1;
   }
   return result;

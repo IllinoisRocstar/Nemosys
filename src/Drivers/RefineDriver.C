@@ -3,14 +3,15 @@
 // -------------------------------- Refine Driver -------------------------------------//
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName,
                            double dev_mult, bool maxIsmin, double edgescale, std::string ofname,
-                           bool transferData)
+                           bool transferData, double sizeFactor)
 {
   std::cout << "RefineDriver created" << std::endl;
+  std::cout << "Size Factor = " << sizeFactor << std::endl;
   mesh = meshBase::Create(_mesh);
   std::cout << std::endl;
   mesh->report();
   std::cout << std::endl;
-  mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname, transferData);  
+  mesh->refineMesh(method, arrayName, dev_mult, maxIsmin, edgescale, ofname, transferData, sizeFactor);  
 }
 
 RefineDriver::RefineDriver(std::string _mesh, std::string method, double edgescale, std::string ofname,
@@ -75,8 +76,11 @@ RefineDriver* RefineDriver::readJSON(json inputjson)
     arrayName = inputjson["Refinement Options"]["Array Name"].as<std::string>();
     dev_mult = inputjson["Refinement Options"]["StdDev Multiplier"].as<double>();
     maxIsmin = inputjson["Refinement Options"]["Max Is Min for Scaling"].as<bool>();
+    double sizeFactor;
+    sizeFactor = inputjson["Refinement Options"].has_key("Size Factor") ?
+        inputjson["Refinement Options"]["Size Factor"].as<double>():1.0;
     refdrvobj = new RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin, 
-                                 edgescale, ofname, transferData);
+                                 edgescale, ofname, transferData, sizeFactor);
   }
   return refdrvobj;  
 }

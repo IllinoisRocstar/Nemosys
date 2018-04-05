@@ -4,17 +4,19 @@
 #include <Z2ErrorSizeField.H>
 
 SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int arrayID,
-                                   double _dev_mult, bool _maxIsmin)
+                                   double _dev_mult, bool _maxIsmin, double sizeFactor)
 {
   if (!method.compare("value"))
   {
     ValSizeField* valsf = new ValSizeField(_mesh, arrayID, _dev_mult, _maxIsmin);
+    valsf->setSizeFactor(sizeFactor);
     valsf->computeSizeField(arrayID);
     return valsf;
   }
   else if (!method.compare("gradient"))
   {
     GradSizeField* gradsf = new GradSizeField(_mesh, arrayID, _dev_mult, _maxIsmin);
+    gradsf->setSizeFactor(sizeFactor);
     gradsf->computeSizeField(arrayID);
     return gradsf;
   }
@@ -84,6 +86,7 @@ void SizeFieldBase::initialize(meshBase* _mesh, int arrayID, double _dev_mult,
 // into a compatible size field for the mesh
 void SizeFieldBase::mutateValues(std::vector<double>& values)
 {
+  std::cout << "Size Factor = " << sizeFactor << std::endl;
   // get circumsphere diameter of all cells 
   std::vector<double> lengths = mesh->getCellLengths();
   // find minmax of diameters
@@ -95,22 +98,40 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
     lengthminmax[1] *= 0.65;
   lengthminmax[0] -= lengthminmax[0]/2.; 
 
+  // min/max length
+  std::cout << "Min Elm Lenght Scale : " << lengthminmax[0]
+            << "\nMax Elm Lenght Scale : " << lengthminmax[1]
+            << std::endl;
   // get mean and stdev of values 
   std::vector<double> meanStdev = getMeanStdev(values);
   // get bool array of which cells to refine based on multiplier of stdev
-  std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+  //std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+  //std::vector<int> cells2Refine = cellsToRefineStdev(values, meanStdev[0], meanStdev[1]*dev_mult);
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  std::vector<int> cells2Refine = cellsToRefineMaxdev(values, dev_mult);
   // normalize values by mean
   std::vector<double> values_norm = (1./meanStdev[0])*values;  
   // take the reciprocal of values for size definition (high value -> smaller size)
-  reciprocal_vec(values);
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  if (!hasZero(values)){
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    reciprocal_vec(values);
+  }
   // scale values to min max circumsphere diam of cells 
   // now, values represents a size field
   std::vector<double> valuesMinMax = getMinMax(values);
   scale_vec_to_range(values, valuesMinMax, lengthminmax);
+
   // setting sizes (values) to f*max element diam based on return of cellsToRefine function
+  std::cout << __FILE__ << __LINE__ << std::endl;
   for (int i = 0; i < values.size(); ++i)
   {
     if (!cells2Refine[i])
       values[i] = lengthminmax[1]; // if cell shouldn't be refined, size set to min of diams
+    else
+    {
+      values[i] = sizeFactor*values[i];
+    }
   }
+  std::cout << __FILE__ << __LINE__ << std::endl;
 }
