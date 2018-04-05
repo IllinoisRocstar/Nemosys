@@ -8,7 +8,8 @@ class RefineDriver : public NemDriver
   public:
     RefineDriver(std::string _mesh, std::string method, std::string arrayName,
                  double dev_mult, bool maxIsmin, double edgescale, 
-                 std::string ofname, bool transferData);
+                 std::string ofname, bool transferData, double sizeFactor = 1.);
+
     RefineDriver(std::string _mesh, std::string method, 
                  double edgescale, std::string ofname, bool transferData);
   
