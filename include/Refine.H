@@ -10,7 +10,7 @@ class Refine
     Refine(){}
     Refine(meshBase* _mesh, const std::string& method, 
            int arrayID, double dev_mult, bool maxIsmin, 
-           double edge_scale, std::string _ofname);
+           double edge_scale, std::string _ofname, double sizeFactor=1.);
     ~Refine();
 
   // methods

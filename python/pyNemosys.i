@@ -53,7 +53,7 @@ class meshBase
     int transfer(meshBase* target, std::string method,
                  const std::vector<std::string>& arrayNames);
     int transfer(meshBase* target, std::string method);
-    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
+    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin, double sizeFactor=1.);
 
     void setSFBool(bool q);
     bool getSFBool();
@@ -62,9 +62,11 @@ class meshBase
     int getOrder() const; 
 
     void refineMesh(std::string method, int arrayID,
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData);
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData,
+                    double sizeFactor=1.);
     void refineMesh(std::string method, std::string arrayName,
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData);
+                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname, bool transferData, 
+                    double sizeFactor=1.);
     void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData);
 
     virtual void report();
@@ -236,9 +238,12 @@ class RefineDriver : public NemDriver
 {
   public:
     RefineDriver(std::string _mesh, std::string method, std::string arrayName,
-                 double dev_mult, bool maxIsmin, double edgescale, std::string ofname, bool transferData);
+                 double dev_mult, bool maxIsmin, double edgescale, std::string ofname, bool transferData, 
+                 double sizeFactor = 1.);
     RefineDriver(std::string _mesh, std::string method,
                  double edgescale, std::string ofname, bool transferData);
+    RefineDriver(std::string _mesh, std::string method, std::string arrayName, int order,
+                 std::string ofname, bool transferData);
 
   ~RefineDriver();
 

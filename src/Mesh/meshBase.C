@@ -123,9 +123,12 @@ int meshBase::transfer(meshBase* target, std::string method)
   return transobj->run(); 
 }
 
-void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin, double sizeFactor)
 {
-  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin);
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  std::cout << "Size Factor = " << sizeFactor << std::endl;
+  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
+  sfobj->setSizeFactor(sizeFactor);
   sfobj->computeSizeField(arrayID);
 }
 
@@ -871,10 +874,12 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
 
 void meshBase::refineMesh(std::string method, int arrayID, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname, bool transferData)
+                          double edge_scale, std::string ofname, bool transferData,
+                          double sizeFactor)
 {
+  std::cout << "Size Factor = " << sizeFactor << std::endl;
   std::unique_ptr<Refine> refineobj
-    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname));
+    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname,sizeFactor));
   refineobj->run(transferData);
 }
 
@@ -889,7 +894,8 @@ void meshBase::refineMesh(std::string method, int arrayID, int _order,
 
 void meshBase::refineMesh(std::string method, std::string arrayName, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname, bool transferData)
+                          double edge_scale, std::string ofname, bool transferData,
+                          double sizeFactor)
 {
   int arrayID = IsArrayName(arrayName);
   if (arrayID == -1)
@@ -898,7 +904,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
               << " not fuond in set of point data arrays" << std::endl;
     exit(1);
   }
-  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData);
+  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData, sizeFactor);
 }
 
 void meshBase::refineMesh(std::string method, std::string arrayName, int order, 

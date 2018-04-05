@@ -203,7 +203,7 @@ class meshBase
     // generate size field based on method ("gradient", "value", "error estimator")
     // and given a point data array. dev_mlt and maxIsmin are used to determine
     // which cells to consider for refinement
-    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
+    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin, double sizeFactor=1.);
     // set whether this mesh has a sizefield
     void setSFBool(bool q) { hasSizeField = q; }
     // get this meshes' sizefield  
@@ -220,10 +220,10 @@ class meshBase
     // is ignored in calls where method is "gradient", "value" etc. instead of "uniform"
     void refineMesh(std::string method, int arrayID, 
                     double dev_mult, bool maxIsmin, double edge_scale, 
-                    std::string ofname, bool transferData); 
+                    std::string ofname, bool transferData, double sizeFactor=1.); 
     void refineMesh(std::string method, std::string arrayName, 
                     double dev_mult, bool maxIsmin, double edge_scale, 
-                    std::string ofname, bool transferData); 
+                    std::string ofname, bool transferData, double sizeFactor=1.); 
     // added for uniform refinement by driver
     void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData); 
     void refineMesh(std::string method, int arrayID, int order, 
