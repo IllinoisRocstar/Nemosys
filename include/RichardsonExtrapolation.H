@@ -7,14 +7,14 @@ class RichardsonExtrapolation
 {
 
   public:
-    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* _coarseMesh,
+    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
                             double _ref_factor, int _order, 
                             const std::vector<int>& _arrayIDs)
-      : fineMesh(_fineMesh), coarseMesh(_coarseMesh), ref_factor(_ref_factor), order(_order),
+      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
         arrayIDs(_arrayIDs)
     {
       // set names for array from coarse mesh to be transferred to fine
-      std::vector<std::string> newArrNames(arrayIDs.size());
+      newArrNames.resize((arrayIDs.size()));
       for (int i = 0; i < arrayIDs.size(); ++i)
       {
         std::string name(fineMesh->getDataSet()->GetPointData()->GetArrayName(arrayIDs[i]));
@@ -35,25 +35,38 @@ class RichardsonExtrapolation
       std::vector<vtkSmartPointer<vtkDoubleArray>> fineDatas(numArr);
       std::vector<vtkSmartPointer<vtkDoubleArray>> coarseDatas(numArr);
       std::vector<vtkSmartPointer<vtkDoubleArray>> diffDatas(numArr);
-  
+      std::vector<vtkSmartPointer<vtkDoubleArray>> diffDatas1(numArr);
+ 
       vtkSmartPointer<vtkPointData> finePD 
         = fineMesh->getDataSet()->GetPointData();
-    
+   
+      std::vector<std::string> names(numArr*2);
+      int j = 0; 
       for (int id = 0; id < numArr; ++id)
       {
         fineDatas[id] 
           = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id]));
         coarseDatas[id] 
-          = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id] + numArr));
+          = vtkDoubleArray::SafeDownCast(finePD->GetArray(&(newArrNames[id])[0u]));
+            //arrayIDs[id] + numArr));
         vtkSmartPointer<vtkDoubleArray> diffData = vtkSmartPointer<vtkDoubleArray>::New();
         diffData->SetNumberOfComponents(fineDatas[id]->GetNumberOfComponents());
         diffData->SetNumberOfTuples(fineMesh->getNumberOfPoints());
         std::string name(finePD->GetArrayName(arrayIDs[id]));
         name += "Diff";
+        names[j] = name;
         diffData->SetName(&name[0u]);
         diffDatas[id] = diffData;
+        vtkSmartPointer<vtkDoubleArray> diffData1 = vtkSmartPointer<vtkDoubleArray>::New();
+        diffData1->SetNumberOfComponents(fineDatas[id]->GetNumberOfComponents());
+        diffData1->SetNumberOfTuples(fineMesh->getNumberOfPoints());
+        name += "1";
+        names[j+1] = name;
+        diffData1->SetName(&name[0u]);
+        diffDatas1[id] = diffData1;
+        j+=2;
       }
-      
+      // vdiff is wrong 
       for (int i = 0; i < fineMesh->getNumberOfPoints(); ++i)
       {
         for (int id = 0; id < numArr; ++id)
@@ -64,19 +77,29 @@ class RichardsonExtrapolation
           fineDatas[id]->GetTuple(i,fine_comps);
           coarseDatas[id]->GetTuple(i,coarse_comps);
           double diff[numComponent];
+          double diff1[numComponent];
           for (int j = 0; j < numComponent; ++j)
-          {
-            diff[j] = pow((fine_comps[j] - coarse_comps[j])/(pow(ref_factor,order)-1),2);  
+          { 
+            double error = (coarse_comps[j] -fine_comps[j])/(pow(ref_factor,order)-1);
+            diff[j] = error*error;  
+            diff1[j] = pow(error*pow(ref_factor,order),2);
           } 
           diffDatas[id]->SetTuple(i,diff);
+          diffDatas1[id]->SetTuple(i,diff1);
         }  
       }
       
-      std::vector<int> diffIDs(numArr);
+      j = 0;
+      std::vector<int> diffIDs(numArr*2);
       for (int id = 0; id < numArr; ++id)
       {
         finePD->AddArray(diffDatas[id]);
-        diffIDs[id] = arrayIDs[id] + 2*numArr; 
+        finePD->AddArray(diffDatas1[id]);
+        finePD->GetArray(&(names[j])[0u], diffIDs[j]);
+        finePD->GetArray(&(names[j+1])[0u], diffIDs[j+1]);
+        std::cout << names[j] << " " << names[j+1] << std::endl;
+        std::cout << diffIDs[j] << " " << diffIDs[j+1] << std::endl; 
+        j+=2;
       }
          
       std::vector<std::vector<double>> discretization_error(fineMesh->integrateOverMesh(diffIDs)); 
@@ -84,21 +107,41 @@ class RichardsonExtrapolation
       {
         for (int j = 0; j < discretization_error[i].size(); ++j)
         {
-          discretization_error[i][j] = log(discretization_error[i][j]);
-          std::cout << discretization_error[i][j] << std::endl;
+          discretization_error[i][j] = log(std::sqrt(discretization_error[i][j]));  
+          std::cout << discretization_error[i][j] << " ";
         }
-      } 
+        std::cout << std::endl;
+      }
+ 
+      j = 0; 
+      for (int id = 0; id < names.size(); ++id)
+      {
+        std::string intgrl_name(names[id]);
+        intgrl_name += "Integral";
+        fineMesh->unsetPointDataArray(&(names[id])[0u]);
+        fineMesh->unsetCellDataArray(&intgrl_name[0u]);
+      }
+      for (int id = 0; id < numArr; ++id)
+      {
+        fineMesh->unsetPointDataArray(&(newArrNames[id])[0u]);
+      }
+ 
       return discretization_error; 
     }
+
+   // std::vector<std::vector<double>> computeObservedOrderOfAccuracy(meshBase* finerMesh)
+   // {
+   // 
+   //   
+   // }
       
 
   private:
     meshBase* fineMesh;
-    meshBase* coarseMesh;
     double ref_factor;
     int order;
     const std::vector<int> arrayIDs;
-
+    std::vector<std::string> newArrNames;
 };
 
 

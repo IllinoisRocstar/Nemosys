@@ -389,7 +389,6 @@ int FETransfer::run(const std::vector<std::string>& newnames)
       std::cout << "\t" << source->getDataSet()->GetPointData()->GetArrayName(i)
                 << std::endl;
     }
-    //runPD(arrayIDs);
     transferPointData(arrayIDs,newnames);
   }
   else
@@ -411,7 +410,6 @@ int FETransfer::run(const std::vector<std::string>& newnames)
                 << std::endl;
     }
     transferCellData(arrayIDs, newnames);
-    //runCD(arrayIDs);
   }
   else
   {
