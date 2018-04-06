@@ -5,6 +5,7 @@
 #include <SizeFieldBase.H>
 #include <Refine.H>
 #include <MeshQuality.H>
+#include <Cubature.H>
 
 // TODO: Stop using setPoint/CellDataArray in export methods
 //        - instead, use the faster vtkDataArray creation and insertion
@@ -95,10 +96,11 @@ int meshBase::transfer(meshBase* target, std::string method,
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  return transobj->runPD(arrayIDs);
+  return transobj->transferPointData(arrayIDs,newArrayNames);
 }
 
-int meshBase::transfer(meshBase* target, std::string method, const std::vector<std::string>& arrayNames)
+int meshBase::transfer(meshBase* target, std::string method, 
+                       const std::vector<std::string>& arrayNames)
 {
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
@@ -120,7 +122,14 @@ int meshBase::transfer(meshBase* target, std::string method)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  return transobj->run(); 
+  return transobj->run(newArrayNames); 
+}
+
+std::vector<std::vector<double>> 
+meshBase::integrateOverMesh(const std::vector<int>& arrayIDs)
+{
+  std::unique_ptr<GaussCubature> cubature = GaussCubature::CreateUnique(this, arrayIDs);
+  return cubature->integrateOverAllCells(); 
 }
 
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
