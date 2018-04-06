@@ -273,17 +273,17 @@ class RichardsonExtrapolation
 {
 
   public:
-    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* _coarseMesh,
+    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
                             double _ref_factor, int _order, 
                             const std::vector<int>& _arrayIDs)
-      : fineMesh(_fineMesh), coarseMesh(_coarseMesh), ref_factor(_ref_factor), order(_order),
+      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
         arrayIDs(_arrayIDs);
 
     std::vector<std::vector<double>> computeDiscretizationError();
   private:
     meshBase* fineMesh;
-    meshBase* coarseMesh;
     double ref_factor;
     int order;
     const std::vetor<int> arrayIDs;
+    std::vector<std::string> newArrNames;
 };
