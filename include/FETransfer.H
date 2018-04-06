@@ -29,17 +29,14 @@ class FETransfer : public TransferBase
               in any of these neighboring cells
         2) When the cell is identified, evaluate the weights for interpolation of the 
            solution to the target point and perform the interpolation. */
-    int runPD(vtkPointData* pd, int arrayID);
-    // transfer point data from source to provided target points
-    // this method is used when transferring converted cellToPoint data
-    // from source to cell centers in target 
-    std::vector<std::vector<double>> 
-      runPD(vtkSmartPointer<vtkCellLocator> cellLocator,
-            std::vector<std::vector<double>>& sourceData, 
-            std::vector<std::vector<double>>& targetPnts);
-    // transfer point data with given ids from source to target
-    int runPD(const std::vector<int>& arrayIDs);
+    int transferPointData(const std::vector<int>& arrayIDs,
+                          const std::vector<string>& newnames = std::vector<string>()); 
 
+    int transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell, 
+                          std::vector<vtkSmartPointer<vtkDoubleArray>> dasSource,
+                          std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget,
+                          const bool flip);
+  
   // cell data transfer
   public:
     /* Transfer cell data from source mesh to target
@@ -50,12 +47,15 @@ class FETransfer : public TransferBase
         2)  Compute the centers of cell in the target mesh
         3)  Transfer the converted cell-point data from the source mesh
             to the cell centers of the target mesh using the runPD methods*/
-    int runCD(vtkCellData* cd, int arrayID, 
-              std::vector<std::vector<double>>& targetCenters);
-    // transfer cell data with given ids from source to target
-    int runCD(const std::vector<int>& arrayIDs);
+    int transferCellData(const std::vector<int>& arrayIDs,
+                         const std::vector<string>& newnames = std::vector<string>());
+
+    int transferCellData(int i, vtkSmartPointer<vtkGenericCell> genCell, 
+                     std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint,
+                     std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget);
+
     // transfer all cell and point data from source to target
-    int run();
+    int run(const std::vector<std::string>& newnames = std::vector<std::string>());
 };
 
 #endif

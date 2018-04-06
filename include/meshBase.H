@@ -120,18 +120,7 @@ class meshBase
       std::cout << "meshBase constructed" << std::endl;
     }
 
-    // put existing vtkDataSet into meshBase
-    meshBase(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname)
-    {
-      dataSet = dataSet_tmp;
-      std::string newname(fname);
-      setFileName(newname);
-      numCells = dataSet->GetNumberOfCells();
-      numPoints = dataSet->GetNumberOfPoints();
-      std::cout << numCells << " " << numPoints << std::endl;
-      std::cout << "meshBase constructed" << std::endl;
-      
-    }
+
 
     virtual ~meshBase()
     {
@@ -149,10 +138,12 @@ class meshBase
       mesh.reset(meshBase::Create(fname));
       return mesh;
     }
+
     static std::unique_ptr<meshBase> CreateUnique(std::string fname)
     {
       return std::unique_ptr<meshBase>(meshBase::Create(fname));
     }
+
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
@@ -160,7 +151,7 @@ class meshBase
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
-    
+ 
   // access
   public:
     // get point with id
@@ -208,6 +199,15 @@ class meshBase
                  const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
+
+  // integration
+  public:
+    // integrate arrays in arrayIDs over the mesh. 
+    // integrated data is available per cell after operation
+    // total integral for each datum is returned
+    std::vector<std::vector<double>> 
+    integrateOverMesh(const std::vector<int>& arrayIDs);
+
  
   // size field generation
   public:
@@ -274,6 +274,7 @@ class meshBase
     void setFileName(std::string fname) { filename = fname; }
     std::string getFileName() { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
+    void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
 
   protected:
     int numPoints; // number of points in mesh
@@ -283,6 +284,7 @@ class meshBase
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
     int order; // shape function order
+    std::vector<std::string> newArrayNames;
 };
 
 // compares two meshBases- used in testing
