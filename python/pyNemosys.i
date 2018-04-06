@@ -11,12 +11,14 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
+#include "RichardsonExtrapolation.H"
 #include "jsoncons/json.hpp"
 %}
 
 
 %template(vectorString) std::vector<std::string>;
 %template(doubleV) std::vector<double>;
+%template(intV) std::vector<int>;
 %template(doubleVV) std::vector<std::vector<double>>;
 %template(cellMap) std::map<int, std::vector<double>>;
 class meshBase
@@ -57,6 +59,8 @@ class meshBase
     int transfer(meshBase* target, std::string method,
                  const std::vector<std::string>& arrayNames);
     int transfer(meshBase* target, std::string method);
+    std::vector<std::vector<double>> integrateOverMesh(const std::vector<int>& arrayIDs);
+    
     void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
 
     void setSFBool(bool q);
@@ -90,6 +94,7 @@ class meshBase
     void setFileName(std::string fname);
     std::string getFileName();
     void setCheckQuality(bool x);
+    void setNewArrayNames(const std::vector<std::string>& newnames);
 };
 
 
@@ -338,6 +343,7 @@ class MeshQualityDriver : public NemDriver
     static MeshQualityDriver* readJSON(json inputjson);
 };
 
+<<<<<<< HEAD
 
 
 %extend MeshQualityDriver {
@@ -419,4 +425,23 @@ class ConversionDriver : public NemDriver
             return ConversionDriver.py_readJSON('', json_obj, False)
 
     %}
+=======
+class RichardsonExtrapolation
+{
+
+  public:
+    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* _coarseMesh,
+                            double _ref_factor, int _order, 
+                            const std::vector<int>& _arrayIDs)
+      : fineMesh(_fineMesh), coarseMesh(_coarseMesh), ref_factor(_ref_factor), order(_order),
+        arrayIDs(_arrayIDs);
+
+    std::vector<std::vector<double>> computeDiscretizationError();
+  private:
+    meshBase* fineMesh;
+    meshBase* coarseMesh;
+    double ref_factor;
+    int order;
+    const std::vetor<int> arrayIDs;
+>>>>>>> 430ca68... richardson_extrap class and more efficient transfer
 };
