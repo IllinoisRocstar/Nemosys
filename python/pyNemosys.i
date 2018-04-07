@@ -436,6 +436,7 @@ class RichardsonExtrapolation
         arrayIDs(_arrayIDs);
 
     std::vector<std::vector<double>> computeDiscretizationError();
+    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh);
   private:
     meshBase* fineMesh;
     double ref_factor;
