@@ -66,7 +66,6 @@ class RichardsonExtrapolation
         diffDatas1[id] = diffData1;
         j+=2;
       }
-      // vdiff is wrong 
       for (int i = 0; i < fineMesh->getNumberOfPoints(); ++i)
       {
         for (int id = 0; id < numArr; ++id)
@@ -107,7 +106,7 @@ class RichardsonExtrapolation
       {
         for (int j = 0; j < discretization_error[i].size(); ++j)
         {
-          discretization_error[i][j] = log(std::sqrt(discretization_error[i][j]));  
+          discretization_error[i][j] = 0.5*log(discretization_error[i][j]);  
           std::cout << discretization_error[i][j] << " ";
         }
         std::cout << std::endl;
@@ -125,15 +124,30 @@ class RichardsonExtrapolation
       {
         fineMesh->unsetPointDataArray(&(newArrNames[id])[0u]);
       }
- 
       return discretization_error; 
     }
 
-   // std::vector<std::vector<double>> computeObservedOrderOfAccuracy(meshBase* finerMesh)
-   // {
-   // 
-   //   
-   // }
+    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh)
+    {
+      std::vector<std::vector<double>> discretization_error 
+        = computeDiscretizationError();
+      std::unique_ptr<RichardsonExtrapolation> finerExtrapolation
+        = std::unique_ptr<RichardsonExtrapolation>
+          (new RichardsonExtrapolation(finerMesh, fineMesh, ref_factor,order,arrayIDs));
+      std::vector<std::vector<double>> discretization_error1 
+        = finerExtrapolation->computeDiscretizationError();
+      
+      std::vector<double> observed_order;
+      for (int i = 1; i < discretization_error.size(); i+=2)
+      {
+        for (int j = 0; j < discretization_error[i].size(); ++j)
+        {
+          observed_order.push_back((discretization_error1[i][j] - discretization_error[i][j])/log(ref_factor)); 
+        }
+      }
+      printVec(observed_order); 
+      return observed_order;
+    }
       
 
   private:
