@@ -8,6 +8,9 @@
 
 // The following arrays are shape functions evaluated at quadrature points supporting second
 // order integration for the indicated cell type as well as the quadrature point weights.
+
+// TODO: Add a check to preserve cubature information on mesh for future use
+// TODO: Add L2-norm function to simplify implementation in other classes where this is used
 double TRI3 [] = 
 {
 .666666666666667, .166666666666667, .166666666666667,
