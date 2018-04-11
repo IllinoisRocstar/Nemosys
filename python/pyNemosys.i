@@ -453,9 +453,15 @@ class OrderOfAccuracy
     OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
                     const std::vector<int>& _arrayIDs)
       : f1(_f1), f2(_f2), f3(_f3), arrayIDs(_arrayIDs);
- 
+    ~OrderOfAccuracy(); 
     std::vector<std::vector<double>> computeOrderOfAccuracy(); 
-    std::vector<std::vector<double>> computeGridConvergenceIndex();
+    std::vector<std::vector<double>> computeGCI_21();
+    std::vector<std::vector<double>> computeGCI_32();
+    std::vector<std::vector<double>> computeResolution(double gciStar);
+    std::vector<std::vector<double>> getOrderOfAccuracy();
+    std::vector<std::vector<double>> checkAsymptoticRange();
+    std::vector<std::vector<double>> 
+    computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
   private:
     meshBase *f1, *f2, *f3;
     const std::vector<int> arrayIDs;
@@ -465,8 +471,10 @@ class OrderOfAccuracy
     double r21, r32;
     std::vector<std::vector<double>> diffF3F2;
     std::vector<std::vector<double>> diffF2F1;  
+    std::vector<std::vector<double>> GCI_32;
+    std::vector<std::vector<double>> GCI_21;
+    std::vector<std::vector<double>> orderOfAccuracy; 
   
-    std::vector<std::vector<double>> 
-    computeDiffAndRelativeError(meshBase* mesh, const std::vector<std::string>& newArrNames);
+
 };
 
