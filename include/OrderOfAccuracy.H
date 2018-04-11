@@ -32,6 +32,8 @@ class OrderOfAccuracy
     // if realDiff is on, the actual difference (not sqr) is added to 'mesh' as pointdata 
     std::vector<std::vector<double>> 
     computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
+    void computeRichardsonExtrapolation();
+    void computeMeshWithResolution(double gciStar, const std::string& ofname);
  
   private:
     // meshes from most to least refined

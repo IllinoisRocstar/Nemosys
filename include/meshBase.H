@@ -275,6 +275,7 @@ class meshBase
     std::string getFileName() { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
     void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
+    void unsetNewArrayNames() { newArrayNames.clear(); }
 
   protected:
     int numPoints; // number of points in mesh
