@@ -306,11 +306,15 @@ class OrderOfAccuracy
     std::vector<std::vector<double>> checkAsymptoticRange();
     std::vector<std::vector<double>> 
     computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
+    void computeRichardsonExtrapolation();
+    void computeMeshWithResolution(double gciStar, const std::string& ofname);
+  
   private:
     meshBase *f1, *f2, *f3;
     const std::vector<int> arrayIDs;
     std::vector<int> diffIDs;
     std::vector<int> relEIDs;
+    std::vector<int> realDiffIDs;
     std::vector<std::string> f3ArrNames, f2ArrNames;    
     double r21, r32;
     std::vector<std::vector<double>> diffF3F2;
