@@ -58,6 +58,14 @@ void MeshQuality::checkMesh(std::ostream& outputStream)
 
   vtkSmartPointer<vtkDoubleArray> qualityArray =
     vtkDoubleArray::SafeDownCast(qualityFilter->GetOutput()->GetCellData()->GetArray("Quality"));
+
+  mesh->getDataSet()->GetCellData()->AddArray(qualityArray);
+  std::string qfn = trim_fname(mesh->getFileName(),"") + "-qal.vtu";
+  mesh->write(qfn);
+
+
+  // writing to file
+
   
   outputStream << "Type" << std::setw(10) << "Quality\n" << std::endl;
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
