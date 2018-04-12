@@ -22,6 +22,8 @@ template<class TReader> vtkDataSet* ReadAnXMLOrSTLFile(const char* fileName)
 // tested on vtk output from MFEM
 vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
 
+vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName);
+
 // helpers for reading legacy vtk 
 
 // helper that reads/checks header from legacy vtk
@@ -62,6 +64,9 @@ class vtkMesh : public meshBase
     vtkMesh(const char* fname);
     // limited support for conversion between formats
     vtkMesh(const char* fname1, const char* fname2);
+    // put existing vtkDataSet into meshBase
+    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname);
+
     ~vtkMesh()
     {
       std::cout << "vtkMesh destroyed" << std::endl;
@@ -81,6 +86,8 @@ class vtkMesh : public meshBase
     // get cell type as an integer
     // assumes all elements are the same type
     int getCellType() const;
+    // get edge lengths of dataSet
+    void inspectEdges(const std::string& ofname);
  
   // diagnostics
   public:

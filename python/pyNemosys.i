@@ -1,6 +1,7 @@
 %module pyNemosys
 %include "std_string.i"
 %include "std_vector.i"
+%include "std_map.i"
 %{
 #include "meshBase.H"
 #include "vtkMesh.H"
@@ -10,13 +11,17 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
+#include "RichardsonExtrapolation.H"
+#include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
 %}
 
 
 %template(vectorString) std::vector<std::string>;
-
-
+%template(doubleV) std::vector<double>;
+%template(intV) std::vector<int>;
+%template(doubleVV) std::vector<std::vector<double>>;
+%template(cellMap) std::map<int, std::vector<double>>;
 class meshBase
 {
 
@@ -33,6 +38,7 @@ class meshBase
     virtual std::map<int, std::vector<double>> getCell(int id);
     virtual std::vector<std::vector<double>> getCellVec(int id);
     vtkSmartPointer<vtkDataSet> getDataSet();
+    virtual void inspectEdges(const std::string& ofname);
     virtual void setPointDataArray(const char* name,
                                      const std::vector<std::vector<double>>& data);
     virtual void setCellDataArray(const char* name,
@@ -46,13 +52,17 @@ class meshBase
     virtual void unsetFieldDataArray(const char* name);
     virtual std::vector<double> getCellLengths();
     virtual std::vector<double> getCellCenter(int cellID);
+    virtual void classifyAndAddBoundaries();
     vtkSmartPointer<vtkCellLocator> buildLocator();
-    virtual void getIntegrationPointsAtCell(int cellID);int transfer(meshBase* target, std::string method,
+    int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
     virtual int getCellType() const = 0;
     int transfer(meshBase* target, std::string method,
                  const std::vector<std::string>& arrayNames);
     int transfer(meshBase* target, std::string method);
+    
+    std::vector<std::vector<double>> integrateOverMesh(const std::vector<int>& arrayIDs);
+    
     void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin, double sizeFactor=1.);
 
     void setSFBool(bool q);
@@ -88,6 +98,8 @@ class meshBase
     void setFileName(std::string fname);
     std::string getFileName();
     void setCheckQuality(bool x);
+    void setNewArrayNames(const std::vector<std::string>& newnames);
+    void unsetNewArrayNames();
 };
 
 
@@ -340,7 +352,6 @@ class MeshQualityDriver : public NemDriver
 };
 
 
-
 %extend MeshQualityDriver {
 
     static MeshQualityDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
@@ -421,3 +432,62 @@ class ConversionDriver : public NemDriver
 
     %}
 };
+
+class RichardsonExtrapolation
+{
+
+  public:
+    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
+                            double _ref_factor, int _order, 
+                            const std::vector<int>& _arrayIDs)
+      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
+        arrayIDs(_arrayIDs);
+
+    std::vector<std::vector<double>> computeDiscretizationError();
+    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh);
+  private:
+    meshBase* fineMesh;
+    double ref_factor;
+    int order;
+    const std::vetor<int> arrayIDs;
+    std::vector<std::string> newArrNames; 
+};
+
+class OrderOfAccuracy
+{
+
+  public: 
+    OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
+                    const std::vector<int>& _arrayIDs)
+      : f1(_f1), f2(_f2), f3(_f3), arrayIDs(_arrayIDs);
+    ~OrderOfAccuracy(); 
+    std::vector<std::vector<double>> computeOrderOfAccuracy(); 
+    std::vector<std::vector<double>> computeGCI_21();
+    std::vector<std::vector<double>> computeGCI_32();
+    std::vector<std::vector<double>> computeResolution(double gciStar);
+    std::vector<std::vector<double>> getOrderOfAccuracy();
+    std::vector<std::vector<double>> checkAsymptoticRange();
+    std::vector<std::vector<double>> 
+    computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
+    void computeRichardsonExtrapolation();
+    void computeMeshWithResolution(double gciStar, const std::string& ofname);
+    std::vector<std::vector<double>> computeDiffF3F1();
+    std::vector<std::vector<double>> getDiffF2F1();
+  
+  private:
+    meshBase *f1, *f2, *f3;
+    const std::vector<int> arrayIDs;
+    std::vector<int> diffIDs;
+    std::vector<int> relEIDs;
+    std::vector<int> realDiffIDs;
+    std::vector<std::string> f3ArrNames, f2ArrNames;    
+    double r21, r32;
+    std::vector<std::vector<double>> diffF3F2;
+    std::vector<std::vector<double>> diffF2F1;  
+    std::vector<std::vector<double>> GCI_32;
+    std::vector<std::vector<double>> GCI_21;
+    std::vector<std::vector<double>> orderOfAccuracy; 
+  
+
+};
+
