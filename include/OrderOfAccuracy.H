@@ -23,7 +23,9 @@ class OrderOfAccuracy
     // get the grid resolution required to obtain the desired gci/level of accuracy
     std::vector<std::vector<double>> computeResolution(double gciStar);
     // return order of accuracy
-    std::vector<std::vector<double>> getOrderOfAccuracy() { return orderOfAccuracy; };
+    std::vector<std::vector<double>> getOrderOfAccuracy() { return orderOfAccuracy; }
+    // return diffF2F1
+    std::vector<std::vector<double>> getDiffF2F1() { return diffF2F1; }
     // check if the grids are in the asymptotic range of convergnece
     // they must be in order for the analysis performed by this class to make sense
     std::vector<std::vector<double>> checkAsymptoticRange();
@@ -32,6 +34,7 @@ class OrderOfAccuracy
     // if realDiff is on, the actual difference (not sqr) is added to 'mesh' as pointdata 
     std::vector<std::vector<double>> 
     computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
+    std::vector<std::vector<double>> computeDiffF3F1();
     void computeRichardsonExtrapolation();
     void computeMeshWithResolution(double gciStar, const std::string& ofname);
  
@@ -40,7 +43,7 @@ class OrderOfAccuracy
     meshBase *f1, *f2, *f3;
     // arrays to consider for analysis
     const std::vector<int> arrayIDs;
-    // pointdata array ids for differences in solutions between meshes
+    // pointdata array ids for differences^2 in solutions between meshes
     std::vector<int> diffIDs;
     // pointdata array ids for integral of the solutions on the most refined mesh
     // this is used to compute the relative discretization error
