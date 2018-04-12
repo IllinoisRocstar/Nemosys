@@ -107,14 +107,11 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
   // get bool array of which cells to refine based on multiplier of stdev
   //std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
   //std::vector<int> cells2Refine = cellsToRefineStdev(values, meanStdev[0], meanStdev[1]*dev_mult);
-  std::cout << __FILE__ << __LINE__ << std::endl;
   std::vector<int> cells2Refine = cellsToRefineMaxdev(values, dev_mult);
   // normalize values by mean
   std::vector<double> values_norm = (1./meanStdev[0])*values;  
   // take the reciprocal of values for size definition (high value -> smaller size)
-  std::cout << __FILE__ << __LINE__ << std::endl;
   if (!hasZero(values)){
-    std::cout << __FILE__ << __LINE__ << std::endl;
     reciprocal_vec(values);
   }
   // scale values to min max circumsphere diam of cells 
@@ -123,15 +120,29 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
   scale_vec_to_range(values, valuesMinMax, lengthminmax);
 
   // setting sizes (values) to f*max element diam based on return of cellsToRefine function
-  std::cout << __FILE__ << __LINE__ << std::endl;
+  std::ofstream elmLst;
+  elmLst.open("refineCellList.csv");
+  if (!elmLst.good())
+  {
+    std::cerr << "Error opening the stream for refinement list.\n";
+    exit(1);
+  }
+  bool isFirstElmIdx = true;
   for (int i = 0; i < values.size(); ++i)
   {
     if (!cells2Refine[i])
       values[i] = lengthminmax[1]; // if cell shouldn't be refined, size set to min of diams
     else
     {
+      if (isFirstElmIdx)
+      {
+        elmLst << i;
+        isFirstElmIdx = false;
+      }
+      else
+        elmLst << "," << i;
       values[i] = sizeFactor*values[i];
     }
   }
-  std::cout << __FILE__ << __LINE__ << std::endl;
+  elmLst.close();
 }

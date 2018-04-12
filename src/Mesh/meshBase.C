@@ -125,7 +125,6 @@ int meshBase::transfer(meshBase* target, std::string method)
 
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin, double sizeFactor)
 {
-  std::cout << __FILE__ << __LINE__ << std::endl;
   std::cout << "Size Factor = " << sizeFactor << std::endl;
   std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
   sfobj->setSizeFactor(sizeFactor);
