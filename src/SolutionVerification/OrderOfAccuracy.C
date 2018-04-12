@@ -26,20 +26,47 @@ OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
   f2->setNewArrayNames(f2ArrNames);
   f3->transfer(f2, "Finite Element", arrayIDs);
   f2->transfer(f1, "Finite Element", arrayIDs); 
-
-  r21 = pow(f1->getNumberOfPoints()/f2->getNumberOfPoints(),1./3.);
-  r32 = pow(f2->getNumberOfPoints()/f3->getNumberOfPoints(),1./3.);
-
-  std::cout << r21 << " " << r32 << std::endl;
-
   diffF3F2 = computeDiff(f2,f3ArrNames);
   diffF2F1 = computeDiff(f1,f2ArrNames);
+  r21 = pow(f1->getNumberOfPoints()/f2->getNumberOfPoints(),1./3.);
+  r32 = pow(f2->getNumberOfPoints()/f3->getNumberOfPoints(),1./3.);
+  std::cout << r21 << " " << r32 << std::endl;
 }
 
 OrderOfAccuracy::~OrderOfAccuracy()
 {
 
 }
+
+std::vector<std::vector<double>> OrderOfAccuracy::computeDiffF3F1()
+{
+
+  vtkSmartPointer<vtkPointData> finePD = f1->getDataSet()->GetPointData();
+  int numArr = arrayIDs.size();
+  for (int id = 0; id < numArr; ++id)
+  {
+    std::string arrname(finePD->GetArrayName(arrayIDs[id]));
+    std::string old(arrname);
+    arrname += "f2";
+    f1->unsetPointDataArray(&arrname[0u]);
+    arrname = old;
+    arrname += "DiffSqr";
+    f1->unsetPointDataArray(&arrname[0u]);
+    arrname = old;
+    arrname += "Diff";
+    f1->unsetPointDataArray(&arrname[0u]);
+    arrname = old;
+    arrname += "Sqr";
+    f1->unsetPointDataArray(&arrname[0u]);
+    arrname = old;
+    arrname += "DifSqrIntegral";
+    f1->unsetCellDataArray(&arrname[0u]);  
+  }
+
+  f3->transfer(f1, "Finite Element", arrayIDs);
+  return computeDiff(f1,f3ArrNames);
+}
+
 
 std::vector<std::vector<double>> OrderOfAccuracy::computeOrderOfAccuracy()
 {
@@ -55,7 +82,7 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeOrderOfAccuracy()
       int s = (f32_f21 > 0) - (f32_f21 < 0);
       double p = -1;
       double old_p = 1;
-      for (int k = 0; k < 100; ++k)
+      for (int k = 0; k < 1000; ++k)
       {
         p = std::fabs(log(f32_f21) + q_p)/log(r21);
         q_p = log((pow(r21,p) - s)/(pow(r32,p)-s));
@@ -303,7 +330,7 @@ OrderOfAccuracy::computeDiff
         double error = (coarse_comps[j] - fine_comps[j]);
         diff[j] = error*error;
         fsqr[j] = fine_comps[j]*fine_comps[j];
-        realdiff[j] = fine_comps[j] = coarse_comps[j];
+        realdiff[j] = fine_comps[j] - coarse_comps[j];
       } 
       diffDatas[id]->SetTuple(i,diff);
       fineDatasSqr[id]->SetTuple(i,fsqr);
@@ -336,15 +363,3 @@ OrderOfAccuracy::computeDiff
 }  
 
 
-  
-//for (int id = 0; id < names.size(); ++id)
-  //{
-  //  std::string intgrl_name(names[id]);
-  //  intgrl_name += "Integral";
-  //  mesh->unsetPointDataArray(&(names[id])[0u]);
-  //  mesh->unsetCellDataArray(&intgrl_name[0u]);
-  //}
-  //for (int id = 0; id < numArr; ++id)
-  //{
-  //  mesh->unsetPointDataArray(&(newArrNames[id])[0u]);
-  //}
