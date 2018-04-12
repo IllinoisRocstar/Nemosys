@@ -96,6 +96,7 @@ class meshBase
     std::string getFileName();
     void setCheckQuality(bool x);
     void setNewArrayNames(const std::vector<std::string>& newnames);
+    void unsetNewArrayNames();
 };
 
 
@@ -464,6 +465,8 @@ class OrderOfAccuracy
     computeDiff(meshBase* mesh, const std::vector<std::string>& newArrNames);
     void computeRichardsonExtrapolation();
     void computeMeshWithResolution(double gciStar, const std::string& ofname);
+    std::vector<std::vector<double>> computeDiffF3F1();
+    std::vector<std::vector<double>> getDiffF2F1();
   
   private:
     meshBase *f1, *f2, *f3;
