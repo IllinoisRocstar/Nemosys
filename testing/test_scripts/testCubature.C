@@ -5,7 +5,7 @@ const char* nodeMesh;
 const char* refGauss;
 const char* refGauss1;
 const char* refInt;
-
+const char* hexmesh;
 
 // The fixture for testing class orthoPoly. From google test primer.
 class CubatureTest : public ::testing::Test 
@@ -89,28 +89,62 @@ TEST_F(CubatureTest, integrateOverAllCells)
   EXPECT_EQ(0,diffMesh(cuby->getNodeMesh(),integralMesh.get())); 
 }
 
-int main(int argc, char** argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 5);
-  nodeMesh = argv[1];
-  refGauss = argv[2];
-  refGauss1 = argv[3];
-  refInt  = argv[4];
-  return RUN_ALL_TESTS();
+TEST(CubatureHexTest, integrateOverHex)
+{
+  std::unique_ptr<meshBase> hex = meshBase::CreateUnique(hexmesh);
+  std::vector<int> arrayIDs = {0};
+  std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(hex.get(),arrayIDs); 
+  std::vector<std::vector<double>> totalIntegralData(cubeObj->integrateOverAllCells());
+  EXPECT_FLOAT_EQ(totalIntegralData[0][0],0.0178032529762904);
+  //std::cout << setprecision(15) << totalIntegralData[0][0] << std::endl;
+  //double p = 0.577350269189626;
+  //std::vector<double> gp1 = {-p,-p,-p};
+  //std::vector<double> gp2 = {p,-p,-p};
+  //std::vector<double> gp3 = {-p,p,-p};
+  //std::vector<double> gp4 = {p,p,-p};
+  //std::vector<double> gp5 = {-p,-p,p};
+  //std::vector<double> gp6 = {p,-p,p};
+  //std::vector<double> gp7 = {-p,p,p};
+  //std::vector<double> gp8 = {p,p,p}; 
+
+  //std::vector<std::vector<double>> gp(8);
+  //gp[0] = gp1;
+  //gp[1] = gp2;
+  //gp[2] = gp3;
+  //gp[3] = gp4;
+  //gp[4] = gp5;
+  //gp[5] = gp6;
+  //gp[6] = gp7;
+  //gp[7] = gp8;
+ 
+  //vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  //hex->getDataSet()->GetCell(0,genCell);
+  //double pcoords[3];
+  //double weights[8];
+  //double minDist2;
+  //int subId;
+  //for (int i = 0; i < 8; ++i)
+  //{
+  //  genCell->EvaluatePosition(gp[i].data(),NULL,subId,pcoords,minDist2,weights); 
+  //  for (int j = 0; j < 8; ++j)
+  //  {
+  //    std::cout << std::setprecision(15) << weights[j] << ", "; 
+  //  }
+  //  std::cout << std::endl;
+  //}
+
+
 }
+
 
 //double integrand(const std::vector<double>& coord)
 //{
 //  return sin(coord[0]) + coord[1]*coord[1]+ cos(coord[2]);
 //}
 //
-//double integrand1(const std::vector<double>& coord)
-//{
-//  return coord[0]*coord[0] + coord[1]*coord[1] + coord[2]*coord[2];
-//}
 //TEST(IntegrationTest, writeNewCube)
 //{
-//  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(cubeMesh);
+//  std::unique_ptr<meshBase> mesh = meshBase::CreateUnique("single-hex.vtk");
 //  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
 //  da->SetName("integrand");
 //  da->SetNumberOfComponents(1);
@@ -124,4 +158,27 @@ int main(int argc, char** argv) {
 //  }
 //  mesh->getDataSet()->GetPointData()->AddArray(da);
 //  mesh->write();
+//
 //}
+
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  assert(argc == 6);
+  nodeMesh = argv[1];
+  refGauss = argv[2];
+  refGauss1 = argv[3];
+  refInt  = argv[4];
+  hexmesh = argv[5];
+  return RUN_ALL_TESTS();
+}
+
+//double integrand(const std::vector<double>& coord)
+//{
+//  return sin(coord[0]) + coord[1]*coord[1]+ cos(coord[2]);
+//}
+//
+//double integrand1(const std::vector<double>& coord)
+//{
+//  return coord[0]*coord[0] + coord[1]*coord[1] + coord[2]*coord[2];
+//}
+

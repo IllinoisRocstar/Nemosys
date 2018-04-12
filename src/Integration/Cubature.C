@@ -3,8 +3,14 @@
 // Table 10.4 Quadrature for unit tetrahedra in http://me.rice.edu/~akin/Elsevier/Chap_10.pdf
 // OR
 // Table 6.3.1 and 6.3.1 in http://www.cs.rpi.edu/~flaherje/pdf/fea6.pdf
+// also
+// https://www.colorado.edu/engineering/CAS/courses.d/AFEM.d/AFEM.AppI.d/AFEM.AppI.pdf
 
-// second order
+// The following arrays are shape functions evaluated at quadrature points supporting second
+// order integration for the indicated cell type as well as the quadrature point weights.
+
+// TODO: Add a check to preserve cubature information on mesh for future use
+// TODO: Add L2-norm function to simplify implementation in other classes where this is used
 double TRI3 [] = 
 {
 .666666666666667, .166666666666667, .166666666666667,
@@ -23,6 +29,20 @@ double TET4 [] =
 };
 //double TET4W [] = {0.041666666666667,0.041666666666667,0.041666666666667,0.041666666666667};
 double TET4W [] = {0.25, 0.25, 0.25, 0.25};
+
+double HEX8 [] =
+{
+0.490562612162344, 0.131445855765802, 0.0352208109008645, 0.131445855765802, 0.131445855765802, 0.0352208109008645, 0.00943738783765592, 0.0352208109008645, 
+0.131445855765802, 0.490562612162344, 0.131445855765802, 0.0352208109008645, 0.0352208109008645, 0.131445855765802, 0.0352208109008645, 0.00943738783765592, 
+0.131445855765802, 0.0352208109008645, 0.131445855765802, 0.490562612162344, 0.0352208109008645, 0.00943738783765592, 0.0352208109008645, 0.131445855765802, 
+0.0352208109008645, 0.131445855765802, 0.490562612162344, 0.131445855765802, 0.00943738783765592, 0.0352208109008645, 0.131445855765802, 0.0352208109008645, 
+0.131445855765802, 0.0352208109008645, 0.00943738783765592, 0.0352208109008645, 0.490562612162344, 0.131445855765802, 0.0352208109008645, 0.131445855765802, 
+0.0352208109008645, 0.131445855765802, 0.0352208109008645, 0.00943738783765592, 0.131445855765802, 0.490562612162344, 0.131445855765802, 0.0352208109008645, 
+0.0352208109008645, 0.00943738783765592, 0.0352208109008645, 0.131445855765802, 0.131445855765802, 0.0352208109008645, 0.131445855765802, 0.490562612162344, 
+0.00943738783765592, 0.0352208109008645, 0.131445855765802, 0.0352208109008645, 0.0352208109008645, 0.131445855765802, 0.490562612162344, 0.131445855765802
+};
+
+double HEX8W [] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
 GaussCubature::GaussCubature(meshBase* _nodeMesh)
   :nodeMesh(_nodeMesh),totalComponents(0),numVolCells(0)
@@ -124,8 +144,11 @@ void GaussCubature::constructGaussMesh()
       case VTK_TETRA:
         def->Initialize(VTK_TETRA, 4, 4, TET4,TET4W);
         break;
+      case VTK_HEXAHEDRON:
+        def->Initialize(VTK_HEXAHEDRON,8,8,HEX8,HEX8W);
+        break;
       default:
-        std::cerr << "Error: Cell type: " << cellType << "found "
+        std::cerr << "Error: Cell type: " << cellType << " found "
                   << "with no quadrature definition provided" << std::endl;
         exit(1);
     }
@@ -174,6 +197,11 @@ double GaussCubature::computeCellVolume(vtkSmartPointer<vtkGenericCell> genCell,
     {
       volume = vtkMeshQuality::TriangleArea(genCell);
       break;
+    }
+    case VTK_QUAD:
+    {
+      volume = vtkMeshQuality::QuadArea(genCell);
+      break;
     } 
     case VTK_TETRA:
     {
@@ -198,56 +226,23 @@ double GaussCubature::computeCellVolume(vtkSmartPointer<vtkGenericCell> genCell,
 // FIXME: Can remove switch if you just use the general method implemented in tetra's case
 double GaussCubature::computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, int cellType)
 {
-  double jacobi = 0;
   switch(cellType)
   {
     case VTK_TRIANGLE:
     {
-      double x1[3],x2[3],x3[3];
-      genCell->Points->GetPoint(0,x1);
-      genCell->Points->GetPoint(1,x2);
-      genCell->Points->GetPoint(2,x3);
-      jacobi = 2.0*vtkTriangle::TriangleArea(x1,x2,x3);
-      break;
+      return vtkMeshQuality::TriangleArea(genCell); 
+    }
+    case VTK_QUAD:
+    {
+      return vtkMeshQuality::QuadArea(genCell)/4.0;      
     }
     case VTK_TETRA:
     { 
-      double pcoords[3];
-      double derivs[12];
-      genCell->InterpolateDerivs(pcoords,derivs);
-      Matrix3d jacobianMat = Matrix3d::Zero();
-      double x[3];
-      //double *m[3]; 
-      //double m0[3],m1[3],m2[3];
-      //m[0] = m0; m[1] = m1; m[2] = m2;
-      //for (int i = 0; i < 3; ++i)
-      //  m0[i] = m1[i] = m2[i] = 0.0;
-
-      for (int j = 0; j < 4; ++j)
-      {
-        genCell->Points->GetPoint(j,x);
-        for (int i = 0; i < 3; ++i)
-        {
-          jacobianMat(i,0) += x[i] * derivs[j];
-          jacobianMat(i,1) += x[i] * derivs[j+4];
-          jacobianMat(i,2) += x[i] * derivs[j+8];
-          //m0[i] += x[i] * derivs[j];
-          //m1[i] += x[i] * derivs[j+4];
-          //m2[i] += x[i] * derivs[j+8];
-        }
-      }
-      //vtkTetra* tetcell = vtkTetra::SafeDownCast(genCell);//->SetCellTypeToTetra();
-      //std::vector<std::vector<double>> x(4);
-      //double x1[3], x2[3], x3[3], x4[3];
-      //genCell->Points->GetPoint(0, x1);
-      //genCell->Points->GetPoint(1, x2);
-      //genCell->Points->GetPoint(2, x3);
-      //genCell->Points->GetPoint(3, x4);
-
-      //jacobi = tetcell->ComputeVolume(x1,x2,x3,x4);
-      jacobi = jacobianMat.determinant()/6.0;
-     //jacobi = vtkMath::Determinant3x3(m[0],m[1],m[2]);
-      break;
+      return vtkMeshQuality::TetVolume(genCell);
+    }
+    case VTK_HEXAHEDRON:
+    {
+      return vtkMeshQuality::HexVolume(genCell)/8.0;
     }
     default:
     {
@@ -256,7 +251,6 @@ double GaussCubature::computeJacobian(vtkSmartPointer<vtkGenericCell> genCell, i
       exit(1);
     }
   }
-  return jacobi;
 }
 
 int GaussCubature::getOffset(int cellID)
@@ -447,9 +441,7 @@ void GaussCubature::integrateOverCell
   // get number of gauss points in cell from dictionary
   int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // computing jacobian for integration
-  //TODO: MEssing with this
-  //double jacobian = computeJacobian(genCell,cellType);
-  double jacobian = computeCellVolume(genCell,cellType);
+  double jacobian = computeJacobian(genCell,cellType);
   // get quadrature weights for this cell type
   const double* quadWeights = dict[cellType]->GetQuadratureWeights();
   // get offset from nodeMesh for lookup of gauss points in polydata
@@ -468,14 +460,18 @@ void GaussCubature::integrateOverCell
       pd->GetArray(j)->GetTuple(offset+i,comps);
       for (int k = 0; k < numComponent; ++k)
       {
+        // TODO: generalize to support surface integration
         if (genCell->GetCellDimension() == 3)
-          data[j][k] += comps[k]*quadWeights[i]*jacobian;
+        {
+          data[j][k] += comps[k]*quadWeights[i];//*jacobian;
+        }
         else
           data[j][k] += 0.0;
       }
     }
     for (int k = 0; k < numComponent; ++k)
     {
+      data[j][k] *= jacobian;
       totalIntegralData[j][k] += data[j][k];
     }
     // adding integrated value to data of cell
@@ -500,9 +496,8 @@ void GaussCubature::integrateOverCell
   // get number of gauss points in cell from dictionary
   int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // computing jacobian for integration
-  //TODO: MEssing with this
-  //double jacobian = computeJacobian(genCell,cellType);
-  double jacobian = computeCellVolume(genCell,cellType);
+  double jacobian = computeJacobian(genCell,cellType);
+  double volume = computeCellVolume(genCell,cellType);
   //double volume = (computeRMSE ? computeCellVolume(genCell,cellType) : 1.0);
   // get quadrature weights for this cell type
   const double* quadWeights = dict[cellType]->GetQuadratureWeights();
@@ -521,10 +516,10 @@ void GaussCubature::integrateOverCell
       pd->GetArray(&(newArrayNames[j])[0u])->GetTuple(offset+i,comps);
       for (int k = 0; k < numComponent; ++k)
       {
+        // TODO: generalize to support surface integration
         if (genCell->GetCellDimension() == 3)
         {
-          // normalizing by volume if computeRMSE=1, no scaling by jacobian in such case
-          data[j][k] += (computeRMSE ? comps[k]*quadWeights[i] : comps[k]*quadWeights[i]*jacobian);
+          data[j][k] += comps[k]*quadWeights[i];
         }
         else
           data[j][k] += 0.0;
@@ -533,7 +528,8 @@ void GaussCubature::integrateOverCell
     // taking sqrt of integrated value (rmse)
     for (int k = 0; k < numComponent; ++k)
     {
-      data[j][k] = (computeRMSE ? std::sqrt(data[j][k]) : data[j][k]);
+      data[j][k] *= jacobian;
+      data[j][k] = (computeRMSE ? std::sqrt(data[j][k]/volume) : data[j][k]);
       //if (computeRMSE)
       //  data[j][k] = std::sqrt(data[j][k]/volume);
       totalIntegralData[j][k] += data[j][k];
