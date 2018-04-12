@@ -28,7 +28,10 @@ void vtkMesh::write()
     writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
   }
   else
-    writeVTFile<vtkXMLUnstructuredGridWriter> (filename,dataSet);   // default is vtu 
+  {
+    std::string fname = trim_fname(filename, ".vtu");
+    writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
+  }
 } 
 
 void vtkMesh::write(std::string fname)
@@ -40,7 +43,6 @@ void vtkMesh::write(std::string fname)
   }
    
   std::string extension = find_ext(fname);
-  std::cout << "Extension: " << extension << std::endl; 
 
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -61,8 +63,19 @@ void vtkMesh::write(std::string fname)
   
 }
 
+vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname)
+{
+  dataSet = dataSet_tmp;
+  std::string newname(fname);
+  setFileName(newname);
+  numCells = dataSet->GetNumberOfCells();
+  numPoints = dataSet->GetNumberOfPoints();
+  std::cout << "vtkMesh constructed" << std::endl;
+}
+
 vtkMesh::vtkMesh(const char* fname)
 {
+  bool degenerate(0);
   std::string extension = vtksys::SystemTools::GetFilenameLastExtension(fname);
   // Dispatch based on the file extension
   if (extension == ".vtu")
@@ -95,8 +108,37 @@ vtkMesh::vtkMesh(const char* fname)
   }
   else if (extension == ".vtk")
   {
-    //dataSet.TakeReference(ReadALegacyVTKFile(fname));
-    dataSet = vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname));
+    // if vtk is produced by MFEM, it's probably degenerate (i.e. point duplicity)
+    // in this case, we use a different reader to correct duplicity and transfer 
+    // the data attributes read by the regular legacy reader using the transfer
+    // methods in meshBase
+    std::ifstream meshStream(fname);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << fname << std::endl;
+      exit(1);
+    } 
+    std::string line;
+    getline(meshStream,line);
+    getline(meshStream,line);
+    meshStream.close();
+    if (line.find("MFEM") != -1)
+    {
+      degenerate = 1;
+      dataSet = vtkDataSet::SafeDownCast(ReadDegenerateVTKFile(fname));
+      std::string newname(fname);
+      setFileName(newname);
+      numCells = dataSet->GetNumberOfCells();
+      numPoints = dataSet->GetNumberOfPoints();
+      vtkMesh vtkMesh_tmp(vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname)),fname);
+      vtkMesh_tmp.transfer(this,"Finite Element");     
+      std::cout << "vtkMesh constructed" << std::endl;
+    }
+    else
+    {
+      dataSet = vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname));
+    }  
+
   }
   else
   {
@@ -110,11 +152,14 @@ vtkMesh::vtkMesh(const char* fname)
     exit(1);
   }
 
-  std::string newname(fname);
-  setFileName(newname);
-  std::cout << "vtkMesh constructed" << std::endl;
-  numCells = dataSet->GetNumberOfCells();
-  numPoints = dataSet->GetNumberOfPoints();
+  if (!degenerate)
+  {
+    std::string newname(fname);
+    setFileName(newname);
+    std::cout << "vtkMesh constructed" << std::endl;
+    numCells = dataSet->GetNumberOfCells();
+    numPoints = dataSet->GetNumberOfPoints();
+  }
 }
 
 vtkMesh::vtkMesh(const char* fname1, const char* fname2)
@@ -516,6 +561,120 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName)
   return dataSet_tmp;
 }
 
+vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName)
+{
+  std::ifstream meshStream(fileName);
+  if (!meshStream.good())
+  {
+    std::cerr << "Error opening file " << fileName << std::endl;
+    exit(1);
+  }
+  std::string line;
+  std::map<std::vector<double>, int> point_map;
+  std::map<int, int> duplicate_point_map;
+  std::pair<std::map<std::vector<double>,int>::iterator, bool> point_ret;
+  int numPoints;
+  int numCells;
+  int cellListSize;
+  std::vector<vtkSmartPointer<vtkIdList>> vtkCellIds;
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  while (getline(meshStream, line))
+  {
+    if (line.find("POINTS") != -1)
+    {
+      std::istringstream ss(line);
+      std::string tmp;
+      ss >> tmp >> numPoints;
+      std::vector<double> point(3);
+      int pntId = 0;
+      int realPntId = 0;
+      while (getline(meshStream,line) && pntId < numPoints)
+      {
+        if (!line.empty())
+        {
+          std::istringstream ss(line);
+          ss >> point[0] >> point[1] >> point[2];
+          point_ret = point_map.insert(std::pair<std::vector<double>,int> (point,realPntId));    
+          if (point_ret.second)
+          {
+            ++realPntId;        
+          }
+          duplicate_point_map.insert(std::pair<int,int> (pntId,point_ret.first->second));
+          ++pntId;
+        }
+      }
+    }
+
+    if (line.find("CELLS") != -1)
+    {
+      std::istringstream ss(line);
+      std::string tmp;
+      ss >> tmp >> numCells >> cellListSize;
+      int cellId = 0;
+      int realCellId = 0;
+      vtkCellIds.resize(numCells);
+      while (cellId < numCells && getline(meshStream,line))
+      {
+        if (!line.empty())
+        {
+          std::istringstream ss(line);
+          int numId;
+          double id;
+          ss >> numId;
+          vtkCellIds[cellId] = vtkSmartPointer<vtkIdList>::New();
+          vtkCellIds[cellId]->SetNumberOfIds(numId);
+          //cells[cellId].resize(numId);
+          for (int j = 0; j < numId; ++j)
+          {
+            ss >> id;
+            vtkCellIds[cellId]->SetId(j, duplicate_point_map[id]);
+            //cells[cellId][j] = duplicate_point_map[id];
+          }
+          ++cellId;
+        } 
+      }
+      // get cell types
+      while (getline(meshStream,line)) 
+      {
+        if (line.find("CELL_TYPES") != -1)
+        {
+          dataSet_tmp->Allocate(numCells);
+          cellId = 0;
+          //cellTypes.resize(numCells); 
+          while (cellId < numCells && getline(meshStream,line))
+          {
+            if (!line.empty())
+            { 
+              std::istringstream ss(line);
+              int cellType;
+              ss >> cellType;
+              //cellTypes[cellId] = cellType;
+              dataSet_tmp->InsertNextCell(cellType, vtkCellIds[cellId]);
+              ++cellId;
+            }
+          }
+          break; 
+        }
+      }
+    }
+  }
+   
+  std::multimap<int, std::vector<double>> flipped = flip_map(point_map);
+  std::multimap<int,std::vector<double>>::iterator flip_it = flipped.begin();
+
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  points->SetNumberOfPoints(point_map.size());
+  int pnt = 0;
+  while (flip_it != flipped.end())
+  {
+    points->SetPoint(pnt, flip_it->second.data());
+    ++flip_it;
+    ++pnt;
+  }
+  dataSet_tmp->SetPoints(points); 
+  return dataSet_tmp;
+}
+
 // get point with id
 std::vector<double> vtkMesh::getPoint(int id) const
 {
@@ -570,6 +729,34 @@ std::vector<std::vector<double>> vtkMesh::getCellVec(int id) const
     exit(1);
   }
 
+}
+
+
+void vtkMesh::inspectEdges(const std::string& ofname)
+{
+  std::ofstream outputStream(ofname);
+  if (!outputStream.good())
+  {
+    std::cerr << "error opening " << ofname << std::endl;
+    exit(1);
+  }
+
+  vtkSmartPointer<vtkExtractEdges> extractEdges 
+    = vtkSmartPointer<vtkExtractEdges>::New();
+  extractEdges->SetInputData(dataSet);
+  extractEdges->Update();
+  
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < extractEdges->GetOutput()->GetNumberOfCells(); ++i)
+  {
+    extractEdges->GetOutput()->GetCell(i, genCell);
+    vtkPoints* points = genCell->GetPoints();
+    double p1[3], p2[3];
+    points->GetPoint(0,p1);
+    points->GetPoint(1,p2);
+    double len = sqrt(pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2));
+    outputStream << len << std::endl;
+  } 
 }
 
 void vtkMesh::report()

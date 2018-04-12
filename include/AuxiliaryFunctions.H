@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <chrono>
+#include <iomanip>
 //---------------------------Auxiliary Classes---------------------------------//
 
 // class wrapping around chrono for timing methods
@@ -127,6 +128,13 @@ inline std::string find_ext(std::string fname);
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
+
+template<typename A, typename B>
+std::pair<B,A> flip_pair(const std::pair<A,B> &p);
+
+
+template<typename A, typename B>
+std::multimap<B,A> flip_map(const std::map<A,B> &src);
 //-------------------------------------------------------------------------//
 
 
@@ -417,7 +425,22 @@ template<typename T>
 void printVec(const std::vector<T>& v)
 {
   for (int i = 0; i < v.size(); ++i)
-    std::cout << v[i] << " ";
+    std::cout << std::setprecision(15) << v[i] << " ";
   std::cout << std::endl;
+}
+
+template<typename A, typename B>
+std::pair<B,A> flip_pair(const std::pair<A,B> &p)
+{
+    return std::pair<B,A>(p.second, p.first);
+}
+
+template<typename A, typename B>
+std::multimap<B,A> flip_map(const std::map<A,B> &src)
+{
+    std::multimap<B,A> dst;
+    std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()), 
+                   flip_pair<A,B>);
+    return dst;
 }
 #endif

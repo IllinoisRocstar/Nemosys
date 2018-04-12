@@ -66,6 +66,8 @@
 #include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
 #include <vtkMath.h>
+#include <vtkExtractEdges.h>
+#include <vtkConnectivityFilter.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -118,6 +120,9 @@ class meshBase
     {
       std::cout << "meshBase constructed" << std::endl;
     }
+
+
+
     virtual ~meshBase()
     {
       std::cout << "meshBase destroyed" << std::endl;
@@ -134,10 +139,12 @@ class meshBase
       mesh.reset(meshBase::Create(fname));
       return mesh;
     }
+
     static std::unique_ptr<meshBase> CreateUnique(std::string fname)
     {
       return std::unique_ptr<meshBase>(meshBase::Create(fname));
     }
+
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
@@ -147,7 +154,7 @@ class meshBase
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
-    
+ 
   // access
   public:
     // get point with id
@@ -156,6 +163,8 @@ class meshBase
     virtual std::map<int, std::vector<double>> getCell(int id) const {}
     // get vector of coords of cell with id
     virtual std::vector<std::vector<double>> getCellVec(int id) const {}
+    // get edge lengths of dataSet
+    virtual void inspectEdges(const std::string& ofname){}
     // get this meshes' dataSet
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // register data to dataSet's point data
@@ -186,6 +195,10 @@ class meshBase
     // assumes all elements are the same type
     virtual int getCellType() const = 0;
 
+    virtual void classifyAndAddBoundaries(){}
+    // build locators for efficient search operations
+    vtkSmartPointer<vtkCellLocator> buildLocator();
+
   // data transfer
   public:
     // transfer point data with given id from this mesh to target
@@ -197,6 +210,15 @@ class meshBase
                  const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
+
+  // integration
+  public:
+    // integrate arrays in arrayIDs over the mesh. 
+    // integrated data is available per cell after operation
+    // total integral for each datum is returned
+    std::vector<std::vector<double>> 
+    integrateOverMesh(const std::vector<int>& arrayIDs);
+
  
   // size field generation
   public:
@@ -263,6 +285,8 @@ class meshBase
     void setFileName(std::string fname) { filename = fname; }
     std::string getFileName() const { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
+    void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
+    void unsetNewArrayNames() { newArrayNames.clear(); }
 
   protected:
     int numPoints; // number of points in mesh
@@ -272,6 +296,7 @@ class meshBase
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
     int order; // shape function order
+    std::vector<std::string> newArrayNames;
 };
 
 // compares two meshBases- used in testing
