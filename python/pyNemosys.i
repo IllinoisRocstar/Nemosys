@@ -11,7 +11,6 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
-#include "RichardsonExtrapolation.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
 %}
@@ -52,7 +51,6 @@ class meshBase
     virtual void unsetFieldDataArray(const char* name);
     virtual std::vector<double> getCellLengths();
     virtual std::vector<double> getCellCenter(int cellID);
-    virtual void classifyAndAddBoundaries();
     vtkSmartPointer<vtkCellLocator> buildLocator();
     int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
@@ -345,8 +343,6 @@ class MeshQualityDriver : public NemDriver
     static MeshQualityDriver* readJSON(json inputjson);
 };
 
-<<<<<<< HEAD
-
 
 %extend MeshQualityDriver {
 
@@ -427,24 +423,6 @@ class ConversionDriver : public NemDriver
             return ConversionDriver.py_readJSON('', json_obj, False)
 
     %}
-class RichardsonExtrapolation
-{
-
-  public:
-    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
-                            double _ref_factor, int _order, 
-                            const std::vector<int>& _arrayIDs)
-      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
-        arrayIDs(_arrayIDs);
-
-    std::vector<std::vector<double>> computeDiscretizationError();
-    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh);
-  private:
-    meshBase* fineMesh;
-    double ref_factor;
-    int order;
-    const std::vetor<int> arrayIDs;
-    std::vector<std::string> newArrNames; 
 };
 
 class OrderOfAccuracy
@@ -481,7 +459,4 @@ class OrderOfAccuracy
     std::vector<std::vector<double>> GCI_32;
     std::vector<std::vector<double>> GCI_21;
     std::vector<std::vector<double>> orderOfAccuracy; 
-  
-
 };
-

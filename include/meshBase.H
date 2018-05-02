@@ -187,7 +187,6 @@ class meshBase
     virtual std::vector<double> getCellLengths() const {}
     // get center of a cell
     virtual std::vector<double> getCellCenter(int cellID) const {}
-    virtual void classifyAndAddBoundaries(){}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
