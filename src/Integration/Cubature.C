@@ -491,14 +491,13 @@ void GaussCubature::integrateOverCell
   // putting cell from nodemesh into gencell
   nodeMesh->getDataSet()->GetCell(cellID,genCell);
   // getting celltype for looking up numGaussPoints in dictionary 
-  // as well as computing scaled jacobian
   int cellType = nodeMesh->getDataSet()->GetCell(cellID)->GetCellType();
   // get number of gauss points in cell from dictionary
   int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
   // computing jacobian for integration
   double jacobian = computeJacobian(genCell,cellType);
+  // computing volume for rmse
   double volume = computeCellVolume(genCell,cellType);
-  //double volume = (computeRMSE ? computeCellVolume(genCell,cellType) : 1.0);
   // get quadrature weights for this cell type
   const double* quadWeights = dict[cellType]->GetQuadratureWeights();
   // get offset from nodeMesh for lookup of gauss points in polydata
