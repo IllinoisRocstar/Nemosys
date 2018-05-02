@@ -25,7 +25,7 @@ SET(PATCHRECOVERY_TESTDIR ${TEST_DATA}/PatchRecoveryTest)
 SET(TRANSFER_TESTDIR ${TEST_DATA}/TransferTest)
 SET(MESHGEN_TESTDIR ${TEST_DATA}/MeshGenTest)
 SET(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
-
+SET(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
 SET(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 SET(meshgendefault ${MESHGEN_TESTDIR}/default.json)
 SET(meshgenunif_in ${MESHGEN_TESTDIR}/unif_in.json)
@@ -55,6 +55,7 @@ ADD_TEST(NAME orthoPolyTest COMMAND runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt)
 ADD_TEST(NAME patchRecoveryTest COMMAND runPatchRecoveryTest ${PATCHRECOVERY_TESTDIR}/case0001.vtu ${PATCHRECOVERY_TESTDIR}/testRef.vtu ${PATCHRECOVERY_TESTDIR}/fixedWithData.vtu)
 ADD_TEST(NAME transferTest COMMAND runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu ${TRANSFER_TESTDIR}/cellSource.vtu ${TRANSFER_TESTDIR}/target.vtu ${TRANSFER_TESTDIR}/pntRef.vtu ${TRANSFER_TESTDIR}/cellRef.vtu)
 ADD_TEST(NAME meshGenTest COMMAND runMeshGenTest ${MESHGEN_TESTDIR}/default.json ${MESHGEN_TESTDIR}/hingeRef.vtu ${MESHGEN_TESTDIR}/unif.json ${MESHGEN_TESTDIR}/hingeUnifRef.vtu ${MESHGEN_TESTDIR}/geom.json ${MESHGEN_TESTDIR}/hingeGeomRef.vtu)
+ADD_TEST(NAME autVerifTest COMMAND runAutoVerifTest ${AUTOVERIF_TESTDIR}/finer.vtu ${AUTOVERIF_TESTDIR}/fine.vtu ${AUTOVERIF_TESTDIR}/coarse.vtu ${AUTOVERIF_TESTDIR}/richardson.vtu)
 
 ADD_TEST(NAME PNTGenTest COMMAND runPNTGenTest
     ${PNTGEN_TESTDIR}/bench1.json ${PNTGEN_TESTDIR}/bench1_conv_gold.pntmesh
