@@ -1,5 +1,6 @@
 #include<vtkMesh.H>
 #include <vtkDataSetSurfaceFilter.h>
+#include <vtkUnstructuredGridWriter.h>
 #include <vtkTriangleFilter.h>
 
 void vtkMesh::write()
@@ -27,6 +28,8 @@ void vtkMesh::write()
     filename = trim_fname(filename , ".vtp");
     writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
   }
+  else if (extension == ".vtk")
+    writeVTFile<vtkUnstructuredGridWriter> (filename, dataSet); // legacy vtk writer
   else
   {
     std::string fname = trim_fname(filename, ".vtu");
@@ -55,9 +58,9 @@ void vtkMesh::write(std::string fname)
   else if (extension == ".vto")
     writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else if (extension == ".stl")
-  {
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
-  }
+  else if (extension == ".vtk")
+    writeVTFile<vtkUnstructuredGridWriter> (fname, dataSet); // legacy vtk writer
   else
     writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
   

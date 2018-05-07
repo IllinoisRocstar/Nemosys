@@ -377,7 +377,10 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
-  vtkmesh->setFileName(trim_fname(fname,".vtu"));
+  // Temporary changed to legacy vtk for AMR demos
+  // switch back to vtu when done
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  vtkmesh->setFileName(trim_fname(fname,".vtk"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
@@ -885,7 +888,6 @@ void meshBase::refineMesh(std::string method, int arrayID,
                           double edge_scale, std::string ofname, bool transferData,
                           double sizeFactor)
 {
-  std::cout << "Size Factor = " << sizeFactor << std::endl;
   std::unique_ptr<Refine> refineobj
     = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname,sizeFactor));
   refineobj->run(transferData);
