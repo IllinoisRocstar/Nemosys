@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <set>
 #include "Gmsh.h"
 #include "GModel.h"
@@ -40,6 +41,19 @@ bool isIn(tri& qry, triVec& vec)
       return(true);
   return(false);
 }
+
+
+void switchConn(std::vector<MVertex*>& verts)
+{
+    //for (auto itr=verts.begin(); itr!=verts.end(); itr++)
+    //    std::cout << *itr << "\t";
+    //std::cout << std::endl;
+    //iter_swap(verts.begin()+1, verts.begin()+2);
+    //for (auto itr=verts.begin(); itr!=verts.end(); itr++)
+    //    std::cout << *itr << "\t";
+    //std::cout << std::endl;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -100,6 +114,7 @@ int main(int argc, char* argv[])
     {
       nTetPrj++;
       elm->getVertices(verts);
+      //switchConn(verts);
       for (auto iv=verts.begin(); iv!=verts.end(); iv++)
       {
 	elmConnPrjGMSH.push_back((*iv)->getNum());
@@ -175,6 +190,7 @@ int main(int argc, char* argv[])
 	nTetTrg[iTrg]++;
         totTetTrg++;
 	elm->getVertices(verts);
+    switchConn(verts);
 	for (auto iv=verts.begin(); iv!=verts.end(); iv++)
 	{
 	  tmpElmConn.push_back((*iv)->getNum() + totNNdeSoFar);
