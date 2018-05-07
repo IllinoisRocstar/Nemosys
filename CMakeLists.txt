@@ -11,6 +11,26 @@ MACRO(opt OPTION HELP VALUE)
   OPTION(ENABLE_${OPTION} ${HELP} ${VALUE})
   SET(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
 ENDMACRO(opt)
+     
+## writing remake scripts
+FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
+"#!/bin/bash
+ rm -rf build
+ mkdir build && cd build
+ CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} .. 
+ make -j
+ make install")
+FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
+"#!/bin/bash
+ rm -rf build
+ mkdir build && cd build
+ CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} .. 
+ make -j
+ make install")
+FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
+     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
+     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 # writing remake scripts
 FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
@@ -347,6 +367,7 @@ IF (ENABLE_TESTING)
     ADD_EXECUTABLE(runTransferTest testing/test_scripts/testTransfer.C)
     ADD_EXECUTABLE(runMeshGenTest testing/test_scripts/testMeshGen.C)
     ADD_EXECUTABLE(runPNTGenTest testing/test_scripts/testPNTGen.C)
+    ADD_EXECUTABLE(runAutoVerifTest testing/test_scripts/testAutoVerification.C)
     TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
@@ -354,5 +375,6 @@ IF (ENABLE_TESTING)
     TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runPNTGenTest gtest gtest_main Nemosys)
+    TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
 ENDIF(ENABLE_TESTING)
