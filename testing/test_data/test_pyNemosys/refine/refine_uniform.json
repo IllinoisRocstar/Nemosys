@@ -1,0 +1,12 @@
+{
+    "Program Type": "Refinement",
+    "Mesh File Options": {
+        "Input Mesh File": "unrefined_beam.vtu",
+        "Output Mesh File": "refined_beam.vtu"
+    },
+    "Refinement Options": {
+        "Refinement Method": "uniform",
+        "Edge Scaling": 1.0,
+        "Transfer Data": 1
+    }
+}

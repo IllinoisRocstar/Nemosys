@@ -1,0 +1,13 @@
+[
+		{
+		    "Program Type": "Mesh Generation",
+		    "Mesh Generation Engine": "netgen",
+		    "Mesh File Options": {
+		        "Input Geometry File": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/MeshGenTest/hinge.stl",
+		        "Output Mesh File": "hinge.vtu"
+		    },
+		    "Meshing Parameters": {
+		        "Netgen Parameters": "default"
+		    }
+		}
+]

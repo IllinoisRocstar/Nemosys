@@ -13346,7 +13346,7 @@ double r8mat_diff_frobenius ( int m, int n, double a[], double b[] )
 //
 //    R8MAT_DIFF_FROBENIUS returns the Frobenius norm of the difference of R8MAT's.
 //
-//  Discussion: 							    
+//  Discussion:                   
 //
 //    An R8MAT is a doubly dimensioned array of double precision values, which
 //    may be stored as a vector in column-major order.
@@ -14600,7 +14600,7 @@ void r8mat_house_axh ( int n, double a[], double v[] )
 //
 //    R8MAT_HOUSE_AXH computes A*H where H is a compact Householder matrix.
 //
-//  Discussion: 							    
+//  Discussion:                   
 //
 //    An R8MAT is a doubly dimensioned array of double precision values, which
 //    may be stored as a vector in column-major order.

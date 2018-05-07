@@ -8,14 +8,14 @@ class Refine
   // constructors and destructors
   public:
     Refine(){}
-    Refine(meshBase* _mesh, std::string method, 
+    Refine(meshBase* _mesh, const std::string& method, 
            int arrayID, double dev_mult, bool maxIsmin, 
-           double edge_scale, std::string _ofname);
+           double edge_scale, std::string _ofname, double sizeFactor=1.);
     ~Refine();
 
   // methods
   public:
-    void run();
+    void run(bool transferData);
 
   private:
     meshBase* mesh; // mesh to be refined
@@ -27,6 +27,9 @@ class Refine
  
   // helpers
   private:
+    void initUniform(double edge_scale);
+    void initAdaptive(int arrayID, const std::string& method);
+  
     void classifyBoundaries();
     void unClassifyBoundaries();
 };

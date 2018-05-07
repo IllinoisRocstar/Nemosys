@@ -5,13 +5,68 @@
 
 using namespace nemAux;
 
+// read files from any vtk format (except legacy .vtk)
+template<class TReader> vtkDataSet* ReadAnXMLOrSTLFile(const char* fileName)
+{
+  vtkSmartPointer<TReader> reader =
+    vtkSmartPointer<TReader>::New();
+  reader->SetFileName(fileName);
+  reader->Update();
+  reader->GetOutput()->Register(reader);
+  return vtkDataSet::SafeDownCast(reader->GetOutput());
+}
+
+// read an ASCII legacy vtk file containing an unstructured grid
+// the available vtk readers do not suffice for this purpose if the file
+// contains more than one point or cell data array. This function has mainlyl been
+// tested on vtk output from MFEM
+vtkSmartPointer<vtkUnstructuredGrid> ReadALegacyVTKFile(const char* fileName);
+
+vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName);
+
+// helpers for reading legacy vtk 
+
+// helper that reads/checks header from legacy vtk
+bool readLegacyVTKHeader(const std::string& line);
+
+// helper that reads field data from legacy vtk
+bool readLegacyVTKFieldData(std::istream& meshStream, std::string& line, 
+                            vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+// helper that reads points from legacy vtk
+bool readLegacyVTKPoints(std::istream& meshStream, std::string& line, int& numPoints,
+                         vtkSmartPointer<vtkPoints> points,
+                         vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+// helper that reads cells from legacy vtk
+bool readLegacyVTKCells(std::istream& meshStream, std::string& line, int& numCells, 
+                        std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds,
+                        vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+// helper that reads point and cell data from legacy vtk
+bool readLegacyVTKData(std::ifstream& meshStream, std::string& line, const int numTuple, 
+                       const bool pointOrCell, bool& hasPointOrCell,
+                       vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+// helper that casts data arrays to type specified in legacy file (not used rn)
+void addLegacyVTKData(vtkDataArray* arr, const std::string& type, bool pointOrCell, 
+                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+
+template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
+{
+  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
+  Writer->SetFileName(&fname[0u]);
+  Writer->SetInputData(dataSet);
+  Writer->Write();
+}
+
 class vtkMesh : public meshBase
 {
   // constructor and destructor
   public:
-    
     vtkMesh(){};
     vtkMesh(const char* fname);
+    // limited support for conversion between formats
+    vtkMesh(const char* fname1, const char* fname2);
+    // put existing vtkDataSet into meshBase
+    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname);
+
     ~vtkMesh()
     {
       std::cout << "vtkMesh destroyed" << std::endl;
@@ -20,14 +75,20 @@ class vtkMesh : public meshBase
   // access
   public:
     // get point with id
-    std::vector<double> getPoint(int id);
+    std::vector<double> getPoint(int id)  const;
     // get cell with id : returns point indices and respective coordinates
-    std::map<int, std::vector<double>> getCell(int id);
-    std::vector<std::vector<double>> getCellVec(int id);
+    std::map<int, std::vector<double>> getCell(int id) const;
+    std::vector<std::vector<double>> getCellVec(int id) const;
     // get diameter of circumsphere of each cell
-    std::vector<double> getCellLengths();
+    std::vector<double> getCellLengths() const;
     // get center of a cell
+    std::vector<double> getCellCenter(int cellID) const;
+    // get cell type as an integer
+    // assumes all elements are the same type
+    int getCellType() const;
     std::vector<double> getCellCenter(int cellID);
+    // get edge lengths of dataSet
+    void inspectEdges(const std::string& ofname);
  
   // diagnostics
   public:

@@ -22,6 +22,8 @@ NetgenParams::NetgenParams()
   invert_trigs                = 0;
   check_overlap               = 1;
   check_overlapping_boundary  = 1;
+  refine_with_geom            = 0;
+  refine_without_geom         = 0;  
 }
 
 meshGen* meshGen::Create(std::string fname, std::string meshEngine)
@@ -98,6 +100,8 @@ void meshNetgen::set_mp(NetgenParams* params)
   mp.invert_trigs                = params->invert_trigs;               
   mp.check_overlap               = params->check_overlap;              
   mp.check_overlapping_boundary  = params->check_overlapping_boundary; 
+  refine_without_geom            = params->refine_without_geom;
+  refine_with_geom               = params->refine_with_geom;  
 }
 
 int meshNetgen::createMeshFromSTL(char* fname)
@@ -160,11 +164,11 @@ int meshNetgen::createMeshFromSTL(char* fname)
   ne = Ng_GetNE(mesh);
   cout << "Elements: " << ne << endl;
 
-  // refinement without geomety adaption:
-  // Ng_Uniform_Refinement (mesh);
-
-  // refinement with geomety adaption:   
-  //Ng_STL_Uniform_Refinement (stl_geom, mesh);
+  // refinement without or with geomety adaption:
+  if (refine_without_geom)
+    Ng_Uniform_Refinement (mesh);
+  else if (refine_with_geom)
+    Ng_STL_Uniform_Refinement (stl_geom, mesh);
 
   cout << "elements after refinement: " << Ng_GetNE(mesh) << endl;
   cout << "points   after refinement: " << Ng_GetNP(mesh) << endl;

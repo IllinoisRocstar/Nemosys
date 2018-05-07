@@ -23,9 +23,9 @@ class GradSizeField: public SizeFieldBase
     // compute size field and insert as cell data into mesh's dataSet
     void computeSizeField(int arrayID);
 
-  private:
-    vtkDataArray* da;
-    std::string sfname; 
+//  private:
+//    vtkDataArray* da;
+//    std::string sfname; 
 };
 
 

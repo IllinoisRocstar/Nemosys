@@ -4,16 +4,16 @@ The **N**uclear **E**nergy **Mo**deling **Sys**tem is a modular, extensible reso
 designed to be used in typical application development systems as well as in distributed
 web-services environments. The focus of the project is on providing a framework for robust,
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
-between arbitrary meshes.
+between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
 ## Getting Started ##
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
 ```
-$ git clone https://github.com/IllinoisRocstar/Nemosys.git
+$ git clone git@git.illinois.rocstar:Nemosys/Nemosys.git
 ```
-
 ## Build Instructions ##
+### Build Dependencies ###
 You will need to `apt install` at least the following dependencies:
 
 * build-essential
@@ -30,20 +30,49 @@ You will need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
+* swig (if you want python bindings)
 
-Once these dependencies are installed, the easiest way to build the rest of the 
-package is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to
-the local install directory. Execute the following:
+Once these dependencies are installed, the easiest way to build the required third party
+libraries is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to Nemosys, 
+and $NEMOSYS_INSTALL_PATH is the desired installation location. Make sure to use absolute paths 
+and execute the following:
+```
+$ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys
+$ NEMOSYS_INSTALL_PATH=/full/path/to/install
+$ $NEMOSYS_PROJECT_PATH/scripts/build.sh $NEMOSYS_PROJECT_PATH $NEMOSYS_PROJECT_PATH/contrib/nemosys_tpls.tar.gz $NEMOSYS_INSTALL_PATH
+```
 
+### Build Nemosys ###
+Now, we can compile the Nemosys library, create its python binding and build utilities: 
 ```
 $ cd $NEMOSYS_PROJECT_PATH
-$ ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
-
+$ mkdir build && cd build
+$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/cgns:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON .. 
+$ make -j
+$ make install
+$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$LD_LIBRARY_PATH
+$ export PYTHONPATH=$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH
 ```
+Executing the commands above will build all libraries, executables and bindings. The libraries are
+installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`. Executables are installed in 
+`$NEMOSYS_INSTALL_PATH/Nemosys/bin`. If python bindings are enabled, the `pyNemosys` module files are
+installed in `$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages`.
+The last two export commands are only required if python bindings are enabled. The `pyNemosys` module 
+can be imported in python as `import pyNemosys`. Building of the utilities and python bindings
+can be enabled/disabled either through the CMake curses interface (ccmake) or by passing the 
+corresponding command line definitions to cmake (ON or OFF). 
 
-If this fails, you can try building the tpls independently
+## Testing Nemosys ##
+From the build directory, execute the following command to test the installation:
+```
+$ make test
+```
+This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
+here for more details.
+
+### Manually Build Third Party Libraries ###
+If execution of `build.sh` fails, you can try building the tpls independently
 Extract the whole archive as such:
-
 ```
 $ cd $NEMOSYS_PROJECT_PATH/
 $ tar zxf contrib/nemosys_tpls.tar.gz 
@@ -51,16 +80,12 @@ $ cd nemosys_tpls
 ```
 
 #### Building Gmsh ####
-
 Unpack Gmsh from the `neomsys_tpls` directory:
-
 ```
 $ tar zxf gmsh-2.15.0-source.tgz
 $ cd gmsh-2.15.0-source
 ```
-
 Build Gmsh by running the following commands:
-
 ```
 $ mkdir lib
 $ cd lib
@@ -71,16 +96,12 @@ $ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_PROJECT_PATH/install/gmsh/include/gm
 ```
 
 #### Building madlib ####
-
 Unpack madlib from the `neomsys_tpls` directory:
-
 ```
 $ tar zxf madlib-1.3.0.tar.gz
 $ cd madlib-1.3.0/
 ```
-
 Build madlib:
-
 ```
 $ ./configure --prefix=$NEMOSYS_PROJECT_PATH/install/madlib --enable-moveIt
               --enable-benchmarks --enable-ann
@@ -88,7 +109,6 @@ $ ./configure --prefix=$NEMOSYS_PROJECT_PATH/install/madlib --enable-moveIt
 $ make -j8
 $ make install
 ```
-
 Afterwards, a number of header files from the madlib source directory will
 need to be manually copied into `$NEMOSYS_PROJECT_PATH/install/madlib/include/MAdLib`:
 
@@ -107,16 +127,12 @@ need to be manually copied into `$NEMOSYS_PROJECT_PATH/install/madlib/include/MA
 * Adapt/utils/NodalDataManager.h
 
 #### Building CGNS ####
-
 Unpack Gmsh from the `neomsys_tpls` directory:
-
 ```
 $ tar zxf cgns.tar.gz
 $ cd CGNS
 ```
-
 Build CGNS:
-
 ```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/cgns ..
@@ -130,36 +146,14 @@ Unpack Netgen from the `nemosys_tpls` directory:
 $ tar xzf netgen-meshter-git.tar.gz
 $ cd netgen-mesher-git
 ```
-
 Build Netgen:
-
 ```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen -DUSE_GUI=OFF ..
 $ make
 $ make install
 ```
-
-#### Building Nemosys ####
-
-With the local dependencies installed, you should be able to build Nemosys and all utilities
-using the following commands:
-
-```
-$ mkdir build
-$ cd build
-$ CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake -DBUILD_UTILS=ON ..
-$ make -j8
-```
-
-## Testing Nemosys ##
-
-From the build directory, execute the following command to test the installation:
-```
-$ make test
-```
-This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
-here for more details.
+See the building Nemosys section to proceed from this point and complete the build.
 
 ## License ##
 This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for

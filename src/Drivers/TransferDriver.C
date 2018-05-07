@@ -126,6 +126,15 @@ TransferDriver* TransferDriver::readJSON(std::string ifname)
 
   json inputjson;
   inputStream >> inputjson;
-  return TransferDriver::readJSON(inputjson);
     
+  // checking if array
+  if (inputjson.is_array())
+  {
+    std::cout << "Warning: Input is an array. Only first element will be processed\n";
+    return TransferDriver::readJSON(inputjson[0]);
+  } 
+  else
+  {
+    return TransferDriver::readJSON(inputjson);
+  }
 }

@@ -83,7 +83,7 @@ void gridTransfer::loadSrcCg()
     std::cout << "  Zone ID : " << getZoneName(srcCgObjs[0], iz) << std::endl;
     stitchMe(srcCgObjs[0], iz);
     std::cout << "Finished processing of the zone " 
- 	     << getZoneName(srcCgObjs[0], iz) << std::endl;
+       << getZoneName(srcCgObjs[0], iz) << std::endl;
   }
 }
 
@@ -149,9 +149,9 @@ void gridTransfer::gridHist()
   std::string line;
   out << "[";
   while(std::getline(hist,line)){
-	if(line == "        --- Histogram ---"){
+  if(line == "        --- Histogram ---"){
       for(int i =0 ; i < 11; i ++){
-		std::getline(hist,line);
+    std::getline(hist,line);
         if(!line.empty()){
           std::string filter = "%";
           line = line.substr(line.find(filter)+filter.length(), line.length());
@@ -216,25 +216,25 @@ void gridTransfer::transfer()
       std::cout << "Transfering nodal " << *is << std::endl;
       for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
       {
-	std::vector<double> vrtCrds, prms;
-	std::vector<int>  vrtIds;
-	vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
-	//std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-	int elmIdx = getBaryCrds("src", vrtCrds, prms, vrtIds);
-	if (elmIdx < 0)
-	{
+  std::vector<double> vrtCrds, prms;
+  std::vector<int>  vrtIds;
+  vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
+  //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+  int elmIdx = getBaryCrds("src", vrtCrds, prms, vrtIds);
+  if (elmIdx < 0)
+  {
           badPnt++;
-	  //std::cout << badPnt << std::endl;
-	  std::vector<double> trgVrtData;
+    //std::cout << badPnt << std::endl;
+    std::vector<double> trgVrtData;
           interpNde.clearCache();
-	  interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
-	  trgSlnVec.push_back(trgVrtData[0]);
-	}
-	else
-	  trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
-			       prms[1]*srcSlnVec[vrtIds[1]] +
-			       prms[2]*srcSlnVec[vrtIds[2]] +
-			       prms[3]*srcSlnVec[vrtIds[3]] );
+    interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
+    trgSlnVec.push_back(trgVrtData[0]);
+  }
+  else
+    trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
+             prms[1]*srcSlnVec[vrtIds[1]] +
+             prms[2]*srcSlnVec[vrtIds[2]] +
+             prms[3]*srcSlnVec[vrtIds[3]] );
       }
       inNData = trgCgObjs[0]->getNVertex();
       std::cout << "Finished transfering with " << badPnt << " bad nodes." << std::endl;
@@ -294,30 +294,30 @@ double gridTransfer::calcTransAcc(std::string slnName)
       //std::cout << "Checking nodal " << *is << std::endl;
       for (int iNde=0; iNde<getNVertex(); iNde++)
       {
-	std::vector<double> vrtCrds, prms;
-	std::vector<int>  vrtIds;
-	vrtCrds = getVertexCoords(iNde);
-	//std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-	int elmIdx = getBaryCrds("trg", vrtCrds, prms, vrtIds);
-	if (elmIdx < 0)
-	{
+  std::vector<double> vrtCrds, prms;
+  std::vector<int>  vrtIds;
+  vrtCrds = getVertexCoords(iNde);
+  //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+  int elmIdx = getBaryCrds("trg", vrtCrds, prms, vrtIds);
+  if (elmIdx < 0)
+  {
           badPnt++;
-	  std::vector<double> srcVrtData;
+    std::vector<double> srcVrtData;
           interpNde.clearCache();
-	  interpNde.interpolate(1, vrtCrds, trgSlnVec, srcVrtData);
+    interpNde.interpolate(1, vrtCrds, trgSlnVec, srcVrtData);
           //std::cout << "Nde: " << iNde
           //          << " orig = " << origSrcSlnVec[iNde]
           //          << " target projected interp = " << srcVrtData[0] 
           //          << " delta = " << fabs(srcVrtData[0] - origSrcSlnVec[iNde])
           //          << std::endl;
-	  transAccuracy += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
-	  transAccIntp += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+    transAccuracy += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+    transAccIntp += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
           slnSum += fabs(origSrcSlnVec[iNde]);
-	} else {
-	  double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
-			       prms[1]*trgSlnVec[vrtIds[1]] +
-			       prms[2]*trgSlnVec[vrtIds[2]] +
-			       prms[3]*trgSlnVec[vrtIds[3]] ;
+  } else {
+    double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
+             prms[1]*trgSlnVec[vrtIds[1]] +
+             prms[2]*trgSlnVec[vrtIds[2]] +
+             prms[3]*trgSlnVec[vrtIds[3]] ;
           //std::cout << "Nde: " << iNde
           //          << " orig = " << origSrcSlnVec[iNde]
           //          << " target projected = " << srcVrtData 
@@ -364,8 +364,8 @@ void gridTransfer::writeTrgCg(std::string cgFName)
   // define elementary information
   cgnsWriter* cgWrtObj = new cgnsWriter(cgFName, cgObj1->getBaseName(), 3, 3);
   cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
-		    cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
-		    cgObj1->getAngleUnit());
+        cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
+        cgObj1->getAngleUnit());
   cgWrtObj->setBaseItrData(cgObj1->getBaseItrName(), 
                            cgObj1->getNTStep(), 
                            cgObj1->getTimeStep());
@@ -379,8 +379,8 @@ void gridTransfer::writeTrgCg(std::string cgFName)
   cgWrtObj->setGridXYZ(cgObj1->getVrtXCrd(), cgObj1->getVrtYCrd(), cgObj1->getVrtZCrd());
   // define connctivity
   cgWrtObj->setSection(cgObj1->getSectionName(), 
-		       (ElementType_t) cgObj1->getElementType(), 
-		       cgObj1->getElementConnectivity(-1));
+           (ElementType_t) cgObj1->getElementType(), 
+           cgObj1->getElementConnectivity(-1));
   // define vertex and cell data 
   cgWrtObj->setSolutionNode("NodeData", Vertex);
   cgWrtObj->setSolutionNode("ElemData", CellCenter);
@@ -533,17 +533,17 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
       getSolutionDataNames(slnNameList);  
       getAppendedSolutionDataName(appSlnNameList);
       slnNameList.insert(slnNameList.end(),
-			 appSlnNameList.begin(), appSlnNameList.end());
+       appSlnNameList.begin(), appSlnNameList.end());
       // write all data into vtk file
       for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
       {
-	std::vector<double> physData;
-	getSolutionDataStitched(*is, physData, outNData, outNDim);
-	solution_type_t dt = getSolutionDataObj(*is)->getDataType();
-	if (dt == NODAL)      
-	  wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
-	else if (dt == ELEMENTAL)
-	  wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
+  std::vector<double> physData;
+  getSolutionDataStitched(*is, physData, outNData, outNDim);
+  solution_type_t dt = getSolutionDataObj(*is)->getDataType();
+  if (dt == NODAL)      
+    wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
+  else if (dt == ELEMENTAL)
+    wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
       }
       wrtVTK->report();
       wrtVTK->write((char *)fName.c_str());
@@ -558,14 +558,14 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
       // write transfered data to vtk
       for (auto ia=appDataLst.begin(); ia!=appDataLst.end(); ia++)
       {
-	std::vector<double> trgSlnVec;
+  std::vector<double> trgSlnVec;
         int tmp;
-	solution_type_t dt = trgCgObjs[0]->getSolutionDataStitched(*ia, trgSlnVec, tmp, tmp);
-	if (dt == NODAL)
-	  wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
-	else if (dt== ELEMENTAL)
-	  wrtVTK->setCellDataArray((*ia).c_str(), 1, trgSlnVec);
-	
+  solution_type_t dt = trgCgObjs[0]->getSolutionDataStitched(*ia, trgSlnVec, tmp, tmp);
+  if (dt == NODAL)
+    wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
+  else if (dt== ELEMENTAL)
+    wrtVTK->setCellDataArray((*ia).c_str(), 1, trgSlnVec);
+  
       }
       wrtVTK->report();
       wrtVTK->write((char *)fName.c_str());
@@ -1000,12 +1000,12 @@ void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
     {
       if (paneHasPatchNo(cgObj, zoneIdx))
       {
-	appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
-			     ELEMENTAL, cgObj->getNElement(), 1); 
-	appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-			     ELEMENTAL, cgObj->getNElement(), 1); 
-	appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
-			     ELEMENTAL, cgObj->getNElement(), 1); 
+  appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+           ELEMENTAL, cgObj->getNElement(), 1); 
+  appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+           ELEMENTAL, cgObj->getNElement(), 1); 
+  appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
+           ELEMENTAL, cgObj->getNElement(), 1); 
       }
     }
     return;
@@ -1018,13 +1018,13 @@ void gridTransfer::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
     {
       cgObj->delAppSlnData("patchNo");
       cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
-				 ELEMENTAL, cgObj->getNElement(), 1);
+         ELEMENTAL, cgObj->getNElement(), 1);
       cgObj->delAppSlnData("bcflag");
       cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
-				 ELEMENTAL, cgObj->getNElement(), 1);
+         ELEMENTAL, cgObj->getNElement(), 1);
       cgObj->delAppSlnData("cnstr_type");
       cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
-				 ELEMENTAL, cgObj->getNElement(), 1);
+         ELEMENTAL, cgObj->getNElement(), 1);
     }
   }
 
@@ -1235,9 +1235,9 @@ std::vector<int> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   // making sure we read real one otherwise next one is the real one
   if (std::string(secname).find("real") == std::string::npos)
     if (cg_section_read(cgObj->getIndexFile(),
-	 cgObj->getIndexBase(),
-	 zoneIdx, ++secidx,
-	 secname, &et, &st, &en, &nbndry, &parflag))
+   cgObj->getIndexBase(),
+   zoneIdx, ++secidx,
+   secname, &et, &st, &en, &nbndry, &parflag))
       cg_error_exit();
   int nVrtxElm;
   switch(et)
@@ -1284,9 +1284,9 @@ int gridTransfer::getZoneRealSecType(cgnsAnalyzer* cgObj, int zoneIdx)
   // making sure we read real one otherwise next one is the real one
   if (std::string(secname).find("real") == std::string::npos)
     if (cg_section_read(cgObj->getIndexFile(),
-	 cgObj->getIndexBase(),
-	 zoneIdx, ++secidx,
-	 secname, &et, &st, &en, &nbndry, &parflag))
+   cgObj->getIndexBase(),
+   zoneIdx, ++secidx,
+   secname, &et, &st, &en, &nbndry, &parflag))
       cg_error_exit();
   return(et);
 }
