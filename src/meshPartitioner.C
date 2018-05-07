@@ -192,13 +192,13 @@ int meshPartitioner::partition()
      case MESH_TETRA_4:
        eptr[0] = 0;
        for (int iElm=1; iElm<=nElm; iElm++)
-	 eptr[iElm] = iElm*4;
+   eptr[iElm] = iElm*4;
        ncommon = 3;
        break;
      case MESH_TRI_3:
        eptr[0] = 0;
        for (int iElm=1; iElm<=nElm; iElm++)
-	 eptr[iElm] = iElm*3;
+   eptr[iElm] = iElm*3;
        ncommon = 2;
        break;
      default:

@@ -28,12 +28,6 @@ class triangle
 
 };
 
-template<typename A, typename B>
-std::pair<B,A> flip_pair(const std::pair<A,B> &p);
-
-template<typename A, typename B>
-std::multimap<B,A> flip_map(const std::map<A,B> &src);
-
 void exportStlToVtk(std::string fname);
 
 #endif

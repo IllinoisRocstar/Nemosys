@@ -498,9 +498,9 @@ std::vector<int> rocstarCgns::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   // making sure we read real one otherwise next one is the real one
   if (std::string(secname).find("real") == std::string::npos)
     if (cg_section_read(cgObj->getIndexFile(),
-	 cgObj->getIndexBase(),
-	 zoneIdx, ++secidx,
-	 secname, &et, &st, &en, &nbndry, &parflag))
+   cgObj->getIndexBase(),
+   zoneIdx, ++secidx,
+   secname, &et, &st, &en, &nbndry, &parflag))
       cg_error_exit();
   int nVrtxElm;
   switch(et)
@@ -547,9 +547,9 @@ int rocstarCgns::getZoneRealSecType(cgnsAnalyzer* cgObj, int zoneIdx)
   // making sure we read real one otherwise next one is the real one
   if (std::string(secname).find("real") == std::string::npos)
     if (cg_section_read(cgObj->getIndexFile(),
-	 cgObj->getIndexBase(),
-	 zoneIdx, ++secidx,
-	 secname, &et, &st, &en, &nbndry, &parflag))
+   cgObj->getIndexBase(),
+   zoneIdx, ++secidx,
+   secname, &et, &st, &en, &nbndry, &parflag))
       cg_error_exit();
   return(et);
 }

@@ -1,11 +1,14 @@
 image: snatesh/testdoc:testimg
 
 before_script:
+ - apt -y install swig
  - cp -r /tmp/install .
  - mkdir build && cd build
- - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns cmake ..
- - make 
- 
+ - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns:../install/netgen cmake -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=../install ..
+ - make
+ - make install 
+ - export LD_LIBRARY_PATH=../install/Nemosys/lib:$LD_LIBRARY_PATH
+ - export PYTHONPATH=../install/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH 
 job1:
  script:
   - make test

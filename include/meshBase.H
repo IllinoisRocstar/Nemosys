@@ -12,7 +12,9 @@
 #include <vtkXMLCompositeDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLImageDataReader.h>
+#include <vtkSTLReader.h>
 #include <vtkDataSetReader.h>
+#include <vtkGenericDataObjectReader.h>
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkRectilinearGrid.h>
@@ -25,6 +27,12 @@
 #include <vtkFieldData.h>
 #include <vtkCellTypes.h>
 #include <vtksys/SystemTools.hxx>
+#include <vtkDataArray.h>
+#include <vtkUnsignedIntArray.h>
+#include <vtkIntArray.h>
+#include <vtkUnsignedLongArray.h>
+#include <vtkLongArray.h>
+#include <vtkFloatArray.h>
 #include <vtkDoubleArray.h>
 #include <vtkXMLWriter.h>
 #include <vtkXMLUnstructuredGridWriter.h>
@@ -34,21 +42,32 @@
 #include <vtkXMLHyperOctreeWriter.h>
 #include <vtkXMLCompositeDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
+#include <vtkSTLWriter.h>
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkDataSetReader.h>
 #include <vtkDataSetWriter.h>
 #include <vtkCellCenters.h>
 #include <vtkCell.h>
+#include <vtkCellArray.h>
 #include <vtkGenericCell.h>
 #include <vtkTetra.h>
 #include <vtkTriangle.h>
+#include <vtkIdTypeArray.h>
+#include <vtkInformation.h>
 #include <vtkCellLocator.h>
 #include <vtkCellTreeLocator.h>
 #include <vtkModifiedBSPTree.h>
 #include <vtkMeshQuality.h>
+#include <vtkQuadratureSchemeDefinition.h>
+#include <vtkQuadratureSchemeDictionaryGenerator.h>
+#include <vtkQuadraturePointsGenerator.h>
+#include <vtkQuadraturePointInterpolator.h>
+#include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <baseInterp.H>
-#include <spheres.H>
+#include <vtkMath.h>
+#include <vtkExtractEdges.h>
+#include <vtkConnectivityFilter.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -66,6 +85,7 @@ namespace nglib
 }
 
 // Nemosys
+#include <pntMesh.H>
 #include <AuxiliaryFunctions.H>
 
 // stl
@@ -79,25 +99,32 @@ namespace nglib
 #include <cstdlib>
 #include <algorithm>
 #include <cstdio>
+#include <memory>
+#include <utility>
+#include <sstream>
 
 
+// TODO: 1) Implment copy and assignment constructors for all classes/subs
+//       2) Migrate implementations to use smart pointer types 
 // Virtual functions are implemented in vtkMesh.C
 
 class meshingParams;
 
-class meshBase
+class meshBase 
 {
 
   // constructors and destructors
   public:
 
-    meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0)
+    meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0), order(1)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
+
+
+
     virtual ~meshBase()
     {
-      if(dataSet) dataSet->Delete();
       std::cout << "meshBase destroyed" << std::endl;
     }
   
@@ -106,24 +133,40 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
+    static std::shared_ptr<meshBase> CreateShared(std::string fname)
+    {
+      std::shared_ptr<meshBase> mesh;
+      mesh.reset(meshBase::Create(fname));
+      return mesh;
+    }
+
+    static std::unique_ptr<meshBase> CreateUnique(std::string fname)
+    {
+      return std::unique_ptr<meshBase>(meshBase::Create(fname));
+    }
+
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
     static meshBase* exportVolToVtk(std::string fname);
+    // construct vtkMesh from netgen vol file
+    static meshBase* exportPntToVtk(std::string fname);
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
-    
+ 
   // access
   public:
     // get point with id
-    virtual std::vector<double> getPoint(int id){}
+    virtual std::vector<double> getPoint(int id) const {}
     // get cell with id : returns point indices and respective coordinates
-    virtual std::map<int, std::vector<double>> getCell(int id){}
+    virtual std::map<int, std::vector<double>> getCell(int id) const {}
     // get vector of coords of cell with id
-    virtual std::vector<std::vector<double>> getCellVec(int id){}
+    virtual std::vector<std::vector<double>> getCellVec(int id) const {}
+    // get edge lengths of dataSet
+    virtual void inspectEdges(const std::string& ofname){}
     // get this meshes' dataSet
-    vtkDataSet* getDataSet(){ return dataSet; }
+    vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
@@ -141,13 +184,17 @@ class meshBase
     // delete array with id from dataSet's field data
     virtual void unsetFieldDataArray(const char* name){}
     // get diameter of circumsphere of each cell
-    virtual std::vector<double> getCellLengths(){}
+    virtual std::vector<double> getCellLengths() const {}
     // get center of a cell
-    virtual std::vector<double> getCellCenter(int cellID){}
+    virtual std::vector<double> getCellCenter(int cellID) const {}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
 
+    // get cell type as an integer
+    // assumes all elements are the same type
+    virtual int getCellType() const = 0;
 
+    virtual void classifyAndAddBoundaries(){}
 
   // data transfer
   public:
@@ -160,39 +207,56 @@ class meshBase
                  const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
+
+  // integration
+  public:
+    // integrate arrays in arrayIDs over the mesh. 
+    // integrated data is available per cell after operation
+    // total integral for each datum is returned
+    std::vector<std::vector<double>> 
+    integrateOverMesh(const std::vector<int>& arrayIDs);
+
  
   // size field generation
   public:
     // generate size field based on method ("gradient", "value", "error estimator")
     // and given a point data array. dev_mlt and maxIsmin are used to determine
     // which cells to consider for refinement
-    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin);
+    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin, double sizeFactor=1.);
     // set whether this mesh has a sizefield
     void setSFBool(bool q) { hasSizeField = q; }
     // get this meshes' sizefield  
-    bool getSFBool() { return hasSizeField; }
+    bool getSFBool() const { return hasSizeField; }
     // check for named array in vtk and return its integer id 
     int IsArrayName(std::string name);
-  
+    // set mesh order
+    void setOrder(int _order) { order = _order;}
+    int getOrder() const { return order; } 
+ 
   // adaptive mesh refinement
   public:
     // perform sizefield-based h-refinement. edge_scale is for uniform refinement and 
     // is ignored in calls where method is "gradient", "value" etc. instead of "uniform"
     void refineMesh(std::string method, int arrayID, 
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
+                    double dev_mult, bool maxIsmin, double edge_scale, 
+                    std::string ofname, bool transferData, double sizeFactor=1.); 
     void refineMesh(std::string method, std::string arrayName, 
-                    double dev_mult, bool maxIsmin, double edge_scale, std::string ofname); 
+                    double dev_mult, bool maxIsmin, double edge_scale, 
+                    std::string ofname, bool transferData, double sizeFactor=1.); 
     // added for uniform refinement by driver
-    void refineMesh(std::string method, double edge_scale, std::string ofname); 
-  
+    void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData); 
+    void refineMesh(std::string method, int arrayID, int order, 
+                    std::string ofname, bool transferData);
+    void refineMesh(std::string method, std::string arrayName, int order, 
+                    std::string ofname, bool transferData);
   // diagnostics
   public:
     // generate a report of the mesh
     virtual void report(){}; 
     // return the number of points
-    int getNumberOfPoints() {return numPoints;}
+    int getNumberOfPoints() const {return numPoints;}
     // return the number of cells
-    int getNumberOfCells() { return numCells;}
+    int getNumberOfCells() const { return numCells;}
     void checkMesh(std::string ofname);
 
 
@@ -216,19 +280,24 @@ class meshBase
                   bool onlyVol);
 
     void setFileName(std::string fname) { filename = fname; }
-    std::string getFileName() { return filename; }
+    std::string getFileName() const { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
+    void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
+    void unsetNewArrayNames() { newArrayNames.clear(); }
 
   protected:
     int numPoints; // number of points in mesh
     int numCells;  // number of cells in mesh
     bool hasSizeField; // set to 1 if sizeField attached to dataSet
-    vtkDataSet* dataSet; // mesh points, topology and data
+    vtkSmartPointer<vtkDataSet> dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
+    int order; // shape function order
+    std::vector<std::string> newArrayNames;
 };
 
-
+// compares two meshBases- used in testing
+int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
 
 #endif

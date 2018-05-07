@@ -5,10 +5,14 @@
 #include <SizeFieldBase.H>
 #include <Refine.H>
 #include <MeshQuality.H>
+#include <Cubature.H>
+
+// TODO: Stop using setPoint/CellDataArray in export methods
+//        - instead, use the faster vtkDataArray creation and insertion
 
 meshBase* meshBase::Create(std::string fname)
 {
-  if (fname.find(".vt") != -1 ) 
+  if (fname.find(".vt") != -1 || fname.find(".stl") != -1 ) 
   {
     vtkMesh* vtkmesh = new vtkMesh(&fname[0u]);
     vtkmesh->setFileName(fname);
@@ -27,6 +31,13 @@ meshBase* meshBase::Create(std::string fname)
     std::cout << "Detected file in Netgen .vol format" << std::endl;
     std::cout << "Exporting to VTK ...." << std::endl;
     return exportVolToVtk(fname);
+  }
+
+  else if (fname.find(".pntmesh") != -1)
+  {
+    std::cout << "Detected file in PNTmesh format" << std::endl;
+    std::cout << "Processing the file ...." << std::endl;
+    return exportPntToVtk(fname);
   }
 
   else
@@ -54,7 +65,7 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   if (generator) 
   { 
     delete generator;
-    generator=0;
+    generator=nullptr;
   }
   if(!status) 
   {
@@ -62,7 +73,6 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
     return exportVolToVtk(newname);    
   }
 }
-
 
 // check for named array in vtk 
 int meshBase::IsArrayName(std::string name)
@@ -84,18 +94,13 @@ int meshBase::IsArrayName(std::string name)
 int meshBase::transfer(meshBase* target, std::string method, 
                        const std::vector<int>& arrayIDs)
 {
-  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  transobj->runPD(arrayIDs);
-  if (transobj)
-  { 
-    delete transobj;
-    transobj = 0;
-  }
-  return 0;
+  return transobj->transferPointData(arrayIDs,newArrayNames);
 }
 
-int meshBase::transfer(meshBase* target, std::string method, const std::vector<std::string>& arrayNames)
+int meshBase::transfer(meshBase* target, std::string method, 
+                       const std::vector<std::string>& arrayNames)
 {
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
@@ -115,29 +120,24 @@ int meshBase::transfer(meshBase* target, std::string method, const std::vector<s
 // transfer all data from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method)
 {
-  
-  TransferBase* transobj = TransferBase::Create(method, this, target);//new Transfer(this, target);
+  std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  int result = transobj->run(); 
-  if (transobj)
-  { 
-    delete transobj;
-    transobj = 0;
-  }
-  return result;
+  return transobj->run(newArrayNames); 
 }
 
-
-
-void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin)
+std::vector<std::vector<double>> 
+meshBase::integrateOverMesh(const std::vector<int>& arrayIDs)
 {
-  SizeFieldBase* sfobj = SizeFieldBase::Create(this, method, arrayID, dev_mult, maxIsmin); 
+  std::unique_ptr<GaussCubature> cubature = GaussCubature::CreateUnique(this, arrayIDs);
+  return cubature->integrateOverAllCells(); 
+}
+
+void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin, double sizeFactor)
+{
+  std::cout << "Size Factor = " << sizeFactor << std::endl;
+  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
+  sfobj->setSizeFactor(sizeFactor);
   sfobj->computeSizeField(arrayID);
-  if (sfobj)
-  {
-    delete sfobj;
-    sfobj = 0;
-  }
 }
 
 meshBase* meshBase::exportGmshToVtk(std::string fname)
@@ -366,8 +366,9 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   }  
 
   vtkMesh* vtkmesh = new vtkMesh();
-  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
-  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  //vtkmesh->dataSet = dataSet_tmp->NewInstance();
+  //vtkmesh->dataSet->DeepCopy(dataSet_tmp);
+  vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
   
@@ -376,7 +377,10 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
-  vtkmesh->setFileName(trim_fname(fname,".vtu"));
+  // Temporary changed to legacy vtk for AMR demos
+  // switch back to vtu when done
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  vtkmesh->setFileName(trim_fname(fname,".vtk"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
@@ -452,8 +456,9 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   }
   
   vtkMesh* vtkmesh = new vtkMesh();
-  vtkmesh->dataSet = dataSet_tmp->NewInstance();//
-  vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  //vtkmesh->dataSet = dataSet_tmp->NewInstance();//
+  //vtkmesh->dataSet->DeepCopy(dataSet_tmp);//vtkDataSet::SafeDownCast(dataSet_tmp));
+  vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
@@ -466,6 +471,78 @@ meshBase* meshBase::exportVolToVtk(std::string fname)
   
 }
 
+// exports pntMesh to vtk format
+meshBase* meshBase::exportPntToVtk(std::string fname)
+{
+  PNTMesh::pntMesh* pMesh;
+  pMesh = new PNTMesh::pntMesh(fname);
+
+  vtkMesh* vtkmesh = new vtkMesh();
+  
+  /*
+  if (!pMesh->isCompatible())
+  {
+    std::cerr << "Mesh contains unsupported element types.\n";
+    std::cerr << "Only 3-Node TRIs and 4-Node TETs are supported.\n";
+    vtkmesh->numCells = 0;
+    vtkmesh->numPoints = 0;
+    return vtkmesh;
+  }
+  */
+
+  // declare points to be pushed into dataSet_tmp
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  // declare dataSet_tmp which will be associated to output vtkMesh
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = 
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  
+  int numPoints = pMesh->getNumberOfPoints();
+  int numVolCells =  pMesh->getNumberOfCells();
+
+  // allocate memory for points
+  points->SetNumberOfPoints(numPoints);
+  for (int i = 0; i < numPoints; ++i)
+  {
+    std::vector<double> point;
+    point = pMesh->getPointCrd(i);
+    // insert point i
+    points->SetPoint(i,&point[0]);     
+  }
+  // inserting point array into dataSet_tmp
+  dataSet_tmp->SetPoints(points);
+
+  // allocating space for cell connectivities
+  dataSet_tmp->Allocate(numVolCells);
+  for (int i = 0; i < numVolCells; ++i)
+  {
+    std::cout << "Element " << i << std::endl;
+    vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+    std::vector<int> conn;
+    VTKCellType vct= 
+        pMesh->getVtkCellTag(pMesh->getElmType(i), pMesh->getElmOrder(i));
+    conn = pMesh->getElmConn(i, vct);
+    for (int j = 0; j < conn.size(); ++j)
+    {
+      // insert connectivies for cell into cellIds container
+      vtkcellIds->InsertNextId(conn[j]);
+    }
+    // insert connectivies
+    dataSet_tmp->InsertNextCell(vct, vtkcellIds); 
+  }
+  
+  vtkmesh->dataSet = dataSet_tmp;
+  vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+
+  std::cout << "Trimmed name = "
+      << trim_fname(fname, ".vtu") << std::endl;
+  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+  //vtkmesh->write();
+  std::cout << "vtkMesh constructed" << std::endl;
+
+  return vtkmesh;
+
+}
 
 // convert to gmsh format without data
 void meshBase::writeMSH(std::ofstream& outputStream)
@@ -808,20 +885,27 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
 
 void meshBase::refineMesh(std::string method, int arrayID, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname)
+                          double edge_scale, std::string ofname, bool transferData,
+                          double sizeFactor)
 {
-  Refine* refineobj = new Refine(this, method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
-  refineobj->run();
-  if (refineobj)
-  { 
-    delete refineobj;
-    refineobj = 0;
-  }
+  std::unique_ptr<Refine> refineobj
+    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,dev_mult,maxIsmin,edge_scale,ofname,sizeFactor));
+  refineobj->run(transferData);
+}
+
+void meshBase::refineMesh(std::string method, int arrayID, int _order, 
+                          std::string ofname, bool transferData)
+{
+  setOrder(_order); 
+  std::unique_ptr<Refine> refineobj
+    = std::unique_ptr<Refine>(new Refine(this,method,arrayID,0,0,0,ofname));
+  refineobj->run(transferData);
 }
 
 void meshBase::refineMesh(std::string method, std::string arrayName, 
                           double dev_mult, bool maxIsmin, 
-                          double edge_scale, std::string ofname)
+                          double edge_scale, std::string ofname, bool transferData,
+                          double sizeFactor)
 {
   int arrayID = IsArrayName(arrayName);
   if (arrayID == -1)
@@ -830,13 +914,27 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
               << " not fuond in set of point data arrays" << std::endl;
     exit(1);
   }
-  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname);
-
+  refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData, sizeFactor);
 }
-// added for uniform refinement by driver
-void meshBase::refineMesh(std::string method, double edge_scale, std::string ofname)
+
+void meshBase::refineMesh(std::string method, std::string arrayName, int order, 
+                          std::string ofname, bool transferData)
 {
-  refineMesh(method, 0, 0, 0, edge_scale, ofname);
+  int arrayID = IsArrayName(arrayName);
+  if (arrayID == -1)
+  {
+    std::cout << "Array " << arrayName
+              << " not fuond in set of point data arrays" << std::endl;
+    exit(1);
+  }
+
+  refineMesh(method, arrayID, order, ofname, transferData);
+}
+
+// added for uniform refinement by driver
+void meshBase::refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData)
+{
+  refineMesh(method, 0, 0, 0, edge_scale, ofname, transferData);
 }
 
 vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()
@@ -850,16 +948,100 @@ vtkSmartPointer<vtkCellLocator> meshBase::buildLocator()
 
 void meshBase::checkMesh(std::string ofname)
 {
-  MeshQuality* qualcheck = new MeshQuality(this);
-  qualcheck->checkMesh(ofname);
+  std::unique_ptr<MeshQuality> qualCheck
+    = std::unique_ptr<MeshQuality>(new MeshQuality(this)); 
+  qualCheck->checkMesh(ofname);
+}
 
-  if (qualcheck)
+
+int diffMesh(meshBase* mesh1, meshBase* mesh2)
+{
+  double tol = 1e-6;
+
+  if (mesh1->getNumberOfPoints() != mesh2->getNumberOfPoints() ||
+      mesh1->getNumberOfCells() != mesh2->getNumberOfCells())
   {
-    delete qualcheck;
-    qualcheck = 0;
+    std::cerr << "Meshes don't have the same number of points or cells" << std::endl;
+    return 1;
   }
 
+  std::cout << mesh1->getNumberOfPoints() << std::endl;
+  for (int i = 0; i < mesh1->getNumberOfPoints(); ++i)
+  {
+    std::vector<double> coord1 = mesh1->getPoint(i);
+    std::vector<double> coord2 = mesh2->getPoint(i);
+    for (int j = 0; j < 3; ++j)
+    {
+      std::cout << coord1[j] << std::endl;
+      if (std::fabs(coord1[j]-coord2[j]) > tol)
+      {
+        std::cerr << "Meshes differ in point coordinates" << std::endl;
+        return 1;
+      }
+    } 
+  }
+
+  for (int i = 0; i < mesh1->getNumberOfCells(); ++i)
+  {
+    std::vector<std::vector<double>> cell1 = mesh1->getCellVec(i);
+    std::vector<std::vector<double>> cell2 = mesh2->getCellVec(i);
+    if (cell1.size() != cell2.size())
+    {
+      std::cerr << "Meshes differ in cells" << std::endl;
+      return 1; 
+    }
+    for (int j = 0; j < cell1.size(); ++j)
+    {
+      for (int k = 0; k < 3; ++k)
+      {
+        if (std::fabs(cell1[j][k] - cell2[j][k]) > tol)
+        {
+          std::cerr << "Meshes differ in cells" << std::endl;
+          return 1; 
+        }
+      }
+    }   
+  }
+
+  vtkSmartPointer<vtkPointData> pd1 = vtkSmartPointer<vtkPointData>::New();
+  pd1 = mesh1->getDataSet()->GetPointData();
+  vtkSmartPointer<vtkPointData> pd2 = vtkSmartPointer<vtkPointData>::New();
+  pd2 = mesh2->getDataSet()->GetPointData(); 
+  int numArr1 = pd1->GetNumberOfArrays(); 
+  int numArr2 = pd2->GetNumberOfArrays(); 
+ 
+  if (numArr1 != numArr2)
+  {
+    std::cerr << "Meshes have different numbers of point data" << std::endl;
+    return 1;
+  }
+
+  for (int i = 0; i < numArr1; ++i)
+  {
+    vtkDataArray* da1 = pd1->GetArray(i);
+    vtkDataArray* da2 = pd2->GetArray(i);
+    int numComponent = da1->GetNumberOfComponents();
+    for (int j = 0; j < mesh1->getNumberOfPoints(); ++j)
+    {
+      double comps1[numComponent];
+      double comps2[numComponent];
+      da1->GetTuple(j, comps1);
+      da2->GetTuple(j, comps2);
+      for (int k = 0; k < numComponent; ++k)
+      {
+        if (std::fabs(comps1[k] - comps2[k]) > tol)
+        {
+          std::cerr << "Meshes differ in point data values at point " << j <<  std::endl;
+          std::cerr << comps1[k] << " " << comps2[k] << std::endl;
+          return 1;
+        }
+      }
+    }
+  }
+  std::cerr << "Meshes are the same" << std::endl;
+  return 0;
 }
+
 
 /*meshBase* meshBase::exportStlToVtk(std::string fname)
 {
