@@ -196,8 +196,6 @@ class meshBase
     virtual int getCellType() const = 0;
 
     virtual void classifyAndAddBoundaries(){}
-    // build locators for efficient search operations
-    vtkSmartPointer<vtkCellLocator> buildLocator();
 
   // data transfer
   public:
