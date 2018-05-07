@@ -28,7 +28,7 @@ std::vector<double> meshPhys::ComputeGradAtCell(int cell, int array)
     double values[dim*numPointsInCell];
     for (int i = 0; i < numPointsInCell; ++i)
     {
-			int id = (int) point_ids->GetId(i);
+      int id = (int) point_ids->GetId(i);
       for (int j = 0; j < dim; ++j)
         values[i*dim +j] = pntData[array](id,j); 
     }
@@ -104,14 +104,14 @@ std::vector<double> meshPhys::ComputeValAtCell(int cell, int array)
   }
 }
 
-// compute L2 norm of gradient of point data at each cell 
+// compute 2 norm of gradient of point data at each cell 
 std::vector<double> meshPhys::ComputeL2GradAtAllCells(int array)
 {
   std::vector<double> result;
   result.resize(numberOfCells);
   for (int i = 0; i < numberOfCells; ++i)
   {
-    result[i] = L2_Norm(ComputeGradAtCell(i, array)); 
+    result[i] = l2_Norm(ComputeGradAtCell(i, array)); 
   }
 
   return result;
@@ -131,12 +131,12 @@ std::vector<double> meshPhys::ComputeValAtAllCells(int array)
   return result;
 }
 
-// compute L2 norm of value of point data at center of each cell
+// compute 2 norm of value of point data at center of each cell
 std::vector<double> meshPhys::ComputeL2ValAtAllCells(int array)
 {
   std::vector<double> result(numberOfCells); 
   for (int i = 0; i < numberOfCells; ++i)
-    result[i] = L2_Norm(ComputeValAtCell(i, array));
+    result[i] = l2_Norm(ComputeValAtCell(i, array));
   return result;
 }
 
@@ -172,7 +172,7 @@ void meshPhys::createSizeField(int array_id, std::string method,
     lengthminmax[1] *= 0.65;
   lengthminmax[0] -= lengthminmax[0]/2.; 
 
-  // populate vector with L2 norm of gradient/value of physical variable
+  // populate vector with 2 norm of gradient/value of physical variable
   std::vector<double> values;
  
   if (method.compare("grad") == 0)
@@ -240,7 +240,7 @@ void meshPhys::writeCellsToRefine(int array_id, std::string method, double dev_m
   // get name of array for proper data naming in output
   std::string array_name =  getPointData(array_id).getName(); 
 
-  // populate vector with L2 norm of gradient/value of physical variable
+  // populate vector with 2 norm of gradient/value of physical variable
   std::vector<double> values;
  
   if (method.compare("grad") == 0)

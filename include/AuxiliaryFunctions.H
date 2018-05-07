@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <chrono>
+#include <iomanip>
 //---------------------------Auxiliary Classes---------------------------------//
 
 // class wrapping around chrono for timing methods
@@ -79,8 +80,8 @@ std::vector<T> hadamard(const std::vector<T>& x,
                         const std::vector<T>& y);
 }
 
-// compute L2 norm of vec
-inline double L2_Norm(const std::vector<double>& x);
+// compute 2 norm of vec
+inline double l2_Norm(const std::vector<double>& x);
 
 // computes reciprocal of argument
 template <typename T>
@@ -89,6 +90,10 @@ T reciprocal(T x);
 // computes reciprocal of vector elements, in place
 template <typename T>
 void reciprocal_vec(std::vector<T>& x);
+
+// checks if vector has zeros
+inline bool hasZero(std::vector<double>& x);
+
 
 // find minmax of vector, excluding inf 
 inline std::vector<double> getMinMax(const std::vector<double>& x);
@@ -109,6 +114,12 @@ inline std::vector<double> getMeanStdev(const std::vector<double>& x);
 // generates boolean array with 1 if value >= tol, 0 otherwise
 inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
 
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+inline std::vector<int> cellsToRefineStdev(std::vector<double>& values, double mean, double dev);
+
+// return selects cells if their value is above some threshold of the maximum
+inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double dev);
+
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
 // find file extension
@@ -117,6 +128,13 @@ inline std::string find_ext(std::string fname);
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
+
+template<typename A, typename B>
+std::pair<B,A> flip_pair(const std::pair<A,B> &p);
+
+
+template<typename A, typename B>
+std::multimap<B,A> flip_map(const std::map<A,B> &src);
 //-------------------------------------------------------------------------//
 
 
@@ -159,8 +177,8 @@ std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim)
 }
 
 
-// compute L2 norm of vec
-double L2_Norm(const std::vector<double>& x)
+// compute 2 norm of vec
+double l2_Norm(const std::vector<double>& x)
 {
   double result = 0.0;
   for (int i = 0; i < x.size(); ++i)
@@ -255,6 +273,14 @@ void reciprocal_vec(std::vector<T>& x)
   std::transform(x.begin(), x.end(), x.begin(), reciprocal<T>);
 }
 
+bool hasZero(std::vector<double>& x)
+{
+    for (auto it=x.begin(); it!=x.end(); it++)
+        if (*it==0.)
+            return true;
+    return false;
+}
+
 // find minmax of vector, excluding inf 
 std::vector<double> getMinMax(const std::vector<double>& x)
 {
@@ -323,6 +349,42 @@ std::vector<int> cellsToRefine(std::vector<double>& values, double tol)
   return result;
 }
 
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+std::vector<int> cellsToRefineStdev(std::vector<double>& values, double mean, double dev)
+{
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  if (std::abs(dev/mean) >= 1.0)
+  {
+    dev = 0.99*mean;
+  }
+  double th = mean + dev;
+  double tl = mean - dev;
+  std::vector<int> result(values.size(),0);  
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (values[i] > th || values[i] < tl)
+      result[i] = 1;
+  }
+  return result;
+}
+
+// generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
+std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double dev)
+{
+  dev = std::abs(dev);
+  if (dev > 1.)
+      dev = 1.;
+  double max = *std::max_element(values.begin(), values.end());
+  double hl = (1-dev)*max;
+  std::vector<int> result(values.size(),0);  
+  for (int i = 0; i < values.size(); ++i)
+  {
+    if (values[i] > hl)
+      result[i] = 1;
+  }
+  return result;
+}
+
 // string trimming for consistent file names 
 std::string trim_fname(std::string fname, std::string ext)
 {
@@ -363,7 +425,22 @@ template<typename T>
 void printVec(const std::vector<T>& v)
 {
   for (int i = 0; i < v.size(); ++i)
-    std::cout << v[i] << " ";
+    std::cout << std::setprecision(15) << v[i] << " ";
   std::cout << std::endl;
+}
+
+template<typename A, typename B>
+std::pair<B,A> flip_pair(const std::pair<A,B> &p)
+{
+    return std::pair<B,A>(p.second, p.first);
+}
+
+template<typename A, typename B>
+std::multimap<B,A> flip_map(const std::map<A,B> &src)
+{
+    std::multimap<B,A> dst;
+    std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()), 
+                   flip_pair<A,B>);
+    return dst;
 }
 #endif

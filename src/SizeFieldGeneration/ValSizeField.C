@@ -1,50 +1,9 @@
 #include <ValSizeField.H>
 
-
 // constructor
 ValSizeField::ValSizeField(meshBase* _mesh, int arrayID, double _dev_mult, bool _maxIsmin)
 {
-  // setting private vars
-  mesh = _mesh;
-  dev_mult = _dev_mult;
-  maxIsmin = _maxIsmin;
-  // checking for point data
-  int numArr = mesh->getDataSet()->GetPointData()->GetNumberOfArrays();
-  if (arrayID >= numArr)
-  {
-    std::cout << "ERROR: arrayID is out of bounds" << std::endl;
-    std::cout << "There are " << numArr << " point data arrays" << std::endl;
-    exit(1);
-  }
-  else if (numArr < 1)
-  {
-    std::cout << "no point data found" << std::endl;
-    exit(1);
-  }
-  // setting data array member
-  da = mesh->getDataSet()->GetPointData()->GetArray(arrayID); 
-  // setting name of size field
-  std::string array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
-  int dim = da->GetNumberOfComponents(); 
-  sfname = array_name.append("ValueSF");
-  
-  { // checking for name conflicts and removing SF with same name if it exists
-    vtkCellData* cd = mesh->getDataSet()->GetCellData();
-    if (cd->GetNumberOfArrays())
-    { 
-      for (int i = 0; i < cd->GetNumberOfArrays(); ++i)
-      {
-        std::string currname = cd->GetArrayName(i);
-        if (!sfname.compare(currname))
-        {
-          std::cout << "Found size field identifier in cell data: " << currname << std::endl;
-          std::cout << "Removing " << currname << " from dataSet" << std::endl;
-          mesh->unsetCellDataArray(i);
-          break;
-        }
-      }
-    }
-  }
+  initialize(_mesh, arrayID, _dev_mult, _maxIsmin, "ValueSF");
   std::cout << "ValSizeField constructed" << std::endl; 
 }
 
@@ -98,19 +57,19 @@ std::vector<std::vector<double>> ValSizeField::computeValAtAllCells(int arrayID)
   return result;
 }
 
-// compute L2 norm of value of point data at center of each cell
+// compute 2 norm of value of point data at center of each cell
 std::vector<double> ValSizeField::computeL2ValAtAllCells(int array)
 {
   std::vector<double> result(mesh->getNumberOfCells()); 
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
-    result[i] = L2_Norm(computeValAtCell(i, array));
+    result[i] = l2_Norm(computeValAtCell(i, array));
   return result;
 }
 
 // compute size field and insert as cell data into mesh's dataSet
 void ValSizeField::computeSizeField(int arrayID)
 {
-  // populate vector with L2 norm of gradient/value of physical variable
+  // populate vector with 2 norm of gradient/value of physical variable
   std::vector<double> values = computeL2ValAtAllCells(arrayID); 
  
   if (values.empty())

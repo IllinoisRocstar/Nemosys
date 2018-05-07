@@ -1,0 +1,31 @@
+[
+    {
+        "Program Type": "Conversion",
+        "Mesh File Options": {
+            "Input Mesh Files": {
+                "Source Mesh": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/PNTGenTest/bench5.vtu",
+                "Target Mesh": "bench5_conv.pntmesh"
+            },
+            "Output Mesh File": ""
+        },
+        "Conversion Options": {
+            "Method": "VTK->PNT",
+            "Check Conversion Quality": "true",
+            "Dimension": 2,
+            "Block Data": [
+                {"Name": "REGION_000000001", 
+                 "Element Type": "TRIANGLE",
+                 "Element Order": 2,
+                 "Equation Order": 2,
+                 "BC Tag": "REFLECTIVE",
+                 "Element ID": [0,1,2,3,4,5,6,7,8]},
+                {"Name": "REGION_000000007", 
+                 "Element Type": "TRIANGLE",
+                 "Element Order": 2,
+                 "Equation Order": 2,
+                 "BC Tag": "REFLECTIVE",
+                 "Element ID": [9,10,11,12,13,14,15]}
+            ]
+        }
+    }
+]

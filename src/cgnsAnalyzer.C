@@ -186,38 +186,38 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
       // reading coordinates X
       xCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateX", RealDouble, &one, &rmax[0], &xCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateX", RealDouble, &one, &rmax[0], &xCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
        
       // reading coordinates Y
       yCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateY", RealDouble, &one, &rmax[1], &yCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateY", RealDouble, &one, &rmax[1], &yCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
       // reading coordinates Z
       zCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateZ", RealDouble, &one, &rmax[2], &zCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateZ", RealDouble, &one, &rmax[2], &zCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
    } else if (zoneType == Structured) {
       // reading coordinates X
       xCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateX", RealDouble, &rmin[0], &rmax[0], &xCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateX", RealDouble, &rmin[0], &rmax[0], &xCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
       // reading coordinates Y
       yCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateY", RealDouble, &rmin[0], &rmax[0], &yCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateY", RealDouble, &rmin[0], &rmax[0], &yCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
       // reading coordinates Z
       zCrd.resize(nVertex,0);
       if (cg_coord_read(indexFile, indexBase, indexZone, 
-		    "CoordinateZ", RealDouble, &rmin[0], &rmax[0], &zCrd[0]) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+        "CoordinateZ", RealDouble, &rmin[0], &rmax[0], &zCrd[0]) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
    } else {
          std::cerr << "Error in load, only Structured and Unstructured girds are supported.\n ";
          exit(0);
@@ -229,14 +229,14 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
       int indexSection, eBeg, eEnd, nBdry, parentFlag;
       char sectionname[33];
       if(cg_nsections(indexFile, indexBase, indexZone, &nSection) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error();
+   std::cerr << "Error in load, " << cg_get_error();
       if (nSection > 1)
-	 if (verb) std::cerr << "Number of sections = " << nSection
+   if (verb) std::cerr << "Number of sections = " << nSection
                    << ", More than one section is not supported." << std::endl;
       indexSection = 1;
       if(cg_section_read(indexFile, indexBase, indexZone, indexSection, 
-			 sectionname, &sectionType, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
-	 std::cerr << "Error in load, " << cg_get_error() << std::endl;
+       sectionname, &sectionType, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
+   std::cerr << "Error in load, " << cg_get_error() << std::endl;
       sectionName = sectionname;
       if (verb) std::cout << "sectionName = " << sectionname 
                 << " eBeg = " << eBeg 
@@ -245,25 +245,25 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
                 << std::endl;
       switch(sectionType)
       {
-	case TETRA_4:
+  case TETRA_4:
           nVrtxElem = 4;
-	  break;
-	case HEXA_8:
+    break;
+  case HEXA_8:
           nVrtxElem = 8;
-	  break;
-	case TRI_3:
+    break;
+  case TRI_3:
           nVrtxElem = 3;
-	  break;
-	case QUAD_4:
+    break;
+  case QUAD_4:
           nVrtxElem = 4;
-	  break;
-	default:
-	  std::cerr << "Unknown element type " << sectionType << std::endl;
-	  break;
+    break;
+  default:
+    std::cerr << "Unknown element type " << sectionType << std::endl;
+    break;
       }
       elemConn.resize(nVrtxElem*nElem,-1);
       if(cg_elements_read(indexFile, indexBase, indexZone, indexSection, &elemConn[0], NULL) != CG_OK)
-	  std::cerr << "Error in load, "<< cg_get_error() << std::endl;
+    std::cerr << "Error in load, "<< cg_get_error() << std::endl;
       // reduce by 1 to base the node index to zero
       // using lambda function
       //std::for_each(elemConn.begin(), elemConn.end(), [](int& d) { d-=1;});
@@ -760,7 +760,7 @@ void cgnsAnalyzer::getSolutionDataNames(std::vector<std::string>& list)
    solution type (2) for Vertex based and (3) for the element based. Types
    are in aggreement with GridLocation_t defintion provided by CGNS API.
    NOTE: It is assumed that vector-valued nodal and element data are 
-	 decomposed into scalar fields.
+   decomposed into scalar fields.
 */
 solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<double> &slnData)
 {
@@ -815,16 +815,16 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
    if (isUnstructured) {
       if (dt == RealDouble){
         // for double soultion data
-	if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName, 
-	      dt, &one, &rmax[0], &slnData[0]) != CG_OK)
-	  std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
+  if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName, 
+        dt, &one, &rmax[0], &slnData[0]) != CG_OK)
+    std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
       } else if (dt == Integer) {
         // for integer solution data 
         std::vector<int> tmpSlnData;
         tmpSlnData.resize(rmax[0], -1);
-	if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName, 
-	      dt, &one, &rmax[0], &tmpSlnData[0]) != CG_OK)
-	  std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
+  if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName, 
+        dt, &one, &rmax[0], &tmpSlnData[0]) != CG_OK)
+    std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
         slnData.clear();
         for (auto it=tmpSlnData.begin(); it!=tmpSlnData.end(); it++)
           slnData.push_back(*it);
@@ -832,7 +832,7 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
   } else {
       if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName, 
                    dt, &rmin[0], &rmax[0], &slnData[0]) != CG_OK)
-	  std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
+    std::cerr << "Error in reading solution data, "<< cg_get_error() << std::endl;
   }
 
   // returns the type of the data
@@ -851,7 +851,7 @@ solutionData* cgnsAnalyzer::getSolutionDataObj(std::string sName)
     {
       if ( !strcmp( ((*is)->getDataName()).c_str(), sName.c_str()) ) 
       {
-	return(*is);
+  return(*is);
       }
     }
   }
@@ -1007,35 +1007,35 @@ void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
   if (physDim==3)
       switch(sectionType)
       {
-	case TETRA_4:
-	  {
-	    for (int iC=0; iC < nElem; iC++) {
-	      int iN = iC*4;
-	      // the last argument for the next fuction is just a dummy now
-	      MAd::pGEntity geom = (MAd::pGEntity) MAd::GM_regionByTag(MAdMesh->model, 0);
-	      //geom->setPhysical(3,1);
-	      MAd::MDB_Tet *tet = MAdMesh->add_tet(elemConn[iN], elemConn[iN+1],
-			            elemConn[iN+2], elemConn[iN+3], geom);
+  case TETRA_4:
+    {
+      for (int iC=0; iC < nElem; iC++) {
+        int iN = iC*4;
+        // the last argument for the next fuction is just a dummy now
+        MAd::pGEntity geom = (MAd::pGEntity) MAd::GM_regionByTag(MAdMesh->model, 0);
+        //geom->setPhysical(3,1);
+        MAd::MDB_Tet *tet = MAdMesh->add_tet(elemConn[iN], elemConn[iN+1],
+                  elemConn[iN+2], elemConn[iN+3], geom);
               // changing tet ID
               tet->iD = iC+1; 
-	    }
-	  }
-	  break;
-	case TRI_3:
-	  {
-	    for (int iC=0; iC < nElem; iC++) {
-	      int iN = iC*3;
-	      // the last argument for the next fuction is just a dummy now
-	      MAd::pGEntity geom = (MAd::pGEntity) MAd::GM_faceByTag(MAdMesh->model, 0);
-	      MAdMesh->add_triangle(elemConn[iN], elemConn[iN+1],
-				    elemConn[iN+2], geom); 
-	    }
-	  }
-	  break;
-	default:
-	  std::cerr << "Current version only works for TRI and TET elements. Element type " 
+      }
+    }
+    break;
+  case TRI_3:
+    {
+      for (int iC=0; iC < nElem; iC++) {
+        int iN = iC*3;
+        // the last argument for the next fuction is just a dummy now
+        MAd::pGEntity geom = (MAd::pGEntity) MAd::GM_faceByTag(MAdMesh->model, 0);
+        MAdMesh->add_triangle(elemConn[iN], elemConn[iN+1],
+            elemConn[iN+2], geom); 
+      }
+    }
+    break;
+  default:
+    std::cerr << "Current version only works for TRI and TET elements. Element type " 
                     << sectionType << " is not supported." << std::endl;
-	  break;
+    break;
       } 
 
   
@@ -1120,7 +1120,7 @@ void cgnsAnalyzer::buildElementKDTree()
   {
      for (int iVrtx=1; iVrtx<=nVrtxElem; iVrtx++)
      {
-	vrtxIdx[iElem][iVrtx] = elemConn[(iElem-1)*nVrtxElem+iVrtx];
+  vrtxIdx[iElem][iVrtx] = elemConn[(iElem-1)*nVrtxElem+iVrtx];
      }
   }
   // building kdTree
@@ -1339,15 +1339,15 @@ void cgnsAnalyzer::loadSolutionDataContainer(int verb)
    {
       for (auto is=crntCgList.begin(); is!=crntCgList.end(); is++)
       {
-	 solutionData* slnDataPtr = getSolutionDataObj(*is);
+   solutionData* slnDataPtr = getSolutionDataObj(*is);
          if (verb>0)
-	   std::cout << (*is)
-		     << " number of data read " 
-		     << slnDataPtr->getNData()
-		     << " "
-		     << slnDataPtr->getNDim()                   
-		     << std::endl;
-	 slnDataCont.push_back(slnDataPtr);
+     std::cout << (*is)
+         << " number of data read " 
+         << slnDataPtr->getNData()
+         << " "
+         << slnDataPtr->getNDim()                   
+         << std::endl;
+   slnDataCont.push_back(slnDataPtr);
       }
    }
    // information 
