@@ -84,7 +84,7 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeOrderOfAccuracy()
       double old_p = 1;
       for (int k = 0; k < 1000; ++k)
       {
-        p = std::fabs(log(f32_f21) + q_p)/log(r21);
+        p = std::fabs(log(std::fabs(f32_f21)) + q_p)/log(r21);
         q_p = log((pow(r21,p) - s)/(pow(r32,p)-s));
         if (std::fabs(old_p - p) < 1e-16)
           break;

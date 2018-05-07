@@ -86,6 +86,7 @@ class vtkMesh : public meshBase
     // get cell type as an integer
     // assumes all elements are the same type
     int getCellType() const;
+    std::vector<double> getCellCenter(int cellID);
     // get edge lengths of dataSet
     void inspectEdges(const std::string& ofname);
  

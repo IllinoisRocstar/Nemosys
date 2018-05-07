@@ -487,7 +487,4 @@ class OrderOfAccuracy
     std::vector<std::vector<double>> GCI_32;
     std::vector<std::vector<double>> GCI_21;
     std::vector<std::vector<double>> orderOfAccuracy; 
-  
-
 };
-
