@@ -1,7 +1,0 @@
-[==========] Running 1 test from 1 test case.
-[----------] Global test environment set-up.
-[----------] 1 test from PatchRecoveryConstructor
-[ RUN      ] PatchRecoveryConstructor.ConstructWithoutArray
-meshBase constructed
-vtkMesh constructed
-WARNING: mesh is assumed to be properly numbered

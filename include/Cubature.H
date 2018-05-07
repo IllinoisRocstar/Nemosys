@@ -1,5 +1,4 @@
-#ifndef CUBATURE_H
-#define CUBATURE_H
+#ifndef CUBATURE_H #define CUBATURE_H
 #include <meshBase.H>
 #include <vtkMesh.H>
 #include <Eigen/Dense>
@@ -33,15 +32,19 @@ class GaussCubature
     void constructGaussMesh();
 
   public:
-    // returns coordinates of gauss points at cell
+    // returns coordinates of gauss points and associated data at cell
     pntDataPairVec getGaussPointsAndDataAtCell(int cellID);
     // get interpolated values at gauss points for arrays specified in arrayIDs
     void interpolateToGaussPoints();
     // get interpolated values at gauss points for arrays specified by name
     void interpolateToGaussPoints(const std::vector<std::string>& newArrayNames);
     // integrate arrays specified in arrayIDs over all cells
+    // the array returned contains the sum of the integral in each cell
+    // taking the square root of its components will give you the L2-norm 
     std::vector<std::vector<double>> integrateOverAllCells();
-    // integrate arrays specified by name over all cells
+    // in each cell, integrate arrays specified by name, normalize them by volume 
+    // and take the sqrt. the returned array contains the sum over all cells
+    // this function is meant to be used by the patch recovery class 
     std::vector<std::vector<double>> 
       integrateOverAllCells(const std::vector<std::string>& newArrayNames, bool computeRMSE);
     void setArrayIDs(const std::vector<int>& _arrayIDs) { arrayIDs = _arrayIDs; }
@@ -59,7 +62,7 @@ class GaussCubature
     int getTotalComponents() { return totalComponents; }
 
     // writes a vtp (polydata) of gauss points 
-    // interpolated values also written if interpolateToGaussPoitns(...) has been called
+    // interpolated values also written if interpolateToGaussPoints(...) has been called
     void writeGaussMesh(const char* name);
 
   // factory constructors
@@ -101,6 +104,8 @@ class GaussCubature
                            vtkSmartPointer<vtkPointData> pd,
                            std::vector<vtkSmartPointer<vtkDoubleArray>>& integralData,
                            std::vector<std::vector<double>>& totalIntegralData);
+    // integrates data specified by newArrayNames over cell, 
+    // normalizes the integral by the cell volume and takes the sqrt
     void integrateOverCell(int cellID,
                            vtkSmartPointer<vtkGenericCell> genCell,
                            vtkSmartPointer<vtkPointData> pd,
