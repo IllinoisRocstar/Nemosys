@@ -377,10 +377,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
-  // Temporary changed to legacy vtk for AMR demos
-  // switch back to vtu when done
-  std::cout << __FILE__ << __LINE__ << std::endl;
-  vtkmesh->setFileName(trim_fname(fname,".vtk"));
+  vtkmesh->setFileName(trim_fname(fname,".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
