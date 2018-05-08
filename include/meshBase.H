@@ -189,12 +189,9 @@ class meshBase
     virtual std::vector<double> getCellCenter(int cellID) const {}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
-
     // get cell type as an integer
     // assumes all elements are the same type
     virtual int getCellType() const = 0;
-
-    virtual void classifyAndAddBoundaries(){}
 
   // data transfer
   public:
