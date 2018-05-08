@@ -11,20 +11,20 @@ MACRO(opt OPTION HELP VALUE)
   OPTION(ENABLE_${OPTION} ${HELP} ${VALUE})
   SET(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
 ENDMACRO(opt)
-     
+
 ## writing remake scripts
 FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
 "#!/bin/bash
  rm -rf build
  mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} .. 
+ CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
  make -j
  make install")
 FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
 "#!/bin/bash
  rm -rf build
  mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} .. 
+ CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
  make -j
  make install")
 FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
@@ -59,6 +59,7 @@ opt(EXODUS "Enable EXODUS II extensions" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 opt(TESTING "Enable testing" ON)
 opt(BUILD_UTILS "Build utilities" OFF)
+opt(SYMMX "Enable SYMMETRIX Meshing engine" OFF)
 
 # set up version
 SET(NEMOSYS_MAJOR_VERSION 1)
@@ -120,6 +121,26 @@ IF (ENABLE_DTK)
   INCLUDE(dtk_stuff.txt)
 ENDIF ()
 
+# symmetrix
+IF (ENABLE_SYMMX)
+    FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    SET(SYMMX_LIBS ${SMMDL_LIB} ${SYMADM_LIB} ${SYMDSC_LIB} ${SYMEXP_LIB} ${SYMLIC_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB})
+    FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/msafdari/codes/symmetrix/include)
+    GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
+    GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
+    MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
+    MESSAGE(STATUS "SYMMETRIX libraries ${SYMMX_LIBS}")
+    MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
+ENDIF()
+
 ## add include files to path
 INCLUDE_DIRECTORIES(include)
 INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
@@ -127,6 +148,7 @@ INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${SYMMX_INCPATH})
 
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling madlib header references.
@@ -150,15 +172,15 @@ ELSE()
                   no modern C++ support. Please use a different C++ compiler.")
 ENDIF()
 
-### adding flags to debug
+# adding flags to debug
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
-# Compiled objects output paths
+# compiled objects output paths
 SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
+# setting RPATH
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/Nemosys/lib")
@@ -168,6 +190,13 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+ENDIF()
+
+# other flags for dependencies
+IF (ENABLE_SYMMX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SYMMX")
+    MESSAGE(STATUS "Using -DHAVE_SYMMX")
 ENDIF()
 
 # Setting files   ###############################################################
@@ -202,8 +231,10 @@ SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.C)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
+SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C)
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
+             ${SYMMX_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
@@ -249,7 +280,17 @@ ELSE()
   ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
 ENDIF()
 
-INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs
+# Symmetrix support library
+IF (ENABLE_SYMMX)
+    IF(NOT BUILD_STATIC)
+        ADD_LIBRARY(Symmx SHARED ${SYMMX_SRCS})
+    ELSE()
+        ADD_LIBRARY(Symmx ${SYMMX_SRCS})
+    ENDIF()
+    TARGET_LINK_LIBRARIES(Symmx ${SYMMX_LIBS})
+ENDIF()
+
+INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs Symmx
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
