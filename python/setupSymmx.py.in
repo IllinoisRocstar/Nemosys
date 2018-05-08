@@ -1,0 +1,18 @@
+from distutils.core import setup, Extension
+
+pySymmx = Extension('_pySymmx',
+                    sources = [file for file in '${SYMMX_WRAPPER_SOURCE_FILES}'.split(';')],
+                    include_dirs = [dir for dir in '${SYMMX_WRAPPER_INCLUDE_DIRS}'.split(';')] \
+                               + ['${SYMMX_INCPATH}'],
+                    libraries = ['Symmx','SimModel', 'SimAdvMeshing', 'SimDiscrete', 'SimExport', 'SimLicense','SimMeshing', 
+                        'SimMeshTools', 'SimPartitionedMesh', 'SimPartitionWrapper'],
+                    library_dirs = ['${CMAKE_BINARY_DIR}/lib/', '${SYMMX_LIBPATH}'],
+                    swig_opts=['-c++'],
+                    extra_compile_args = ['-std=c++11', '-w']
+                    )
+
+setup(name='_pySymmx',
+      version='${NEMOSYS_VERSION}',
+      ext_modules = [pySymmx]
+     )
+

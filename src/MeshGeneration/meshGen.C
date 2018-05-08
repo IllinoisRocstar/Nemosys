@@ -1,5 +1,6 @@
 #include <meshGen.H>
 
+
 using namespace nglib;   
 
 NetgenParams::NetgenParams()
@@ -180,4 +181,3 @@ int meshNetgen::createMeshFromSTL(char* fname)
 }
 
 
-  
