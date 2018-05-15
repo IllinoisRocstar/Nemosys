@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <symmxGen.H>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <iostream>
 
 // constructor
-meshSymmx::meshSymmx(char* logFName, char* features, const char* licFName):
-    haveLog(false),prog(NULL),model(NULL),mcase(NULL),mesh(NULL)
+meshSymmx::meshSymmx(const char* logFName, const char* features, const char* licFName):
+    haveLog(false),prog(NULL),model(NULL),dModel(NULL),mcase(NULL),mesh(NULL),dataSet(0)
 {
     // log
     if (strcmp(logFName,"NONE"))
@@ -15,6 +17,7 @@ meshSymmx::meshSymmx(char* logFName, char* features, const char* licFName):
     // initialization
     SimLicense_start(features, licFName);
     MS_init();
+    Sim_setMessageHandler(messageHandler);
     setProgress();
 }
 
@@ -22,12 +25,19 @@ meshSymmx::meshSymmx(char* logFName, char* features, const char* licFName):
 meshSymmx::~meshSymmx()
 {
     if (mesh)
-        M_release(mesh);
+      M_release(mesh);
     if (mcase)
-        MS_deleteMeshCase(mcase);
+      MS_deleteMeshCase(mcase);
     if (model)
-        GM_release(model);
+      GM_release(model);
+    if (dModel)
+      GM_release(dModel);
+    if (prog)
+      Progress_delete(prog);    
     SimLicense_stop();
+    MS_exit();
+    if (haveLog)
+      Sim_logOff(); 
 }
 
 
@@ -37,7 +47,7 @@ void meshSymmx::setProgress()
     Progress_setDefaultCallback(prog);    
 }
 
-void meshSymmx::createMeshFromModel(char* mFName)
+void meshSymmx::createMeshFromModel(const char* mFName)
 {
   model = GM_load(mFName, 0, prog);
   mcase = MS_newMeshCase(model);
@@ -51,7 +61,275 @@ void meshSymmx::createMeshFromModel(char* mFName)
   VolumeMesher_delete(volumeMesher);
 }
 
-void meshSymmx::saveMesh(char* mFName)
+int meshSymmx::createMeshFromSTL(const char* stlFName)
 {
-    M_write(mesh, mFName, 0, prog);
+  if (!createModelFromSTL(stlFName))
+  {
+    try
+    {
+      SimDiscrete_start(0);
+      pModelItem modelDomain = GM_domain(dModel);
+      mcase = MS_newMeshCase(dModel);
+      std::cout << "Number of initial mesh faces: " << M_numFaces(mesh) << std::endl;
+
+      if (MS_checkMeshIntersections(mesh,0,prog))
+      {
+        std::cerr << "There are intersections in the input mesh" << std::endl;
+        MS_deleteMeshCase(mcase);
+        M_release(mesh);
+        GM_release(dModel);
+        return 1;
+      }
+
+      // set the mesh size
+      MS_setMeshSize(mcase, modelDomain, 2, 0.1, 0);
+      // setting curvature-based isotropic refinement
+      MS_setMeshCurv(mcase, modelDomain, 2, 0.1);
+      pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
+      // snap model vertices to resulting surface mesh (ensures consistency with model)
+      SurfaceMesher_setSnapOnMatch(surfaceMesher, 1);
+      SurfaceMesher_execute(surfaceMesher, prog);
+      std::cout << "Number of mesh faces on the surface: " << M_numFaces(mesh) << std::endl;
+      SurfaceMesher_delete(surfaceMesher);
+      // improving the surface mesh
+      pSurfaceMeshImprover surfaceMeshImprover = SurfaceMeshImprover_new(mesh);
+      SurfaceMeshImprover_setShapeMetric(surfaceMeshImprover, ShapeMetricType_MaxAngle,145.);
+      // set smoothing type to move vertices down gradient of shape metric
+      SurfaceMeshImprover_setSmoothType(surfaceMeshImprover, 1);
+      // set gradation rate
+      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, .1);
+      // allow improver to refine mesh in areas to meet metric
+      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, 0.05);
+      // fix intersections after improvement
+      SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
+      SurfaceMeshImprover_execute(surfaceMeshImprover, prog);
+      SurfaceMeshImprover_delete(surfaceMeshImprover);
+      
+      pVolumeMesher volumeMesher = VolumeMesher_new(mcase, mesh);
+      VolumeMesher_execute(volumeMesher, prog);
+      VolumeMesher_delete(volumeMesher);
+      SimDiscrete_stop(0);
+    }
+    catch (pSimError err) 
+    {
+      std::cerr << "SimModSuite error caught:" << std::endl;
+      std::cerr << "  Error code: " << SimError_code(err) << std::endl;
+      std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
+      SimError_delete(err);
+      return 1;
+    } 
+    catch (...) 
+    {
+      std::cerr << "Unhandled exception caught" << std::endl;
+      return 1;
+    }
+    return 0; 
+  }
+  else
+    return 1;
+}
+
+int meshSymmx::createModelFromSTL(const char* stlFName)
+{
+  // try/catch around all SimModSuite calls
+  // as errors are thrown.
+  try 
+  { 
+
+    SimDiscrete_start(0); 
+    mesh = M_new(0,0);
+    //pDiscreteModel model = 0;
+    // load and return if error encountered
+    if(M_importFromSTLFile(mesh, stlFName, prog)) 
+    { 
+      std::cerr << "Error importing file" << std::endl;
+      M_release(mesh);
+      return 1;
+    }
+  
+    // check the input mesh for intersections
+    // this call must occur before the discrete model is created
+    if(MS_checkMeshIntersections(mesh,0,prog)) 
+    {
+      std::cerr << "There are intersections in the input mesh" << std::endl;
+      M_release(mesh);
+      return 1;
+    }
+    
+    // create the Discrete model
+    dModel = DM_createFromMesh(mesh, 1, prog);
+    // return if error in model creation
+    if(!dModel) 
+    { 
+      std::cerr << "Error creating Discrete model from mesh" << std::endl;
+      M_release(mesh);
+      return 1;
+    }
+    
+    // define the Discrete model
+    DM_findEdgesByFaceNormals(dModel, 0, prog);
+    DM_eliminateDanglingEdges(dModel, prog);
+    // complete the topology and return if erro encountered
+    if(DM_completeTopology(dModel, prog)) 
+    { 
+      std::cerr << "Error completing Discrete model topology" << std::endl;
+      M_release(mesh);
+      GM_release(dModel);
+      return 1;
+    }
+    
+    // Print out information about the model
+    std::cout << "Number of model vertices: " << GM_numVertices(dModel) << std::endl;
+    std::cout << "Number of model edges: " << GM_numEdges(dModel) << std::endl;
+    std::cout << "Number of model faces: " << GM_numFaces(dModel) << std::endl;
+    std::cout << "Number of model regions: " << GM_numRegions(dModel) << std::endl;
+    
+    GM_write(dModel,"discreteModel.smd",0,prog); // save the discrete model
+    SimDiscrete_stop(0);
+  } 
+  catch (pSimError err) 
+  {
+    std::cerr << "SimModSuite error caught:" << std::endl;
+    std::cerr << "  Error code: " << SimError_code(err) << std::endl;
+    std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
+    SimError_delete(err);
+    return 1;
+  } 
+  catch (...) 
+  {
+    std::cerr << "Unhandled exception caught" << std::endl;
+    return 1;
+  }
+  return 0; 
+}
+
+void meshSymmx::convertToVTU()
+{
+  if (!dataSet)
+  {
+    // points to be pushed into dataSet
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    // declare vtk dataset
+    dataSet = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    
+    // get the iterator for mesh vertices 
+    VIter vertices = M_vertexIter(mesh);
+    pVertex vertex;
+    double coord[3];
+    // allocate size of vtk point container
+    points->SetNumberOfPoints(M_numVertices(mesh));
+    int i = 0;
+    // copy points into vtk point container
+    while (vertex = VIter_next(vertices))
+    {
+      EN_setID( (pEntity) vertex, i); // TODO: check if id is 0 to begin
+      V_coord(vertex, coord);
+      points->SetPoint(i,coord);
+      ++i;
+    }
+    VIter_delete(vertices);
+    dataSet->SetPoints(points);
+
+    // allocate space for cells in vtk dataset
+    dataSet->Allocate(M_numRegions(mesh));
+
+    // get iterator for mesh regions (cells)
+    RIter regions = M_regionIter(mesh);
+    pRegion region;  
+    pPList regionVerts;
+    while (region = RIter_next(regions))
+    {
+      regionVerts = R_vertices(region,0);
+      rType celltype = R_topoType(region);
+      switch(celltype)
+      {
+        case Rtet:
+        {
+          createVtkCell(dataSet, 4, VTK_TETRA, regionVerts);
+          break;
+        }
+        case Rwedge:
+        {
+          createVtkCell(dataSet, 5, VTK_WEDGE, regionVerts);
+          break;
+        }
+        case Rpyramid:
+        {
+          createVtkCell(dataSet, 4, VTK_PYRAMID, regionVerts);
+          break;
+        }
+        case Rhex:
+        {
+          createVtkCell(dataSet, 6, VTK_HEXAHEDRON, regionVerts);
+          break;
+        }
+        case Runknown:
+          std::cerr << "Encountered unknown cell type: " << celltype << std::endl;
+          exit(1);
+      }
+      PList_delete(regionVerts); 
+    }
+    RIter_delete(regions);
+  }
+}
+
+
+void meshSymmx::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+                              const int numIds,
+                              const int cellType,
+                              pPList regionVerts)
+{
+  pVertex vertex;
+  vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+  vtkCellIds->SetNumberOfIds(numIds);
+  for (int i = 0; i < numIds; ++i)
+  {
+    vertex = (pVertex) PList_item(regionVerts,i);
+    vtkCellIds->SetId(i,EN_id( (pEntity) vertex));
+  }
+  dataSet->InsertNextCell(cellType,vtkCellIds);
+}
+                             
+
+
+
+void meshSymmx::saveMesh(const std::string& mFName)
+{
+
+  size_t last = mFName.find_last_of('.');
+  if (last != -1)
+  {
+    std::string ext = mFName.substr(last); 
+    if (ext == ".sms")
+    {
+      std::cout << "writing .sms mesh" << std::endl;
+      M_write(mesh, &mFName[0u],0,prog);
+    } 
+    else if (ext == ".vtu")
+    {
+      std::cout << "writing .vtu mesh" << std::endl;
+      convertToVTU();
+      writeVTFile<vtkXMLUnstructuredGridWriter>(mFName,dataSet);  
+    } 
+  }
+}
+
+void meshSymmx::messageHandler(int type, const char* msg)
+{
+  switch (type) 
+  {
+    case Sim_InfoMsg:
+      std::cout << "Info: " << msg <<std::endl;
+      break;
+    case Sim_DebugMsg:
+      std::cout << "Debug: " << msg <<std::endl;
+      break;
+    case Sim_WarningMsg:
+      std::cout << "Warning: " << msg << std::endl;
+      break;
+    case Sim_ErrorMsg:
+      std::cout << "Error: " << msg<< std::endl;
+      break;
+  }
+  return;
 }
