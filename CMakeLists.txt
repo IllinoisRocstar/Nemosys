@@ -32,25 +32,6 @@ FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
 FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
      FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
-# writing remake scripts
-FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
-"#!/bin/bash
- rm -rf build
- mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
- make -j
- make install")
-FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
-"#!/bin/bash
- rm -rf build
- mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/cgns:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
- make -j
- make install")
-FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
-     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
-     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 # set to $DEFAULT to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
@@ -123,17 +104,17 @@ ENDIF ()
 
 # symmetrix
 IF (ENABLE_SYMMX)
-    FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/msafdari/codes/symmetrix/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+    FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
     SET(SYMMX_LIBS ${SMMDL_LIB} ${SYMADM_LIB} ${SYMDSC_LIB} ${SYMEXP_LIB} ${SYMLIC_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB})
-    FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/msafdari/codes/symmetrix/include)
+    FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/include)
     GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
     GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
     MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
@@ -287,7 +268,7 @@ IF (ENABLE_SYMMX)
     ELSE()
         ADD_LIBRARY(Symmx ${SYMMX_SRCS})
     ENDIF()
-    TARGET_LINK_LIBRARIES(Symmx ${SYMMX_LIBS})
+    TARGET_LINK_LIBRARIES(Symmx ${SYMMX_LIBS} ${VTK_LIBRARIES})
 ENDIF()
 
 INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs Symmx

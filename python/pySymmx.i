@@ -23,6 +23,9 @@ class meshSymmx
     // symmetrix mesh creation
     // create mesh from symmetrix model file
     void createMeshFromModel(char* mdlFName);
+    int createModelFromSTL(char* stlFName);
+    int createMeshFromSTL(char* stlFName);
+    void convertToVTU();
     void saveMesh(char* mshFName);
 
 };
