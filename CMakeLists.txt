@@ -113,7 +113,7 @@ IF (ENABLE_SYMMX)
     FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
     FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
     FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    SET(SYMMX_LIBS ${SMMDL_LIB} ${SYMADM_LIB} ${SYMDSC_LIB} ${SYMEXP_LIB} ${SYMLIC_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB})
+    SET(SYMMX_LIBS ${SYMADM_LIB} ${SYMEXP_LIB} ${SYMDSC_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMMDL_LIB} ${SYMLIC_LIB})
     FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/include)
     GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
     GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
@@ -191,6 +191,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/netgenInterface.C src/MeshGeneration/meshGen.C
+                 src/MeshGeneration/netgenGen.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C
                  src/SizeFieldGeneration/GradSizeField.C
@@ -212,7 +213,10 @@ SET(TUTR_SRCS utils/writeStructured.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.C)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
-SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C)
+IF(ENABLE_SYMMX)
+  SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C)
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
+ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
              ${SYMMX_SRCS})
@@ -243,7 +247,8 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES})
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES})
+
 
 # build old nemosys lib
 IF(NOT BUILD_STATIC)
@@ -261,17 +266,7 @@ ELSE()
   ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
 ENDIF()
 
-# Symmetrix support library
-IF (ENABLE_SYMMX)
-    IF(NOT BUILD_STATIC)
-        ADD_LIBRARY(Symmx SHARED ${SYMMX_SRCS})
-    ELSE()
-        ADD_LIBRARY(Symmx ${SYMMX_SRCS})
-    ENDIF()
-    TARGET_LINK_LIBRARIES(Symmx ${SYMMX_LIBS} ${VTK_LIBRARIES})
-ENDIF()
-
-INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs Symmx
+INSTALL(TARGETS r8 interp Nemosys AltNemosys Rocs
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -308,6 +303,9 @@ IF(ENABLE_BUILD_UTILS)
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh AltNemosys)
+  
+  ADD_EXECUTABLE(rocRemeshNew utils/rocRemeshNew.C)
+  TARGET_LINK_LIBRARIES(rocRemeshNew AltNemosys)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)

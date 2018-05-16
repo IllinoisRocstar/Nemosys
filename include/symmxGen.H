@@ -1,6 +1,8 @@
 #ifndef SYMMXGEN_H
 #define SYMMXGEN_H
 #include <string>
+// simmetrix
+
 #include "MeshSim.h"
 #include "SimDiscrete.h"
 #include "SimMessages.h"
@@ -10,39 +12,47 @@
 #include "SimErrorCodes.h"
 #include "SimMeshingErrorCodes.h"
 #include "SimDiscreteErrorCodes.h"
-// vtk
-#include <vtkSmartPointer.h>
-#include <vtkDataSet.h>
+#include <meshGen.H>
+//// vtk
 #include <vtkUnstructuredGrid.h>
-
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
 
-// method to write vtk grids
-template<class TWriter> void writeVTFile(const std::string& fname, 
-                                         vtkSmartPointer<vtkDataSet> dataSet)
-{
-  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
-  Writer->SetFileName(&fname[0u]);
-  Writer->SetInputData(dataSet);
-  Writer->Write();
-}
 
-class meshSymmx
-{
-
-  public:
-    /* possible feature options are :
+/* TODO: needs extension. currently, most parameters are hardcoded, except for
+         the log file name, licence features and license file name/location 
+    
+      possible feature options are :
       - geomsim_core
       - meshsim_surface
       - meshsim_volume
       - geomsim_discrete
       - meshsim_adv
       - meshsim_adapt */
-    meshSymmx(const char* logFName="NONE", 
-              const char* features="geomsim_core,meshsim_surface,meshsim_volume", 
-              const char* licFName="simmodsuite.lic");
-    ~meshSymmx();
+
+class SymmxParams : public meshingParams
+{
+  
+  public:
+    SymmxParams(){};
+
+    ~SymmxParams(){};
+  
+  public:
+    const char* logFName;
+    const char* features;
+    const char* licFName;
+};
+
+
+class symmxGen : public meshGen
+{
+
+  public:
+    // initialize params with default values
+    symmxGen();
+    symmxGen(SymmxParams* params); 
+    ~symmxGen();
 
   // symmetrix mesh creation
   public:
@@ -51,12 +61,19 @@ class meshSymmx
     // create model from stl file. relevant features (geomsim_discrete) must be passed
     // to object constructor to use this function
     int createModelFromSTL(const char* stlFName);
-    int createMeshFromSTL(const char* stlFName);
-    // convert from symmetrix to vtu 
-    void convertToVTU();
-    
+    int createSurfaceMeshFromSTL(const char* stlFName);
+    int createVolumeMeshFromSTL(const char* stlFName);
+    // base class mesh gen function
+    int createMeshFromSTL(const char* fname); 
+    // convert from symmetrix to vtu. if converting a volume mesh, you can choose to 
+    // write only volume cells by setting writeSurfAndVol to false with the set method.
+    void convertToVTU(); 
     void saveMesh(const std::string& mshFName);
 
+  // access
+  public:
+    //vtkSmartPointer<vtkDataSet> getDataSet();
+    void setWriteSurfAndVol(bool b);
 
   // helpers
   private:
@@ -64,6 +81,7 @@ class meshSymmx
                        const int numIds,
                        const int cellType,
                        pPList regionVerts);
+    void addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet);
 
   // status
   private:
@@ -72,11 +90,12 @@ class meshSymmx
 
   private:
     bool haveLog;
+    bool writeSurfAndVol;
     pProgress prog;
     pGModel model;
     pDiscreteModel dModel;
     pACase mcase;
     pMesh mesh;
-    vtkSmartPointer<vtkUnstructuredGrid> dataSet;
+//    vtkSmartPointer<vtkDataSet> dataSet;
 };
 #endif
