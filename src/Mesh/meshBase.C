@@ -6,6 +6,15 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 #include <Cubature.H>
+// netgen
+namespace nglib
+{
+  #include<nglib.h>
+}
+// simmetrix
+#ifdef HAVE_SYMMX
+  #include <symmxGen.H>
+#endif
 
 // TODO: Stop using setPoint/CellDataArray in export methods
 //        - instead, use the faster vtkDataArray creation and insertion
@@ -50,6 +59,36 @@ meshBase* meshBase::Create(std::string fname)
   
 }
 
+meshBase* meshBase::Create(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  if (other)
+  {
+    vtkMesh* vtkmesh = new vtkMesh();
+    vtkmesh->dataSet = other;
+    vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+    vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+    vtkmesh->setFileName(newname); 
+    return vtkmesh;
+  }
+  else
+  {
+    std::cerr << "Nothing to copy!" << std::endl;
+    exit(1);
+  }
+}
+
+std::shared_ptr<meshBase> meshBase::CreateShared(std::string fname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(fname));
+  return mesh;
+}
+
+std::unique_ptr<meshBase> meshBase::CreateUnique(std::string fname)
+{
+  return std::unique_ptr<meshBase>(meshBase::Create(fname));
+}
+
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
                                  meshingParams* params)
 {
@@ -67,12 +106,21 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
     delete generator;
     generator=nullptr;
   }
-  if(!status) 
+  if(!status)
   {
-    std::string newname = trim_fname(fname,".vol");
-    return exportVolToVtk(newname);    
+    if (meshEngine == "netgen") 
+    {
+      std::string newname = trim_fname(fname,".vol");
+      return exportVolToVtk(newname);    
+    }
+    else if (meshEngine == "simmetrix")
+    {
+      std::string newname = trim_fname(fname, ".vtu");
+      return Create(generator->getDataSet(), newname); 
+    }
   }
 }
+
 
 // check for named array in vtk 
 int meshBase::IsArrayName(std::string name)

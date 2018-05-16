@@ -6,6 +6,8 @@
 
 using jsoncons::json;
 
+// TODO: need to harden json input checks etc.
+
 class NemDriver
 {
   public:

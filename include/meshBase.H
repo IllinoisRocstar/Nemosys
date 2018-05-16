@@ -74,15 +74,6 @@
 #include <ModelInterface.h>
 #include <MeshDataBaseInterface.h>
 
-// gmsh
-#include <GmshEntities.h>
-#include <Generator.h>
-
-// netgen
-namespace nglib
-{
-  #include<nglib.h>
-}
 
 // Nemosys
 #include <pntMesh.H>
@@ -104,7 +95,7 @@ namespace nglib
 #include <sstream>
 
 
-// TODO: 1) Implment copy and assignment constructors for all classes/subs
+// TODO: 1) Implment/disable copy and assignment constructors for all classes/subs
 //       2) Migrate implementations to use smart pointer types 
 // Virtual functions are implemented in vtkMesh.C
 
@@ -121,8 +112,6 @@ class meshBase
       std::cout << "meshBase constructed" << std::endl;
     }
 
-
-
     virtual ~meshBase()
     {
       std::cout << "meshBase destroyed" << std::endl;
@@ -133,17 +122,10 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
-    static std::shared_ptr<meshBase> CreateShared(std::string fname)
-    {
-      std::shared_ptr<meshBase> mesh;
-      mesh.reset(meshBase::Create(fname));
-      return mesh;
-    }
+    static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
+    static std::shared_ptr<meshBase> CreateShared(std::string fname);
+    static std::unique_ptr<meshBase> CreateUnique(std::string fname);
 
-    static std::unique_ptr<meshBase> CreateUnique(std::string fname)
-    {
-      return std::unique_ptr<meshBase>(meshBase::Create(fname));
-    }
 
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);

@@ -61,50 +61,50 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
 *********************************************/
 void cgnsAnalyzer::loadGrid(int verb)
 {
-   // cgns related variables
-   int i,j,k;
-   char basename[33],zonename[33];
+  // cgns related variables
+  int i,j,k;
+  char basename[33],zonename[33];
 
-   // open CGNS file for read
-   if (cg_open(cgFileName.c_str(),CG_MODE_READ,&indexFile)) cg_error_exit();
+  // open CGNS file for read
+  if (cg_open(cgFileName.c_str(),CG_MODE_READ,&indexFile)) cg_error_exit();
+  
+  // reading base information
+  cg_nbases(indexFile, &nBase);
+  if (nBase > 1)
+    std::cerr << "There are "<< nBase << " bases in the file (not supported).\n";
+  else
+    indexBase = 1;
+  if (cg_base_read(indexFile, indexBase, basename, &cellDim, &physDim)) cg_error_exit();
+  baseName = basename;
+  // reading units
+  if (cg_goto(indexFile, indexBase,"end")) cg_error_exit();
+  if (cg_units_read(&massU, &lengthU, &timeU, &tempU, &angleU)) cg_error_exit();
+  if (verb>0) 
+     std::cout << " ------------------------------------------------\n"
+          << "Base name = " << baseName 
+          << "\ncellDim = " << cellDim
+          << "\nphysDim = " << physDim
+          << "\nUnits " <<massU<<" "<<lengthU<<" "<<timeU<<" "<<tempU<<" "<<angleU
+          << std::endl;
 
-   // reading base information
-   cg_nbases(indexFile, &nBase);
-   if (nBase > 1)
-     std::cerr << "There are "<< nBase << " bases in the file (not supported).\n";
-   else
-     indexBase = 1;
-   if (cg_base_read(indexFile, indexBase, basename, &cellDim, &physDim)) cg_error_exit();
-   baseName = basename;
-   // reading units
-   if (cg_goto(indexFile, indexBase,"end")) cg_error_exit();
-   if (cg_units_read(&massU, &lengthU, &timeU, &tempU, &angleU)) cg_error_exit();
-   if (verb>0) 
-      std::cout << " ------------------------------------------------\n"
-           << "Base name = " << baseName 
-           << "\ncellDim = " << cellDim
-           << "\nphysDim = " << physDim
-           << "\nUnits " <<massU<<" "<<lengthU<<" "<<timeU<<" "<<tempU<<" "<<angleU
-           << std::endl;
+  // reading base iterative data
+  char bitername[33];
+  if (cg_biter_read(indexFile, indexBase, bitername, &nTStep)) cg_error_exit();
+  baseItrName = bitername;
+  if (nTStep != 1)
+     std::cerr << "More than one time step is not supported.\n";
+  int nArrays;
+  if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
+  if (cg_array_read_as(1, RealDouble , &timeLabel)) cg_error_exit();
+  if (verb>0) std::cout << "Time label = " << timeLabel << std::endl;
 
-   // reading base iterative data
-   char bitername[33];
-   if (cg_biter_read(indexFile, indexBase, bitername, &nTStep)) cg_error_exit();
-   baseItrName = bitername;
-   if (nTStep != 1)
-      std::cerr << "More than one time step is not supported.\n";
-   int nArrays;
-   if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
-   if (cg_array_read_as(1, RealDouble , &timeLabel)) cg_error_exit();
-   if (verb>0) std::cout << "Time label = " << timeLabel << std::endl;
-
-   // reading zone information
-   cg_nzones(indexFile, indexBase, &nZone);
-   if (nZone > 1){
-     //std::cout << "There are "<< nZone << " zones in the file (not supported).\n";
-     isMltZone=true;
-   }
-   loadZone(1,verb);
+  // reading zone information
+  cg_nzones(indexFile, indexBase, &nZone);
+  if (nZone > 1){
+    //std::cout << "There are "<< nZone << " zones in the file (not supported).\n";
+    isMltZone=true;
+  }
+  loadZone(1,verb);
 }
 
 
@@ -407,6 +407,17 @@ bool cgnsAnalyzer::isStructured()
    return(!isUnstructured);
 }
 
+vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getVTKMesh()
+{
+  if (vtkMesh)
+    return vtkMesh;
+  else
+  {
+    exportToVTKMesh();
+    return vtkMesh;
+  }
+}
+
 std::vector<double> cgnsAnalyzer::getVertexCoords()
 {
    std::vector<double> crd;
@@ -511,6 +522,8 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
 
    return(elmConn);
 }
+
+
 
 void cgnsAnalyzer::writeSampleStructured()
 {
@@ -992,6 +1005,59 @@ std::map<std::string, GridLocation_t> cgnsAnalyzer::getSolutionNameLocMap()
   return(solutionNameLocMap);
 }
 
+void cgnsAnalyzer::exportToVTKMesh()
+{
+  if (!vtkMesh)
+  {
+    // points to be pushed into dataSet
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    // declare vtk dataset
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp 
+      = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    // allocate size for vtk point container 
+    points->SetNumberOfPoints(nVertex);
+    for (int i = 0; i < nVertex; ++i)
+    {
+      points->SetPoint(i, xCrd[i],yCrd[i],zCrd[i]); 
+    }
+    // add points to vtk mesh data structure 
+    dataSet_tmp->SetPoints(points);  
+    
+    // allocate space for elements
+    dataSet_tmp->Allocate(nElem); 
+    // add the elements
+    for (int i = 0; i < nElem; ++i)
+    {
+      vtkSmartPointer<vtkIdList> vtkElmIds = vtkSmartPointer<vtkIdList>::New();
+      std::vector<int> cgnsElmIds(getElementConnectivity(i));
+      vtkElmIds->SetNumberOfIds(cgnsElmIds.size());
+      for (int j = 0; j < cgnsElmIds.size(); ++j)
+      {
+        vtkElmIds->SetId(j,cgnsElmIds[j]-1);
+      }
+      switch(sectionType)
+      {
+        case TETRA_4:
+          dataSet_tmp->InsertNextCell(VTK_TETRA,vtkElmIds);
+          break;
+        case HEXA_8:
+          dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON,vtkElmIds);
+          break;
+        case TRI_3:
+          dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkElmIds);  
+          break;
+        case QUAD_4:
+          dataSet_tmp->InsertNextCell(VTK_QUAD,vtkElmIds);
+          break;
+        default:
+          std::cerr << "Unknown element type " << sectionType << std::endl;
+          break;
+      }
+    }
+    vtkMesh = dataSet_tmp; 
+  }
+} 
+
 void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
 {
   // --- Build the vertices ---
@@ -1037,8 +1103,6 @@ void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
                     << sectionType << " is not supported." << std::endl;
     break;
       } 
-
-  
 }
 
 void cgnsAnalyzer::classifyMAdMeshOpt(const MAd::pMesh MAdMesh)

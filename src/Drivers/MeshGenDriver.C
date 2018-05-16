@@ -1,5 +1,9 @@
 #include <MeshGenDriver.H>
 #include <meshGen.H>
+#include <netgenGen.H>
+#ifdef HAVE_SYMMX
+#include <symmxGen.H>
+#endif
 // ----------------------------- MeshGen Driver -----------------------------------//
 
 MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
@@ -95,9 +99,32 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
-
-
   }
+  else if (!meshEngine.compare("simmetrix"))
+  {
+    #ifndef HAVE_SYMMX
+      std::cerr << "Nemosys must be recompiled with simmetrix support" << std::endl;
+      exit(1);
+    #else
+      if (!inputjson.has_key("License File"))
+      {
+        std::cerr << "Simmetrix License file must be specified in json" << std::endl;
+        exit(1);
+      }
+      
+      SymmxParams* params = new SymmxParams();
+      std::string licFName = inputjson["License File"].as<std::string>();
+      params->licFName = &licFName[0u];
+      std::string features = inputjson["Features"].as<std::string>();
+      params->features = &features[0u];
+      std::string logFName = inputjson["Log File"].as<std::string>();
+      params->logFName = &logFName[0u];
+      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+      return mshgndrvobj; 
+    #endif
+  }
+
+
   else
   {
     std::cout << "Mesh generation engine " << meshEngine << " is not supported" << std::endl;
