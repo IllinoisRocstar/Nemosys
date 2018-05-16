@@ -5,24 +5,39 @@
 #include <iostream>
 
 // constructor
-meshSymmx::meshSymmx(const char* logFName, const char* features, const char* licFName):
-    haveLog(false),prog(NULL),model(NULL),dModel(NULL),mcase(NULL),mesh(NULL),dataSet(0)
+symmxGen::symmxGen(SymmxParams* params)
+  : haveLog(false),prog(NULL),model(NULL),
+    dModel(NULL),mcase(NULL),writeSurfAndVol(true),
+    mesh(NULL)
 {
     // log
-    if (strcmp(logFName,"NONE"))
+    if (strcmp(params->logFName,"NONE"))
     {
         haveLog = true;
-        Sim_logOn(logFName);
+        Sim_logOn(params->logFName);
     }
     // initialization
-    SimLicense_start(features, licFName);
+    SimLicense_start(params->features, params->licFName);
     MS_init();
     Sim_setMessageHandler(messageHandler);
     setProgress();
 }
 
+// default
+symmxGen::symmxGen()
+  : haveLog(true),prog(NULL),model(NULL),
+    dModel(NULL),mcase(NULL),writeSurfAndVol(true),
+    mesh(NULL)
+{
+  Sim_logOn("symmxGen.log");
+  SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume","simmodsuite.lic");
+  MS_init();
+  Sim_setMessageHandler(messageHandler);
+  setProgress(); 
+}
+
 // destructor
-meshSymmx::~meshSymmx()
+symmxGen::~symmxGen()
 {
     if (mesh)
       M_release(mesh);
@@ -37,17 +52,17 @@ meshSymmx::~meshSymmx()
     SimLicense_stop();
     MS_exit();
     if (haveLog)
-      Sim_logOff(); 
+      Sim_logOff();
 }
 
 
-void meshSymmx::setProgress()
+void symmxGen::setProgress()
 {
     prog = Progress_new();
     Progress_setDefaultCallback(prog);    
 }
 
-void meshSymmx::createMeshFromModel(const char* mFName)
+void symmxGen::createMeshFromModel(const char* mFName)
 {
   model = GM_load(mFName, 0, prog);
   mcase = MS_newMeshCase(model);
@@ -61,7 +76,7 @@ void meshSymmx::createMeshFromModel(const char* mFName)
   VolumeMesher_delete(volumeMesher);
 }
 
-int meshSymmx::createMeshFromSTL(const char* stlFName)
+int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
 {
   if (!createModelFromSTL(stlFName))
   {
@@ -83,11 +98,15 @@ int meshSymmx::createMeshFromSTL(const char* stlFName)
 
       // set the mesh size
       MS_setMeshSize(mcase, modelDomain, 2, 0.1, 0);
-      // setting curvature-based isotropic refinement
-      MS_setMeshCurv(mcase, modelDomain, 2, 0.1);
+      // setting curvature-based refinement params
+      MS_setAnisoMeshCurv(mcase, modelDomain, 2, 0.02);
+      MS_setMinCurvSize(mcase, modelDomain, 2, 0.01);
+      MS_setGlobalSizeGradationRate(mcase, 0.1);
       pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
       // snap model vertices to resulting surface mesh (ensures consistency with model)
-      SurfaceMesher_setSnapOnMatch(surfaceMesher, 1);
+      // this causes seg faults when trying to change topology of mesh during improvement
+      //SurfaceMesher_setSnapForDiscrete(surfaceMesher, 1);
+      SurfaceMesher_setEnforceSpatialGradation(surfaceMesher, 1);
       SurfaceMesher_execute(surfaceMesher, prog);
       std::cout << "Number of mesh faces on the surface: " << M_numFaces(mesh) << std::endl;
       SurfaceMesher_delete(surfaceMesher);
@@ -97,15 +116,44 @@ int meshSymmx::createMeshFromSTL(const char* stlFName)
       // set smoothing type to move vertices down gradient of shape metric
       SurfaceMeshImprover_setSmoothType(surfaceMeshImprover, 1);
       // set gradation rate
-      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, .1);
+      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, .05);
       // allow improver to refine mesh in areas to meet metric
-      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, 0.05);
+      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, 0.1);
       // fix intersections after improvement
       SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
       SurfaceMeshImprover_execute(surfaceMeshImprover, prog);
       SurfaceMeshImprover_delete(surfaceMeshImprover);
-      
+      std::cout << "Num regions in surf mesh: " << M_numRegions(mesh) << std::endl;
+      SimDiscrete_stop(0);
+    }
+    catch (pSimError err) 
+    {
+      std::cerr << "SimModSuite error caught:" << std::endl;
+      std::cerr << "  Error code: " << SimError_code(err) << std::endl;
+      std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
+      SimError_delete(err);
+      return 1;
+    } 
+    catch (...) 
+    {
+      std::cerr << "Unhandled exception caught" << std::endl;
+      return 1;
+    }
+    return 0; 
+  }
+  else
+    return 1;
+}
+
+int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
+{
+  if (!createSurfaceMeshFromSTL(stlFName))
+  {
+    try
+    {
+      SimDiscrete_start(0);
       pVolumeMesher volumeMesher = VolumeMesher_new(mcase, mesh);
+      VolumeMesher_setEnforceSize(volumeMesher, 2);
       VolumeMesher_execute(volumeMesher, prog);
       VolumeMesher_delete(volumeMesher);
       SimDiscrete_stop(0);
@@ -129,7 +177,12 @@ int meshSymmx::createMeshFromSTL(const char* stlFName)
     return 1;
 }
 
-int meshSymmx::createModelFromSTL(const char* stlFName)
+int symmxGen::createMeshFromSTL(const char* stlFName)
+{
+  createVolumeMeshFromSTL(stlFName);
+}
+
+int symmxGen::createModelFromSTL(const char* stlFName)
 {
   // try/catch around all SimModSuite calls
   // as errors are thrown.
@@ -167,7 +220,7 @@ int meshSymmx::createModelFromSTL(const char* stlFName)
     }
     
     // define the Discrete model
-    DM_findEdgesByFaceNormals(dModel, 0, prog);
+    DM_findEdgesByFaceNormals(dModel, 5., prog);
     DM_eliminateDanglingEdges(dModel, prog);
     // complete the topology and return if erro encountered
     if(DM_completeTopology(dModel, prog)) 
@@ -203,14 +256,15 @@ int meshSymmx::createModelFromSTL(const char* stlFName)
   return 0; 
 }
 
-void meshSymmx::convertToVTU()
+void symmxGen::convertToVTU()
 {
   if (!dataSet)
   {
     // points to be pushed into dataSet
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
     // declare vtk dataset
-    dataSet = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp 
+      = vtkSmartPointer<vtkUnstructuredGrid>::New();
     
     // get the iterator for mesh vertices 
     VIter vertices = M_vertexIter(mesh);
@@ -222,78 +276,72 @@ void meshSymmx::convertToVTU()
     // copy points into vtk point container
     while (vertex = VIter_next(vertices))
     {
-      EN_setID( (pEntity) vertex, i); // TODO: check if id is 0 to begin
+      EN_setID( (pEntity) vertex, i); 
       V_coord(vertex, coord);
       points->SetPoint(i,coord);
       ++i;
     }
     VIter_delete(vertices);
-    dataSet->SetPoints(points);
+    dataSet_tmp->SetPoints(points);
 
-    // allocate space for cells in vtk dataset
-    dataSet->Allocate(M_numRegions(mesh));
-
-    // get iterator for mesh regions (cells)
-    RIter regions = M_regionIter(mesh);
-    pRegion region;  
-    pPList regionVerts;
-    while (region = RIter_next(regions))
+    // if mesh is a surface mesh
+    if (!M_numRegions(mesh))
     {
-      regionVerts = R_vertices(region,0);
-      rType celltype = R_topoType(region);
-      switch(celltype)
+      // allocate space for faces
+      dataSet_tmp->Allocate(M_numFaces(mesh));
+      FIter faces = M_faceIter(mesh);
+      pFace face;
+      pPList faceVerts;
+      while (face = FIter_next(faces))
       {
-        case Rtet:
-        {
-          createVtkCell(dataSet, 4, VTK_TETRA, regionVerts);
-          break;
-        }
-        case Rwedge:
-        {
-          createVtkCell(dataSet, 5, VTK_WEDGE, regionVerts);
-          break;
-        }
-        case Rpyramid:
-        {
-          createVtkCell(dataSet, 4, VTK_PYRAMID, regionVerts);
-          break;
-        }
-        case Rhex:
-        {
-          createVtkCell(dataSet, 6, VTK_HEXAHEDRON, regionVerts);
-          break;
-        }
-        case Runknown:
-          std::cerr << "Encountered unknown cell type: " << celltype << std::endl;
-          exit(1);
+        faceVerts = F_vertices(face,1);
+        createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
+        PList_delete(faceVerts);
       }
-      PList_delete(regionVerts); 
+      FIter_delete(faces);
+      dataSet = dataSet_tmp;
     }
-    RIter_delete(regions);
+    // if mesh is volume mesh and you want to write surf and vol cells
+    else if (writeSurfAndVol)
+    {
+      // allocate space for cells in vtk dataset
+      dataSet_tmp->Allocate(M_numRegions(mesh) + M_numFaces(mesh));
+      // add surface faces
+      FIter faces = M_faceIter(mesh);
+      pFace face;
+      pPList faceVerts;
+      while (face = FIter_next(faces))
+      {
+        faceVerts = F_vertices(face,1);
+        createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
+        PList_delete(faceVerts);
+      }
+      FIter_delete(faces);
+      // add vol cells
+      addVtkVolCells(dataSet_tmp);
+      dataSet = dataSet_tmp;
+    }
+    // write only vol cells
+    else
+    {
+      dataSet_tmp->Allocate(M_numRegions(mesh)); 
+      addVtkVolCells(dataSet_tmp);
+      dataSet = dataSet_tmp;
+    }
   }
 }
 
+//vtkSmartPointer<vtkDataSet> symmxGen::getDataSet()
+//{
+//  return dataSet;
+//}
 
-void meshSymmx::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
-                              const int numIds,
-                              const int cellType,
-                              pPList regionVerts)
+void symmxGen::setWriteSurfAndVol(bool b)
 {
-  pVertex vertex;
-  vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
-  vtkCellIds->SetNumberOfIds(numIds);
-  for (int i = 0; i < numIds; ++i)
-  {
-    vertex = (pVertex) PList_item(regionVerts,i);
-    vtkCellIds->SetId(i,EN_id( (pEntity) vertex));
-  }
-  dataSet->InsertNextCell(cellType,vtkCellIds);
+  writeSurfAndVol = b;
 }
-                             
 
-
-
-void meshSymmx::saveMesh(const std::string& mFName)
+void symmxGen::saveMesh(const std::string& mFName)
 {
 
   size_t last = mFName.find_last_of('.');
@@ -314,7 +362,64 @@ void meshSymmx::saveMesh(const std::string& mFName)
   }
 }
 
-void meshSymmx::messageHandler(int type, const char* msg)
+void symmxGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+                              const int numIds,
+                              const int cellType,
+                              pPList regionVerts)
+{
+  pVertex vertex;
+  vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+  vtkCellIds->SetNumberOfIds(numIds);
+  for (int i = 0; i < numIds; ++i)
+  {
+    vertex = (pVertex) PList_item(regionVerts,i);
+    vtkCellIds->SetId(i,EN_id( (pEntity) vertex));
+  }
+  dataSet->InsertNextCell(cellType,vtkCellIds);
+}
+                             
+void symmxGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+{
+  // get iterator for mesh regions (cells) and add them
+  RIter regions = M_regionIter(mesh);
+  pRegion region;  
+  pPList regionVerts;
+  while (region = RIter_next(regions))
+  {
+    regionVerts = R_vertices(region,0);
+    rType celltype = R_topoType(region);
+    switch(celltype)
+    {
+      case Rtet:
+      {
+        createVtkCell(dataSet_tmp, 4, VTK_TETRA, regionVerts);
+        break;
+      }
+      case Rwedge:
+      {
+        createVtkCell(dataSet_tmp, 5, VTK_WEDGE, regionVerts);
+        break;
+      }
+      case Rpyramid:
+      {
+        createVtkCell(dataSet_tmp, 4, VTK_PYRAMID, regionVerts);
+        break;
+      }
+      case Rhex:
+      {
+        createVtkCell(dataSet_tmp, 6, VTK_HEXAHEDRON, regionVerts);
+        break;
+      }
+      case Runknown:
+        std::cerr << "Encountered unknown cell type: " << celltype << std::endl;
+        exit(1);
+    }
+    PList_delete(regionVerts); 
+  }
+  RIter_delete(regions);
+}
+
+void symmxGen::messageHandler(int type, const char* msg)
 {
   switch (type) 
   {

@@ -14,6 +14,10 @@
 #include "RichardsonExtrapolation.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
+#include "meshGen.H"
+#ifdef HAVE_SYMMX
+  #include "symmxGen.H"
+#endif
 %}
 
 
@@ -32,6 +36,7 @@ class meshBase
     ~meshBase();
 
     static meshBase* Create(std::string fname);
+    static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
     static std::shared_ptr<meshBase> CreateShared(std::string fname);
     //static std::unique_ptr<meshBase> CreateUnique(std::string fname);
     virtual std::vector<double> getPoint(int id);
@@ -433,25 +438,6 @@ class ConversionDriver : public NemDriver
     %}
 };
 
-class RichardsonExtrapolation
-{
-
-  public:
-    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
-                            double _ref_factor, int _order, 
-                            const std::vector<int>& _arrayIDs)
-      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
-        arrayIDs(_arrayIDs);
-
-    std::vector<std::vector<double>> computeDiscretizationError();
-    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh);
-  private:
-    meshBase* fineMesh;
-    double ref_factor;
-    int order;
-    const std::vetor<int> arrayIDs;
-    std::vector<std::string> newArrNames; 
-};
 
 class OrderOfAccuracy
 {
@@ -488,3 +474,72 @@ class OrderOfAccuracy
     std::vector<std::vector<double>> GCI_21;
     std::vector<std::vector<double>> orderOfAccuracy; 
 };
+
+class meshingParams
+{
+  public:
+    meshingParams(){};
+    virtual ~meshingParams(){};    
+    
+};
+
+class meshGen 
+{
+  public:
+    meshGen():dataSet(0){}
+    virtual ~meshGen(){}
+    
+    // creates generator with default parameters
+    static meshGen* Create(std::string fname, std::string meshEngine);
+    // creates generater with specified parameters
+    static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
+    virtual int createMeshFromSTL(const char* fname) = 0;
+    vtkSmartPointer<vtkDataSet> getDataSet(); 
+};
+
+
+//class SymmxParams : public meshingParams
+//{
+//  
+//  public:
+//    SymmxParams(){};
+//    ~SymmxParams(){};
+//  
+//  public:
+//    const char* logFName;
+//    const char* features;
+//    const char* licFName;
+//};
+//
+//
+//
+//class symmxGen : public meshGen
+//{
+//
+//  public:
+//    // initialize params with default values
+//    symmxGen();
+//    symmxGen(SymmxParams* params); 
+//    ~symmxGen();
+//
+//  // symmetrix mesh creation
+//  public:
+//    // create mesh from symmetrix model file
+//    void createMeshFromModel(const char* mdlFName);
+//    // create model from stl file. relevant features (geomsim_discrete) must be passed
+//    // to object constructor to use this function
+//    int createModelFromSTL(const char* stlFName);
+//    int createSurfaceMeshFromSTL(const char* stlFName);
+//    int createVolumeMeshFromSTL(const char* stlFName);
+//    // base class mesh gen function
+//    int createMeshFromSTL(const char* fname); 
+//    // convert from symmetrix to vtu. if converting a volume mesh, you can choose to 
+//    // write only volume cells by setting writeSurfAndVol to false with the set method.
+//    void convertToVTU(); 
+//    void saveMesh(const std::string& mshFName);
+//
+//  // access
+//  public:
+//    //vtkSmartPointer<vtkDataSet> getDataSet();
+//    void setWriteSurfAndVol(bool b);
+//};
