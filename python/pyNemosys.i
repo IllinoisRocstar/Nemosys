@@ -505,6 +505,8 @@ class meshGen
     vtkSmartPointer<vtkDataSet> getDataSet(); 
 };
 
+%{
+#ifdef HAVE_SYMMX
 class SymmxParams : public meshingParams
 {
   
@@ -550,3 +552,5 @@ class symmxGen : public meshGen
     //vtkSmartPointer<vtkDataSet> getDataSet();
     void setWriteSurfAndVol(bool b);
 };
+#endif
+%}
