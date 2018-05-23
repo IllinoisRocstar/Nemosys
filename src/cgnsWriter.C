@@ -1,5 +1,6 @@
 /* Implementation of CGNSWriter class */
 #include "cgnsWriter.H"
+#include "GmshEntities.h"
 
 void cgnsWriter::setUnits(MassUnits_t mu, LengthUnits_t lu, 
                           TimeUnits_t tu, TemperatureUnits_t tpu, AngleUnits_t au)

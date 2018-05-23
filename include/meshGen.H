@@ -27,8 +27,8 @@ class meshingParams
 class meshGen 
 {
   public:
-    meshGen():dataSet(0){}
-    virtual ~meshGen(){}
+    meshGen():dataSet(0){std::cout << "Base mesh generator created" << std::endl;}
+    virtual ~meshGen(){ std::cout << "Base mesh generator destroyed" << std::endl;}
     
     // creates generator with default parameters
     static meshGen* Create(std::string fname, std::string meshEngine);

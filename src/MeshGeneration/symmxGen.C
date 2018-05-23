@@ -7,26 +7,32 @@
 // constructor
 symmxGen::symmxGen(SymmxParams* params)
   : haveLog(false),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(true),
+    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
 {
-    // log
-    if (strcmp(params->logFName,"NONE"))
-    {
-        haveLog = true;
-        Sim_logOn(params->logFName);
-    }
-    // initialization
-    SimLicense_start(params->features, params->licFName);
-    MS_init();
-    Sim_setMessageHandler(messageHandler);
-    setProgress();
+
+  if (params->logFName != "NONE")
+  {
+      haveLog = true;
+      Sim_logOn(&(params->logFName)[0u]);
+  }
+
+  std::cout << "Log File: " << params->logFName << std::endl;  
+  std::cout << "License File: " << params->licFName << std::endl;  
+  std::cout << "Feature List: " << params->features << std::endl;  
+
+  // initialization
+  SimLicense_start(&(params->features)[0u], &(params->licFName)[0u]);
+  MS_init();
+  Sim_setMessageHandler(messageHandler);
+  setProgress();
+  std::cout << "Simmetrix mesh generator created" << std::endl;
 }
 
 // default
 symmxGen::symmxGen()
   : haveLog(true),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(true),
+    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
 {
   Sim_logOn("symmxGen.log");
@@ -34,32 +40,34 @@ symmxGen::symmxGen()
   MS_init();
   Sim_setMessageHandler(messageHandler);
   setProgress(); 
+  std::cout << "Simmetrix mesh generator created" << std::endl;
 }
 
 // destructor
 symmxGen::~symmxGen()
 {
-    if (mesh)
-      M_release(mesh);
-    if (mcase)
-      MS_deleteMeshCase(mcase);
-    if (model)
-      GM_release(model);
-    if (dModel)
-      GM_release(dModel);
-    if (prog)
-      Progress_delete(prog);    
-    SimLicense_stop();
-    MS_exit();
-    if (haveLog)
-      Sim_logOff();
+  if (mesh)
+    M_release(mesh);
+  if (mcase)
+    MS_deleteMeshCase(mcase);
+  if (model)
+    GM_release(model);
+  if (dModel)
+    GM_release(dModel);
+  if (prog)
+    Progress_delete(prog);    
+  SimLicense_stop();
+  MS_exit();
+  if (haveLog)
+    Sim_logOff();
+  std::cout << "Simmetrix mesh generator destroyed" << std::endl;
 }
 
 
 void symmxGen::setProgress()
 {
-    prog = Progress_new();
-    Progress_setDefaultCallback(prog);    
+  prog = Progress_new();
+  Progress_setDefaultCallback(prog);    
 }
 
 void symmxGen::createMeshFromModel(const char* mFName)
@@ -180,6 +188,8 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
 int symmxGen::createMeshFromSTL(const char* stlFName)
 {
   createVolumeMeshFromSTL(stlFName);
+  convertToVTU();
+  return 0;
 }
 
 int symmxGen::createModelFromSTL(const char* stlFName)

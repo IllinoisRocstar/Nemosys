@@ -304,9 +304,10 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh AltNemosys)
   
-  ADD_EXECUTABLE(rocRemeshNew utils/rocRemeshNew.C)
-  TARGET_LINK_LIBRARIES(rocRemeshNew AltNemosys)
-
+  if (ENABLE_SYMMX) 
+  ADD_EXECUTABLE(rocSymmxRemesh utils/rocSymmxRemesh.C)
+    TARGET_LINK_LIBRARIES(rocSymmxRemesh AltNemosys Nemosys)
+  ENDIF()
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
   TARGET_LINK_LIBRARIES(rocSurfRemesh AltNemosys Rocs)
@@ -325,6 +326,12 @@ IF(ENABLE_BUILD_UTILS)
   INSTALL(TARGETS xmlDump cgns2msh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+  if (ENABLE_SYMMX)
+    INSTALL(TARGETS rocSymmxRemesh RUNTIME DESTINATION Nemosys/bin 
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+            GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif()
 
   # DTK tutorial
   IF (ENABLE_DTK)

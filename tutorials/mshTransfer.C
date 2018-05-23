@@ -16,12 +16,13 @@
 #include "cgnsWriter.H"
 
 
-// MAdLib headers 
+// MAdLib + gmsh headers 
 #include "ModelInterface.h"
 #include "MAdLib.h"
 #include "NodalDataManager.h"
 #include "MeshDataBaseIO.h"
 #include <CheckOrientation.h>
+#include "GmshEntities.h"
 
 // typedefs
 
