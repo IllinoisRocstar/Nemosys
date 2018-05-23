@@ -113,12 +113,9 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
       }
       
       SymmxParams* params = new SymmxParams();
-      std::string licFName = inputjson["License File"].as<std::string>();
-      params->licFName = &licFName[0u];
-      std::string features = inputjson["Features"].as<std::string>();
-      params->features = &features[0u];
-      std::string logFName = inputjson["Log File"].as<std::string>();
-      params->logFName = &logFName[0u];
+      params->licFName = inputjson["License File"].as<std::string>();
+      params->features = inputjson["Features"].as<std::string>();
+      params->logFName = inputjson["Log File"].as<std::string>();
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj; 
     #endif

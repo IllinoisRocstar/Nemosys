@@ -61,20 +61,16 @@ meshBase* meshBase::Create(std::string fname)
 
 meshBase* meshBase::Create(vtkSmartPointer<vtkDataSet> other, std::string newname)
 {
-  if (other)
-  {
-    vtkMesh* vtkmesh = new vtkMesh();
-    vtkmesh->dataSet = other;
-    vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
-    vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
-    vtkmesh->setFileName(newname); 
-    return vtkmesh;
-  }
-  else
-  {
-    std::cerr << "Nothing to copy!" << std::endl;
-    exit(1);
-  }
+  return new vtkMesh(other, newname);
+}
+
+meshBase* meshBase::Create(const std::vector<double>& xCrds,
+                           const std::vector<double>& yCrds,
+                           const std::vector<double>& zCrds,
+                           const std::vector<int>& elmConn, const int cellType,
+                           std::string newname)
+{
+  return new vtkMesh(xCrds, yCrds, zCrds, elmConn, cellType, newname);
 }
 
 std::shared_ptr<meshBase> meshBase::CreateShared(std::string fname)
@@ -100,24 +96,31 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   }
 
   meshGen* generator = meshGen::Create(fname, meshEngine, params);
-  int status = generator->createMeshFromSTL(&fname[0u]);
-  if (generator) 
-  { 
+  if (generator)
+  {
+    int status = generator->createMeshFromSTL(&fname[0u]);
+    meshBase* ret;
+    if(!status)
+    {
+      if (meshEngine == "netgen") 
+      {
+        std::string newname = trim_fname(fname,".vol");
+        ret = exportVolToVtk(newname);    
+      }
+      else if (meshEngine == "simmetrix")
+      {
+        std::string newname = trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname); 
+      }
+    }
     delete generator;
     generator=nullptr;
+    return ret;
   }
-  if(!status)
+  else
   {
-    if (meshEngine == "netgen") 
-    {
-      std::string newname = trim_fname(fname,".vol");
-      return exportVolToVtk(newname);    
-    }
-    else if (meshEngine == "simmetrix")
-    {
-      std::string newname = trim_fname(fname, ".vtu");
-      return Create(generator->getDataSet(), newname); 
-    }
+    std::cerr << "Could not create mesh generator" << std::endl;
+    exit(1);
   }
 }
 
@@ -170,6 +173,7 @@ int meshBase::transfer(meshBase* target, std::string method)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
+  transobj->setContBool(continuous);
   return transobj->run(newArrayNames); 
 }
 
