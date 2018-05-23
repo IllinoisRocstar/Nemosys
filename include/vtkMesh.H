@@ -65,7 +65,16 @@ class vtkMesh : public meshBase
     // limited support for conversion between formats
     vtkMesh(const char* fname1, const char* fname2);
     // put existing vtkDataSet into meshBase
-    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname);
+    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, std::string fname);
+    /* create from coordinates and connectivities.
+       NOTE: use of this is only valid when mesh has one cell type. 
+             cellType one of the vtkCellType enums. 
+             Currently, only VTK_TETRA and VTK_TRIANGLE are supported */
+    vtkMesh(const std::vector<double>& xCrds,
+            const std::vector<double>& yCrds,
+            const std::vector<double>& zCrds,
+            const std::vector<int>& elemConn, const int cellType,
+            std::string newname);
 
     ~vtkMesh()
     {
@@ -76,6 +85,8 @@ class vtkMesh : public meshBase
   public:
     // get point with id
     std::vector<double> getPoint(int id)  const;
+    // get 3 vecs with x,y and z coords
+    std::vector<std::vector<double>> getVertCrds() const;
     // get cell with id : returns point indices and respective coordinates
     std::map<int, std::vector<double>> getCell(int id) const;
     std::vector<std::vector<double>> getCellVec(int id) const;
@@ -89,6 +100,11 @@ class vtkMesh : public meshBase
     std::vector<double> getCellCenter(int cellID);
     // get edge lengths of dataSet
     void inspectEdges(const std::string& ofname);
+    std::vector<int> getConnectivities() const;
+
+  // processing
+  public:
+    vtkSmartPointer<vtkDataSet> extractSurface();
  
   // diagnostics
   public:
@@ -100,6 +116,7 @@ class vtkMesh : public meshBase
   public:
     // set point data (numComponets per point determined by dim of data[0] 
     void setPointDataArray(const char* name, const std::vector<std::vector<double>>& data);
+    void setPointDataArray(const char* name, const std::vector<double>& data);
     // set cell data (numComponents per cell determined by dim of data[0])
     void setCellDataArray(const char* name, const std::vector<std::vector<double>>& data);
     // set scalar cell data
@@ -112,6 +129,9 @@ class vtkMesh : public meshBase
     void unsetCellDataArray(const char* name);
     // remove field data with given id from dataSet
     void unsetFieldDataArray(const char* name);
+    // get scalar point or cell data array. assumes data is not allocated prior to calling
+    void getPointDataArray(std::string name, std::vector<double>& data);
+    void getCellDataArray(std::string name, std::vector<double>& data);
 
 };
 

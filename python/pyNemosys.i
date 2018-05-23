@@ -11,7 +11,6 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
-#include "RichardsonExtrapolation.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
 #include "meshGen.H"
@@ -39,10 +38,14 @@ class meshBase
     static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
     static std::shared_ptr<meshBase> CreateShared(std::string fname);
     //static std::unique_ptr<meshBase> CreateUnique(std::string fname);
+    static meshBase* generateMesh(std::string fname, std::string meshEngine,
+                                  meshingParams* params); 
     virtual std::vector<double> getPoint(int id);
+    virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);
     virtual std::vector<std::vector<double>> getCellVec(int id);
     vtkSmartPointer<vtkDataSet> getDataSet();
+    virtual vtkSmartPointer<vtkDataSet> extractSurface();
     virtual void inspectEdges(const std::string& ofname);
     virtual void setPointDataArray(const char* name,
                                      const std::vector<std::vector<double>>& data);
@@ -57,7 +60,6 @@ class meshBase
     virtual void unsetFieldDataArray(const char* name);
     virtual std::vector<double> getCellLengths();
     virtual std::vector<double> getCellCenter(int cellID);
-    virtual void classifyAndAddBoundaries();
     vtkSmartPointer<vtkCellLocator> buildLocator();
     int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
@@ -103,6 +105,7 @@ class meshBase
     void setFileName(std::string fname);
     std::string getFileName();
     void setCheckQuality(bool x);
+    void setContBool(bool x);
     void setNewArrayNames(const std::vector<std::string>& newnames);
     void unsetNewArrayNames();
 };
@@ -115,6 +118,7 @@ class vtkMesh : public meshBase
     vtkMesh();
     vtkMesh(const char* fname);
     vtkMesh(const char* fname1, const char* fname2);
+    vtkMesh(vtkSmartPointer<vtkDataSet> other, std::string fname);
     ~vtkMesh();
 
   // access
@@ -137,6 +141,10 @@ class vtkMesh : public meshBase
     void report();
     void write();
     void write(std::string fname); 
+
+  // processing
+  public:
+    vtkSmartPointer<vtkDataSet> extractSurface();
 
   // set and get point and cell data
   public:
@@ -478,16 +486,16 @@ class OrderOfAccuracy
 class meshingParams
 {
   public:
-    meshingParams(){};
-    virtual ~meshingParams(){};    
+    meshingParams();
+    virtual ~meshingParams();    
     
 };
 
 class meshGen 
 {
   public:
-    meshGen():dataSet(0){}
-    virtual ~meshGen(){}
+    meshGen();
+    virtual ~meshGen();
     
     // creates generator with default parameters
     static meshGen* Create(std::string fname, std::string meshEngine);
@@ -497,49 +505,48 @@ class meshGen
     vtkSmartPointer<vtkDataSet> getDataSet(); 
 };
 
+class SymmxParams : public meshingParams
+{
+  
+  public:
+    SymmxParams();
+    ~SymmxParams();
+  
+  public:
+    std::string logFName;
+    std::string features;
+    std::string licFName;
+};
 
-//class SymmxParams : public meshingParams
-//{
-//  
-//  public:
-//    SymmxParams(){};
-//    ~SymmxParams(){};
-//  
-//  public:
-//    const char* logFName;
-//    const char* features;
-//    const char* licFName;
-//};
-//
-//
-//
-//class symmxGen : public meshGen
-//{
-//
-//  public:
-//    // initialize params with default values
-//    symmxGen();
-//    symmxGen(SymmxParams* params); 
-//    ~symmxGen();
-//
-//  // symmetrix mesh creation
-//  public:
-//    // create mesh from symmetrix model file
-//    void createMeshFromModel(const char* mdlFName);
-//    // create model from stl file. relevant features (geomsim_discrete) must be passed
-//    // to object constructor to use this function
-//    int createModelFromSTL(const char* stlFName);
-//    int createSurfaceMeshFromSTL(const char* stlFName);
-//    int createVolumeMeshFromSTL(const char* stlFName);
-//    // base class mesh gen function
-//    int createMeshFromSTL(const char* fname); 
-//    // convert from symmetrix to vtu. if converting a volume mesh, you can choose to 
-//    // write only volume cells by setting writeSurfAndVol to false with the set method.
-//    void convertToVTU(); 
-//    void saveMesh(const std::string& mshFName);
-//
-//  // access
-//  public:
-//    //vtkSmartPointer<vtkDataSet> getDataSet();
-//    void setWriteSurfAndVol(bool b);
-//};
+
+
+class symmxGen : public meshGen
+{
+
+  public:
+    // initialize params with default values
+    symmxGen();
+    symmxGen(SymmxParams* params); 
+    ~symmxGen();
+
+  // symmetrix mesh creation
+  public:
+    // create mesh from symmetrix model file
+    void createMeshFromModel(const char* mdlFName);
+    // create model from stl file. relevant features (geomsim_discrete) must be passed
+    // to object constructor to use this function
+    int createModelFromSTL(const char* stlFName);
+    int createSurfaceMeshFromSTL(const char* stlFName);
+    int createVolumeMeshFromSTL(const char* stlFName);
+    // base class mesh gen function
+    int createMeshFromSTL(const char* fname); 
+    // convert from symmetrix to vtu. if converting a volume mesh, you can choose to 
+    // write only volume cells by setting writeSurfAndVol to false with the set method.
+    void convertToVTU(); 
+    void saveMesh(const std::string& mshFName);
+
+  // access
+  public:
+    //vtkSmartPointer<vtkDataSet> getDataSet();
+    void setWriteSurfAndVol(bool b);
+};

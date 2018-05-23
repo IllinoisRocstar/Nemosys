@@ -227,58 +227,13 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
     }
   }
   std::vector<vtkSmartPointer<vtkDataArray>> dasSource(arrayIDs.size());
-  std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint(arrayIDs.size());
   std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget(arrayIDs.size());
-
-
-  // ---------------------- Convert source cell data to point data -------- // 
-  
-  // cellId container for cells sharing a point
-  vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New(); 
-
-  // initializing arrays storing interpolated data
   for (int id = 0; id < arrayIDs.size(); ++id)
   {
     // get desired cell data array from source to be transferred to target
     vtkSmartPointer<vtkDataArray> daSource = cd->GetArray(arrayIDs[id]);
     // get tuple length of given data
     int numComponent = daSource->GetNumberOfComponents();
-    // initialize cellToPoint source array
-    vtkSmartPointer<vtkDoubleArray> daSourceToPoint
-      = vtkSmartPointer<vtkDoubleArray>::New(); 
-    daSourceToPoint->SetNumberOfComponents(numComponent);
-    daSourceToPoint->SetNumberOfTuples(source->getNumberOfPoints());
-  
-    for (int i = 0; i < source->getNumberOfPoints(); ++i)
-    {
-      // find cells sharing point i
-      source->getDataSet()->GetPointCells(i, cellIds);
-      int numSharedCells = cellIds->GetNumberOfIds(); 
-      double totW = 0;
-      double W;
-      // contains averaged/weighted data
-      std::vector<double> interps(numComponent,0.0);
-      for (int j = 0; j < numSharedCells; ++j)
-      {
-        int cellId = cellIds->GetId(j);
-        double comps[numComponent];
-        daSource->GetTuple(cellId, comps);
-        // compute distance from point to cell center
-        W = 1./l2_Norm(source->getCellCenter(cellId)
-                       - source->getPoint(i));
-        // average over shared cells, weighted by inverse distance to center
-        for (int k = 0; k < numComponent; ++k)
-        {
-          interps[k] += W*comps[k];
-        }
-        totW += W; 
-      } 
-      interps = (1.0/totW)*interps;
-      daSourceToPoint->SetTuple(i, interps.data());
-    }
-    
-    dasSourceToPoint[id] = daSourceToPoint;
-
     // declare data array to be populated with values at target points
     vtkSmartPointer<vtkDoubleArray> daTarget = vtkSmartPointer<vtkDoubleArray>::New();
     // names and sizing
@@ -291,11 +246,98 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
     dasSource[id] = daSource;
     dasTarget[id] = daTarget;
   }
-  // genCell used by locator
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
-  for (int i = 0; i < target->getNumberOfCells(); ++i)
+  // straightforwrad transfer without weighted averaging by locating target cell in source mesh
+  // and assigning cell data
+  if (!continuous) 
   {
-    transferCellData(i, genCell, dasSourceToPoint, dasTarget);
+    vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+    for (int i = 0; i < target->getNumberOfCells(); ++i)
+    {
+      std::vector<double> targetCenter = target->getCellCenter(i);
+      // id of the cell containing source mesh point
+      vtkIdType id;
+      int subId;
+      double minDist2;
+      // find closest point and closest cell to x
+      double closestPoint[3];
+      double* x = targetCenter.data();
+      srcCellLocator->FindClosestPoint(x, closestPoint, genCell,id,subId,minDist2);
+      if (id >= 0)
+      {
+        for (int j = 0; j < dasSource.size(); ++j)
+        {
+          int numComponent = dasSource[j]->GetNumberOfComponents();
+          double comps[numComponent];
+          dasSource[j]->GetTuple(id,comps);
+          dasTarget[j]->SetTuple(i,comps); 
+        }
+      }
+      else
+      {
+        std::cout << "Could not locate center of cell " 
+                  << i << " from target in source mesh" << std::endl;
+        exit(1);
+      }
+    }
+  }
+
+  else // transfer with weighted averaging
+  {
+    // ---------------------- Convert source cell data to point data -------- // 
+    std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint(arrayIDs.size());
+    
+    // cellId container for cells sharing a point
+    vtkSmartPointer<vtkIdList> cellIds = vtkSmartPointer<vtkIdList>::New(); 
+
+    // initializing arrays storing interpolated data
+    for (int id = 0; id < arrayIDs.size(); ++id)
+    {
+      // get desired cell data array from source to be transferred to target
+      vtkSmartPointer<vtkDataArray> daSource = cd->GetArray(arrayIDs[id]);
+      // get tuple length of given data
+      int numComponent = daSource->GetNumberOfComponents();
+      // initialize cellToPoint source array
+      vtkSmartPointer<vtkDoubleArray> daSourceToPoint
+        = vtkSmartPointer<vtkDoubleArray>::New(); 
+      daSourceToPoint->SetNumberOfComponents(numComponent);
+      daSourceToPoint->SetNumberOfTuples(source->getNumberOfPoints());
+    
+      for (int i = 0; i < source->getNumberOfPoints(); ++i)
+      {
+        // find cells sharing point i
+        source->getDataSet()->GetPointCells(i, cellIds);
+        int numSharedCells = cellIds->GetNumberOfIds(); 
+        double totW = 0;
+        double W;
+        // contains averaged/weighted data
+        std::vector<double> interps(numComponent,0.0);
+        for (int j = 0; j < numSharedCells; ++j)
+        {
+          int cellId = cellIds->GetId(j);
+          double comps[numComponent];
+          daSource->GetTuple(cellId, comps);
+          // compute distance from point to cell center
+          W = 1./l2_Norm(source->getCellCenter(cellId)
+                         - source->getPoint(i));
+          // average over shared cells, weighted by inverse distance to center
+          for (int k = 0; k < numComponent; ++k)
+          {
+            interps[k] += W*comps[k];
+          }
+          totW += W; 
+        } 
+        interps = (1.0/totW)*interps;
+        daSourceToPoint->SetTuple(i, interps.data());
+      }
+      
+      dasSourceToPoint[id] = daSourceToPoint;
+    }
+    // genCell used by locator
+    vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();       
+    for (int i = 0; i < target->getNumberOfCells(); ++i)
+    {
+      transferCellData(i, genCell, dasSourceToPoint, dasTarget);
+    }
   }
   for (int id = 0; id < arrayIDs.size(); ++id)
   { 

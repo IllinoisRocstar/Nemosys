@@ -50,6 +50,9 @@ meshPartition::meshPartition(int pidx, std::vector<int> glbElmPartedIdx, std::ve
     }
     glbElmIdx++;
   }
+  std::cout <<  "Min connectivity passed to partitioner = "
+            << *std::min_element(glbElmConn.begin(), glbElmConn.end()) << std::endl;
+
   // Debug information
   //std::cout << "I am partition " << pidx 
   //          << "\n cycled on " << glbElmIdx-1 << " global elements "
@@ -92,26 +95,73 @@ std::vector<double> meshPartition::getElmSlnsVec(std::vector<double>& slns, int 
 
 
 /* Implementation of class partitioner class */
-meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
+//meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
+//{
+//  nNde = inCg->getNVertex();
+//  nElm = inCg->getNElement();
+//  elmConnVec = inCg->getElementConnectivity(-1);
+//  elmConn.insert(elmConn.begin(), elmConnVec.begin(), elmConnVec.end());
+//  // 0-indexing connectivity 
+//  for (auto it=elmConn.begin(); it!=elmConn.end(); it++)
+//    *it = *it-1;
+//  nPart = 0;
+//  // coverting between CGNS to local type
+//  switch (inCg->getElementType())
+//  {
+//    case TETRA_4:
+//      meshType = MESH_TETRA_4;
+//      break;
+//    case TRI_3:
+//      meshType = MESH_TRI_3;
+//      break;
+//    default:
+//      std::cerr << "Unknown element type!\n";
+//      break;
+//  }
+//}
+
+
+meshPartitioner::meshPartitioner(meshBase* inMB)
 {
-  nNde = inCg->getNVertex();
-  nElm = inCg->getNElement();
-  elmConnVec = inCg->getElementConnectivity(-1);
-  elmConn.insert(elmConn.begin(), elmConnVec.begin(), elmConnVec.end());
-  // 0-indexing connectivity 
-  for (auto it=elmConn.begin(); it!=elmConn.end(); it++)
-    *it = *it-1;
-  nPart = 0;
-  // coverting between CGNS to local type
-  switch (inCg->getElementType())
+  vtkSmartPointer<vtkCellTypes> celltypes = vtkSmartPointer<vtkCellTypes>::New();
+  inMB->getDataSet()->GetCellTypes(celltypes);
+  for (int i = 0; i < celltypes->GetNumberOfTypes(); ++i)
   {
-    case TETRA_4:
-      meshType = MESH_TETRA_4;
-      break;
-    default:
-      std::cerr << "Unknown element type!\n";
-      break;
+    if (!(celltypes->IsType(VTK_TETRA)) && !(celltypes->IsType(VTK_TRIANGLE)))
+    {
+      std::cerr << "Partitioner works for 4-node tet and 3-node tri elements only.\n";
+      exit(-1);
+    }
   }
+  nNde = inMB->getNumberOfPoints();
+  elmConnVec = inMB->getConnectivities(); 
+  elmConn = elmConnVec;
+  // 1 based idex for elmConnVec, 0 based for elmConn
+  for (int i= 0; i < elmConnVec.size(); ++i)
+  {
+    elmConnVec[i] = elmConnVec[i] + 1;
+  }
+  nElm = inMB->getNumberOfCells();
+  if (celltypes->IsType(VTK_TETRA))
+    meshType = MESH_TETRA_4;
+  else if (celltypes->IsType(VTK_TRIANGLE))
+    meshType = MESH_TRI_3;
+  else
+  {
+    std::cerr << "Mesh with unspported element types.\n";
+    exit(-1);
+  }
+  nPart = 0;
+  std::cout << " ------------------- Partitioner Stats ---------------------\n";
+  std::cout << "Mesh type : " << ( meshType==0 ? "Triangular":"Tetrahedral") << std::endl;
+  std::cout << "Number of nodes = " << nNde
+            << "\nNumber of elements = " << nElm << std::endl;
+  std::cout << "Size of elmConn = " << elmConnVec.size() << std::endl;
+  std::cout <<  "Min connectivity passed to partitioner = "
+            << *std::min_element(elmConnVec.begin(), elmConnVec.end()) << std::endl;
+  std::cout <<  "Max connectivity passed to partitioner = "
+            << *std::max_element(elmConnVec.begin(), elmConnVec.end()) << std::endl;
+  std::cout << " ----------------------------------------------------------\n";
 }
 
 

@@ -24,8 +24,10 @@ class meshSymmx
     // create mesh from symmetrix model file
     void createMeshFromModel(char* mdlFName);
     int createModelFromSTL(char* stlFName);
-    int createMeshFromSTL(char* stlFName);
+    int createSurfaceMeshFromSTL(char* stlFName);
+    int createVolumeMeshFromSTL(char* stlFName);
     void convertToVTU();
     void saveMesh(char* mshFName);
-
+    vtkSmartPointer<vtkDataSet> getDataSet();
+    void setWriteSurfAndVol(bool b);
 };

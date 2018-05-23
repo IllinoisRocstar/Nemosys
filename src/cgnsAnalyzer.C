@@ -1,4 +1,5 @@
 #include <cgnsAnalyzer.H>
+#include <GmshEntities.h>
 #include <string.h>
 #include <iostream>
 
@@ -494,7 +495,6 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
    // return the whole connectivity if requested
    if (elemId == -1)
    {
-      elmConn.insert(elmConn.begin(), elemConn.begin(), elemConn.end());
       return(elemConn);
    }
    // returning individual element connectivity

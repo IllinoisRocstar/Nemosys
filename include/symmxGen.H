@@ -1,8 +1,9 @@
 #ifndef SYMMXGEN_H
 #define SYMMXGEN_H
+
+// std
 #include <string>
 // simmetrix
-
 #include "MeshSim.h"
 #include "SimDiscrete.h"
 #include "SimMessages.h"
@@ -12,15 +13,18 @@
 #include "SimErrorCodes.h"
 #include "SimMeshingErrorCodes.h"
 #include "SimDiscreteErrorCodes.h"
-#include <meshGen.H>
-//// vtk
+// Nemosys + vtk
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
+#include <meshGen.H>
 
 
 /* TODO: needs extension. currently, most parameters are hardcoded, except for
          the log file name, licence features and license file name/location 
+        
+          also, implement vtuTosymmx in-mem convertor that takes a vtkDataSet
+          as input 
     
       possible feature options are :
       - geomsim_core
@@ -39,9 +43,9 @@ class SymmxParams : public meshingParams
     ~SymmxParams(){};
   
   public:
-    const char* logFName;
-    const char* features;
-    const char* licFName;
+    std::string logFName;
+    std::string features;
+    std::string licFName;
 };
 
 

@@ -7,7 +7,9 @@ class TransferBase
 {
   // constructors and destructors
   public:
-    TransferBase():source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL)
+    TransferBase()
+      :source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL),
+       checkQual(0), continuous(0)
     { 
       std::cout << "TransferBase constructed" << std::endl;
     }
@@ -40,6 +42,7 @@ class TransferBase
                       = std::vector<std::string>()) = 0; 
     // set whether to check transfer quality
     void setCheckQual(bool x) { checkQual = x; }
+    void setContBool(bool x) { continuous = x; }
 
   protected:
     meshBase* source;
@@ -47,6 +50,7 @@ class TransferBase
     meshBase* target;  
     vtkSmartPointer<vtkCellLocator> trgCellLocator;
     bool checkQual; 
+    bool continuous; // switch on / off weighted averaging for cell transfer
 };
 
 

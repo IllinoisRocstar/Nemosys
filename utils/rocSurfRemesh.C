@@ -30,10 +30,11 @@
 #include "meshPartitioner.H"
 #include "cgnsWriter.H"
 
-// MAdLib headers 
+// MAdLib + gmsh headers 
 #include "ModelInterface.h"
 #include "MAdLib.h"
 #include "NodalDataManager.h"
+#include "GmshEntities.h"
 
 // typedefs
 

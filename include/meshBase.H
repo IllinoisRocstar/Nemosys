@@ -68,6 +68,7 @@
 #include <vtkMath.h>
 #include <vtkExtractEdges.h>
 #include <vtkConnectivityFilter.h>
+#include <vtkCellIterator.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -107,7 +108,9 @@ class meshBase
   // constructors and destructors
   public:
 
-    meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0), order(1)
+    meshBase()
+      : dataSet(0),numPoints(0),numCells(0),
+        hasSizeField(0),checkQuality(0), continuous(1),order(1)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -122,10 +125,22 @@ class meshBase
     // construct vtkMesh from filename
     // this method calls the other factor methods based on extension
     static meshBase* Create(std::string fname); 
+    // construct from existing vtkDataSet and assign newname as filename
     static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
+    // create shared ptr from fname
     static std::shared_ptr<meshBase> CreateShared(std::string fname);
+    // create unique ptr from fname
     static std::unique_ptr<meshBase> CreateUnique(std::string fname);
-
+    /* create from coordinates and connectivities.
+       NOTE: use of this is only valid when mesh has one cell type. 
+             cellType one of the vtkCellType enums.
+             Currently, only VTK_TETRA and VTK_TRIANGLE are supported */
+    static meshBase* Create(const std::vector<double>& xCrds,
+                            const std::vector<double>& yCrds,
+                            const std::vector<double>& zCrds,
+                            const std::vector<int>& elmConn, const int cellType,
+                            std::string newname);
+  
 
     // construct vtkMesh from gmsh msh file
     static meshBase* exportGmshToVtk(std::string fname);
@@ -141,6 +156,8 @@ class meshBase
   public:
     // get point with id
     virtual std::vector<double> getPoint(int id) const {}
+    // get 3 vecs with x,y and z coords
+    virtual std::vector<std::vector<double>> getVertCrds() const {}
     // get cell with id : returns point indices and respective coordinates
     virtual std::map<int, std::vector<double>> getCell(int id) const {}
     // get vector of coords of cell with id
@@ -149,14 +166,23 @@ class meshBase
     virtual void inspectEdges(const std::string& ofname){}
     // get this meshes' dataSet
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
+    // extract the surface mesh
+    virtual vtkSmartPointer<vtkDataSet> extractSurface(){}
+
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
+    virtual void setPointDataArray(const char* name, const std::vector<double>& data){}
     // register data to dataSet's cell data
     virtual void setCellDataArray(const char* name,
                                   const std::vector<std::vector<double>>& data){}
     virtual void setCellDataArray(const char* name,
                                   const std::vector<double>& data){}
+    // get scalar point or cell data array. assumes data is not allocated prior to calling
+    virtual void getPointDataArray(std::string name,
+                                   std::vector<double>& data) {}
+    virtual void getCellDataArray(std::string name,
+                                  std::vector<double>& data) {}
     // delete array with id from dataSet's point data
     virtual void unsetPointDataArray(int arrayID){}
     virtual void unsetPointDataArray(const char* name){}
@@ -171,12 +197,10 @@ class meshBase
     virtual std::vector<double> getCellCenter(int cellID) const {}
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
-
     // get cell type as an integer
     // assumes all elements are the same type
     virtual int getCellType() const = 0;
-
-    virtual void classifyAndAddBoundaries(){}
+    virtual std::vector<int> getConnectivities() const {}
 
   // data transfer
   public:
@@ -204,7 +228,8 @@ class meshBase
     // generate size field based on method ("gradient", "value", "error estimator")
     // and given a point data array. dev_mlt and maxIsmin are used to determine
     // which cells to consider for refinement
-    void generateSizeField(std::string method, int arrayID, double dev_mlt, bool maxIsmin, double sizeFactor=1.);
+    void generateSizeField(std::string method, int arrayID, double dev_mlt, 
+                           bool maxIsmin, double sizeFactor=1.);
     // set whether this mesh has a sizefield
     void setSFBool(bool q) { hasSizeField = q; }
     // get this meshes' sizefield  
@@ -240,7 +265,7 @@ class meshBase
     // return the number of cells
     int getNumberOfCells() const { return numCells;}
     void checkMesh(std::string ofname);
-
+    
 
   // write and conversion
   public:
@@ -264,6 +289,7 @@ class meshBase
     void setFileName(std::string fname) { filename = fname; }
     std::string getFileName() const { return filename; }
     void setCheckQuality(bool x) { checkQuality = x; }
+    void setContBool(bool x) { continuous = x;}
     void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
     void unsetNewArrayNames() { newArrayNames.clear(); }
 
@@ -274,6 +300,7 @@ class meshBase
     vtkSmartPointer<vtkDataSet> dataSet; // mesh points, topology and data
     std::string filename; // name of mesh file
     bool checkQuality; // check transfer quality when on
+    bool continuous; // switch on / off weighted averaging for cell data transfer
     int order; // shape function order
     std::vector<std::string> newArrayNames;
 };
