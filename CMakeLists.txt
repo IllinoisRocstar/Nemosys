@@ -300,6 +300,10 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(cgns2msh utils/cgns2msh.C)
   TARGET_LINK_LIBRARIES(cgns2msh AltNemosys)
 
+  # stitch cgns utility
+  ADD_EXECUTABLE(rocStitchMesh utils/rocStitchMesh.C)
+  TARGET_LINK_LIBRARIES(rocStitchMesh AltNemosys)
+
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh AltNemosys)
