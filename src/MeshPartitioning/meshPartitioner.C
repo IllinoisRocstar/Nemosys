@@ -1,6 +1,8 @@
 /* implementation of mesh partition class(es) */
 
-#include "meshPartitioner.H"
+#include <meshPartitioner.H>
+#include <cgnsAnalyzer.H>
+#include <meshBase.H>
 
 /* Implementation of meshPartition class */
 //meshPartition::meshPartition(int pidx, std::vector<int> glbNdePartedIdx, std::vector<int> glbElmPartedIdx)
@@ -95,30 +97,30 @@ std::vector<double> meshPartition::getElmSlnsVec(std::vector<double>& slns, int 
 
 
 /* Implementation of class partitioner class */
-//meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
-//{
-//  nNde = inCg->getNVertex();
-//  nElm = inCg->getNElement();
-//  elmConnVec = inCg->getElementConnectivity(-1);
-//  elmConn.insert(elmConn.begin(), elmConnVec.begin(), elmConnVec.end());
-//  // 0-indexing connectivity 
-//  for (auto it=elmConn.begin(); it!=elmConn.end(); it++)
-//    *it = *it-1;
-//  nPart = 0;
-//  // coverting between CGNS to local type
-//  switch (inCg->getElementType())
-//  {
-//    case TETRA_4:
-//      meshType = MESH_TETRA_4;
-//      break;
-//    case TRI_3:
-//      meshType = MESH_TRI_3;
-//      break;
-//    default:
-//      std::cerr << "Unknown element type!\n";
-//      break;
-//  }
-//}
+meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
+{
+  nNde = inCg->getNVertex();
+  nElm = inCg->getNElement();
+  elmConnVec = inCg->getElementConnectivity(-1);
+  elmConn.insert(elmConn.begin(), elmConnVec.begin(), elmConnVec.end());
+  // 0-indexing connectivity 
+  for (auto it=elmConn.begin(); it!=elmConn.end(); it++)
+    *it = *it-1;
+  nPart = 0;
+  // coverting between CGNS to local type
+  switch (inCg->getElementType())
+  {
+    case TETRA_4:
+      meshType = MESH_TETRA_4;
+      break;
+    case TRI_3:
+      meshType = MESH_TRI_3;
+      break;
+    default:
+      std::cerr << "Unknown element type!\n";
+      break;
+  }
+}
 
 
 meshPartitioner::meshPartitioner(meshBase* inMB)

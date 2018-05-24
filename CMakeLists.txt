@@ -191,7 +191,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/netgenInterface.C src/MeshGeneration/meshGen.C
-                 src/MeshGeneration/netgenGen.C
+                 src/MeshGeneration/netgenGen.C src/MeshGeneration/netgenParams.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C
                  src/SizeFieldGeneration/GradSizeField.C
@@ -205,8 +205,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
                  src/SolutionVerification/OrderOfAccuracy.C)
-SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
-                src/cgnsWriter.C src/gridTransfer.C)
+SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/MeshPartitioning/meshPartitioner.C
+                src/MeshPartitioning/meshStitcher.C src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
@@ -214,7 +214,7 @@ SET(R8_SRCS src/math/r8lib.cpp)
 SET(SPHERE_SRCS src/spheres.C)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
 IF(ENABLE_SYMMX)
-  SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C)
+  SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C src/MeshGeneration/symmxParams.C)
   SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
 ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
@@ -257,7 +257,7 @@ ELSE()
   ADD_LIBRARY(AltNemosys ${ALTNEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(AltNemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
+TARGET_LINK_LIBRARIES(AltNemosys Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
 
 # Rocstar support library
 IF(NOT BUILD_STATIC)

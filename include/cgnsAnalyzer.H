@@ -81,7 +81,7 @@ public:
     indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
     nVertex(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
     solutionDataPopulated(false),
-    searchEps(1e-9), kdTree(NULL), kdTreeElem(NULL),
+    searchEps(1e-9), kdTree(NULL), kdTreeElem(NULL),vrtxCrd(NULL),vrtxIdx(NULL),
     isMltZone(false),vtkMesh(0)
   {};
 
@@ -94,6 +94,11 @@ public:
       delete kdTree;
     if (kdTreeElem)
       delete kdTreeElem;
+    if (vrtxCrd)
+      annDeallocPts(vrtxCrd);
+    if (vrtxIdx)
+      annDeallocPts(vrtxIdx);
+    clearAllSolutionData(); 
   };
 
   // loading mesh
@@ -245,6 +250,8 @@ protected:
   // search support data structures
   ANNkd_tree* kdTree;
   ANNkd_tree* kdTreeElem;
+  ANNpointArray vrtxCrd;
+  ANNpointArray vrtxIdx;
   double searchEps;
   // stitching data support
   std::vector<std::string> zoneNames;

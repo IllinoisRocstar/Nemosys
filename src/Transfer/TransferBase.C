@@ -3,7 +3,7 @@
 
 TransferBase* TransferBase::Create(std::string method, meshBase* _source, meshBase* _target)
 {
-  if (!method.compare("Finite Element"))
+  if (!method.compare("Consistent Interpolation"))
   {
     FETransfer* transobj = new FETransfer( _source , _target);
     return transobj; 
@@ -12,7 +12,7 @@ TransferBase* TransferBase::Create(std::string method, meshBase* _source, meshBa
   {
     std::cout << "Method " << method << " is not supported" << std::endl;
     std::cout << "Supported methods are: " << std::endl
-              << "1) Finite Element" << std::endl;
+              << "1) Consistent Interpolation" << std::endl;
     exit(1);
   }  
 }

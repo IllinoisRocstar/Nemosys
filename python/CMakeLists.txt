@@ -1,12 +1,14 @@
 find_package(PythonInterp 2.7 REQUIRED)
 find_package(SWIG REQUIRED)
 
-set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyNemosys.i)
+
 set(WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include)
 set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 if (ENABLE_SYMMX)
+  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyNemosysSymmx.i)
   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup_havesymmx.py.in")
 else()
+  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyNemosys.i)
   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 endif()
 configure_file(${SETUP_PY_IN} ${SETUP_PY})

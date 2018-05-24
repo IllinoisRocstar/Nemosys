@@ -211,7 +211,7 @@ vtkMesh::vtkMesh(const char* fname)
       numCells = dataSet->GetNumberOfCells();
       numPoints = dataSet->GetNumberOfPoints();
       vtkMesh vtkMesh_tmp(vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname)),fname);
-      vtkMesh_tmp.transfer(this,"Finite Element");     
+      vtkMesh_tmp.transfer(this,"Consistent Interpolation");     
       std::cout << "vtkMesh constructed" << std::endl;
     }
     else
@@ -861,7 +861,8 @@ void vtkMesh::inspectEdges(const std::string& ofname)
 std::vector<int> vtkMesh::getConnectivities() const
 {
   std::vector<int> connectivities;
-  vtkSmartPointer<vtkCellIterator> it = dataSet->NewCellIterator(); 
+  vtkSmartPointer<vtkCellIterator> it 
+    = vtkSmartPointer<vtkCellIterator>::Take(dataSet->NewCellIterator()); 
   for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
   {
     vtkSmartPointer<vtkIdList> pointIds = it->GetPointIds();

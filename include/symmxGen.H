@@ -15,47 +15,21 @@
 #include "SimDiscreteErrorCodes.h"
 // Nemosys + vtk
 #include <vtkUnstructuredGrid.h>
-#include <vtkIdList.h>
-#include <vtkCellTypes.h>
 #include <meshGen.H>
 
 
-/* TODO: needs extension. currently, most parameters are hardcoded, except for
-         the log file name, licence features and license file name/location 
-        
-          also, implement vtuTosymmx in-mem convertor that takes a vtkDataSet
-          as input 
+// TODO: implement vtuTosymmx in-mem convertor that takes a vtkDataSet
+//         as input 
+
+class symmxParams;
     
-      possible feature options are :
-      - geomsim_core
-      - meshsim_surface
-      - meshsim_volume
-      - geomsim_discrete
-      - meshsim_adv
-      - meshsim_adapt */
-
-class SymmxParams : public meshingParams
-{
-  
-  public:
-    SymmxParams(){};
-
-    ~SymmxParams(){};
-  
-  public:
-    std::string logFName;
-    std::string features;
-    std::string licFName;
-};
-
-
 class symmxGen : public meshGen
 {
 
   public:
     // initialize params with default values
     symmxGen();
-    symmxGen(SymmxParams* params); 
+    symmxGen(symmxParams* params); 
     ~symmxGen();
 
   // symmetrix mesh creation
@@ -76,7 +50,6 @@ class symmxGen : public meshGen
 
   // access
   public:
-    //vtkSmartPointer<vtkDataSet> getDataSet();
     void setWriteSurfAndVol(bool b);
 
   // helpers
@@ -93,6 +66,7 @@ class symmxGen : public meshGen
     static void messageHandler(int type, const char* msg);
 
   private:
+    symmxParams* params; // meshing params
     bool haveLog;
     bool writeSurfAndVol;
     pProgress prog;
@@ -100,6 +74,6 @@ class symmxGen : public meshGen
     pDiscreteModel dModel;
     pACase mcase;
     pMesh mesh;
-//    vtkSmartPointer<vtkDataSet> dataSet;
 };
+
 #endif
