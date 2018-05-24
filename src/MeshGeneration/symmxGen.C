@@ -1,12 +1,14 @@
-#include <stdio.h>
-#include <string.h>
-#include <symmxGen.H>
-#include <vtkXMLUnstructuredGridWriter.h>
 #include <iostream>
+#include <symmxGen.H>
+#include <symmxParams.H>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkIdList.h>
+#include <vtkCellTypes.h>
+
 
 // constructor
-symmxGen::symmxGen(SymmxParams* params)
-  : haveLog(false),prog(NULL),model(NULL),
+symmxGen::symmxGen(symmxParams* _params)
+  : params(_params), haveLog(false),prog(NULL),model(NULL),
     dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
 {
@@ -105,11 +107,11 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
       }
 
       // set the mesh size
-      MS_setMeshSize(mcase, modelDomain, 2, 0.1, 0);
+      MS_setMeshSize(mcase, modelDomain, 2, params->meshSize, 0);
       // setting curvature-based refinement params
-      MS_setAnisoMeshCurv(mcase, modelDomain, 2, 0.02);
-      MS_setMinCurvSize(mcase, modelDomain, 2, 0.01);
-      MS_setGlobalSizeGradationRate(mcase, 0.1);
+      MS_setAnisoMeshCurv(mcase, modelDomain, 2, params->anisoMeshCurv);
+      MS_setMinCurvSize(mcase, modelDomain, 2, params->minCurvSize);
+      MS_setGlobalSizeGradationRate(mcase, params->glbSizeGradRate);
       pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
       // snap model vertices to resulting surface mesh (ensures consistency with model)
       // this causes seg faults when trying to change topology of mesh during improvement
@@ -124,9 +126,9 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
       // set smoothing type to move vertices down gradient of shape metric
       SurfaceMeshImprover_setSmoothType(surfaceMeshImprover, 1);
       // set gradation rate
-      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, .05);
+      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, params->surfMshImprovGradRate);
       // allow improver to refine mesh in areas to meet metric
-      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, 0.1);
+      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, params->surfMshImprovMinSize);
       // fix intersections after improvement
       SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
       SurfaceMeshImprover_execute(surfaceMeshImprover, prog);
@@ -161,7 +163,7 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
     {
       SimDiscrete_start(0);
       pVolumeMesher volumeMesher = VolumeMesher_new(mcase, mesh);
-      VolumeMesher_setEnforceSize(volumeMesher, 2);
+      VolumeMesher_setEnforceSize(volumeMesher, 1);
       VolumeMesher_execute(volumeMesher, prog);
       VolumeMesher_delete(volumeMesher);
       SimDiscrete_stop(0);

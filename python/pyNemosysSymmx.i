@@ -15,6 +15,8 @@
 #include "jsoncons/json.hpp"
 #include "meshGen.H"
 #include "meshingParams.H"
+#include "symmxGen.H"
+#include "symmxParams.H"
 %}
 
 
@@ -505,3 +507,36 @@ class meshGen
     vtkSmartPointer<vtkDataSet> getDataSet(); 
 };
 
+class symmxParams : public meshingParams
+{
+  
+  public:
+    symmxParams();
+    ~symmxParams();
+    std::string logFName;
+    std::string features;
+    std::string licFName;
+    double meshSize;
+    double anisoMeshCurv;
+    double minCurvSize;
+    double glbSizeGradRate;
+    double surfMshImprovGradRate;  
+    double surfMshImprovMinSize; 
+};
+
+class symmxGen : public meshGen
+{
+
+  public:
+    symmxGen();
+    symmxGen(symmxParams* params); 
+    ~symmxGen();
+    void createMeshFromModel(const char* mdlFName);
+    int createModelFromSTL(const char* stlFName);
+    int createSurfaceMeshFromSTL(const char* stlFName);
+    int createVolumeMeshFromSTL(const char* stlFName);
+    int createMeshFromSTL(const char* fname); 
+    void convertToVTU(); 
+    void saveMesh(const std::string& mshFName);
+    void setWriteSurfAndVol(bool b);
+};

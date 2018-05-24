@@ -1,8 +1,9 @@
 #include <MeshGenDriver.H>
-#include <meshGen.H>
 #include <netgenGen.H>
+#include <netgenParams.H>
 #ifdef HAVE_SYMMX
-#include <symmxGen.H>
+  #include <symmxGen.H>
+  #include <symmxParams.H>
 #endif
 // ----------------------------- MeshGen Driver -----------------------------------//
 
@@ -45,7 +46,7 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
                                     ["Netgen Parameters"].as<std::string>();
     if (!defaults.compare("default"))
     {
-      NetgenParams* params = new NetgenParams();
+      netgenParams* params = new netgenParams();
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
@@ -53,7 +54,7 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
     {
       json ngparams = inputjson["Meshing Parameters"]["Netgen Parameters"];
       
-      NetgenParams* params = new NetgenParams();  
+      netgenParams* params = new netgenParams();  
      
       if (ngparams.has_key("uselocalh")) 
         params->uselocalh = ngparams["uselocalh"].as<bool>();
@@ -112,15 +113,36 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
         exit(1);
       }
       
-      SymmxParams* params = new SymmxParams();
+      symmxParams* params = new symmxParams();
       params->licFName = inputjson["License File"].as<std::string>();
       params->features = inputjson["Features"].as<std::string>();
       params->logFName = inputjson["Log File"].as<std::string>();
-      MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
-      return mshgndrvobj; 
+      
+      std::string defaults = inputjson["Meshing Parameters"]["Simmetrix Parameters"].as<std::string>();
+      if (!defaults.compare("default"))
+      {
+        MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+        return mshgndrvobj; 
+      }
+      else
+      {
+        json symmxparams = inputjson["Meshing Parameters"]["Simmetrix Parameters"];
+        if (symmxparams.has_key("Mesh Size"))
+          params->meshSize = symmxparams["Mesh Size"].as<double>();
+        if (symmxparams.has_key("Anisotropic Curvature Refinement"))
+          params->anisoMeshCurv = symmxparams["Anisotropic Curvature Refinement"].as<double>();
+        if (symmxparams.has_key("Global Gradation Rate"))
+          params->glbSizeGradRate = symmxparams["Global Gradation Rate"].as<double>();
+        if (symmxparams.has_key("Surface Mesh Improver Gradation Rate"))
+          params->surfMshImprovGradRate = symmxparams["Surface Mesh Improver Gradation Rate"].as<double>();
+        if (symmxparams.has_key("Surface Mesh Improver Min Size"))
+          params->surfMshImprovMinSize = symmxparams["Surface Mesh Improver Min Size"].as<double>();
+      
+        MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+        return mshgndrvobj;
+      } 
     #endif
   }
-
 
   else
   {

@@ -72,9 +72,6 @@
 
 //MAd Lib
 #include <MAdLib.h>
-#include <ModelInterface.h>
-#include <MeshDataBaseInterface.h>
-
 
 // Nemosys
 #include <pntMesh.H>
@@ -205,8 +202,8 @@ class meshBase
   // data transfer
   public:
     // transfer point data with given id from this mesh to target
-    // method can be "Finite Element", "Mortar Element", "RBF" etc.
-    // only "Finite Element" has been implemented
+    // method can be "Consistent Interpolation", "Mortar Element", "RBF" etc.
+    // only "Consistent Interpolation" has been implemented
     int transfer(meshBase* target, std::string method, 
                  const std::vector<int>& arrayIDs);
     int transfer(meshBase* target, std::string method, 
