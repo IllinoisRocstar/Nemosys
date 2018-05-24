@@ -7,13 +7,15 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <map>
 
 // other
 #include "metis.h"
+#include "MAdLib.h"
 
-// Nemosys
-//#include "cgnsAnalyzer.H"
-#include "meshBase.H"
+// forward declare cgnsAnalyzer to prevent gmsh name conflicts w/ simmetrix
+class cgnsAnalyzer;
+class meshBase;
 
 enum MeshType_t {MESH_TRI_3, MESH_QUAD_4, MESH_TETRA_4, MESH_HEX_8, MESH_MIXED};
 
@@ -54,7 +56,7 @@ public:
     elmConn.insert(elmConn.begin(), elemConn.begin(), elemConn.end());     
   };
   // from CGNS object
-  //meshPartitioner(cgnsAnalyzer* inCg);
+  meshPartitioner(cgnsAnalyzer* inCg);
   // from MAdMesh object
   meshPartitioner(MAd::pMesh inMesh);
   //// from meshBase object

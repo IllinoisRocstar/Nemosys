@@ -5,6 +5,8 @@
 #include <vtkSmartPointer.h>
 #include <vtkDataSet.h>
 
+class meshingParams;
+
 // method to write vtk grids
 template<class TWriter> void writeVTFile(const std::string& fname, 
                                          vtkSmartPointer<vtkDataSet> dataSet)
@@ -14,15 +16,6 @@ template<class TWriter> void writeVTFile(const std::string& fname,
   Writer->SetInputData(dataSet);
   Writer->Write();
 }
-
-
-class meshingParams
-{
-  public:
-    meshingParams(){};
-    virtual ~meshingParams(){};    
-    
-};
 
 class meshGen 
 {

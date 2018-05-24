@@ -1150,8 +1150,9 @@ void cgnsAnalyzer::unclassifyMAdMeshBnd(const MAd::pMesh MAdMesh)
 
 void cgnsAnalyzer::buildVertexKDTree()
 {
-  ANNpointArray vrtxCrd;
-  
+  //ANNpointArray vrtxCrd;
+  if (vrtxCrd)
+    annDeallocPts(vrtxCrd);
   // clearing onld instance
   vrtxCrd = annAllocPts(nVertex, physDim);
   if (kdTree) {
@@ -1172,8 +1173,9 @@ void cgnsAnalyzer::buildVertexKDTree()
 
 void cgnsAnalyzer::buildElementKDTree()
 {
-  ANNpointArray vrtxIdx;
-  
+  //ANNpointArray vrtxIdx;
+  if (vrtxIdx)
+    annDeallocPts(vrtxIdx);  
   // clearing onld instance
   vrtxIdx = annAllocPts(nElem, nVrtxElem);
   if (kdTreeElem)
@@ -1196,30 +1198,33 @@ void cgnsAnalyzer::buildElementKDTree()
 */
 void cgnsAnalyzer::checkVertex()
 {
-   // (re)building the kdTree
-   buildVertexKDTree();
-   // loop through vertieces to find duplicated ones
-   int nDupVer = 0;
-   for (int iVrt=0; iVrt<getNVertex(); iVrt++)
-   {
-     ANNpoint     qryVrtx;
-     ANNidxArray  nnIdx;
-     ANNdistArray dists;
-     qryVrtx = annAllocPt(physDim);
-     qryVrtx[0] = getVrtXCrd(iVrt);
-     qryVrtx[1] = getVrtYCrd(iVrt);
-     qryVrtx[2] = getVrtZCrd(iVrt);
-     nnIdx  = new ANNidx[1];
-     dists  = new ANNdist[1];
-     kdTree->annkSearch(qryVrtx, 2, nnIdx, dists);
-     if (dists[1] < 1e-10) {
-       nDupVer++;
-       std::cout << "Vertex " << iVrt << " is duplicated."
-                 << " Distances = " << dists[0]
-                 << " " << dists[1] << std::endl;
-     }
-   }
-   std::cout << "Found " << nDupVer << " duplicate vertex.\n";
+  // (re)building the kdTree
+  buildVertexKDTree();
+  // loop through vertieces to find duplicated ones
+  int nDupVer = 0;
+  for (int iVrt=0; iVrt<getNVertex(); iVrt++)
+  {
+    ANNpoint     qryVrtx;
+    ANNidxArray  nnIdx;
+    ANNdistArray dists;
+    qryVrtx = annAllocPt(physDim);
+    qryVrtx[0] = getVrtXCrd(iVrt);
+    qryVrtx[1] = getVrtYCrd(iVrt);
+    qryVrtx[2] = getVrtZCrd(iVrt);
+    nnIdx  = new ANNidx[1];
+    dists  = new ANNdist[1];
+    kdTree->annkSearch(qryVrtx, 2, nnIdx, dists);
+    if (dists[1] < 1e-10) {
+      nDupVer++;
+      std::cout << "Vertex " << iVrt << " is duplicated."
+                << " Distances = " << dists[0]
+                << " " << dists[1] << std::endl;
+    }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
+  }
+  std::cout << "Found " << nDupVer << " duplicate vertex.\n";
 }
 /*
    Check element to element connectivity making sure there is at least
@@ -1303,91 +1308,94 @@ std::vector<double> cgnsAnalyzer::getElmCntCoords(MAd::pMesh msh)
 */
 void cgnsAnalyzer::stitchMesh(cgnsAnalyzer* inCg, bool withFields)
 {
-   // sanity check
-   if (physDim != inCg->getPhysDim())
-   {
-     std::cerr << "Error : Stitching mesh should have same dimensions."
-               << std::endl;
-     return;
-   }
-        
-   // (re)building the kdTree
-   buildVertexKDTree();
+  // sanity check
+  if (physDim != inCg->getPhysDim())
+  {
+    std::cerr << "Error : Stitching mesh should have same dimensions."
+              << std::endl;
+    return;
+  }
+       
+  // (re)building the kdTree
+  buildVertexKDTree();
 
-   // clear old masks 
-   vrtDataMask.clear();
-   elmDataMask.clear();
+  // clear old masks 
+  vrtDataMask.clear();
+  elmDataMask.clear();
 
-   // adding new mesh non-repeating vertices
-   std::vector<int>    newVrtIdx;
-   std::vector<int>    rptVrtIdx;
-   std::map<int,int>   rptVrtMap; // <newMeshIdx, currentMeshIdx>
-   std::vector<double> newXCrd;
-   std::vector<double> newYCrd;
-   std::vector<double> newZCrd;
-   int nNewVrt = 0;
-   for (int iVrt=0; iVrt<inCg->getNVertex(); iVrt++)
-   {
-     ANNpoint     qryVrtx;
-     ANNidxArray  nnIdx;
-     ANNdistArray dists;
-     qryVrtx = annAllocPt(physDim);
-     qryVrtx[0] = inCg->getVrtXCrd(iVrt);
-     qryVrtx[1] = inCg->getVrtYCrd(iVrt);
-     qryVrtx[2] = inCg->getVrtZCrd(iVrt);
-     nnIdx  = new ANNidx[1];
-     dists  = new ANNdist[1];
-     kdTree->annkSearch(qryVrtx, 1, nnIdx, dists);
-     if (dists[0] > searchEps) {
-       nNewVrt++;
-       vrtDataMask.push_back(true);
-       newVrtIdx.push_back(nVertex + nNewVrt);
-       newXCrd.push_back(qryVrtx[0]);
-       newYCrd.push_back(qryVrtx[1]);
-       newZCrd.push_back(qryVrtx[2]);
-     } else {
-       vrtDataMask.push_back(false);
-       newVrtIdx.push_back(nnIdx[0]+1);
-       rptVrtIdx.push_back(iVrt);
-       rptVrtMap[iVrt] = nnIdx[0]+1;
-     }
-   }
-   std::cout << "Found " << nNewVrt << " new vertices.\n"; 
-   std::cout << "Number of repeating index " << rptVrtIdx.size()
-             << std::endl; 
+  // adding new mesh non-repeating vertices
+  std::vector<int>    newVrtIdx;
+  std::vector<int>    rptVrtIdx;
+  std::map<int,int>   rptVrtMap; // <newMeshIdx, currentMeshIdx>
+  std::vector<double> newXCrd;
+  std::vector<double> newYCrd;
+  std::vector<double> newZCrd;
+  int nNewVrt = 0;
+  for (int iVrt=0; iVrt<inCg->getNVertex(); iVrt++)
+  {
+    ANNpoint     qryVrtx;
+    ANNidxArray  nnIdx;
+    ANNdistArray dists;
+    qryVrtx = annAllocPt(physDim);
+    qryVrtx[0] = inCg->getVrtXCrd(iVrt);
+    qryVrtx[1] = inCg->getVrtYCrd(iVrt);
+    qryVrtx[2] = inCg->getVrtZCrd(iVrt);
+    nnIdx  = new ANNidx[1];
+    dists  = new ANNdist[1];
+    kdTree->annkSearch(qryVrtx, 1, nnIdx, dists);
+    if (dists[0] > searchEps) {
+      nNewVrt++;
+      vrtDataMask.push_back(true);
+      newVrtIdx.push_back(nVertex + nNewVrt);
+      newXCrd.push_back(qryVrtx[0]);
+      newYCrd.push_back(qryVrtx[1]);
+      newZCrd.push_back(qryVrtx[2]);
+    } else {
+      vrtDataMask.push_back(false);
+      newVrtIdx.push_back(nnIdx[0]+1);
+      rptVrtIdx.push_back(iVrt);
+      rptVrtMap[iVrt] = nnIdx[0]+1;
+    }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
+  }
+  std::cout << "Found " << nNewVrt << " new vertices.\n"; 
+  std::cout << "Number of repeating index " << rptVrtIdx.size()
+            << std::endl; 
 
-   // currently implemented to add all new elements
-   std::vector<int> newElemConn;
-   int nNewElem=0;
-   for (int iElem=0; iElem<inCg->getNElement(); iElem++)
-   {
-     std::vector<int> rmtElemConn = inCg->getElementConnectivity(iElem);
-     
-     // just adding all elements
-     elmDataMask.push_back(true);
-     nNewElem++;
-     newElemConn.insert(newElemConn.end(), 
-           rmtElemConn.begin(), rmtElemConn.end());
-   }
-   std::cout << "Found " << nNewElem << " new elements.\n";
-   
-   // switching conncetivity table to global
-   for (int iIdx=0; iIdx<newElemConn.size(); iIdx++){
-     newElemConn[iIdx] = newVrtIdx[newElemConn[iIdx]-1];
-   }
+  // currently implemented to add all new elements
+  std::vector<int> newElemConn;
+  int nNewElem=0;
+  for (int iElem=0; iElem<inCg->getNElement(); iElem++)
+  {
+    std::vector<int> rmtElemConn = inCg->getElementConnectivity(iElem);
+    
+    // just adding all elements
+    elmDataMask.push_back(true);
+    nNewElem++;
+    newElemConn.insert(newElemConn.end(), 
+          rmtElemConn.begin(), rmtElemConn.end());
+  }
+  std::cout << "Found " << nNewElem << " new elements.\n";
+  
+  // switching conncetivity table to global
+  for (int iIdx=0; iIdx<newElemConn.size(); iIdx++){
+    newElemConn[iIdx] = newVrtIdx[newElemConn[iIdx]-1];
+  }
 
-   // stitching field values if requested
-   if (withFields)
-     stitchFields(inCg);
+  // stitching field values if requested
+  if (withFields)
+    stitchFields(inCg);
 
-   // updating internal datastructure       
-   nVertex += nNewVrt;
-   nElem += nNewElem;
-   xCrd.insert(xCrd.end(), newXCrd.begin(), newXCrd.end());
-   yCrd.insert(yCrd.end(), newYCrd.begin(), newYCrd.end());
-   zCrd.insert(zCrd.end(), newZCrd.begin(), newZCrd.end());
-   elemConn.insert(elemConn.end(), newElemConn.begin(), newElemConn.end());
-   zoneNames.push_back(inCg->getZoneName());
+  // updating internal datastructure       
+  nVertex += nNewVrt;
+  nElem += nNewElem;
+  xCrd.insert(xCrd.end(), newXCrd.begin(), newXCrd.end());
+  yCrd.insert(yCrd.end(), newYCrd.begin(), newYCrd.end());
+  zCrd.insert(zCrd.end(), newZCrd.begin(), newZCrd.end());
+  elemConn.insert(elemConn.end(), newElemConn.begin(), newElemConn.end());
+  zoneNames.push_back(inCg->getZoneName());
 }
 
 void cgnsAnalyzer::loadSolutionDataContainer(int verb)
