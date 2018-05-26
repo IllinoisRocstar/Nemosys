@@ -10,6 +10,7 @@ meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
   {
     partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
     partitions[iCg]->loadGrid();
+		// defining partition flags
     std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
     partitions[iCg]
       ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
@@ -28,7 +29,8 @@ meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
   partitions[0]->getAppendedSolutionDataName(appSlnNameList);
   slnNameList.insert(slnNameList.end(),
                      appSlnNameList.begin(), appSlnNameList.end());
-  // write all data into vtk file
+
+	// write all data into vtk file
   for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
   {
     std::vector<double> physData;

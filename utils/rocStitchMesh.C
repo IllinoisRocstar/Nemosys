@@ -5,7 +5,6 @@
 #include <memory>
 
 // Nemosys headers
-#include <cgnsAnalyzer.H>
 #include <meshBase.H>
 #include <meshPartitioner.H>
 #include <meshStitcher.H>
