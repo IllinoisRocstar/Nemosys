@@ -1,32 +1,80 @@
 #include <meshStitcher.H>
-#include <cgnsAnalyzer.H>
+#include <rocstarCgns.H>
 #include <meshBase.H>
 
 meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
-  : cgFileNames(_cgFileNames), stitchedMesh(nullptr)
+  : cgFileNames(_cgFileNames), stitchedMesh(nullptr), cgObj(nullptr)
 {
-  partitions.resize(cgFileNames.size());
-  for (int iCg = 0; iCg < cgFileNames.size(); ++iCg)
+  if (cgFileNames.size() > 0)
   {
-    partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
-    partitions[iCg]->loadGrid();
-		// defining partition flags
-    std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
-    partitions[iCg]
-      ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
-    if (iCg)
-      partitions[0]->stitchMesh(partitions[iCg],true); 
-  } 
+    partitions.resize(cgFileNames.size(),nullptr);
+    for (int iCg = 0; iCg < cgFileNames.size(); ++iCg)
+    {
+      partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
+      partitions[iCg]->loadGrid(1);
+	  	// defining partition flags
+      std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
+      partitions[iCg]
+        ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
+      if (iCg)
+        partitions[0]->stitchMesh(partitions[iCg],true); 
+    } 
+    std::cout << "Meshes stitched successfully! #####################################\n";
+    std::cout << "Exporting stitched mesh to VTK format #############################\n";
+    stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),"stitched.vtu");
+    std::cout << "Transferring physical quantities to vtk mesh ######################\n";
+    // figure out what is existing on the stitched grid
+    int outNData, outNDim;
+    std::vector<std::string> slnNameList;
+    std::vector<std::string> appSlnNameList;
+    partitions[0]->getSolutionDataNames(slnNameList);  
+    partitions[0]->getAppendedSolutionDataName(appSlnNameList);
+    slnNameList.insert(slnNameList.end(),
+                       appSlnNameList.begin(), appSlnNameList.end());
+
+	  // write all data into vtk file
+    for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
+    {
+      std::vector<double> physData;
+      partitions[0]->getSolutionDataStitched(*is, physData, outNData, outNDim);
+      solution_type_t dt = partitions[0]->getSolutionDataObj(*is)->getDataType();
+      if (dt == NODAL)  
+      {      
+        std::cout << "Writing nodal " << *is << std::endl; 
+        stitchedMesh->setPointDataArray((*is).c_str(), physData);
+      }
+      else
+      {
+        // gs field is 'weird' in irocstar files- we don't write it back
+        if (!(*is).compare("gs"))
+          continue;
+        std::cout << "Writing cell-based " << *is << std::endl;
+        stitchedMesh->setCellDataArray((*is).c_str(), physData);
+      }
+    }
+    stitchedMesh->report();
+    stitchedMesh->write();
+  }
+}
+
+meshStitcher::meshStitcher(int nCg, const std::string& baseCgName)
+  : cgObj(nullptr), stitchedMesh(nullptr)
+{
+  cgObj = new rocstarCgns(baseCgName);
+  cgObj->loadCgSeries(nCg);
+  cgObj->dummy(); 
   std::cout << "Meshes stitched successfully! #####################################\n";
   std::cout << "Exporting stitched mesh to VTK format #############################\n";
-  stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),"stitched.vtu");
+  std::string newname = baseCgName;
+  newname = trim_fname(newname, "stitched.vtu");
+  stitchedMesh = meshBase::Create(cgObj->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh ######################\n";
-  // figure out what is existing on the stitched grid
+  // figure out what exists on the stitched grid
   int outNData, outNDim;
   std::vector<std::string> slnNameList;
   std::vector<std::string> appSlnNameList;
-  partitions[0]->getSolutionDataNames(slnNameList);  
-  partitions[0]->getAppendedSolutionDataName(appSlnNameList);
+  cgObj->getSolutionDataNames(slnNameList);  
+  cgObj->getAppendedSolutionDataName(appSlnNameList);
   slnNameList.insert(slnNameList.end(),
                      appSlnNameList.begin(), appSlnNameList.end());
 
@@ -34,8 +82,8 @@ meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
   for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
   {
     std::vector<double> physData;
-    partitions[0]->getSolutionDataStitched(*is, physData, outNData, outNDim);
-    solution_type_t dt = partitions[0]->getSolutionDataObj(*is)->getDataType();
+    cgObj->getSolutionDataStitched(*is, physData, outNData, outNDim);
+    solution_type_t dt = cgObj->getSolutionDataObj(*is)->getDataType();
     if (dt == NODAL)  
     {      
       std::cout << "Writing nodal " << *is << std::endl; 
@@ -69,6 +117,11 @@ meshStitcher::~meshStitcher()
     delete stitchedMesh;
     stitchedMesh = nullptr;
   }
+  if (cgObj)
+  {
+    delete cgObj;
+    cgObj = nullptr;
+  }
 }
 
 meshBase* meshStitcher::getStitchedMB()
@@ -84,8 +137,10 @@ meshBase* meshStitcher::getStitchedMB()
 
 cgnsAnalyzer* meshStitcher::getStitchedCGNS()
 {
-  if (partitions[0])
+  if (partitions.size())
     return partitions[0];
+  else if (cgObj)
+    return cgObj;
   else
   {
     std::cerr << "No stitched mesh to return!" << std::endl;

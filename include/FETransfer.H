@@ -2,6 +2,8 @@
 #define FETRANSFER_H
 
 #include <TransferBase.H>
+#include <vtkGenericCell.h>
+#include <vtkDoubleArray.h>
 
 using namespace nemAux;
 
@@ -30,7 +32,7 @@ class FETransfer : public TransferBase
         2) When the cell is identified, evaluate the weights for interpolation of the 
            solution to the target point and perform the interpolation. */
     int transferPointData(const std::vector<int>& arrayIDs,
-                          const std::vector<string>& newnames = std::vector<string>()); 
+                          const std::vector<std::string>& newnames = std::vector<std::string>()); 
 
     int transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell, 
                           std::vector<vtkSmartPointer<vtkDoubleArray>> dasSource,
@@ -48,7 +50,7 @@ class FETransfer : public TransferBase
         3)  Transfer the converted cell-point data from the source mesh
             to the cell centers of the target mesh using the runPD methods*/
     int transferCellData(const std::vector<int>& arrayIDs,
-                         const std::vector<string>& newnames = std::vector<string>());
+                         const std::vector<std::string>& newnames = std::vector<std::string>());
 
     int transferCellData(int i, vtkSmartPointer<vtkGenericCell> genCell, 
                      std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint,

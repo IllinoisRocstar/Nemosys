@@ -35,7 +35,7 @@
 #include "MAdLib.h"
 #include "NodalDataManager.h"
 #include "GmshEntities.h"
-
+#include <meshBase.H>
 // typedefs
 
 /* auxiliary functions */
@@ -70,6 +70,12 @@ int main(int argc, char* argv[])
   rocstarCgns* niCgObj = new rocstarCgns(niCgFileName);
   niCgObj->loadCgSeries(4);
   niCgObj->dummy();
+  meshBase* stitched1 = meshBase::Create(bCgObj->getVTKMesh(), "bCgObjStitched.vtu");
+  meshBase* stitched2 = meshBase::Create(niCgObj->getVTKMesh(), "niCgObjStitched.vtu");
+  stitched1->write();
+  stitched2->write();
+  delete stitched1;
+  delete stitched2;
   // stiching two files
   bCgObj->stitchMe(niCgObj); 
   

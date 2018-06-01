@@ -205,8 +205,7 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
                  src/SolutionVerification/OrderOfAccuracy.C)
-SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/rocstarCgns.C src/MeshPartitioning/meshPartitioner.C
-                src/MeshPartitioning/meshStitcher.C src/cgnsWriter.C src/gridTransfer.C)
+SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/rocstarCgns.C src/MeshPartitioning/meshPartitioner.C src/MeshPartitioning/meshStitcher.C src/cgnsWriter.C src/gridTransfer.C src/Drivers/RemeshDriver.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
 SET(TUTR_SRCS utils/writeStructured.C)
@@ -215,7 +214,7 @@ SET(SPHERE_SRCS src/spheres.C)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
 IF(ENABLE_SYMMX)
   SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C src/MeshGeneration/symmxParams.C)
-  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${SYMMX_SRCS})
 ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
@@ -247,8 +246,11 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES})
-
+IF(NOT ENABLE_SYMMX)
+  TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES})
+ELSE()
+  TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
+ENDIF()
 
 # build old nemosys lib
 IF(NOT BUILD_STATIC)
@@ -308,10 +310,10 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh AltNemosys)
   
-  if (ENABLE_SYMMX) 
-  ADD_EXECUTABLE(rocSymmxRemesh utils/rocSymmxRemesh.C)
-    TARGET_LINK_LIBRARIES(rocSymmxRemesh AltNemosys Nemosys)
-  ENDIF()
+  #if (ENABLE_SYMMX) 
+  #ADD_EXECUTABLE(rocSymmxRemesh utils/rocSymmxRemesh.C)
+  #  TARGET_LINK_LIBRARIES(rocSymmxRemesh AltNemosys Nemosys)
+  #ENDIF()
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
   TARGET_LINK_LIBRARIES(rocSurfRemesh AltNemosys Rocs)
@@ -331,11 +333,11 @@ IF(ENABLE_BUILD_UTILS)
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-  if (ENABLE_SYMMX)
-    INSTALL(TARGETS rocSymmxRemesh RUNTIME DESTINATION Nemosys/bin 
-            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-            GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-  endif()
+  #if (ENABLE_SYMMX)
+  #  INSTALL(TARGETS rocSymmxRemesh RUNTIME DESTINATION Nemosys/bin 
+  #          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  #          GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  #endif()
 
   # DTK tutorial
   IF (ENABLE_DTK)

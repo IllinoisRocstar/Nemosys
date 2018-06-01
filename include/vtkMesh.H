@@ -2,6 +2,7 @@
 #define vtkMesh_H
 
 #include <meshBase.H>
+#include <vtkUnstructuredGrid.h>
 
 using namespace nemAux;
 

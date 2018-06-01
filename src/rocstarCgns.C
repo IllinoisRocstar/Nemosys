@@ -205,6 +205,9 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
       rptVrtIdx.push_back(iVrt);
       rptVrtMap[iVrt] = nnIdx[0]+1;
     }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
   }
   std::cout << "Found " << nNewVrt << " new vertices.\n"; 
   std::cout << "Number of repeating index " << rptVrtIdx.size()
@@ -345,6 +348,9 @@ void rocstarCgns::stitchMe(rocstarCgns* cgObj)
       rptVrtIdx.push_back(iVrt);
       rptVrtMap[iVrt] = nnIdx[0]+1;
     }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
   }
   std::cout << "Found " << nNewVrt << " new vertices.\n"; 
   std::cout << "Number of repeating index " << rptVrtIdx.size()
