@@ -17,6 +17,9 @@
 #include "meshingParams.H"
 #include "symmxGen.H"
 #include "symmxParams.H"
+#include "cgnsAnalyzer.H"
+#include "meshStitcher.H"
+#include "meshPartitioner.H"
 %}
 
 
@@ -539,4 +542,34 @@ class symmxGen : public meshGen
     void convertToVTU(); 
     void saveMesh(const std::string& mshFName);
     void setWriteSurfAndVol(bool b);
+};
+
+class meshStitcher
+{
+  public:
+    
+    meshStitcher(const std::vector<std::string>& cgFileNames);
+    ~meshStitcher();
+    
+    cgnsAnalyzer* getStitchedCGNS();
+    meshBase* getStitchedMB();
+};
+
+class meshPartitioner
+{
+
+public:
+  meshPartitioner(int nNde, int nElm, std::vector<int>& elemConn, MeshType_t meshType);
+  meshPartitioner(cgnsAnalyzer* inCg);
+  meshPartitioner(meshBase* inMB);
+  // destructor
+  ~meshPartitioner();
+
+  // mesh information
+  int partition(int nPartition);
+  int partition();
+  std::vector<double> getCrds(int iPart, std::vector<double> crds);
+  std::vector<int> getConns(int iPart);
+  int getNNdePart(int iPart);
+  int getNElmPart(int iPart);
 };

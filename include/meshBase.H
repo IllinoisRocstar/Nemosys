@@ -3,72 +3,8 @@
 
 // VTK
 #include <vtkSmartPointer.h>
-#include <vtkXMLReader.h>
-#include <vtkXMLUnstructuredGridReader.h>
-#include <vtkXMLPolyDataReader.h>
-#include <vtkXMLStructuredGridReader.h>
-#include <vtkXMLRectilinearGridReader.h>
-#include <vtkXMLHyperOctreeReader.h>
-#include <vtkXMLCompositeDataReader.h>
-#include <vtkXMLStructuredGridReader.h>
-#include <vtkXMLImageDataReader.h>
-#include <vtkSTLReader.h>
-#include <vtkDataSetReader.h>
-#include <vtkGenericDataObjectReader.h>
-#include <vtkDataSet.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkRectilinearGrid.h>
-#include <vtkHyperOctree.h>
-#include <vtkImageData.h>
-#include <vtkPolyData.h>
-#include <vtkStructuredGrid.h>
-#include <vtkPointData.h>
-#include <vtkCellData.h>
-#include <vtkFieldData.h>
-#include <vtkCellTypes.h>
-#include <vtksys/SystemTools.hxx>
-#include <vtkDataArray.h>
-#include <vtkUnsignedIntArray.h>
-#include <vtkIntArray.h>
-#include <vtkUnsignedLongArray.h>
-#include <vtkLongArray.h>
-#include <vtkFloatArray.h>
-#include <vtkDoubleArray.h>
-#include <vtkXMLWriter.h>
-#include <vtkXMLUnstructuredGridWriter.h>
-#include <vtkXMLPolyDataWriter.h>
-#include <vtkXMLStructuredGridWriter.h>
-#include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLHyperOctreeWriter.h>
-#include <vtkXMLCompositeDataWriter.h>
-#include <vtkXMLStructuredGridWriter.h>
-#include <vtkSTLWriter.h>
-#include <vtkXMLImageDataWriter.h>
-#include <vtkXMLImageDataReader.h>
-#include <vtkDataSetReader.h>
-#include <vtkDataSetWriter.h>
-#include <vtkCellCenters.h>
-#include <vtkCell.h>
-#include <vtkCellArray.h>
-#include <vtkGenericCell.h>
-#include <vtkTetra.h>
-#include <vtkTriangle.h>
-#include <vtkIdTypeArray.h>
-#include <vtkInformation.h>
 #include <vtkCellLocator.h>
-#include <vtkCellTreeLocator.h>
-#include <vtkModifiedBSPTree.h>
-#include <vtkMeshQuality.h>
-#include <vtkQuadratureSchemeDefinition.h>
-#include <vtkQuadratureSchemeDictionaryGenerator.h>
-#include <vtkQuadraturePointsGenerator.h>
-#include <vtkQuadraturePointInterpolator.h>
-#include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
-#include <baseInterp.H>
-#include <vtkMath.h>
-#include <vtkExtractEdges.h>
-#include <vtkConnectivityFilter.h>
-#include <vtkCellIterator.h>
+#include <vtkDataSet.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -210,6 +146,9 @@ class meshBase
                  const std::vector<std::string>& arrayNames);
     // transfer all point data from this mesh to target
     int transfer(meshBase* target, std::string method);
+
+
+
 
   // integration
   public:

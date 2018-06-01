@@ -1,7 +1,40 @@
-#include<vtkMesh.H>
+#include <vtkMesh.H>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkUnstructuredGridWriter.h>
 #include <vtkTriangleFilter.h>
+#include <vtkDoubleArray.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkFieldData.h>
+#include <vtkPoints.h>
+#include <vtkCell.h>
+#include <vtkIdList.h>
+#include <vtksys/SystemTools.hxx>
+#include <vtkCellTypes.h>
+#include <vtkXMLWriter.h>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLStructuredGridWriter.h>
+#include <vtkXMLRectilinearGridWriter.h>
+#include <vtkXMLHyperOctreeWriter.h>
+#include <vtkSTLWriter.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkXMLStructuredGridReader.h>
+#include <vtkXMLRectilinearGridReader.h>
+#include <vtkXMLHyperOctreeReader.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkSTLReader.h>
+#include <vtkExtractEdges.h>
+#include <vtkGenericCell.h>
+#include <vtkStructuredGrid.h>
+#include <vtkCellIterator.h>
+#include <vtkRectilinearGrid.h>
+#include <vtkImageData.h>
+#include <vtkHyperOctree.h>
+
 
 void vtkMesh::write()
 {

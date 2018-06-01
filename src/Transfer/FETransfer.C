@@ -1,5 +1,6 @@
 #include <FETransfer.H>
-
+#include <vtkPointData.h>
+#include <vtkCellData.h>
 
 FETransfer::FETransfer(meshBase* _source, meshBase* _target)
 {
@@ -22,7 +23,7 @@ FETransfer::FETransfer(meshBase* _source, meshBase* _target)
        solution to the target point and perform the interpolation.
 */
 int FETransfer::transferPointData(const std::vector<int>& arrayIDs,
-                                  const std::vector<string>& newnames)
+                                  const std::vector<std::string>& newnames)
 {
 
   if (arrayIDs.size() == 0)
@@ -149,9 +150,10 @@ int FETransfer::transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell
   if (id >= 0)
   {
     double pcoords[3];
+    double tmp[3];
     double weights[genCell->GetNumberOfPoints()];
-    int result = genCell->EvaluatePosition(x,NULL,subId,pcoords,minDist2,weights); 
-    if (result > 0)
+    int result = genCell->EvaluatePosition(x,tmp,subId,pcoords,minDist2,weights); 
+    if (result > 0 || minDist2 < 1e-14)
     {
       for (int id = 0; id < dasSource.size(); ++id)
       {
@@ -201,7 +203,7 @@ int FETransfer::transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell
         to the cell centers of the target mesh using the runPD methods
 */
 int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
-                                 const std::vector<string>& newnames)
+                                 const std::vector<std::string>& newnames)
 {
 
   if (arrayIDs.size() == 0)

@@ -2,6 +2,7 @@
 #define SIZEFIELDGEN_H
 
 #include <meshBase.H>
+#include <vtkDataArray.h>
 
 using namespace nemAux;
 
