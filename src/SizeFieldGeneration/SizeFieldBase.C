@@ -2,6 +2,8 @@
 #include <GradSizeField.H>
 #include <ValSizeField.H>
 #include <Z2ErrorSizeField.H>
+#include <vtkCellData.h>
+#include <vtkPointData.h>
 
 SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int arrayID,
                                    double _dev_mult, bool _maxIsmin, double sizeFactor)

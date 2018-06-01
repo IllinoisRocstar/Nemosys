@@ -6,6 +6,14 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 #include <Cubature.H>
+#include <vtkCellData.h>
+#include <vtkPointData.h>
+#include <vtkDataArray.h>
+#include <vtkIdList.h>
+#include <vtkCellTypes.h>
+#include <vtkPoints.h>
+#include <vtkCell.h>
+
 // netgen
 namespace nglib
 {

@@ -31,11 +31,11 @@ class TransferBase
   public:
     // transfer point data with given id from source to target
     virtual int transferPointData(const std::vector<int>& arrayIDs,
-                                  const std::vector<string>& newnames 
+                                  const std::vector<std::string>& newnames 
                                     = std::vector<std::string>()) = 0; 
     // transfer cell data with given id from source to target
     virtual int transferCellData(const std::vector<int>& arrayIDs,
-                                  const std::vector<string>& newnames 
+                                  const std::vector<std::string>& newnames 
                                     = std::vector<std::string>()) = 0; 
     // transfer all data from source to target
     virtual int run(const std::vector<std::string>& newnames 

@@ -2,6 +2,8 @@
 #define MESHQUALITY_H
 
 #include <meshBase.H>
+#include <vtkMeshQuality.h>
+#include <vtkDoubleArray.h>
 
 class MeshQuality
 {
