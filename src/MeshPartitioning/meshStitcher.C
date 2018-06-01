@@ -21,7 +21,9 @@ meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
     } 
     std::cout << "Meshes stitched successfully! #####################################\n";
     std::cout << "Exporting stitched mesh to VTK format #############################\n";
-    stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),"stitched.vtu");
+    std::string newname = partitions[0]->getFileName();
+    newname = trim_fname(newname, "stitched.vtu");
+    stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),newname);
     std::cout << "Transferring physical quantities to vtk mesh ######################\n";
     // figure out what is existing on the stitched grid
     int outNData, outNDim;
