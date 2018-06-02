@@ -12,10 +12,11 @@
 #include <vtkAppendFilter.h>
 
 void setCgFnames(std::vector<std::string>& names, const std::string& prefix,
-                 const std::string& base_t, const int numproc)
+                 const std::string& base_t, const int numproc, const int beg)
 {
   names.resize(numproc);
-  for (int i = 0; i < numproc; ++i)
+  int j = 0;
+  for (int i = beg; i < numproc+beg; ++i)
   {
     std::stringstream basename;
     basename << prefix << "_" << base_t << "_";
@@ -25,7 +26,8 @@ void setCgFnames(std::vector<std::string>& names, const std::string& prefix,
       basename << "00" << i << ".cgns";
     else if (i >= 100 && i < 1000)
       basename << 0 << i << ".cgns";
-    names[i] = basename.str();
+    names[j] = basename.str();
+    j+=1;
   } 
 }
 
@@ -38,13 +40,14 @@ int main(int argc, char* argv[])
   std::vector<std::string> cgFileName;
   if (argc==1 || (argc==2 && !std::strcmp(argv[1], "-h")) ) {
     std::cout << "Usage: " << argv[0] 
-              << " nCgFile CgFileName0 surf?" << std::endl
-              << "Eg) rocStitchMesh 4 fluid_04.124000_0000.cgns 0" << std::endl; 
+              << " nCgFile CgFileName0 part_num surf?" << std::endl
+              << "Eg) rocStitchMesh 4 fluid_04.124000_0000.cgns 0 0" << std::endl; 
     return 0;
   }
-  std::string::size_type sz;   // alias of size_t
+  std::string::size_type sz;
   nInCgFile = std::stoi(argv[1],&sz);
-  int surf = std::stoi(argv[3]);
+  int surf = std::stoi(argv[4]);
+  int part_num = std::stoi(argv[3]);
   if (surf)
   {
     meshStitcher* stitcher = new meshStitcher(nInCgFile, argv[2]);
@@ -56,7 +59,8 @@ int main(int argc, char* argv[])
     std::size_t pos = base_t.find_first_of("_");
     base_t = base_t.substr(pos+1,9);
     std::vector<std::string> fluidNames;
-    setCgFnames(fluidNames, "fluid", base_t, nInCgFile);
+    setCgFnames(fluidNames, "fluid", base_t, nInCgFile, part_num);
+    printVec(fluidNames);
     meshStitcher* stitcher = new meshStitcher(fluidNames);
     delete stitcher; stitcher = 0;
   }     
