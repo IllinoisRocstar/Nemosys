@@ -4,6 +4,7 @@
 #include <cgnsWriter.H>
 #include <meshPartitioner.H>
 #include <vtkAppendFilter.h>
+#include <MeshGenDriver.H>
 #ifdef HAVE_SYMMX
   #include <symmxGen.H>
   #include <symmxParams.H>
@@ -12,56 +13,37 @@
 RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _base_t,
                            const int _fluidproc, const int _ifluidniproc,
                            const int _ifluidbproc, const int _ifluidnbproc,
-                           meshingParams* _params)
-  : base_t(_base_t), case_dir(_case_dir), params(_params), fluidproc(_fluidproc),
-    ifluidniproc(_ifluidniproc), ifluidbproc(_ifluidbproc), ifluidnbproc(_ifluidnbproc)
+                           const json& remeshjson)
+  : base_t(_base_t), case_dir(_case_dir), fluidproc(_fluidproc), ifluidniproc(_ifluidniproc),
+    ifluidbproc(_ifluidbproc), ifluidnbproc(_ifluidnbproc)
 {
   // stitch fluid files
-  if (fluidproc)
-  {
-    setCgFnames(fluidNames, "fluid", fluidproc);
-    stitchers.push_back(new meshStitcher(fluidNames));
-  }
+  stitchFluidCGNS("fluid",fluidproc);
   // stitch ifluid ni files
-  if (ifluidniproc)
-  {
-    setCgFname(ifluidniName, "ifluid_ni");
-    stitchers.push_back(new meshStitcher(ifluidniproc, ifluidniName));
-  }  
+  stitchIFluidCGNS(ifluidniName, "ifluid_ni", ifluidniproc);
   // stitch ifluid b files
-  if (ifluidbproc)
-  {
-    setCgFname(ifluidbName, "ifluid_b");
-    stitchers.push_back(new meshStitcher(ifluidbproc, ifluidbName));
-  }
+  stitchIFluidCGNS(ifluidbName, "ifluid_b", ifluidbproc);
   // stitch ifluid nb files
-  if (ifluidnbproc)
-  {
-    setCgFname(ifluidnbName, "ifluid_nb");
-    stitchers.push_back(new meshStitcher(ifluidnbproc, ifluidnbName));
-  }
-
+  stitchIFluidCGNS(ifluidnbName, "ifluid_nb", ifluidnbproc);
+  // get stitched meshes from stitcher vector
   for (int i = 0; i < stitchers.size(); ++i)
   {
     cgObjs.push_back(stitchers[i]->getStitchedCGNS());
     mbObjs.push_back(stitchers[i]->getStitchedMB());
   }
-
-  // remesh the volume with symmetrix
-  symmxRemesh();
-  
-  // stitch b, ni and nb surfaces
-  vtkSmartPointer<vtkAppendFilter> appender
-    = vtkSmartPointer<vtkAppendFilter>::New();
-  appender->AddInputData(mbObjs[1]->getDataSet());
-  appender->AddInputData(mbObjs[2]->getDataSet());
-  appender->Update();
-  stitchedSurf = meshBase::Create(appender->GetOutput(), "stitchedSurf.vtu");
-  stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
-  stitchedSurf->write();
+  // creates remeshedVol and remeshedSurf
+  remesh(remeshjson);
+  // creates stitchedSurf
+  if (mbObjs.size() > 1)
+  {
+    stitchSurfaces();
+    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    stitchedSurf->write();
+  }
   remeshedSurf->write();
   // partition the mesh
   partitionMesh();
+  std::cout << "RemeshDriver created" << std::endl;
 }
 
 RemeshDriver::~RemeshDriver()
@@ -76,9 +58,9 @@ RemeshDriver::~RemeshDriver()
       mbObjs[i] = nullptr;
     }
   }
-  if (remeshedVol)
+  if (mshgendrvr)
   {
-    delete remeshedVol;
+    delete mshgendrvr;
     remeshedVol = nullptr;
   }
   if (remeshedSurf)
@@ -91,23 +73,52 @@ RemeshDriver::~RemeshDriver()
     delete stitchedSurf;
     stitchedSurf = nullptr;
   } 
-  if (params)
+  std::cout << "RemeshDriver destroyed" << std::endl;
+}
+
+void RemeshDriver::stitchFluidCGNS(const std::string& prefix, const int numproc)
+{
+  if (numproc)
   {
-    delete params;
-    params = nullptr;
+    setCgFnames(fluidNames, prefix, numproc);
+    stitchers.push_back(new meshStitcher(fluidNames));
   }
 }
 
-void RemeshDriver::symmxRemesh()
+void RemeshDriver::stitchIFluidCGNS(std::string& name, const std::string& prefix, const int numproc)
+{
+  if (numproc)
+  {
+    setCgFname(name, prefix);
+    stitchers.push_back(new meshStitcher(numproc, name));
+  }
+} 
+
+void RemeshDriver::remesh(const json& remeshjson)
 {
   std::cout << "Extracting surface mesh #############################################\n";
-  meshBase* surf = meshBase::Create(mbObjs[0]->extractSurface(), "skinMeshPart.vtp"); 
-  // remeshing with simmetrix
+  std::unique_ptr<meshBase> surf 
+    = std::unique_ptr<meshBase>(meshBase::Create(mbObjs[0]->extractSurface(), "skinMeshPart.vtp")); 
+  // remeshing with engine specified in input
   surf->write("skinMeshPart.stl"); 
-  remeshedVol = meshBase::generateMesh("skinMeshPart.stl","simmetrix",params);
-  mbObjs[0]->setContBool(0);
+  mshgendrvr = MeshGenDriver::readJSON("skinMeshPart.stl", "remeshedVol.vtu", remeshjson);
+  remeshedVol = mshgendrvr->getNewMesh();
   remeshedSurf = meshBase::Create(remeshedVol->extractSurface(), "remeshedSurf.vtp");
-  delete surf; surf = nullptr;
+}
+
+void RemeshDriver::stitchSurfaces()
+{
+  // stitch b, ni and nb surfaces
+  vtkSmartPointer<vtkAppendFilter> appender
+    = vtkSmartPointer<vtkAppendFilter>::New();
+  for (int i = 1; i < mbObjs.size(); ++i)
+  {
+    appender->AddInputData(mbObjs[i]->getDataSet());
+  }
+  //appender->AddInputData(mbObjs[2]->getDataSet());
+  appender->Update();
+  stitchedSurf = meshBase::Create(appender->GetOutput(), "stitchedSurf.vtu");
+  stitchedSurf->setContBool(0);
 }
 
 void RemeshDriver::partitionMesh()
@@ -248,61 +259,8 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   int ifluidniproc = numprocjson["ifluid_ni"].as<int>();
   int ifluidbproc = numprocjson["ifluid_b"].as<int>();
   int ifluidnbproc = numprocjson["ifluid_nb"].as<int>();
-
   json remeshjson = inputjson["Remeshing Options"];
-
-  std::string meshEngine = remeshjson["Mesh Generation Engine"].as<std::string>();
-
-  if (!meshEngine.compare("simmetrix"))
-  {
-    #ifndef HAVE_SYMMX
-      std::cerr << "Nemosys must be recompiled with simmetrix support" << std::endl;
-      exit(1);
-    #else
-      if (!remeshjson.has_key("License File"))
-      {
-        std::cerr << "Simmetrix License file must be specified in json" << std::endl;
-        exit(1);
-      }
-      
-      symmxParams* params = new symmxParams();
-      params->licFName = remeshjson["License File"].as<std::string>();
-      params->features = remeshjson["Features"].as<std::string>();
-      params->logFName = remeshjson["Log File"].as<std::string>();
-      
-      std::string defaults = remeshjson["Meshing Parameters"]["Simmetrix Parameters"].as<std::string>();
-      if (!defaults.compare("default"))
-      {
-        RemeshDriver* remeshdrvobj = new RemeshDriver(case_dir, base_t, fluidproc,
-                                                      ifluidniproc, ifluidbproc, ifluidnbproc,  
-                                                      params);     
-        return remeshdrvobj;
-      }
-      else
-      {
-        json symmxparams = remeshjson["Meshing Parameters"]["Simmetrix Parameters"];
-        if (symmxparams.has_key("Mesh Size"))
-          params->meshSize = symmxparams["Mesh Size"].as<double>();
-        if (symmxparams.has_key("Anisotropic Curvature Refinement"))
-          params->anisoMeshCurv = symmxparams["Anisotropic Curvature Refinement"].as<double>();
-        if (symmxparams.has_key("Global Gradation Rate"))
-          params->glbSizeGradRate = symmxparams["Global Gradation Rate"].as<double>();
-        if (symmxparams.has_key("Surface Mesh Improver Gradation Rate"))
-          params->surfMshImprovGradRate = symmxparams["Surface Mesh Improver Gradation Rate"].as<double>();
-        if (symmxparams.has_key("Surface Mesh Improver Min Size"))
-          params->surfMshImprovMinSize = symmxparams["Surface Mesh Improver Min Size"].as<double>();
-      
-        RemeshDriver* remeshdrvobj = new RemeshDriver(case_dir, base_t, fluidproc,
-                                                      ifluidniproc, ifluidbproc, ifluidnbproc,  
-                                                      params);     
-        return remeshdrvobj;
-      } 
-    #endif
-  }
-
-  else
-  {
-    std::cout << "Mesh generation engine " << meshEngine << " is not supported" << std::endl;
-    exit(1);
-  }
+  RemeshDriver* remeshdrvobj = new RemeshDriver(case_dir, base_t, fluidproc, ifluidniproc, 
+                                                ifluidbproc, ifluidnbproc, remeshjson);
+  return remeshdrvobj;
 }
