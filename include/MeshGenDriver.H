@@ -7,12 +7,13 @@ class MeshGenDriver : public NemDriver
 {
   public:
     
-    MeshGenDriver(std::string ifname, std::string meshEngine, 
-                  meshingParams* params, std::string ofname);
+    MeshGenDriver(const std::string& ifname, const std::string& meshEngine, 
+                  meshingParams* params, const std::string& ofname);
     ~MeshGenDriver();
-
     static MeshGenDriver* readJSON(json inputjson);
-
+    static MeshGenDriver* readJSON(const std::string& ifname, const std::string& ofname, 
+                                   json inputjson);
+    meshBase* getNewMesh();
   private:
     meshBase* mesh; 
     meshingParams* params;

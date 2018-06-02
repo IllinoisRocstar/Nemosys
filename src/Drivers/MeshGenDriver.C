@@ -7,8 +7,8 @@
 #endif
 // ----------------------------- MeshGen Driver -----------------------------------//
 
-MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
-                             meshingParams* _params, std::string ofname)
+MeshGenDriver::MeshGenDriver(const std::string& ifname, const std::string& meshEngine, 
+                             meshingParams* _params, const std::string& ofname)
 {
   params = _params;
   mesh = meshBase::generateMesh(ifname, meshEngine, params);
@@ -16,6 +16,12 @@ MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine,
   mesh->report();
   mesh->write();
   std::cout << "MeshGenDriver created" << std::endl;
+}
+
+meshBase* MeshGenDriver::getNewMesh()
+{
+  if (mesh)
+    return mesh;
 }
 
 MeshGenDriver::~MeshGenDriver()
@@ -35,11 +41,18 @@ MeshGenDriver::~MeshGenDriver()
 
 MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
 {
-  std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
   std::string ifname = inputjson["Mesh File Options"]
                                 ["Input Geometry File"].as<std::string>();
   std::string ofname = inputjson["Mesh File Options"]
                                 ["Output Mesh File"].as<std::string>();
+  return readJSON(ifname, ofname, inputjson);
+}
+
+MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname, 
+                                       const std::string& ofname,
+                                       json inputjson)
+{
+  std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
   if (!meshEngine.compare("netgen"))
   {
     std::string defaults = inputjson["Meshing Parameters"]
