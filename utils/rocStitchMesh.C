@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
   if (argc==1 || (argc==2 && !std::strcmp(argv[1], "-h")) ) {
     std::cout << "Usage: " << argv[0] 
               << " nCgFile CgFileName0 part_num surf?" << std::endl
-              << "Eg) rocStitchMesh 4 fluid_04.124000_0000.cgns 0 0" << std::endl; 
+              << "Eg) rocStitchMesh 4 fluid_04.124000_0001.cgns 1 0" << std::endl; 
     return 0;
   }
   std::string::size_type sz;
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
   int part_num = std::stoi(argv[3]);
   if (surf)
   {
-    meshStitcher* stitcher = new meshStitcher(nInCgFile, argv[2]);
+    meshStitcher* stitcher = new meshStitcher(part_num, nInCgFile, argv[2]);
     delete stitcher; stitcher = 0;
   }
   else

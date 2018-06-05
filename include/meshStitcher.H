@@ -21,6 +21,7 @@ class meshStitcher
     meshStitcher(const std::vector<std::string>& cgFileNames);
     // stitch ifluid/surf files
     meshStitcher(int nCg, const std::string& baseCgName);
+    meshStitcher(int begCg, int nCg, const std::string& baseCgName);
     ~meshStitcher();
     
     cgnsAnalyzer* getStitchedCGNS();
@@ -31,6 +32,8 @@ class meshStitcher
     std::vector<cgnsAnalyzer*> partitions;      // vector of loaded cgns files
     meshBase* stitchedMesh;                     // stitched mesh in Nemosys format
     rocstarCgns* cgObj;
+    // initialize series of cgns objects
+    void initCgObj(int begCg, int nCg, const std::string& baseCgName);
     // disabling
     meshStitcher(const meshStitcher& that) = delete;
     meshStitcher& operator=(const meshStitcher& that) = delete;
