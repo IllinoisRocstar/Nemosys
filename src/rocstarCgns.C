@@ -43,7 +43,25 @@ void rocstarCgns::loadCgSeries(int nCg)
     myCgObjs.push_back(cgTmp);
     cgFNames.push_back(fName);
   }
+}
 
+void rocstarCgns::loadCgSeries(int begCg, int nCg)
+{
+  for (int iCg=begCg; iCg<nCg+begCg; iCg++)
+  {
+    std::ostringstream suffix1;
+    std::ostringstream suffix2;
+    suffix1 << iCg;
+    std::string tmp = suffix1.str();
+    for (int iPad=0; iPad<padSize-tmp.size(); iPad++)
+      suffix2 << "0";
+    suffix2 << tmp << ".cgns";
+    std::string fName = baseCgFName + suffix2.str();
+    cgnsAnalyzer* cgTmp = new cgnsAnalyzer(fName);
+    cgTmp->loadGrid();
+    myCgObjs.push_back(cgTmp);
+    cgFNames.push_back(fName);
+  }
 }
 
 int rocstarCgns::getNCgObj()

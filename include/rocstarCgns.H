@@ -14,6 +14,7 @@ public:
  ~rocstarCgns();
 
   // loading
+  void loadCgSeries(int begCg, int nCg);
   void loadCgSeries(int nCg);
 
   // cgObjects access

@@ -209,19 +209,17 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/MeshPartitioning/meshPartitioner.C 
                  src/MeshPartitioning/meshStitcher.C 
                  src/cgnsWriter.C src/gridTransfer.C)
-SET(ROCSTAR_SRCS src/rocstarCgns.C)
-SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh utils/rocSurfRemesh.C)
-SET(TUTR_SRCS utils/writeStructured.C)
+SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
+              utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
+SET(TUTR_SRCS utils/writeStructured.C tutorials/mshTransfer.C tutorials/dtkTutorial.C)
 SET(R8_SRCS src/math/r8lib.cpp)
-SET(SPHERE_SRCS src/spheres.C)
-SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C)
+SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C src/spheres.C)
 IF(ENABLE_SYMMX)
   SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C src/MeshGeneration/symmxParams.C)
-  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${SYMMX_SRCS})
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
 ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${ROCSTAR_SRCS} ${SPHERE_SRCS}
-             ${SYMMX_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS} ${SYMMX_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
@@ -236,7 +234,7 @@ ENDIF()
 
 # build interp lib
 IF(NOT BUILD_STATIC)
-  ADD_LIBRARY(interp SHARED ${INTERP_SRCS} ${SPHERE_SRCS})
+  ADD_LIBRARY(interp SHARED ${INTERP_SRCS})
 ELSE()
   ADD_LIBRARY(interp ${R8_SRCS})
 ENDIF()
@@ -251,29 +249,7 @@ ELSE()
 ENDIF()
 TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
 
-#IF(NOT ENABLE_SYMMX)
-#  TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${VTK_LIBRARIES})
-#ELSE()
-#  TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
-#ENDIF()
-
-## build old nemosys lib
-#IF(NOT BUILD_STATIC)
-#  ADD_LIBRARY(AltNemosys SHARED ${ALTNEMOSYS_SRCS})
-#ELSE()
-#  ADD_LIBRARY(AltNemosys ${ALTNEMOSYS_SRCS})
-#  add_definitions( -DSTATIC_LINK )
-#ENDIF()
-#TARGET_LINK_LIBRARIES(AltNemosys Nemosys ${MADLIB_LIB} ${GMSH_LIB} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
-#
-# Rocstar support library
-IF(NOT BUILD_STATIC)
-  ADD_LIBRARY(Rocs SHARED ${ROCSTAR_SRCS})
-ELSE()
-  ADD_LIBRARY(Rocs ${ROCSTAR_SRCS})
-ENDIF()
-
-INSTALL(TARGETS r8 interp Nemosys Rocs
+INSTALL(TARGETS r8 interp Nemosys
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -316,11 +292,11 @@ IF(ENABLE_BUILD_UTILS)
   TARGET_LINK_LIBRARIES(rocRemesh Nemosys)
 
   ADD_EXECUTABLE(rocSurfRemesh utils/rocSurfRemesh.C)
-  TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys Rocs)
+  TARGET_LINK_LIBRARIES(rocSurfRemesh Nemosys)
 
   # Rocstar surface remesh utility
   ADD_EXECUTABLE(grid2gridTransfer utils/grid2gridTransfer.C)
-  TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys Rocs)
+  TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys)
 
   # Building tutorials ###########################################################
   SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
@@ -333,17 +309,11 @@ IF(ENABLE_BUILD_UTILS)
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-  #if (ENABLE_SYMMX)
-  #  INSTALL(TARGETS rocSymmxRemesh RUNTIME DESTINATION Nemosys/bin 
-  #          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-  #          GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-  #endif()
-
   # DTK tutorial
   IF (ENABLE_DTK)
     ADD_EXECUTABLE(dtkTutorial tutorials/dtkTutorial.C)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
-    TARGET_LINK_LIBRARIES(dtkTutorial Nemosys Rocs
+    TARGET_LINK_LIBRARIES(dtkTutorial Nemosys
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION Nemosys/bin
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
