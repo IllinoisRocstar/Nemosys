@@ -59,11 +59,30 @@ meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
   }
 }
 
+meshStitcher::meshStitcher(int begCg, int nCg, const std::string& baseCgName)
+  : cgObj(nullptr), stitchedMesh(nullptr)
+{
+  cgObj = new rocstarCgns(baseCgName);
+  initCgObj(begCg,nCg,baseCgName);
+}
+
 meshStitcher::meshStitcher(int nCg, const std::string& baseCgName)
   : cgObj(nullptr), stitchedMesh(nullptr)
 {
   cgObj = new rocstarCgns(baseCgName);
-  cgObj->loadCgSeries(nCg);
+  initCgObj(0,nCg,baseCgName);
+}
+
+void meshStitcher::initCgObj(int begCg, int nCg, const std::string& baseCgName)
+{
+  if (begCg)
+  {
+    cgObj->loadCgSeries(begCg, nCg);
+  }
+  else
+  {
+    cgObj->loadCgSeries(nCg);
+  }
   cgObj->dummy(); 
   std::cout << "Meshes stitched successfully! #####################################\n";
   std::cout << "Exporting stitched mesh to VTK format #############################\n";

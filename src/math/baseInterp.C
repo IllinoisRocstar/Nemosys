@@ -1,6 +1,7 @@
 /* Implementation of RBF interpolation class */
 
 #include "baseInterp.H"
+#include "spheres.H"
 
 /*
    interpolates values for given point coordinates
