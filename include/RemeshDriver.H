@@ -15,8 +15,7 @@ class RemeshDriver : public NemDriver
                  const int ifluidbproc, const int ifluidnbproc, const json& remeshjson);
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
-    void writeCobalt(std::ofstream& outputStream, const int nZones, 
-                     const int nBoundaryPatches);
+    void writeCobalt(const std::string& mapFile, const std::string& ofname);
  
   private:
     // vol cgns names
@@ -50,6 +49,7 @@ class RemeshDriver : public NemDriver
     void setCgFnames(std::vector<std::string>& names, const std::string& prefix, const int numproc);
     // patch map for writing to cobalt format
     std::map<int,int> readPatchMap(const std::string& mapFile);
+    void writeCobalt(const std::string& mapFile, std::ofstream& outputStream);
     void partitionMesh();
     // creates remeshed volume and surface
     void remesh(const json& remeshjson);
