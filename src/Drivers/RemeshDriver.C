@@ -10,6 +10,10 @@
   #include <symmxParams.H>
 #endif
 
+// testing
+#include <vtkIdTypeArray.h>
+#include <vtkUnstructuredGrid.h>
+
 RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _base_t,
                            const int _fluidproc, const int _ifluidniproc,
                            const int _ifluidbproc, const int _ifluidnbproc,
@@ -115,7 +119,6 @@ void RemeshDriver::stitchSurfaces()
   {
     appender->AddInputData(mbObjs[i]->getDataSet());
   }
-  //appender->AddInputData(mbObjs[2]->getDataSet());
   appender->Update();
   stitchedSurf = meshBase::Create(appender->GetOutput(), "stitchedSurf.vtu");
   stitchedSurf->setContBool(0);
@@ -264,3 +267,98 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
                                                 ifluidbproc, ifluidnbproc, remeshjson);
   return remeshdrvobj;
 }
+
+std::map<int,int> RemeshDriver::readPatchMap(const std::string& mapFile)
+{
+  std::ifstream inputStream(mapFile); 
+  if (!inputStream.good())
+  {
+    std::cout << "error opening file " << mapFile << std::endl;
+    exit(1);
+  }
+  
+  int numPatch;
+  int numMap;
+  std::string line;
+  getline(inputStream,line);
+  std::stringstream ss(line);
+  ss >> numPatch;
+  getline(inputStream,line);
+  std::stringstream ss1(line);
+  ss1 >> numMap;
+  std::map<int, int> patchMap; 
+  while(getline(inputStream, line))
+  {
+    std::stringstream ss(line);
+    int lo; 
+    int up; 
+    int patch;
+    ss >> lo >> up >> patch;
+    for (int i = lo; i <= up; ++i)
+    {   
+      patchMap[i] = patch;
+    }   
+  }   
+  return patchMap;
+}
+
+
+//void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& outputStream)
+//{
+//
+//  if (!remeshedSurf) 
+//  {
+//    std::cout << "remeshed surface has not been generated!" << std::endl;
+//    exit(1);
+//  }
+//
+//  std::map<int,int> patchMap(readPatchMap(mapFile));
+//  outputStream << 3 << " " << 1 << " " << patchMap.size() << std::endl;
+//
+//  
+//  // inspect for types of cells in mesh
+//  std::map<int,int> cellMap;
+//  for (int i = 0; i < numCells; i++)
+//  {
+//    cellMap[dataSet->GetCellType(i)]++;
+//  }
+//  
+//  // PROBABLY DON'T NEED PATCHMAP, build a map of each face and insert them as keys with
+    // pntidx values
+// 
+//  int nFaces = 0;
+//  int nVerticesPerFaceMax;
+//  int nFacesPerCellMax; 
+//  CellContainer::const_iterator it = cellMap.begin();
+//  while (it != cellMap.end())
+//  {
+//    if (it->first == VTK_TETRA)
+//    {
+//      nFaces += 4;
+//    }
+//    else if (it->first == VTK_HEXAHEDRON)
+//    {
+//      nFaces += 
+//    }
+//
+//    std::cout << "\tCell type "
+//              << vtkCellTypes::GetClassNameFromTypeId(it->first)
+//              << " occurs " << it->second << " times." << std::endl;
+//    ++it;
+//  }
+//  
+//
+//  outputStream << getNumberOfPoints() << " " <<   
+//
+//}
+//
+//void RemeshDriver::writeCobalt(const std::string& mapFile, const std::string& ofname)
+//{
+//  std::ofstream outputStream(ofname);
+//  if(!outputStream.good()) 
+//  {
+//    std::cout << "Cannot open file " << ofname << std::endl;
+//    exit(1);
+//  }
+//  writeCobalt(mapFile,outputStream); 
+//}
