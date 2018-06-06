@@ -13,6 +13,9 @@
 // testing
 #include <vtkIdTypeArray.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkGenericCell.h>
+#include <vtkCell.h>
+#include <vtkCellData.h>
 
 RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _base_t,
                            const int _fluidproc, const int _ifluidniproc,
@@ -47,6 +50,8 @@ RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _bas
   remeshedSurf->write();
   // partition the mesh
   partitionMesh();
+
+  writeCobalt("tmp", "cobalt_test.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
 
@@ -303,62 +308,118 @@ std::map<int,int> RemeshDriver::readPatchMap(const std::string& mapFile)
 }
 
 
-//void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& outputStream)
-//{
-//
-//  if (!remeshedSurf) 
-//  {
-//    std::cout << "remeshed surface has not been generated!" << std::endl;
-//    exit(1);
-//  }
-//
-//  std::map<int,int> patchMap(readPatchMap(mapFile));
-//  outputStream << 3 << " " << 1 << " " << patchMap.size() << std::endl;
-//
-//  
-//  // inspect for types of cells in mesh
-//  std::map<int,int> cellMap;
-//  for (int i = 0; i < numCells; i++)
-//  {
-//    cellMap[dataSet->GetCellType(i)]++;
-//  }
-//  
-//  // PROBABLY DON'T NEED PATCHMAP, build a map of each face and insert them as keys with
-    // pntidx values
-// 
-//  int nFaces = 0;
-//  int nVerticesPerFaceMax;
-//  int nFacesPerCellMax; 
-//  CellContainer::const_iterator it = cellMap.begin();
-//  while (it != cellMap.end())
-//  {
-//    if (it->first == VTK_TETRA)
-//    {
-//      nFaces += 4;
-//    }
-//    else if (it->first == VTK_HEXAHEDRON)
-//    {
-//      nFaces += 
-//    }
-//
-//    std::cout << "\tCell type "
-//              << vtkCellTypes::GetClassNameFromTypeId(it->first)
-//              << " occurs " << it->second << " times." << std::endl;
-//    ++it;
-//  }
-//  
-//
-//  outputStream << getNumberOfPoints() << " " <<   
-//
-//}
-//
-//void RemeshDriver::writeCobalt(const std::string& mapFile, const std::string& ofname)
-//{
-//  std::ofstream outputStream(ofname);
-//  if(!outputStream.good()) 
-//  {
-//    std::cout << "Cannot open file " << ofname << std::endl;
-//    exit(1);
-//  }
-//  writeCobalt(mapFile,outputStream); 
-//}
+void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& outputStream)
+{
+
+  if (!remeshedSurf) 
+  {
+    std::cout << "remeshed surface has not been generated!" << std::endl;
+    exit(1);
+  }
+  
+  vtkSmartPointer<vtkIdList> facePtIds;
+  vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
+  vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
+  vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
+  std::map<std::vector<int>, std::pair<int,int>> faceMap;
+
+  // building cell locator for looking up patch number in remeshed surface mesh
+  vtkSmartPointer<vtkCellLocator> surfCellLocator = remeshedSurf->buildLocator(); 
+  // maximum number of vertices per face (to be found in proceeding loop)
+  int nVerticesPerFaceMax = 0;
+  // maximum number of faces per cell (to be found in proceeding loop)
+  int nFacesPerCellMax = 0; 
+
+  for (int i = 0; i < remeshedVol->getNumberOfCells(); ++i)
+  {
+    // get cell i 
+    remeshedVol->getDataSet()->GetCell(i, genCell1);
+    // get faces, find cells sharing it. if no cell shares it, 
+    // use the locator of the remeshedSurf to find the patch number
+    int numFaces = genCell1->GetNumberOfFaces();
+    nFacesPerCellMax = (nFacesPerCellMax < numFaces ? numFaces : nFacesPerCellMax);
+    for (int j = 0; j < numFaces; ++j)
+    {
+      vtkCell* face = genCell1->GetFace(j);
+      bool shared = 0;
+      int numVerts = face->GetNumberOfPoints();
+      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
+      facePtIds = face->GetPointIds(); 
+      remeshedVol->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
+      std::vector<int> facePntIds(numVerts);
+      for (int k = 0; k < numVerts; ++k)
+      {
+        facePntIds[k] = face->GetPointId(k)+1;
+      }
+      if (sharedCellPtIds->GetNumberOfIds())
+      {
+
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>> 
+                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0))));
+      }
+      else
+      {
+        int id = face->GetPointId(0);
+        double x[3];
+        vtkIdType closestCellId;
+        int subId;
+        double minDist2;
+        double closestPoint[3];
+        remeshedVol->getDataSet()->GetPoint(id,x);
+        // find closest point and closest cell to x
+        surfCellLocator->FindClosestPoint(x, closestPoint, genCell2,closestCellId,subId,minDist2);
+        double patchNo[1];
+        remeshedSurf->getDataSet()->GetCellData()->GetArray("patchNo")
+                                                  ->GetTuple(closestCellId, patchNo);
+
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
+                        (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
+
+      }
+    }
+  }
+  
+  std::map<int,int> patchMap;
+  for (int i = 0; i < remeshedSurf->getNumberOfCells(); ++i)
+  {
+    double patchNo[1];
+    remeshedSurf->getDataSet()->GetCellData()->GetArray("patchNo")
+                                              ->GetTuple(i, patchNo);
+    patchMap.insert(std::pair<int,int>(patchNo[0],i));
+  }
+   
+  // write cobalt file
+  outputStream << 3 << " " << 1 << " " << patchMap.size() << std::endl;
+  outputStream << remeshedVol->getNumberOfPoints() << " " << faceMap.size()
+               << " " << remeshedVol->getNumberOfCells() << " "
+               << nVerticesPerFaceMax << " " << nFacesPerCellMax << std::endl;
+  for (int i = 0; i < remeshedVol->getNumberOfPoints(); ++i)
+  {
+    std::vector<double> pnt(remeshedVol->getPoint(i));
+    outputStream << "  "  << std::setw(21) << std::setprecision(15)
+                 << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
+  }
+
+  auto it = faceMap.begin();
+  while (it != faceMap.end())
+  {
+    outputStream << it->first.size() << " ";
+    for (int i = 0; i < it->first.size(); ++i)
+    {
+      outputStream << it->first[i] << " ";
+    }
+    outputStream << it->second.first << " " << it->second.second << std::endl;
+    ++it;
+  }
+}
+
+void RemeshDriver::writeCobalt(const std::string& mapFile, const std::string& ofname)
+{
+  std::ofstream outputStream(ofname);
+  if(!outputStream.good()) 
+  {
+    std::cout << "Cannot open file " << ofname << std::endl;
+    exit(1);
+  }
+  writeCobalt(mapFile,outputStream); 
+}
