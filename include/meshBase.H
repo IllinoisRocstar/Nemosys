@@ -5,6 +5,7 @@
 #include <vtkSmartPointer.h>
 #include <vtkCellLocator.h>
 #include <vtkDataSet.h>
+#include <vtkUnstructuredGrid.h>
 
 //MAd Lib
 #include <MAdLib.h>

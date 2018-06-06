@@ -10,6 +10,7 @@
 #include <vtkPointData.h>
 #include <vtkDataArray.h>
 #include <vtkIdList.h>
+#include <vtkIdTypeArray.h>
 #include <vtkCellTypes.h>
 #include <vtkPoints.h>
 #include <vtkCell.h>
@@ -922,6 +923,7 @@ void meshBase::writeMSH(std::ofstream& outputStream, std::string pointOrCell, in
   }
 }
 
+
 void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                         bool onlyVol)
 {
@@ -940,8 +942,6 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
   std::ofstream outputStream(fname.c_str());
   writeMSH(outputStream, pointOrCell, arrayID);
 }
-
-
 
 void meshBase::refineMesh(std::string method, int arrayID, 
                           double dev_mult, bool maxIsmin, 
