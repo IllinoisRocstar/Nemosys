@@ -57,9 +57,10 @@ int main(int argc, char* argv[])
   {
     std::string base_t(argv[2]);
     std::size_t pos = base_t.find_first_of("_");
+    std::string prefix = base_t.substr(0,pos);
     base_t = base_t.substr(pos+1,9);
     std::vector<std::string> fluidNames;
-    setCgFnames(fluidNames, "fluid", base_t, nInCgFile, part_num);
+    setCgFnames(fluidNames, prefix, base_t, nInCgFile, part_num);
     printVec(fluidNames);
     meshStitcher* stitcher = new meshStitcher(fluidNames);
     delete stitcher; stitcher = 0;

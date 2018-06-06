@@ -54,7 +54,7 @@ RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _bas
   remeshedSurf = stitchedSurf;
   remeshedVol = mbObjs[0];
 
-  writeCobalt("tmp", "cobalt_test.cgr");
+  writeCobalt("cobalt_test.cgi", "cobalt_test.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
 
@@ -276,40 +276,32 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   return remeshdrvobj;
 }
 
-std::map<int,int> RemeshDriver::readPatchMap(const std::string& mapFile)
+void RemeshDriver::writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap)
 {
-  std::ifstream inputStream(mapFile); 
-  if (!inputStream.good())
+  std::ofstream outputStream(mapFile);
+  if (!outputStream.good())
   {
-    std::cout << "error opening file " << mapFile << std::endl;
+    std::cout << "Error opening file " << mapFile << std::endl;
     exit(1);
   }
-  
-  int numPatch;
-  int numMap;
-  std::string line;
-  getline(inputStream,line);
-  std::stringstream ss(line);
-  ss >> numPatch;
-  getline(inputStream,line);
-  std::stringstream ss1(line);
-  ss1 >> numMap;
-  std::map<int, int> patchMap; 
-  while(getline(inputStream, line))
-  {
-    std::stringstream ss(line);
-    int lo; 
-    int up; 
-    int patch;
-    ss >> lo >> up >> patch;
-    for (int i = lo; i <= up; ++i)
-    {   
-      patchMap[i] = patch;
-    }   
-  }   
-  return patchMap;
+  writePatchMap(outputStream, patchMap);
 }
 
+void RemeshDriver::writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap)
+{
+  outputStream << patchMap.size() << std::endl;
+  outputStream << patchMap.size() << std::endl;
+  auto it = patchMap.begin();
+  while (it != patchMap.end())
+  {
+    for (int i = 0; i < 3; ++i)
+    {
+      outputStream << std::setw(2) << std::left << it->first << " ";
+    }
+    outputStream << std::endl;
+    ++it;
+  }
+}
 
 void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& outputStream)
 {
@@ -358,11 +350,11 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
       {
 
         faceMap.insert(std::pair<std::set<int>, std::pair<int,int>> 
-                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0))));
+                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1)));
       }
       else
       {
-        int id = face->GetPointId(0);
+        int id = face->GetPointId(1);
         double x[3];
         vtkIdType closestCellId;
         int subId;
@@ -390,6 +382,9 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
                                               ->GetTuple(i, patchNo);
     patchMap.insert(std::pair<int,int>(patchNo[0],i));
   }
+
+  // write patch mapping file
+  writePatchMap(mapFile, patchMap);
    
   // write cobalt file
   outputStream << 3 << "   " << 1 << "  " << patchMap.size() << std::endl;
@@ -399,7 +394,6 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   for (int i = 0; i < remeshedVol->getNumberOfPoints(); ++i)
   {
     std::vector<double> pnt(remeshedVol->getPoint(i));
-    //outputStream << "  ";
     outputStream << std::setw(21) << std::fixed << std::setprecision(15)
                  << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
   }
@@ -414,10 +408,7 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
       outputStream << *faceIdIter << " ";
       ++faceIdIter;
     }
-    //for (int i = 0; i < it->first.size(); ++i)
-    //{
-    //  outputStream << it->first[i] << " ";
-    //}
+
     outputStream << it->second.first << " " << it->second.second << std::endl;
     ++it;
   }
