@@ -16,6 +16,7 @@
 #include <vtkGenericCell.h>
 #include <vtkCell.h>
 #include <vtkCellData.h>
+#include <set>
 
 RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _base_t,
                            const int _fluidproc, const int _ifluidniproc,
@@ -39,17 +40,19 @@ RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _bas
     mbObjs.push_back(stitchers[i]->getStitchedMB());
   }
   // creates remeshedVol and remeshedSurf
-  remesh(remeshjson);
+ // TODO: remesh(remeshjson);
   // creates stitchedSurf
   if (mbObjs.size() > 1)
   {
     stitchSurfaces();
-    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    //TODO stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
     stitchedSurf->write();
   }
-  remeshedSurf->write();
+  //TODO remeshedSurf->write();
   // partition the mesh
-  partitionMesh();
+  //TODO partitionMesh();
+  remeshedSurf = stitchedSurf;
+  remeshedVol = mbObjs[0];
 
   writeCobalt("tmp", "cobalt_test.cgr");
   std::cout << "RemeshDriver created" << std::endl;
@@ -321,7 +324,7 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
   vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
-  std::map<std::vector<int>, std::pair<int,int>> faceMap;
+  std::map<std::set<int>, std::pair<int,int>> faceMap;
 
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkCellLocator> surfCellLocator = remeshedSurf->buildLocator(); 
@@ -346,15 +349,15 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
       nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
       facePtIds = face->GetPointIds(); 
       remeshedVol->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
-      std::vector<int> facePntIds(numVerts);
+      std::set<int> facePntIds;
       for (int k = 0; k < numVerts; ++k)
       {
-        facePntIds[k] = face->GetPointId(k)+1;
+        facePntIds.insert(face->GetPointId(k)+1);
       }
       if (sharedCellPtIds->GetNumberOfIds())
       {
 
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>> 
+        faceMap.insert(std::pair<std::set<int>, std::pair<int,int>> 
                         (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0))));
       }
       else
@@ -372,7 +375,7 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
         remeshedSurf->getDataSet()->GetCellData()->GetArray("patchNo")
                                                   ->GetTuple(closestCellId, patchNo);
 
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
+        faceMap.insert(std::pair<std::set<int>, std::pair<int,int>>
                         (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
 
       }
@@ -389,14 +392,15 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   }
    
   // write cobalt file
-  outputStream << 3 << " " << 1 << " " << patchMap.size() << std::endl;
+  outputStream << 3 << "   " << 1 << "  " << patchMap.size() << std::endl;
   outputStream << remeshedVol->getNumberOfPoints() << " " << faceMap.size()
                << " " << remeshedVol->getNumberOfCells() << " "
                << nVerticesPerFaceMax << " " << nFacesPerCellMax << std::endl;
   for (int i = 0; i < remeshedVol->getNumberOfPoints(); ++i)
   {
     std::vector<double> pnt(remeshedVol->getPoint(i));
-    outputStream << "  "  << std::setw(21) << std::setprecision(15)
+    //outputStream << "  ";
+    outputStream << std::setw(21) << std::fixed << std::setprecision(15)
                  << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
   }
 
@@ -404,10 +408,16 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   while (it != faceMap.end())
   {
     outputStream << it->first.size() << " ";
-    for (int i = 0; i < it->first.size(); ++i)
+    auto faceIdIter = it->first.begin();
+    while (faceIdIter != it->first.end())
     {
-      outputStream << it->first[i] << " ";
+      outputStream << *faceIdIter << " ";
+      ++faceIdIter;
     }
+    //for (int i = 0; i < it->first.size(); ++i)
+    //{
+    //  outputStream << it->first[i] << " ";
+    //}
     outputStream << it->second.first << " " << it->second.second << std::endl;
     ++it;
   }
