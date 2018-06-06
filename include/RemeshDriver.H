@@ -47,8 +47,9 @@ class RemeshDriver : public NemDriver
     void stitchIFluidCGNS(std::string& name, const std::string& prefix, const int numproc);
     void setCgFname(std::string& name, const std::string& prefix);
     void setCgFnames(std::vector<std::string>& names, const std::string& prefix, const int numproc);
-    // patch map for writing to cobalt format
-    std::map<int,int> readPatchMap(const std::string& mapFile);
+    // write patch map file for roc prep (trivial identity mapping)
+    void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap); 
+    void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
     void writeCobalt(const std::string& mapFile, std::ofstream& outputStream);
     void partitionMesh();
     // creates remeshed volume and surface
