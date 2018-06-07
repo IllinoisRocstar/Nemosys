@@ -14,6 +14,7 @@
 #include <vtkCellTypes.h>
 #include <vtkPoints.h>
 #include <vtkCell.h>
+#include <vtkAppendFilter.h>
 
 // netgen
 namespace nglib
@@ -133,6 +134,25 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
   }
 }
 
+meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
+{
+  if (mbObjs.size())
+  {
+    vtkSmartPointer<vtkAppendFilter> appender
+      = vtkSmartPointer<vtkAppendFilter>::New();
+    for (int i = 0; i < mbObjs.size(); ++i)
+    {
+      appender->AddInputData(mbObjs[i]->getDataSet());
+    }
+    appender->Update();
+    return meshBase::Create(appender->GetOutput(), "stitched.vtu");
+  }
+  else
+  {
+    std::cerr << "Nothing to stitch!" << std::endl;
+    exit(1);
+  }
+}
 
 // check for named array in vtk 
 int meshBase::IsArrayName(std::string name)

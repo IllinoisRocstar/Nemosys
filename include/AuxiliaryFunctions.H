@@ -11,6 +11,8 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>
+#include <string.h>
+#include <glob.h>
 //---------------------------Auxiliary Classes---------------------------------//
 
 // class wrapping around chrono for timing methods
@@ -78,6 +80,9 @@ std::vector<T> operator*(T a, std::vector<T>& x);
 template <typename T>
 std::vector<T> hadamard(const std::vector<T>& x, 
                         const std::vector<T>& y);
+
+// search for pattern and return vector of matches (wrapper around posix glob)
+inline std::vector<std::string> glob(const std::string& pattern);
 }
 
 // compute 2 norm of vec
@@ -443,4 +448,32 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
                    flip_pair<A,B>);
     return dst;
 }
+
+// search for pattern and return vector of matches
+std::vector<std::string> nemAux::glob(const std::string& pattern)
+{
+  glob_t glob_result;
+  memset(&glob_result, 0, sizeof(glob_result));
+  int ret = glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
+  if (ret == GLOB_NOSPACE || ret == GLOB_ABORTED)
+  {
+    globfree(&glob_result); 
+    std::cerr << "glob() failed with return value " << ret << std::endl;
+    exit(1);
+  }
+  else if (ret == GLOB_NOMATCH)
+  {
+    return std::vector<std::string>();
+  }
+
+  std::vector<std::string> fnames;
+  for (int i = 0; i < glob_result.gl_pathc; ++i)
+  {
+    fnames.push_back(std::string(glob_result.gl_pathv[i]));
+  }
+  
+  globfree(&glob_result); 
+  return fnames;
+}
+
 #endif

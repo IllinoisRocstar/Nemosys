@@ -85,6 +85,9 @@ class meshBase
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
+    // stitch together several meshBases
+    static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
+      
  
   // access
   public:
