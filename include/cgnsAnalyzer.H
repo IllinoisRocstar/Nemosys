@@ -84,7 +84,7 @@ public:
     isMltZone(false),vtkMesh(0)
   {};
 
-  ~cgnsAnalyzer()
+  virtual ~cgnsAnalyzer()
   {
     // close file if still open
     if (indexFile>0)

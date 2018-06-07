@@ -2,7 +2,6 @@
 #define REMESH_DRIVER_H
 
 #include <NemDriver.H>
-#include <glob.h> // glob(), globfree()
 
 class meshStitcher;
 class cgnsAnalyzer;
@@ -58,11 +57,9 @@ class RemeshDriver : public NemDriver
 
 };
 
-// find file names given case_dir and base_t (wrapper around posix glob)
-std::vector<std::string> glob(const std::string& pattern);
 // get cg file names using rocstar convention in glob
-std::vector<std::string> getCgFNames(const std::string& case_dir, 
-                                     const std::string& prefix,
-                                     const std::string& base_t);
+inline std::vector<std::string> getCgFNames(const std::string& case_dir, 
+                                            const std::string& prefix,
+                                            const std::string& base_t);
 
 #endif
