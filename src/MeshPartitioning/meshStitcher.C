@@ -2,91 +2,83 @@
 #include <rocstarCgns.H>
 #include <meshBase.H>
 
-meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames)
+meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames, bool surf)
   : cgFileNames(_cgFileNames), stitchedMesh(nullptr), cgObj(nullptr)
 {
   if (cgFileNames.size() > 0)
   {
-    partitions.resize(cgFileNames.size(),nullptr);
-    for (int iCg = 0; iCg < cgFileNames.size(); ++iCg)
-    {
-      partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
-      partitions[iCg]->loadGrid(1);
-	  	// defining partition flags
-      std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
-      partitions[iCg]
-        ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
-      if (iCg)
-        partitions[0]->stitchMesh(partitions[iCg],true); 
-    } 
-    std::cout << "Meshes stitched successfully! #####################################\n";
-    std::cout << "Exporting stitched mesh to VTK format #############################\n";
-    std::string newname = partitions[0]->getFileName();
-    newname = trim_fname(newname, "stitched.vtu");
-    stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),newname);
-    std::cout << "Transferring physical quantities to vtk mesh ######################\n";
-    // figure out what is existing on the stitched grid
-    int outNData, outNDim;
-    std::vector<std::string> slnNameList;
-    std::vector<std::string> appSlnNameList;
-    partitions[0]->getSolutionDataNames(slnNameList);  
-    partitions[0]->getAppendedSolutionDataName(appSlnNameList);
-    slnNameList.insert(slnNameList.end(),
-                       appSlnNameList.begin(), appSlnNameList.end());
+    if (surf)
+      initSurfCgObj();
+    else
+      initVolCgObj();
+  }
+}
 
-	  // write all data into vtk file
-    for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
-    {
-      std::vector<double> physData;
-      partitions[0]->getSolutionDataStitched(*is, physData, outNData, outNDim);
-      solution_type_t dt = partitions[0]->getSolutionDataObj(*is)->getDataType();
-      if (dt == NODAL)  
-      {      
-        std::cout << "Writing nodal " << *is << std::endl; 
-        stitchedMesh->setPointDataArray((*is).c_str(), physData);
-      }
-      else
-      {
-        // gs field is 'weird' in irocstar files- we don't write it back
-        if (!(*is).compare("gs"))
-          continue;
-        std::cout << "Writing cell-based " << *is << std::endl;
-        stitchedMesh->setCellDataArray((*is).c_str(), physData);
-      }
+void meshStitcher::initVolCgObj()
+{
+  partitions.resize(cgFileNames.size(),nullptr);
+  for (int iCg = 0; iCg < cgFileNames.size(); ++iCg)
+  {
+    partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
+    partitions[iCg]->loadGrid(1);
+  	// defining partition flags
+    std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
+    partitions[iCg]
+      ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
+    if (iCg)
+      partitions[0]->stitchMesh(partitions[iCg],true); 
+  } 
+  std::cout << "Meshes stitched successfully! #####################################\n";
+  std::cout << "Exporting stitched mesh to VTK format #############################\n";
+  std::string newname(cgFileNames[0]);
+  std::size_t pos = newname.find_last_of("/");
+  newname = newname.substr(pos+1);
+  newname = trim_fname(newname, "stitched.vtu");
+  stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),newname);
+  std::cout << "Transferring physical quantities to vtk mesh ######################\n";
+  // figure out what is existing on the stitched grid
+  int outNData, outNDim;
+  std::vector<std::string> slnNameList;
+  std::vector<std::string> appSlnNameList;
+  partitions[0]->getSolutionDataNames(slnNameList);  
+  partitions[0]->getAppendedSolutionDataName(appSlnNameList);
+  slnNameList.insert(slnNameList.end(),
+                     appSlnNameList.begin(), appSlnNameList.end());
+  
+  // write all data into vtk file
+  for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
+  {
+    std::vector<double> physData;
+    partitions[0]->getSolutionDataStitched(*is, physData, outNData, outNDim);
+    solution_type_t dt = partitions[0]->getSolutionDataObj(*is)->getDataType();
+    if (dt == NODAL)  
+    {      
+      std::cout << "Writing nodal " << *is << std::endl; 
+      stitchedMesh->setPointDataArray((*is).c_str(), physData);
     }
-    stitchedMesh->report();
-    stitchedMesh->write();
+    else
+    {
+      // gs field is 'weird' in irocstar files- we don't write it back
+      if (!(*is).compare("gs"))
+        continue;
+      std::cout << "Writing cell-based " << *is << std::endl;
+      stitchedMesh->setCellDataArray((*is).c_str(), physData);
+    }
   }
+  stitchedMesh->report();
+  stitchedMesh->write();
 }
 
-meshStitcher::meshStitcher(int begCg, int nCg, const std::string& baseCgName)
-  : cgObj(nullptr), stitchedMesh(nullptr)
+void meshStitcher::initSurfCgObj()
 {
-  cgObj = new rocstarCgns(baseCgName);
-  initCgObj(begCg,nCg,baseCgName);
-}
-
-meshStitcher::meshStitcher(int nCg, const std::string& baseCgName)
-  : cgObj(nullptr), stitchedMesh(nullptr)
-{
-  cgObj = new rocstarCgns(baseCgName);
-  initCgObj(0,nCg,baseCgName);
-}
-
-void meshStitcher::initCgObj(int begCg, int nCg, const std::string& baseCgName)
-{
-  if (begCg)
-  {
-    cgObj->loadCgSeries(begCg, nCg);
-  }
-  else
-  {
-    cgObj->loadCgSeries(nCg);
-  }
+  cgObj = new rocstarCgns(cgFileNames);
+  cgObj->loadCgSeries();
   cgObj->dummy(); 
   std::cout << "Meshes stitched successfully! #####################################\n";
   std::cout << "Exporting stitched mesh to VTK format #############################\n";
-  std::string newname = baseCgName;
+  std::string newname(cgFileNames[0]);
+  std::size_t pos = newname.find_last_of("/");
+  newname = newname.substr(pos+1);
   newname = trim_fname(newname, "stitched.vtu");
   stitchedMesh = meshBase::Create(cgObj->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh ######################\n";

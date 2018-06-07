@@ -17,11 +17,9 @@ class meshBase;
 class meshStitcher
 {
   public:
-    // stitch fluid/vol files 
-    meshStitcher(const std::vector<std::string>& cgFileNames);
-    // stitch ifluid/surf files
-    meshStitcher(int nCg, const std::string& baseCgName);
-    meshStitcher(int begCg, int nCg, const std::string& baseCgName);
+    // stitch fluid/ifluid files depending on surf flag
+    // surface stitching uses rocstarCgns, while vol uses cgnsAnalyzer 
+    meshStitcher(const std::vector<std::string>& cgFileNames, bool surf);
     ~meshStitcher();
     
     cgnsAnalyzer* getStitchedCGNS();
@@ -33,11 +31,11 @@ class meshStitcher
     meshBase* stitchedMesh;                     // stitched mesh in Nemosys format
     rocstarCgns* cgObj;
     // initialize series of cgns objects
-    void initCgObj(int begCg, int nCg, const std::string& baseCgName);
+    void initSurfCgObj();
+    void initVolCgObj();
     // disabling
     meshStitcher(const meshStitcher& that) = delete;
     meshStitcher& operator=(const meshStitcher& that) = delete;
-    
 };
 
 #endif

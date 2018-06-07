@@ -11,10 +11,11 @@
 class rocstarCgns: public cgnsAnalyzer {
 public:
   rocstarCgns(std::string fname);
- ~rocstarCgns();
+  rocstarCgns(const std::vector<std::string>& fnames);
+  ~rocstarCgns();
 
   // loading
-  void loadCgSeries(int begCg, int nCg);
+  void loadCgSeries();
   void loadCgSeries(int nCg);
 
   // cgObjects access

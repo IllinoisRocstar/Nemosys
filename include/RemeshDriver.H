@@ -2,6 +2,7 @@
 #define REMESH_DRIVER_H
 
 #include <NemDriver.H>
+#include <glob.h> // glob(), globfree()
 
 class meshStitcher;
 class cgnsAnalyzer;
@@ -10,22 +11,21 @@ class MeshGenDriver;
 class RemeshDriver : public NemDriver
 {
   public:
-    RemeshDriver(const std::string& case_dir, const std::string& base_t,
-                 const int fluidproc, const int ifluidniproc,
-                 const int ifluidbproc, const int ifluidnbproc, const json& remeshjson);
+    RemeshDriver(const std::vector<std::string>& fluidNames,
+                 const std::vector<std::string>& ifluidniNames,
+                 const std::vector<std::string>& ifluidnbNames,
+                 const std::vector<std::string>& ifluidbNames,
+                 const json& remeshjson);
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
     void writeCobalt(const std::string& mapFile, const std::string& ofname);
  
   private:
-    // vol cgns names
-    std::vector<std::string> fluidNames; 
-    std::string ifluidniName;
-    std::string ifluidnbName;
-    std::string ifluidbName;
-    int fluidproc, ifluidniproc, ifluidbproc, ifluidnbproc;
-    std::string base_t;
-    std::string case_dir; 
+    // cgns file names
+    std::vector<std::string> fluidNames;
+    std::vector<std::string> ifluidniNames;
+    std::vector<std::string> ifluidnbNames;
+    std::vector<std::string> ifluidbNames; 
     // mesh generator
     MeshGenDriver* mshgendrvr;  
     // stitches files in order listed above
@@ -43,19 +43,26 @@ class RemeshDriver : public NemDriver
   
   //helpers
   private:
-    void stitchFluidCGNS(const std::string& prefix, const int numproc);
-    void stitchIFluidCGNS(std::string& name, const std::string& prefix, const int numproc);
-    void setCgFname(std::string& name, const std::string& prefix);
-    void setCgFnames(std::vector<std::string>& names, const std::string& prefix, const int numproc);
+    // stitch surf/vol cgns files, using rocstarCgns if surf=1
+    void stitchCGNS(const std::vector<std::string>& fnames, bool surf);
     // write patch map file for roc prep (trivial identity mapping)
     void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap); 
     void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
     void writeCobalt(const std::string& mapFile, std::ofstream& outputStream);
+    // partitions mesh (NOT USED)
     void partitionMesh();
     // creates remeshed volume and surface
     void remesh(const json& remeshjson);
     // stitches the stitched cgns surfaces into one meshBase
     void stitchSurfaces();
+
 };
+
+// find file names given case_dir and base_t (wrapper around posix glob)
+std::vector<std::string> glob(const std::string& pattern);
+// get cg file names using rocstar convention in glob
+std::vector<std::string> getCgFNames(const std::string& case_dir, 
+                                     const std::string& prefix,
+                                     const std::string& base_t);
 
 #endif

@@ -15,6 +15,13 @@ cgnsAnalyzer(fname), myCgFName(fname)
   padSize = myCgFName.size() - baseCgFName.size() - 5;
 }
 
+rocstarCgns::rocstarCgns(const std::vector<std::string>& fnames)
+  : cgnsAnalyzer(fnames[0]), cgFNames(fnames)
+{
+  std::size_t _loc = fnames[0].find_last_of("_");
+  baseCgFName = fnames[0].substr(0,_loc+1);
+}
+
 rocstarCgns::~rocstarCgns()
 {
  // cleaning up
@@ -45,23 +52,14 @@ void rocstarCgns::loadCgSeries(int nCg)
   }
 }
 
-void rocstarCgns::loadCgSeries(int begCg, int nCg)
+void rocstarCgns::loadCgSeries()
 {
-  for (int iCg=begCg; iCg<nCg+begCg; iCg++)
+  for (int i = 0; i < cgFNames.size(); ++i)
   {
-    std::ostringstream suffix1;
-    std::ostringstream suffix2;
-    suffix1 << iCg;
-    std::string tmp = suffix1.str();
-    for (int iPad=0; iPad<padSize-tmp.size(); iPad++)
-      suffix2 << "0";
-    suffix2 << tmp << ".cgns";
-    std::string fName = baseCgFName + suffix2.str();
-    cgnsAnalyzer* cgTmp = new cgnsAnalyzer(fName);
+    cgnsAnalyzer* cgTmp = new cgnsAnalyzer(cgFNames[i]);
     cgTmp->loadGrid();
     myCgObjs.push_back(cgTmp);
-    cgFNames.push_back(fName);
-  }
+  } 
 }
 
 int rocstarCgns::getNCgObj()
