@@ -1,38 +1,43 @@
+// nemosys
 #include <RemeshDriver.H>
 #include <meshStitcher.H>
 #include <rocstarCgns.H>
 #include <cgnsWriter.H>
 #include <meshPartitioner.H>
-#include <vtkAppendFilter.h>
 #include <MeshGenDriver.H>
 #ifdef HAVE_SYMMX
   #include <symmxGen.H>
   #include <symmxParams.H>
 #endif
 
-// testing
+//vtk
+#include <vtkAppendFilter.h>
 #include <vtkIdTypeArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkGenericCell.h>
 #include <vtkCell.h>
 #include <vtkCellData.h>
-#include <set>
 
-RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _base_t,
-                           const int _fluidproc, const int _ifluidniproc,
-                           const int _ifluidbproc, const int _ifluidnbproc,
+//stl
+#include <set>
+#include <string.h>
+
+RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
+                           const std::vector<std::string>& _ifluidniNames,
+                           const std::vector<std::string>& _ifluidnbNames,
+                           const std::vector<std::string>& _ifluidbNames,
                            const json& remeshjson)
-  : base_t(_base_t), case_dir(_case_dir), fluidproc(_fluidproc), ifluidniproc(_ifluidniproc),
-    ifluidbproc(_ifluidbproc), ifluidnbproc(_ifluidnbproc)
+  : fluidNames(_fluidNames), ifluidniNames(_ifluidniNames), ifluidnbNames(_ifluidnbNames),
+    ifluidbNames(_ifluidbNames)
 {
   // stitch fluid files
-  stitchFluidCGNS("fluid",fluidproc);
-  // stitch ifluid ni files
-  stitchIFluidCGNS(ifluidniName, "ifluid_ni", ifluidniproc);
-  // stitch ifluid b files
-  stitchIFluidCGNS(ifluidbName, "ifluid_b", ifluidbproc);
-  // stitch ifluid nb files
-  stitchIFluidCGNS(ifluidnbName, "ifluid_nb", ifluidnbproc);
+  stitchCGNS(fluidNames,0);
+  // stitch ifluid_ni files
+  stitchCGNS(ifluidniNames,1);
+  // stitch ifluid_b files
+  stitchCGNS(ifluidbNames,1);
+  // stitch ifluid_ng files
+  stitchCGNS(ifluidnbNames,1);
   // get stitched meshes from stitcher vector
   for (int i = 0; i < stitchers.size(); ++i)
   {
@@ -40,23 +45,24 @@ RemeshDriver::RemeshDriver(const std::string& _case_dir, const std::string& _bas
     mbObjs.push_back(stitchers[i]->getStitchedMB());
   }
   // creates remeshedVol and remeshedSurf
- // TODO: remesh(remeshjson);
+  remesh(remeshjson);
   // creates stitchedSurf
   if (mbObjs.size() > 1)
   {
     stitchSurfaces();
-    //TODO stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
     stitchedSurf->write();
   }
-  //TODO remeshedSurf->write();
-  // partition the mesh
-  //TODO partitionMesh();
-  remeshedSurf = stitchedSurf;
-  remeshedVol = mbObjs[0];
+  remeshedSurf->write();
+  // TODO partition the mesh
+  // partitionMesh();
+  //remeshedSurf = stitchedSurf;
+  //remeshedVol = mbObjs[0];
 
   writeCobalt("cobalt_test.cgi", "cobalt_test.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
+
 
 RemeshDriver::~RemeshDriver()
 {
@@ -88,23 +94,14 @@ RemeshDriver::~RemeshDriver()
   std::cout << "RemeshDriver destroyed" << std::endl;
 }
 
-void RemeshDriver::stitchFluidCGNS(const std::string& prefix, const int numproc)
+
+void RemeshDriver::stitchCGNS(const std::vector<std::string>& fnames, bool surf)
 {
-  if (numproc)
+  if (fnames.size())
   {
-    setCgFnames(fluidNames, prefix, numproc);
-    stitchers.push_back(new meshStitcher(fluidNames));
+    stitchers.push_back(new meshStitcher(fnames, surf));
   }
 }
-
-void RemeshDriver::stitchIFluidCGNS(std::string& name, const std::string& prefix, const int numproc)
-{
-  if (numproc)
-  {
-    setCgFname(name, prefix);
-    stitchers.push_back(new meshStitcher(numproc, name));
-  }
-} 
 
 void RemeshDriver::remesh(const json& remeshjson)
 {
@@ -136,10 +133,10 @@ void RemeshDriver::partitionMesh()
 {
   std::cout << " Partitioning the mesh with METIS ###################################\n";
   meshPartitioner* mPart = new meshPartitioner(remeshedVol);
-  mPart->partition(fluidproc);
+  mPart->partition(fluidNames.size());
   
   // write CGNS files for the new grid
-  for (int iCg=0; iCg < fluidproc; ++iCg)
+  for (int iCg=0; iCg < fluidNames.size(); ++iCg)
   {
     std::string fCgName(fluidNames[iCg]);
     std::size_t pos = fCgName.find_last_of("/");
@@ -235,44 +232,17 @@ void RemeshDriver::partitionMesh()
   delete mPart; mPart = nullptr;
 }
 
-
-void RemeshDriver::setCgFnames(std::vector<std::string>& names, const std::string& prefix,
-                               const int numproc)
-{
-  names.resize(numproc);
-  for (int i = 0; i < numproc; ++i)
-  {
-    std::stringstream basename;
-    basename << case_dir << "/" << prefix << "_" << base_t << "_";
-    if (i < 10)
-      basename << "000" << i << ".cgns";
-    else if (i >= 10 && i < 100)
-      basename << "00" << i << ".cgns";
-    else if (i >= 100 && i < 1000)
-      basename << 0 << i << ".cgns";
-    names[i] = basename.str();
-  } 
-}
-
-void RemeshDriver::setCgFname(std::string& name, const std::string& prefix)
-{
-  std::stringstream basename;
-  basename << case_dir << "/" << prefix << "_" << base_t << "_0000.cgns";
-  name = basename.str();
-}
-
 RemeshDriver* RemeshDriver::readJSON(json inputjson)
 {
   std::string case_dir = inputjson["Case Directory"].as<std::string>();
   std::string base_t = inputjson["Base Time Step"].as<std::string>();
-  json numprocjson = inputjson["Number Of Processors"];
-  int fluidproc = numprocjson["fluid"].as<int>();
-  int ifluidniproc = numprocjson["ifluid_ni"].as<int>();
-  int ifluidbproc = numprocjson["ifluid_b"].as<int>();
-  int ifluidnbproc = numprocjson["ifluid_nb"].as<int>();
+  std::vector<std::string> fluNames(getCgFNames(case_dir, "fluid", base_t));
+  std::vector<std::string> ifluniNames(getCgFNames(case_dir, "ifluid_ni", base_t));
+  std::vector<std::string> iflunbNames(getCgFNames(case_dir, "ifluid_nb", base_t));
+  std::vector<std::string> iflubNames(getCgFNames(case_dir, "ifluid_b", base_t));
   json remeshjson = inputjson["Remeshing Options"];
-  RemeshDriver* remeshdrvobj = new RemeshDriver(case_dir, base_t, fluidproc, ifluidniproc, 
-                                                ifluidbproc, ifluidnbproc, remeshjson);
+  RemeshDriver* remeshdrvobj = new RemeshDriver(fluNames, ifluniNames, 
+                                                iflunbNames, iflubNames, remeshjson);
   return remeshdrvobj;
 }
 
@@ -423,4 +393,39 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, const std::string& of
     exit(1);
   }
   writeCobalt(mapFile,outputStream); 
+}
+
+std::vector<std::string> glob(const std::string& pattern)
+{
+  glob_t glob_result;
+  memset(&glob_result, 0, sizeof(glob_result));
+  int ret = glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
+  if (ret == GLOB_NOSPACE || ret == GLOB_ABORTED)
+  {
+    globfree(&glob_result); 
+    std::cerr << "glob() failed with return value " << ret << std::endl;
+    exit(1);
+  }
+  else if (ret == GLOB_NOMATCH)
+  {
+    return std::vector<std::string>();
+  }
+
+  std::vector<std::string> fnames;
+  for (int i = 0; i < glob_result.gl_pathc; ++i)
+  {
+    fnames.push_back(std::string(glob_result.gl_pathv[i]));
+  }
+  
+  globfree(&glob_result); 
+  return fnames;
+}
+
+std::vector<std::string> getCgFNames(const std::string& case_dir, 
+                                     const std::string& prefix,
+                                     const std::string& base_t)
+{
+  std::stringstream names;
+  names << case_dir << "/" << prefix << "*" << base_t << "*.cgns";
+  return glob(names.str());
 }
