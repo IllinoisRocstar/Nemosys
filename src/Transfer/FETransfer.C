@@ -153,7 +153,7 @@ int FETransfer::transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell
     double tmp[3];
     double weights[genCell->GetNumberOfPoints()];
     int result = genCell->EvaluatePosition(x,tmp,subId,pcoords,minDist2,weights); 
-    if (result > 0 || minDist2 < 1e-14)
+    if (result > 0 || minDist2 < 1e-9)
     {
       for (int id = 0; id < dasSource.size(); ++id)
       {

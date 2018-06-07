@@ -11,7 +11,6 @@
 #endif
 
 //vtk
-#include <vtkAppendFilter.h>
 #include <vtkIdTypeArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkGenericCell.h>
@@ -20,7 +19,6 @@
 
 //stl
 #include <set>
-#include <string.h>
 
 RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const std::vector<std::string>& _ifluidniNames,
@@ -54,16 +52,15 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     stitchedSurf->write();
   }
   remeshedSurf->write();
-  // TODO partition the mesh
-  // partitionMesh();
-  //remeshedSurf = stitchedSurf;
-  //remeshedVol = mbObjs[0];
-
-  writeCobalt("cobalt_test.cgi", "cobalt_test.cgr");
+  writeCobalt("remeshedVol.cgi", "remeshedVol.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
 
-
+  // TODO partition the mesh
+  // partitionMesh();
+  //remeshedSurf = stitchedSurf; testing
+  //remeshedVol = mbObjs[0];     testing
+ 
 RemeshDriver::~RemeshDriver()
 {
   for (int i = 0; i < stitchers.size(); ++i)
@@ -118,15 +115,11 @@ void RemeshDriver::remesh(const json& remeshjson)
 void RemeshDriver::stitchSurfaces()
 {
   // stitch b, ni and nb surfaces
-  vtkSmartPointer<vtkAppendFilter> appender
-    = vtkSmartPointer<vtkAppendFilter>::New();
-  for (int i = 1; i < mbObjs.size(); ++i)
-  {
-    appender->AddInputData(mbObjs[i]->getDataSet());
-  }
-  appender->Update();
-  stitchedSurf = meshBase::Create(appender->GetOutput(), "stitchedSurf.vtu");
+  std::vector<meshBase*> surfs;
+  surfs.insert(surfs.begin(), mbObjs.begin()+1,mbObjs.end());
+  stitchedSurf = meshBase::stitchMB(surfs);
   stitchedSurf->setContBool(0);
+  stitchedSurf->setFileName("stitchedSurf.vtu");
 }
 
 void RemeshDriver::partitionMesh()
@@ -138,9 +131,8 @@ void RemeshDriver::partitionMesh()
   // write CGNS files for the new grid
   for (int iCg=0; iCg < fluidNames.size(); ++iCg)
   {
-    std::string fCgName(fluidNames[iCg]);
-    std::size_t pos = fCgName.find_last_of("/");
-    fCgName = fCgName.substr(pos+1);
+    std::size_t pos = fluidNames[iCg].find_last_of("/");
+    std::string fCgName(fluidNames[iCg].substr(pos+1));
     fCgName = trim_fname(fCgName,"New.cgns");
     std::cout << "Writing remeshed cgns part to " << fCgName << std::endl;
     // define elementary information
@@ -395,37 +387,11 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, const std::string& of
   writeCobalt(mapFile,outputStream); 
 }
 
-std::vector<std::string> glob(const std::string& pattern)
-{
-  glob_t glob_result;
-  memset(&glob_result, 0, sizeof(glob_result));
-  int ret = glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
-  if (ret == GLOB_NOSPACE || ret == GLOB_ABORTED)
-  {
-    globfree(&glob_result); 
-    std::cerr << "glob() failed with return value " << ret << std::endl;
-    exit(1);
-  }
-  else if (ret == GLOB_NOMATCH)
-  {
-    return std::vector<std::string>();
-  }
-
-  std::vector<std::string> fnames;
-  for (int i = 0; i < glob_result.gl_pathc; ++i)
-  {
-    fnames.push_back(std::string(glob_result.gl_pathv[i]));
-  }
-  
-  globfree(&glob_result); 
-  return fnames;
-}
-
 std::vector<std::string> getCgFNames(const std::string& case_dir, 
                                      const std::string& prefix,
                                      const std::string& base_t)
 {
   std::stringstream names;
   names << case_dir << "/" << prefix << "*" << base_t << "*.cgns";
-  return glob(names.str());
+  return nemAux::glob(names.str());
 }
