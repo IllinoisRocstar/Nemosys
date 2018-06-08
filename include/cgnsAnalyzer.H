@@ -43,6 +43,9 @@ typedef std::map<int,std::string> keyValueList;
 //typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic> MatrixInt;
 //typedef Eigen::Matrix<int, Eigen::Dynamic, 1> VectorInt;
 
+//TODO change vtk specific stuff to use meshBase
+class meshBase;
+
 class solutionData {
 
 typedef std::vector<double> vecSlnType;
@@ -183,6 +186,9 @@ public:
   // export to vtk format without going through madlib/gmsh (needed for simmetrix interface)
   void exportToVTKMesh(); 
   vtkSmartPointer<vtkDataSet> getVTKMesh();
+  // write data from existing vtkdataset into open cgns file (for replacing data in file)
+  void overwriteSolData(meshBase* mbObj);
+  void overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, DataType_t dt, void* data);
 
   // utilities
   void writeSampleStructured();
