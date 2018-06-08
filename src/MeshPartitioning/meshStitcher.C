@@ -59,8 +59,8 @@ void meshStitcher::initVolCgObj()
     else
     {
       // gs field is 'weird' in irocstar files- we don't write it back
-      if (!(*is).compare("gs"))
-        continue;
+      //if (!(*is).compare("gs"))
+      //  continue;
       std::cout << "Writing cell-based " << *is << std::endl;
       stitchedMesh->setCellDataArray((*is).c_str(), physData);
     }
@@ -105,8 +105,8 @@ void meshStitcher::initSurfCgObj()
     else
     {
       // gs field is 'weird' in irocstar files- we don't write it back
-      if (!(*is).compare("gs"))
-        continue;
+      //if (!(*is).compare("gs"))
+      //  continue;
       std::cout << "Writing cell-based " << *is << std::endl;
       stitchedMesh->setCellDataArray((*is).c_str(), physData);
     }

@@ -1084,7 +1084,7 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
       else 
       {
         //gs field is wiered in irocstar files we dont write it back
-        if (!(ifl->second).compare("gs") || !(ifl->second).compare("mdot_old"))
+        if (/*!(ifl->second).compare("gs") ||*/ !(ifl->second).compare("mdot_old"))
         {  
           continue;
         }
