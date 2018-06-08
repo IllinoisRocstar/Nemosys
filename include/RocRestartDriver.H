@@ -53,6 +53,8 @@ class RocRestartDriver : public NemDriver
 
   //helpers
   private:
+    // delete remeshed cgns files and converted vtus
+    void deleteCgMb(std::vector<cgnsAnalyzer*>& cgObjs, std::vector<meshBase*>& cgMbObjs);
     // populates stitchers
     void stitchCGNS(const std::vector<std::string>& fnames, bool surf);
     // populates cgns and meshbase vectors
@@ -62,7 +64,7 @@ class RocRestartDriver : public NemDriver
     // stitch ni, b and nb surfaces
     void stitchSurfaces();
     // transfer stitched data to new meshbase partitions
-    void transferStitchedToPartMb();
+    void transferStitchedToPartCg();
 
 };
 

@@ -37,14 +37,34 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
   //---- load remeshed cgns partitions into vecs and populate converted MB vecs
   loadPartCgMb();
 
-  //---- transfer solution fields from stitchedMBs to each MB partition
-  transferStitchedToPartMb();
+  //---- transfer solution fields from stitchedMBs to each MB partition 
+  //     and push into corresponding open cgns file
+  transferStitchedToPartCg();
 
   std::cout << "RocRestartDriver created" << std::endl; 
 } 
 
+void RocRestartDriver::deleteCgMb(std::vector<cgnsAnalyzer*>& cgObjs, std::vector<meshBase*>& cgMbObjs)
+{
+  for (int i = 0; i < cgObjs.size(); ++i)
+  {
+    if (cgObjs[i])
+    {
+      delete cgObjs[i];
+      delete cgMbObjs[i];
+      cgObjs[i] = nullptr;
+      cgMbObjs[i] = nullptr;
+    }
+  }
+}
+
 RocRestartDriver::~RocRestartDriver()
 {
+  deleteCgMb(fluidRmCg, fluidRmMb);
+  deleteCgMb(ifluidNiRmCg, ifluidNiRmMb);
+  deleteCgMb(ifluidBRmCg, ifluidBRmMb);
+  deleteCgMb(ifluidNbRmCg, ifluidNbRmMb);
+  
   for (int i = 0; i < stitchers.size(); ++i)
   {
     if (stitchers[i])
@@ -54,46 +74,7 @@ RocRestartDriver::~RocRestartDriver()
       mbObjs[i] = nullptr;
     }
   }
-  for (int i = 0; i < fluidRmCg.size();++i)
-  {
-    if (fluidRmCg[i])
-    {
-      delete fluidRmCg[i];
-      delete fluidRmMb[i];
-      fluidRmCg[i] = nullptr;
-      fluidRmMb[i] = nullptr;
-    }
-  } 
-  for (int i = 0; i < ifluidNiRmCg.size();++i)
-  {
-    if (ifluidNiRmCg[i])
-    {
-      delete ifluidNiRmCg[i];
-      delete ifluidNiRmMb[i];
-      ifluidNiRmCg[i] = nullptr;
-      ifluidNiRmMb[i] = nullptr;
-    }
-  } 
-  for (int i = 0; i < ifluidBRmCg.size();++i)
-  {
-    if (ifluidBRmCg[i])
-    {
-      delete ifluidBRmCg[i];
-      delete ifluidBRmMb[i];
-      ifluidBRmCg[i] = nullptr;
-      ifluidBRmMb[i] = nullptr;
-    }
-  } 
-  for (int i = 0; i < ifluidNbRmCg.size();++i)
-  {
-    if (ifluidNbRmCg[i])
-    {
-      delete ifluidNbRmCg[i];
-      delete ifluidNbRmMb[i];
-      ifluidNbRmCg[i] = nullptr;
-      ifluidNbRmMb[i] = nullptr;
-    }
-  } 
+
   if (stitchedSurf)
   {
     delete stitchedSurf;
@@ -154,29 +135,31 @@ void RocRestartDriver::loadPartCgMb()
   }
 }
 
-void RocRestartDriver::transferStitchedToPartMb()
+void RocRestartDriver::transferStitchedToPartCg()
 {
   // fluid
   for (int i = 0; i < fluidRmMb.size(); ++i)
   {
     mbObjs[0]->transfer(fluidRmMb[i], "Consistent Interpolation"); 
+    fluidRmCg[i]->overwriteSolData(fluidRmMb[i]);
   }
   // ifluid_ni
   for (int i = 0; i < ifluidNiRmMb.size(); ++i)
   {
     stitchedSurf->transfer(ifluidNiRmMb[i], "Consistent Interpolation");
+    ifluidNiRmCg[i]->overwriteSolData(ifluidNiRmMb[i]);
   }
   // ifluid_nb
-  std::cout << "nb size; " << ifluidNbRmMb.size() << std::endl;
-  std::cout << ifluidnbNamesRm.size() << std::endl;
   for (int i = 0; i < ifluidNbRmMb.size(); ++i)
   {
     stitchedSurf->transfer(ifluidNbRmMb[i], "Consistent Interpolation");
+    ifluidNbRmCg[i]->overwriteSolData(ifluidNbRmMb[i]);
   }
   // ifluid_b
   for (int i = 0; i < ifluidBRmMb.size(); ++i)
   {
     stitchedSurf->transfer(ifluidBRmMb[i], "Consistent Interpolation");
+    ifluidBRmCg[i]->overwriteSolData(ifluidBRmMb[i]);
   }
 }
 
@@ -208,7 +191,6 @@ RocRestartDriver::loadCGNS(const std::vector<std::string>& fnames, bool surf)
 
 RocRestartDriver* RocRestartDriver::readJSON(json inputjson)
 {
- 
   std::string prepDir = inputjson["Rocprep Remesh Directory"].as<std::string>();
   std::string lastDir = inputjson["Rocout Last TS Directory"].as<std::string>();
   std::string base_t = inputjson["Rocout Last TS Base"].as<std::string>();

@@ -2,7 +2,7 @@
 #include <GmshEntities.h>
 #include <string.h>
 #include <iostream>
-
+#include <meshBase.H>
 
 
 /********************************************
@@ -67,7 +67,7 @@ void cgnsAnalyzer::loadGrid(int verb)
   char basename[33],zonename[33];
 
   // open CGNS file for read
-  if (cg_open(cgFileName.c_str(),CG_MODE_READ,&indexFile)) cg_error_exit();
+  if (cg_open(cgFileName.c_str(),CG_MODE_MODIFY,&indexFile)) cg_error_exit();
   
   // reading base information
   cg_nbases(indexFile, &nBase);
@@ -1057,6 +1057,111 @@ void cgnsAnalyzer::exportToVTKMesh()
     vtkMesh = dataSet_tmp; 
   }
 } 
+
+void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
+{
+  // loading data if not yet
+  if (slnDataCont.size()==0)
+    loadSolutionDataContainer(); 
+  // write individual data fields
+  // slnMap = solutionMap std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
+  // gloc = solutionGridLocation std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
+  // slnName = solutionName std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
+  int iSol = -1;
+  for (auto is=solutionMap.begin(); is!=solutionMap.end(); is++)
+  {
+    std::pair<int,keyValueList> slnPair = is->second;
+    int slnIdx = slnPair.first;
+    keyValueList fldLst = slnPair.second;
+    for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
+    {
+      iSol++;
+      std::vector<double> newData;
+      if (solutionGridLocation[iSol] == Vertex)
+      {
+        mbObj->getPointDataArray(ifl->second, newData);
+      } 
+      else 
+      {
+        //gs field is wiered in irocstar files we dont write it back
+        if (!(ifl->second).compare("gs") || !(ifl->second).compare("mdot_old"))
+        {  
+          continue;
+        }
+        mbObj->getCellDataArray(ifl->second, newData);
+      }
+      std::cout << "Writing "
+          << newData.size() 
+          << " to "
+          << ifl->second
+          << " located in "
+          << solutionName[iSol]
+          << std::endl;
+      // write to file
+      if (!(ifl->second).compare("bflag"))
+        overwriteSolData(ifl->second, solutionName[iSol], slnIdx, Integer, &newData[0]);
+      else
+        overwriteSolData(ifl->second, solutionName[iSol], slnIdx, RealDouble, &newData[0]);
+    }
+  }
+}
+
+void cgnsAnalyzer::overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, DataType_t dt, void* data)
+{
+  //int slnIdx=-1;
+  //auto is = solutionNameLocMap.begin();
+  //while (is!=solutionNameLocMap.end())
+  //{
+  // slnIdx++;
+  // if (!strcmp((is->first).c_str(), ndeName.c_str()))
+  //   break;
+  // is++;
+  //}
+  //// sanity check
+  //if (is==solutionNameLocMap.end()){
+  //  std::cerr << ndeName 
+  //            << " is not an existing solution node.\n";
+  //  return;
+  //}
+
+  // write solution to file
+  GridLocation_t gloc(solutionNameLocMap[fname]);
+  int fldIdx;
+  if (cg_field_write(indexFile, indexBase, indexZone, slnIdx,
+                     dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
+  // finding range of data
+  double* tmpData = (double*) data;
+  double min = tmpData[0];
+  double max = tmpData[0];
+  int nItr = 0;
+  if (gloc == Vertex)
+  {
+    nItr = nVertex;
+  } else {
+    nItr = nElem;
+  }
+  for (int it=0; it<nItr; it++) {
+    min = std::min(tmpData[it], min);
+    max = std::max(tmpData[it], max);
+  }
+  // writing range descriptor
+  std::ostringstream os;
+  os << min << ", " << max;
+  std::string range = os.str();
+  if (cg_goto(indexFile, indexBase, "Zone_t", indexZone,
+              "FlowSolution_t", slnIdx, "DataArray_t", fldIdx, "end")) cg_error_exit();
+  if (cg_descriptor_write("Range", range.c_str())) cg_error_exit();
+  // write DimensionalExponents and units for cell data
+  if (gloc == CellCenter)
+  {
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx,
+                "DataArray_t", fldIdx, "end")) cg_error_exit();
+    // dummy exponents and units
+    float exponents[5] = {0, 0, 0, 0, 0};
+    if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+    if (cg_descriptor_write("Units", "dmy")) cg_error_exit();
+  }
+}
 
 void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
 {
