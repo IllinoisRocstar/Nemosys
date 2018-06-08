@@ -548,7 +548,7 @@ class meshStitcher
 {
   public:
     
-    meshStitcher(const std::vector<std::string>& cgFileNames);
+    meshStitcher(const std::vector<std::string>& cgFileNames, bool surf);
     ~meshStitcher();
     
     cgnsAnalyzer* getStitchedCGNS();
