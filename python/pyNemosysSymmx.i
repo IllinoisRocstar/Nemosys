@@ -11,6 +11,8 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
+#include "RemeshDriver.H"
+#include "RocRestartDriver.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
 #include "meshGen.H"
@@ -451,6 +453,102 @@ class ConversionDriver : public NemDriver
     %}
 };
 
+class RemeshDriver : public NemDriver
+{
+  public:
+    RemeshDriver(const std::vector<std::string>& fluidNames,
+                 const std::vector<std::string>& ifluidniNames,
+                 const std::vector<std::string>& ifluidnbNames,
+                 const std::vector<std::string>& ifluidbNames,
+                 const json& remeshjson);
+    ~RemeshDriver();
+};
+
+%extend RemeshDriver {
+
+    static RemeshDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
+      if (serialized) {
+        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
+        return RemeshDriver::readJSON(inputjson);
+      }
+      else if (!serialized) {
+        return RemeshDriver::readJSON(ifname);
+      }
+      return NULL;
+    }
+
+    %pythoncode %{
+
+    @staticmethod
+    def readJSON( json_obj):
+      import json
+      if type(json_obj) is list:
+        serialized_json = json.dumps(json_obj[0])
+        return RemeshDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is dict:
+        serialized_json = json.dumps(json_obj)
+        return RemeshDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is str:
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return RemeshDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return RemeshDriver.py_readJSON('', json_obj, False)
+
+    %}
+};
+
+class RocRestartDriver : public NemDriver
+{
+
+  public:
+    RocRestartDriver(const std::vector<std::string>& fluidNamesRm,
+                     const std::vector<std::string>& ifluidniNamesRm,
+                     const std::vector<std::string>& ifluidnbNamesRm,
+                     const std::vector<std::string>& ifluidbNamesRm,
+                     const std::vector<std::string>& fluidNamesLts,
+                     const std::vector<std::string>& ifluidniNamesLts,  
+                     const std::vector<std::string>& ifluidnbNamesLts,   
+                     const std::vector<std::string>& ifluidbNamesLts); 
+ 
+    ~RocRestartDriver(); 
+};
+
+%extend RocRestartDriver {
+
+    static RocRestartDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
+      if (serialized) {
+        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
+        return RocRestartDriver::readJSON(inputjson);
+      }
+      else if (!serialized) {
+        return RocRestartDriver::readJSON(ifname);
+      }
+      return NULL;
+    }
+
+    %pythoncode %{
+
+    @staticmethod
+    def readJSON( json_obj):
+      import json
+      if type(json_obj) is list:
+        serialized_json = json.dumps(json_obj[0])
+        return RocRestartDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is dict:
+        serialized_json = json.dumps(json_obj)
+        return RocRestartDriver.py_readJSON(serialized_json, '', True)
+      elif type(json_obj) is str:
+        try:
+            json.loads(json_obj)
+            serialized_json = json_obj
+            return RocRestartDriver.py_readJSON(serialized_json, '', True)
+        except:
+            return RocRestartDriver.py_readJSON('', json_obj, False)
+
+    %}
+};
 
 class OrderOfAccuracy
 {
