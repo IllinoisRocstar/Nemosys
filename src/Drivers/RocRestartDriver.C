@@ -9,16 +9,26 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
                                    const std::vector<std::string>& _fluidNamesLts,
                                    const std::vector<std::string>& _ifluidniNamesLts,  
                                    const std::vector<std::string>& _ifluidnbNamesLts,   
-                                   const std::vector<std::string>& _ifluidbNamesLts)
+                                   const std::vector<std::string>& _ifluidbNamesLts
+										 							 const std::vect0r<std::string>& _burnNamesRm, 
+										 							 const std::vector<std::string>& _iBurnNamesRm, 
+										 							 const std::vector<std::string>& _burnNamesLts, 
+										 							 const std::vector<std::string>& _iBurnNamesLts)
   : fluidNamesRm(_fluidNamesRm), ifluidniNamesRm(_ifluidniNamesRm),
     ifluidnbNamesRm(_ifluidnbNamesRm), ifluidbNamesRm(_ifluidbNamesRm),
     fluidNamesLts(_fluidNamesLts), ifluidniNamesLts(_ifluidniNamesLts),
-    ifluidnbNamesLts(_ifluidnbNamesLts), ifluidbNamesLts(_ifluidbNamesLts) 
+    ifluidnbNamesLts(_ifluidnbNamesLts), ifluidbNamesLts(_ifluidbNamesLts),
+		burnNamesRm(_burnNamesRm), iBurnNamesRm(_iBurnNamesRm), 
+		burnNamesLts(_iBurnNamesLts), iBurnNamesLts(_iBurnNamesLts)
 {
   //---- stitch files from last time step
   
   // fluid
-  stitchCGNS(fluidNamesLts, 0);
+  stitchCGNS(fluidNamesLts,0);
+	// burn
+	stitchCGNS(burnNamesLts,0);
+	// iburn
+	stitchCGNS(iBurnNamesLts,1);
   // ifluid_ni 
   stitchCGNS(ifluidniNamesLts,1);
   // ifluid_b 
@@ -39,7 +49,7 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
 
   //---- transfer solution fields from stitchedMBs to each MB partition 
   //     and push into corresponding open cgns file
-  transferStitchedToPartCg();
+  transferStitchedToPartCg("Consistent Interpolation");
 
   std::cout << "RocRestartDriver created" << std::endl; 
 } 
@@ -64,7 +74,9 @@ RocRestartDriver::~RocRestartDriver()
   deleteCgMb(ifluidNiRmCg, ifluidNiRmMb);
   deleteCgMb(ifluidBRmCg, ifluidBRmMb);
   deleteCgMb(ifluidNbRmCg, ifluidNbRmMb);
-  
+	deleteCgMb(burnRmCg, burnRmMb);
+	deleteCgMb(iBurnRmCg, iBurnRmMb); 
+ 
   for (int i = 0; i < stitchers.size(); ++i)
   {
     if (stitchers[i])
@@ -95,7 +107,7 @@ void RocRestartDriver::stitchSurfaces()
 {
   // stitch b, ni and nb surfaces
   std::vector<meshBase*> surfs;
-  surfs.insert(surfs.begin(), mbObjs.begin()+1,mbObjs.end());
+  surfs.insert(surfs.begin(), mbObjs.begin()+3,mbObjs.end());
   stitchedSurf = meshBase::stitchMB(surfs);
   stitchedSurf->setContBool(0);
   stitchedSurf->setFileName("stitchedSurf.vtu");
@@ -112,6 +124,20 @@ void RocRestartDriver::loadPartCgMb()
     fluidRmCg = fluidPair.first;
     fluidRmMb = fluidPair.second;
   }
+	// burn
+	if (burnNamesRm.size())
+	{
+		cgVtPair = burnPair(loadCGNS(burnNamesRm,0));
+		burnRmCg = burnPair.first;
+		burnRmMb = burnPair.second;
+	}	
+	// iburn
+	if (iBurnNamesRm.size())
+	{
+		cgVtPair = iBurnPair(loadCGNS(iBurnNamesRm,1));
+		iBurnRmCg = iBurnPair.first;
+		iBurnRmMb = iBurnPair.second;
+	}
   // ifluid_ni
   if (ifluidniNamesRm.size())
   {
@@ -135,30 +161,42 @@ void RocRestartDriver::loadPartCgMb()
   }
 }
 
-void RocRestartDriver::transferStitchedToPartCg()
+void RocRestartDriver::transferStitchedToPartCg(const std::string& transferType)
 {
   // fluid
   for (int i = 0; i < fluidRmMb.size(); ++i)
   {
-    mbObjs[0]->transfer(fluidRmMb[i], "Consistent Interpolation"); 
+    mbObjs[0]->transfer(fluidRmMb[i], transferType); 
     fluidRmCg[i]->overwriteSolData(fluidRmMb[i]);
   }
+	// burn
+	for (int i = 0; i < burnRmMb.size(); ++i)
+	{
+		mbObjs[1]->transfer(burnRmMb[i], transferType);
+		burnRmCg[i]->overwriteSolData(burnRmMb[i]);
+	}
+	// iburn
+	for (int i = 0; i < iBurnRmMb.size(); ++i)
+	{
+		mbObjs[2]->transfer(iBurnRmMb[i], transferType);
+		iBurnRmCg[i]->overwriteSolData(iBurnRmMb[i]);
+	}
   // ifluid_ni
   for (int i = 0; i < ifluidNiRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNiRmMb[i], "Consistent Interpolation");
+    stitchedSurf->transfer(ifluidNiRmMb[i], transferType);
     ifluidNiRmCg[i]->overwriteSolData(ifluidNiRmMb[i]);
   }
   // ifluid_nb
   for (int i = 0; i < ifluidNbRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNbRmMb[i], "Consistent Interpolation");
+    stitchedSurf->transfer(ifluidNbRmMb[i], transferType);
     ifluidNbRmCg[i]->overwriteSolData(ifluidNbRmMb[i]);
   }
   // ifluid_b
   for (int i = 0; i < ifluidBRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidBRmMb[i], "Consistent Interpolation");
+    stitchedSurf->transfer(ifluidBRmMb[i], transferType);
     ifluidBRmCg[i]->overwriteSolData(ifluidBRmMb[i]);
   }
 }
@@ -192,22 +230,29 @@ RocRestartDriver::loadCGNS(const std::vector<std::string>& fnames, bool surf)
 RocRestartDriver* RocRestartDriver::readJSON(json inputjson)
 {
   std::string prepDir = inputjson["Rocprep Remesh Directory"].as<std::string>();
+	std::string prepBurnDir = inputjson["Rocprep Remesh Burn Directory"].as<std::string>();
   std::string lastDir = inputjson["Rocout Last TS Directory"].as<std::string>();
+	std::string lastBurnDir = inputjson["Rocout Last TS Burn Directory"].as<std::string>();
   std::string base_t = inputjson["Rocout Last TS Base"].as<std::string>();
   std::string base_tRm = inputjson["Rocout Remesh TS Base"].as<std::string>();
 
   std::vector<std::string> fluNamesRm(getCgFNames(prepDir, "fluid", base_tRm));
-  std::vector<std::string> ifluniNamesRm(getCgFNames(prepDir, "ifluid_ni", base_tRm));
+  std::vector<std::string> burnNamesRm(getCgFNames(prepBurnDir, "burn", base_tRm));
+	std::vector<std::string> iBurnNamesRm(getCgFNames(prepBurnDir, "iburn", base_tRm));
+	std::vector<std::string> ifluniNamesRm(getCgFNames(prepDir, "ifluid_ni", base_tRm));
   std::vector<std::string> iflunbNamesRm(getCgFNames(prepDir, "ifluid_nb", base_tRm));
   std::vector<std::string> iflubNamesRm(getCgFNames(prepDir, "ifluid_b", base_tRm));
   std::vector<std::string> fluNamesLts(getCgFNames(lastDir, "fluid", base_t));
+  std::vector<std::string> burnNamesLts(getCgFNames(lastBurnDir, "burn", base_t));
+	std::vector<std::string> iBurnNamesLts(getCgFNames(lastBurnDir, "iburn", base_t));
   std::vector<std::string> ifluniNamesLts(getCgFNames(lastDir, "ifluid_ni", base_t));
   std::vector<std::string> iflunbNamesLts(getCgFNames(lastDir, "ifluid_nb", base_t));
   std::vector<std::string> iflubNamesLts(getCgFNames(lastDir, "ifluid_b", base_t));
   
   RocRestartDriver* restartDriver 
     = new RocRestartDriver(fluNamesRm, ifluniNamesRm, iflunbNamesRm, iflubNamesRm,
-                           fluNamesLts, ifluniNamesLts, iflunbNamesLts, iflubNamesLts);
+                           fluNamesLts, ifluniNamesLts, iflunbNamesLts, iflubNamesLts,
+													 burnNamesRm, iBurnNamesRm, burnNamesLts, iBurnNamesLts);
   return restartDriver;
 }
 
