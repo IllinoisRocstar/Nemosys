@@ -9,8 +9,8 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
                                    const std::vector<std::string>& _fluidNamesLts,
                                    const std::vector<std::string>& _ifluidniNamesLts,  
                                    const std::vector<std::string>& _ifluidnbNamesLts,   
-                                   const std::vector<std::string>& _ifluidbNamesLts
-										 							 const std::vect0r<std::string>& _burnNamesRm, 
+                                   const std::vector<std::string>& _ifluidbNamesLts,
+										 							 const std::vector<std::string>& _burnNamesRm, 
 										 							 const std::vector<std::string>& _iBurnNamesRm, 
 										 							 const std::vector<std::string>& _burnNamesLts, 
 										 							 const std::vector<std::string>& _iBurnNamesLts)
