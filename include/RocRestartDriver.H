@@ -18,7 +18,7 @@ class RocRestartDriver : public NemDriver
                      const std::vector<std::string>& ifluidniNamesLts,  
                      const std::vector<std::string>& ifluidnbNamesLts,   
                      const std::vector<std::string>& ifluidbNamesLts 
-										 const std::vect0r<std::string>& burnNamesRm, 
+										 const std::vector<std::string>& burnNamesRm, 
 										 const std::vector<std::string>& iBurnNamesRm, 
 										 const std::vector<std::string>& burnNamesLts, 
 										 const std::vector<std::string>& iBurnNamesLts);
