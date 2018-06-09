@@ -55,11 +55,13 @@ public:
   void stitchMe(cgnsAnalyzer* cgObj, int zoneIdx);
   void stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx); 
   void stitchMe(rocstarCgns* cgObj);
+	void setBurnBool(bool b);
 
   // management data
 private:
   std::string myCgFName;
   std::string baseCgFName;
+	bool burn;
   std::vector<std::string> cgFNames;
   int padSize;
   std::vector<cgnsAnalyzer*> myCgObjs;
