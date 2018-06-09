@@ -127,14 +127,14 @@ void RocRestartDriver::loadPartCgMb()
 	// burn
 	if (burnNamesRm.size())
 	{
-		cgVtPair = burnPair(loadCGNS(burnNamesRm,0));
+		cgVtPair burnPair(loadCGNS(burnNamesRm,0));
 		burnRmCg = burnPair.first;
 		burnRmMb = burnPair.second;
 	}	
 	// iburn
 	if (iBurnNamesRm.size())
 	{
-		cgVtPair = iBurnPair(loadCGNS(iBurnNamesRm,1));
+		cgVtPair iBurnPair(loadCGNS(iBurnNamesRm,1));
 		iBurnRmCg = iBurnPair.first;
 		iBurnRmMb = iBurnPair.second;
 	}
