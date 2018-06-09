@@ -17,7 +17,11 @@ class RocRestartDriver : public NemDriver
                      const std::vector<std::string>& fluidNamesLts,
                      const std::vector<std::string>& ifluidniNamesLts,  
                      const std::vector<std::string>& ifluidnbNamesLts,   
-                     const std::vector<std::string>& ifluidbNamesLts); 
+                     const std::vector<std::string>& ifluidbNamesLts 
+										 const std::vect0r<std::string>& burnNamesRm, 
+										 const std::vector<std::string>& iBurnNamesRm, 
+										 const std::vector<std::string>& burnNamesLts, 
+										 const std::vector<std::string>& iBurnNamesLts);
  
     ~RocRestartDriver(); 
     static RocRestartDriver* readJSON(json inputjson);
@@ -25,11 +29,15 @@ class RocRestartDriver : public NemDriver
   private:
     // remeshed cgns file names
     std::vector<std::string> fluidNamesRm;
+		std::vector<std::string> burnNamesRm;
+		std::vector<std::string> iBurnNamesRm;
     std::vector<std::string> ifluidniNamesRm;
     std::vector<std::string> ifluidnbNamesRm;
     std::vector<std::string> ifluidbNamesRm;
     // last ts cgns file names
     std::vector<std::string> fluidNamesLts;
+		std::vector<std::string> burnNamesLts;
+		std::vector<std::string> iBurnNamesLts;
     std::vector<std::string> ifluidniNamesLts;
     std::vector<std::string> ifluidnbNamesLts;
     std::vector<std::string> ifluidbNamesLts;
@@ -41,11 +49,15 @@ class RocRestartDriver : public NemDriver
     meshBase* stitchedSurf;
     // remeshed, 0 ts loaded cgns files
     std::vector<cgnsAnalyzer*> fluidRmCg;
+		std::vector<cgnsAnalyzer*> burnRmCg;
+		std::vector<cgnsAnalyzer*> iBurnRmCg;
     std::vector<cgnsAnalyzer*> ifluidNiRmCg;
     std::vector<cgnsAnalyzer*> ifluidNbRmCg;
     std::vector<cgnsAnalyzer*> ifluidBRmCg;  
     // remeshed, 0 ts loaded cgns files converted to vtu
     std::vector<meshBase*> fluidRmMb;
+		std::vector<meshBase*> burnRmMb;
+		std::vector<meshBase*> iBurnRmMb;
     std::vector<meshBase*> ifluidNiRmMb;
     std::vector<meshBase*> ifluidNbRmMb;
     std::vector<meshBase*> ifluidBRmMb;  
@@ -64,7 +76,7 @@ class RocRestartDriver : public NemDriver
     // stitch ni, b and nb surfaces
     void stitchSurfaces();
     // transfer stitched data to new meshbase partitions
-    void transferStitchedToPartCg();
+    void transferStitchedToPartCg(const std::string& transferType);
 
 };
 
