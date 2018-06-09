@@ -1098,7 +1098,7 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
           << solutionName[iSol]
           << std::endl;
       // write to file
-      if (!(ifl->second).compare("bflag"))
+      if (!(ifl->second).compare("bflag")) // cg_io complains if this isn't Integer type
         overwriteSolData(ifl->second, solutionName[iSol], slnIdx, Integer, &newData[0]);
       else
         overwriteSolData(ifl->second, solutionName[iSol], slnIdx, RealDouble, &newData[0]);
