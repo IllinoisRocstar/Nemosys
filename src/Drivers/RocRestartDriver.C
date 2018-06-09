@@ -194,11 +194,12 @@ RocRestartDriver* RocRestartDriver::readJSON(json inputjson)
   std::string prepDir = inputjson["Rocprep Remesh Directory"].as<std::string>();
   std::string lastDir = inputjson["Rocout Last TS Directory"].as<std::string>();
   std::string base_t = inputjson["Rocout Last TS Base"].as<std::string>();
+  std::string base_tRm = inputjson["Rocout Remesh TS Base"].as<std::string>();
 
-  std::vector<std::string> fluNamesRm(getCgFNames(prepDir, "fluid", "00.000000"));
-  std::vector<std::string> ifluniNamesRm(getCgFNames(prepDir, "ifluid_ni", "00.000000"));
-  std::vector<std::string> iflunbNamesRm(getCgFNames(prepDir, "ifluid_nb", "00.000000"));
-  std::vector<std::string> iflubNamesRm(getCgFNames(prepDir, "ifluid_b", "00.000000"));
+  std::vector<std::string> fluNamesRm(getCgFNames(prepDir, "fluid", base_tRm));
+  std::vector<std::string> ifluniNamesRm(getCgFNames(prepDir, "ifluid_ni", base_tRm));
+  std::vector<std::string> iflunbNamesRm(getCgFNames(prepDir, "ifluid_nb", base_tRm));
+  std::vector<std::string> iflubNamesRm(getCgFNames(prepDir, "ifluid_b", base_tRm));
   std::vector<std::string> fluNamesLts(getCgFNames(lastDir, "fluid", base_t));
   std::vector<std::string> ifluniNamesLts(getCgFNames(lastDir, "ifluid_ni", base_t));
   std::vector<std::string> iflunbNamesLts(getCgFNames(lastDir, "ifluid_nb", base_t));
