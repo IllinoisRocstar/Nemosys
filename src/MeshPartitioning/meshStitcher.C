@@ -72,6 +72,11 @@ void meshStitcher::initVolCgObj()
 void meshStitcher::initSurfCgObj()
 {
   cgObj = new rocstarCgns(cgFileNames);
+	// different read for burn files
+	if (cgFileNames[0].find("burn") != std::string::npos)
+	{
+		cgObj->setBurnBool(1);
+	}
   cgObj->loadCgSeries();
   cgObj->dummy(); 
   std::cout << "Meshes stitched successfully! #####################################\n";

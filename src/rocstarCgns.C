@@ -8,7 +8,7 @@
 ///////////////////////////////////////////////////
 
 rocstarCgns::rocstarCgns(std::string fname) :
-cgnsAnalyzer(fname), myCgFName(fname)
+cgnsAnalyzer(fname), myCgFName(fname),burn(0)
 {
   std::size_t _loc = myCgFName.find_last_of("_");
   baseCgFName = myCgFName.substr(0,_loc+1);
@@ -16,7 +16,7 @@ cgnsAnalyzer(fname), myCgFName(fname)
 }
 
 rocstarCgns::rocstarCgns(const std::vector<std::string>& fnames)
-  : cgnsAnalyzer(fnames[0]), cgFNames(fnames)
+  : cgnsAnalyzer(fnames[0]), cgFNames(fnames),burn(0)
 {
   std::size_t _loc = fnames[0].find_last_of("_");
   baseCgFName = fnames[0].substr(0,_loc+1);
@@ -77,6 +77,11 @@ std::string rocstarCgns::getBaseName(int indx)
   if (indx<myCgObjs.size())
     return(myCgObjs[indx]->getBaseName());
   return("INVALID");
+}
+
+void rocstarCgns::setBurnBool(bool b)
+{
+	burn = b;
 }
 
 std::string rocstarCgns::getCgFName(int indx)
@@ -292,19 +297,26 @@ void rocstarCgns::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
     indexZone = zoneIdx;
     loadSolutionDataContainer();
     // append Rocstar specific BCs as solution fields
-    appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
+    if (!burn)
+		{
+			appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+     	                   		ELEMENTAL, cgObj->getNElement(), 1); 
+    }
+		appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+                        	ELEMENTAL, cgObj->getNElement(), 1); 
     appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
                          ELEMENTAL, cgObj->getNElement(), 1); 
     return;
   }
   // Rocstar specific BCs remove the old exisiting field 
-  cgObj->delAppSlnData("patchNo");
-  cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("bcflag");
+  if (!burn)
+	{
+		cgObj->delAppSlnData("patchNo");
+  	cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
+    		                         ELEMENTAL, cgObj->getNElement(), 1);
+  }
+
+	cgObj->delAppSlnData("bcflag");
   cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
                              ELEMENTAL, cgObj->getNElement(), 1);
   cgObj->delAppSlnData("cnstr_type");
@@ -661,7 +673,7 @@ int rocstarCgns::getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx)
   }
   if (iArr>nArr)
   {
-    std::cerr << "Can not find patchNo." << std::endl;
+    std::cerr << "Can not find cnstr_type." << std::endl;
     cg_error_exit();
   }
   int cnstrType;
