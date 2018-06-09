@@ -301,11 +301,12 @@ void rocstarCgns::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
 		{
 			appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
      	                   		ELEMENTAL, cgObj->getNElement(), 1); 
-    }
-		appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-                        	ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
+			appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+    	                    	ELEMENTAL, cgObj->getNElement(), 1); 
+    	appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
                          ELEMENTAL, cgObj->getNElement(), 1); 
+    }
+
     return;
   }
   // Rocstar specific BCs remove the old exisiting field 
@@ -314,14 +315,15 @@ void rocstarCgns::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
 		cgObj->delAppSlnData("patchNo");
   	cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
     		                         ELEMENTAL, cgObj->getNElement(), 1);
+		cgObj->delAppSlnData("bcflag");
+  	cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
+  	                           ELEMENTAL, cgObj->getNElement(), 1);
+  	cgObj->delAppSlnData("cnstr_type");
+  	cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
+                             ELEMENTAL, cgObj->getNElement(), 1);
   }
 
-	cgObj->delAppSlnData("bcflag");
-  cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("cnstr_type");
-  cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
+
   // call current object stitch field
   stitchFields(cgObj);
 }
