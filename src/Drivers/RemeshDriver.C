@@ -40,17 +40,15 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     mbObjs.push_back(stitchers[i]->getStitchedMB());
   }
   // creates remeshedVol and remeshedSurf
-  //remesh(remeshjson);
+  remesh(remeshjson);
   // creates stitchedSurf
   if (mbObjs.size() > 1)
   {
     stitchSurfaces();
-    //stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
     stitchedSurf->write();
   }
-  //remeshedSurf->write();
-  remeshedSurf = stitchedSurf;
-  remeshedVol = mbObjs[0];
+  remeshedSurf->write();
   writeCobalt("remeshedVol.cgi", "remeshedVol.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
