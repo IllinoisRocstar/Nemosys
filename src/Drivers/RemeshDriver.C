@@ -17,9 +17,6 @@
 #include <vtkCell.h>
 #include <vtkCellData.h>
 
-//stl
-#include <set>
-
 RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const std::vector<std::string>& _ifluidniNames,
                            const std::vector<std::string>& _ifluidnbNames,
@@ -265,6 +262,7 @@ void RemeshDriver::writePatchMap(std::ofstream& outputStream, const std::map<int
   }
 }
 
+
 void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& outputStream)
 {
 
@@ -278,8 +276,8 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
   vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
-  std::map<std::set<int>, std::pair<int,int>> faceMap;
-
+  //std::map<std::set<int>, std::pair<int,int>> faceMap;
+  std::map<std::vector<int>, std::pair<int,int>, sumIntVec_compare> faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkCellLocator> surfCellLocator = remeshedSurf->buildLocator(); 
   // maximum number of vertices per face (to be found in proceeding loop)
@@ -303,34 +301,50 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
       nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
       facePtIds = face->GetPointIds(); 
       remeshedVol->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
-      std::set<int> facePntIds;
+      //std::set<int> facePntIds;
+      std::vector<int> facePntIds(numVerts);
       for (int k = 0; k < numVerts; ++k)
       {
-        facePntIds.insert(face->GetPointId(k)+1);
+        facePntIds[k] = face->GetPointId(k)+1;
       }
+      //for (int k = 0; k < numVerts; ++k)
+      //{
+      //  facePntIds.insert(face->GetPointId(k)+1);
+      //}
       if (sharedCellPtIds->GetNumberOfIds())
       {
-
-        faceMap.insert(std::pair<std::set<int>, std::pair<int,int>> 
-                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1)));
+        //faceMap.insert(std::pair<std::set<int>, std::pair<int,int>> 
+        //                (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1)));
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
+                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1))); 
       }
       else
       {
-        int id = face->GetPointId(1);
-        double x[3];
+        double p1[3], p2[3], p3[3];
+        face->GetPoints()->GetPoint(0,p1);
+        face->GetPoints()->GetPoint(1,p2);
+        face->GetPoints()->GetPoint(2,p3);
+        double faceCenter[3];
+        for (int k = 0; k < numVerts; ++k)
+        {
+          faceCenter[k] = (p1[k] + p2[k] + p3[k])/3.0;
+        } 
+        //int id = face->GetPointId(1);
+        //double x[3];
         vtkIdType closestCellId;
         int subId;
         double minDist2;
         double closestPoint[3];
-        remeshedVol->getDataSet()->GetPoint(id,x);
-        // find closest point and closest cell to x
-        surfCellLocator->FindClosestPoint(x, closestPoint, genCell2,closestCellId,subId,minDist2);
+        //remeshedVol->getDataSet()->GetPoint(id,x);
+        // find closest point and closest cell to faceCenter
+        surfCellLocator->FindClosestPoint(faceCenter, closestPoint, genCell2,closestCellId,subId,minDist2);
         double patchNo[1];
         remeshedSurf->getDataSet()->GetCellData()->GetArray("patchNo")
                                                   ->GetTuple(closestCellId, patchNo);
 
-        faceMap.insert(std::pair<std::set<int>, std::pair<int,int>>
-                        (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
+        //faceMap.insert(std::pair<std::set<int>, std::pair<int,int>>
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>      
+                  (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
 
       }
     }
@@ -395,3 +409,17 @@ std::vector<std::string> getCgFNames(const std::string& case_dir,
   names << case_dir << "/" << prefix << "*" << base_t << "*.cgns";
   return nemAux::glob(names.str());
 }
+
+bool sumIntVec_compare::operator() (const std::vector<int>& lhs, 
+                                    const std::vector<int>& rhs) const
+{
+  int sum1 = 0;
+  int sum2 = 0;
+  for (int i = 0; i < lhs.size(); ++i)
+  {
+    sum1 += lhs[i];
+    sum2 += rhs[i];
+  }
+  return (sum1 < sum2); 
+}
+
