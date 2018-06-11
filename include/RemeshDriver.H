@@ -63,9 +63,9 @@ inline std::vector<std::string> getCgFNames(const std::string& case_dir,
                                             const std::string& base_t);
 
 // sum comparison for vectors representing faces inserted into map
-struct sumIntVec_compare
+struct sortIntVec_compare
 {
-  bool operator() ( const std::vector<int>& lhs, const std::vector<int>& rhs) const;
+  bool operator() (std::vector<int> lhs, std::vector<int> rhs) const;
 };
 
 #endif

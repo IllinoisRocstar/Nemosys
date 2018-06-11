@@ -40,15 +40,17 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     mbObjs.push_back(stitchers[i]->getStitchedMB());
   }
   // creates remeshedVol and remeshedSurf
-  remesh(remeshjson);
+  //remesh(remeshjson);
   // creates stitchedSurf
   if (mbObjs.size() > 1)
   {
     stitchSurfaces();
-    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    //stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
     stitchedSurf->write();
   }
-  remeshedSurf->write();
+  //remeshedSurf->write();
+  remeshedSurf = stitchedSurf;
+  remeshedVol = mbObjs[0];
   writeCobalt("remeshedVol.cgi", "remeshedVol.cgr");
   std::cout << "RemeshDriver created" << std::endl;
 }
@@ -277,7 +279,7 @@ void RemeshDriver::writeCobalt(const std::string& mapFile, std::ofstream& output
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
   vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
   //std::map<std::set<int>, std::pair<int,int>> faceMap;
-  std::map<std::vector<int>, std::pair<int,int>, sumIntVec_compare> faceMap;
+  std::map<std::vector<int>, std::pair<int,int>, sortIntVec_compare> faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkCellLocator> surfCellLocator = remeshedSurf->buildLocator(); 
   // maximum number of vertices per face (to be found in proceeding loop)
@@ -410,16 +412,11 @@ std::vector<std::string> getCgFNames(const std::string& case_dir,
   return nemAux::glob(names.str());
 }
 
-bool sumIntVec_compare::operator() (const std::vector<int>& lhs, 
-                                    const std::vector<int>& rhs) const
+bool sortIntVec_compare::operator() (std::vector<int> lhs, 
+                                     std::vector<int> rhs) const
 {
-  int sum1 = 0;
-  int sum2 = 0;
-  for (int i = 0; i < lhs.size(); ++i)
-  {
-    sum1 += lhs[i];
-    sum2 += rhs[i];
-  }
-  return (sum1 < sum2); 
+  std::sort(lhs.begin(), lhs.end());
+  std::sort(rhs.begin(), rhs.end());
+  return lhs < rhs;
 }
 
