@@ -1064,9 +1064,6 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
   if (slnDataCont.size()==0)
     loadSolutionDataContainer(); 
   // write individual data fields
-  // slnMap = solutionMap std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
-  // gloc = solutionGridLocation std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
-  // slnName = solutionName std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
   int iSol = -1;
   for (auto is=solutionMap.begin(); is!=solutionMap.end(); is++)
   {
@@ -1099,8 +1096,11 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
           << std::endl;
       // write to file
       if (!(ifl->second).compare("bflag")) // cg_io complains if this isn't Integer type
-        overwriteSolData(ifl->second, solutionName[iSol], slnIdx, Integer, &newData[0]);
-      else
+      {
+				std::vector<int> newDataToInt(newData.begin(),newData.end());
+				overwriteSolData(ifl->second, solutionName[iSol], slnIdx, Integer, &newDataToInt[0]);
+      }
+			else
         overwriteSolData(ifl->second, solutionName[iSol], slnIdx, RealDouble, &newData[0]);
     }
   }
@@ -1108,22 +1108,6 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
 
 void cgnsAnalyzer::overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, DataType_t dt, void* data)
 {
-  //int slnIdx=-1;
-  //auto is = solutionNameLocMap.begin();
-  //while (is!=solutionNameLocMap.end())
-  //{
-  // slnIdx++;
-  // if (!strcmp((is->first).c_str(), ndeName.c_str()))
-  //   break;
-  // is++;
-  //}
-  //// sanity check
-  //if (is==solutionNameLocMap.end()){
-  //  std::cerr << ndeName 
-  //            << " is not an existing solution node.\n";
-  //  return;
-  //}
-
   // write solution to file
   GridLocation_t gloc(solutionNameLocMap[fname]);
   int fldIdx;
