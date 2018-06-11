@@ -1095,8 +1095,10 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
           << solutionName[iSol]
           << std::endl;
       // write to file
-      if (!(ifl->second).compare("bflag")) // cg_io complains if this isn't Integer type
-      {
+      //if (!(ifl->second).compare("bflag")) // cg_io complains if this isn't Integer type
+      if (slnDataCont[slnIdx]->getDataType() == Integer)
+			{
+				// need to cast to int before passing as void*
 				std::vector<int> newDataToInt(newData.begin(),newData.end());
 				overwriteSolData(ifl->second, solutionName[iSol], slnIdx, Integer, &newDataToInt[0]);
       }
