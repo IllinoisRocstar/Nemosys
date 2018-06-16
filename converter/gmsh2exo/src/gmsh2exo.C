@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <algorithm>
 #include "Gmsh.h"
 #include "GModel.h"
 #include "GVertex.h"
@@ -297,6 +298,28 @@ int main(int argc, char* argv[])
   exErr = ex_put_elem_block(exo_fid, 1, "TETRA", nTetPrj, 4, 1);
   errExit(exErr, "Error in writing element block");
   // write connectivity (node map)
+  
+  ///////////////////////////////////////////////////////////////////////////
+  // performing additional tests on the projectile mesh 
+  // to ensure compatability with EPIC requirements
+  
+  // what is the lowest and highest node index (should be 1 and prjMesh->getMaxVertexNumber() )
+  std::cout << "Min nde indx prj = " << *min_element(elmConnPrjGMSH.begin(), elmConnPrjGMSH.end()) << "\n"
+            << "Max nde indx prj = " << *max_element(elmConnPrjGMSH.begin(), elmConnPrjGMSH.end()) << "\n";
+  // creating unique element id list and ensuring its size is equal to the number of projectile 
+  // nodes, in other words there should not be any additional nodes in the projectile mesh that
+  // are not referenced in the connectivity table of the tetrahedral elements
+  std::set<int> unqPrjConn;
+  for (auto it = elmConnPrjGMSH.begin(); it != elmConnPrjGMSH.end(); it++)
+      unqPrjConn.insert(*it);
+  if ( unqPrjConn.size() != prjGM->getMaxVertexNumber() )
+  {
+    std::cout << "Size uniqe node id table for the projectile = " << unqPrjConn.size() << std::endl;
+    std::cerr << "The projectile mesh contains nodes that are not referenced by any tetrahedral element!\n";
+    std::cerr << "Make sure projectile mesh only contains tetrahedral elements.\n";
+    exit(-1);
+  }
+
   exErr = ex_put_elem_conn(exo_fid, 1, &elmConnPrjGMSH[0]);
   errExit(exErr, "Error in writing element connectivities");
   // write element attribute
