@@ -6,6 +6,7 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 #include <Cubature.H>
+#include <meshPartitioner.H>
 #include <vtkCellData.h>
 #include <vtkPointData.h>
 #include <vtkDataArray.h>
@@ -155,14 +156,35 @@ meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
 }
 
 // check for named array in vtk 
-int meshBase::IsArrayName(std::string name)
+int meshBase::IsArrayName(std::string name, const bool pointOrCell)
 {
-  vtkPointData* pd = dataSet->GetPointData();
-  if (pd->GetNumberOfArrays()) {
-    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
-      std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
-      if (!name.compare(curr_name)) {
-        return i;
+  if (!pointOrCell)
+  {
+    vtkPointData* pd = dataSet->GetPointData();
+    if (pd->GetNumberOfArrays()) 
+    {
+      for (int i = 0; i < pd->GetNumberOfArrays(); ++i) 
+      {
+        std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
+        if (!name.compare(curr_name)) 
+        {
+          return i;
+        }
+      }
+    }
+  }
+  else 
+  {
+    vtkCellData* cd = dataSet->GetCellData();
+    if (cd->GetNumberOfArrays())
+    {
+      for (int i = 0; i < cd->GetNumberOfArrays(); ++i)
+      {
+        std::string curr_name = (cd->GetArrayName(i) ? cd->GetArrayName(i) : "Null");
+        if (!name.compare(curr_name))
+        {
+          return i;
+        }
       }
     }
   }
@@ -170,22 +192,29 @@ int meshBase::IsArrayName(std::string name)
 }
 
 
-// transfer point data with given ids from this mesh to target
+// transfer point data or cell data with given ids from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<int>& arrayIDs)
+                       const std::vector<int>& arrayIDs, const bool pointOrCell)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  return transobj->transferPointData(arrayIDs,newArrayNames);
+  if (!pointOrCell)
+  {
+    transobj->transferPointData(arrayIDs,newArrayNames);
+  }
+  else
+  {
+    transobj->transferCellData(arrayIDs, newArrayNames);
+  }
 }
 
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<std::string>& arrayNames)
+                       const std::vector<std::string>& arrayNames, const bool pointOrCell)
 {
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
   {
-    int id = IsArrayName(arrayNames[i]);
+    int id = IsArrayName(arrayNames[i], pointOrCell);
     if (id == -1)
     {
       std::cout << "Array " << arrayNames[i] 
@@ -194,7 +223,7 @@ int meshBase::transfer(meshBase* target, std::string method,
     }
     arrayIDs[i] = id;
   }
-  return transfer(target, method,arrayIDs);
+  return transfer(target, method,arrayIDs, pointOrCell);
 }
 
 // transfer all data from this mesh to target
@@ -204,6 +233,38 @@ int meshBase::transfer(meshBase* target, std::string method)
   transobj->setCheckQual(checkQuality);
   transobj->setContBool(continuous);
   return transobj->run(newArrayNames); 
+}
+
+// partition mesh into numPartition pieces (static fcn)
+std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numPartitions)
+{
+  meshPartitioner* mPart = new meshPartitioner(mbObj);
+  if (mPart->partition(numPartitions))
+  {
+    exit(1); 
+  }
+  std::vector<meshBase*> mbParts(numPartitions); 
+  for (int i = 0; i < numPartitions; ++i)
+  {
+    // define coordinates
+    std::vector<std::vector<double>> comp_crds(mbObj->getVertCrds()); 
+    // write partitioned vtk files with data transfered from stitched mesh
+    std::vector<int> vtkConn(mPart->getConns(i));
+    for (auto it = vtkConn.begin(); it != vtkConn.end(); ++it)
+    {
+      *it -= 1;
+    }
+    std::stringstream vtkname;
+    vtkname << "partition" << i << ".vtu";
+    meshBase* mbPart = meshBase::Create(mPart->getCrds(i, comp_crds[0]),
+                                        mPart->getCrds(i, comp_crds[1]),
+                                        mPart->getCrds(i, comp_crds[2]),
+                                        vtkConn, VTK_TETRA, vtkname.str());
+    mbPart->write();
+    mbParts[i] = mbPart;
+  }
+  delete mPart; mPart = nullptr;
+  return mbParts;
 }
 
 std::vector<std::vector<double>> 
@@ -1121,18 +1182,3 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
   std::cerr << "Meshes are the same" << std::endl;
   return 0;
 }
-
-
-/*meshBase* meshBase::exportStlToVtk(std::string fname)
-{
-  netgenInterface* tmp = new netgenInterface();
-  tmp->createMeshFromSTL(&fname[0u]);
-  char* name = &(trim_fname(fname,".vtk"))[0u];
-  tmp->exportToVTK(name);
-  delete tmp;
-  vtkMesh* vtkmesh = new vtkMesh(name);
-  return vtkmesh;
-}*/
-
-
-

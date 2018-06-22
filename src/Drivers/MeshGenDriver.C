@@ -39,7 +39,7 @@ MeshGenDriver::~MeshGenDriver()
   std::cout << "MeshGenDriver destroyed" << std::endl;
 }
 
-MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
+MeshGenDriver* MeshGenDriver::readJSON(const json& inputjson)
 {
   std::string ifname = inputjson["Mesh File Options"]
                                 ["Input Geometry File"].as<std::string>();
@@ -50,7 +50,7 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
 
 MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname, 
                                        const std::string& ofname,
-                                       json inputjson)
+                                       const json& inputjson)
 {
   std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
   if (!meshEngine.compare("netgen"))

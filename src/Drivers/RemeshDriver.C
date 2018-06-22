@@ -2,13 +2,9 @@
 #include <RemeshDriver.H>
 #include <meshStitcher.H>
 #include <rocstarCgns.H>
-#include <cgnsWriter.H>
-#include <meshPartitioner.H>
+#include <cgnsWriter.H> // not used
+#include <meshPartitioner.H> // not used
 #include <MeshGenDriver.H>
-#ifdef HAVE_SYMMX
-  #include <symmxGen.H>
-  #include <symmxParams.H>
-#endif
 
 //vtk
 #include <vtkIdTypeArray.h>
@@ -45,11 +41,18 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
   if (mbObjs.size() > 1)
   {
     stitchSurfaces();
-    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation");
+    std::vector<std::string> patchno(1,"patchNo");
+    stitchedSurf->transfer(remeshedSurf, "Consistent Interpolation", patchno, 1);
     stitchedSurf->write();
   }
   remeshedSurf->write();
   writeCobalt("remeshedVol.cgi", "remeshedVol.cgr");
+  //std::vector<meshBase*> mbPartitions(meshBase::partition(remeshedVol, 10));
+  //for (int i = 0; i < mbPartitions.size(); ++i)
+  //{
+  //  mbPartitions[i]->write();
+  //  delete mbPartitions[i];
+  //}
   std::cout << "RemeshDriver created" << std::endl;
 }
 
@@ -73,6 +76,7 @@ RemeshDriver::~RemeshDriver()
   if (mshgendrvr)
   {
     delete mshgendrvr;
+    mshgendrvr = nullptr;
     remeshedVol = nullptr;
   }
   if (remeshedSurf)
@@ -101,10 +105,11 @@ void RemeshDriver::remesh(const json& remeshjson)
 {
   std::cout << "Extracting surface mesh #############################################\n";
   std::unique_ptr<meshBase> surf 
-    = std::unique_ptr<meshBase>(meshBase::Create(mbObjs[0]->extractSurface(), "skinMeshPart.vtp")); 
+    = std::unique_ptr<meshBase>
+        (meshBase::Create(mbObjs[0]->extractSurface(), "extractedSurface.vtp")); 
   // remeshing with engine specified in input
-  surf->write("skinMeshPart.stl"); 
-  mshgendrvr = MeshGenDriver::readJSON("skinMeshPart.stl", "remeshedVol.vtu", remeshjson);
+  surf->write("extractedSurface.stl"); 
+  mshgendrvr = MeshGenDriver::readJSON("extractedSurface.stl", "remeshedVol.vtu", remeshjson);
   remeshedVol = mshgendrvr->getNewMesh();
   remeshedSurf = meshBase::Create(remeshedVol->extractSurface(), "remeshedSurf.vtp");
 }
@@ -117,108 +122,6 @@ void RemeshDriver::stitchSurfaces()
   stitchedSurf = meshBase::stitchMB(surfs);
   stitchedSurf->setContBool(0);
   stitchedSurf->setFileName("stitchedSurf.vtu");
-}
-
-void RemeshDriver::partitionMesh()
-{
-  std::cout << " Partitioning the mesh with METIS ###################################\n";
-  meshPartitioner* mPart = new meshPartitioner(remeshedVol);
-  mPart->partition(fluidNames.size());
-  
-  // write CGNS files for the new grid
-  for (int iCg=0; iCg < fluidNames.size(); ++iCg)
-  {
-    std::size_t pos = fluidNames[iCg].find_last_of("/");
-    std::string fCgName(fluidNames[iCg].substr(pos+1));
-    fCgName = trim_fname(fCgName,"New.cgns");
-    std::cout << "Writing remeshed cgns part to " << fCgName << std::endl;
-    // define elementary information
-    cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObjs[0]->getBaseName(), 3, 3);
-    cgWrtObj->setUnits(cgObjs[0]->getMassUnit(), cgObjs[0]->getLengthUnit(),
-		 cgObjs[0]->getTimeUnit(), cgObjs[0]->getTemperatureUnit(),
-		 cgObjs[0]->getAngleUnit());
-    cgWrtObj->setBaseItrData(cgObjs[0]->getBaseItrName(), 
-                             cgObjs[0]->getNTStep(), 
-                             cgObjs[0]->getTimeStep());
-    cgWrtObj->setZoneItrData(cgObjs[0]->getZoneItrName(), 
-                             cgObjs[0]->getGridCrdPntr(), 
-                             cgObjs[0]->getSolutionPntr());
-    cgWrtObj->setZone(cgObjs[0]->getZoneName(iCg), cgObjs[0]->getZoneType());
-    cgWrtObj->setNVrtx(mPart->getNNdePart(iCg));
-    cgWrtObj->setNCell(mPart->getNElmPart(iCg));
-    // define coordinates
-    std::vector<std::vector<double>> comp_crds(remeshedVol->getVertCrds()); 
-    cgWrtObj->setGridXYZ(mPart->getCrds(iCg, comp_crds[0]), 
-		                     mPart->getCrds(iCg, comp_crds[1]), 
-		                     mPart->getCrds(iCg, comp_crds[2]));
-    // define connctivity
-    cgWrtObj->setSection(cgObjs[0]->getSectionName(), 
-		                     (ElementType_t) cgObjs[0]->getElementType(), 
-		                     mPart->getConns(iCg));
-
-    // write partitioned vtk files with data transfered from stitched mesh
-    std::vector<int> vtkConn(mPart->getConns(iCg));
-    for (auto it = vtkConn.begin(); it != vtkConn.end(); ++it)
-    {
-      *it -= 1;
-    }
-    std::stringstream vtkname;
-    vtkname << "partition" << iCg << ".vtu";
-    meshBase* mbPart = meshBase::Create(mPart->getCrds(iCg, comp_crds[0]),
-                                        mPart->getCrds(iCg, comp_crds[1]),
-                                        mPart->getCrds(iCg, comp_crds[2]),
-                                        vtkConn, VTK_TETRA, vtkname.str());
-    mbObjs[0]->transfer(mbPart, "Consistent Interpolation");
-    mbPart->write();
-
-    // define vertex and cell data 
-    std::map<std::string, GridLocation_t> slnNLMap = cgObjs[0]->getSolutionNameLocMap();
-    for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
-      cgWrtObj->setSolutionNode(is->first, is->second);
-    // write skeleton of the file
-    cgWrtObj->writeGridToFile();
-
-    /////////////////////// WRITE SOLUTION DATA TO CGNS ///////////////////////////////
-
-    // write individual data fields
-    std::map<int,std::pair<int,keyValueList> > slnMap = cgObjs[0]->getSolutionMap();
-    std::vector<GridLocation_t> gLoc = cgObjs[0]->getSolutionGridLocations();
-    std::vector<std::string> slnName = cgObjs[0]->getSolutionNodeNames();
-
-    int iSol = -1;
-    for (auto is=slnMap.begin(); is!=slnMap.end(); is++)
-    {
-      std::pair<int,keyValueList> slnPair = is->second;
-      int slnIdx = slnPair.first;
-      keyValueList fldLst = slnPair.second;
-      for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
-      {
-	      iSol++;
-	      std::vector<double> partPhysData;
-	      int nData;
-	      if (gLoc[iSol] == Vertex)
-	      {
-	       mbPart->getPointDataArray(ifl->second, partPhysData);              
-	      } 
-        else 
-        {
-          mbPart->getCellDataArray(ifl->second, partPhysData);
-	      }
-	      std::cout << "Writing "
-	          << partPhysData.size() 
-	          << " to "
-	          << ifl->second
-	          << " located in "
-	          << slnName[iSol]
-	          << std::endl;
-	      // write to file
-	      cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
-      }
-    }
-    delete cgWrtObj; cgWrtObj = nullptr;
-    delete mbPart; mbPart = nullptr;
-  }
-  delete mPart; mPart = nullptr;
 }
 
 RemeshDriver* RemeshDriver::readJSON(json inputjson)
@@ -418,3 +321,104 @@ bool sortIntVec_compare::operator() (std::vector<int> lhs,
   return lhs < rhs;
 }
 
+//void RemeshDriver::partitionMesh()
+//{
+//  std::cout << " Partitioning the mesh with METIS ###################################\n";
+//  meshPartitioner* mPart = new meshPartitioner(remeshedVol);
+////  mPart->partition(fluidNames.size());
+//  mPart->partition(10);
+//  // write CGNS files for the new grid
+//  for (int iCg=0; iCg < fluidNames.size(); ++iCg)
+//  {
+//    std::size_t pos = fluidNames[iCg].find_last_of("/");
+//    std::string fCgName(fluidNames[iCg].substr(pos+1));
+//    fCgName = trim_fname(fCgName,"New.cgns");
+//    std::cout << "Writing remeshed cgns part to " << fCgName << std::endl;
+//    // define elementary information
+//    cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObjs[0]->getBaseName(), 3, 3);
+//    cgWrtObj->setUnits(cgObjs[0]->getMassUnit(), cgObjs[0]->getLengthUnit(),
+//		 cgObjs[0]->getTimeUnit(), cgObjs[0]->getTemperatureUnit(),
+//		 cgObjs[0]->getAngleUnit());
+//    cgWrtObj->setBaseItrData(cgObjs[0]->getBaseItrName(), 
+//                             cgObjs[0]->getNTStep(), 
+//                             cgObjs[0]->getTimeStep());
+//    cgWrtObj->setZoneItrData(cgObjs[0]->getZoneItrName(), 
+//                             cgObjs[0]->getGridCrdPntr(), 
+//                             cgObjs[0]->getSolutionPntr());
+//    cgWrtObj->setZone(cgObjs[0]->getZoneName(iCg), cgObjs[0]->getZoneType());
+//    cgWrtObj->setNVrtx(mPart->getNNdePart(iCg));
+//    cgWrtObj->setNCell(mPart->getNElmPart(iCg));
+//    // define coordinates
+//    std::vector<std::vector<double>> comp_crds(remeshedVol->getVertCrds()); 
+//    cgWrtObj->setGridXYZ(mPart->getCrds(iCg, comp_crds[0]), 
+//		                     mPart->getCrds(iCg, comp_crds[1]), 
+//		                     mPart->getCrds(iCg, comp_crds[2]));
+//    // define connctivity
+//    cgWrtObj->setSection(cgObjs[0]->getSectionName(), 
+//		                     (ElementType_t) cgObjs[0]->getElementType(), 
+//		                     mPart->getConns(iCg));
+//
+//    // write partitioned vtk files with data transfered from stitched mesh
+//    std::vector<int> vtkConn(mPart->getConns(iCg));
+//    for (auto it = vtkConn.begin(); it != vtkConn.end(); ++it)
+//    {
+//      *it -= 1;
+//    }
+//    std::stringstream vtkname;
+//    vtkname << "partition" << iCg << ".vtu";
+//    meshBase* mbPart = meshBase::Create(mPart->getCrds(iCg, comp_crds[0]),
+//                                        mPart->getCrds(iCg, comp_crds[1]),
+//                                        mPart->getCrds(iCg, comp_crds[2]),
+//                                        vtkConn, VTK_TETRA, vtkname.str());
+//    mbObjs[0]->transfer(mbPart, "Consistent Interpolation");
+//    mbPart->write();
+//
+//    // define vertex and cell data 
+//    std::map<std::string, GridLocation_t> slnNLMap = cgObjs[0]->getSolutionNameLocMap();
+//    for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
+//      cgWrtObj->setSolutionNode(is->first, is->second);
+//    // write skeleton of the file
+//    cgWrtObj->writeGridToFile();
+//
+//    /////////////////////// WRITE SOLUTION DATA TO CGNS ///////////////////////////////
+//
+//    // write individual data fields
+//    std::map<int,std::pair<int,keyValueList> > slnMap = cgObjs[0]->getSolutionMap();
+//    std::vector<GridLocation_t> gLoc = cgObjs[0]->getSolutionGridLocations();
+//    std::vector<std::string> slnName = cgObjs[0]->getSolutionNodeNames();
+//
+//    int iSol = -1;
+//    for (auto is=slnMap.begin(); is!=slnMap.end(); is++)
+//    {
+//      std::pair<int,keyValueList> slnPair = is->second;
+//      int slnIdx = slnPair.first;
+//      keyValueList fldLst = slnPair.second;
+//      for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
+//      {
+//	      iSol++;
+//	      std::vector<double> partPhysData;
+//	      int nData;
+//	      if (gLoc[iSol] == Vertex)
+//	      {
+//	       mbPart->getPointDataArray(ifl->second, partPhysData);              
+//	      } 
+//        else 
+//        {
+//          mbPart->getCellDataArray(ifl->second, partPhysData);
+//	      }
+//	      std::cout << "Writing "
+//	          << partPhysData.size() 
+//	          << " to "
+//	          << ifl->second
+//	          << " located in "
+//	          << slnName[iSol]
+//	          << std::endl;
+//	      // write to file
+//	      cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
+//      }
+//    }
+//    delete cgWrtObj; cgWrtObj = nullptr;
+//    delete mbPart; mbPart = nullptr;
+//  }
+//  delete mPart; mPart = nullptr;
+//}
