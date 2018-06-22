@@ -60,7 +60,7 @@ public:
   // from MAdMesh object
   meshPartitioner(MAd::pMesh inMesh);
   //// from meshBase object
-  meshPartitioner(meshBase* inMB);
+  meshPartitioner(const meshBase* inMB);
   // destructor
   ~meshPartitioner()
   {
@@ -103,5 +103,4 @@ private:
   // partition data
   std::vector<meshPartition* > meshParts;
 };
-
 #endif

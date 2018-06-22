@@ -16,7 +16,6 @@
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLHyperOctreeWriter.h>
 #include <vtkSTLWriter.h>
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLImageDataReader.h>
@@ -24,7 +23,6 @@
 #include <vtkXMLPolyDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLRectilinearGridReader.h>
-#include <vtkXMLHyperOctreeReader.h>
 #include <vtkXMLImageDataReader.h>
 #include <vtkSTLReader.h>
 #include <vtkExtractEdges.h>
@@ -33,7 +31,6 @@
 #include <vtkCellIterator.h>
 #include <vtkRectilinearGrid.h>
 #include <vtkImageData.h>
-#include <vtkHyperOctree.h>
 
 
 void vtkMesh::write()
@@ -54,8 +51,6 @@ void vtkMesh::write()
     writeVTFile<vtkXMLRectilinearGridWriter> (filename,dataSet);
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
-  else if (extension == ".vto")
-    writeVTFile<vtkXMLHyperOctreeWriter> (filename,dataSet);
   else if (extension == ".stl") // stl written to vtp
   {
     filename = trim_fname(filename , ".vtp");
@@ -88,8 +83,6 @@ void vtkMesh::write(std::string fname)
     writeVTFile<vtkXMLRectilinearGridWriter> (fname,dataSet);
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (fname, dataSet);
-  else if (extension == ".vto")
-    writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else if (extension == ".stl")
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
   else if (extension == ".vtk")
@@ -210,10 +203,6 @@ vtkMesh::vtkMesh(const char* fname)
   else if (extension == ".vti")
   {
     dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLImageDataReader> (fname));
-  }
-  else if (extension == ".vto")
-  {
-    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLHyperOctreeReader> (fname));
   }
   else if (extension == ".stl")
   {

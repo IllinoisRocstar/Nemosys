@@ -34,7 +34,7 @@ class symmxGen : public meshGen
 
   // symmetrix mesh creation
   public:
-    // create mesh from symmetrix model file
+    // create mesh from symmetrix model file - (not currently used in nemo mesh gen)
     void createMeshFromModel(const char* mdlFName);
     // create model from stl file. relevant features (geomsim_discrete) must be passed
     // to object constructor to use this function

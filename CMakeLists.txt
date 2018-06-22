@@ -87,6 +87,20 @@ GET_FILENAME_COMPONENT(NETGEN_INCPATH ${NETGEN_HDR} PATH)
 MESSAGE(STATUS "netgen include path ${NETGEN_INCPATH}")
 
 
+# find mpi
+find_package(MPI REQUIRED)
+# include mpi headers
+include_directories(${MPI_INCLUDE_PATH})
+IF (MPI_LIBRARY)
+  SET(MPI_LIBRARIES ${MPI_LIBRARY})
+ENDIF (MPI_LIBRARY)
+IF (MPI_EXTRA_LIBRARY)
+  SET(MPI_LIBRARIES ${MPI_LIBRARIES} "${MPI_EXTRA_LIBRARY}")
+ENDIF (MPI_EXTRA_LIBRARY)
+
+# Needed for mpich 2
+ADD_DEFINITIONS("-DMPICH_IGNORE_CXX_SEEK")
+
 IF (ENABLE_DTK)
   FIND_PACKAGE(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos ${TRILINOS_PATH})
   IF(NOT Trilinos_FOUND)
@@ -190,7 +204,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
-                 src/netgenInterface.C src/MeshGeneration/meshGen.C
+                 src/MeshGeneration/meshGen.C
                  src/MeshGeneration/netgenGen.C src/MeshGeneration/netgenParams.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C
@@ -201,7 +215,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
                  src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C src/Drivers/MeshGenDriver.C 
                  src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
-                 src/Drivers/RocRestartDriver.C src/PatchRecovery/orthoPoly1D.C 
+                 src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
+                 src/PatchRecovery/orthoPoly1D.C 
                  src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
@@ -262,9 +277,9 @@ SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk
 # Building Nemosys Core utility ###########################################
 ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
 IF(VTK_LIBRARIES)
-  TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
+  TARGET_LINK_LIBRARIES(nemosysRun Nemosys ${MPI_LIBRARIES})
 ELSE()
-  TARGET_LINK_LIBRARIES(nemosysRun Nemosys vtkHybrid vtkWidgets)
+  TARGET_LINK_LIBRARIES(nemosysRun Nemosys ${MPI_LIBRARIES} vtkHybrid vtkWidgets)
 ENDIF()
 INSTALL(TARGETS nemosysRun RUNTIME DESTINATION Nemosys/bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
