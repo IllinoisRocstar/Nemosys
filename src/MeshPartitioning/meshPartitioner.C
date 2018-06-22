@@ -52,8 +52,8 @@ meshPartition::meshPartition(int pidx, std::vector<int> glbElmPartedIdx, std::ve
     }
     glbElmIdx++;
   }
-  std::cout <<  "Min connectivity passed to partitioner = "
-            << *std::min_element(glbElmConn.begin(), glbElmConn.end()) << std::endl;
+  //std::cout <<  "Min connectivity passed to partitioner = "
+  //          << *std::min_element(glbElmConn.begin(), glbElmConn.end()) << std::endl;
 
   // Debug information
   //std::cout << "I am partition " << pidx 
@@ -123,7 +123,7 @@ meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
 }
 
 
-meshPartitioner::meshPartitioner(meshBase* inMB)
+meshPartitioner::meshPartitioner(const meshBase* inMB)
 {
   vtkSmartPointer<vtkCellTypes> celltypes = vtkSmartPointer<vtkCellTypes>::New();
   inMB->getDataSet()->GetCellTypes(celltypes);
@@ -258,8 +258,12 @@ int meshPartitioner::partition()
   }
   // setting options (some default values, should be tailored)
   METIS_SetDefaultOptions(options);
-  options[METIS_OPTION_NUMBERING] = 0; 
-  options[METIS_OPTION_CONTIG] = 1;
+  options[METIS_OPTION_NUMBERING] = 0; // 0-based index
+  options[METIS_OPTION_CONTIG] = 1;    // try for contiguous partitions
+  options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY; // multilevel k-way partitioning
+  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT; // minimize edge cut METIS_OBJTYPE_VOL(comm vol)
+  options[METIS_OPTION_UFACTOR] = 1; // load imbalance of 1.001 
+  
   //options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO | METIS_DBG_TIME | 
   //                               METIS_DBG_CONNINFO | METIS_DBG_CONTIGINFO;   
   int res;
@@ -297,24 +301,29 @@ int meshPartitioner::partition()
     std::cout << "eptr[end] = " << eptr[nElm] << std::endl;
     std::cout << "eind = " << elmConn[0] << std::endl;
     */
+  
+   // res = METIS_PartMeshNodal(&nElm, &nNde, &eptr[0], &elmConn[0], NULL, NULL,
+   //                           &nPart, NULL, options, &objval, &epart[0], &npart[0]);
     res = METIS_PartMeshDual(&nElm, &nNde, &eptr[0], &elmConn[0], NULL, NULL, 
-                             //&ncommon, &nPart, NULL, NULL, &objval, &epart[0], &npart[0]);
                              &ncommon, &nPart, NULL, options, &objval, &epart[0], &npart[0]);
+
     std::cout << "Received data from METIS" << std::endl;
   }
   // output partitioning results
   // check success
-  if (res == METIS_OK){
+  if (res == METIS_OK)
+  {
     std::cout << "Successfully partitioned the mesh.\n";
     // removing the first member of the npart as default 
     // index starts from 1
     npart.erase(npart.begin());
     buildPartitions();
-    return(1);
-  } else {
+    return 0;
+  } 
+  else 
+  {
     std::cerr << "Failed to partition with error code " << res << std::endl;
-    exit(-1);
-    return(0);
+    return 1;
   }
 }
 

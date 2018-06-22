@@ -6,6 +6,7 @@
 #include <ConversionDriver.H>
 #include <RemeshDriver.H>
 #include <RocRestartDriver.H>
+#include <RocPrepDriver.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver* NemDriver::readJSON(json inputjson)
@@ -39,6 +40,10 @@ NemDriver* NemDriver::readJSON(json inputjson)
   else if (!program_type.compare("Post Rocstar Remeshing"))
   {
     return RocRestartDriver::readJSON(inputjson);
+  }
+  else if (!program_type.compare("Rocstar Communication Generation"))
+  {
+    return RocPrepDriver::readJSON(inputjson);
   }
   else
   {

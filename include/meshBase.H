@@ -87,6 +87,8 @@ class meshBase
                                   meshingParams* params); 
     // stitch together several meshBases
     static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
+    // mesh partitioning (with METIS)
+    static std::vector<meshBase*> partition(const meshBase* mbObj, const int numPartitions);
       
  
   // access
@@ -141,18 +143,16 @@ class meshBase
 
   // data transfer
   public:
-    // transfer point data with given id from this mesh to target
+    // transfer point data (pointOrCell=0) or cell data (pointOrCell=1)
+    //  with given id from this mesh to target
     // method can be "Consistent Interpolation", "Mortar Element", "RBF" etc.
     // only "Consistent Interpolation" has been implemented
     int transfer(meshBase* target, std::string method, 
-                 const std::vector<int>& arrayIDs);
+                 const std::vector<int>& arrayIDs, const bool pointOrCell = 1);
     int transfer(meshBase* target, std::string method, 
-                 const std::vector<std::string>& arrayNames);
-    // transfer all point data from this mesh to target
+                 const std::vector<std::string>& arrayNames, const bool pointOrCell = 1);
+    // transfer all point and cell data from this mesh to target
     int transfer(meshBase* target, std::string method);
-
-
-
 
   // integration
   public:
@@ -174,8 +174,8 @@ class meshBase
     void setSFBool(bool q) { hasSizeField = q; }
     // get this meshes' sizefield  
     bool getSFBool() const { return hasSizeField; }
-    // check for named array in vtk and return its integer id 
-    int IsArrayName(std::string name);
+    // check for named array in vtk and return its integer id (0-point data, 1-cell data)
+    int IsArrayName(std::string name, const bool pointOrCell = 0);
     // set mesh order
     void setOrder(int _order) { order = _order;}
     int getOrder() const { return order; } 

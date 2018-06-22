@@ -65,25 +65,10 @@ symmxGen::~symmxGen()
   std::cout << "Simmetrix mesh generator destroyed" << std::endl;
 }
 
-
 void symmxGen::setProgress()
 {
   prog = Progress_new();
   Progress_setDefaultCallback(prog);    
-}
-
-void symmxGen::createMeshFromModel(const char* mFName)
-{
-  model = GM_load(mFName, 0, prog);
-  mcase = MS_newMeshCase(model);
-  MS_setMeshSize(mcase, GM_domain(model), 2, 0.5, 0);
-  mesh = M_new(0, model);
-  pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
-  SurfaceMesher_execute(surfaceMesher, prog);
-  SurfaceMesher_delete(surfaceMesher);
-  pVolumeMesher volumeMesher = VolumeMesher_new(mcase, mesh);
-  VolumeMesher_execute(volumeMesher, prog);
-  VolumeMesher_delete(volumeMesher);
 }
 
 int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
@@ -128,7 +113,8 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
       // set gradation rate
       SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, params->surfMshImprovGradRate);
       // allow improver to refine mesh in areas to meet metric
-      SurfaceMeshImprover_setMinRefinementSize(surfaceMeshImprover, 2, params->surfMshImprovMinSize);
+      SurfaceMeshImprover_setMinRefinementSize
+        (surfaceMeshImprover, 2, params->surfMshImprovMinSize);
       // fix intersections after improvement
       SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
       SurfaceMeshImprover_execute(surfaceMeshImprover, prog);
@@ -189,9 +175,12 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
 
 int symmxGen::createMeshFromSTL(const char* stlFName)
 {
-  createVolumeMeshFromSTL(stlFName);
-  convertToVTU();
-  return 0;
+  if (!createVolumeMeshFromSTL(stlFName))
+  {
+    convertToVTU();
+    return 0;
+  }
+  return 1;
 }
 
 int symmxGen::createModelFromSTL(const char* stlFName)
@@ -343,11 +332,6 @@ void symmxGen::convertToVTU()
   }
 }
 
-//vtkSmartPointer<vtkDataSet> symmxGen::getDataSet()
-//{
-//  return dataSet;
-//}
-
 void symmxGen::setWriteSurfAndVol(bool b)
 {
   writeSurfAndVol = b;
@@ -449,4 +433,18 @@ void symmxGen::messageHandler(int type, const char* msg)
       break;
   }
   return;
+}
+
+void symmxGen::createMeshFromModel(const char* mFName)
+{
+  model = GM_load(mFName, 0, prog);
+  mcase = MS_newMeshCase(model);
+  MS_setMeshSize(mcase, GM_domain(model), 2, 0.5, 0);
+  mesh = M_new(0, model);
+  pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
+  SurfaceMesher_execute(surfaceMesher, prog);
+  SurfaceMesher_delete(surfaceMesher);
+  pVolumeMesher volumeMesher = VolumeMesher_new(mcase, mesh);
+  VolumeMesher_execute(volumeMesher, prog);
+  VolumeMesher_delete(volumeMesher);
 }

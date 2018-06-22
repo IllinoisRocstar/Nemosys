@@ -7,7 +7,6 @@
 #include <vtkXMLPolyDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLRectilinearGridReader.h>
-#include <vtkXMLHyperOctreeReader.h>
 #include <vtkXMLCompositeDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLImageDataReader.h>
@@ -15,7 +14,6 @@
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkRectilinearGrid.h>
-#include <vtkHyperOctree.h>
 #include <vtkImageData.h>
 #include <vtkPolyData.h>
 #include <vtkStructuredGrid.h>
@@ -30,7 +28,6 @@
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLHyperOctreeWriter.h>
 #include <vtkXMLCompositeDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLImageDataReader.h>

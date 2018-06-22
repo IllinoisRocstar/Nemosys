@@ -49,7 +49,7 @@ class RemeshDriver : public NemDriver
     void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
     void writeCobalt(const std::string& mapFile, std::ofstream& outputStream);
     // partitions mesh (NOT USED)
-    void partitionMesh();
+    //void partitionMesh();
     // creates remeshed volume and surface
     void remesh(const json& remeshjson);
     // stitches the stitched cgns surfaces into one meshBase
