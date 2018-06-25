@@ -149,10 +149,16 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     exit(1);
   }
 
+  bool warning = true;
+
   std::string line;
-  int numPoints,numCells; 
+  int numPoints,numCells,numPhysGrps;
+  bool fndPhyGrp = false;
+  std::vector<int> physGrpDims;
+  std::map<int, std::string> physGrpIdName;
   std::vector<std::vector<std::vector<double>>> pointData;
   std::vector<std::vector<std::vector<double>>> cellData;
+  std::vector<std::vector<double>> cellPhysGrpIds;
   std::vector<std::string> pointDataNames;
   std::vector<std::string> cellDataNames;
 
@@ -164,6 +170,30 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   std::map<int,int> trueIndex;
   while (getline(meshStream, line))
   {
+    if (line.find("$PhysicalNames") != -1)
+    {
+      fndPhyGrp = true;
+      getline(meshStream,line);
+      std::stringstream ss(line); 
+      ss >> numPhysGrps;
+      std::cout << "Found " << numPhysGrps << " physical groups!\n";
+      int grpDim, grpId;
+      std::string grpName;
+      for (int i = 0; i < numPhysGrps; ++i)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> grpDim >> grpId >> grpName;
+        grpName.erase(std::remove(grpName.begin(),grpName.end(),'\"'),grpName.end());
+        //std::cout << "Group Dim = " << grpDim
+        //    << "\nGroup Id = " << grpId
+        //    << "\nGroup Name = " << grpName 
+        //    << std::endl;
+        physGrpDims.push_back(grpDim);
+        physGrpIdName[grpId] = grpName;
+      }
+    }
+    
     if (line.find("$Nodes") != -1)
     {
       getline(meshStream,line);
@@ -207,8 +237,19 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         if (type == 2)
         {
           int tmp;
-          for (int j = 0; j < numTags; ++j)
-            ss >> tmp;
+          if (!fndPhyGrp)
+          {
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
+          }
           for (int j = 0; j < 3; ++j)
           {
             ss >> tmp;
@@ -221,8 +262,19 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         else if (type == 4)
         {
           int tmp;
-          for (int j = 0; j < numTags; ++j)
-            ss >> tmp;
+          if (!fndPhyGrp)
+          {
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
+          }
           for (int j = 0; j < 4; ++j)
           {
             ss >> tmp;
@@ -234,8 +286,12 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         }
         else
         {
-          std::cout << "Only triangular and tetrahedral elements are supported!" << std::endl;
-          exit(1);
+          if (warning)
+          {
+            std::cout << "Warning: Only triangular and tetrahedral elements are supported, rest is ignored! " << std::endl;
+            warning = false;
+            //exit(1);
+          }
         }
       }
     }
@@ -363,7 +419,13 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       }
       cellData.push_back(currCellData);
     }
-  }  
+  }
+
+  if (fndPhyGrp)
+  {
+      cellDataNames.push_back("PhysGrpId");
+      cellData.push_back(cellPhysGrpIds);
+  }
 
   vtkMesh* vtkmesh = new vtkMesh();
   //vtkmesh->dataSet = dataSet_tmp->NewInstance();
