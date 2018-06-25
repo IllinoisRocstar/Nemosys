@@ -44,9 +44,11 @@ bool isIn(tri& qry, triVec& vec)
 
 int main(int argc, char* argv[])
 {
-  std::cout << "Gmsh to Exodus II converter v1.0\n";
-  std::cout << "Note: This converter only works for tetrahedral elements.\n";
+  std::cout << "WARNING! This converter is deprecated and will be removed in future releases.\n";
+  std::cout << "WaRNING! We recommend using nemosysRun's conversion service.\n";
+  std::cout << "WaRNING! This converter only works for tetrahedral elements.\n";
   if (argc < 5){
+    std::cout << "Gmsh to Exodus II converter v1.0\n";
     std::cout << "Converter between gmsh and exodusII v1.0\n";
     std::cout << "Usage: \n";
     std::cout << argv[0] << " gmshProjectileFile outputExoFile nTargetFile  gmshTargetFile1 ...\n\n";
