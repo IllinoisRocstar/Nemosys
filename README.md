@@ -43,7 +43,7 @@ $ $NEMOSYS_PROJECT_PATH/scripts/build.sh $NEMOSYS_PROJECT_PATH $NEMOSYS_PROJECT_
 ```
 
 ### Build Nemosys ###
-Now, we can compile the Nemosys library, create its python binding and build utilities: 
+Now, we can compile the Nemosys library, create its python bindings and other utilities: 
 ```
 $ cd $NEMOSYS_PROJECT_PATH
 $ mkdir build && cd build
