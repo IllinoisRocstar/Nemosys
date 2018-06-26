@@ -29,6 +29,9 @@ public:
   std::vector<int> getConns();
   std::vector<double> getElmSlns(std::vector<double>& slns);
   std::vector<double> getElmSlnsVec(std::vector<double>& slns, int nComp);
+  
+  std::map<int,int> getPartToGlobNodeMap();
+  std::map<int,int> getPartToGlobElmMap();
   int nNde;
   int nElm;
 
@@ -81,6 +84,9 @@ public:
   std::vector<int> getConns(int iPart);
   int getNNdePart(int iPart);
   int getNElmPart(int iPart);
+  
+  std::map<int,int> getPartToGlobNodeMap(int iPart);
+  std::map<int,int> getPartToGlobElmMap(int iPart);
   // solution data
   std::vector<double> getNdeSlnScalar(int iPart, std::vector<double>& slns);
   std::vector<double> getElmSlnScalar(int iPart, std::vector<double>& slns);
