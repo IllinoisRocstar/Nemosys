@@ -27,6 +27,9 @@ namespace nglib
   #include <symmxGen.H>
 #endif
 
+// stl
+#include <algorithm>
+
 // TODO: Stop using setPoint/CellDataArray in export methods
 //        - instead, use the faster vtkDataArray creation and insertion
 
@@ -248,18 +251,41 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
   {
     // define coordinates
     std::vector<std::vector<double>> comp_crds(mbObj->getVertCrds()); 
-    // write partitioned vtk files with data transfered from stitched mesh
+    // get partition connectivity and zero index it
     std::vector<int> vtkConn(mPart->getConns(i));
     for (auto it = vtkConn.begin(); it != vtkConn.end(); ++it)
     {
       *it -= 1;
     }
-    std::stringstream vtkname;
-    vtkname << "partition" << i << ".vtu";
+    std::string basename(trim_fname(mbObj->getFileName(), ""));
+    basename += std::to_string(i);
+    basename += ".vtu";
     meshBase* mbPart = meshBase::Create(mPart->getCrds(i, comp_crds[0]),
                                         mPart->getCrds(i, comp_crds[1]),
                                         mPart->getCrds(i, comp_crds[2]),
-                                        vtkConn, VTK_TETRA, vtkname.str());
+                                        vtkConn, VTK_TETRA, basename);
+    // add global node index array to partition
+    std::map<int,int> partToGlobNodeMap(mPart->getPartToGlobNodeMap(i)); 
+    vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
+    globalNodeIds->SetName("GlobalNodeIds");
+    globalNodeIds->SetNumberOfValues(mbPart->getNumberOfPoints());
+    for (int idx = 0; idx < mbPart->getNumberOfPoints(); ++idx)
+    {
+      int globidx = partToGlobNodeMap[idx+1]-1;
+      globalNodeIds->SetValue(idx,globidx); 
+    }   
+    mbPart->getDataSet()->GetPointData()->SetGlobalIds(globalNodeIds);
+    // add global cell index array to partition
+    std::map<int,int> partToGlobElmMap(mPart->getPartToGlobElmMap(i));
+    vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
+    globalCellIds->SetName("GlobalCellIds");
+    globalCellIds->SetNumberOfValues(mbPart->getNumberOfCells());
+    for (int idx = 0; idx < mbPart->getNumberOfCells(); ++idx)
+    {
+      int globidx = partToGlobElmMap[idx+1]-1;
+      globalCellIds->SetValue(idx,globidx);
+    }
+    mbPart->getDataSet()->GetCellData()->SetGlobalIds(globalCellIds);  
     mbPart->write();
     mbParts[i] = mbPart;
   }

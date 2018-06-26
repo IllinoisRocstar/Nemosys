@@ -32,7 +32,7 @@ class meshBase
   public:
 
     meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0);
-    ~meshBase();
+    virtual ~meshBase();
 
     static meshBase* Create(std::string fname);
     static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);

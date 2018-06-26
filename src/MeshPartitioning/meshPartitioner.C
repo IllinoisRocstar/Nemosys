@@ -95,6 +95,15 @@ std::vector<double> meshPartition::getElmSlnsVec(std::vector<double>& slns, int 
   return(x);
 }
 
+std::map<int,int> meshPartition::getPartToGlobNodeMap()
+{
+  return ndeIdxPartToGlob;
+}  
+
+std::map<int,int> meshPartition::getPartToGlobElmMap()
+{
+  return elmIdxPartToGlob;
+}  
 
 /* Implementation of class partitioner class */
 meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
@@ -395,4 +404,25 @@ std::vector<double> meshPartitioner::getElmSlnScalar(int iPart, std::vector<doub
 std::vector<double> meshPartitioner::getElmSlnVec(int iPart, std::vector<double>& slns, int nComp)
 {
   return(meshParts[iPart]->getElmSlnsVec(slns, nComp));
+}
+  
+
+std::map<int,int> meshPartitioner::getPartToGlobNodeMap(int iPart)
+{
+  if (iPart > meshParts.size())
+  {
+    std::cerr << "requested partition number exceeds available partitions" << std::endl;
+    exit(1);
+  }
+  return meshParts[iPart]->getPartToGlobNodeMap();
+}
+
+std::map<int,int> meshPartitioner::getPartToGlobElmMap(int iPart)
+{
+  if (iPart > meshParts.size())
+  {
+    std::cerr << "requested partition number exceeds available partitions" << std::endl;
+    exit(1);
+  }
+  return meshParts[iPart]->getPartToGlobElmMap();
 }
