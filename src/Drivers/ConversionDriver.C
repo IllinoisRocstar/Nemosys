@@ -1,5 +1,4 @@
 #include <ConversionDriver.H>
-#include <exoMesh.H>
 #include <algorithm>
 
 //----------------------- Conversion Driver -----------------------------------------//
@@ -77,6 +76,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     std::cout << "Converting to EXODUSII...\n";
     json opts = inputjson["Conversion Options"];
     int nMsh = opts.get_with_default("Number of Mesh", 0);
+    bool needsPP = opts.get_with_default("Post Processing", false);
     
     // sanity check
     if (nMsh == 0)
@@ -246,6 +246,35 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     // writing the file
     em->write();
 
+    // performing post-processing tasks
+    if (needsPP)
+    {   
+        int nTsk = opts.get_with_default("Number of Tasks", 0);
+        json ppTsk = opts["Tasks"];
+        for (int iTsk=0; iTsk<nTsk; iTsk++)
+        {
+            std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
+            std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
+            std::ifstream inputStream(ppFName);
+            if (!inputStream.good() || find_ext(ppFName) != ".json")
+            {
+              std::cout << "Error opening file " << ppFName << std::endl;
+              exit(1);
+            }
+            if (find_ext(ppFName) != ".json")
+            {
+              std::cout << "Input File must be in .json format" << std::endl;
+              exit(1);
+            }
+            json ppJson;
+            inputStream >> ppJson;
+            procExo(ppJson, ofname, em);
+        }
+
+        // writing augmented exo file
+        em->write();
+    }
+    
     // clean up
     delete em;
     em = NULL;
@@ -342,3 +371,61 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
   }
     
 }
+
+
+#ifdef HAVE_EXODUSII
+void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh* em)
+{
+    // converting to mesh base for geometric inquiry
+    meshBase* mb = meshBase::Create(fname); 
+
+    // performing requested operation
+    std::string opr = ppJson.get_with_default("Operation", "");
+    if (!opr.compare("Material Assignment"))
+    {
+        // Create the tree
+        vtkSmartPointer<vtkCellLocator> cl = vtkSmartPointer<vtkCellLocator>::New();
+        cl->SetDataSet(mb->getDataSet());
+        cl->BuildLocator();
+
+        json zones = ppJson["Zones"];
+        int nZn = zones.size();
+        for (int iZn=0; iZn<1; iZn++)
+        {
+            std::string znName = "Zone"+std::to_string(iZn);
+            json znInfo = zones[iZn][znName];
+            std::string matName = znInfo.get_with_default("Material Name","N/A");
+            std::string shape = znInfo.get_with_default("Shape","N/A");
+            std::cout <<"Processing zone "<<iZn<<" Material "<<matName<<" Shape "<<shape<<std::endl;
+
+            if (!shape.compare("Box"))
+            {
+                double bb[6];
+                bb[0] = znInfo["Params"]["Min"][0].as<double>(); 
+                bb[2] = znInfo["Params"]["Min"][1].as<double>(); 
+                bb[4] = znInfo["Params"]["Min"][2].as<double>(); 
+                bb[1] = znInfo["Params"]["Max"][0].as<double>(); 
+                bb[3] = znInfo["Params"]["Max"][1].as<double>(); 
+                bb[5] = znInfo["Params"]["Max"][2].as<double>(); 
+                vtkSmartPointer<vtkIdList> idl = vtkSmartPointer<vtkIdList>::New();
+                cl->FindCellsWithinBounds(bb, idl);
+                std::cout << "Found " << idl->GetNumberOfIds() << " cells.\n";
+                std::vector<int> lst;
+                for (int idx=0; idx<idl->GetNumberOfIds(); idx++)
+                    lst.push_back(idl->GetId(idx));
+                em->addElmBlkByElmIdLst(matName, lst);
+            }
+            else
+            {
+                std::cout << "WARNNING: Skipiing unkown zone shape: " << shape << std::endl; 
+            }
+
+        }
+    }
+    else
+    {
+        std::cout << "Unknown operation requested : " << opr << std::endl;
+    }
+}
+#endif
+
