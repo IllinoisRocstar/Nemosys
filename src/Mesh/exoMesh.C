@@ -135,7 +135,7 @@ exoMesh::~exoMesh()
 }
     
     
-void exoMesh::wrnErrMsg(int errCode, std::string msg)
+void EXOMesh::wrnErrMsg(int errCode, std::string msg)
 {
     if (errCode<0) {
         std::cerr<< "Error: " << msg 
@@ -152,8 +152,8 @@ void exoMesh::wrnErrMsg(int errCode, std::string msg)
 void exoMesh::write()
 {
     // preparing database
-    if (!_isPopulated);
-        exoPopulate();
+    // regadless we update it
+    exoPopulate();
 
     // writing to file
     int comp_ws = 8;
@@ -218,10 +218,18 @@ void exoMesh::write()
     wrnErrMsg(_exErr, "Problem closing the exodusII file.");
 }
 
-void exoMesh::exoPopulate() 
+void exoMesh::exoPopulate(bool updElmLst) 
 {
     numNdes = 0;
     numElms = 0;
+    xCrds.clear();
+    yCrds.clear();
+    zCrds.clear();
+    ndeSetNames.clear();
+    elmBlockNames.clear();
+    sideSetNames.clear();
+    if (updElmLst)
+        glbConn.clear();
 
     // gathering node coordinates and updating node sets
     for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
@@ -243,13 +251,146 @@ void exoMesh::exoPopulate()
     // upadting element sets
     for (auto it1=_elmBlock.begin(); it1!=_elmBlock.end(); it1++)
     {
-        numElms += it1->nElm;
         elmBlockNames.push_back(const_cast<char*>((it1->name).c_str()));        
         // offseting element connectivities
         for (auto it2=(it1->conn).begin(); it2!=(it1->conn).end(); it2++)
             (*it2) += it1->ndeIdOffset;
+        // since node ids are now updates
+        // setting offset to zero
+        it1->ndeIdOffset = 0;
+        // extending global connectivity
+        for (int elmIdx=0; elmIdx<(*it1).nElm; elmIdx++)
+        {
+            int nn = it1->ndePerElm;
+            std::vector<int> elmConn;
+            for (int idx=elmIdx*nn; idx<(elmIdx+1)*nn; idx++)
+                elmConn.push_back(it1->conn[idx]);
+            
+            if (updElmLst)
+            {
+                (*it1).elmIds.push_back(numElms+elmIdx);
+                glbConn.push_back(elmConn);
+            }
+        }
+        numElms += it1->nElm;
     }
 
+    report();
     _isPopulated = true;
 }
 
+void exoMesh::report() const
+{
+    std::cout << "Number of nodes = " << numNdes << std::endl;
+    std::cout << "Number of elements = " << numElms << std::endl;
+    std::cout << "Number of node sets = " << getNumberOfNodeSet() << std::endl;
+    std::cout << "Number of element blocks = " << getNumberOfElementBlock() << std::endl;
+    std::cout << "Number of side sets = " << getNumberOfSideSets() << std::endl;
+}
+
+void exoMesh::removeByElmIdLst(int blkIdx, std::vector<int>& idLst)
+{
+    // range check
+    if (blkIdx>getNumberOfElementBlock() || blkIdx<0) 
+        wrnErrMsg(-1, "Block Id is out of the range.");
+
+    // the idLst should not eliminate the old block
+    // at least one element should remain
+    if (idLst.size() >= _elmBlock[blkIdx].elmIds.size())
+        wrnErrMsg(-1, "Can not remove the entire block!.");
+
+    // now updating the old block
+    _isPopulated=false;
+
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    elmBlockType oeb = _elmBlock[blkIdx];
+    elmBlockType neb;
+    neb.id = oeb.id;
+    neb.name = oeb.name;
+    neb.ndePerElm = oeb.ndePerElm;
+    neb.eTpe = oeb.eTpe;
+    neb.ndeIdOffset = 0;
+    neb.nElm = oeb.nElm-idLst.size();
+
+    // elmIds and connectivities
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    for (auto it1=idLst.begin(); it1!=idLst.end(); it1++)
+    {
+        int oei = 0;
+        for (auto it2 = oeb.elmIds.begin(); it2!=oeb.elmIds.end(); it2++)
+        {
+            if ( (*it2) == (*it1) )
+                continue;
+            neb.elmIds.push_back(*it2);
+            for (int ni=oei*oeb.ndePerElm; ni<(oei+1)*oeb.ndePerElm; ni++)
+                neb.conn.push_back(oeb.conn[ni]);
+            oei++;
+        }
+    }
+    std::cout << __FILE__ << __LINE__ << std::endl;
+
+    _elmBlock[blkIdx] = neb;
+}
+
+
+void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int>& lst)
+{ 
+    // preparing database
+    if (!_isPopulated);
+        exoPopulate(false);
+
+    _isPopulated=false;
+
+    // create element block
+    // Assumption here: All elements in the provided list are in the same 
+    // element block
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    elmBlockType neb;
+    neb.id = _elmBlock.size()+1; 
+    neb.nElm = lst.size();
+    neb.name = name;
+    neb.ndeIdOffset = 0;
+    neb.elmIds = lst;
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    int blkIdx = findElmBlkIdx(lst[0]);
+    if (blkIdx == -1) 
+        wrnErrMsg(-1, "Elements ids are not registered.");
+    std::cout << "Block Indx = " << blkIdx << std::endl;
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    neb.eTpe = getBlockElmType(blkIdx); 
+    neb.ndePerElm = _elmBlock[blkIdx].ndePerElm;
+    for (auto eid=lst.begin(); eid!=lst.end(); eid++)
+        for (int idx=0; idx<neb.ndePerElm; idx++)
+            neb.conn.push_back( glbConn[*eid][idx] );
+    
+    // updating the old element block and adding a new one
+    std::cout << __FILE__ << __LINE__ << std::endl;
+    removeByElmIdLst(blkIdx, lst);
+    addElmBlk(neb);
+    std::cout << __FILE__ << __LINE__ << std::endl;
+}
+
+int exoMesh::findElmBlkIdx(int elmId) const
+{
+    std::cout << "----->"<<elmId<<std::endl;
+    int blkId = -1;
+    int blkIdx = 0;
+    for (auto it1=_elmBlock.begin(); it1!=_elmBlock.end(); it1++)
+    {
+        for (auto it2=(*it1).elmIds.begin(); it2!=(*it1).elmIds.end(); it2++)
+        {
+            if ( (*it2)==elmId )
+            {
+                blkId = it1->id;
+                break;
+            }
+        }
+        if ( blkId != -1)
+            break;
+        blkIdx++;
+    }
+    if (blkId != -1)
+        return(blkIdx);
+    else
+        return(-1);
+}
