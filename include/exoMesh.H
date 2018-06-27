@@ -12,6 +12,8 @@ class meshBase;
 namespace EXOMesh
 {
 
+void wrnErrMsg(int errCode, std::string errMsg = "None");
+
 enum elementType {
   QUAD,
   TRIANGLE,
@@ -74,28 +76,40 @@ class exoMesh
       exoMesh(std::string ifname);
       ~exoMesh();
 
+    // fast access
     public:
       bool isCompatible() const {return _isSupported;}
-
       int getNumberOfNode() const {return numNdes;}
       int getNumberOfElement() const {return numElms;}
       int getNumberOfNodeSet() const {return _ndeSet.size();}
       int getNumberOfElementBlock() const {return _elmBlock.size();}
       int getNumberOfSideSets() const {return _sideSet.size();}
+      std::string getBlockName(int id) const { return(_elmBlock[id].name); }
+      elementType getBlockElmType(int id) const { return(_elmBlock[id].eTpe); };
+      void report() const;
 
-      void addNdeSet(ndeSetType& ns) { _ndeSet.push_back(ns); }
-      void addElmBlk(elmBlockType& eb) { _elmBlock.push_back(eb); }
-      
-      std::string getBlockName(int id) const;
-      elementType getBlockElmType(int id) const;
+    // adding sets and blocks
+    public:
+      void addNdeSet(ndeSetType& ns) { _ndeSet.push_back(ns); _isPopulated=false; }
+      void addElmBlk(elmBlockType& eb) { _elmBlock.push_back(eb);  _isPopulated=false;}
 
+    // augmentation and maintenance
+    public:
+      // finds index of block containing element
+      int findElmBlkIdx(int elmId) const; // returns -1 if not found
+      // removes a list of elements from an element block
+      void removeByElmIdLst(int blkId, std::vector<int>& idLst);
+      // creates a new element block and augments previous oweners
+      void addElmBlkByElmIdLst(std::string name, std::vector<int>& idLst); 
+     
+    // I/O
+    public:
       void write();
 
-   private:
+    private:
       // populate quanitites needed to write
       // pntmesh file
-      void exoPopulate();
-      void wrnErrMsg(int errCode, std::string errMsg = "None");
+      void exoPopulate(bool updElmLst=true);
 
     private:
       std::string _ifname;
@@ -112,10 +126,10 @@ class exoMesh
       std::vector<double> xCrds;
       std::vector<double> yCrds;
       std::vector<double> zCrds;
+      std::vector<std::vector<int>> glbConn;
       std::vector<char*> ndeSetNames;
       std::vector<char*> elmBlockNames;
       std::vector<char*> sideSetNames;
-      std::vector<int> elmBlockOffset;
 };
 
 } // end namespace exoMesh
