@@ -34,7 +34,7 @@ public:
   cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim) :
   myCgFileName(fname), cellDim(cellDim), physDim(physDim),
   baseName(baseName), nBase(1), nZone(0), nSection(0),
-  nVrtx(0), nCell(0), nSlnFld(0), 
+  nVrtx(0), nCell(0), nSlnFld(0), coordRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
     if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
@@ -49,7 +49,8 @@ public:
   void setZone(std::string zName, ZoneType_t zt);
   void setNVrtx(int nVt);
   void setNCell(int nCl);
-  void setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z);  
+  void setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z);
+  void setCoordRind(int rind);  
   void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
@@ -74,6 +75,7 @@ private:
   int nCell;
   int nSection;
   int nVrtxElem;
+  int coordRind;
   vect<int>::v1d elmConn;
   // units
   MassUnits_t massU;

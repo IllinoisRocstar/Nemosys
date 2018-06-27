@@ -66,6 +66,11 @@ void cgnsWriter::setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<doubl
   zCrd.insert(zCrd.begin(), z.begin(), z.end());
 }  
 
+void cgnsWriter::setCoordRind(int rind)
+{
+  coordRind = rind;
+}
+
 void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
 {
   if (slnLoc == Vertex)
@@ -177,7 +182,7 @@ void cgnsWriter::writeZoneToFile()
   strcpy(zonename, zoneName.c_str());
   if (zoneType == Unstructured) {
     cgCoreSize[0]=nVrtx;
-    cgCoreSize[1]=nCell;
+    cgCoreSize[1]=nCells[0];
     cgCoreSize[2]=0;
   } else {
     std::cerr << "Format is not supported.\n";
@@ -198,7 +203,18 @@ void cgnsWriter::writeZoneToFile()
                      gridCrdPntr.c_str())) cg_error_exit();
   if (cg_array_write("FlowSolutionsPointers", Character, 2, tmpDim2, 
                      flowSlnPntr.c_str())) cg_error_exit();
-  
+ 
+  // create grid coordinates node
+  int indexGrid = 1;
+  if (cg_grid_write(indexFile, indexBase, indexZone, "GridCoordinates", &indexGrid)) cg_error_exit();
+ 
+  // write rind
+  if (coordRind)
+  {
+    int rindArr[2] = {0,coordRind};
+    if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,"GridCoordinates",0,"end")) cg_error_exit();
+    if (cg_rind_write(rindArr)) cg_error_exit();
+  }
   // write coordinates + range, dimensional exponent, units
   float dimUnits[5] = {0, 1, 0, 0, 0};
   // x
@@ -243,7 +259,8 @@ void cgnsWriter::writeZoneToFile()
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
   if (cg_exponents_write(RealSingle, dimUnits)) cg_error_exit();
   if (cg_descriptor_write("Units", "m")) cg_error_exit();
-  
+
+ 
   // create link to the grid coordinates
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "end")) cg_error_exit();
   os.str("");
@@ -252,12 +269,15 @@ void cgnsWriter::writeZoneToFile()
   str = os.str();
   if (cg_link_write(gridCrdPntr.c_str(), "", str.c_str())) cg_error_exit();
 
-  // write sections
+  // write sections (real and virtual cells)
+  int elm_start;
   for (int iSec=0; iSec<nSection; iSec++)
   {
+    elm_start = (iSec == 0 ? 1 : elm_start+nCells[iSec-1]);
+    int elm_end = elm_start + nCells[iSec] - 1;
     int nBdy = 0;
     if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
-                         sectionTypes[iSec], 1, nCells[iSec], nBdy, 
+                         sectionTypes[iSec], elm_start, elm_end, nBdy, 
                          &elmConns[iSec][0], &indexSection)) cg_error_exit();
   }
   // write solution data
