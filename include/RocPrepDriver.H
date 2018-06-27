@@ -12,4 +12,10 @@ class RocPrepDriver : public NemDriver
     ~RocPrepDriver(){}
     static RocPrepDriver* readJSON(json inputjson);
 };
+
+std::vector<std::string> getCgFNames(const std::string& case_dir, 
+                                     const std::string& prefix,
+                                     const std::string& base_t);
+
+
 #endif
