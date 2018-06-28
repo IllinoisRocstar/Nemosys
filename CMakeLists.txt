@@ -185,7 +185,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
-                 src/SolutionVerification/OrderOfAccuracy.C)
+                 src/SolutionVerification/OrderOfAccuracy.C
+                 src/Mesh/meshSrch.C )
 IF (ENABLE_EXODUS)
     SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
 ENDIF()

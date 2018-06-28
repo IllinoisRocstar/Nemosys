@@ -109,7 +109,7 @@ class exoMesh
     private:
       // populate quanitites needed to write
       // pntmesh file
-      void exoPopulate(bool updElmLst=true);
+      void exoPopulate(bool updElmLst=false);
 
     private:
       std::string _ifname;
