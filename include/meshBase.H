@@ -121,7 +121,17 @@ class meshBase
       std::cout << "meshBase constructed" << std::endl;
     }
 
-
+    meshBase(const meshBase& mb)
+    {
+        numPoints = mb.numPoints;
+        numCells = mb.numCells;
+        hasSizeField = mb.hasSizeField;
+        dataSet = mb.dataSet;
+        filename = mb.filename;
+        checkQuality = mb.checkQuality;
+        order = mb.order;
+        newArrayNames = mb.newArrayNames;
+    }
 
     virtual ~meshBase()
     {
