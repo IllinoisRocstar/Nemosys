@@ -153,7 +153,7 @@ void exoMesh::write()
 {
     // preparing database
     // regadless we update it
-    exoPopulate();
+    exoPopulate(true);
 
     // writing to file
     int comp_ws = 8;
@@ -185,19 +185,18 @@ void exoMesh::write()
         _exErr = ex_put_elem_block(fid, _elmBlock[ieb].id, eTpe.c_str(), 
                 _elmBlock[ieb].nElm, _elmBlock[ieb].ndePerElm, 1);
         wrnErrMsg(_exErr, "Problem during writing elementBlock parameteres.");
-        /* testing
         int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
         char elem_type[MAX_STR_LENGTH+1];
-        elem_blk_id = 1;
+        elem_blk_id = ieb+1;
         ex_get_elem_block (fid, elem_blk_id, elem_type, &num_elem_this_blk,
             &num_nodes_per_elem, &num_attr);
-        std::cout << "elem_blk_id : " << elem_blk_id 
-                  << "\nelem_type : " << std::string(elem_type)
-                  << "\nnum_elem_this_blk : " << num_elem_this_blk
-                  << "\nnum_nodes_per_elem : " << num_nodes_per_elem
-                  << "\nnum_attr : " << num_attr
-                  << std::endl;
-        */ //end testing
+        //std::cout << "elem_blk_id : " << elem_blk_id 
+        //          << "\nelem_type : " << std::string(elem_type)
+        //          << "\nnum_elem_this_blk : " << num_elem_this_blk
+        //          << "\nnum_nodes_per_elem : " << num_nodes_per_elem
+        //          << "\nnum_attr : " << num_attr
+        //          << std::endl;
+        //end testing
         _exErr = ex_put_elem_conn(fid, _elmBlock[ieb].id, &(_elmBlock[ieb].conn[0]));
         wrnErrMsg(_exErr, "Problem during writing elementBlock connectivities.");
         // write element attribute
@@ -229,7 +228,11 @@ void exoMesh::exoPopulate(bool updElmLst)
     elmBlockNames.clear();
     sideSetNames.clear();
     if (updElmLst)
+    {
         glbConn.clear();
+        for (auto ib=_elmBlock.begin(); ib!=_elmBlock.end(); ib++)
+            ib->elmIds.clear();
+    }
 
     // gathering node coordinates and updating node sets
     for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
@@ -259,9 +262,9 @@ void exoMesh::exoPopulate(bool updElmLst)
         // setting offset to zero
         it1->ndeIdOffset = 0;
         // extending global connectivity
+        int nn = it1->ndePerElm;
         for (int elmIdx=0; elmIdx<(*it1).nElm; elmIdx++)
         {
-            int nn = it1->ndePerElm;
             std::vector<int> elmConn;
             for (int idx=elmIdx*nn; idx<(elmIdx+1)*nn; idx++)
                 elmConn.push_back(it1->conn[idx]);
@@ -281,11 +284,19 @@ void exoMesh::exoPopulate(bool updElmLst)
 
 void exoMesh::report() const
 {
-    std::cout << "Number of nodes = " << numNdes << std::endl;
-    std::cout << "Number of elements = " << numElms << std::endl;
-    std::cout << "Number of node sets = " << getNumberOfNodeSet() << std::endl;
-    std::cout << "Number of element blocks = " << getNumberOfElementBlock() << std::endl;
-    std::cout << "Number of side sets = " << getNumberOfSideSets() << std::endl;
+    std::cout << " ----- Exodus II Database Statistics ----- \n";
+    std::cout << "#Nodes = " << numNdes << std::endl;
+    std::cout << "#Elements = " << numElms << std::endl;
+    std::cout << "#Node sets = " << getNumberOfNodeSet() << std::endl;
+    std::cout << "#Element blocks = " << getNumberOfElementBlock() << std::endl;
+    std::cout << "#Side sets = " << getNumberOfSideSets() << std::endl;
+    std::cout << "  Blk      nElm     eType\n";
+    std::cout << "  ---      ----     -----\n";
+    for (auto ib=_elmBlock.begin(); ib!=_elmBlock.end(); ib++)
+        std::cout << std::setw(5) << ib->id
+                  << std::setw(10) << (*ib).elmIds.size()
+                  << std::setw(10) << EXOMesh::elmTypeStr(ib->eTpe)
+                  << std::endl;
 }
 
 void exoMesh::removeByElmIdLst(int blkIdx, std::vector<int>& idLst)
@@ -314,20 +325,30 @@ void exoMesh::removeByElmIdLst(int blkIdx, std::vector<int>& idLst)
 
     // elmIds and connectivities
     std::cout << __FILE__ << __LINE__ << std::endl;
-    for (auto it1=idLst.begin(); it1!=idLst.end(); it1++)
+    int oei = -1;
+    for (auto it1=oeb.elmIds.begin(); it1!=oeb.elmIds.end(); it1++)
     {
-        int oei = 0;
-        for (auto it2 = oeb.elmIds.begin(); it2!=oeb.elmIds.end(); it2++)
-        {
+        oei++;
+        bool stays = true;
+        for (auto it2=idLst.begin(); it2!=idLst.end(); it2++)
             if ( (*it2) == (*it1) )
-                continue;
-            neb.elmIds.push_back(*it2);
-            for (int ni=oei*oeb.ndePerElm; ni<(oei+1)*oeb.ndePerElm; ni++)
-                neb.conn.push_back(oeb.conn[ni]);
-            oei++;
-        }
+            {
+                stays = false;
+                break;
+            }
+
+        if (!stays)
+            continue;
+        
+        neb.elmIds.push_back(*it1);
+        for (int ni=oei*oeb.ndePerElm; ni<(oei+1)*oeb.ndePerElm; ni++)
+            neb.conn.push_back(oeb.conn[ni]);
+
     }
     std::cout << __FILE__ << __LINE__ << std::endl;
+    std::cout << neb.nElm << " " 
+              << neb.elmIds.size() << " "
+              << idLst.size() << std::endl;
 
     _elmBlock[blkIdx] = neb;
 }
@@ -368,6 +389,7 @@ void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int>& lst)
     removeByElmIdLst(blkIdx, lst);
     addElmBlk(neb);
     std::cout << __FILE__ << __LINE__ << std::endl;
+    exoPopulate(false);
 }
 
 int exoMesh::findElmBlkIdx(int elmId) const
