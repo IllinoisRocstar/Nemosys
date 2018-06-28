@@ -122,6 +122,7 @@ inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double 
 
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
+
 // find file extension
 inline std::string find_ext(std::string fname);
 
@@ -135,6 +136,10 @@ std::pair<B,A> flip_pair(const std::pair<A,B> &p);
 
 template<typename A, typename B>
 std::multimap<B,A> flip_map(const std::map<A,B> &src);
+
+// check if coordinate is inside a bounding box
+template<typename T>
+bool isInBBox(std::vector<T> crd, std::vector<T> bb);
 //-------------------------------------------------------------------------//
 
 
@@ -443,4 +448,20 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
                    flip_pair<A,B>);
     return dst;
 }
+
+template<typename T>
+bool isInBBox(std::vector<T> crd, std::vector<T> bb)
+{
+    bool isIn = true;
+    int dim = crd.size();
+    for (int i=0; i<dim; i++)
+    {   
+        if (!isIn)
+            continue;
+        if (crd[i] < bb[2*i] || crd[i] > bb[2*i+1])
+            isIn = false;
+    }
+    return(isIn);
+}
+
 #endif

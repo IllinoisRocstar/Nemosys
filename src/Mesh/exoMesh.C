@@ -256,21 +256,22 @@ void exoMesh::exoPopulate(bool updElmLst)
     {
         elmBlockNames.push_back(const_cast<char*>((it1->name).c_str()));        
         // offseting element connectivities
-        for (auto it2=(it1->conn).begin(); it2!=(it1->conn).end(); it2++)
-            (*it2) += it1->ndeIdOffset;
-        // since node ids are now updates
-        // setting offset to zero
-        it1->ndeIdOffset = 0;
-        // extending global connectivity
-        int nn = it1->ndePerElm;
-        for (int elmIdx=0; elmIdx<(*it1).nElm; elmIdx++)
+        if ( (it1->ndeIdOffset) != 0 )
         {
-            std::vector<int> elmConn;
-            for (int idx=elmIdx*nn; idx<(elmIdx+1)*nn; idx++)
-                elmConn.push_back(it1->conn[idx]);
-            
-            if (updElmLst)
+            std::cout << "Non-zero node offset\n";
+            for (auto it2=(it1->conn).begin(); it2!=(it1->conn).end(); it2++)
+                (*it2) += it1->ndeIdOffset;
+            it1->ndeIdOffset = 0;
+        }
+        // updating global connectivity
+        if (updElmLst)
+        {
+            int nn = it1->ndePerElm;
+            for (int elmIdx=0; elmIdx<(*it1).nElm; elmIdx++)
             {
+                std::vector<int> elmConn;
+                for (int idx=elmIdx*nn; idx<(elmIdx+1)*nn; idx++)
+                    elmConn.push_back(it1->conn[idx]);       
                 (*it1).elmIds.push_back(numElms+elmIdx);
                 glbConn.push_back(elmConn);
             }
@@ -360,6 +361,7 @@ void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int>& lst)
     if (!_isPopulated);
         exoPopulate(false);
 
+    std::cout << "Received a list of " << lst.size() << std::endl;
     _isPopulated=false;
 
     // create element block
