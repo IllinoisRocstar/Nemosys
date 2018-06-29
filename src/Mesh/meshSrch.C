@@ -89,7 +89,7 @@ void meshSrch::FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& 
             else
                 ids.push_back(*it);
         }
-        std::cout << "Removed additional " << nr << std::endl;
+        std::cout << "Remove " << nr << " cells from the list.\n";
     }
     else
         ids = aids;
