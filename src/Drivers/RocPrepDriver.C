@@ -12,14 +12,13 @@
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkDistributedDataFilter.h>
 #include <vtkPUnstructuredGridGhostCellsGenerator.h>
-#include <vtkPConnectivityFilter.h>
-#include <vtkRemoveGhosts.h>
 #include <vtkMPICommunicator.h>
 #include <vtkProcess.h>
 #include <vtkPointData.h>
 #include <vtkGenericCell.h>
 
 #include <mpi.h>
+#include <unordered_set>
 #include <sstream>
 #include <cstddef>
 #include <set>
@@ -54,8 +53,8 @@ class GhostGenerator : public vtkProcess
     std::vector<int> myGlobalCellIds;           // global cell indices of partition
     std::vector<int> myGlobalGhostCellIds;      // global ghost cell indices of partition
     std::map<int, std::vector<int>> sharedNodes;// <proc, shared nodes>
-    std::map<int, std::vector<int>> sentNodes;  // <proc, sent nodes> 
-    std::map<int, std::map<int, int>> sentCells;// <proc, sent cells>
+    std::map<int, std::unordered_set<int>> sentNodes;  // <proc, sent nodes> 
+    std::map<int, std::unordered_set<int>> sentCells;// <proc, sent cells>
     std::map<int, int> recievedNodesNum;        // <proc, num recieved nodes>
     std::map<int, int> recievedCellsNum;        // <proc, num recieved cells>
     std::map<int,int> myGlobToPartNodeMap;      // <global nodeId, local nodeId>
@@ -162,7 +161,7 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
         // get the local cell idx
         int localCellId = cellIdsList->GetId(k);
         // add idx to sentCells to proc i map
-        this->sentCells[i][localCellId] = localCellId;
+        this->sentCells[i].insert(localCellId);
         // get the cell for point extraction
         partitions[me]->getDataSet()->GetCell(localCellId, genCell);
         for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
@@ -173,8 +172,8 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
           if (std::find(tmpVec.begin(), tmpVec.end(),
                 this->myPartToGlobNodeMap[pntCellId]) == tmpVec.end())
           {
-            this->sentNodes[i].push_back(pntCellId);
-          } 
+            this->sentNodes[i].insert(pntCellId);
+					} 
         }
       }
     }
@@ -189,7 +188,8 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
     std::set_intersection(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end(),
                           procsGlobalCellIds.begin(), procsGlobalCellIds.end(),
                           std::back_inserter(tmpVec));
-  }
+  	this->recievedCellsNum[i] = tmpVec.size();
+	}
 }
 
 
@@ -246,13 +246,13 @@ void GhostGenerator::Execute()
                                                 ss1.str());
   this->ghostCellMesh->write(); 
   this->getPconnInformation(me, numProcs); 
-  if (me == 3)
+  if (me == 1)
   {
     std::cout << "Checking shared nodes...." << std::endl;
     auto it = this->sharedNodes.begin();
     while ( it != this->sharedNodes.end())
     {
-      std::cout << "Shared with proc " << it->first << " : ";
+      std::cout << "Nodes shared with proc " << it->first << " : ";
       for (int i = 0; i < it->second.size(); ++i)
       {
         std::cout << it->second[i] << " ";
@@ -260,8 +260,54 @@ void GhostGenerator::Execute()
       std::cout << std::endl;
       ++it;
     }
-    
-    
+
+
+		std::cout << "Checking sent nodes...." << std::endl;
+		auto it2 = this->sentNodes.begin();
+		while (it2 != this->sentNodes.end())
+		{
+			std::cout << "Nodes sent to proc " << it2->first << " : ";
+			auto it3 = it2->second.begin();
+			while (it3 != it2->second.end())
+			{
+				std::cout << *it3 <<  " ";
+				++it3;
+			}
+			std::cout << std::endl;	
+			++it2;
+		}
+
+		auto it1 = this->recievedNodesNum.begin();
+		while (it1 != this->recievedNodesNum.end())
+		{
+			std::cout << "Num nodes recieved from proc " << it1->first << " : ";	
+			std::cout << it1->second << std::endl;;
+			++it1;
+		} 	
+   
+		std::cout << "Checking sent cells...." << std::endl;
+		it2 = this->sentCells.begin();
+		while (it2 != this->sentCells.end())
+		{
+			std::cout << "Cells sent to proc " << it2->first << " : ";
+			auto it3 = it2->second.begin();
+			while (it3 != it2->second.end())
+			{
+				std::cout << *it3 <<  " ";
+				++it3;
+			}
+			std::cout << std::endl;	
+			++it2;
+		}
+		
+		it1 = this->recievedCellsNum.begin();
+		while (it1 != this->recievedCellsNum.end())
+		{
+			std::cout << "Num cells recieved from proc " << it1->first << " : ";
+			std::cout << it1->second << std::endl;
+			++it1;
+		}
+ 
     // write cgns file
     
     cgnsAnalyzer* cgObj = new cgnsAnalyzer("fluid-grid_00.000000_00001.cgns");
