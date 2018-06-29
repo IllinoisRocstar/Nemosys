@@ -40,8 +40,6 @@ std::vector<std::vector<double>> meshSrch::getCellVec(int id) const
 
 }
 
-
-
 // get center of a cell
 std::vector<double> meshSrch::getCellCenter(int cellID) const
 {
@@ -93,5 +91,27 @@ void meshSrch::FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& 
     }
     else
         ids = aids;
+}
+
+
+// checks for duplicate elements
+bool meshSrch::chkDuplElm() const
+{
+    std::set<std::vector<int>> ids;
+    for (int ic=0; ic<getNumberOfCells(); ic++)
+    {
+        std::vector<int> cid;
+        vtkIdList* idl = vtkIdList::New(); 
+        idl = dataSet->GetCell(ic)->GetPointIds();
+        for (int id=0; id<idl->GetNumberOfIds(); id++)
+            cid.push_back(idl->GetId(id));
+        std::pair<std::set<std::vector<int>>::iterator, bool> ret;
+        ret = ids.insert(cid);
+        if (!ret.second)
+        {
+            return(true);
+        }
+    }
+    return(false);
 }
 

@@ -87,20 +87,28 @@ class exoMesh
       std::string getBlockName(int id) const { return(_elmBlock[id].name); }
       elementType getBlockElmType(int id) const { return(_elmBlock[id].eTpe); };
       void report() const;
+      void togVrb() {_isVerbose=_isVerbose?false:true; };
 
     // adding sets and blocks
     public:
       void addNdeSet(ndeSetType& ns) { _ndeSet.push_back(ns); _isPopulated=false; }
       void addElmBlk(elmBlockType& eb) { _elmBlock.push_back(eb);  _isPopulated=false;}
+      void removeElmBlkByName(std::string blkName);
 
     // augmentation and maintenance
     public:
-      // finds index of block containing element
+      // finds index of the first block containing element
       int findElmBlkIdx(int elmId) const; // returns -1 if not found
+      // finds index of the block containing most or all of the list (slower)
+      int findElmLstBlkIdx(std::vector<int> elmIds) const; // returns -1 if not found
+      // finds all elements that are within the block and generates a list of them
+      // if all in, sets allIn to true
+      std::vector<int> lstElmInBlck(int blkId, std::vector<int> elmIds, bool allIn = false ) const;
       // removes a list of elements from an element block
       void removeByElmIdLst(int blkId, std::vector<int>& idLst);
       // creates a new element block and augments previous oweners
-      void addElmBlkByElmIdLst(std::string name, std::vector<int>& idLst); 
+      void addElmBlkByElmIdLst(std::string name, std::vector<int> idLst); 
+    
      
     // I/O
     public:
@@ -116,6 +124,7 @@ class exoMesh
       bool _isSupported; // false is non Tri/Tet elements were found
       bool _isPopulated;
       bool _isOpen;
+      bool _isVerbose;
       int _exErr;
       ndeSet _ndeSet;
       elmBlock _elmBlock;
