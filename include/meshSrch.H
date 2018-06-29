@@ -38,6 +38,10 @@ class meshSrch : public meshBase
   public:
     std::vector<double> getCellCenter(int cellID) const;
 
+  // check for special conditions
+  public:
+    bool chkDuplElm() const; // finds duplicate elements
+
   // cell search methods
   public:
     void FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& ids, bool fulImrsd=true);

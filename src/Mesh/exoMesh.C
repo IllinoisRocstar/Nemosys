@@ -1,8 +1,10 @@
 #include "meshBase.H"
+#include "exodusII.h"
 #include "exoMesh.H"
+
+#include <set>
 #include <fstream>
 #include <algorithm>
-#include "exodusII.h"
 
 using namespace EXOMesh;
 
@@ -125,7 +127,7 @@ int EXOMesh::elmNumSrf (elementType tag)
 
 exoMesh::exoMesh(std::string ifname) :
     _ifname(ifname), _isSupported(true), _isPopulated(false), 
-    _isOpen(true)
+    _isOpen(true), _isVerbose(false)
 {}
 
 exoMesh::~exoMesh() 
@@ -229,6 +231,8 @@ void exoMesh::exoPopulate(bool updElmLst)
     sideSetNames.clear();
     if (updElmLst)
     {
+        for (auto it=_elmBlock.begin(); it!=_elmBlock.end(); it++)
+            (it->elmIds).clear();
         glbConn.clear();
         for (auto ib=_elmBlock.begin(); ib!=_elmBlock.end(); ib++)
             ib->elmIds.clear();
@@ -267,7 +271,6 @@ void exoMesh::exoPopulate(bool updElmLst)
         // offseting element connectivities
         if ( (it1->ndeIdOffset) != 0 )
         {
-            std::cout << "Non-zero node offset\n";
             for (auto it2=(it1->conn).begin(); it2!=(it1->conn).end(); it2++)
                 (*it2) += it1->ndeIdOffset;
             it1->ndeIdOffset = 0;
@@ -275,6 +278,7 @@ void exoMesh::exoPopulate(bool updElmLst)
         // updating global connectivity
         if (updElmLst)
         {
+            (*it1).elmIds.clear();
             int nn = it1->ndePerElm;
             for (int elmIdx=0; elmIdx<(*it1).nElm; elmIdx++)
             {
@@ -288,7 +292,8 @@ void exoMesh::exoPopulate(bool updElmLst)
         numElms += it1->nElm;
     }
 
-    report();
+    if (_isVerbose)
+        report();
     _isPopulated = true;
 }
 
@@ -300,12 +305,13 @@ void exoMesh::report() const
     std::cout << "#Node sets = " << getNumberOfNodeSet() << std::endl;
     std::cout << "#Element blocks = " << getNumberOfElementBlock() << std::endl;
     std::cout << "#Side sets = " << getNumberOfSideSets() << std::endl;
-    std::cout << "  Blk      nElm     eType\n";
-    std::cout << "  ---      ----     -----\n";
+    std::cout << "  Blk      nElm     eType                Name\n";
+    std::cout << "  ---      ----     -----                ----\n";
     for (auto ib=_elmBlock.begin(); ib!=_elmBlock.end(); ib++)
         std::cout << std::setw(5) << ib->id
                   << std::setw(10) << (*ib).elmIds.size()
                   << std::setw(10) << EXOMesh::elmTypeStr(ib->eTpe)
+                  << std::setw(20) << (*ib).name
                   << std::endl;
 }
 
@@ -361,27 +367,38 @@ void exoMesh::removeByElmIdLst(int blkIdx, std::vector<int>& idLst)
 }
 
 
-void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int>& lst)
+void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int> lst)
 { 
     // preparing database
     if (!_isPopulated);
         exoPopulate(false);
 
     _isPopulated=false;
-
     // create element block
     // Assumption here: All elements in the provided list are in the same 
     // element block
     elmBlockType neb;
     neb.id = _elmBlock.size()+1; 
-    neb.nElm = lst.size();
     neb.name = name;
     neb.ndeIdOffset = 0;
-    neb.elmIds = lst;
-    int blkIdx = findElmBlkIdx(lst[0]);
+    //int blkIdx = findElmBlkIdx(lst[0]); // faste but less accurate
+    int blkIdx = findElmLstBlkIdx(lst); // slower, more accurate
     if (blkIdx == -1) 
         wrnErrMsg(-1, "Elements ids are not registered.");
     //std::cout << "Block Indx = " << blkIdx << std::endl;
+    // now adjust the list and remove elements that are 
+    // not owned by this block
+    std::vector<int> owndLst;
+    bool allIn;
+    owndLst = lstElmInBlck(blkIdx, lst, allIn);
+    if (!allIn)
+    {
+        std::cout << owndLst.size() << " Elements are in the block.\n";
+        std::cout << "Some of the elements in the list are outside the block.\n";
+        lst = owndLst;
+    }
+    neb.elmIds = lst;    
+    neb.nElm = lst.size();
     neb.eTpe = getBlockElmType(blkIdx); 
     neb.ndePerElm = _elmBlock[blkIdx].ndePerElm;
     for (auto eid=lst.begin(); eid!=lst.end(); eid++)
@@ -393,6 +410,23 @@ void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int>& lst)
     addElmBlk(neb);
     exoPopulate(false);
 }
+
+
+void exoMesh::removeElmBlkByName(std::string blkName)
+{
+    if (blkName == "")
+        return;
+    std::vector<elmBlockType> neb;
+    for (auto it1=_elmBlock.begin(); it1!=_elmBlock.end(); it1++)
+    {
+        if ( (*it1).name.compare(blkName) )
+            neb.push_back(*it1);
+    }
+    _elmBlock = neb;
+    exoPopulate(true);
+}
+
+
 
 int exoMesh::findElmBlkIdx(int elmId) const
 {
@@ -417,3 +451,52 @@ int exoMesh::findElmBlkIdx(int elmId) const
     else
         return(-1);
 }
+
+int exoMesh::findElmLstBlkIdx(std::vector<int> elmIds) const
+{
+    int blkIdx = -1;
+    int intfCnt = 0;
+
+    if (elmIds.size() == 0)
+        return(blkIdx);
+
+    for (int ib=0; ib<_elmBlock.size(); ib++)
+    {
+        std::vector<int> intfLst = {};
+        bool allIn = false;
+        intfLst = lstElmInBlck(ib, elmIds, allIn);
+        if (allIn)
+            return(ib);
+        else
+            if (intfLst.size() > intfCnt)
+            {
+                intfCnt = intfLst.size();
+                blkIdx = ib;
+            }
+    }
+    return(blkIdx);
+}
+
+
+std::vector<int> exoMesh::lstElmInBlck(int blkId, std::vector<int> elmIds, bool allIn) const
+{
+    std::vector<int> out;
+    allIn = true;
+    // compare elmIds with list of the elements within block
+    std::set<int> current;
+    for (auto it=_elmBlock[blkId].elmIds.begin(); it!=_elmBlock[blkId].elmIds.end(); it++)
+    {
+        current.insert(*it);
+    }
+    std::pair<std::set<int>::iterator, bool> ret;
+    for (auto it=elmIds.begin(); it!=elmIds.end(); it++)
+    {
+        ret=current.insert(*it);
+        if (!ret.second)
+            out.push_back(*it);
+        else
+            allIn = false;
+    }
+    return(out);
+}
+

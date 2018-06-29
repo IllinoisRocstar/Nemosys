@@ -249,6 +249,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
 
     // writing the file
     em->write();
+    em->report();
 
     // performing post-processing tasks
     if (needsPP)
@@ -277,6 +278,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
 
         // writing augmented exo file
         em->write();
+        em->report();
     }
     
     // clean up
@@ -382,7 +384,7 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
 {
   // converting to mesh base for geometric inquiry
   meshBase* mb = meshBase::Create(fname); 
-  meshSrch* ms = meshSrch::Create(mb); 
+  meshSrch* ms = meshSrch::Create(mb);
 
   // performing requested operation
   std::string opr = ppJson.get_with_default("Operation", "");
@@ -428,6 +430,24 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
           elmLst.insert(elmLst.end(), (it1->second).begin(), (it1->second).end());
           em->addElmBlkByElmIdLst(it1->first, elmLst);
       }
+  }
+  else if (!opr.compare("Check Duplicate Elements"))
+  {
+      std::cout << "Checking for existance of duplicate elements ... ";
+      bool ret = ms->chkDuplElm(); 
+      if (ret)
+      {
+          std::cerr << " The exodus database contains duplicate elements.\n";
+          exit(-1);
+      } 
+      else 
+        std::cout << "False\n";
+  }
+  else if (!opr.compare("Remove Block"))
+  {
+      std::string blkName = ppJson.get_with_default("Block Name", "");
+      std::cout << "Removing Block " << blkName << std::endl;
+      em->removeElmBlkByName(blkName);
   }
   else
   {
