@@ -35,9 +35,11 @@ class GhostGenerator : public vtkProcess
 {
   public:
     static GhostGenerator* New();
+    // single process function, called by each proc
     virtual void Execute();
+    // sets partitioned meshes which are generated outside of mpi world
     void setPartitions(std::vector<meshBase*>& partitions);
-    void getPconnInformation(int me, int numProcs);
+
     ~GhostGenerator() 
     {
       delete ghostCellMesh;
@@ -45,20 +47,23 @@ class GhostGenerator : public vtkProcess
 
   protected:
     GhostGenerator();
-    std::vector<meshBase*> partitions;
-    meshBase* ghostCellMesh;
-    std::vector<int> myGlobalNodeIds;
-    std::vector<int> myGlobalGhostNodeIds;
-    std::vector<int> myGlobalCellIds;
-    std::vector<int> myGlobalGhostCellIds;
-    std::map<int, std::vector<int>> sharedNodes; // local  
-    std::map<int, std::vector<int>> sentNodes; // local
-    std::map<int, std::map<int, int>> sentCells;
-    std::map<int, int> recievedNodesNum;
-    std::map<int, int> recievedCellsNum;
+    std::vector<meshBase*> partitions;          // vector of partitioned meshes
+    meshBase* ghostCellMesh;                    // this proc's mesh with ghost info
+    std::vector<int> myGlobalNodeIds;           // global node indices of partition
+    std::vector<int> myGlobalGhostNodeIds;      // global ghost node indices of partition
+    std::vector<int> myGlobalCellIds;           // global cell indices of partition
+    std::vector<int> myGlobalGhostCellIds;      // global ghost cell indices of partition
+    std::map<int, std::vector<int>> sharedNodes;// <proc, shared nodes>
+    std::map<int, std::vector<int>> sentNodes;  // <proc, sent nodes> 
+    std::map<int, std::map<int, int>> sentCells;// <proc, sent cells>
+    std::map<int, int> recievedNodesNum;        // <proc, num recieved nodes>
+    std::map<int, int> recievedCellsNum;        // <proc, num recieved cells>
+    std::map<int,int> myGlobToPartNodeMap;      // <global nodeId, local nodeId>
+    std::map<int,int> myPartToGlobNodeMap;      // <local nodeId, global nodeId>
     
-    std::map<int,int> myGlobToPartNodeMap;
-    std::map<int,int> myPartToGlobNodeMap;
+    // populates the vectors and maps above
+    void getPconnInformation(int me, int numProcs);
+    // helpers to get pconn
     void getGlobalIds(int me);
     void getGlobalGhostIds(int me); 
 
@@ -93,8 +98,8 @@ void GhostGenerator::getGlobalGhostIds(int me)
 {
   if (this->myGlobalGhostNodeIds.empty())
   {
-    vtkIdTypeArray* myVtkGlobalNodeIds
-      = vtkArrayDownCast<vtkIdTypeArray>(
+    vtkSmartPointer<vtkIdTypeArray> myVtkGlobalNodeIds
+      = vtkIdTypeArray::FastDownCast(
           this->ghostCellMesh->getDataSet()->GetPointData()->GetGlobalIds());
     int start = partitions[me]->getNumberOfPoints();
     this->myGlobalGhostNodeIds.resize(this->ghostCellMesh->getNumberOfPoints()-start);
@@ -106,8 +111,8 @@ void GhostGenerator::getGlobalGhostIds(int me)
   }
   if (this->myGlobalGhostCellIds.empty())
   {
-    vtkIdTypeArray* myVtkGlobalCellIds
-      = vtkArrayDownCast<vtkIdTypeArray>(
+    vtkSmartPointer<vtkIdTypeArray> myVtkGlobalCellIds
+      = vtkIdTypeArray::FastDownCast(
           this->ghostCellMesh->getDataSet()->GetCellData()->GetGlobalIds());
     int start = partitions[me]->getNumberOfCells();
     this->myGlobalGhostCellIds.resize(this->ghostCellMesh->getNumberOfCells()-start);
@@ -173,8 +178,6 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
         }
       }
     }
-    
-
     // ------ nodes and cells me recieves from proc i
     tmpVec.clear();
     std::set_intersection(this->myGlobalGhostNodeIds.begin(), this->myGlobalGhostNodeIds.end(),

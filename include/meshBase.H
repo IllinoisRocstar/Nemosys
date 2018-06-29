@@ -222,7 +222,7 @@ class meshBase
       if (!globToPartCellMap.empty())
       {
         auto it = globToPartCellMap.begin();
-        std::vector<int> sortedGlobPartIds(numPoints);
+        std::vector<int> sortedGlobPartIds(numCells);
         int i = 0;
         while (it != globToPartCellMap.end())
         {
