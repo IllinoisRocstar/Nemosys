@@ -200,8 +200,44 @@ class meshBase
     // return the number of cells
     int getNumberOfCells() const { return numCells;}
     void checkMesh(std::string ofname);
-    
-
+    // for distributed data sets
+    std::vector<int> getSortedGlobPartNodeIds()
+    {
+      if (!globToPartNodeMap.empty())
+      {
+        auto it = globToPartNodeMap.begin();
+        std::vector<int> sortedGlobPartIds(numPoints);
+        int i = 0;
+        while (it != globToPartNodeMap.end())
+        {
+          sortedGlobPartIds[i] = it->first;
+          ++it;
+          ++i;
+        }
+        return sortedGlobPartIds;
+      }
+    }
+    std::vector<int> getSortedGlobPartCellIds()
+    {
+      if (!globToPartCellMap.empty())
+      {
+        auto it = globToPartCellMap.begin();
+        std::vector<int> sortedGlobPartIds(numPoints);
+        int i = 0;
+        while (it != globToPartCellMap.end())
+        {
+          sortedGlobPartIds[i] = it->first;
+          ++it;
+          ++i;
+        }
+        return sortedGlobPartIds;
+      }
+    }
+    std::map<int,int> getGlobToPartNodeMap() { return globToPartNodeMap; }
+    std::map<int,int> getGlobToPartCellMap() { return globToPartCellMap; }
+    std::map<int,int> getPartToGlobNodeMap() { return partToGlobNodeMap; }
+    std::map<int,int> getPartToGlobCellMap() { return partToGlobCellMap; }
+  
   // write and conversion
   public:
     // write the mesh to file named after the private var 'filename'
@@ -238,6 +274,12 @@ class meshBase
     bool continuous; // switch on / off weighted averaging for cell data transfer
     int order; // shape function order
     std::vector<std::string> newArrayNames;
+
+    // for distributed data sets
+    std::map<int,int> globToPartNodeMap; // map between global and local node idx in partition
+    std::map<int,int> globToPartCellMap; // map between global and local cell idx in partition
+    std::map<int,int> partToGlobNodeMap;
+    std::map<int,int> partToGlobCellMap;
 };
 
 // compares two meshBases- used in testing
