@@ -269,21 +269,35 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
     globalNodeIds->SetName("GlobalNodeIds");
     globalNodeIds->SetNumberOfValues(mbPart->getNumberOfPoints());
-    for (int idx = 0; idx < mbPart->getNumberOfPoints(); ++idx)
+    auto it = partToGlobNodeMap.begin();
+    int idx = 0;
+    while (it != partToGlobNodeMap.end())
     {
-      int globidx = partToGlobNodeMap[idx+1]-1;
-      globalNodeIds->SetValue(idx,globidx); 
-    }   
+      int globidx = it->second-1;
+      int locidx = it->first-1;
+      globalNodeIds->SetValue(idx,globidx);
+      mbPart->globToPartNodeMap[globidx] = locidx; 
+      mbPart->partToGlobNodeMap[locidx] = globidx; 
+      ++idx; 
+      ++it;
+    }
     mbPart->getDataSet()->GetPointData()->SetGlobalIds(globalNodeIds);
     // add global cell index array to partition
-    std::map<int,int> partToGlobElmMap(mPart->getPartToGlobElmMap(i));
+    std::map<int,int> partToGlobCellMap(mPart->getPartToGlobElmMap(i));
     vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
     globalCellIds->SetName("GlobalCellIds");
     globalCellIds->SetNumberOfValues(mbPart->getNumberOfCells());
-    for (int idx = 0; idx < mbPart->getNumberOfCells(); ++idx)
+    it = partToGlobCellMap.begin();
+    idx = 0;
+    while (it != partToGlobCellMap.end())
     {
-      int globidx = partToGlobElmMap[idx+1]-1;
+      int globidx = it->second-1;
+      int locidx = it->first-1;
       globalCellIds->SetValue(idx,globidx);
+      mbPart->globToPartCellMap[globidx] = locidx;
+      mbPart->partToGlobCellMap[locidx] = globidx;
+      ++idx;
+      ++it;
     }
     mbPart->getDataSet()->GetCellData()->SetGlobalIds(globalCellIds);  
     mbPart->write();

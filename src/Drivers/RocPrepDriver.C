@@ -17,6 +17,7 @@
 #include <vtkMPICommunicator.h>
 #include <vtkProcess.h>
 #include <vtkPointData.h>
+#include <vtkGenericCell.h>
 
 #include <mpi.h>
 #include <sstream>
@@ -36,50 +37,95 @@ class GhostGenerator : public vtkProcess
     static GhostGenerator* New();
     virtual void Execute();
     void setPartitions(std::vector<meshBase*>& partitions);
-    void getSharedNodes(int me, int numProcs);
-
+    void getPconnInformation(int me, int numProcs);
     ~GhostGenerator() 
     {
-      delete dataSet;
+      delete ghostCellMesh;
     }
 
   protected:
     GhostGenerator();
     std::vector<meshBase*> partitions;
-    meshBase* dataSet;
-    std::map<int, std::vector<int>> sharedNodes;
-    std::vector<int> sendNodes;
-    std::vector<int> recievedNodes;
-    std::vector<int> sentCells;
-    std::vector<int> recievedCells;
- 
+    meshBase* ghostCellMesh;
+    std::vector<int> myGlobalNodeIds;
+    std::vector<int> myGlobalGhostNodeIds;
+    std::vector<int> myGlobalCellIds;
+    std::vector<int> myGlobalGhostCellIds;
+    std::map<int, std::vector<int>> sharedNodes; // local  
+    std::map<int, std::vector<int>> sentNodes; // local
+    std::map<int, std::map<int, int>> sentCells;
+    std::map<int, int> recievedNodesNum;
+    std::map<int, int> recievedCellsNum;
+    
+    std::map<int,int> myGlobToPartNodeMap;
+    std::map<int,int> myPartToGlobNodeMap;
+    void getGlobalIds(int me);
+    void getGlobalGhostIds(int me); 
+
 };
 
 vtkStandardNewMacro(GhostGenerator);
 
 GhostGenerator::GhostGenerator()
-  : dataSet(nullptr)
+  : ghostCellMesh(nullptr)
 {} 
 
 void GhostGenerator::setPartitions(std::vector<meshBase*>& _partitions)
 {
-  partitions = _partitions;
+  this->partitions = _partitions;
 }
 
-void GhostGenerator::getSharedNodes(int me, int numProcs)
+void GhostGenerator::getGlobalIds(int me)
 {
-  // get global node array of me
-  vtkSmartPointer<vtkIdTypeArray> myVtkGlobalNodeIds
-    = vtkIdTypeArray::FastDownCast(
-        partitions[me]->getDataSet()->GetPointData()->GetGlobalIds());
-  // convert to vector and sort
-  std::vector<int> myGlobalNodeIds(myVtkGlobalNodeIds->GetNumberOfTuples());
-  for (int i = 0; i < myGlobalNodeIds.size(); ++i)
+  if (this->myGlobalNodeIds.empty())
   {
-    myGlobalNodeIds[i] = (int) myVtkGlobalNodeIds->GetTuple1(i);
+    this->myGlobToPartNodeMap = partitions[me]->getGlobToPartNodeMap();
+    this->myPartToGlobNodeMap = partitions[me]->getPartToGlobNodeMap();
+    this->myGlobalNodeIds = partitions[me]->getSortedGlobPartNodeIds();
   }
-  std::sort(myGlobalNodeIds.begin(), myGlobalNodeIds.end());
+  if (this->myGlobalCellIds.empty())
+  {
+    this->myGlobalCellIds = partitions[me]->getSortedGlobPartCellIds();
+  }
+}
 
+void GhostGenerator::getGlobalGhostIds(int me)
+{
+  if (this->myGlobalGhostNodeIds.empty())
+  {
+    vtkIdTypeArray* myVtkGlobalNodeIds
+      = vtkArrayDownCast<vtkIdTypeArray>(
+          this->ghostCellMesh->getDataSet()->GetPointData()->GetGlobalIds());
+    int start = partitions[me]->getNumberOfPoints();
+    this->myGlobalGhostNodeIds.resize(this->ghostCellMesh->getNumberOfPoints()-start);
+    for (int i = 0; i < this->myGlobalGhostNodeIds.size(); ++i)
+    {
+      this->myGlobalGhostNodeIds[i] = (int) myVtkGlobalNodeIds->GetTuple1(i+start);
+    }
+    std::sort(this->myGlobalGhostNodeIds.begin(), this->myGlobalGhostNodeIds.end());
+  }
+  if (this->myGlobalGhostCellIds.empty())
+  {
+    vtkIdTypeArray* myVtkGlobalCellIds
+      = vtkArrayDownCast<vtkIdTypeArray>(
+          this->ghostCellMesh->getDataSet()->GetCellData()->GetGlobalIds());
+    int start = partitions[me]->getNumberOfCells();
+    this->myGlobalGhostCellIds.resize(this->ghostCellMesh->getNumberOfCells()-start);
+    for (int i = 0; i < this->myGlobalGhostCellIds.size(); ++i)
+    {
+      this->myGlobalGhostCellIds[i] = (int) myVtkGlobalCellIds->GetTuple1(i+start);
+    }
+    std::sort(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end());
+  }
+}
+
+void GhostGenerator::getPconnInformation(int me, int numProcs)
+{
+  this->getGlobalIds(me);
+  this->getGlobalGhostIds(me);
+  // will hold sent cell's indices
+  vtkSmartPointer<vtkIdList> cellIdsList = vtkSmartPointer<vtkIdList>::New();
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
   // for each proc that is not me
   for (int i = 0; i < numProcs; ++i)
   {
@@ -87,24 +133,62 @@ void GhostGenerator::getSharedNodes(int me, int numProcs)
     {
       continue;
     }
-    // get procs global node ids
-    vtkSmartPointer<vtkIdTypeArray> procsVtkGlobalNodeIds
-      = vtkIdTypeArray::FastDownCast(
-          partitions[i]->getDataSet()->GetPointData()->GetGlobalIds());
-    // convert to vector and sort
-    std::vector<int> procsGlobalNodeIds(procsVtkGlobalNodeIds->GetNumberOfTuples());
-    for (int j = 0; j < procsGlobalNodeIds.size(); ++j)
-    {
-      procsGlobalNodeIds[j] = (int) procsVtkGlobalNodeIds->GetTuple1(j);
-    }
-    std::sort(procsGlobalNodeIds.begin(), procsGlobalNodeIds.end());
+    // ------ shared nodes between me and proc i
+    std::vector<int> procsGlobalNodeIds(partitions[i]->getSortedGlobPartNodeIds());
     // compute the intersection and assign to sharedNodes vec
-    std::vector<int> tmpShared;
-    std::set_intersection(myGlobalNodeIds.begin(), myGlobalNodeIds.end(),
+    std::vector<int> tmpVec;
+    std::set_intersection(this->myGlobalNodeIds.begin(), this->myGlobalNodeIds.end(),
                           procsGlobalNodeIds.begin(), procsGlobalNodeIds.end(),
-                          std::back_inserter(this->sharedNodes[i]));
+                          std::back_inserter(tmpVec));//(this->sharedNodes[i]));
+    this->sharedNodes[i].resize(tmpVec.size());
+    // ------ fill shared nodes map and find cells and nodes me sends to proc i
+    for (int j = 0; j < tmpVec.size(); ++j)
+    {
+      cellIdsList->Reset();
+      // get local idx of shared node
+      int localPntId = myGlobToPartNodeMap[tmpVec[j]];
+      // add to sharedNodes with proc i map
+      this->sharedNodes[i][j] = localPntId;
+      // find cells using this shared node
+      partitions[me]->getDataSet()->GetPointCells(localPntId, cellIdsList);
+      // for each cell using shared node (these will be cells on the boundary)
+      for (int k = 0; k < cellIdsList->GetNumberOfIds(); ++k)
+      {
+        // get the local cell idx
+        int localCellId = cellIdsList->GetId(k);
+        // add idx to sentCells to proc i map
+        this->sentCells[i][localCellId] = localCellId;
+        // get the cell for point extraction
+        partitions[me]->getDataSet()->GetCell(localCellId, genCell);
+        for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
+        {
+          // get node idx of cell point
+          int pntCellId = genCell->GetPointId(l);
+          // if node is not found in shared nodes, it is sent 
+          if (std::find(tmpVec.begin(), tmpVec.end(),
+                this->myPartToGlobNodeMap[pntCellId]) == tmpVec.end())
+          {
+            this->sentNodes[i].push_back(pntCellId);
+          } 
+        }
+      }
+    }
+    
+
+    // ------ nodes and cells me recieves from proc i
+    tmpVec.clear();
+    std::set_intersection(this->myGlobalGhostNodeIds.begin(), this->myGlobalGhostNodeIds.end(),
+                          procsGlobalNodeIds.begin(), procsGlobalNodeIds.end(),
+                          std::back_inserter(tmpVec));
+    this->recievedNodesNum[i] = tmpVec.size(); 
+    tmpVec.clear();
+    std::vector<int> procsGlobalCellIds(partitions[i]->getSortedGlobPartCellIds());
+    std::set_intersection(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end(),
+                          procsGlobalCellIds.begin(), procsGlobalCellIds.end(),
+                          std::back_inserter(tmpVec));
   }
 }
+
 
 void GhostGenerator::Execute()
 {
@@ -123,10 +207,9 @@ void GhostGenerator::Execute()
   int me = this->Controller->GetLocalProcessId();
   int go;
   // load partition per process
-  dataSet = partitions[me];
-  if (dataSet->getNumberOfCells() == 0 || dataSet == nullptr)
+  if (partitions[me]->getNumberOfCells() == 0 || partitions[me] == nullptr)
   {
-    if (dataSet)
+    if (partitions[me])
     {
       std::cerr << "Failure: input mesh has no cells" << std::endl;
     }
@@ -141,14 +224,13 @@ void GhostGenerator::Execute()
     this->ReturnValue = 0;
     return;
   }
-  
   // initialize ghost cell generator
   vtkSmartPointer<vtkPUnstructuredGridGhostCellsGenerator> ghostGenerator
     = vtkSmartPointer<vtkPUnstructuredGridGhostCellsGenerator>::New();
   ghostGenerator->SetController(this->Controller);
   ghostGenerator->BuildIfRequiredOff();
   ghostGenerator->SetMinimumNumberOfGhostLevels(1);
-  ghostGenerator->SetInputData(dataSet->getDataSet());
+  ghostGenerator->SetInputData(partitions[me]->getDataSet());
   ghostGenerator->UseGlobalPointIdsOn();
   ghostGenerator->SetGlobalPointIdsArrayName("GlobalNodeIds");
   ghostGenerator->SetHasGlobalCellIds(true);
@@ -156,25 +238,24 @@ void GhostGenerator::Execute()
   ghostGenerator->Update();
   std::stringstream ss1;
   ss1 << "ghostProc" << me << ".vtu";
-  meshBase* ghostCellMesh 
+  this->ghostCellMesh 
     = meshBase::Create(vtkDataSet::SafeDownCast(ghostGenerator->GetOutput()),
                                                 ss1.str());
-  ghostCellMesh->write(); 
-  
-  this->getSharedNodes(me, numProcs); 
- 
-  if (me == 0)
+  this->ghostCellMesh->write(); 
+  this->getPconnInformation(me, numProcs); 
+  if (me == 3)
   {
-
     std::cout << "Checking shared nodes...." << std::endl;
     auto it = this->sharedNodes.begin();
     while ( it != this->sharedNodes.end())
     {
+      std::cout << "Shared with proc " << it->first << " : ";
       for (int i = 0; i < it->second.size(); ++i)
       {
         std::cout << it->second[i] << " ";
       }
       std::cout << std::endl;
+      ++it;
     }
     
     
@@ -195,14 +276,14 @@ void GhostGenerator::Execute()
                              cgObj->getGridCrdPntr(),
                              cgObj->getSolutionPntr());
     cgWrtObj->setZone(cgObj->getZoneName(), cgObj->getZoneType());
-    cgWrtObj->setNVrtx(dataSet->getNumberOfPoints());
-    cgWrtObj->setNCell(dataSet->getNumberOfCells());
+    cgWrtObj->setNVrtx(partitions[me]->getNumberOfPoints());
+    cgWrtObj->setNCell(partitions[me]->getNumberOfCells());
     // define coordinates
     std::vector<std::vector<double>> comp_crds(ghostCellMesh->getVertCrds());
     cgWrtObj->setGridXYZ(comp_crds[0], comp_crds[1], comp_crds[2]);
-    cgWrtObj->setCoordRind(ghostCellMesh->getNumberOfPoints() - dataSet->getNumberOfPoints());
+    cgWrtObj->setCoordRind(ghostCellMesh->getNumberOfPoints() - partitions[me]->getNumberOfPoints());
     // define connectivity
-    std::vector<int> cgConnReal(dataSet->getConnectivities());
+    std::vector<int> cgConnReal(partitions[me]->getConnectivities());
     for (auto it = cgConnReal.begin(); it != cgConnReal.end(); ++it)
     {
       *it += 1;
@@ -216,7 +297,7 @@ void GhostGenerator::Execute()
     cgWrtObj->setSection(cgObj->getSectionName(), 
                          (ElementType_t) cgObj->getElementType(),
                          cgConnReal);
-    cgWrtObj->setNCell(ghostCellMesh->getNumberOfCells() - dataSet->getNumberOfCells());
+    cgWrtObj->setNCell(ghostCellMesh->getNumberOfCells() - partitions[me]->getNumberOfCells());
     cgWrtObj->setSection(":T4:virtual", 
                          (ElementType_t) cgObj->getElementType(),
                          cgConnVirtual);
@@ -224,15 +305,14 @@ void GhostGenerator::Execute()
     delete cgObj;
     delete cgWrtObj;
   }
-  delete ghostCellMesh;
 }
 
 
 RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
 {
   // load full volume mesh and create METIS partitions
-  meshBase* mesh = meshBase::Create(fname);
-  std::vector<meshBase*> partitions(meshBase::partition(mesh, numPartitions)); 
+  mesh = meshBase::Create(fname);
+  partitions = meshBase::partition(mesh, numPartitions); 
   // create single process
   vtkSmartPointer<GhostGenerator> p = vtkSmartPointer<GhostGenerator>::New();
   p->setPartitions(partitions);
@@ -251,37 +331,23 @@ RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
     exit(1);
   }
   controller->Finalize();
-  delete mesh;
 }
 
-RocPrepDriver::RocPrepDriver(const std::vector<std::string>& fnames)
+RocPrepDriver::~RocPrepDriver()
 {
-  std::vector<meshBase*> partitions;
-  int numPoints = 0;
-  for (int i = 0; i < fnames.size(); ++i)
+  if (mesh)
   {
-    partitions.push_back(meshBase::Create(fnames[i]));
-    numPoints += partitions[i]->getNumberOfPoints();
-  }
-
-  // create single process
-  vtkSmartPointer<GhostGenerator> p = vtkSmartPointer<GhostGenerator>::New();
-  p->setPartitions(partitions);
-  // intialize mpi
-  MPI_Init(NULL,NULL);
-  // initialize controller 
-  vtkSmartPointer<vtkMPIController> controller
-    = vtkSmartPointer<vtkMPIController>::New();
-  controller->Initialize();
-  vtkMultiProcessController::SetGlobalController(controller);
-  // pass single process to controller
-  controller->SetSingleProcessObject(p);
-  controller->SingleMethodExecute();
-  if(!p->GetReturnValue())
+    delete mesh;
+    mesh = nullptr;
+  } 
+  if (!partitions.empty())
   {
-    exit(1);
+    for (int i = 0; i < partitions.size(); ++i)
+    {
+      delete partitions[i];
+      partitions[i] = nullptr;
+    }
   }
-  controller->Finalize();
 }
 
 RocPrepDriver* RocPrepDriver::readJSON(json inputjson)
@@ -307,13 +373,6 @@ RocPrepDriver* RocPrepDriver::readJSON(json inputjson)
   //  ++i;
   //}
   //return new RocPrepDriver(case_dir, base_t, prefixes, fname, numPartitions); 
-  // recreate testing
-//  std::vector<std::string> fnames;
-//  fnames.push_back(inputjson["Grid 1"].as<std::string>());
-//  fnames.push_back(inputjson["Grid 2"].as<std::string>());
-//  fnames.push_back(inputjson["Grid 3"].as<std::string>());
-//  fnames.push_back(inputjson["Grid 4"].as<std::string>());
-//  return new RocPrepDriver(fnames);
 }
 
 std::vector<std::string> getCgFNames(const std::string& case_dir, 
