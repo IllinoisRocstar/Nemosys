@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <map>
 
 // Nemosys
 #include <ConversionDriver.H>
@@ -383,17 +384,20 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
   meshBase* mb = meshBase::Create(fname); 
   meshSrch* ms = meshSrch::Create(mb); 
 
-
   // performing requested operation
   std::string opr = ppJson.get_with_default("Operation", "");
   if (!opr.compare("Material Assignment"))
   {
+      // gathering information about all zones
+      std::map<std::string, std::set<int> > zoneGeom;
       json zones = ppJson["Zones"];
       int nZn = zones.size();
-      for (int iZn=0; iZn<20; iZn++)
+      for (int iZn=0; iZn<nZn; iZn++)
       {
-          std::string znName = "Zone"+std::to_string(iZn);
-          json znInfo = zones[iZn][znName];
+          // assuming first element is zone infomration
+          // keyed by zone name that we do not care about
+          // yet
+          json znInfo = zones[iZn][0];
           std::string matName = znInfo.get_with_default("Material Name","N/A");
           std::string shape = znInfo.get_with_default("Shape","N/A");
           std::cout <<"Processing zone "<<iZn<<" Material "<<matName<<" Shape "<<shape<<std::endl;
@@ -407,15 +411,22 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
               bb.push_back( znInfo["Params"]["Max"][1].as<double>() ); 
               bb.push_back( znInfo["Params"]["Min"][2].as<double>() ); 
               bb.push_back( znInfo["Params"]["Max"][2].as<double>() ); 
+              
               std::vector<int> lst;
-              ms->FindCellsWithinBounds(bb, lst, true); 
-              em->addElmBlkByElmIdLst(matName, lst);
+              ms->FindCellsWithinBounds(bb, lst, true);
+              zoneGeom[matName].insert(lst.begin(), lst.end());
+              
           }
           else
-          {
-              std::cout << "WARNNING: Skipiing unkown zone shape: " << shape << std::endl; 
-          }
+              std::cout << "WARNNING: Skipiing unkown zone shape: " << shape << std::endl;     
+      }
 
+      // adjusting exodus database accordingly
+      for (auto it1=zoneGeom.begin(); it1!=zoneGeom.end(); it1++)
+      {
+          std::vector<int> elmLst;
+          elmLst.insert(elmLst.end(), (it1->second).begin(), (it1->second).end());
+          em->addElmBlkByElmIdLst(it1->first, elmLst);
       }
   }
   else
