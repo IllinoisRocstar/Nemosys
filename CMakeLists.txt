@@ -36,13 +36,14 @@ FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
+opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 opt(TESTING "Enable testing" ON)
 opt(BUILD_UTILS "Build utilities" OFF)
 
 # set up version
 SET(NEMOSYS_MAJOR_VERSION 1)
-SET(NEMOSYS_MINOR_VERSION 2)
+SET(NEMOSYS_MINOR_VERSION 3)
 SET(NEMOSYS_PATCH_VERSION 0)
 SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -83,7 +84,6 @@ FIND_LIBRARY(NETGEN_LIB nglib HINTS ${CMAKE_INSTALL_PREFIX}/netgen/lib/)
 FIND_FILE(NETGEN_HDR nglib.h HINTS ${CMAKE_INSTALL_PREFIX}/netgen/include/include)
 GET_FILENAME_COMPONENT(NETGEN_INCPATH ${NETGEN_HDR} PATH)
 MESSAGE(STATUS "netgen include path ${NETGEN_INCPATH}")
-
 
 IF (ENABLE_DTK)
   FIND_PACKAGE(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos ${TRILINOS_PATH})
@@ -162,6 +162,11 @@ IF (ENABLE_EXODUS)
     SET(NEMOSYS_LNK ${NEMOSYS_LNK} ${EXO_LIB})
 ENDIF()
 
+IF (ENABLE_EPIC)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EPIC")
+ENDIF()
+
+
 # Setting files   ###############################################################
 # Install include files
 FILE(GLOB H_FILES include/*.H)
@@ -186,10 +191,18 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
                  src/SolutionVerification/OrderOfAccuracy.C
-                 src/Mesh/meshSrch.C )
+                 src/Mesh/meshSrch.C
+                 src/InputGeneration/inputGen.C
+                 src/Drivers/InputGenDriver.C)
+
+# optinal source files
 IF (ENABLE_EXODUS)
     SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
 ENDIF()
+IF (ENABLE_EPIC)
+    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
+ENDIF()
+
 SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                 src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
