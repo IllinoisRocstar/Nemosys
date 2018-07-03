@@ -53,18 +53,26 @@ class GhostGenerator : public vtkProcess
     std::vector<int> myGlobalCellIds;           // global cell indices of partition
     std::vector<int> myGlobalGhostCellIds;      // global ghost cell indices of partition
     std::map<int, std::vector<int>> sharedNodes;// <proc, shared nodes>
-    std::map<int, std::unordered_set<int>> sentNodes;  // <proc, sent nodes> 
-    std::map<int, std::unordered_set<int>> sentCells;// <proc, sent cells>
+    std::map<int, std::unordered_set<int>> sentNodes; // <proc, sent nodes> 
+    std::map<int, std::unordered_set<int>> sentCells; // <proc, sent cells>
     std::map<int, int> recievedNodesNum;        // <proc, num recieved nodes>
     std::map<int, int> recievedCellsNum;        // <proc, num recieved cells>
     std::map<int,int> myGlobToPartNodeMap;      // <global nodeId, local nodeId>
     std::map<int,int> myPartToGlobNodeMap;      // <local nodeId, global nodeId>
-    
+    std::vector<int> pConnVec;                  // pConn vector for rocstar
+     
+ 
     // populates the vectors and maps above
     void getPconnInformation(int me, int numProcs);
     // helpers to get pconn
     void getGlobalIds(int me);
     void getGlobalGhostIds(int me); 
+
+    // write pconn vec
+    void writeSharedToPconn(const std::string& type);
+    void writeSentToPconn(const std::string& type, bool nodeOrCell);
+    void writeRecievedToPconn(const std::string& type, int me, bool nodeOrCell);
+
 
 };
 
@@ -192,6 +200,109 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
 	}
 }
 
+void GhostGenerator::writeSharedToPconn(const std::string& type)
+{
+  auto sharedItr = this->sharedNodes.begin();
+  while ( sharedItr != this->sharedNodes.end())
+  {
+    if (sharedItr->second.size() != 0)
+    {
+      // num blocks
+      pConnVec.push_back(1);
+      std::stringstream ss;
+      ss << sharedItr->first + 1 << type;
+      // zone number
+      pConnVec.push_back(std::stoi(ss.str()));
+      // number of ids
+      pConnVec.push_back(sharedItr->second.size());
+      // indices 
+      for (int i = 0; i < sharedItr->second.size(); ++i)
+      {
+        pConnVec.push_back(sharedItr->second[i] + 1);
+      }
+    }
+    ++sharedItr;
+  }
+}
+
+void GhostGenerator::writeSentToPconn(const std::string& type, bool nodeOrCell)
+{
+  std::map<int, std::unordered_set<int>>::iterator sentItr;
+  std::map<int, std::unordered_set<int>>::iterator end;
+  if (!nodeOrCell)
+  {
+    sentItr = this->sentNodes.begin();
+    end = this->sentNodes.end();
+  }
+  else
+  {
+    sentItr = this->sentCells.begin();
+    end = this->sentCells.end();
+  }
+  while (sentItr != end)
+  {
+    if (sentItr->second.size() != 0)
+    {
+      // num blocks
+      pConnVec.push_back(1);
+      std::stringstream ss;
+      ss << sentItr->first + 1 << type;
+      // zone number
+      pConnVec.push_back(std::stoi(ss.str()));
+      // number of ids
+      pConnVec.push_back(sentItr->second.size());
+      // indices
+  	  auto tmpIt = sentItr->second.begin();
+  	  while (tmpIt != sentItr->second.end())
+  	  {
+        pConnVec.push_back(*tmpIt + 1);
+  	  	++tmpIt;
+  	  }
+    }	
+  	++sentItr;
+  }
+}
+
+void GhostGenerator::writeRecievedToPconn(const std::string& type, int me, bool nodeOrCell)
+{
+  std::map<int, int>::iterator recievedItr;
+  std::map<int, int>::iterator end;
+  int offset;
+  if (!nodeOrCell)
+  {
+    recievedItr = this->recievedNodesNum.begin();
+    end = this->recievedNodesNum.end();
+    offset = partitions[me]->getNumberOfPoints(); 
+  }
+  else
+  {
+    recievedItr = this->recievedCellsNum.begin();
+    end = this->recievedCellsNum.end();
+    offset = partitions[me]->getNumberOfCells();
+  }
+  int numPrevRecieved = 0;
+  while (recievedItr != end)
+  {
+    if (recievedItr->second != 0)
+    {
+      // num blocks
+      pConnVec.push_back(1);
+      std::stringstream ss;
+      ss << recievedItr->first + 1 << type;
+      // zone number
+      pConnVec.push_back(std::stoi(ss.str()));
+      // number of ids
+      pConnVec.push_back(recievedItr->second);
+      for (int i = 1; i <= recievedItr->second; ++i)
+      {
+        int id = offset + numPrevRecieved + i;
+        pConnVec.push_back(id);
+      }
+      numPrevRecieved += recievedItr->second;
+    }
+  	++recievedItr;
+  }
+}
 
 void GhostGenerator::Execute()
 {
@@ -248,34 +359,6 @@ void GhostGenerator::Execute()
   this->getPconnInformation(me, numProcs); 
   if (me == 1)
   {
-    std::cout << "Checking shared nodes...." << std::endl;
-    auto it = this->sharedNodes.begin();
-    while ( it != this->sharedNodes.end())
-    {
-      std::cout << "Nodes shared with proc " << it->first << " : ";
-      for (int i = 0; i < it->second.size(); ++i)
-      {
-        std::cout << it->second[i] << " ";
-      }
-      std::cout << std::endl;
-      ++it;
-    }
-
-
-		std::cout << "Checking sent nodes...." << std::endl;
-		auto it2 = this->sentNodes.begin();
-		while (it2 != this->sentNodes.end())
-		{
-			std::cout << "Nodes sent to proc " << it2->first << " : ";
-			auto it3 = it2->second.begin();
-			while (it3 != it2->second.end())
-			{
-				std::cout << *it3 <<  " ";
-				++it3;
-			}
-			std::cout << std::endl;	
-			++it2;
-		}
 
 		auto it1 = this->recievedNodesNum.begin();
 		while (it1 != this->recievedNodesNum.end())
@@ -284,30 +367,6 @@ void GhostGenerator::Execute()
 			std::cout << it1->second << std::endl;;
 			++it1;
 		} 	
-   
-		std::cout << "Checking sent cells...." << std::endl;
-		it2 = this->sentCells.begin();
-		while (it2 != this->sentCells.end())
-		{
-			std::cout << "Cells sent to proc " << it2->first << " : ";
-			auto it3 = it2->second.begin();
-			while (it3 != it2->second.end())
-			{
-				std::cout << *it3 <<  " ";
-				++it3;
-			}
-			std::cout << std::endl;	
-			++it2;
-		}
-		
-		it1 = this->recievedCellsNum.begin();
-		while (it1 != this->recievedCellsNum.end())
-		{
-			std::cout << "Num cells recieved from proc " << it1->first << " : ";
-			std::cout << it1->second << std::endl;
-			++it1;
-		}
- 
     // write cgns file
     
     cgnsAnalyzer* cgObj = new cgnsAnalyzer("fluid-grid_00.000000_00001.cgns");
@@ -324,6 +383,22 @@ void GhostGenerator::Execute()
     cgWrtObj->setZoneItrData(cgObj->getZoneItrName(),
                              cgObj->getGridCrdPntr(),
                              cgObj->getSolutionPntr());
+    //std::string part = cgObj->getZoneName().substr(0,2);
+    std::string type = cgObj->getZoneName().substr(2,3);
+    //std::cout << "Part and type: " << part << " " << type << std::endl;
+    //std::cout << "zone as int " << std::stoi(cgObj->getZoneName()) << std::endl;
+     
+ 
+    this->writeSharedToPconn(type);
+    int notGhostDescriptor = pConnVec.size();
+    this->writeSentToPconn(type,0);    
+    this->writeRecievedToPconn(type,me,0);
+    this->writeSentToPconn(type,1);
+    this->writeRecievedToPconn(type,me,1);
+    int ghostDescriptor = pConnVec.size() - notGhostDescriptor;
+    cgWrtObj->setPconnGhostDescriptor(ghostDescriptor);
+    printVec(pConnVec);
+
     cgWrtObj->setZone(cgObj->getZoneName(), cgObj->getZoneType());
     cgWrtObj->setNVrtx(partitions[me]->getNumberOfPoints());
     cgWrtObj->setNCell(partitions[me]->getNumberOfCells());
@@ -350,6 +425,8 @@ void GhostGenerator::Execute()
     cgWrtObj->setSection(":T4:virtual", 
                          (ElementType_t) cgObj->getElementType(),
                          cgConnVirtual);
+    cgWrtObj->setVirtElmRind(ghostCellMesh->getNumberOfCells() - partitions[me]->getNumberOfCells());
+    cgWrtObj->setPconnVec(pConnVec);
     cgWrtObj->writeGridToFile();
     delete cgObj;
     delete cgWrtObj;
@@ -360,11 +437,11 @@ void GhostGenerator::Execute()
 RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
 {
   // load full volume mesh and create METIS partitions
-  mesh = meshBase::Create(fname);
-  partitions = meshBase::partition(mesh, numPartitions); 
+  this->mesh = meshBase::Create(fname);
+  this->partitions = meshBase::partition(mesh, numPartitions); 
   // create single process
   vtkSmartPointer<GhostGenerator> p = vtkSmartPointer<GhostGenerator>::New();
-  p->setPartitions(partitions);
+  p->setPartitions(this->partitions);
   // intialize mpi
   MPI_Init(NULL,NULL);
   // initialize controller 
@@ -432,3 +509,63 @@ std::vector<std::string> getCgFNames(const std::string& case_dir,
   names << case_dir << "/" << prefix << "*" << base_t << "*.cgns";
   return nemAux::glob(names.str());
 }
+    //auto it = this->sharedNodes.begin();
+    //std::cout << "Checking shared nodes...." << std::endl;
+    //while ( it != this->sharedNodes.end())
+    //{
+    //  std::cout << "Nodes shared with proc " << it->first << " : ";
+    //  for (int i = 0; i < it->second.size(); ++i)
+    //  {
+    //    std::cout << it->second[i] << " ";
+    //  }
+    //  std::cout << std::endl;
+    //  ++it;
+    //}
+
+
+		//std::cout << "Checking sent nodes...." << std::endl;
+		//auto it2 = this->sentNodes.begin();
+		//while (it2 != this->sentNodes.end())
+		//{
+		//	std::cout << "Nodes sent to proc " << it2->first << " : ";
+		//	auto it3 = it2->second.begin();
+		//	while (it3 != it2->second.end())
+		//	{
+		//		std::cout << *it3 <<  " ";
+		//		++it3;
+		//	}
+		//	std::cout << std::endl;	
+		//	++it2;
+		//}
+
+		//auto it1 = this->recievedNodesNum.begin();
+		//while (it1 != this->recievedNodesNum.end())
+		//{
+		//	std::cout << "Num nodes recieved from proc " << it1->first << " : ";	
+		//	std::cout << it1->second << std::endl;;
+		//	++it1;
+		//} 	
+   
+		//std::cout << "Checking sent cells...." << std::endl;
+		//it2 = this->sentCells.begin();
+		//while (it2 != this->sentCells.end())
+		//{
+		//	std::cout << "Cells sent to proc " << it2->first << " : ";
+		//	auto it3 = it2->second.begin();
+		//	while (it3 != it2->second.end())
+		//	{
+		//		std::cout << *it3 <<  " ";
+		//		++it3;
+		//	}
+		//	std::cout << std::endl;	
+		//	++it2;
+		//}
+		//
+		//it1 = this->recievedCellsNum.begin();
+		//while (it1 != this->recievedCellsNum.end())
+		//{
+		//	std::cout << "Num cells recieved from proc " << it1->first << " : ";
+		//	std::cout << it1->second << std::endl;
+		//	++it1;
+		//}
+ 

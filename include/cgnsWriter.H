@@ -34,7 +34,7 @@ public:
   cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim) :
   myCgFileName(fname), cellDim(cellDim), physDim(physDim),
   baseName(baseName), nBase(1), nZone(0), nSection(0),
-  nVrtx(0), nCell(0), nSlnFld(0), coordRind(0), 
+  nVrtx(0), nCell(0), nSlnFld(0), coordRind(0),virtElmRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
     if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
@@ -51,6 +51,9 @@ public:
   void setNCell(int nCl);
   void setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z);
   void setCoordRind(int rind);  
+  void setVirtElmRind(int rind); 
+  void setPconnVec(const vect<int>::v1d& pConnVec); 
+  void setPconnGhostDescriptor(int ghostDescriptor);
   void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
@@ -76,6 +79,9 @@ private:
   int nSection;
   int nVrtxElem;
   int coordRind;
+  int virtElmRind;
+  int pConnGhostDescriptor;
+  vect<int>::v1d pConnVec;
   vect<int>::v1d elmConn;
   // units
   MassUnits_t massU;

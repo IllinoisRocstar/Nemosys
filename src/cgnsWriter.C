@@ -71,6 +71,20 @@ void cgnsWriter::setCoordRind(int rind)
   coordRind = rind;
 }
 
+void cgnsWriter::setVirtElmRind(int rind)
+{
+  virtElmRind = rind;
+}
+
+void cgnsWriter::setPconnGhostDescriptor(int ghostDescriptor)
+{
+  pConnGhostDescriptor = ghostDescriptor;
+}
+
+void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
+{
+  pConnVec = _pConnVec;
+}
 void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
 {
   if (slnLoc == Vertex)
@@ -215,6 +229,7 @@ void cgnsWriter::writeZoneToFile()
     if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,"GridCoordinates",0,"end")) cg_error_exit();
     if (cg_rind_write(rindArr)) cg_error_exit();
   }
+
   // write coordinates + range, dimensional exponent, units
   float dimUnits[5] = {0, 1, 0, 0, 0};
   // x
@@ -279,7 +294,59 @@ void cgnsWriter::writeZoneToFile()
     if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                          sectionTypes[iSec], elm_start, elm_end, nBdy, 
                          &elmConns[iSec][0], &indexSection)) cg_error_exit();
+    // set virtual rind
+    if (!sectionNames[iSec].compare(":T4:virtual"))
+    {
+      if (virtElmRind)
+      {
+        int rindArr[2] = {0,virtElmRind};
+        if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,":T4:virtual",0,"end")) cg_error_exit();
+        if (cg_rind_write(rindArr)) cg_error_exit();
+      }
+    }
   }
+
+  // create pane data node
+  if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,0,"end")) cg_error_exit();
+  if (cg_integral_write("PaneData0")) cg_error_exit();
+  // write pconn (and ridges)
+  if (!pConnVec.empty())
+  {
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0", 0,"end")) cg_error_exit();
+    cgsize_t tmpDim[1] = {pConnVec.size()};
+    if (cg_array_write("pconn",Integer,1, tmpDim, &pConnVec[0])) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0", 0, "pconn",0,"end")) 
+      cg_error_exit();
+    min = *std::min_element(pConnVec.begin(),pConnVec.end());
+    max = *std::max_element(pConnVec.begin(),pConnVec.end());
+    os.str("");
+    os.clear();
+    os << min << ", " << max;
+    str = os.str();
+    if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
+    os.str("");
+    os.clear();
+    os << pConnGhostDescriptor;
+    str = os.str();
+    if (cg_descriptor_write("Ghost", str.c_str())) cg_error_exit();
+    tmpDim[0] = 1;
+    int ridge[1] = {0};
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0", 0,"end")) cg_error_exit();
+    if (cg_array_write("ridges#1of2", Integer,1,tmpDim,ridge)) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0",0,"ridges#1of2",0,"end")) 
+      cg_error_exit();
+    if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
+    if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0",0,"end")) cg_error_exit();
+    if (cg_array_write("ridges#2of2", Integer,1,tmpDim,ridge)) cg_error_exit();  
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "PaneData0",0,"ridges#2of2",0,"end")) 
+      cg_error_exit();
+    if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
+    if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
+  }
+  
+
+
   // write solution data
   for (auto is=solutionNameLocMap.begin(); is!= solutionNameLocMap.end(); is++)
   {
