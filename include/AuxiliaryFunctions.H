@@ -126,6 +126,19 @@ inline std::string trim_fname(std::string name, std::string ext);
 // find file extension
 inline std::string find_ext(std::string fname);
 
+// to lower
+inline std::string toLower(std::string str);
+
+// to upper
+inline std::string toUpper(std::string str);
+
+// return from begining to the location of str
+inline std::string findToStr(std::string str, std::string ptrn);
+
+// return from the location of str
+inline std::string findFromStr(std::string str, std::string ptrn);
+
+
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
@@ -425,6 +438,35 @@ inline std::string find_ext(std::string fname)
   }
 
 }
+
+// to lower
+inline std::string toLower(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower); 
+    return(str);
+}
+
+// to upper
+inline std::string toUpper(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper); 
+    return(str);
+}
+
+// return from begining to the location of str
+inline std::string findToStr(std::string str, std::string ptrn)
+{
+  size_t loc = str.find_first_of(ptrn);
+  return(str.substr(0,loc)); 
+}
+
+// return from the location of str
+inline std::string findFromStr(std::string str, std::string ptrn)
+{
+  size_t loc = str.find_first_of(ptrn);
+  return(str.substr(loc,std::string::npos)); 
+}
+
 // print vector
 template<typename T>
 void printVec(const std::vector<T>& v)
