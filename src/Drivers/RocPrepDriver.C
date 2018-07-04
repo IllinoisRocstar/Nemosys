@@ -55,8 +55,8 @@ class GhostGenerator : public vtkProcess
     std::map<int, std::vector<int>> sharedNodes;// <proc, shared nodes>
     std::map<int, std::unordered_set<int>> sentNodes; // <proc, sent nodes> 
     std::map<int, std::unordered_set<int>> sentCells; // <proc, sent cells>
-    std::map<int, int> recievedNodesNum;        // <proc, num recieved nodes>
-    std::map<int, int> recievedCellsNum;        // <proc, num recieved cells>
+    std::map<int, int> receivedNodesNum;        // <proc, num received nodes>
+    std::map<int, int> receivedCellsNum;        // <proc, num received cells>
     std::map<int,int> myGlobToPartNodeMap;      // <global nodeId, local nodeId>
     std::map<int,int> myPartToGlobNodeMap;      // <local nodeId, global nodeId>
     std::vector<int> pConnVec;                  // pConn vector for rocstar
@@ -71,7 +71,7 @@ class GhostGenerator : public vtkProcess
     // write pconn vec
     void writeSharedToPconn(const std::string& type);
     void writeSentToPconn(const std::string& type, bool nodeOrCell);
-    void writeRecievedToPconn(const std::string& type, int me, bool nodeOrCell);
+    void writeReceivedToPconn(const std::string& type, int me, bool nodeOrCell);
 
 
 };
@@ -185,18 +185,18 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
         }
       }
     }
-    // ------ nodes and cells me recieves from proc i
+    // ------ nodes and cells me receives from proc i
     tmpVec.clear();
     std::set_intersection(this->myGlobalGhostNodeIds.begin(), this->myGlobalGhostNodeIds.end(),
                           procsGlobalNodeIds.begin(), procsGlobalNodeIds.end(),
                           std::back_inserter(tmpVec));
-    this->recievedNodesNum[i] = tmpVec.size(); 
+    this->receivedNodesNum[i] = tmpVec.size(); 
     tmpVec.clear();
     std::vector<int> procsGlobalCellIds(partitions[i]->getSortedGlobPartCellIds());
     std::set_intersection(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end(),
                           procsGlobalCellIds.begin(), procsGlobalCellIds.end(),
                           std::back_inserter(tmpVec));
-  	this->recievedCellsNum[i] = tmpVec.size();
+  	this->receivedCellsNum[i] = tmpVec.size();
 	}
 }
 
@@ -263,44 +263,51 @@ void GhostGenerator::writeSentToPconn(const std::string& type, bool nodeOrCell)
   }
 }
 
-void GhostGenerator::writeRecievedToPconn(const std::string& type, int me, bool nodeOrCell)
+void GhostGenerator::writeReceivedToPconn(const std::string& type, int me, bool nodeOrCell)
 {
-  std::map<int, int>::iterator recievedItr;
-  std::map<int, int>::iterator end;
+
   int offset;
+  int end;
+  vtkSmartPointer<vtkDataArray> partitionIds;
   if (!nodeOrCell)
   {
-    recievedItr = this->recievedNodesNum.begin();
-    end = this->recievedNodesNum.end();
-    offset = partitions[me]->getNumberOfPoints(); 
+    offset = partitions[me]->getNumberOfPoints();
+    partitionIds = this->ghostCellMesh->getDataSet()->GetPointData()->GetArray("NodePartitionIds");
+    end = ghostCellMesh->getNumberOfPoints();
   }
   else
   {
-    recievedItr = this->recievedCellsNum.begin();
-    end = this->recievedCellsNum.end();
     offset = partitions[me]->getNumberOfCells();
+    partitionIds = this->ghostCellMesh->getDataSet()->GetCellData()->GetArray("CellPartitionIds");
+    end = ghostCellMesh->getNumberOfCells();
   }
-  int numPrevRecieved = 0;
-  while (recievedItr != end)
+
+  while ( offset < end )
   {
-    if (recievedItr->second != 0)
+    std::cout << "offset " << offset << std::endl;
+    double tmp[1];
+    partitionIds->GetTuple(offset, tmp);
+    int ghostProcId = (int) tmp[0];
+    // num blocks
+    pConnVec.push_back(1);
+    std::stringstream ss;
+    ss << ghostProcId + 1 << type;
+    // zone number
+    pConnVec.push_back(std::stoi(ss.str()));
+    std::cout << "zone: " << ss.str() << std::endl;
+    std::cout << "ghostprocid : " << ghostProcId+1 << std::endl;
+    // number of ids
+    int numRecieved = (!nodeOrCell ?
+                        this->receivedNodesNum[ghostProcId] :
+                        this->receivedCellsNum[ghostProcId]);
+    std::cout << "num recieved " << numRecieved << std::endl;
+    //std::cout << "offset " << offset << std::endl;
+    pConnVec.push_back(numRecieved);
+    for (int id = offset; id < numRecieved + offset; ++id)
     {
-      // num blocks
-      pConnVec.push_back(1);
-      std::stringstream ss;
-      ss << recievedItr->first + 1 << type;
-      // zone number
-      pConnVec.push_back(std::stoi(ss.str()));
-      // number of ids
-      pConnVec.push_back(recievedItr->second);
-      for (int i = 1; i <= recievedItr->second; ++i)
-      {
-        int id = offset + numPrevRecieved + i;
-        pConnVec.push_back(id);
-      }
-      numPrevRecieved += recievedItr->second;
+      pConnVec.push_back(id+1);
     }
-  	++recievedItr;
+    offset += numRecieved;
   }
 }
 
@@ -360,13 +367,13 @@ void GhostGenerator::Execute()
   if (me == 1)
   {
 
-		auto it1 = this->recievedNodesNum.begin();
-		while (it1 != this->recievedNodesNum.end())
+		/*auto it1 = this->receivedNodesNum.begin();
+		while (it1 != this->receivedNodesNum.end())
 		{
-			std::cout << "Num nodes recieved from proc " << it1->first << " : ";	
+			std::cout << "Num nodes received from proc " << it1->first << " : ";	
 			std::cout << it1->second << std::endl;;
 			++it1;
-		} 	
+		} */	
     // write cgns file
     
     cgnsAnalyzer* cgObj = new cgnsAnalyzer("fluid-grid_00.000000_00001.cgns");
@@ -383,18 +390,18 @@ void GhostGenerator::Execute()
     cgWrtObj->setZoneItrData(cgObj->getZoneItrName(),
                              cgObj->getGridCrdPntr(),
                              cgObj->getSolutionPntr());
-    //std::string part = cgObj->getZoneName().substr(0,2);
+    std::string part = cgObj->getZoneName().substr(0,2);
     std::string type = cgObj->getZoneName().substr(2,3);
-    //std::cout << "Part and type: " << part << " " << type << std::endl;
-    //std::cout << "zone as int " << std::stoi(cgObj->getZoneName()) << std::endl;
+    std::cout << "Part and type: " << part << " " << type << std::endl;
+    std::cout << "zone as int " << std::stoi(cgObj->getZoneName()) << std::endl;
      
  
     this->writeSharedToPconn(type);
     int notGhostDescriptor = pConnVec.size();
     this->writeSentToPconn(type,0);    
-    this->writeRecievedToPconn(type,me,0);
+    this->writeReceivedToPconn(type,me,0);
     this->writeSentToPconn(type,1);
-    this->writeRecievedToPconn(type,me,1);
+    this->writeReceivedToPconn(type,me,1);
     int ghostDescriptor = pConnVec.size() - notGhostDescriptor;
     cgWrtObj->setPconnGhostDescriptor(ghostDescriptor);
     printVec(pConnVec);
@@ -538,10 +545,10 @@ std::vector<std::string> getCgFNames(const std::string& case_dir,
 		//	++it2;
 		//}
 
-		//auto it1 = this->recievedNodesNum.begin();
-		//while (it1 != this->recievedNodesNum.end())
+		//auto it1 = this->receivedNodesNum.begin();
+		//while (it1 != this->receivedNodesNum.end())
 		//{
-		//	std::cout << "Num nodes recieved from proc " << it1->first << " : ";	
+		//	std::cout << "Num nodes received from proc " << it1->first << " : ";	
 		//	std::cout << it1->second << std::endl;;
 		//	++it1;
 		//} 	
@@ -561,10 +568,10 @@ std::vector<std::string> getCgFNames(const std::string& case_dir,
 		//	++it2;
 		//}
 		//
-		//it1 = this->recievedCellsNum.begin();
-		//while (it1 != this->recievedCellsNum.end())
+		//it1 = this->receivedCellsNum.begin();
+		//while (it1 != this->receivedCellsNum.end())
 		//{
-		//	std::cout << "Num cells recieved from proc " << it1->first << " : ";
+		//	std::cout << "Num cells received from proc " << it1->first << " : ";
 		//	std::cout << it1->second << std::endl;
 		//	++it1;
 		//}
