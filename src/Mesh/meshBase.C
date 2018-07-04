@@ -241,11 +241,13 @@ int meshBase::transfer(meshBase* target, std::string method)
 // partition mesh into numPartition pieces (static fcn)
 std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numPartitions)
 {
+  // construct partitioner with meshBase object
   meshPartitioner* mPart = new meshPartitioner(mbObj);
   if (mPart->partition(numPartitions))
   {
     exit(1); 
   }
+  // initialize vector of meshBase partitions
   std::vector<meshBase*> mbParts(numPartitions); 
   for (int i = 0; i < numPartitions; ++i)
   {
@@ -260,10 +262,26 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     std::string basename(trim_fname(mbObj->getFileName(), ""));
     basename += std::to_string(i);
     basename += ".vtu";
+    // construct meshBase partition from coordinates and connectivities from partitioner
     meshBase* mbPart = meshBase::Create(mPart->getCrds(i, comp_crds[0]),
                                         mPart->getCrds(i, comp_crds[1]),
                                         mPart->getCrds(i, comp_crds[2]),
                                         vtkConn, VTK_TETRA, basename);
+    // add partition id to node and cell data of mbPart
+    vtkSmartPointer<vtkIntArray> nodePartitionIds = vtkSmartPointer<vtkIntArray>::New();
+    nodePartitionIds->SetName("NodePartitionIds");
+    nodePartitionIds->SetNumberOfComponents(1);
+    nodePartitionIds->SetNumberOfTuples(mbPart->getNumberOfPoints());
+    nodePartitionIds->FillComponent(0, i);
+    mbPart->getDataSet()->GetPointData()->AddArray(nodePartitionIds);
+
+    vtkSmartPointer<vtkIntArray> cellPartitionIds = vtkSmartPointer<vtkIntArray>::New();
+    cellPartitionIds->SetName("CellPartitionIds");
+    cellPartitionIds->SetNumberOfComponents(1);
+    cellPartitionIds->SetNumberOfTuples(mbPart->getNumberOfCells());
+    cellPartitionIds->FillComponent(0, i);
+    mbPart->getDataSet()->GetCellData()->AddArray(cellPartitionIds);
+
     // add global node index array to partition
     std::map<int,int> partToGlobNodeMap(mPart->getPartToGlobNodeMap(i)); 
     vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
