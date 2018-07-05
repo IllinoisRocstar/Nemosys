@@ -1,4 +1,5 @@
 #include <RefineDriver.H>
+#include <AuxiliaryFunctions.H>
 
 // -------------------------------- Refine Driver -------------------------------------//
 RefineDriver::RefineDriver(std::string _mesh, std::string method, std::string arrayName,

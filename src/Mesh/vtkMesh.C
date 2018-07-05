@@ -31,7 +31,8 @@
 #include <vtkCellIterator.h>
 #include <vtkRectilinearGrid.h>
 #include <vtkImageData.h>
-
+#include <AuxiliaryFunctions.H>
+using namespace nemAux;
 
 void vtkMesh::write()
 {

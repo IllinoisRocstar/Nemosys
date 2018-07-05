@@ -30,6 +30,9 @@ namespace nglib
 // stl
 #include <algorithm>
 
+// aux
+#include <AuxiliaryFunctions.H>
+
 // TODO: Stop using setPoint/CellDataArray in export methods
 //        - instead, use the faster vtkDataArray creation and insertion
 
@@ -335,7 +338,8 @@ meshBase::integrateOverMesh(const std::vector<int>& arrayIDs)
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin, double sizeFactor)
 {
   std::cout << "Size Factor = " << sizeFactor << std::endl;
-  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
+  std::unique_ptr<SizeFieldBase> sfobj 
+    = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
   sfobj->setSizeFactor(sizeFactor);
   sfobj->computeSizeField(arrayID);
 }

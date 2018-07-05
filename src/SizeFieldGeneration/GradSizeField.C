@@ -1,6 +1,7 @@
 #include <GradSizeField.H>
 #include <vtkCell.h>
 #include <vtkIdList.h>
+#include <AuxiliaryFunctions.H>
 
 // constructor
 GradSizeField::GradSizeField(meshBase* _mesh, int arrayID,double _dev_mult, bool _maxIsmin)

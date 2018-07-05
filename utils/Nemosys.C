@@ -1,4 +1,5 @@
 #include <NemDriver.H>
+#include <AuxiliaryFunctions.H>
 
 int main(int argc, char* argv[])
 {

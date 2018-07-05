@@ -1,4 +1,5 @@
 #include <TransferDriver.H>
+#include <AuxiliaryFunctions.H>
 
 //----------------------- Transfer Driver -----------------------------------------//
 TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,

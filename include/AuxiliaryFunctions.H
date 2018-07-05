@@ -63,83 +63,70 @@ std::vector<T> flatten(const std::vector<std::vector<T>>& v);
 template <typename T>
 std::vector<std::vector<T>> fold(const std::vector<T>& v, int dim);
 
-namespace nemAux {
-// adds two vectors
-template <typename T>
-std::vector<T> operator+(const std::vector<T>& x, 
-                         const std::vector<T>& y);
-// sub two vectors
-template <typename T>
-std::vector<T> operator-(const std::vector<T>& x,
-                         const std::vector<T>& y);
-// multiplies vector by scalar
-template <typename T>
-std::vector<T> operator*(T a, std::vector<T>& x);
-
-// hadamard product of vectors
-template <typename T>
-std::vector<T> hadamard(const std::vector<T>& x, 
-                        const std::vector<T>& y);
-
-// search for pattern and return vector of matches (wrapper around posix glob)
-inline std::vector<std::string> glob(const std::string& pattern);
+namespace nemAux 
+{
+  // adds two vectors
+  template <typename T>
+  std::vector<T> operator+(const std::vector<T>& x, 
+                           const std::vector<T>& y);
+  // sub two vectors
+  template <typename T>
+  std::vector<T> operator-(const std::vector<T>& x,
+                           const std::vector<T>& y);
+  // multiplies vector by scalar
+  template <typename T>
+  std::vector<T> operator*(T a, std::vector<T>& x);
+  // hadamard product of vectors
+  template <typename T>
+  std::vector<T> hadamard(const std::vector<T>& x, 
+                          const std::vector<T>& y);
+  // search for pattern and return vector of matches (wrapper around posix glob)
+  inline std::vector<std::string> glob(const std::string& pattern);
 }
-
 // compute 2 norm of vec
 inline double l2_Norm(const std::vector<double>& x);
-
 // computes reciprocal of argument
 template <typename T>
 T reciprocal(T x);
-
 // computes reciprocal of vector elements, in place
 template <typename T>
 void reciprocal_vec(std::vector<T>& x);
-
 // checks if vector has zeros
 inline bool hasZero(std::vector<double>& x);
-
-
 // find minmax of vector, excluding inf 
 inline std::vector<double> getMinMax(const std::vector<double>& x);
-
 // scales x from range [xmin, xmax] to within range [ymin, ymax]
 // if x is inf, the scaled value will be ymax
 inline double scale_to_range(double x, const std::vector<double>& xminmax, 
                       const std::vector<double>& yminmax);
-
 // scales each number in vector in range [xmin, xmax] to [ymin,ymax]
 inline void scale_vec_to_range(std::vector<double>& x, 
                         const std::vector<double>& xminmax,
                         const std::vector<double>& yminmax);
-
 // get average and stdev of values
 inline std::vector<double> getMeanStdev(const std::vector<double>& x);
-
 // generates boolean array with 1 if value >= tol, 0 otherwise
 inline std::vector<int> cellsToRefine(std::vector<double>& values, double tol);
-
 // generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
 inline std::vector<int> cellsToRefineStdev(std::vector<double>& values, double mean, double dev);
-
 // return selects cells if their value is above some threshold of the maximum
 inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double dev);
-
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
 // find file extension
 inline std::string find_ext(std::string fname);
-
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
-
+// flip a pair
 template<typename A, typename B>
 std::pair<B,A> flip_pair(const std::pair<A,B> &p);
-
-
+// flip a map into a multimap
 template<typename A, typename B>
 std::multimap<B,A> flip_map(const std::map<A,B> &src);
+// get a vector of the keys from a map (which are sorted)
+template<typename A, typename B>
+std::vector<A> getSortedKeysFromMap(const std::map<A,B>& mapObj); 
 //-------------------------------------------------------------------------//
 
 
@@ -447,6 +434,29 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
     std::transform(src.begin(), src.end(), std::inserter(dst, dst.begin()), 
                    flip_pair<A,B>);
     return dst;
+}
+
+template<typename A, typename B>
+std::vector<A> getSortedKeys(const std::map<A,B>& mapObj)
+{
+  if (!mapObj.empty())
+  {
+    auto it = mapObj.begin();
+    std::vector<A> sortedKeys(mapObj.size());
+    int i = 0;
+    while (it != mapObj.end())
+    {
+      sortedKeys[i] = it->first;
+      ++it;
+      ++i;
+    }
+    return sortedKeys;
+  }
+  else
+  {
+    std::cerr << "Map is empty! No sorted keys to return." << std::endl;
+    exit(1);
+  }
 }
 
 // search for pattern and return vector of matches

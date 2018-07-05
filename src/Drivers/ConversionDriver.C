@@ -1,4 +1,5 @@
 #include <ConversionDriver.H>
+#include <AuxiliaryFunctions.H>
 
 //----------------------- Conversion Driver -----------------------------------------//
 ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
