@@ -1,6 +1,7 @@
 #include <Refine.H>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
+#include <AuxiliaryFunctions.H>
 
 Refine::Refine(meshBase* _mesh, const std::string& method, 
                int arrayID, double dev_mult, bool maxIsmin, 

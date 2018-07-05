@@ -1,6 +1,7 @@
 #include <RocRestartDriver.H>
 #include <meshStitcher.H>
 #include <rocstarCgns.H>
+#include <AuxiliaryFunctions.H>
 
 RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm,
                                    const std::vector<std::string>& _ifluidniNamesRm,

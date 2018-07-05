@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cstddef>
 #include <set>
+#include <AuxiliaryFunctions.H>
 
 vtkStandardNewMacro(GhostGenerator);
 
@@ -38,11 +39,13 @@ void GhostGenerator::getGlobalIds(int me)
   {
     this->myGlobToPartNodeMap = partitions[me]->getGlobToPartNodeMap();
     this->myPartToGlobNodeMap = partitions[me]->getPartToGlobNodeMap();
-    this->myGlobalNodeIds = partitions[me]->getSortedGlobPartNodeIds();
+    this->myGlobalNodeIds = getSortedKeys(this->myGlobToPartNodeMap);
+      //partitions[me]->getSortedGlobPartNodeIds();
   }
   if (this->myGlobalCellIds.empty())
   {
-    this->myGlobalCellIds = partitions[me]->getSortedGlobPartCellIds();
+    this->myGlobalCellIds = getSortedKeys(partitions[me]->getGlobToPartCellMap());
+      //partitions[me]->getSortedGlobPartCellIds();
   }
 }
 
@@ -91,7 +94,8 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
       continue;
     }
     // ------ shared nodes between me and proc i
-    std::vector<int> procsGlobalNodeIds(partitions[i]->getSortedGlobPartNodeIds());
+    std::vector<int> procsGlobalNodeIds(getSortedKeys(partitions[i]->getGlobToPartNodeMap()));
+      //partitions[i]->getSortedGlobPartNodeIds());
     // compute the intersection and assign to sharedNodes vec
     std::vector<int> tmpVec;
     std::set_intersection(this->myGlobalNodeIds.begin(), this->myGlobalNodeIds.end(),
@@ -137,7 +141,8 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
                           std::back_inserter(tmpVec));
     this->receivedNodesNum[i] = tmpVec.size(); 
     tmpVec.clear();
-    std::vector<int> procsGlobalCellIds(partitions[i]->getSortedGlobPartCellIds());
+    std::vector<int> procsGlobalCellIds(getSortedKeys(partitions[i]->getGlobToPartCellMap()));
+      //partitions[i]->getSortedGlobPartCellIds());
     std::set_intersection(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end(),
                           procsGlobalCellIds.begin(), procsGlobalCellIds.end(),
                           std::back_inserter(tmpVec));

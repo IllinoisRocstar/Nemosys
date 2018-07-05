@@ -1,6 +1,7 @@
 #include <OrderOfAccuracy.H>
 #include <vtkPointData.h>
 #include <vtkDoubleArray.h>
+#include <AuxiliaryFunctions.H>
 
 OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
                 const std::vector<int>& _arrayIDs)

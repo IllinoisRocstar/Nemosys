@@ -1,6 +1,9 @@
 #include <FETransfer.H>
 #include <vtkPointData.h>
 #include <vtkCellData.h>
+#include <AuxiliaryFunctions.H>
+
+using namespace nemAux;
 
 FETransfer::FETransfer(meshBase* _source, meshBase* _target)
 {
