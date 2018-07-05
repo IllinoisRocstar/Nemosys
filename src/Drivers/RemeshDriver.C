@@ -5,6 +5,7 @@
 #include <cgnsWriter.H> // not used
 #include <meshPartitioner.H> // not used
 #include <MeshGenDriver.H>
+#include <AuxiliaryFunctions.H>
 
 //vtk
 #include <vtkIdTypeArray.h>

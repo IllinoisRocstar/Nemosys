@@ -5,8 +5,6 @@
 #include <vtkGenericCell.h>
 #include <vtkDoubleArray.h>
 
-using namespace nemAux;
-
 // This class is used for data transfer between meshes based on the element transfer method
 
 class FETransfer : public TransferBase

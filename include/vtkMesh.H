@@ -4,8 +4,6 @@
 #include <meshBase.H>
 #include <vtkUnstructuredGrid.h>
 
-using namespace nemAux;
-
 // read files from any vtk format (except legacy .vtk)
 template<class TReader> vtkDataSet* ReadAnXMLOrSTLFile(const char* fileName)
 {

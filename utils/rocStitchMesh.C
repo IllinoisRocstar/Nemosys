@@ -10,6 +10,7 @@
 #include <meshStitcher.H>
 #include <cgnsWriter.H>
 #include <vtkAppendFilter.h>
+#include <AuxiliaryFunctions.H>
 
 std::vector<std::string> getCgFNames(const std::string& case_dir, 
                                      const std::string& prefix,

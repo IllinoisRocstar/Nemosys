@@ -1,6 +1,7 @@
 #include <meshStitcher.H>
 #include <rocstarCgns.H>
 #include <meshBase.H>
+#include <AuxiliaryFunctions.H>
 
 meshStitcher::meshStitcher(const std::vector<std::string>& _cgFileNames, bool surf)
   : cgFileNames(_cgFileNames), stitchedMesh(nullptr), cgObj(nullptr)

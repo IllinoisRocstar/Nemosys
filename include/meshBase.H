@@ -12,22 +12,17 @@
 
 // Nemosys
 #include <pntMesh.H>
-#include <AuxiliaryFunctions.H>
 
 // stl
-#include <functional>
 #include <vector>
-#include <iostream>
-#include <ostream>
+#include <iosfwd>
 #include <fstream>
 #include <map>
 #include <string>
-#include <cstdlib>
-#include <algorithm>
-#include <cstdio>
 #include <memory>
-#include <utility>
-#include <sstream>
+
+
+// NOTE: virtual methods are usually implemented in vtkMesh.C
 
 class meshingParams;
 
@@ -52,37 +47,45 @@ class meshBase
   // meshBase factory methods
   public:
     // construct vtkMesh from filename
-    // this method calls the other factor methods based on extension
+    // this method calls the other factory methods based on extension
+    // caller must delete object after use
     static meshBase* Create(std::string fname); 
     // construct from existing vtkDataSet and assign newname as filename
+    // caller must delete object after use
     static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
     // create shared ptr from fname
+    // memory is managed by shared pointer, so do not call delete after use
     static std::shared_ptr<meshBase> CreateShared(std::string fname);
     // create unique ptr from fname
+    // memory is managed by unique pointer, so do not call delete after use
     static std::unique_ptr<meshBase> CreateUnique(std::string fname);
     /* create from coordinates and connectivities.
        NOTE: use of this is only valid when mesh has one cell type. 
              cellType one of the vtkCellType enums.
-             Currently, only VTK_TETRA and VTK_TRIANGLE are supported */
+             Currently, only VTK_TETRA and VTK_TRIANGLE are supported
+       Caller must delete object after use  */
     static meshBase* Create(const std::vector<double>& xCrds,
                             const std::vector<double>& yCrds,
                             const std::vector<double>& zCrds,
                             const std::vector<int>& elmConn, const int cellType,
                             std::string newname);
-  
 
-    // construct vtkMesh from gmsh msh file
+    // construct vtkMesh from gmsh msh file (called in Create methods)
     static meshBase* exportGmshToVtk(std::string fname);
-    // construct vtkMesh from netgen vol file
+    // construct vtkMesh from netgen vol file (called in Create methods)
     static meshBase* exportVolToVtk(std::string fname);
-    // construct vtkMesh from netgen vol file
+    // construct vtkMesh from netgen vol file (called in Create methods)
     static meshBase* exportPntToVtk(std::string fname);
+  
     // generate volume mesh from stl
+    // caller must delete object after use
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
     // stitch together several meshBases
+    // caller must delete object after use
     static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
     // mesh partitioning (with METIS)
+    // caller must delete objects after use
     static std::vector<meshBase*> partition(const meshBase* mbObj, const int numPartitions);
       
  
@@ -200,39 +203,9 @@ class meshBase
     // return the number of cells
     int getNumberOfCells() const { return numCells;}
     void checkMesh(std::string ofname);
-    // for distributed data sets
-    std::vector<int> getSortedGlobPartNodeIds()
-    {
-      if (!globToPartNodeMap.empty())
-      {
-        auto it = globToPartNodeMap.begin();
-        std::vector<int> sortedGlobPartIds(numPoints);
-        int i = 0;
-        while (it != globToPartNodeMap.end())
-        {
-          sortedGlobPartIds[i] = it->first;
-          ++it;
-          ++i;
-        }
-        return sortedGlobPartIds;
-      }
-    }
-    std::vector<int> getSortedGlobPartCellIds()
-    {
-      if (!globToPartCellMap.empty())
-      {
-        auto it = globToPartCellMap.begin();
-        std::vector<int> sortedGlobPartIds(numCells);
-        int i = 0;
-        while (it != globToPartCellMap.end())
-        {
-          sortedGlobPartIds[i] = it->first;
-          ++it;
-          ++i;
-        }
-        return sortedGlobPartIds;
-      }
-    }
+
+  // for distributed data sets
+  public:
     std::map<int,int> getGlobToPartNodeMap() { return globToPartNodeMap; }
     std::map<int,int> getGlobToPartCellMap() { return globToPartCellMap; }
     std::map<int,int> getPartToGlobNodeMap() { return partToGlobNodeMap; }
@@ -284,6 +257,5 @@ class meshBase
 
 // compares two meshBases- used in testing
 int diffMesh(meshBase* mesh1, meshBase* mesh2);
-
 
 #endif
