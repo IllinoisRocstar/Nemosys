@@ -39,6 +39,8 @@ ep16Prep* ep16Prep::readJSON(json inputjson)
 {
   ep16Prep* ep = new ep16Prep(inputjson);
   ep->readJSON();
+  ep->process();
+  ep->write();
   return ep;
 }
 
@@ -48,7 +50,7 @@ void ep16Prep::readJSON()
 
     std::cout << "Reading Epic 2016 Input Generation JSON.\n";
     std::string fname;
-    std::string type;
+    std::string type = "short_form";
 
     // reading mandatory fields
     fname = _jstrm["File Name"].as<std::string>();
@@ -65,24 +67,75 @@ void ep16Prep::readJSON()
         exit(-1);
     }
 
+    // order definition
     _set_key(fname); 
     setNameType(fname, INPGEN_TXT);
     std::vector<std::string> order = {
-        "prep.description", 
+        "prep.case", 
         "prep.run", 
         "prep.exodus", 
         "prep.array_size",
-        "ndeset.projectile_node_set",
-        "ndeset.target_node_set",
-        "elmset.projectile_element_set",
-        "elmset.target_element_set",
+        "mesh.ndeset.projectile_node_set",
+        "mesh.ndeset.target_node_set",
+        "mesh.elmset.projectile_element_set",
+        "mesh.elmset.target_element_set",
         "misc.velocity",
-        "misc.detonation"          
+        "misc.detonation"  
     };
     setOrder(order);
-    std::cout << findToStr("sdfsdfsd.555555",".") << "\n";
-    std::cout << findFromStr("sdfsdfsd.555555",".") << "\n";
 
+    // other preps
+    setCmntStr("$");
+}
+
+
+void ep16Prep::process()
+{
+    // Top level information
+    wrtCmnt("EPIC 2016 INPUT FILE");
+    wrtCmnt("Generated on " + getTimeStr() + " by NEMoSys");
+    wrtCmnt("Short Form Description Card for ExodusII/CUBIT Data");
+
+    // begin processing based on order specified
+    std::vector<std::string> ord = getOrder();
+    for (auto oi=ord.begin(); oi!=ord.end(); oi++)
+    {
+        std::string tsk = findToStr(*oi, ".");
+        std::string _tsk = findFromStr(*oi, ".");
+        std::cout << tsk << " -- " << _tsk << std::endl;
+        if (!tsk.compare("prep"))
+            wrtPre(_tsk);
+    }
+}
+
+
+void ep16Prep::wrtCmnt(std::string cmnt)
+{
+    std::string cmntStr = getCmntStr() + cmnt;
+    _write(cmntStr);
+}
+
+
+void ep16Prep::wrtPre(std::string tsk)
+{
+   std::stringstream _tcmnt;
+   std::stringstream _tstr;
+   if (!tsk.compare("case"))
+   {
+       _tstr.clear();
+       _tcmnt.clear();
+       int _ctype = _jstrm["Case"]["Type"].as<int>();
+       int _cid =  _jstrm["Case"]["Id"].as<int>();
+       std::string _des = " " + _jstrm["Case"]["Description"].as<std::string>();
+       _tcmnt << "CASE DESCRIPTION";
+       _tstr << std::setw(5) << _ctype 
+             << std::setw(5) << _cid
+             << std::setw(70) << std::left << _des;
+   }
+   if (!_tcmnt.str().empty())
+       wrtCmnt(_tcmnt.str());
+   if (!_tstr.str().empty())
+       _write(_tstr.str());
 }
 
 
