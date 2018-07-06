@@ -320,7 +320,7 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
       ++idx;
       ++it;
     }
-    mbPart->getDataSet()->GetCellData()->SetGlobalIds(globalCellIds);  
+    mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
     mbPart->write();
     mbParts[i] = mbPart;
   }
