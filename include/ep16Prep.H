@@ -28,8 +28,7 @@ public:
     // basic methods
 public:
     void readJSON();
-    void process() {};
-    void write() {};
+    void process();
 
     // feature specifications
 public:
@@ -44,9 +43,9 @@ public:
     bool addMisc() {};
 
     // internal processing
-private:
-    void wrtPre() {};
-    void wrtCmnt() {};
+public:
+    void wrtPre(std::string tsk);
+    void wrtCmnt(std::string cmnt);
     void wrtMsh() {};
     void wrtNdeCrds() {};
     void wrtElmCon() {};
