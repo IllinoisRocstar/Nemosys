@@ -315,7 +315,7 @@ int meshPartitioner::partition()
    //                           &nPart, NULL, options, &objval, &epart[0], &npart[0]);
     res = METIS_PartMeshDual(&nElm, &nNde, &eptr[0], &elmConn[0], NULL, NULL, 
                              &ncommon, &nPart, NULL, options, &objval, &epart[0], &npart[0]);
-
+    
     std::cout << "Received data from METIS" << std::endl;
   }
   // output partitioning results
