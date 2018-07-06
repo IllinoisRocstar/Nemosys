@@ -3,14 +3,15 @@
 
 // other headers
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 void inputGen::setNameType(std::string fname, inpFileType ftyp, std::string key) 
 { 
     if (!key.empty())
         _key = key;
-    _fn[_key].push_back(fname); 
-    _tpe[_key].push_back(ftyp); 
+    _fn[_key] = fname; 
+    _tpe[_key] = ftyp; 
 }
 
 void inputGen::setOrder(std::vector<std::string>& ord, std::string key)
@@ -43,5 +44,43 @@ void inputGen::setMsh(meshBase* mb, std::string key)
     if (!key.empty())
         _key = key;
     _mb[_key].push_back(mb);
+}
+
+
+void inputGen::setCmntStr(std::string cmstr, std::string key)
+{
+    if (!key.empty())
+        _key = key;
+    _cmnt[_key] = cmstr;
+}
+
+std::string inputGen::getCmntStr(std::string key)
+{
+    if (!key.empty())
+        _key = key;
+    return(_cmnt[_key]);
+}
+
+void inputGen::write(std::string key)
+{
+    bool onlyKey = false;
+    if (!key.empty())
+        onlyKey = true;
+    for (auto it=_inp.begin(); it!=_inp.end(); it++)
+    {
+        if (onlyKey && (it->first).compare(key))
+            continue;
+
+        std::string fname = _fn[(it->first)]; 
+        std::ofstream ofile;
+        ofile.open (fname);
+        if (!ofile.good())
+        {
+            std::cerr << "Error opening file "<< fname << std::endl;
+            throw;
+        }
+        ofile << (it->second).str();
+        ofile.close();
+    }
 }
 

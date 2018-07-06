@@ -138,6 +138,8 @@ inline std::string findToStr(std::string str, std::string ptrn);
 // return from the location of str
 inline std::string findFromStr(std::string str, std::string ptrn);
 
+// returns current time as string
+inline std::string getTimeStr();
 
 // print a vector
 template<typename T>
@@ -464,7 +466,23 @@ inline std::string findToStr(std::string str, std::string ptrn)
 inline std::string findFromStr(std::string str, std::string ptrn)
 {
   size_t loc = str.find_first_of(ptrn);
-  return(str.substr(loc,std::string::npos)); 
+  return(str.substr(loc+1,std::string::npos)); 
+}
+
+// returns current time as string
+inline std::string getTimeStr()
+{
+  time_t rawtime;
+  struct tm * timeinfo;
+  char buffer[80];
+
+  time (&rawtime);
+  timeinfo = localtime(&rawtime);
+
+  strftime(buffer,sizeof(buffer),"%d-%m-%Y %I:%M:%S %p",timeinfo);
+  std::string str(buffer);
+
+  return (str);
 }
 
 // print vector
