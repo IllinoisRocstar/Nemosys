@@ -54,9 +54,6 @@ SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
 # finding libraries ###############################################################
 IF (ENABLE_MPI)
   FIND_PACKAGE(MPI REQUIRED)
-  #IF(MPI_CXX_COMPILER)
-  #  SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-  #ENDIF()
   # include mpi headers
   include_directories(${MPI_INCLUDE_PATH})
   IF (MPI_LIBRARY)
@@ -69,7 +66,7 @@ IF (ENABLE_MPI)
   ADD_DEFINITIONS("-DMPICH_IGNORE_CXX_SEEK")
 ENDIF (ENABLE_MPI)
 
-FIND_PACKAGE(VTK REQUIRED)
+FIND_PACKAGE(VTK REQUIRED HINTS ${CMAKE_INSTALL_PREFIX}/vtk)
 INCLUDE(${VTK_USE_FILE})
 
 FIND_LIBRARY(MADLIB_LIB MAdLib HINTS ${CMAKE_INSTALL_PREFIX}/madlib/lib)
@@ -208,8 +205,9 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C src/Drivers/MeshGenDriver.C 
-                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
+                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C 
+								 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
+								 src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
                  src/PatchRecovery/orthoPoly1D.C 
                  src/PatchRecovery/orthoPoly3D.C
