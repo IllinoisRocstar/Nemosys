@@ -3,7 +3,6 @@
 # This script will build Nemosys and all of the necessary dependencies
 # given a tarball of projects with gmsh, madlib, hdf5, cgns, netgen and vtk.
 # Usage: 
-#	- without simmetrix support
 #		./build.sh PATH_TO_NEMOSYS PATH_TO_NEMOSYS_TPLS_TARBALL PATH_TO_INSTALL_DIR
 
 
@@ -11,7 +10,6 @@ set -x
 
 NEMOSYS_DEPS_BUILD_DIR=/tmp/nemosys_build
 NEMOSYS_PROJECT_PATH=$1
-#NEMOSYS_DEPS_INSTALL_PATH=$NEMOSYS_PROJECT_PATH/install
 NEMOSYS_DEPS_INSTALL_PATH=$3
 NEMOSYS_TARBALL_PATH=$2
 
