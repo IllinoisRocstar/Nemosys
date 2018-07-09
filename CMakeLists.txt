@@ -177,7 +177,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # setting RPATH
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/Nemosys/lib")
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/vtk/lib:${CMAKE_INSTALL_PREFIX}/hdf5/lib:${CMAKE_INSTALL_PREFIX}/cgns/lib:${CMAKE_INSTALL_PREFIX}/Nemosys/lib")
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # turning off warnings
@@ -212,9 +212,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C 
-								 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
-								 src/StlToVtk.C src/Integration/Cubature.C
+                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C						      src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
+		 src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
                  src/PatchRecovery/orthoPoly1D.C 
                  src/PatchRecovery/orthoPoly3D.C
@@ -263,7 +262,7 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${HDF5_LIB} ${METIS_LIB} interp)
+TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${CGNS_LIB} ${HDF5_LIB} ${METIS_LIB} interp)
 
 INSTALL(TARGETS r8 interp Nemosys
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
