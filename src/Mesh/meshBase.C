@@ -224,7 +224,7 @@ int meshBase::transfer(meshBase* target, std::string method,
     if (id == -1)
     {
       std::cout << "Array " << arrayNames[i] 
-                << " not found in set of point data arrays" << std::endl;
+                << " not found in set of data arrays" << std::endl;
       exit(1);
     }
     arrayIDs[i] = id;
@@ -320,7 +320,7 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
       ++idx;
       ++it;
     }
-    mbPart->getDataSet()->GetCellData()->SetGlobalIds(globalCellIds);  
+    mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
     mbPart->write();
     mbParts[i] = mbPart;
   }

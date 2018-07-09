@@ -18,7 +18,7 @@
 #include <vtkSelection.h>
 #include <vtkSelectionNode.h>
 #include <vtkExtractSelection.h>
-
+#include <vtkAppendFilter.h>
 
 #include <mpi.h>
 #include <sstream>
@@ -37,6 +37,11 @@ void GhostGenerator::setPartitions(std::vector<meshBase*>& _partitions)
   this->partitions = _partitions;
 }
 
+void GhostGenerator::setSurfacePartitions(std::vector<meshBase*>& _surfacePartitions)
+{
+  this->surfacePartitions = _surfacePartitions;
+}
+
 void GhostGenerator::getGlobalIds(int me)
 {
   if (this->myGlobalNodeIds.empty())
@@ -52,7 +57,6 @@ void GhostGenerator::getGlobalIds(int me)
       //partitions[me]->getSortedGlobPartCellIds();
   }
 }
-
 void GhostGenerator::getGlobalGhostIds(int me)
 {
   if (this->myGlobalGhostNodeIds.empty())
@@ -71,8 +75,10 @@ void GhostGenerator::getGlobalGhostIds(int me)
   if (this->myGlobalGhostCellIds.empty())
   {
     vtkSmartPointer<vtkIdTypeArray> myVtkGlobalCellIds
+      //= vtkIdTypeArray::FastDownCast(
+      //    this->ghostCellMesh->getDataSet()->GetCellData()->GetGlobalIds());
       = vtkIdTypeArray::FastDownCast(
-          this->ghostCellMesh->getDataSet()->GetCellData()->GetGlobalIds());
+          this->ghostCellMesh->getDataSet()->GetCellData()->GetArray("GlobalCellIds"));
     int start = partitions[me]->getNumberOfCells();
     this->myGlobalGhostCellIds.resize(this->ghostCellMesh->getNumberOfCells()-start);
     for (int i = 0; i < this->myGlobalGhostCellIds.size(); ++i)
@@ -83,8 +89,14 @@ void GhostGenerator::getGlobalGhostIds(int me)
   }
 }
 
+
 void GhostGenerator::getPconnInformation(int me, int numProcs)
 {
+  // get surface information
+  //this->getGlobalSurfaceIds(me);
+  //this->getGlobalSurfaceGhostIds(me);
+
+
   this->getGlobalIds(me);
   this->getGlobalGhostIds(me);
   // will hold sent cell's indices
@@ -109,11 +121,13 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
     // ------ fill shared nodes map and find cells and nodes me sends to proc i
     for (int j = 0; j < tmpVec.size(); ++j)
     {
-      cellIdsList->Reset();
       // get local idx of shared node
       int localPntId = myGlobToPartNodeMap[tmpVec[j]];
+
       // add to sharedNodes with proc i map
       this->sharedNodes[i][j] = localPntId;
+
+      cellIdsList->Reset();
       // find cells using this shared node
       partitions[me]->getDataSet()->GetPointCells(localPntId, cellIdsList);
       // for each cell using shared node (these will be cells on the boundary)
@@ -317,7 +331,55 @@ void GhostGenerator::Execute()
   this->ghostCellMesh 
     = meshBase::Create(vtkDataSet::SafeDownCast(ghostGenerator->GetOutput()),
                                                 ss1.str());
-  this->ghostCellMesh->write(); 
+  this->ghostCellMesh->write();
+
+
+
+  //vtkSmartPointer<vtkAppendFilter> appendFilter =
+  //  vtkSmartPointer<vtkAppendFilter>::New();
+  //appendFilter->AddInputData(partitions[me]->extractSurface());
+  //appendFilter->Update();
+//
+  //vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid =
+  //  appendFilter->GetOutput();
+//
+  //meshBase* mbSurfPart = meshBase::Create(unstructuredGrid, "blah");
+
+
+  // initialize ghost cell generator
+  vtkSmartPointer<vtkPUnstructuredGridGhostCellsGenerator> ghostSurfGenerator
+    = vtkSmartPointer<vtkPUnstructuredGridGhostCellsGenerator>::New();
+  ghostSurfGenerator->SetController(this->Controller);
+  ghostSurfGenerator->BuildIfRequiredOff();
+  ghostSurfGenerator->SetMinimumNumberOfGhostLevels(1);
+  ghostSurfGenerator->SetInputData(surfacePartitions[me]->getDataSet());
+  //ghostSurfGenerator->SetInputData(unstructuredGrid);
+  //ghostSurfGenerator->SetInputData(mbSurfPart->getDataSet());
+  ghostSurfGenerator->UseGlobalPointIdsOn();
+  ghostSurfGenerator->SetGlobalPointIdsArrayName("GlobalNodeIds");
+  //ghostSurfGenerator->SetHasGlobalCellIds(true);
+  //ghostSurfGenerator->SetGlobalCellIdsArrayName("GlobalCellIds");
+  ghostSurfGenerator->Update();
+  std::stringstream ss2;
+  ss2 << "ghostSurfProc" << me << ".vtu";
+  this->ghostSurfCellMesh 
+    = meshBase::Create(vtkDataSet::SafeDownCast(ghostSurfGenerator->GetOutput()),
+                                                ss2.str());
+  ghostSurfCellMesh->write();
+
+  //this->ghostCellMesh->write();
+
+
+
+
+
+  // Extract surface with ghost points
+  //std::stringstream ss2;
+  //ss2 << "myGhostSurf" << me << ".vtp";
+  //meshBase* myGhostSurf = meshBase::Create(this->ghostCellMesh->extractSurface(), ss2.str());
+
+
+
   this->getPconnInformation(me, numProcs); 
   if (me == 1)
   {
@@ -449,10 +511,32 @@ RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
 
   // load full volume mesh and create METIS partitions
   this->mesh = meshBase::Create(fname);
-  this->partitions = meshBase::partition(mesh, numPartitions); 
+  this->partitions = meshBase::partition(mesh, numPartitions);
+
+  // create surfs partitions casted from vtp to vtu
+  vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid;
+  this->surfacePartitions.resize(numPartitions);
+
+  for (auto it = this->surfacePartitions.begin(); it != this->surfacePartitions.end(); ++it)
+  {
+    vtkSmartPointer<vtkAppendFilter> appendFilter =
+      vtkSmartPointer<vtkAppendFilter>::New();
+    appendFilter->AddInputData(partitions[it-this->surfacePartitions.begin()]->extractSurface());
+    appendFilter->Update();
+    unstructuredGrid = appendFilter->GetOutput();
+    std::string basename("surfacePartition");
+    basename += std::to_string(it-this->surfacePartitions.begin());
+    basename += ".vtu";
+    // construct meshBase surface partition from vtkUnstructuredGrid
+    meshBase* mbSurfPart = meshBase::Create(unstructuredGrid, basename);
+    mbSurfPart->write();
+    *it = mbSurfPart;
+  }
+
   // create single process
-  vtkSmartPointer<GhostGenerator> p = vtkSmartPointer<GhostGenerator>::New();
-  p->setPartitions(this->partitions);
+  vtkSmartPointer<GhostGenerator> singleProcObj = vtkSmartPointer<GhostGenerator>::New();
+  singleProcObj->setPartitions(this->partitions);
+  singleProcObj->setSurfacePartitions(this->surfacePartitions);
   // intialize mpi
   MPI_Init(NULL,NULL);
   // initialize controller 
@@ -461,9 +545,9 @@ RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
   controller->Initialize();
   vtkMultiProcessController::SetGlobalController(controller);
   // pass single process to controller
-  controller->SetSingleProcessObject(p);
+  controller->SetSingleProcessObject(singleProcObj);
   controller->SingleMethodExecute();
-  if(!p->GetReturnValue())
+  if(!singleProcObj->GetReturnValue())
   {
     exit(1);
   }

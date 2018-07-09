@@ -54,9 +54,6 @@ SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
 # finding libraries ###############################################################
 IF (ENABLE_MPI)
   FIND_PACKAGE(MPI REQUIRED)
-  #IF(MPI_CXX_COMPILER)
-  #  SET(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
-  #ENDIF()
   # include mpi headers
   include_directories(${MPI_INCLUDE_PATH})
   IF (MPI_LIBRARY)
@@ -69,7 +66,7 @@ IF (ENABLE_MPI)
   ADD_DEFINITIONS("-DMPICH_IGNORE_CXX_SEEK")
 ENDIF (ENABLE_MPI)
 
-FIND_PACKAGE(VTK REQUIRED)
+FIND_PACKAGE(VTK REQUIRED HINTS ${CMAKE_INSTALL_PREFIX}/vtk)
 INCLUDE(${VTK_USE_FILE})
 
 FIND_LIBRARY(MADLIB_LIB MAdLib HINTS ${CMAKE_INSTALL_PREFIX}/madlib/lib)
@@ -81,6 +78,12 @@ FIND_LIBRARY(GMSH_LIB Gmsh HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/lib)
 FIND_FILE(GMSH_HDR Gmsh.h HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/include/gmsh)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
 MESSAGE(STATUS "gmsh include path ${GMSH_INCPATH}")
+
+FIND_LIBRARY(HDF5_LIB hdf5 HINTS ${CMAKE_INSTALL_PREFIX}/hdf5/lib)
+FIND_FILE(HDF5_HDR hdf5.h HINTS ${CMAKE_INSTALL_PREFIX}/hdf5/include)
+GET_FILENAME_COMPONENT(HDF5_INCPATH ${HDF5_HDR} PATH)
+MESSAGE(STATUS "hdf5 include path ${HDF5_INCPATH}")
+
 
 FIND_LIBRARY(CGNS_LIB cgns HINTS ${CMAKE_INSTALL_PREFIX}/cgns/lib)
 FIND_FILE(CGNS_HDR cgnslib.h HINTS ${CMAKE_INSTALL_PREFIX}/include)
@@ -139,6 +142,7 @@ INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${SYMMX_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${HDF5_INCPATH})
 
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling madlib header references.
@@ -208,8 +212,9 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C src/Drivers/MeshGenDriver.C 
-                 src/Drivers/MeshQualityDriver.C src/StlToVtk.C src/Integration/Cubature.C
+                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C 
+								 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
+								 src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
                  src/PatchRecovery/orthoPoly1D.C 
                  src/PatchRecovery/orthoPoly3D.C
@@ -258,7 +263,7 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${METIS_LIB} interp)
+TARGET_LINK_LIBRARIES(Nemosys ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${VTK_LIBRARIES} ${CGNS_LIB} ${HDF5_LIB} ${METIS_LIB} interp)
 
 INSTALL(TARGETS r8 interp Nemosys
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
