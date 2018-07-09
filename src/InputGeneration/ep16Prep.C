@@ -4,7 +4,12 @@
 #include "inputGen.H"
 #include "ep16Prep.H"
 #include "exoMesh.H"
- 
+
+ep16Prep::~ep16Prep()
+{
+    if (_mdb)
+        delete _mdb;
+}
 
 ep16Prep* ep16Prep::readJSON(std::string ifname)
 {
@@ -75,11 +80,11 @@ void ep16Prep::readJSON()
         "prep.case", 
         "prep.run", 
         "prep.exodus", 
-        "prep.array_size",
-        "mesh.ndeset.projectile_node_set",
-        "mesh.ndeset.target_node_set",
-        "mesh.elmset.projectile_element_set",
-        "mesh.elmset.target_element_set",
+        "prep.arraysize",
+        "mesh.nodeset.projectile",
+        "mesh.nodeset.target",
+        "mesh.elementset.projectile",
+        "mesh.elrmrnyset.target",
         "misc.velocity",
         "misc.detonation"  
     };
@@ -97,10 +102,10 @@ void ep16Prep::process()
     wrtCmnt("Generated on " + getTimeStr() + " by NEMoSys");
     wrtCmnt("Short Form Description Card for ExodusII/CUBIT Data");
 
-    // reading exodus databse
+    // reading mesh databse
     std::string exo_fname = _jstrm["Mesh"]["File"].as<std::string>();
-    EXOMesh::exoMesh* ex = new EXOMesh::exoMesh(exo_fname);
-    ex->read();
+    _mdb = new EXOMesh::exoMesh(exo_fname);
+    _mdb->read();
 
     // begin processing based on order specified
     std::vector<std::string> ord = getOrder();
@@ -108,9 +113,13 @@ void ep16Prep::process()
     {
         std::string tsk = findToStr(*oi, ".");
         std::string _tsk = findFromStr(*oi, ".");
-        std::cout << tsk << " -- " << _tsk << std::endl;
+        std::string __tsk = findFromStr(_tsk, ".");
+        _tsk = findToStr(_tsk,".");
+        std::cout << tsk << " -- " << _tsk << " -- " << __tsk <<std::endl;
         if (!tsk.compare("prep"))
-            wrtPre(_tsk);
+            wrtPre(_tsk,__tsk);
+        else if (!tsk.compare("mesh"))
+            wrtMsh(_tsk,__tsk);
 
     }
 }
@@ -123,11 +132,11 @@ void ep16Prep::wrtCmnt(std::string cmnt)
 }
 
 
-void ep16Prep::wrtPre(std::string tsk)
+void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
 {
     std::stringstream _tcmnt;
     std::stringstream _tstr;
-    if (!tsk.compare("case"))
+    if (!_tsk.compare("case"))
     {
         _tstr.clear();
         _tcmnt.clear();
@@ -139,7 +148,7 @@ void ep16Prep::wrtPre(std::string tsk)
               << std::setw(5) << _cid
               << std::setw(70) << std::left << _des;
     }
-    else if (!tsk.compare("run"))
+    else if (!_tsk.compare("run"))
     {
         _tstr.clear();
         _tcmnt.clear();
@@ -161,12 +170,122 @@ void ep16Prep::wrtPre(std::string tsk)
               << std::setw(10) << _cpmx
               << std::setw(5) << _ssld;
     }
+    else if (!_tsk.compare("exodus"))
+    {
+        // data gathering
+        int _npns,_ntns,_npes,_ntes,_ctact,_conv,_sym,_tet;
+        double _gap;
+        std::vector<std::string> ns_names,eb_names;
+        ns_names = _mdb->getNdeSetNames();
+        eb_names = _mdb->getElmBlkNames();
+        _npns = 0;
+        _ntns = 0;
+        _npes = 0;
+        _ntes = 0;
+        for (auto ni=ns_names.begin(); ni!=ns_names.end(); ni++)
+        {
+            std::string pre = toLower( findToStr(*ni, "_") );
+            if (!pre.compare("prj"))
+                _npns++;
+            else if (!pre.compare("trg"))
+                _ntns++;
+        }
+        for (auto ei=eb_names.begin(); ei!=eb_names.end(); ei++)
+        {
+            std::string pre = toLower( findToStr(*ei, "_") );
+            if (!pre.compare("prj"))
+                _npes++;
+            else if (!pre.compare("trg"))
+                _ntes++;
+        }
+        _ctact = 1;
+        _conv = 2;
+        _sym = 0;
+        _tet = 1;
+        _gap = 0.1;
 
+        _tstr.clear();
+        _tcmnt.clear();
+        _tcmnt << "Exodus II Description Card\n";
+        _tcmnt << getCmntStr() << "NPNS NTNS NPES NTES CTCT CONV  SYM  TET       GAP";
+        _tstr.precision(4);
+        _tstr<< std::setw(5) << _npns
+             << std::setw(5) << _ntns
+             << std::setw(5) << _npes
+             << std::setw(5) << _ntes
+             << std::setw(5) << _ctact
+             << std::setw(5) << _conv
+             << std::setw(5) << _sym
+             << std::setw(5) << _tet
+             << std::setw(10) << std::scientific << _gap;
+    }
+    else if (!_tsk.compare("arraysize"))
+    {
+        // data gathering
+        int _mxn,_mxl,_mxmn,_mxsn;
+        _mxn = _mdb->getNumberOfNode();
+        _mxl = _mdb->getNumberOfElement();
+        _mxmn = _mxn;
+        _mxsn = _mxn;
+
+        _tstr.clear();
+        _tcmnt.clear();
+        _tcmnt << "Array Size/Dimension Card\n";
+        _tcmnt << getCmntStr() << "      MXN       MXL      MXMN      MXSN";
+        _tstr << std::setw(10) << _mxn
+              << std::setw(10) << _mxl
+              << std::setw(10) << _mxmn
+              << std::setw(10) << _mxsn
+              << std::endl;
+    }
     // write to stream
     if (!_tcmnt.str().empty())
         wrtCmnt(_tcmnt.str());
     if (!_tstr.str().empty())
         _write(_tstr.str());
+}
+
+void ep16Prep::wrtMsh(std::string _tsk, std::string __tsk)
+{
+    std::stringstream _tcmnt;
+    std::stringstream _tstr;
+    if (!_tsk.compare("nodeset") && !__tsk.compare("projectile"))
+    {
+        _tcmnt.clear();
+        _tstr.clear();
+        _tcmnt << "Projectile Node Set Cards\n";
+        _tcmnt << getCmntStr() << "NSET     XYZ";
+        wrtCmnt(_tcmnt.str());
+        for (int ns=0; ns<_mdb->getNumberOfNodeSet(); ns++)
+        {
+            std::string pre = findToStr(toLower(_mdb->getNdeSetName(ns)),"_");
+            if (!pre.compare("prj"))
+            {
+                int _nset = _mdb->getNdeSetId(ns);
+                _tstr << std::setw(5) << _nset << "     000";
+                _write(_tstr.str());    
+            }
+        }
+    }
+    else if (!_tsk.compare("nodeset") && !__tsk.compare("target"))
+    {
+        _tcmnt.clear();
+        _tstr.clear();
+        _tcmnt << "Target Node Set Cards\n";
+        _tcmnt << getCmntStr() << "NSET     XYZ";
+        wrtCmnt(_tcmnt.str());
+        for (int ns=0; ns<_mdb->getNumberOfNodeSet(); ns++)
+        {
+            std::string pre = findToStr(toLower(_mdb->getNdeSetName(ns)),"_");
+            if (!pre.compare("trg"))
+            {
+                int _nset = _mdb->getNdeSetId(ns);
+                _tstr << std::setw(5) << _nset << "     000";
+                _write(_tstr.str());    
+            }
+        }
+
+    }
 }
 
 

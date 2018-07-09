@@ -85,9 +85,14 @@ class exoMesh
       int getNumberOfElementBlock() const {return _elmBlock.size();}
       int getNumberOfSideSets() const {return _sideSet.size();}
       std::string getBlockName(int id) const { return(_elmBlock[id].name); }
+      std::string getNdeSetName(int id) const { return(_ndeSet[id].name); }
+      int getElmBlkId(int id) const { return(_elmBlock[id].id); }
+      int getNdeSetId(int id) const { return(_ndeSet[id].id); }
       elementType getBlockElmType(int id) const { return(_elmBlock[id].eTpe); };
       void report() const;
       void togVrb() {_isVerbose=_isVerbose?false:true; };
+      std::vector<std::string> getNdeSetNames() const { return ndeSetNames;};
+      std::vector<std::string> getElmBlkNames() const { return elmBlockNames;};
 
     // adding sets and blocks
     public:
@@ -138,9 +143,9 @@ class exoMesh
       std::vector<double> yCrds;
       std::vector<double> zCrds;
       std::vector<std::vector<int>> glbConn;
-      std::vector<char*> ndeSetNames;
-      std::vector<char*> elmBlockNames;
-      std::vector<char*> sideSetNames;
+      std::vector<std::string> ndeSetNames;
+      std::vector<std::string> elmBlockNames;
+      std::vector<std::string> sideSetNames;
       float _api_v;
       float _dbs_v;
 
