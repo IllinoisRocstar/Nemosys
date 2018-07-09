@@ -5,12 +5,14 @@
 
 // Nemosys
 #include "inputGen.H"
+#include "exoMesh.H"
 
 // other
 #include <iostream>
 #include "jsoncons/json.hpp"
 
 using jsoncons::json;
+
 
 // A preprocessor class derived from generic
 // high-fidelity input generation class inputGen
@@ -19,8 +21,8 @@ using jsoncons::json;
 class ep16Prep : public inputGen
 {
 public:
-    ep16Prep(json inputjson):_shortForm(true),inputGen(inputjson) {};
-    ~ep16Prep(){};
+    ep16Prep(json inputjson):_shortForm(true),_mdb(NULL),inputGen(inputjson) {};
+    ~ep16Prep();
 
     static ep16Prep* readJSON(std::string jsonFName);
     static ep16Prep* readJSON(json inputjson);
@@ -44,9 +46,9 @@ public:
 
     // internal processing
 public:
-    void wrtPre(std::string tsk);
+    void wrtPre(std::string _tsk, std::string __tsk);
     void wrtCmnt(std::string cmnt);
-    void wrtMsh() {};
+    void wrtMsh(std::string _tsk, std::string __tsk);
     void wrtNdeCrds() {};
     void wrtElmCon() {};
     void wrtPost() {};
@@ -56,6 +58,7 @@ public:
 
 private:
     bool _shortForm;
+    EXOMesh::exoMesh* _mdb;
 };
 
 #endif
