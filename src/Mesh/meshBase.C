@@ -224,7 +224,7 @@ int meshBase::transfer(meshBase* target, std::string method,
     if (id == -1)
     {
       std::cout << "Array " << arrayNames[i] 
-                << " not found in set of point data arrays" << std::endl;
+                << " not found in set of data arrays" << std::endl;
       exit(1);
     }
     arrayIDs[i] = id;

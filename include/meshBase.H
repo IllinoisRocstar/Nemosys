@@ -146,9 +146,9 @@ class meshBase
     // method can be "Consistent Interpolation", "Mortar Element", "RBF" etc.
     // only "Consistent Interpolation" has been implemented
     int transfer(meshBase* target, std::string method, 
-                 const std::vector<int>& arrayIDs, const bool pointOrCell = 1);
+                 const std::vector<int>& arrayIDs, const bool pointOrCell = 0);
     int transfer(meshBase* target, std::string method, 
-                 const std::vector<std::string>& arrayNames, const bool pointOrCell = 1);
+                 const std::vector<std::string>& arrayNames, const bool pointOrCell = 0);
     // transfer all point and cell data from this mesh to target
     int transfer(meshBase* target, std::string method);
 
