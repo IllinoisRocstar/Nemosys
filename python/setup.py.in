@@ -1,12 +1,15 @@
 from distutils.core import setup, Extension
 
+libraries_list = [lib+'-8.1' for lib in '${VTK_LIBRARIES}'.split(';') if lib != 'verdict'] + ['vtkverdict-8.1', 'Nemosys']
+
 pyNemosys = Extension('_pyNemosys',
                     sources = [file for file in '${WRAPPER_SOURCE_FILES}'.split(';')],
                     include_dirs = [dir for dir in '${WRAPPER_INCLUDE_DIRS}'.split(';')] \
                                + [dir for dir in '${VTK_INCLUDE_DIRS}'.split(';')]\
-                               + ['${MADLIB_INCPATH}', '${GMSH_INCPATH}', '${CGNS_INCPATH}', '${ANN_INCPATH}', '${METIS_INCPATH}', '${NETGEN_INCPATH}'],
-                    libraries = ['Nemosys'],
-                    library_dirs = ['${CMAKE_BINARY_DIR}/lib/'],
+                               + ['${MADLIB_INCPATH}', '${GMSH_INCPATH}', '${HDF5_INCPATH}', '${CGNS_INCPATH}', '${ANN_INCPATH}', '${METIS_INCPATH}', '${NETGEN_INCPATH}'],
+                    libraries = libraries_list,
+                    library_dirs = ['${CMAKE_BINARY_DIR}/lib/']\
+			      + ['${CMAKE_INSTALL_PREFIX}/vtk/lib/'], 
                     swig_opts=['-c++'],
                     extra_compile_args = ['-std=c++11', '-w']
                     )
