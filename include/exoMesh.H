@@ -113,6 +113,8 @@ class exoMesh
     // I/O
     public:
       void write();
+      void reset();
+      void read(std::string ifname=std::string());
 
     private:
       // populate quanitites needed to write
@@ -139,6 +141,9 @@ class exoMesh
       std::vector<char*> ndeSetNames;
       std::vector<char*> elmBlockNames;
       std::vector<char*> sideSetNames;
+      float _api_v;
+      float _dbs_v;
+
 };
 
 } // end namespace exoMesh
