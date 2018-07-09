@@ -15,6 +15,10 @@
 #include <vtkMPICommunicator.h>
 #include <vtkPointData.h>
 #include <vtkGenericCell.h>
+#include <vtkSelection.h>
+#include <vtkSelectionNode.h>
+#include <vtkExtractSelection.h>
+
 
 #include <mpi.h>
 #include <sstream>
@@ -148,6 +152,7 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
                           std::back_inserter(tmpVec));
   	this->receivedCellsNum[i] = tmpVec.size();
 	}
+  std::cout << "bs" << std::endl;
 }
 
 void GhostGenerator::writeSharedToPconn(const std::string& type)
@@ -393,6 +398,55 @@ void GhostGenerator::Execute()
 
 RocPrepDriver::RocPrepDriver(std::string& fname, int numPartitions)
 {
+  // ------------- Testing selection of cells by patch no ----------------------------
+  
+  // loading stitched surf mesh with patch info
+  meshBase* stitchedSurf = meshBase::Create("stitchedSurf.vtu");
+  // creating selectionId container
+  vtkSmartPointer<vtkIdTypeArray> selectionIds = vtkSmartPointer<vtkIdTypeArray>::New();
+  selectionIds->SetNumberOfComponents(1);
+  // getting patch number array from stitched surf
+  vtkSmartPointer<vtkDataArray> patchNumbers 
+    = stitchedSurf->getDataSet()->GetCellData()->GetArray("patchNo");
+  // looping to pull cell ids with patchNo=5
+  for (int i = 0; i < patchNumbers->GetNumberOfTuples(); ++i)
+  {
+    double tmp[1];
+    patchNumbers->GetTuple(i,tmp);
+    int patchNo = (int) tmp[0];
+    if (patchNo <= 7 && patchNo >= 3)
+    {
+      selectionIds->InsertNextValue(i);
+    }
+  }
+  // creating a selectionNode which is used to create the selection 
+  vtkSmartPointer<vtkSelectionNode> selectionNode
+    = vtkSmartPointer<vtkSelectionNode>::New(); 
+  selectionNode->SetFieldType(vtkSelectionNode::CELL);
+  selectionNode->SetContentType(vtkSelectionNode::INDICES);
+  selectionNode->SetSelectionList(selectionIds);
+  // create the selection
+  vtkSmartPointer<vtkSelection> selection = vtkSmartPointer<vtkSelection>::New();
+  selection->AddNode(selectionNode);
+  // creating extractor
+  vtkSmartPointer<vtkExtractSelection> extractSelection
+    = vtkSmartPointer<vtkExtractSelection>::New();
+  // set stitch surf as input on first port
+  extractSelection->SetInputData(0, stitchedSurf->getDataSet());
+  // set selectionNode as input on second port
+  extractSelection->SetInputData(1, selection);
+  extractSelection->Update();
+  
+  meshBase* extractedSurf 
+    = meshBase::Create(vtkDataSet::SafeDownCast(
+                        extractSelection->GetOutput()), "extracted.vtu");
+  extractedSurf->write();
+  delete stitchedSurf;
+  delete extractedSurf;
+
+  // --------------------------- end testing --------------------------------------
+
+
   // load full volume mesh and create METIS partitions
   this->mesh = meshBase::Create(fname);
   this->partitions = meshBase::partition(mesh, numPartitions); 
