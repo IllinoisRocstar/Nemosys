@@ -500,3 +500,147 @@ std::vector<int> exoMesh::lstElmInBlck(int blkId, std::vector<int> elmIds, bool 
     return(out);
 }
 
+
+void exoMesh::reset()
+{
+  _isPopulated = false;  
+  _ndeSet.clear();
+  _elmBlock.clear();
+  _sideSet.clear();
+  fid = 0;
+  numNdes = 0; 
+  numElms = 0;
+  xCrds.clear();
+  yCrds.clear();
+  zCrds.clear();
+  glbConn.clear();
+  ndeSetNames.clear();
+  elmBlockNames.clear();
+  sideSetNames.clear();
+}
+
+
+void exoMesh::read(std::string ifname)
+{
+  if (!ifname.empty())
+    _ifname = ifname;
+
+  // before reading all internal data base will be reset
+  reset();
+
+  int CPU_word_size,IO_word_size;
+  float version;
+  CPU_word_size = sizeof(float);
+  IO_word_size = 0;
+
+  /* open EXODUS II files */
+  fid = ex_open(_ifname.c_str(),EX_READ,&CPU_word_size,&IO_word_size,&version);
+  wrnErrMsg(_exErr, "Problem opening file "+_ifname+"\n");
+
+  int numElmBlk;
+  int numNdeSet;
+  int numSideSet;
+
+  // parameter inquiry from Exodus file
+  int num_props;
+  int idum;
+  float fdum;
+  char *cdum;
+  _exErr = ex_inquire(fid, EX_INQ_API_VERS, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Exodus II API version is "<< fdum << std::endl;
+  _api_v = fdum;
+  _exErr = ex_inquire(fid, EX_INQ_DB_VERS, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Exodus II Database version is "<< fdum << std::endl;
+  _dbs_v = fdum;
+  _exErr = ex_inquire(fid, EX_INQ_DIM, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Number of coordinate dimensions is "<< num_props << std::endl;
+  if (num_props != 3)
+    wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
+  _exErr = ex_inquire(fid, EX_INQ_NODES, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Number of points "<< num_props << std::endl;
+  numNdes = num_props;
+  _exErr = ex_inquire(fid, EX_INQ_ELEM, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Number of elements "<< num_props << std::endl;
+  numElms =  num_props;
+  _exErr = ex_inquire(fid, EX_INQ_ELEM_BLK, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numElmBlk = num_props;
+  std::cout << "Number of element blocks "<< numElmBlk << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_NODE_SETS, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numNdeSet = num_props;
+  std::cout << "Number of node sets "<< numNdeSet << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_SIDE_SETS, &num_props, &fdum, cdum);
+  wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numSideSet = num_props;
+  std::cout << "Number of side sets "<< numSideSet << std::endl;
+
+  // names
+  ndeSetNames.resize(numNdeSet,"");
+  elmBlockNames.resize(numElmBlk,"");
+  char w[numElmBlk][MAX_STR_LENGTH+1];
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  //_exErr = ex_get_names(fid, EX_NODE_SET, &ndeSetNames[0]);
+  //wrnErrMsg(_exErr, "Problem reading nodeSet names.");
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  _exErr = ex_get_names(fid, EX_ELEM_BLOCK, (char**)w);
+  wrnErrMsg(_exErr, "Problem reading elementBlock names.");
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  
+
+  // nodal coordinates
+  std::vector<float> x,y,z;
+  xCrds.resize(numNdes,0);
+  yCrds.resize(numNdes,0);
+  zCrds.resize(numNdes,0);
+  _exErr = ex_get_coord(fid, &xCrds[0], &yCrds[0], &zCrds[0]);
+  wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
+  std::cout << __FILE__ << __LINE__ << std::endl;
+ 
+  // node sets
+  for (int iNS=1; iNS<=numNdeSet; iNS++)
+  {
+      ndeSetType ns;
+      ns.id = iNS;
+      ns.name = ndeSetNames[iNS-1];
+      ns.usrNdeIds = true;
+      _exErr = ex_get_node_set_param(fid, iNS, &(ns.nNde), &idum);  
+      wrnErrMsg(_exErr, "Problem reading node set.\n");
+      ns.ndeIds.resize(ns.nNde,0);
+      _exErr = ex_get_node_set(fid, iNS, &(ns.ndeIds[0]));  
+      wrnErrMsg(_exErr, "Problem reading node set ids.\n");
+      _ndeSet.push_back(ns);
+  }
+
+  // read element blocks
+  std::vector<int> elem_blk_ids;
+  elem_blk_ids.resize(0,numElmBlk);
+  _exErr = ex_get_elem_blk_ids(fid, &elem_blk_ids[0]);
+  wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+  for (int iEB=0; iEB<numElmBlk; iEB++)
+  {
+    elmBlockType eb;
+    eb.name = elmBlockNames[iEB];
+    eb.id = elem_blk_ids[iEB];
+    int num_el_in_blk, num_nod_per_el, num_attr, *connect;
+    float *attrib;
+    char elem_type[MAX_STR_LENGTH+1];
+    _exErr = ex_get_elem_block(fid, eb.id, elem_type, &num_el_in_blk, &num_nod_per_el, &num_attr);
+    wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
+    eb.nElm = num_el_in_blk;
+    eb.ndePerElm = num_nod_per_el;
+    eb.eTpe = elmTypeNum(std::string(elem_type)); 
+    // read element connectivity
+    eb.conn.resize(num_el_in_blk*num_nod_per_el,0);
+    _exErr = ex_get_elem_conn (fid, eb.id, &(eb.conn[0]));
+    wrnErrMsg(_exErr, "Problem reading element block connectivites.\n");
+  }
+
+  // since all data structures are manually populated from the file
+  _isPopulated = true;    
+}
