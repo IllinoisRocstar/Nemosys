@@ -57,9 +57,9 @@ public:
 
     // internal processing
 public:
-    virtual void wrtPre(std::string tsk) = 0;
+    virtual void wrtPre(std::string _tsk, std::string __tsk) = 0;
     virtual void wrtCmnt(std::string cmnt) = 0;
-    virtual void wrtMsh() = 0;
+    virtual void wrtMsh(std::string _tsk, std::string __tsk) = 0;
     virtual void wrtNdeCrds() = 0;
     virtual void wrtElmCon() = 0;
     virtual void wrtPost() = 0;

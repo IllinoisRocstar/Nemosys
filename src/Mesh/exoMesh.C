@@ -209,9 +209,16 @@ void exoMesh::write()
     }
 
     // writing names
-    _exErr = ex_put_names(fid, EX_NODE_SET, &ndeSetNames[0]);
+    std::vector<char*> names;
+    names.clear();
+    for (auto it=ndeSetNames.begin(); it!=ndeSetNames.end(); it++)
+        names.push_back(const_cast<char*>(it->c_str()));
+    _exErr = ex_put_names(fid, EX_NODE_SET, &names[0]);
     wrnErrMsg(_exErr, "Problem writing nodeSet names.");
-    _exErr = ex_put_names(fid, EX_ELEM_BLOCK, &elmBlockNames[0]);
+    names.clear();
+    for (auto it=elmBlockNames.begin(); it!=elmBlockNames.end(); it++)
+        names.push_back(const_cast<char*>(it->c_str()));
+    _exErr = ex_put_names(fid, EX_ELEM_BLOCK, &names[0]);
     wrnErrMsg(_exErr, "Problem writing elementBlock names.");
 
     // closing the file
@@ -244,7 +251,7 @@ void exoMesh::exoPopulate(bool updElmLst)
         // sanity check
         if (it1->usrNdeIds == true)
             wrnErrMsg(-666, "User setting for node ids is not supported yet.");
-        ndeSetNames.push_back(const_cast<char*>((it1->name).c_str()));
+        ndeSetNames.push_back(it1->name);
         for (auto it2=(it1->crds).begin(); it2!=(it1->crds).end(); it2++)
         {
             numNdes++;
@@ -267,7 +274,7 @@ void exoMesh::exoPopulate(bool updElmLst)
     for (auto it1=_elmBlock.begin(); it1!=_elmBlock.end(); it1++)
     {
         it1->id = ++blkId;
-        elmBlockNames.push_back(const_cast<char*>((it1->name).c_str()));        
+        elmBlockNames.push_back(it1->name);        
         // offseting element connectivities
         if ( (it1->ndeIdOffset) != 0 )
         {
@@ -299,17 +306,24 @@ void exoMesh::exoPopulate(bool updElmLst)
 
 void exoMesh::report() const
 {
-    std::cout << " ----- Exodus II Database Statistics ----- \n";
+    std::cout << " ----- Exodus II Database Report ----- \n";
     std::cout << "#Nodes = " << numNdes << std::endl;
     std::cout << "#Elements = " << numElms << std::endl;
     std::cout << "#Node sets = " << getNumberOfNodeSet() << std::endl;
     std::cout << "#Element blocks = " << getNumberOfElementBlock() << std::endl;
     std::cout << "#Side sets = " << getNumberOfSideSets() << std::endl;
-    std::cout << "  Blk      nElm     eType                Name\n";
-    std::cout << "  ---      ----     -----                ----\n";
+    std::cout << "  Nde      nNde               Name\n";
+    std::cout << "  ---      ----              ------\n";
+    for (auto ib=_ndeSet.begin(); ib!=_ndeSet.end(); ib++)
+        std::cout << std::setw(5) << ib->id
+                  << std::setw(10) << (*ib).nNde
+                  << std::setw(20) << (*ib).name
+                  << std::endl;
+    std::cout << "  Blk      nElm     eType               Name\n";
+    std::cout << "  ---      ----     -----              ------\n";
     for (auto ib=_elmBlock.begin(); ib!=_elmBlock.end(); ib++)
         std::cout << std::setw(5) << ib->id
-                  << std::setw(10) << (*ib).elmIds.size()
+                  << std::setw(10) << (*ib).nElm
                   << std::setw(10) << EXOMesh::elmTypeStr(ib->eTpe)
                   << std::setw(20) << (*ib).name
                   << std::endl;
@@ -580,18 +594,6 @@ void exoMesh::read(std::string ifname)
   numSideSet = num_props;
   std::cout << "Number of side sets "<< numSideSet << std::endl;
 
-  // names
-  ndeSetNames.resize(numNdeSet,"");
-  elmBlockNames.resize(numElmBlk,"");
-  char w[numElmBlk][MAX_STR_LENGTH+1];
-  std::cout << __FILE__ << __LINE__ << std::endl;
-  //_exErr = ex_get_names(fid, EX_NODE_SET, &ndeSetNames[0]);
-  //wrnErrMsg(_exErr, "Problem reading nodeSet names.");
-  std::cout << __FILE__ << __LINE__ << std::endl;
-  _exErr = ex_get_names(fid, EX_ELEM_BLOCK, (char**)w);
-  wrnErrMsg(_exErr, "Problem reading elementBlock names.");
-  std::cout << __FILE__ << __LINE__ << std::endl;
-  
 
   // nodal coordinates
   std::vector<float> x,y,z;
@@ -600,28 +602,53 @@ void exoMesh::read(std::string ifname)
   zCrds.resize(numNdes,0);
   _exErr = ex_get_coord(fid, &xCrds[0], &yCrds[0], &zCrds[0]);
   wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
-  std::cout << __FILE__ << __LINE__ << std::endl;
  
+  // ids
+  std::vector<int> elem_blk_ids;
+  elem_blk_ids.resize(numElmBlk, 0);
+  _exErr = ex_get_elem_blk_ids(fid, &elem_blk_ids[0]);
+  wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+  std::vector<int> nde_set_ids;
+  nde_set_ids.resize(numNdeSet, 0);
+  _exErr = ex_get_node_set_ids(fid, &nde_set_ids[0]);
+  wrnErrMsg(_exErr, "Problem reading node set ids.\n");
+
+  // node set and element block names
+  for (int i=0; i<numElmBlk; i++)
+  {
+      char blk_name[MAX_STR_LENGTH];
+      int blk_id = elem_blk_ids[i];
+      _exErr = ex_get_name(fid, EX_ELEM_BLOCK, blk_id, blk_name);
+      wrnErrMsg(_exErr, "Problem reading elementBlock names.");
+      //std::cout << " " << blk_name << std::endl;
+      elmBlockNames.push_back(blk_name);
+  }
+  for (int i=0; i<numNdeSet; i++)
+  {
+      char blk_name[MAX_STR_LENGTH];
+      int blk_id = elem_blk_ids[i];
+      _exErr = ex_get_name(fid, EX_NODE_SET, blk_id, blk_name);
+      wrnErrMsg(_exErr, "Problem reading nodeSet names.");
+      //std::cout << " " << blk_name << std::endl;
+      ndeSetNames.push_back(blk_name);
+  }
+  
   // node sets
-  for (int iNS=1; iNS<=numNdeSet; iNS++)
+  for (int iNS=0; iNS<numNdeSet; iNS++)
   {
       ndeSetType ns;
-      ns.id = iNS;
-      ns.name = ndeSetNames[iNS-1];
+      ns.id = elem_blk_ids[iNS];
+      ns.name = ndeSetNames[iNS];
       ns.usrNdeIds = true;
-      _exErr = ex_get_node_set_param(fid, iNS, &(ns.nNde), &idum);  
-      wrnErrMsg(_exErr, "Problem reading node set.\n");
+      _exErr = ex_get_node_set_param(fid, ns.id, &(ns.nNde), &idum);
+      wrnErrMsg(_exErr, "Problem reading node set parameters.\n");
       ns.ndeIds.resize(ns.nNde,0);
-      _exErr = ex_get_node_set(fid, iNS, &(ns.ndeIds[0]));  
+      _exErr = ex_get_node_set(fid, ns.id, &(ns.ndeIds[0]));
       wrnErrMsg(_exErr, "Problem reading node set ids.\n");
       _ndeSet.push_back(ns);
   }
-
-  // read element blocks
-  std::vector<int> elem_blk_ids;
-  elem_blk_ids.resize(0,numElmBlk);
-  _exErr = ex_get_elem_blk_ids(fid, &elem_blk_ids[0]);
-  wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+  
+  // element blocks
   for (int iEB=0; iEB<numElmBlk; iEB++)
   {
     elmBlockType eb;
@@ -629,7 +656,7 @@ void exoMesh::read(std::string ifname)
     eb.id = elem_blk_ids[iEB];
     int num_el_in_blk, num_nod_per_el, num_attr, *connect;
     float *attrib;
-    char elem_type[MAX_STR_LENGTH+1];
+    char elem_type[MAX_STR_LENGTH];
     _exErr = ex_get_elem_block(fid, eb.id, elem_type, &num_el_in_blk, &num_nod_per_el, &num_attr);
     wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
     eb.nElm = num_el_in_blk;
@@ -639,8 +666,12 @@ void exoMesh::read(std::string ifname)
     eb.conn.resize(num_el_in_blk*num_nod_per_el,0);
     _exErr = ex_get_elem_conn (fid, eb.id, &(eb.conn[0]));
     wrnErrMsg(_exErr, "Problem reading element block connectivites.\n");
+    _elmBlock.push_back(eb);
   }
+  report();
 
   // since all data structures are manually populated from the file
   _isPopulated = true;    
 }
+
+
