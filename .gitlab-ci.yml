@@ -7,7 +7,7 @@ before_script:
  - CMAKE_PREFIX_PATH=../install/vtk:../install/madlib:../install/gmsh:../install/hdf5:../install/cgns:../install/netgen cmake -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=../install ..
  - make -j$(nproc)
  - make install 
- - export LD_LIBRARY_PATH=../install/Nemosys/lib:$LD_LIBRARY_PATH
+ - export LD_LIBRARY_PATH=../install/Nemosys/lib:../install/vtk/lib:$LD_LIBRARY_PATH
  - export PYTHONPATH=../install/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH 
 job1:
  script:
