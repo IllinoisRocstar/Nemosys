@@ -54,11 +54,13 @@ public:
     void wrtPost() {};
     void wrtNdeSet() {};
     void wrtElmSet() {};
-    void wrtMisc() {};
+    void wrtMisc(std::string _tsk, std::string __tsk);
 
 private:
     bool _shortForm;
     EXOMesh::exoMesh* _mdb;
+    std::map<std::string,int> _mat;
+
 };
 
 #endif
