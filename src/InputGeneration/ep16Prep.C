@@ -252,10 +252,10 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
         _tcmnt.str(std::string());        
         _tcmnt << "Array Size/Dimension Card\n";
         _tcmnt << getCmntStr() << "      MXN       MXL      MXMN      MXSN";
-        _tstr << std::setw(10) << _mxn
-              << std::setw(10) << _mxl
-              << std::setw(10) << _mxmn
-              << std::setw(10) << _mxsn;
+        _tstr << std::setw(10) << _mxn*10
+              << std::setw(10) << _mxl*10
+              << std::setw(10) << _mxmn*10
+              << std::setw(10) << _mxsn*10;
     }
     // write to stream
     if (!_tcmnt.str().empty())
@@ -347,6 +347,7 @@ void ep16Prep::wrtMsh(std::string _tsk, std::string __tsk)
                 _type = 0;
                 _sset = 0;
                 _ta = 0.; 
+                _tstr.precision(4);
                 _tstr << std::setw(5) << _lset
                       << std::setw(5) << _matl
                       << std::setw(5) << _type
