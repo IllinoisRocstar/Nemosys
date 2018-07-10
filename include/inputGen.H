@@ -65,11 +65,16 @@ public:
     virtual void wrtPost() = 0;
     virtual void wrtNdeSet() = 0;
     virtual void wrtElmSet() = 0;
-    virtual void wrtMisc() = 0;
+    virtual void wrtMisc(std::string _tsk, std::string __tsk) = 0;
 
     // raw methods
 protected:
-    virtual void _write(std::string str) {_inp[_key] << str << std::endl;};
+    virtual void _write(std::stringstream& ss) 
+    {
+        _inp[_key] << ss.str() << std::endl;
+        ss.clear(); 
+        ss.str(std::string());
+    };
 
 protected:
     json _jstrm;
