@@ -82,6 +82,6 @@ mkdir build
 cd build
 export CC=mpicc
 export CXX=mpicxx
-cmake -DModule_vtkParallelMPI=ON -DModule_vtkFiltersParallelMPI=ON -DModule_vtkFiltersParallelGeome=ON -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/vtk ..
+cmake -DModule_vtkParallelMPI=ON -DModule_vtkFiltersParallelMPI=ON -DModule_vtkFiltersParallelGeometry=ON -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/vtk ..
 make -j${num_threads}
 make install
