@@ -73,7 +73,7 @@ IF (ENABLE_PYTHON_BINDINGS)
                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys27.py
                --topsrcdir ${CMAKE_CURRENT_SOURCE_DIR} )
            set_property(TEST testPyNemosys
-                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/")
+                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/:${CMAKE_INSTALL_PREFIX}/vtk/lib")
            set_property(TEST testPyNemosys
                         APPEND
                         PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/Nemosys/python/src:${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib/python2.7/site-packages")
