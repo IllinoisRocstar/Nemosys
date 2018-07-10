@@ -27,6 +27,12 @@ You will need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
+* libxt-dev
+* zlib1g-dev
+* tcl-dev
+* tk-dev
+* libxmu-dev
+* python-dev
 * swig (if you want python bindings)
 * an MPI compiler
 
@@ -47,19 +53,18 @@ $ cd $NEMOSYS_PROJECT_PATH
 $ mkdir build && cd build
 $ export CC=mpicc
 $ export CXX=mpicxx
-$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/vtk:$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/hdf5:$NEMOSYS_INSTALL_PATH/cgns:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON .. 
+$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/vtk:$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/hdf5:$NEMOSYS_INSTALL_PATH/cgns:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON .. 
 $ make -j6 (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
-$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$LD_LIBRARY_PATH
+$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$NEMOSYS_INSTALL_PATH/vtk/lib:$LD_LIBRARY_PATH
 $ export PYTHONPATH=$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH
 ```
 Executing the commands above will build all libraries, executables and bindings. The libraries are
 installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`. Executables are installed in 
 `$NEMOSYS_INSTALL_PATH/Nemosys/bin`. If python bindings are enabled, the `pyNemosys` module files are
 installed in `$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages`.
-The last two export commands are only required if python bindings are enabled. The `pyNemosys` module 
-can be imported in python as `import pyNemosys`. The build configuration can modified through the 
-CMake curses interface (ccmake) or by passing the command line options to cmake.
+The `pyNemosys` module can be imported in python as `import pyNemosys`. The build configuration 
+can modified through the CMake curses interface (ccmake) or by passing the command line options to cmake.
 
 ## Testing Nemosys ##
 From the build directory, execute the following command to test the installation:
