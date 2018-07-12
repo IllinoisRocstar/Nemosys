@@ -111,7 +111,6 @@ void ep16Prep::process()
     json _matj = _jstrm["Material"];
     for (const auto& km: _matj.object_range())
     {
-        std::cout << toLower(km.key()) << std::endl;
         _mat[toLower(km.key())] = km.value().as<int>();
     }
 
