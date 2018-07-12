@@ -122,8 +122,24 @@ inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double 
 
 // string trimming for consistent file names 
 inline std::string trim_fname(std::string name, std::string ext);
+
 // find file extension
 inline std::string find_ext(std::string fname);
+
+// to lower
+inline std::string toLower(std::string str);
+
+// to upper
+inline std::string toUpper(std::string str);
+
+// return from begining to the location of str
+inline std::string findToStr(std::string str, std::string ptrn);
+
+// return from the location of str
+inline std::string findFromStr(std::string str, std::string ptrn);
+
+// returns current time as string
+inline std::string getTimeStr();
 
 // print a vector
 template<typename T>
@@ -135,6 +151,10 @@ std::pair<B,A> flip_pair(const std::pair<A,B> &p);
 
 template<typename A, typename B>
 std::multimap<B,A> flip_map(const std::map<A,B> &src);
+
+// check if coordinate is inside a bounding box
+template<typename T>
+bool isInBBox(std::vector<T> crd, std::vector<T> bb);
 //-------------------------------------------------------------------------//
 
 
@@ -420,6 +440,51 @@ inline std::string find_ext(std::string fname)
   }
 
 }
+
+// to lower
+inline std::string toLower(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower); 
+    return(str);
+}
+
+// to upper
+inline std::string toUpper(std::string str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper); 
+    return(str);
+}
+
+// return from begining to the location of str
+inline std::string findToStr(std::string str, std::string ptrn)
+{
+  size_t loc = str.find_first_of(ptrn);
+  return(str.substr(0,loc)); 
+}
+
+// return from the location of str
+inline std::string findFromStr(std::string str, std::string ptrn)
+{
+  size_t loc = str.find_first_of(ptrn);
+  return(str.substr(loc+1,std::string::npos)); 
+}
+
+// returns current time as string
+inline std::string getTimeStr()
+{
+  time_t rawtime;
+  struct tm * timeinfo;
+  char buffer[80];
+
+  time (&rawtime);
+  timeinfo = localtime(&rawtime);
+
+  strftime(buffer,sizeof(buffer),"%d-%m-%Y %I:%M:%S %p",timeinfo);
+  std::string str(buffer);
+
+  return (str);
+}
+
 // print vector
 template<typename T>
 void printVec(const std::vector<T>& v)
@@ -443,4 +508,20 @@ std::multimap<B,A> flip_map(const std::map<A,B> &src)
                    flip_pair<A,B>);
     return dst;
 }
+
+template<typename T>
+bool isInBBox(std::vector<T> crd, std::vector<T> bb)
+{
+    bool isIn = true;
+    int dim = crd.size();
+    for (int i=0; i<dim; i++)
+    {   
+        if (!isIn)
+            continue;
+        if (crd[i] < bb[2*i] || crd[i] > bb[2*i+1])
+            isIn = false;
+    }
+    return(isIn);
+}
+
 #endif
