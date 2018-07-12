@@ -71,7 +71,7 @@ class pntMesh
       pntMesh();
       pntMesh(std::string ifname);
       pntMesh(const meshBase* imb, int dim, int nBlk, BlockMap& elmBlkMap);
-      ~pntMesh();
+      ~pntMesh() {};
 
     public:
       bool isCompatible() const {return isSupported;}

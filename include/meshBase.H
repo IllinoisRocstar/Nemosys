@@ -121,7 +121,17 @@ class meshBase
       std::cout << "meshBase constructed" << std::endl;
     }
 
-
+    meshBase(const meshBase& mb)
+    {
+        numPoints = mb.numPoints;
+        numCells = mb.numCells;
+        hasSizeField = mb.hasSizeField;
+        dataSet = mb.dataSet;
+        filename = mb.filename;
+        checkQuality = mb.checkQuality;
+        order = mb.order;
+        newArrayNames = mb.newArrayNames;
+    }
 
     virtual ~meshBase()
     {
@@ -151,6 +161,8 @@ class meshBase
     static meshBase* exportVolToVtk(std::string fname);
     // construct vtkMesh from netgen vol file
     static meshBase* exportPntToVtk(std::string fname);
+    // construct vtkMesh from exodusII files
+    static meshBase* exportExoToVtk(std::string fname);
     // generate volume mesh from stl
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
@@ -282,6 +294,7 @@ class meshBase
     void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
     void unsetNewArrayNames() { newArrayNames.clear(); }
 
+   
   protected:
     int numPoints; // number of points in mesh
     int numCells;  // number of cells in mesh
