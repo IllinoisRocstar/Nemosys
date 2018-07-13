@@ -16,6 +16,9 @@
 #include <vtkPoints.h>
 #include <vtkCell.h>
 #include <vtkAppendFilter.h>
+#include <vtkSelection.h>
+#include <vtkSelectionNode.h>
+#include <vtkExtractSelection.h>
 
 // netgen
 namespace nglib
@@ -147,6 +150,7 @@ meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
   {
     vtkSmartPointer<vtkAppendFilter> appender
       = vtkSmartPointer<vtkAppendFilter>::New();
+    appender->MergePointsOn();
     for (int i = 0; i < mbObjs.size(); ++i)
     {
       appender->AddInputData(mbObjs[i]->getDataSet());
@@ -159,6 +163,43 @@ meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
     std::cerr << "Nothing to stitch!" << std::endl;
     exit(1);
   }
+}
+
+meshBase* meshBase::extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds)
+{
+  vtkSmartPointer<vtkIdTypeArray> selectionIds 
+    = vtkSmartPointer<vtkIdTypeArray>::New();
+  selectionIds->SetNumberOfComponents(1);
+  for (int i = 0; i < cellIds.size(); ++i)
+  {
+    selectionIds->InsertNextValue(cellIds[i]);
+  }
+  return extractSelectedCells(mesh->getDataSet(), selectionIds);
+}
+
+meshBase* meshBase::extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
+                                         vtkSmartPointer<vtkIdTypeArray> cellIds)
+{
+  vtkSmartPointer<vtkSelectionNode> selectionNode
+    = vtkSmartPointer<vtkSelectionNode>::New(); 
+  selectionNode->SetFieldType(vtkSelectionNode::CELL);
+  selectionNode->SetContentType(vtkSelectionNode::INDICES);
+  selectionNode->SetSelectionList(cellIds);
+  // create the selection
+  vtkSmartPointer<vtkSelection> selection = vtkSmartPointer<vtkSelection>::New();
+  selection->AddNode(selectionNode);
+  // creating extractor
+  vtkSmartPointer<vtkExtractSelection> extractSelection
+    = vtkSmartPointer<vtkExtractSelection>::New();
+  // set stitch surf as input on first port
+  extractSelection->SetInputData(0, mesh);
+  // set selectionNode as input on second port
+  extractSelection->SetInputData(1, selection);
+  extractSelection->Update();
+  meshBase* selectedCellMesh 
+    = meshBase::Create(vtkDataSet::SafeDownCast(
+                        extractSelection->GetOutput()), "extracted.vtu");
+  return selectedCellMesh;
 }
 
 // check for named array in vtk 
@@ -289,6 +330,8 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     std::map<int,int> partToGlobNodeMap(mPart->getPartToGlobNodeMap(i)); 
     vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
     globalNodeIds->SetName("GlobalNodeIds");
+    globalNodeIds->SetNumberOfComponents(1);
+    globalNodeIds->SetNumberOfTuples(mbPart->getNumberOfPoints());
     globalNodeIds->SetNumberOfValues(mbPart->getNumberOfPoints());
     auto it = partToGlobNodeMap.begin();
     int idx = 0;
@@ -296,31 +339,33 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     {
       int globidx = it->second-1;
       int locidx = it->first-1;
-      globalNodeIds->SetValue(idx,globidx);
+      globalNodeIds->SetTuple1(idx,globidx);
       mbPart->globToPartNodeMap[globidx] = locidx; 
-      mbPart->partToGlobNodeMap[locidx] = globidx; 
+      mbPart->partToGlobNodeMap[locidx] = globidx;
       ++idx; 
       ++it;
     }
-    mbPart->getDataSet()->GetPointData()->SetGlobalIds(globalNodeIds);
+    mbPart->getDataSet()->GetPointData()->AddArray(globalNodeIds);
     // add global cell index array to partition
     std::map<int,int> partToGlobCellMap(mPart->getPartToGlobElmMap(i));
-    vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
-    globalCellIds->SetName("GlobalCellIds");
-    globalCellIds->SetNumberOfValues(mbPart->getNumberOfCells());
+    //vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
+    //globalCellIds->SetName("GlobalCellIds");
+    //globalCellIds->SetNumberOfComponents(1);
+    //globalCellIds->SetNumberOfTuples(mbPart->getNumberOfCells());
+    //globalCellIds->SetNumberOfValues(mbPart->getNumberOfCells());
     it = partToGlobCellMap.begin();
     idx = 0;
     while (it != partToGlobCellMap.end())
     {
       int globidx = it->second-1;
       int locidx = it->first-1;
-      globalCellIds->SetValue(idx,globidx);
+  //    globalCellIds->SetTuple1(idx,globidx);
       mbPart->globToPartCellMap[globidx] = locidx;
       mbPart->partToGlobCellMap[locidx] = globidx;
       ++idx;
       ++it;
     }
-    mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
+    //mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
     mbPart->write();
     mbParts[i] = mbPart;
   }

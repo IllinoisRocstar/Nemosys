@@ -11,7 +11,7 @@ using jsoncons::json;
 class NemDriver
 {
   public:
-    NemDriver(){};
+    NemDriver(){}
     virtual ~NemDriver(){}
     static NemDriver* readJSON(json inputjson);
 };
