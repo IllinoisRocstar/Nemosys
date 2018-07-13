@@ -51,8 +51,8 @@ class FETransfer : public TransferBase
                          const std::vector<std::string>& newnames = std::vector<std::string>());
 
     int transferCellData(int i, vtkSmartPointer<vtkGenericCell> genCell, 
-                     std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint,
-                     std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget);
+                         std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint,
+                         std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget);
 
     // transfer all cell and point data from source to target
     int run(const std::vector<std::string>& newnames = std::vector<std::string>());

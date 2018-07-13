@@ -126,7 +126,7 @@ template<typename A, typename B>
 std::multimap<B,A> flip_map(const std::map<A,B> &src);
 // get a vector of the keys from a map (which are sorted)
 template<typename A, typename B>
-std::vector<A> getSortedKeysFromMap(const std::map<A,B>& mapObj); 
+std::vector<A> getSortedKeys(const std::map<A,B>& mapObj); 
 //-------------------------------------------------------------------------//
 
 

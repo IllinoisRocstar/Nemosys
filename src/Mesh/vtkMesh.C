@@ -32,6 +32,7 @@
 #include <vtkRectilinearGrid.h>
 #include <vtkImageData.h>
 #include <AuxiliaryFunctions.H>
+
 using namespace nemAux;
 
 void vtkMesh::write()
@@ -1024,6 +1025,7 @@ int vtkMesh::getCellType() const
 {
   return dataSet->GetCellType(0);
 }
+
 
 
 // set point data  

@@ -101,6 +101,7 @@ class vtkMesh : public meshBase
     void inspectEdges(const std::string& ofname);
     std::vector<int> getConnectivities() const;
 
+  
   // processing
   public:
     vtkSmartPointer<vtkDataSet> extractSurface();
