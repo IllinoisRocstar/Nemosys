@@ -212,11 +212,12 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C						      src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
-		 src/StlToVtk.C src/Integration/Cubature.C
+                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C                  
+                 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
+                 src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
-                 src/PatchRecovery/orthoPoly1D.C 
-                 src/PatchRecovery/orthoPoly3D.C
+                 src/Drivers/PreRocPrepDriver.C
+                 src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
                  src/SolutionVerification/OrderOfAccuracy.C src/vtkAnalyzer.C 

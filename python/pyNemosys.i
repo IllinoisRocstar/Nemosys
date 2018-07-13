@@ -24,6 +24,7 @@
 %template(intV) std::vector<int>;
 %template(doubleVV) std::vector<std::vector<double>>;
 %template(cellMap) std::map<int, std::vector<double>>;
+%template(meshBaseV) std::vector<meshBase*>;
 
 class meshBase
 {
@@ -40,6 +41,9 @@ class meshBase
     //static std::unique_ptr<meshBase> CreateUnique(std::string fname);
     static meshBase* generateMesh(std::string fname, std::string meshEngine,
                                   meshingParams* params); 
+    static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
+    static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
+                                          vtkSmartPointer<vtkIdTypeArray> cellIds);
     virtual std::vector<double> getPoint(int id);
     virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);

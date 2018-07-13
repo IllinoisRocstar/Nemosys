@@ -6,6 +6,7 @@
 #include <vtkCellLocator.h>
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkIdTypeArray.h>
 
 //MAd Lib
 #include <MAdLib.h>
@@ -34,7 +35,7 @@ class meshBase
 
     meshBase()
       : dataSet(0),numPoints(0),numCells(0),
-        hasSizeField(0),checkQuality(0), continuous(1),order(1)
+        hasSizeField(0),checkQuality(0), continuous(0),order(1)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -87,7 +88,11 @@ class meshBase
     // mesh partitioning (with METIS)
     // caller must delete objects after use
     static std::vector<meshBase*> partition(const meshBase* mbObj, const int numPartitions);
-      
+    // extract subset of mesh given list of cell ids and return meshbase obj
+    static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& celIds);
+    static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh, 
+                                          vtkSmartPointer<vtkIdTypeArray> cellIds);
+
  
   // access
   public:
@@ -138,6 +143,8 @@ class meshBase
     // assumes all elements are the same type
     virtual int getCellType() const = 0;
     virtual std::vector<int> getConnectivities() const {}
+
+
 
   // data transfer
   public:

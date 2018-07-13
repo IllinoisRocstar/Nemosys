@@ -7,11 +7,11 @@
 #include <RemeshDriver.H>
 #include <RocRestartDriver.H>
 #include <RocPrepDriver.H>
+#include <PreRocPrepDriver.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver* NemDriver::readJSON(json inputjson)
 {
-
   std::string program_type = inputjson["Program Type"].as<std::string>();
   if (!program_type.compare("Transfer"))
   {
@@ -45,11 +45,15 @@ NemDriver* NemDriver::readJSON(json inputjson)
   {
     return RocPrepDriver::readJSON(inputjson);
   }
+  else if (!program_type.compare("Pre Rocstar Communication Generation"))
+  {
+    return PreRocPrepDriver::readJSON(inputjson);
+  }
   else
   {
     std::cout << "Program Type " << program_type 
               << " is not supported by Nemosys" << std::endl;
     exit(1);
   }
-  
 }
+
