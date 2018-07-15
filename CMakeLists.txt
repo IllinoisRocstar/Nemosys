@@ -216,7 +216,7 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
                  src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocRestartDriver.C src/Drivers/RocPrepDriver.C
-                 src/Drivers/PreRocPrepDriver.C
+                 src/Drivers/RocPartCommGenDriver.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C

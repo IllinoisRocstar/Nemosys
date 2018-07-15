@@ -13,9 +13,9 @@ class MeshGenDriver : public NemDriver
     static MeshGenDriver* readJSON(const json& inputjson);
     static MeshGenDriver* readJSON(const std::string& ifname, const std::string& ofname, 
                                    const json& inputjson);
-    meshBase* getNewMesh();
+    std::shared_ptr<meshBase> getNewMesh();
   private:
-    meshBase* mesh; 
+    std::shared_ptr<meshBase> mesh; 
     meshingParams* params;
 };
 

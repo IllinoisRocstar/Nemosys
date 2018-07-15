@@ -93,6 +93,44 @@ meshBase* meshBase::Create(const std::vector<double>& xCrds,
   return new vtkMesh(xCrds, yCrds, zCrds, elmConn, cellType, newname);
 }
 
+std::unique_ptr<meshBase>
+meshBase::CreateUnique(const std::vector<double>& xCrds,
+                       const std::vector<double>& yCrds,
+                       const std::vector<double>& zCrds,
+                       const std::vector<int>& elmConn, const int cellType,
+                       std::string newname)
+{
+  return std::unique_ptr<meshBase>
+          (meshBase::Create(xCrds,yCrds,zCrds,elmConn,cellType,newname));
+}
+
+std::unique_ptr<meshBase> 
+meshBase::CreateUnique(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  return std::unique_ptr<meshBase>(meshBase::Create(other,newname));
+}
+
+std::unique_ptr<meshBase>
+meshBase::CreateUnique(meshBase* mesh)
+{
+  return std::unique_ptr<meshBase>(mesh);
+}
+
+std::shared_ptr<meshBase>
+meshBase::CreateShared(meshBase* mesh)
+{
+  std::shared_ptr<meshBase> sharedMesh;
+  sharedMesh.reset(mesh);
+  return sharedMesh;
+} 
+
+std::shared_ptr<meshBase> 
+meshBase::CreateShared(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(other,newname));
+  return mesh;
+}
 std::shared_ptr<meshBase> meshBase::CreateShared(std::string fname)
 {
   std::shared_ptr<meshBase> mesh;
@@ -165,6 +203,17 @@ meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
   }
 }
 
+std::shared_ptr<meshBase> 
+meshBase::stitchMB(const std::vector<std::shared_ptr<meshBase>>& _mbObjs)
+{
+  std::vector<meshBase*> mbObjs(_mbObjs.size());
+  for (int i = 0; i < mbObjs.size(); ++i)
+  {
+    mbObjs[i] = _mbObjs[i].get();
+  }
+  return meshBase::CreateShared(meshBase::stitchMB(mbObjs));
+}
+
 meshBase* meshBase::extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds)
 {
   vtkSmartPointer<vtkIdTypeArray> selectionIds 
@@ -196,9 +245,10 @@ meshBase* meshBase::extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
   // set selectionNode as input on second port
   extractSelection->SetInputData(1, selection);
   extractSelection->Update();
+  vtkSmartPointer<vtkDataSet> extractedCellMesh
+    = vtkDataSet::SafeDownCast(extractSelection->GetOutput());
   meshBase* selectedCellMesh 
-    = meshBase::Create(vtkDataSet::SafeDownCast(
-                        extractSelection->GetOutput()), "extracted.vtu");
+    = meshBase::Create(extractedCellMesh, "extracted.vtu");
   return selectedCellMesh;
 }
 
@@ -241,7 +291,7 @@ int meshBase::IsArrayName(std::string name, const bool pointOrCell)
 
 // transfer point data or cell data with given ids from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<int>& arrayIDs, const bool pointOrCell)
+                       const std::vector<int>& arrayIDs, bool pointOrCell)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
@@ -256,7 +306,7 @@ int meshBase::transfer(meshBase* target, std::string method,
 }
 
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<std::string>& arrayNames, const bool pointOrCell)
+                       const std::vector<std::string>& arrayNames, bool pointOrCell)
 {
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
@@ -283,7 +333,8 @@ int meshBase::transfer(meshBase* target, std::string method)
 }
 
 // partition mesh into numPartition pieces (static fcn)
-std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numPartitions)
+std::vector<std::unique_ptr<meshBase>> 
+meshBase::partition(const meshBase* mbObj, const int numPartitions)
 {
   // construct partitioner with meshBase object
   meshPartitioner* mPart = new meshPartitioner(mbObj);
@@ -292,7 +343,7 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     exit(1); 
   }
   // initialize vector of meshBase partitions
-  std::vector<meshBase*> mbParts(numPartitions); 
+  std::vector<std::unique_ptr<meshBase>> mbParts(numPartitions); 
   for (int i = 0; i < numPartitions; ++i)
   {
     // define coordinates
@@ -307,7 +358,7 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase partition from coordinates and connectivities from partitioner
-    meshBase* mbPart = meshBase::Create(mPart->getCrds(i, comp_crds[0]),
+    mbParts[i] = meshBase::CreateUnique(mPart->getCrds(i, comp_crds[0]),
                                         mPart->getCrds(i, comp_crds[1]),
                                         mPart->getCrds(i, comp_crds[2]),
                                         vtkConn, VTK_TETRA, basename);
@@ -315,24 +366,24 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
     vtkSmartPointer<vtkIntArray> nodePartitionIds = vtkSmartPointer<vtkIntArray>::New();
     nodePartitionIds->SetName("NodePartitionIds");
     nodePartitionIds->SetNumberOfComponents(1);
-    nodePartitionIds->SetNumberOfTuples(mbPart->getNumberOfPoints());
+    nodePartitionIds->SetNumberOfTuples(mbParts[i]->getNumberOfPoints());
     nodePartitionIds->FillComponent(0, i);
-    mbPart->getDataSet()->GetPointData()->AddArray(nodePartitionIds);
+    mbParts[i]->getDataSet()->GetPointData()->AddArray(nodePartitionIds);
 
     vtkSmartPointer<vtkIntArray> cellPartitionIds = vtkSmartPointer<vtkIntArray>::New();
     cellPartitionIds->SetName("CellPartitionIds");
     cellPartitionIds->SetNumberOfComponents(1);
-    cellPartitionIds->SetNumberOfTuples(mbPart->getNumberOfCells());
+    cellPartitionIds->SetNumberOfTuples(mbParts[i]->getNumberOfCells());
     cellPartitionIds->FillComponent(0, i);
-    mbPart->getDataSet()->GetCellData()->AddArray(cellPartitionIds);
+    mbParts[i]->getDataSet()->GetCellData()->AddArray(cellPartitionIds);
 
     // add global node index array to partition
     std::map<int,int> partToGlobNodeMap(mPart->getPartToGlobNodeMap(i)); 
     vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
     globalNodeIds->SetName("GlobalNodeIds");
     globalNodeIds->SetNumberOfComponents(1);
-    globalNodeIds->SetNumberOfTuples(mbPart->getNumberOfPoints());
-    globalNodeIds->SetNumberOfValues(mbPart->getNumberOfPoints());
+    globalNodeIds->SetNumberOfTuples(mbParts[i]->getNumberOfPoints());
+    globalNodeIds->SetNumberOfValues(mbParts[i]->getNumberOfPoints());
     auto it = partToGlobNodeMap.begin();
     int idx = 0;
     while (it != partToGlobNodeMap.end())
@@ -340,12 +391,12 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
       int globidx = it->second-1;
       int locidx = it->first-1;
       globalNodeIds->SetTuple1(idx,globidx);
-      mbPart->globToPartNodeMap[globidx] = locidx; 
-      mbPart->partToGlobNodeMap[locidx] = globidx;
+      mbParts[i]->globToPartNodeMap[globidx] = locidx; 
+      mbParts[i]->partToGlobNodeMap[locidx] = globidx;
       ++idx; 
       ++it;
     }
-    mbPart->getDataSet()->GetPointData()->AddArray(globalNodeIds);
+    mbParts[i]->getDataSet()->GetPointData()->AddArray(globalNodeIds);
     // add global cell index array to partition
     std::map<int,int> partToGlobCellMap(mPart->getPartToGlobElmMap(i));
     //vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
@@ -360,14 +411,14 @@ std::vector<meshBase*> meshBase::partition(const meshBase* mbObj, const int numP
       int globidx = it->second-1;
       int locidx = it->first-1;
   //    globalCellIds->SetTuple1(idx,globidx);
-      mbPart->globToPartCellMap[globidx] = locidx;
-      mbPart->partToGlobCellMap[locidx] = globidx;
+      mbParts[i]->globToPartCellMap[globidx] = locidx;
+      mbParts[i]->partToGlobCellMap[locidx] = globidx;
       ++idx;
       ++it;
     }
     //mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
-    mbPart->write();
-    mbParts[i] = mbPart;
+    mbParts[i]->write();
+    //mbParts[i] = mbPart;
   }
   delete mPart; mPart = nullptr;
   return mbParts;
