@@ -53,10 +53,9 @@ void vtkMesh::write()
     writeVTFile<vtkXMLRectilinearGridWriter> (filename,dataSet);
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
-  else if (extension == ".stl") // stl written to vtp
+  else if (extension == ".stl") 
   {
-    filename = trim_fname(filename , ".vtp");
-    writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
+    writeVTFile<vtkSTLWriter> (filename, dataSet);
   }
   else if (extension == ".vtk")
     writeVTFile<vtkUnstructuredGridWriter> (filename, dataSet); // legacy vtk writer

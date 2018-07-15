@@ -20,14 +20,14 @@ void meshStitcher::initVolCgObj()
   partitions.resize(cgFileNames.size(),nullptr);
   for (int iCg = 0; iCg < cgFileNames.size(); ++iCg)
   {
-    partitions[iCg] = new cgnsAnalyzer(cgFileNames[iCg]);
+    partitions[iCg] = std::make_shared<cgnsAnalyzer>(cgFileNames[iCg]);
     partitions[iCg]->loadGrid(1);
   	// defining partition flags
     std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
     partitions[iCg]
       ->appendSolutionData("partitionOld", slnData, ELEMENTAL, partitions[iCg]->getNElement(),1);
     if (iCg)
-      partitions[0]->stitchMesh(partitions[iCg],true); 
+      partitions[0]->stitchMesh(partitions[iCg].get(),true); 
   } 
   std::cout << "Meshes stitched successfully! #####################################\n";
   std::cout << "Exporting stitched mesh to VTK format #############################\n";
@@ -35,7 +35,7 @@ void meshStitcher::initVolCgObj()
   std::size_t pos = newname.find_last_of("/");
   newname = newname.substr(pos+1);
   newname = trim_fname(newname, "stitched.vtu");
-  stitchedMesh = meshBase::Create(partitions[0]->getVTKMesh(),newname);
+  stitchedMesh = meshBase::CreateShared(partitions[0]->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh ######################\n";
   // figure out what is existing on the stitched grid
   int outNData, outNDim;
@@ -72,7 +72,7 @@ void meshStitcher::initVolCgObj()
 
 void meshStitcher::initSurfCgObj()
 {
-  cgObj = new rocstarCgns(cgFileNames);
+  cgObj = std::make_shared<rocstarCgns>(cgFileNames);
 	// different read for burn files
 	if (cgFileNames[0].find("burn") != std::string::npos)
 	{
@@ -86,7 +86,7 @@ void meshStitcher::initSurfCgObj()
   std::size_t pos = newname.find_last_of("/");
   newname = newname.substr(pos+1);
   newname = trim_fname(newname, "stitched.vtu");
-  stitchedMesh = meshBase::Create(cgObj->getVTKMesh(),newname);
+  stitchedMesh = meshBase::CreateShared(cgObj->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh ######################\n";
   // figure out what exists on the stitched grid
   int outNData, outNDim;
@@ -121,29 +121,7 @@ void meshStitcher::initSurfCgObj()
   stitchedMesh->write();
 }
 
-meshStitcher::~meshStitcher()
-{
-  for (int i = 0; i < partitions.size(); ++i)
-  {    
-    if (partitions[i])
-    {
-      delete partitions[i];
-      partitions[i] = 0;
-    }
-  }
-  if (stitchedMesh)
-  {
-    delete stitchedMesh;
-    stitchedMesh = nullptr;
-  }
-  if (cgObj)
-  {
-    delete cgObj;
-    cgObj = nullptr;
-  }
-}
-
-meshBase* meshStitcher::getStitchedMB()
+std::shared_ptr<meshBase> meshStitcher::getStitchedMB()
 {
   if (stitchedMesh)
     return stitchedMesh;
@@ -154,7 +132,7 @@ meshBase* meshStitcher::getStitchedMB()
   }
 }
 
-cgnsAnalyzer* meshStitcher::getStitchedCGNS()
+std::shared_ptr<cgnsAnalyzer> meshStitcher::getStitchedCGNS()
 {
   if (partitions.size())
     return partitions[0];

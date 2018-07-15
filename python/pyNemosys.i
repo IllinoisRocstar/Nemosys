@@ -44,6 +44,7 @@ class meshBase
     static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
     static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
+    static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds);
     virtual std::vector<double> getPoint(int id);
     virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);

@@ -1108,7 +1108,9 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
   }
 }
 
-void cgnsAnalyzer::overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, DataType_t dt, void* data)
+void cgnsAnalyzer::overwriteSolData(const std::string& fname, 
+                                    const std::string& ndeName, 
+                                    int slnIdx, DataType_t dt, void* data)
 {
   // write solution to file
   GridLocation_t gloc(solutionNameLocMap[fname]);

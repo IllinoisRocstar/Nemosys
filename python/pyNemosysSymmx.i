@@ -51,6 +51,7 @@ class meshBase
     static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
     static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
+    static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds);
     static std::vector<meshBase*> partition(const meshBase* mbObj, const int numPartitions);
     virtual std::vector<double> getPoint(int id);
     virtual std::vector<std::vector<double>> getVertCrds() const;
@@ -465,7 +466,7 @@ class RemeshDriver : public NemDriver
                  const std::vector<std::string>& ifluidniNames,
                  const std::vector<std::string>& ifluidnbNames,
                  const std::vector<std::string>& ifluidbNames,
-                 const json& remeshjson);
+                 const json& remeshjson, int numPartitions);
     ~RemeshDriver();
 };
 
