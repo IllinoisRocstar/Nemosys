@@ -55,44 +55,9 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
   std::cout << "RocRestartDriver created" << std::endl; 
 } 
 
-void RocRestartDriver::deleteCgMb(std::vector<cgnsAnalyzer*>& cgObjs, std::vector<meshBase*>& cgMbObjs)
-{
-  for (int i = 0; i < cgObjs.size(); ++i)
-  {
-    if (cgObjs[i])
-    {
-      delete cgObjs[i];
-      delete cgMbObjs[i];
-      cgObjs[i] = nullptr;
-      cgMbObjs[i] = nullptr;
-    }
-  }
-}
 
 RocRestartDriver::~RocRestartDriver()
 {
-  deleteCgMb(fluidRmCg, fluidRmMb);
-  deleteCgMb(ifluidNiRmCg, ifluidNiRmMb);
-  deleteCgMb(ifluidBRmCg, ifluidBRmMb);
-  deleteCgMb(ifluidNbRmCg, ifluidNbRmMb);
-	deleteCgMb(burnRmCg, burnRmMb);
-	deleteCgMb(iBurnRmCg, iBurnRmMb); 
- 
-  for (int i = 0; i < stitchers.size(); ++i)
-  {
-    if (stitchers[i])
-    { 
-      delete stitchers[i]; // deletes mb and cg objs as well
-      stitchers[i] = nullptr;
-      mbObjs[i] = nullptr;
-    }
-  }
-
-  if (stitchedSurf)
-  {
-    delete stitchedSurf;
-    stitchedSurf = nullptr;
-  } 
   std::cout << "RocRestartDriver destroyed" << std::endl;
 }
 
@@ -100,14 +65,14 @@ void RocRestartDriver::stitchCGNS(const std::vector<std::string>& fnames, bool s
 {
   if (fnames.size())
   {
-    stitchers.push_back(new meshStitcher(fnames, surf));
+    stitchers.push_back(std::unique_ptr<meshStitcher>(new meshStitcher(fnames, surf)));
   }
 }
 
 void RocRestartDriver::stitchSurfaces()
 {
   // stitch b, ni and nb surfaces
-  std::vector<meshBase*> surfs;
+  std::vector<std::shared_ptr<meshBase>> surfs;
   surfs.insert(surfs.begin(), mbObjs.begin()+3,mbObjs.end());
   stitchedSurf = meshBase::stitchMB(surfs);
   stitchedSurf->setContBool(0);
@@ -116,8 +81,6 @@ void RocRestartDriver::stitchSurfaces()
 
 void RocRestartDriver::loadPartCgMb()
 {
-  // return type from loadCGNS 
-  typedef std::pair<std::vector<cgnsAnalyzer*>, std::vector<meshBase*>> cgVtPair; 
   // fluid
   if (fluidNamesRm.size())
   {
@@ -167,63 +130,65 @@ void RocRestartDriver::transferStitchedToPartCg(const std::string& transferType)
   // fluid
   for (int i = 0; i < fluidRmMb.size(); ++i)
   {
-    mbObjs[0]->transfer(fluidRmMb[i], transferType); 
-    fluidRmCg[i]->overwriteSolData(fluidRmMb[i]);
+    mbObjs[0]->transfer(fluidRmMb[i].get(), transferType); 
+    fluidRmCg[i]->overwriteSolData(fluidRmMb[i].get());
   }
 	// burn
 	for (int i = 0; i < burnRmMb.size(); ++i)
 	{
-		mbObjs[1]->transfer(burnRmMb[i], transferType);
-		burnRmCg[i]->overwriteSolData(burnRmMb[i]);
+		mbObjs[1]->transfer(burnRmMb[i].get(), transferType);
+		burnRmCg[i]->overwriteSolData(burnRmMb[i].get());
 	}
 	// iburn
 	for (int i = 0; i < iBurnRmMb.size(); ++i)
 	{
-		mbObjs[2]->transfer(iBurnRmMb[i], transferType);
-		iBurnRmCg[i]->overwriteSolData(iBurnRmMb[i]);
+		mbObjs[2]->transfer(iBurnRmMb[i].get(), transferType);
+		iBurnRmCg[i]->overwriteSolData(iBurnRmMb[i].get());
 	}
   // ifluid_ni
   for (int i = 0; i < ifluidNiRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNiRmMb[i], transferType);
-    ifluidNiRmCg[i]->overwriteSolData(ifluidNiRmMb[i]);
+    stitchedSurf->transfer(ifluidNiRmMb[i].get(), transferType);
+    ifluidNiRmCg[i]->overwriteSolData(ifluidNiRmMb[i].get());
   }
   // ifluid_nb
   for (int i = 0; i < ifluidNbRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNbRmMb[i], transferType);
-    ifluidNbRmCg[i]->overwriteSolData(ifluidNbRmMb[i]);
+    stitchedSurf->transfer(ifluidNbRmMb[i].get(), transferType);
+    ifluidNbRmCg[i]->overwriteSolData(ifluidNbRmMb[i].get());
   }
   // ifluid_b
   for (int i = 0; i < ifluidBRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidBRmMb[i], transferType);
-    ifluidBRmCg[i]->overwriteSolData(ifluidBRmMb[i]);
+    stitchedSurf->transfer(ifluidBRmMb[i].get(), transferType);
+    ifluidBRmCg[i]->overwriteSolData(ifluidBRmMb[i].get());
   }
 }
 
-std::pair< std::vector<cgnsAnalyzer*>, std::vector<meshBase*> >
-RocRestartDriver::loadCGNS(const std::vector<std::string>& fnames, bool surf)
+
+cgVtPair RocRestartDriver::loadCGNS(const std::vector<std::string>& fnames, bool surf)
 {
-  std::vector<cgnsAnalyzer*> cgObjs;
-  std::vector<meshBase*> mbobjs(fnames.size());
+  std::vector<std::shared_ptr<cgnsAnalyzer>> cgObjs;
+  std::vector<std::shared_ptr<meshBase>> mbobjs(fnames.size());
   for (int i = 0; i < fnames.size(); ++i)
   {
-    cgnsAnalyzer* cgObj;
+    std::shared_ptr<cgnsAnalyzer> cgObj;
     if (surf)
     {
-      cgObj = new rocstarCgns(fnames[i]);
+      cgnsAnalyzer* _cgObj = new rocstarCgns(fnames[i]);
+      cgObj.reset(_cgObj);
     }
     else
     {
-      cgObj = new cgnsAnalyzer(fnames[i]);
+      cgnsAnalyzer* _cgObj = new cgnsAnalyzer(fnames[i]);
+      cgObj.reset(_cgObj);
     }
     cgObj->loadGrid(1);
     cgObjs.push_back(cgObj);
     std::size_t pos = fnames[i].find_last_of("/");
     std::string vtkname = fnames[i].substr(pos+1);
     vtkname = trim_fname(vtkname, ".vtu");
-    mbobjs[i] = meshBase::Create(cgObj->getVTKMesh(),vtkname);      
+    mbobjs[i] = meshBase::CreateShared(cgObj->getVTKMesh(),vtkname);      
   }
   return std::make_pair(cgObjs, mbobjs);
 }

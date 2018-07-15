@@ -4,6 +4,7 @@
 //std
 #include <vector>
 #include <string>
+#include <memory>
 
 class cgnsAnalyzer;
 class rocstarCgns;
@@ -20,16 +21,20 @@ class meshStitcher
     // stitch fluid/ifluid files depending on surf flag
     // surface stitching uses rocstarCgns, while vol uses cgnsAnalyzer 
     meshStitcher(const std::vector<std::string>& cgFileNames, bool surf);
-    ~meshStitcher();
+    ~meshStitcher(){};
     
-    cgnsAnalyzer* getStitchedCGNS();
-    meshBase* getStitchedMB();
+    std::shared_ptr<cgnsAnalyzer> getStitchedCGNS();
+    std::shared_ptr<meshBase> getStitchedMB();
  
   private:
-    const std::vector<std::string> cgFileNames; // names of cgns files
-    std::vector<cgnsAnalyzer*> partitions;      // vector of loaded cgns files
-    meshBase* stitchedMesh;                     // stitched mesh in Nemosys format
-    rocstarCgns* cgObj;
+    // names of cgns files
+    const std::vector<std::string> cgFileNames;             
+    // vector of loaded cgns files
+    std::vector<std::shared_ptr<cgnsAnalyzer>> partitions;
+    // stitched mesh in Nemosys format  
+    std::shared_ptr<meshBase> stitchedMesh;                     
+    // stitched mesh in cgns fomrat
+    std::shared_ptr<rocstarCgns> cgObj;
     // initialize series of cgns objects
     void initSurfCgObj();
     void initVolCgObj();

@@ -6,6 +6,8 @@
 class meshStitcher;
 class cgnsAnalyzer;
  
+typedef std::pair<std::vector<std::shared_ptr<cgnsAnalyzer>>, 
+                    std::vector<std::shared_ptr<meshBase>>> cgVtPair; 
 class RocRestartDriver : public NemDriver
 {
 
@@ -42,42 +44,38 @@ class RocRestartDriver : public NemDriver
     std::vector<std::string> ifluidnbNamesLts;
     std::vector<std::string> ifluidbNamesLts;
     // stitches files in order listed above
-    std::vector<meshStitcher*> stitchers;
+    std::vector<std::unique_ptr<meshStitcher>> stitchers;
     // stitched last ts meshbase in order listed above    
-    std::vector<meshBase*> mbObjs;  
+    std::vector<std::shared_ptr<meshBase>> mbObjs;  
     // all last ts surface cgns files stitched together (mbObjs[1:-1])
-    meshBase* stitchedSurf;
+    std::shared_ptr<meshBase> stitchedSurf;
     // remeshed, 0 ts loaded cgns files
-    std::vector<cgnsAnalyzer*> fluidRmCg;
-		std::vector<cgnsAnalyzer*> burnRmCg;
-		std::vector<cgnsAnalyzer*> iBurnRmCg;
-    std::vector<cgnsAnalyzer*> ifluidNiRmCg;
-    std::vector<cgnsAnalyzer*> ifluidNbRmCg;
-    std::vector<cgnsAnalyzer*> ifluidBRmCg;  
+    std::vector<std::shared_ptr<cgnsAnalyzer>> fluidRmCg;
+		std::vector<std::shared_ptr<cgnsAnalyzer>> burnRmCg;
+		std::vector<std::shared_ptr<cgnsAnalyzer>> iBurnRmCg;
+    std::vector<std::shared_ptr<cgnsAnalyzer>> ifluidNiRmCg;
+    std::vector<std::shared_ptr<cgnsAnalyzer>> ifluidNbRmCg;
+    std::vector<std::shared_ptr<cgnsAnalyzer>> ifluidBRmCg;  
     // remeshed, 0 ts loaded cgns files converted to vtu
-    std::vector<meshBase*> fluidRmMb;
-		std::vector<meshBase*> burnRmMb;
-		std::vector<meshBase*> iBurnRmMb;
-    std::vector<meshBase*> ifluidNiRmMb;
-    std::vector<meshBase*> ifluidNbRmMb;
-    std::vector<meshBase*> ifluidBRmMb;  
+    std::vector<std::shared_ptr<meshBase>> fluidRmMb;
+		std::vector<std::shared_ptr<meshBase>> burnRmMb;
+		std::vector<std::shared_ptr<meshBase>> iBurnRmMb;
+    std::vector<std::shared_ptr<meshBase>> ifluidNiRmMb;
+    std::vector<std::shared_ptr<meshBase>> ifluidNbRmMb;
+    std::vector<std::shared_ptr<meshBase>> ifluidBRmMb;  
 
 
   //helpers
   private:
-    // delete remeshed cgns files and converted vtus
-    void deleteCgMb(std::vector<cgnsAnalyzer*>& cgObjs, std::vector<meshBase*>& cgMbObjs);
     // populates stitchers
     void stitchCGNS(const std::vector<std::string>& fnames, bool surf);
     // populates cgns and meshbase vectors
     void loadPartCgMb();
-    std::pair< std::vector<cgnsAnalyzer*>, std::vector<meshBase*> >
-      loadCGNS(const std::vector<std::string>& fnames, bool surf);
+    cgVtPair loadCGNS(const std::vector<std::string>& fnames, bool surf);
     // stitch ni, b and nb surfaces
     void stitchSurfaces();
     // transfer stitched data to new meshbase partitions
     void transferStitchedToPartCg(const std::string& transferType);
-
 };
 
 // get cg file names using rocstar convention in glob

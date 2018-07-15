@@ -2,6 +2,7 @@
 #define REMESH_DRIVER_H
 
 #include <NemDriver.H>
+#include <memory>
 
 class meshStitcher;
 class cgnsAnalyzer;
@@ -14,10 +15,11 @@ class RemeshDriver : public NemDriver
                  const std::vector<std::string>& ifluidniNames,
                  const std::vector<std::string>& ifluidnbNames,
                  const std::vector<std::string>& ifluidbNames,
-                 const json& remeshjson);
+                 const std::vector<std::string>& _burnNames,
+                 const std::vector<std::string>& _iBurnNames,
+                 const json& remeshjson, int numPartitions);
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
-    void writeCobalt(const std::string& mapFile, const std::string& ofname);
  
   private:
     // cgns file names
@@ -25,47 +27,38 @@ class RemeshDriver : public NemDriver
     std::vector<std::string> ifluidniNames;
     std::vector<std::string> ifluidnbNames;
     std::vector<std::string> ifluidbNames; 
-    // mesh generator
-    MeshGenDriver* mshgendrvr;  
+    std::vector<std::string> burnNames;
+    std::vector<std::string> iBurnNames;
+    // mesh generator which uses remeshing parameters from json
+    std::unique_ptr<MeshGenDriver> mshgendrvr;  
     // stitches files in order listed above
-    std::vector<meshStitcher*> stitchers;
+    std::vector<std::unique_ptr<meshStitcher>> stitchers;
     // stitched cgns in order listed above  
-    std::vector<cgnsAnalyzer*> cgObjs;
+    std::vector<std::shared_ptr<cgnsAnalyzer>> cgObjs;
     // stitched meshbase in order listed above    
-    std::vector<meshBase*> mbObjs;  
+    std::vector<std::shared_ptr<meshBase>> mbObjs;  
     // all surface cgns files stitched together 
-    meshBase* stitchedSurf;
+    std::shared_ptr<meshBase> stitchedSurf;
     // stitched volume cgns remeshed
-    meshBase* remeshedVol;  
+    std::shared_ptr<meshBase> remeshedVol;  
     // surface extracted from remeshed stitched volume 
-    meshBase* remeshedSurf;
-  
+    std::shared_ptr<meshBase> remeshedSurf;
+    // number of partitions
+    int numPartitions;
+
   //helpers
   private:
     // stitch surf/vol cgns files, using rocstarCgns if surf=1
     void stitchCGNS(const std::vector<std::string>& fnames, bool surf);
-    // write patch map file for roc prep (trivial identity mapping)
-    void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap); 
-    void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
-    void writeCobalt(const std::string& mapFile, std::ofstream& outputStream);
-    // partitions mesh (NOT USED)
-    //void partitionMesh();
     // creates remeshed volume and surface
     void remesh(const json& remeshjson);
     // stitches the stitched cgns surfaces into one meshBase
     void stitchSurfaces();
-
 };
 
-// get cg file names using rocstar convention in glob
+// get cg file names using rocstar convention in regex glob
 inline std::vector<std::string> getCgFNames(const std::string& case_dir, 
                                             const std::string& prefix,
                                             const std::string& base_t);
-
-// sum comparison for vectors representing faces inserted into map
-struct sortIntVec_compare
-{
-  bool operator() (std::vector<int> lhs, std::vector<int> rhs) const;
-};
 
 #endif

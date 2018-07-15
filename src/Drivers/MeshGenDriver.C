@@ -11,14 +11,14 @@ MeshGenDriver::MeshGenDriver(const std::string& ifname, const std::string& meshE
                              meshingParams* _params, const std::string& ofname)
 {
   params = _params;
-  mesh = meshBase::generateMesh(ifname, meshEngine, params);
+  mesh = meshBase::CreateShared(meshBase::generateMesh(ifname, meshEngine, params));
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();
   std::cout << "MeshGenDriver created" << std::endl;
 }
 
-meshBase* MeshGenDriver::getNewMesh()
+std::shared_ptr<meshBase> MeshGenDriver::getNewMesh()
 {
   if (mesh)
     return mesh;
@@ -26,11 +26,11 @@ meshBase* MeshGenDriver::getNewMesh()
 
 MeshGenDriver::~MeshGenDriver()
 {
-  if (mesh)
-  {
-    delete mesh;
-    mesh = 0;
-  }
+  //if (mesh)
+  //{
+  //  delete mesh;
+  //  mesh = 0;
+  //}
   if (params)
   {
     delete params;
