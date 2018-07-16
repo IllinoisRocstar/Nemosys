@@ -27,42 +27,44 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     numPartitions(_numPartitions)
 {
   // stitch fluid files
-  stitchCGNS(fluidNames,0);
+  this->stitchCGNS(fluidNames,0);
 	// stitch burn files
-	stitchCGNS(burnNames,0);
+	this->stitchCGNS(burnNames,0);
 	// stitch iburn files
-	stitchCGNS(iBurnNames,1);
+	this->stitchCGNS(iBurnNames,1);
   // stitch ifluid_ni files
-  stitchCGNS(ifluidniNames,1);
+  this->stitchCGNS(ifluidniNames,1);
   // stitch ifluid_b files
-  stitchCGNS(ifluidbNames,1);
+  this->stitchCGNS(ifluidbNames,1);
   // stitch ifluid_ng files
-  stitchCGNS(ifluidnbNames,1);
+  this->stitchCGNS(ifluidnbNames,1);
   // get stitched meshes from stitcher vector
-  for (int i = 0; i < stitchers.size(); ++i)
+  for (int i = 0; i < this->stitchers.size(); ++i)
   {
     //cgObjs.push_back(stitchers[i]->getStitchedCGNS());
-    mbObjs.push_back(stitchers[i]->getStitchedMB());
-    mbObjs[i]->setContBool(0);
+    this->mbObjs.push_back(stitchers[i]->getStitchedMB());
+    this->mbObjs[i]->setContBool(0);
   }
   // creates remeshedVol and remeshedSurf
-  remesh(remeshjson);
+  this->remesh(remeshjson);
   // creates stitchedSurf
-  if (mbObjs.size() > 1)
+  if (this->mbObjs.size() > 1)
   {
     // stitches b, ni and nb surfaces into one stitchedSurf
-    stitchSurfaces();
+    this->stitchSurfaces();
     // do not smooth for cell data transfer
-    stitchedSurf->setContBool(0);
+    this->stitchedSurf->setContBool(0);
     // transfer patch number to remeshed surface
     std::vector<std::string> patchno(1,"patchNo");
-    stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", patchno, 1);
-    stitchedSurf->write();
+    this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", patchno, 1);
+    this->stitchedSurf->write();
   }
-  remeshedSurf->write();
+  this->remeshedSurf->write();
   std::unique_ptr<RocPartCommGenDriver> rocprepdrvr 
     = std::unique_ptr<RocPartCommGenDriver>
-        (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, numPartitions));
+        (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
+                                  this->mbObjs[0], this->stitchedSurf,
+                                  numPartitions));
   std::cout << "RemeshDriver created" << std::endl;
 }
  

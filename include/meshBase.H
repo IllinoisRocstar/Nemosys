@@ -82,6 +82,13 @@ class meshBase
     // memory is managed by shared pointer, so do not call delete after use
     static std::shared_ptr<meshBase> 
     CreateShared(vtkSmartPointer<vtkDataSet> other, std::string newname);
+    // version of raw data mesh creation for memory managed shared_ptr instance (do not call delete)
+    static std::shared_ptr<meshBase> CreateShared(const std::vector<double>& xCrds,
+                                                  const std::vector<double>& yCrds,
+                                                  const std::vector<double>& zCrds,
+                                                  const std::vector<int>& elmConn, 
+                                                  const int cellType,
+                                                  std::string newname);
     // create unique ptr from fname
     // memory is managed by unique pointer, so do not call delete after use
     static std::unique_ptr<meshBase> CreateUnique(std::string fname);
@@ -118,8 +125,8 @@ class meshBase
     static std::shared_ptr<meshBase> 
     stitchMB(const std::vector<std::shared_ptr<meshBase>>& _mbObjs);
     // mesh partitioning (with METIS)
-    // memory is managed by unique ptr, so do not call delete
-    static std::vector<std::unique_ptr<meshBase>> 
+    // memory is managed by shared ptr, so do not call delete
+    static std::vector<std::shared_ptr<meshBase>> 
     partition(const meshBase* mbObj, const int numPartitions);
     // extract subset of mesh given list of cell ids and return meshbase obj
     static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& celIds);
@@ -154,10 +161,14 @@ class meshBase
                                   const std::vector<std::vector<double>>& data){}
     virtual void setCellDataArray(const char* name,
                                   const std::vector<double>& data){}
-    // get scalar point or cell data array. assumes data is not allocated prior to calling
-    virtual void getPointDataArray(std::string name,
+    // get *scalar* point or cell data array. assumes data is not allocated prior to calling
+    virtual void getPointDataArray(const std::string& name,
                                    std::vector<double>& data) {}
-    virtual void getCellDataArray(std::string name,
+    virtual void getPointDataArray(int arrayId,
+                                   std::vector<double>& data) {}
+    virtual void getCellDataArray(const std::string& name,
+                                  std::vector<double>& data) {}
+    virtual void getCellDataArray(int arrayId,
                                   std::vector<double>& data) {}
     // delete array with id from dataSet's point data
     virtual void unsetPointDataArray(int arrayID){}

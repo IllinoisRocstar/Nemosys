@@ -130,8 +130,10 @@ class vtkMesh : public meshBase
     // remove field data with given id from dataSet
     void unsetFieldDataArray(const char* name);
     // get scalar point or cell data array. assumes data is not allocated prior to calling
-    void getPointDataArray(std::string name, std::vector<double>& data);
-    void getCellDataArray(std::string name, std::vector<double>& data);
+    void getPointDataArray(const std::string& name, std::vector<double>& data);
+    void getPointDataArray(int arrayId, std::vector<double>& data);
+    void getCellDataArray(const std::string& name, std::vector<double>& data);
+    void getCellDataArray(int arrayId, std::vector<double>& data);
 
 };
 

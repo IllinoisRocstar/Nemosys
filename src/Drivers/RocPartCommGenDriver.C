@@ -21,13 +21,17 @@
 #include <cgnsWriter.H>
 
 RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh, 
-                                   std::shared_ptr<meshBase> _stitchedSurf, 
-                                   int numPartitions)
+                                           std::shared_ptr<meshBase> _stitchedSurf, 
+                                           std::shared_ptr<meshBase> _volWithSol,
+                                           std::shared_ptr<meshBase> _surfWithSol,
+                                           int numPartitions)
 {
   std::cout << "RocPartCommGenDriver created\n";
   this->mesh = _mesh;
   // load stitched surf mesh with patch info
-  this->stitchedSurf = _stitchedSurf; 
+  this->stitchedSurf = _stitchedSurf;
+  this->volWithSol = _volWithSol;
+  this->surfWithSol = _surfWithSol; 
   this->execute(numPartitions);
 }
 
@@ -72,8 +76,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
-    //std::unique_ptr<meshBase> mbSurfPart(meshBase::CreateUnique(unstructuredGrid, basename));
-    this->surfacePartitions[i] =  meshBase::CreateUnique(unstructuredGrid, basename);
+    this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
     stitchedSurf->transfer(this->surfacePartitions[i].get(), 
                            "Consistent Interpolation", patchNoAndGlobalCellIds, 1);
     //stitchedSurf->transfer(mbSurfPart,"Consistent Interpolation");
@@ -93,6 +96,12 @@ void RocPartCommGenDriver::execute(int numPartitions)
     {
       // get virtual cells of each volume partition
       this->getVirtualCells(i,j,true);
+    }
+    // transfer data from original volume with solution if it's provided
+    if (this->volWithSol)
+    {
+      this->volWithSol->setContBool(0);
+      this->volWithSol->transfer(this->partitions[i].get(),"Consistent Interpolation");
     }
     // write cgns for vol partition
     this->writeCgns(i,1);
@@ -330,7 +339,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
   {
     std::vector<int> virtuals(receivedCells[me][you].begin(), receivedCells[me][you].end());
     this->virtualCellsOfPartitions[me][you] = 
-      meshBase::CreateUnique(meshBase::extractSelectedCells(this->mesh.get(),virtuals));
+      meshBase::CreateShared(meshBase::extractSelectedCells(this->mesh.get(),virtuals));
     std::stringstream ss;
     ss << "virtual" << "Vol" << "Of" << me << "from" << you << ".vtu";
     this->virtualCellsOfPartitions[me][you]->setFileName(ss.str());
@@ -340,7 +349,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
   {
     std::vector<int> virtuals(receivedSurfCells[me][you].begin(), receivedSurfCells[me][you].end());
     this->virtualCellsOfSurfPartitions[me][you] 
-      = meshBase::CreateUnique(meshBase::extractSelectedCells(this->stitchedSurf.get(),virtuals));
+      = meshBase::CreateShared(meshBase::extractSelectedCells(this->stitchedSurf.get(),virtuals));
     std::stringstream ss;
     ss << "virtual" << "Surf" << "Of" << me << "from" << you << ".vtu";
     this->virtualCellsOfSurfPartitions[me][you]->setFileName(ss.str());
@@ -624,7 +633,7 @@ void RocPartCommGenDriver::extractPatches()
     {
       std::vector<int> patchCellIds(it->second.begin(), it->second.end());  
       this->patchesOfSurfacePartitions[i][it->first] 
-        = meshBase::CreateUnique(
+        = meshBase::CreateShared(
             meshBase::extractSelectedCells(this->surfacePartitions[i].get(), patchCellIds));
       std::stringstream ss;
       ss << "extractedPatch" << it->first << "FromProc" << i << ".vtu";
@@ -653,7 +662,7 @@ void RocPartCommGenDriver::extractPatches()
       {
         std::vector<int> virtualPatchCellIds(it1->second.begin(), it1->second.end());
         this->virtualCellsOfPatchesOfSurfacePartitions[i][it->first][it1->first]
-          = meshBase::CreateUnique(
+          = meshBase::CreateShared(
               meshBase::extractSelectedCells(it->second.get(), virtualPatchCellIds));
         std::stringstream ss;
         ss << "extractedVirtualPatch" << it1->first 
@@ -687,40 +696,33 @@ void RocPartCommGenDriver::writeCgns(int proc, int type)
   ss << "fluid_00.000000_000" << proc << ".cgns";
   std::unique_ptr<cgnsWriter> writer 
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(ss.str(), "fluid", 3, 3));
-  
+  // define elementary information 
   writer->setUnits(Kilogram,Meter,Second,Kelvin,Degree);
   // baseitrname, nTstep, timeVal 
-  writer->setBaseItrData("fluid", 1, 0.0);
+  writer->setBaseItrData("TimeIterValues", 1, 0.0);
   // setting zone iter data
   writer->setZoneItrData("ZoneIterativeData", "GridCoordinatesPointers", "FlowSolutionPointers");
   ss.str("");
   ss.clear();
-  ss << 0 << proc << 0 << type;
-  // define real coordinates
-  std::vector<std::vector<double>> coords(partitions[proc]->getVertCrds());
-  int numVirtualCoords = 0;
-  int numVirtualCells = 0;
-  // get virtual coordinates and cell connectivities
-  std::vector<int> cgConnVirtuals;
+  ss << 0 << proc+1 << 0 << type;
+  // vector to hold all virtual meshes and the partition's mesh for merging
+  std::vector<std::shared_ptr<meshBase>> partitionWithAllVirtualCells;
+  partitionWithAllVirtualCells.push_back(this->partitions[proc]);
+  // iterate over vitual meshes to merge them and get number of virtual coords
   auto virtItr = this->virtualCellsOfPartitions[proc].begin();
+  int numVirtualCells = 0;
   while (virtItr != this->virtualCellsOfPartitions[proc].end())
-  { 
-    // get virtual coords
-    std::vector<std::vector<double>> virtualCoords(virtItr->second->getVertCrds());
-    coords[0].insert(coords[0].end(), virtualCoords[0].begin(), virtualCoords[0].end());
-    coords[1].insert(coords[1].end(), virtualCoords[1].begin(), virtualCoords[1].end());
-    coords[2].insert(coords[2].end(), virtualCoords[2].begin(), virtualCoords[2].end());
-    // get virtual cell connectivites and correct indexing
-    std::vector<int> cgConnVirtual(virtItr->second->getConnectivities());
-    for (int i = 0; i < cgConnVirtual.size(); ++i)
-    {
-      cgConnVirtual[i] += coords.size() + numVirtualCoords + 1;
-    }
-    cgConnVirtuals.insert(cgConnVirtuals.end(), cgConnVirtual.begin(), cgConnVirtual.end());
-    numVirtualCoords += virtItr->second->getNumberOfPoints();
+  {
+    // push virtual mesh into real
+    partitionWithAllVirtualCells.push_back(virtItr->second); 
     numVirtualCells += virtItr->second->getNumberOfCells();
     ++virtItr;
   }
+  // merge virtual cells into real mesh for this partition
+  std::shared_ptr<meshBase> partitionWithVirtualMesh
+    = meshBase::stitchMB(partitionWithAllVirtualCells);
+  // define coordinates
+  std::vector<std::vector<double>> coords(partitionWithVirtualMesh->getVertCrds());
   // set the zone
   writer->setZone(ss.str(), Unstructured);
   // get number of ghost entities in pconn vec
@@ -732,19 +734,42 @@ void RocPartCommGenDriver::writeCgns(int proc, int type)
   // set num real cells for this partition
   writer->setNCell(partitions[proc]->getNumberOfCells());
   writer->setGridXYZ(coords[0], coords[1], coords[2]);
-  writer->setCoordRind(numVirtualCoords);
-  // define real connectivities and correct indexing
+  // set num virtual vertices for this partition
+  writer->setCoordRind(partitionWithVirtualMesh->getNumberOfPoints()
+                       - partitions[proc]->getNumberOfPoints());
+  // define real connectivities and 1-base indexing
   std::vector<int> cgConnReal(partitions[proc]->getConnectivities());
   for (auto it = cgConnReal.begin(); it != cgConnReal.end(); ++it)
   {
     *it += 1;
   }
+  // define virtual connectivities and 1-base indexing
+  std::vector<int> cgConnVirtual(partitionWithVirtualMesh->getConnectivities());
+  cgConnVirtual.erase(cgConnVirtual.begin(),cgConnVirtual.begin() + cgConnReal.size());
+  for (auto it = cgConnVirtual.begin(); it != cgConnVirtual.end(); ++it)
+  {
+    *it += 1;
+  }
   writer->setSection(":T4:real", TETRA_4, cgConnReal);
   writer->setNCell(numVirtualCells);
-  writer->setSection(":T4:virtual", TETRA_4, cgConnVirtuals);
+  writer->setSection(":T4:virtual", TETRA_4, cgConnVirtual);
   writer->setVirtElmRind(numVirtualCells);
   writer->setPconnVec(this->volPconns[proc]);
-  writer->writeGridToFile(); 
+  writer->writeGridToFile();
+  // write solution data
+  //if (this->volWithSol)
+  //{
+  //  // begin with point data
+  //  for (int i = 0; i < this->volWithSol->getDataSet()->GetPointData()->GetNumberOfArrays())
+  //  {
+  //    std::vector<double> pointData;
+  //    this->volWithSol->getPointDataArray
+
+  //  }
+
+  //  
+
+  //} 
 }
 
   //if (!partitions.empty())

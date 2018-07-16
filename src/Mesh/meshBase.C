@@ -138,6 +138,18 @@ std::shared_ptr<meshBase> meshBase::CreateShared(std::string fname)
   return mesh;
 }
 
+std::shared_ptr<meshBase> meshBase::CreateShared(const std::vector<double>& xCrds,
+                                                 const std::vector<double>& yCrds,
+                                                 const std::vector<double>& zCrds,
+                                                 const std::vector<int>& elmConn, 
+                                                 const int cellType,
+                                                 std::string newname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(xCrds, yCrds, zCrds, elmConn, cellType, newname));
+  return mesh;
+}
+
 std::unique_ptr<meshBase> meshBase::CreateUnique(std::string fname)
 {
   return std::unique_ptr<meshBase>(meshBase::Create(fname));
@@ -333,7 +345,7 @@ int meshBase::transfer(meshBase* target, std::string method)
 }
 
 // partition mesh into numPartition pieces (static fcn)
-std::vector<std::unique_ptr<meshBase>> 
+std::vector<std::shared_ptr<meshBase>> 
 meshBase::partition(const meshBase* mbObj, const int numPartitions)
 {
   // construct partitioner with meshBase object
@@ -343,7 +355,7 @@ meshBase::partition(const meshBase* mbObj, const int numPartitions)
     exit(1); 
   }
   // initialize vector of meshBase partitions
-  std::vector<std::unique_ptr<meshBase>> mbParts(numPartitions); 
+  std::vector<std::shared_ptr<meshBase>> mbParts(numPartitions); 
   for (int i = 0; i < numPartitions; ++i)
   {
     // define coordinates
@@ -358,7 +370,7 @@ meshBase::partition(const meshBase* mbObj, const int numPartitions)
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase partition from coordinates and connectivities from partitioner
-    mbParts[i] = meshBase::CreateUnique(mPart->getCrds(i, comp_crds[0]),
+    mbParts[i] = meshBase::CreateShared(mPart->getCrds(i, comp_crds[0]),
                                         mPart->getCrds(i, comp_crds[1]),
                                         mPart->getCrds(i, comp_crds[2]),
                                         vtkConn, VTK_TETRA, basename);
