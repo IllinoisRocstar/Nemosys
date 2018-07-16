@@ -94,10 +94,11 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeReceivedToPconn(i,type,false);
     for (int j = 0; j < numPartitions; ++j)
     {
-      // get virtual cells of each volume partition (t4:real)
+      // get virtual cells of each volume partition (t4:virtual)
       this->getVirtualCells(i,j,true);
     }
     // transfer data from original volume with solution if it's provided
+    // TODO: rind data must be there as well
     if (this->volWithSol)
     {
       this->volWithSol->setContBool(0);
@@ -114,8 +115,8 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->getGhostInformation(i,false);
     for (int j = 0; j < numPartitions; ++j)
     {
-      // get virtual cells for each surface partition
-      this->getVirtualCells(i,j,false);
+      // get virtual cells for each surface partition (t3:virtual)
+      this->getVirtualCells(i,j,false); 
     }
   }  
   // create map of proc to patch to patch mesh
@@ -432,28 +433,9 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
     {
       // get the local cell idx
       int localCellId = cellIdsList->GetId(k);
-      if (vol)
-      {
-        // add idx to sentCells to you map
-        this->sentCells[me][you].insert(localCellId);
-      }
-      else
-      {
-        this->sentSurfCells[me][you].insert(localCellId);
-      }
-      // get the global cell index
-      int globId = partToGlobCellMap[me][localCellId];
-      if (vol)
-      {
-        // add idx to map of cells proc you recieves from proc me
-        this->receivedCells[you][me].insert(globId);
-      }
-      else
-      {
-        this->receivedSurfCells[you][me].insert(globId);
-      }
       // get the cell in me for point extraction
       meMesh->getDataSet()->GetCell(localCellId, genCell);
+      int numSharedInCell = 0;
       for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
       {
         // get node idx of cell point
@@ -476,7 +458,35 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
             // add idx to map of nodes you recevies from proc me 
             this->receivedSurfNodes[you][me].insert(globPntId);
           }
-        } 
+        }
+        else 
+        {
+          numSharedInCell += 1;
+        }
+        // if there are more than two shared node with other proc, we send the cell
+        if (numSharedInCell >= 2)
+        {
+          if (vol)
+          {
+            // add idx to sentCells to you map
+            this->sentCells[me][you].insert(localCellId);
+          }
+          else
+          {
+            this->sentSurfCells[me][you].insert(localCellId);
+          }
+          // get the global cell index
+          int globId = partToGlobCellMap[me][localCellId];
+          if (vol)
+          {
+            // add idx to map of cells proc you recieves from proc me
+            this->receivedCells[you][me].insert(globId);
+          }
+          else
+          {
+            this->receivedSurfCells[you][me].insert(globId);
+          }
+        }
       }
     }
   }
@@ -695,8 +705,9 @@ void RocPartCommGenDriver::writeCgns(int proc, int type)
 {
   std::stringstream ss;
   ss << "fluid_00.000000_000" << proc << ".cgns";
+  std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer 
-    = std::unique_ptr<cgnsWriter>(new cgnsWriter(ss.str(), "fluid", 3, 3));
+    = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname, "fluid", 3, 3));
   // define elementary information 
   writer->setUnits(Kilogram,Meter,Second,Kelvin,Degree);
   // baseitrname, nTstep, timeVal 
@@ -757,20 +768,26 @@ void RocPartCommGenDriver::writeCgns(int proc, int type)
   writer->setVirtElmRind(numVirtualCells);
   writer->setPconnVec(this->volPconns[proc]);
   writer->writeGridToFile();
-  // write solution data
-  //if (this->volWithSol)
-  //{
-  //  // begin with point data
-  //  for (int i = 0; i < this->volWithSol->getDataSet()->GetPointData()->GetNumberOfArrays())
-  //  {
-  //    std::vector<double> pointData;
-  //    this->volWithSol->getPointDataArray
+  // write solution data  // TODO: WRONG HERE
+  if (this->volWithSol)
+  {
+    int numPointDataArr
+      = this->volWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
+    if (numPointDataArr)
+    {
+      std::string nodeName("NodeData0.0");
+      writer->writeSolutionNode(nodeName, Vertex); // TODO: ADD BASE_T to input
+      // begin with point data
+      for (int i = 0; i < numPointDataArr; ++i)
+      {
+        std::vector<double> pointData;
+        this->volWithSol->getPointDataArray(i, pointData);
+        std::string dataName(this->volWithSol->getDataSet()->GetPointData()->GetArrayName(i));
+        writer->writeSolutionField(dataName, nodeName, RealDouble,&pointData[0u]);
+      }
+    }
+  } 
 
-  //  }
-
-  //  
-
-  //} 
 }
 
   //if (!partitions.empty())

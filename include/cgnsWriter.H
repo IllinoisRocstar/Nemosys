@@ -56,6 +56,7 @@ public:
   void setPconnGhostDescriptor(int ghostDescriptor);
   void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
+  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
   void writeGridToFile();
   void writeZoneToFile();
