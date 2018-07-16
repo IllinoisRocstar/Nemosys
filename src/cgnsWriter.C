@@ -97,6 +97,25 @@ void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
   slnNameNFld[ndeName] = 0;  
 }
 
+// write solution data node
+void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc)
+{
+  if (slnLoc == Vertex)
+    nVrtxSln++;
+  else if (slnLoc == CellCenter)
+    nCellSln++;
+  else
+    std::cerr << "Can not write to requested solution location.\n";
+  solutionNameLocMap[ndeName] = slnLoc;
+  slnNameNFld[ndeName] = 0;  
+  int slnIdx;
+  if (cg_sol_write(indexFile, indexBase, indexZone, 
+                   ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
+  solutionIdx.push_back(slnIdx);
+  cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx, "end");
+  cg_gridlocation_write(slnLoc);
+}
+
 /* Writing a solution field to the CGNS file.
    We assume the skeleton of the file is already written properly */
 void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data)
@@ -158,7 +177,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   {
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", solutionIdx[slnIdx],
                 "DataArray_t", fldIdx, "end")) cg_error_exit();
-    // dummy exponents and units
+    // dummy exponents 
     float exponents[5] = {0, 0, 0, 0, 0};
     if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
     if (cg_descriptor_write("Units", "dmy")) cg_error_exit();
@@ -344,20 +363,17 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
   }
-  
 
-
-  // write solution data
-  for (auto is=solutionNameLocMap.begin(); is!= solutionNameLocMap.end(); is++)
-  {
-    int slnIdx;
-    if (cg_sol_write(indexFile, indexBase, indexZone, 
-                     (is->first).c_str(), is->second, &slnIdx)) cg_error_exit();
-    solutionIdx.push_back(slnIdx);
-    cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx, "end");
-    cg_gridlocation_write(is->second);
-  }
-
+  //// write solution data
+  //for (auto is=solutionNameLocMap.begin(); is!= solutionNameLocMap.end(); is++)
+  //{
+  //  int slnIdx;
+  //  if (cg_sol_write(indexFile, indexBase, indexZone, 
+  //                   (is->first).c_str(), is->second, &slnIdx)) cg_error_exit();
+  //  solutionIdx.push_back(slnIdx);
+  //  cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx, "end");
+  //  cg_gridlocation_write(is->second);
+  //}
 }
 
 
