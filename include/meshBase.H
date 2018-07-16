@@ -291,6 +291,12 @@ class meshBase
                   bool onlyVol); // added for overloading, doesn't do anything 
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                   bool onlyVol);
+    // for rocstar restart hack through rflupart/prep
+    void writeCobalt(meshBase* surfWithPatch, const std::string& mapFile, 
+                     std::ofstream& outputStream);
+    void writeCobalt(meshBase* surfWithPatch, 
+                     const std::string& mapFile, const std::string& ofname);
+
 
     // set the file name - this will allow vtk to dispatch appropriate writers based on
     // the extension and whether it is supported by vtk. 
@@ -337,7 +343,17 @@ class meshBase
     std::map<int,int> partToGlobCellMap;
 };
 
+// --- auxiliary helpers
 // compares two meshBases- used in testing
 int diffMesh(meshBase* mesh1, meshBase* mesh2);
 
-#endif
+// sum comparison for vectors representing faces inserted into map
+struct sortIntVec_compare
+{
+  bool operator() (std::vector<int> lhs, std::vector<int> rhs) const;
+};
+// write patch map file for roc prep (trivial identity mapping)
+void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap); 
+void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
+
+#endif // meshBase_H

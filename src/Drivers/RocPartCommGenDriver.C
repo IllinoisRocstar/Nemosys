@@ -21,7 +21,7 @@
 #include <cgnsWriter.H>
 
 RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh, 
-                                           std::shared_ptr<meshBase> _stitchedSurf, 
+                                           std::shared_ptr<meshBase> _remeshedSurf, 
                                            std::shared_ptr<meshBase> _volWithSol,
                                            std::shared_ptr<meshBase> _surfWithSol,
                                            int numPartitions)
@@ -29,7 +29,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
   std::cout << "RocPartCommGenDriver created\n";
   this->mesh = _mesh;
   // load stitched surf mesh with patch info
-  this->stitchedSurf = _stitchedSurf;
+  this->remeshedSurf = _remeshedSurf;
   this->volWithSol = _volWithSol;
   this->surfWithSol = _surfWithSol; 
   this->execute(numPartitions);
@@ -41,15 +41,15 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::string& volname, std::string& su
   std::cout << "RocPartCommGenDriver created\n";
   // load full volume mesh and create METIS partitions
   this->mesh = meshBase::CreateShared(volname);
-  this->stitchedSurf = meshBase::CreateShared(surfname);
+  this->remeshedSurf = meshBase::CreateShared(surfname);
   this->execute(numPartitions);
 }
 
 void RocPartCommGenDriver::execute(int numPartitions)
 {
-  stitchedSurf->setContBool(0);
+  remeshedSurf->setContBool(0);
   this->partitions = meshBase::partition(this->mesh.get(), numPartitions);
-  this->AddGlobalCellIds(this->stitchedSurf);
+  this->AddGlobalCellIds(this->remeshedSurf);
   std::vector<std::string> patchNoAndGlobalCellIds = {"patchNo","GlobalCellIds"};
   // initialize storage for surf partitions 
   vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid;
@@ -68,7 +68,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
       vtkSmartPointer<vtkAppendFilter>::New();
     appendFilter->AddInputData(
                     deleteInterPartitionSurface(
-                      stitchedSurf, partitions[i]->extractSurface()));
+                      remeshedSurf, partitions[i]->extractSurface()));
     appendFilter->Update();
     // create surfs partitions casted from vtp to vtu
     unstructuredGrid = appendFilter->GetOutput();
@@ -77,9 +77,9 @@ void RocPartCommGenDriver::execute(int numPartitions)
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
     this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
-    stitchedSurf->transfer(this->surfacePartitions[i].get(), 
+    remeshedSurf->transfer(this->surfacePartitions[i].get(), 
                            "Consistent Interpolation", patchNoAndGlobalCellIds, 1);
-    //stitchedSurf->transfer(mbSurfPart,"Consistent Interpolation");
+    //remeshedSurf->transfer(mbSurfPart,"Consistent Interpolation");
     //mbSurfPart->write();
     //this->surfacePartitions[i] = mbSurfPart;
     this->surfacePartitions[i]->write();
@@ -94,7 +94,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeReceivedToPconn(i,type,false);
     for (int j = 0; j < numPartitions; ++j)
     {
-      // get virtual cells of each volume partition
+      // get virtual cells of each volume partition (t4:real)
       this->getVirtualCells(i,j,true);
     }
     // transfer data from original volume with solution if it's provided
@@ -155,6 +155,7 @@ int RocPartCommGenDriver::writeSharedToPconn(int proc, const std::string& type)
     }
     ++sharedItr;
   }
+  return volPconns[proc].size();
 }
 
 void RocPartCommGenDriver::writeSharedToPconn(int proc)
@@ -349,7 +350,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
   {
     std::vector<int> virtuals(receivedSurfCells[me][you].begin(), receivedSurfCells[me][you].end());
     this->virtualCellsOfSurfPartitions[me][you] 
-      = meshBase::CreateShared(meshBase::extractSelectedCells(this->stitchedSurf.get(),virtuals));
+      = meshBase::CreateShared(meshBase::extractSelectedCells(this->remeshedSurf.get(),virtuals));
     std::stringstream ss;
     ss << "virtual" << "Surf" << "Of" << me << "from" << you << ".vtu";
     this->virtualCellsOfSurfPartitions[me][you]->setFileName(ss.str());
@@ -374,8 +375,8 @@ void RocPartCommGenDriver::getGhostInformation(int me, bool volOrSurf)
 }
 
 void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, bool vol,
-                                           vtkSmartPointer<vtkIdList> cellIdsList,
-                                           vtkSmartPointer<vtkGenericCell> genCell)
+                                               vtkSmartPointer<vtkIdList> cellIdsList,
+                                               vtkSmartPointer<vtkGenericCell> genCell)
 {
   meshBase* meMesh = (vol ? partitions[me].get() : surfacePartitions[me].get());
 
