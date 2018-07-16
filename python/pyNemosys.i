@@ -106,6 +106,8 @@ class meshBase
                     bool onlyVol);
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                     bool onlyVol);
+    void writeCobalt(meshBase* surfWithPatch, 
+                     const std::string& mapFile, const std::string& ofname);
 
     void setFileName(std::string fname);
     std::string getFileName();

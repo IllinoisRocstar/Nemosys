@@ -11,7 +11,6 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
-#include "RemeshDriver.H"
 #include "RocRestartDriver.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
@@ -52,7 +51,7 @@ class meshBase
     static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
     static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds);
-    static std::vector<meshBase*> partition(const meshBase* mbObj, const int numPartitions);
+    static std::vector<std::shared_ptr<meshBase>> partition(const meshBase* mbObj, const int numPartitions);
     virtual std::vector<double> getPoint(int id);
     virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);
@@ -114,6 +113,8 @@ class meshBase
                     bool onlyVol);
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                     bool onlyVol);
+    void writeCobalt(meshBase* surfWithPatch, 
+                     const std::string& mapFile, const std::string& ofname);
 
     void setFileName(std::string fname);
     std::string getFileName();
@@ -459,107 +460,6 @@ class ConversionDriver : public NemDriver
     %}
 };
 
-class RemeshDriver : public NemDriver
-{
-  public:
-    RemeshDriver(const std::vector<std::string>& fluidNames,
-                 const std::vector<std::string>& ifluidniNames,
-                 const std::vector<std::string>& ifluidnbNames,
-                 const std::vector<std::string>& ifluidbNames,
-                 const json& remeshjson, int numPartitions);
-    ~RemeshDriver();
-};
-
-%extend RemeshDriver {
-
-    static RemeshDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
-      if (serialized) {
-        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return RemeshDriver::readJSON(inputjson);
-      }
-      else if (!serialized) {
-        return RemeshDriver::readJSON(ifname);
-      }
-      return NULL;
-    }
-
-    %pythoncode %{
-
-    @staticmethod
-    def readJSON( json_obj):
-      import json
-      if type(json_obj) is list:
-        serialized_json = json.dumps(json_obj[0])
-        return RemeshDriver.py_readJSON(serialized_json, '', True)
-      elif type(json_obj) is dict:
-        serialized_json = json.dumps(json_obj)
-        return RemeshDriver.py_readJSON(serialized_json, '', True)
-      elif type(json_obj) is str:
-        try:
-            json.loads(json_obj)
-            serialized_json = json_obj
-            return RemeshDriver.py_readJSON(serialized_json, '', True)
-        except:
-            return RemeshDriver.py_readJSON('', json_obj, False)
-
-    %}
-};
-
-class RocRestartDriver : public NemDriver
-{
-
-  public:
-    RocRestartDriver(const std::vector<std::string>& fluidNamesRm,
-                     const std::vector<std::string>& ifluidniNamesRm,
-                     const std::vector<std::string>& ifluidnbNamesRm,
-                     const std::vector<std::string>& ifluidbNamesRm,
-                     const std::vector<std::string>& fluidNamesLts,
-                     const std::vector<std::string>& ifluidniNamesLts,  
-                     const std::vector<std::string>& ifluidnbNamesLts,   
-                     const std::vector<std::string>& ifluidbNamesLts, 
-										 const std::vector<std::string>& burnNamesRm, 
-										 const std::vector<std::string>& iBurnNamesRm, 
-										 const std::vector<std::string>& burnNamesLts, 
-										 const std::vector<std::string>& iBurnNamesLts);
- 
-    ~RocRestartDriver(); 
-};
-
-%extend RocRestartDriver {
-
-    static RocRestartDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
-      if (serialized) {
-        jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return RocRestartDriver::readJSON(inputjson);
-      }
-      else if (!serialized) {
-        return RocRestartDriver::readJSON(ifname);
-      }
-      return NULL;
-    }
-
-    %pythoncode %{
-
-    @staticmethod
-    def readJSON( json_obj):
-      import json
-      if type(json_obj) is list:
-        serialized_json = json.dumps(json_obj[0])
-        return RocRestartDriver.py_readJSON(serialized_json, '', True)
-      elif type(json_obj) is dict:
-        serialized_json = json.dumps(json_obj)
-        return RocRestartDriver.py_readJSON(serialized_json, '', True)
-      elif type(json_obj) is str:
-        try:
-            json.loads(json_obj)
-            serialized_json = json_obj
-            return RocRestartDriver.py_readJSON(serialized_json, '', True)
-        except:
-            return RocRestartDriver.py_readJSON('', json_obj, False)
-
-    %}
-};
-
 class OrderOfAccuracy
 {
 
@@ -659,8 +559,8 @@ class meshStitcher
     meshStitcher(const std::vector<std::string>& cgFileNames, bool surf);
     ~meshStitcher();
     
-    cgnsAnalyzer* getStitchedCGNS();
-    meshBase* getStitchedMB();
+    std::shared_ptr<cgnsAnalyzer> getStitchedCGNS();
+    std::shared_ptr<meshBase> getStitchedMB();
 };
 
 class meshPartitioner

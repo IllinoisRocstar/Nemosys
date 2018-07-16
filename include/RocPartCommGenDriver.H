@@ -39,7 +39,7 @@ class RocPartCommGenDriver : public NemDriver
     // remeshed volume to be partitioned
     std::shared_ptr<meshBase> mesh;
     // stitched surface
-    std::shared_ptr<meshBase> stitchedSurf;
+    std::shared_ptr<meshBase> remeshedSurf;
     // original volume mesh with solution data
     std::shared_ptr<meshBase> volWithSol;
     // original surface mesh with solution data
