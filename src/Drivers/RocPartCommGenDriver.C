@@ -636,7 +636,7 @@ void RocPartCommGenDriver::extractPatches()
         = meshBase::CreateShared(
             meshBase::extractSelectedCells(this->surfacePartitions[i].get(), patchCellIds));
       std::stringstream ss;
-      ss << "extractedPatch" << it->first << "FromProc" << i << ".vtu";
+      ss << "extractedPatch" << it->first << "OfProc" << i << ".vtu";
       this->patchesOfSurfacePartitions[i][it->first]->setFileName(ss.str());//write(ss.str());
       this->patchesOfSurfacePartitions[i][it->first]->write();
       std::cout << ss.str() << std::endl;
