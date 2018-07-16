@@ -1051,7 +1051,7 @@ void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<
   //dataSet->GetPointData()->SetScalars(da);
 }
 
-void vtkMesh::getPointDataArray(std::string name, std::vector<double>& data)
+void vtkMesh::getPointDataArray(const std::string& name, std::vector<double>& data)
 {
   int idx;  
   vtkSmartPointer<vtkDoubleArray> pd 
@@ -1076,10 +1076,35 @@ void vtkMesh::getPointDataArray(std::string name, std::vector<double>& data)
     std::cerr << "could not find data with name " << name << std::endl;
     exit(1);
   }
-
 }
 
-void vtkMesh::getCellDataArray(std::string name, std::vector<double>& data)
+void vtkMesh::getPointDataArray(int arrayId, std::vector<double>& data)
+{
+  if (arrayId < dataSet->GetPointData()->GetNumberOfArrays())
+  {
+    vtkSmartPointer<vtkDoubleArray> pd
+      = vtkDoubleArray::SafeDownCast(dataSet->GetPointData()->GetArray(arrayId));
+    if (pd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(pd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < pd->GetNumberOfTuples(); ++i)
+    {
+      pd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "arrayId exceeds number of point data arrays " << std::endl;
+    exit(1);
+  }
+}
+
+void vtkMesh::getCellDataArray(const std::string& name, std::vector<double>& data)
 {
   int idx;  
   vtkSmartPointer<vtkDoubleArray> cd 
@@ -1104,9 +1129,33 @@ void vtkMesh::getCellDataArray(std::string name, std::vector<double>& data)
     std::cerr << "could not find data with name " << name << std::endl;
     exit(1);
   }
-
 }
 
+void vtkMesh::getCellDataArray(int arrayId, std::vector<double>& data)
+{
+  if (arrayId < dataSet->GetCellData()->GetNumberOfArrays())
+  {
+    vtkSmartPointer<vtkDoubleArray> cd
+      = vtkDoubleArray::SafeDownCast(dataSet->GetCellData()->GetArray(arrayId));
+    if (cd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(cd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < cd->GetNumberOfTuples(); ++i)
+    {
+      cd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "arrayId exceeds number of cell data arrays " << std::endl;
+    exit(1);
+  }
+}
 // set cell data (numComponents per cell determined by dim of data[0])
 void vtkMesh::setCellDataArray(const char* name, const std::vector<std::vector<double>>& data)
 {
