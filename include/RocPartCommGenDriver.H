@@ -8,8 +8,10 @@ class RocPartCommGenDriver : public NemDriver
 {
   public:
     RocPartCommGenDriver(std::shared_ptr<meshBase> vol, 
-                     std::shared_ptr<meshBase> surf, 
-                     int numPartitions);
+                         std::shared_ptr<meshBase> surf, 
+                         std::shared_ptr<meshBase> volWithSol,
+                         std::shared_ptr<meshBase> surfWithSol,
+                         int numPartitions);
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
     // run the driver (called on construction)
     void execute(int numPartitions);
@@ -27,6 +29,7 @@ class RocPartCommGenDriver : public NemDriver
     void getVirtualCells(int me, int you, bool vol);
     // get the shared nodes between patches both intra and inter partition
     void getSharedPatchInformation();
+
     // write cgns files (proc is partition num, type is patch num)
     void writeCgns(int proc, int type); 
 
@@ -37,18 +40,22 @@ class RocPartCommGenDriver : public NemDriver
     std::shared_ptr<meshBase> mesh;
     // stitched surface
     std::shared_ptr<meshBase> stitchedSurf;
+    // original volume mesh with solution data
+    std::shared_ptr<meshBase> volWithSol;
+    // original surface mesh with solution data
+    std::shared_ptr<meshBase> surfWithSol;
     // partitions <proc, partition>
-    std::vector<std::unique_ptr<meshBase>> partitions;
+    std::vector<std::shared_ptr<meshBase>> partitions;
     // <proc, <proc, mesh>>
-    std::vector<std::map<int, std::unique_ptr<meshBase>>> virtualCellsOfPartitions;
+    std::vector<std::map<int, std::shared_ptr<meshBase>>> virtualCellsOfPartitions;
     // surface partitions <proc, partition>
-    std::vector<std::unique_ptr<meshBase>> surfacePartitions;
+    std::vector<std::shared_ptr<meshBase>> surfacePartitions;
     // <proc, <proc, mesh>>
-    std::vector<std::map<int, std::unique_ptr<meshBase>>> virtualCellsOfSurfPartitions;
+    std::vector<std::map<int, std::shared_ptr<meshBase>>> virtualCellsOfSurfPartitions;
     // <proc, <patch, mesh>> 
-    std::vector<std::map<int, std::unique_ptr<meshBase>>> patchesOfSurfacePartitions;
+    std::vector<std::map<int, std::shared_ptr<meshBase>>> patchesOfSurfacePartitions;
     // <proc, <proc, <patch, mesh>>>
-    std::vector<std::map<int, std::map<int, std::unique_ptr<meshBase>>>> 
+    std::vector<std::map<int, std::map<int, std::shared_ptr<meshBase>>>> 
       virtualCellsOfPatchesOfSurfacePartitions;  
 
   // --- global to local node and cell index maps
