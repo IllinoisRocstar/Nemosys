@@ -112,7 +112,7 @@ void RemeshDriver::stitchSurfaces()
 RemeshDriver* RemeshDriver::readJSON(json inputjson)
 {
   std::string case_dir = inputjson["RocFluMP Case Directory"].as<std::string>();
-  std::string burn_dir = inputjson["RocFluMP Case Directory"].as<std::string>();
+  std::string burn_dir = inputjson["RocBurn APN Case Directory"].as<std::string>();
   std::string base_t = inputjson["Base Time Step"].as<std::string>();
   std::vector<std::string> fluNames(getCgFNames(case_dir, "fluid", base_t));
   std::vector<std::string> ifluniNames(getCgFNames(case_dir, "ifluid_ni", base_t));
