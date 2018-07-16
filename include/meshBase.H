@@ -292,6 +292,7 @@ class meshBase
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                   bool onlyVol);
     // for rocstar restart hack through rflupart/prep
+    // surfWithPatch must have patchNo array
     void writeCobalt(meshBase* surfWithPatch, const std::string& mapFile, 
                      std::ofstream& outputStream);
     void writeCobalt(meshBase* surfWithPatch, 

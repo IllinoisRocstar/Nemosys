@@ -1206,9 +1206,14 @@ void meshBase::writeCobalt(meshBase* surfWithPatches,
 {
   if (!surfWithPatches) 
   {
-    std::cout << "remeshed surface has not been generated!" << std::endl;
+    std::cout << "surface mesh is empty!" << std::endl;
     exit(1);
   }
+  if (surfWithPatches->IsArrayName("patchNo", 1) == -1)
+  {
+    std::cout << "surface mesh must have patchNo cell array" << std::endl;
+    exit(1);
+  } 
   vtkSmartPointer<vtkIdList> facePtIds;
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
