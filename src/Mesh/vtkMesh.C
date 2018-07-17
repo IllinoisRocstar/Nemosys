@@ -1054,8 +1054,8 @@ void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<
 void vtkMesh::getPointDataArray(const std::string& name, std::vector<double>& data)
 {
   int idx;  
-  vtkSmartPointer<vtkDoubleArray> pd 
-    = vtkDoubleArray::SafeDownCast(dataSet->GetPointData()->GetArray(&name[0u],idx));
+  vtkSmartPointer<vtkDataArray> pd 
+    = dataSet->GetPointData()->GetArray(&name[0u],idx);
   if (idx != -1)
   {
     if (pd->GetNumberOfComponents() > 1)
@@ -1082,8 +1082,8 @@ void vtkMesh::getPointDataArray(int arrayId, std::vector<double>& data)
 {
   if (arrayId < dataSet->GetPointData()->GetNumberOfArrays())
   {
-    vtkSmartPointer<vtkDoubleArray> pd
-      = vtkDoubleArray::SafeDownCast(dataSet->GetPointData()->GetArray(arrayId));
+    vtkSmartPointer<vtkDataArray> pd
+      = dataSet->GetPointData()->GetArray(arrayId);
     if (pd->GetNumberOfComponents() > 1)
     {
       std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
@@ -1107,8 +1107,8 @@ void vtkMesh::getPointDataArray(int arrayId, std::vector<double>& data)
 void vtkMesh::getCellDataArray(const std::string& name, std::vector<double>& data)
 {
   int idx;  
-  vtkSmartPointer<vtkDoubleArray> cd 
-    = vtkDoubleArray::SafeDownCast(dataSet->GetCellData()->GetArray(&name[0u],idx));
+  vtkSmartPointer<vtkDataArray> cd 
+    = dataSet->GetCellData()->GetArray(&name[0u],idx);
   if (idx != -1)
   {
     if (cd->GetNumberOfComponents() > 1)
@@ -1135,8 +1135,8 @@ void vtkMesh::getCellDataArray(int arrayId, std::vector<double>& data)
 {
   if (arrayId < dataSet->GetCellData()->GetNumberOfArrays())
   {
-    vtkSmartPointer<vtkDoubleArray> cd
-      = vtkDoubleArray::SafeDownCast(dataSet->GetCellData()->GetArray(arrayId));
+    vtkSmartPointer<vtkDataArray> cd
+      = dataSet->GetCellData()->GetArray(arrayId);
     if (cd->GetNumberOfComponents() > 1)
     {
       std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";

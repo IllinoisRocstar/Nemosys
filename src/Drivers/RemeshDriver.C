@@ -21,7 +21,9 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const std::vector<std::string>& _ifluidbNames,
                            const std::vector<std::string>& _burnNames,
                            const std::vector<std::string>& _iBurnNames,
-                           const json& remeshjson, int _numPartitions)
+                           const json& remeshjson, int _numPartitions,
+                           const std::string& base_t, bool writeIntermediateFiles,
+                           double searchTolerance)
   : fluidNames(_fluidNames), ifluidniNames(_ifluidniNames), ifluidnbNames(_ifluidnbNames),
     ifluidbNames(_ifluidbNames), burnNames(_burnNames), iBurnNames(_iBurnNames),
     numPartitions(_numPartitions)
@@ -57,14 +59,14 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     // transfer patch number to remeshed surface
     std::vector<std::string> patchno(1,"patchNo");
     this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", patchno, 1);
-    this->stitchedSurf->write();
+    if (writeIntermediateFiles) this->stitchedSurf->write();
   }
-  this->remeshedSurf->write();
+  if (writeIntermediateFiles) this->remeshedSurf->write();
   std::unique_ptr<RocPartCommGenDriver> rocprepdrvr 
     = std::unique_ptr<RocPartCommGenDriver>
         (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
                                   this->mbObjs[0], this->stitchedSurf,
-                                  numPartitions));
+                                  numPartitions, base_t, writeIntermediateFiles, searchTolerance));
   std::cout << "RemeshDriver created" << std::endl;
 }
  
@@ -122,9 +124,20 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
 	std::vector<std::string> iBurnNames(getCgFNames(burn_dir, "iburn", base_t));
   json remeshjson = inputjson["Remeshing Options"];
   int numPartitions = inputjson["Number Of New Partitions"].as<int>();
+  bool writeIntermediateFiles = false;
+  double searchTolerance = 1e-9;
+  if (inputjson.has_key("Search Tolerance"))
+  {
+    searchTolerance = inputjson["Search Tolerance"].as<double>();
+  }
+  if (inputjson.has_key("Write Intermediate Files"))
+  {
+    writeIntermediateFiles = inputjson["Write Intermediate Files"].as<bool>();
+  }
   RemeshDriver* remeshdrvobj = new RemeshDriver(fluNames, ifluniNames, iflunbNames, 
                                                 iflubNames, burnNames, iBurnNames,
-                                                remeshjson, numPartitions);
+                                                remeshjson, numPartitions, base_t,
+                                                writeIntermediateFiles, searchTolerance);
   return remeshdrvobj;
 }
 
