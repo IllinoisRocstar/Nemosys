@@ -219,8 +219,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
                  src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
-                 src/SolutionVerification/OrderOfAccuracy.C src/vtkAnalyzer.C 
-                 src/cgnsAnalyzer.C src/rocstarCgns.C 
+                 src/SolutionVerification/OrderOfAccuracy.C src/vtkAnalyzer.C
+                 src/cgnsAnalyzer.C src/rocstarCgns.C
                  src/MeshPartitioning/meshPartitioner.C 
                  src/MeshPartitioning/meshStitcher.C 
                  src/cgnsWriter.C src/gridTransfer.C)
