@@ -703,7 +703,6 @@ void RocPartCommGenDriver::extractPatches()
       {
         std::cout << "virtual patch num " << it1->first << " of proc " << i << " from proc " << it->first
                   << "\n\n" << std::endl;
-        printVec(virtualPatchCellIds);
         this->virtualCellsOfPatchesOfSurfacePartitions[i][it->first][it1->first]
           = meshBase::CreateShared(
               meshBase::extractSelectedCells(it->second.get(), it1->second));
