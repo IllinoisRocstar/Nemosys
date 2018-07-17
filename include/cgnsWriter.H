@@ -55,6 +55,7 @@ public:
   void setPconnVec(const vect<int>::v1d& pConnVec); 
   void setPconnGhostDescriptor(int ghostDescriptor);
   void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
+  void resetSections();
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
@@ -112,6 +113,8 @@ private:
   std::map<std::string, int> slnNameNFld; // number of filed in the given solution name
   vect<int>::v1d solutionIdx; // solution node indices
   std::map<std::string, GridLocation_t> solutionNameLocMap;
+  // maps sol node to index (eg. NodeData0.0=1,ElemData0.0=2)
+  std::map<std::string, int> solutionNameSolIdxMap;  
   std::map<int,std::pair<int,keyValueList> > solutionMap; // (#sln, <slnIdx, [fldIdx, fldName]>)
   vect<std::string>::v1d solutionName;
   vect<GridLocation_t>::v1d solutionGridLocation;

@@ -11,12 +11,16 @@ class RocPartCommGenDriver : public NemDriver
                          std::shared_ptr<meshBase> surf, 
                          std::shared_ptr<meshBase> volWithSol,
                          std::shared_ptr<meshBase> surfWithSol,
-                         int numPartitions);
+                         int numPartitions, const std::string& base_t,
+                         bool writeIntermediateFiles, double searchTolerance);
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
-    // run the driver (called on construction)
-    void execute(int numPartitions);
     ~RocPartCommGenDriver();
     static RocPartCommGenDriver* readJSON(json inputjson);
+
+  // --- executor functions
+  private:    
+    // run the driver (called on construction)
+    void execute(int numPartitions);
     // extract patches from each surface partition and get patch virtual cells
     void extractPatches();
     // add global cell ids to provided mesh (used to add to full surface)
@@ -30,9 +34,21 @@ class RocPartCommGenDriver : public NemDriver
     // get the shared nodes between patches both intra and inter partition
     void getSharedPatchInformation();
 
-    // write cgns files (proc is partition num, type is patch num)
-    void writeCgns(int proc, int type); 
+  // --- info for write to cgns and intermediaries
+  private:
+    // base time step (rocstar convention, eg. 04.210000)
+    std::string base_t;
+    // trimmed time step (eg. 4.21)
+    std::string trimmed_base_t;
+    // if true, all intermediate files will be written (i.e. surf partitions, virtuals etc.)
+    bool writeAllFiles;
 
+  // --- write cgns files
+  private:
+    // write vol cgns (proc is partition num, type is patch num, prefix usually fluid)
+    void writeVolCgns(const std::string& prefix, int proc, int type); 
+    // write surf cgns (proc is partition num, other info is deduced from maps)
+    void writeSurfCgns(const std::string& prefix, int proc); 
 
   // --- real and virtual meshes 
   private:
@@ -44,6 +60,9 @@ class RocPartCommGenDriver : public NemDriver
     std::shared_ptr<meshBase> volWithSol;
     // original surface mesh with solution data
     std::shared_ptr<meshBase> surfWithSol;
+    // TODO: add meshBase (mbObj[2) from remeshDriver) for iburn solution mesh (iBurnWithSol)
+    //       figure out a way to extract the cells with bflag on each surf/vol partition
+    //        transfer data from iBurnWithSol to surf partitions and write them out to cgns
     // partitions <proc, partition>
     std::vector<std::shared_ptr<meshBase>> partitions;
     // <proc, <proc, mesh>>
@@ -57,6 +76,10 @@ class RocPartCommGenDriver : public NemDriver
     // <proc, <proc, <patch, mesh>>>
     std::vector<std::map<int, std::map<int, std::shared_ptr<meshBase>>>> 
       virtualCellsOfPatchesOfSurfacePartitions;  
+  
+  // --- tolerance for cell and point search
+  private:
+    double searchTolerance;
 
   // --- global to local node and cell index maps
   // --- the following are cleared and reused for vol and surf partitions 
@@ -74,10 +97,6 @@ class RocPartCommGenDriver : public NemDriver
     std::vector<std::map<int,int>> partToGlobNodeMap; 
     // <proc, <local cellId, global cellId>>
     std::vector<std::map<int,int>> partToGlobCellMap;
-    // <proc, <global surface nodeId, local surface nodeId>>
-    std::vector<std::map<int,int>> globToPartSurfNodeMap;        
-    // <proc, <local surface nodeId, global surface nodeId>>
-    std::vector<std::map<int,int>> partToGlobSurfNodeMap;        
 
   // --- volume partition ghost information   
   private:
