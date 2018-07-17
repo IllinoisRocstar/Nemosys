@@ -45,6 +45,16 @@ void cgnsWriter::setSection(std::string sName, ElementType_t st, vect<int>::v1d 
   elmConns.push_back(elmConn);
 }
 
+void cgnsWriter::resetSections()
+{
+  nSection = 0;
+  sectionNames.clear();
+  sectionName.clear();
+  sectionTypes.clear();
+  elmConns.clear();
+  nCells.clear();
+}
+
 void cgnsWriter::setNVrtx(int nVt)
 {
   nVrtx= nVt;
@@ -112,8 +122,25 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc)
   if (cg_sol_write(indexFile, indexBase, indexZone, 
                    ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
   solutionIdx.push_back(slnIdx);
+  solutionNameSolIdxMap[ndeName] = slnIdx;  
   cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx, "end");
   cg_gridlocation_write(slnLoc);
+ 
+  int rindArr[2]; 
+  rindArr[0] = 0;
+  if (coordRind && slnLoc == Vertex)
+  {
+    rindArr[1] = coordRind;
+  }
+  if (virtElmRind && slnLoc == CellCenter)
+  {
+    rindArr[1] = virtElmRind;
+  }
+  if (virtElmRind || coordRind)
+  {
+    if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,"FlowSolution_t",slnIdx,"end")) cg_error_exit();
+    if (cg_rind_write(rindArr)) cg_error_exit();
+  } 
 }
 
 /* Writing a solution field to the CGNS file.
@@ -126,7 +153,9 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   {
    slnIdx++;
    if (!strcmp((is->first).c_str(), ndeName.c_str()))
+   {  
      break;
+   }
    is++;
   }
   // sanity check
@@ -142,7 +171,12 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
     nCellFld++;
   // write solution to file
   int fldIdx;
-  if (cg_field_write(indexFile, indexBase, indexZone, solutionIdx[slnIdx],
+  //std::cout << "Sol Node Index : " << slnIdx << std::endl;
+  //std::cout << "Node Name: " << ndeName << std::endl;
+  //std::cout << "Sol name : " << fname << std::endl;
+  //std::cout << "Index from name map : " << solutionNameSolIdxMap[ndeName] << std::endl;
+  int currSlnIdx = solutionNameSolIdxMap[ndeName];
+  if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,//solutionIdx[slnIdx],
                      dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
   keyValueList fldIdxName;
   fldIdxName[fldIdx] = fname;
@@ -170,12 +204,12 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   os << min << ", " << max;
   std::string range = os.str();
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone,
-              "FlowSolution_t", solutionIdx[slnIdx], "DataArray_t", fldIdx, "end")) cg_error_exit();
+              "FlowSolution_t", currSlnIdx, "DataArray_t", fldIdx, "end")) cg_error_exit();
   if (cg_descriptor_write("Range", range.c_str())) cg_error_exit();
   // write DimensionalExponents and units for cell data
   if (is->second == CellCenter)
   {
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", solutionIdx[slnIdx],
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
                 "DataArray_t", fldIdx, "end")) cg_error_exit();
     // dummy exponents 
     float exponents[5] = {0, 0, 0, 0, 0};
@@ -201,7 +235,7 @@ void cgnsWriter::writeGridToFile()
   cgsize_t tmpDim = 1;
   if (cg_array_write("TimeValues", RealDouble, 1, (const cgsize_t*) 
                       &tmpDim, &timeLabel)) cg_error_exit();
-  writeZoneToFile();
+  //writeZoneToFile();
 }
 
 void cgnsWriter::writeZoneToFile()
@@ -313,13 +347,21 @@ void cgnsWriter::writeZoneToFile()
     if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                          sectionTypes[iSec], elm_start, elm_end, nBdy, 
                          &elmConns[iSec][0], &indexSection)) cg_error_exit();
+    
+    std::cout << "on section " << iSec << " of " << nSection << "sections" << std::endl;
     // set virtual rind
-    if (!sectionNames[iSec].compare(":T4:virtual"))
+    if (virtElmRind)
     {
-      if (virtElmRind)
+      int rindArr[2] = {0,virtElmRind};
+
+      if (!sectionNames[iSec].compare(":T4:virtual"))
       {
-        int rindArr[2] = {0,virtElmRind};
         if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,":T4:virtual",0,"end")) cg_error_exit();
+        if (cg_rind_write(rindArr)) cg_error_exit();
+      }
+      else if (!sectionNames[iSec].compare(":T3:virtual"))
+      {
+        if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,":T3:virtual",0,"end")) cg_error_exit();
         if (cg_rind_write(rindArr)) cg_error_exit();
       }
     }
