@@ -309,7 +309,7 @@ int meshBase::transfer(meshBase* target, std::string method,
   transobj->setCheckQual(checkQuality);
   if (!pointOrCell)
   {
-    transobj->transferPointData(arrayIDs,newArrayNames);
+    transobj->transferPointData(arrayIDs, newArrayNames);
   }
   else
   {
