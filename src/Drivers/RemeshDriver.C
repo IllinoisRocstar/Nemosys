@@ -38,7 +38,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
   this->stitchCGNS(ifluidniNames,1);
   // stitch ifluid_b files
   this->stitchCGNS(ifluidbNames,1);
-  // stitch ifluid_ng files
+  // stitch ifluid_nb files
   this->stitchCGNS(ifluidnbNames,1);
   // get stitched meshes from stitcher vector
   for (int i = 0; i < this->stitchers.size(); ++i)
@@ -52,13 +52,19 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
   // creates stitchedSurf
   if (this->mbObjs.size() > 1)
   {
+    // cgns files are already stitched together into meshbase obj
+    // need to transfer this data onto the surface mesh
+
     // stitches b, ni and nb surfaces into one stitchedSurf
+    // also stitches iburn files
     this->stitchSurfaces();
+
     // do not smooth for cell data transfer
     this->stitchedSurf->setContBool(0);
+    this->stitchedBurnSurf->setContBool(0);
     // transfer patch number to remeshed surface
-    std::vector<std::string> patchno(1,"patchNo");
-    this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", patchno, 1);
+    std::vector<std::string> transferPaneData{"patchNo", "bcflag", "cnstr_type"};
+    this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", transferPaneData, 1);
     if (writeIntermediateFiles) this->stitchedSurf->write();
   }
   if (writeIntermediateFiles) this->remeshedSurf->write();
@@ -66,6 +72,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     = std::unique_ptr<RocPartCommGenDriver>
         (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
                                   this->mbObjs[0], this->stitchedSurf,
+                                  this->stitchedBurnSurf,
                                   numPartitions, base_t, writeIntermediateFiles, searchTolerance));
   std::cout << "RemeshDriver created" << std::endl;
 }
@@ -109,6 +116,11 @@ void RemeshDriver::stitchSurfaces()
   surfs.insert(surfs.begin(), mbObjs.begin()+3,mbObjs.end());
   stitchedSurf = meshBase::stitchMB(surfs);
   stitchedSurf->setFileName("stitchedSurf.vtu");
+
+  std::vector<std::shared_ptr<meshBase>> burnSurfs;
+  burnSurfs.insert(burnSurfs.begin(), mbObjs.begin()+2, mbObjs.begin()+2);
+  std::cout << "stitching burning surfaces" << std::endl;
+  stitchedBurnSurf = meshBase::stitchMB(burnSurfs);
 }
 
 RemeshDriver* RemeshDriver::readJSON(json inputjson)

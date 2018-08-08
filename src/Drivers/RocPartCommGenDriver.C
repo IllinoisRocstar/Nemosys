@@ -14,6 +14,10 @@
 #include <vtkExtractSelection.h>
 #include <vtkCleanPolyData.h>
 #include <vtkAppendFilter.h>
+//TJW
+#include <vtkPointLocator.h>
+#include <vtkPointSet.h>
+#include <vtkXMLPolyDataWriter.h>
 
 #include <sstream>
 #include <cstddef>
@@ -23,15 +27,13 @@
 /*
   TODO: handling the iburn and burn files
         - 
-
-
-
 */
 
 RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh, 
                                            std::shared_ptr<meshBase> _remeshedSurf, 
                                            std::shared_ptr<meshBase> _volWithSol,
                                            std::shared_ptr<meshBase> _surfWithSol,
+                                           std::shared_ptr<meshBase> _burnSurfWithSol,
                                            int numPartitions, const std::string& _base_t,
                                            bool _writeIntermediateFiles,
                                            double _searchTolerance)
@@ -42,6 +44,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
   this->remeshedSurf = _remeshedSurf;
   this->volWithSol = _volWithSol;
   this->surfWithSol = _surfWithSol;
+  this->burnSurfWithSol = _burnSurfWithSol;
   this->base_t = _base_t; 
   this->trimmed_base_t = std::to_string(std::stod(_base_t));
   this->trimmed_base_t.erase(this->trimmed_base_t.find_last_not_of('0')+1,std::string::npos);
@@ -69,7 +72,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
   remeshedSurf->setContBool(false);
   this->partitions = meshBase::partition(this->mesh.get(), numPartitions);
   this->AddGlobalCellIds(this->remeshedSurf);
-  std::vector<std::string> patchNoAndGlobalCellIds = {"patchNo","GlobalCellIds"};
+  std::vector<std::string> paneDataAndGlobalCellIds = {"patchNo","bcflag","cnstr_type","GlobalCellIds"};
   // initialize storage for surf partitions 
   vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid;
   this->surfacePartitions.resize(numPartitions);
@@ -97,7 +100,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     // construct meshBase surface partition from vtkUnstructuredGrid
     this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
     remeshedSurf->transfer(this->surfacePartitions[i].get(), 
-                           "Consistent Interpolation", patchNoAndGlobalCellIds, 1);
+                           "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
     if (this->writeAllFiles) this->surfacePartitions[i]->write();
     // get ghost information for volume partitions
     this->getGhostInformation(i,true);
@@ -114,7 +117,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
       this->getVirtualCells(i,j,true);
     }
     // write cgns for vol partition
-    this->writeVolCgns("fluid", i,1);
+    this->writeVolCgns("fluid", i,1,0);
   }
   // get global ids and maps for surface partitions
   this->getGlobalIdsAndMaps(numPartitions, false);
@@ -140,8 +143,71 @@ void RocPartCommGenDriver::execute(int numPartitions)
   for (int i = 0; i < numPartitions; ++i)
   {
     this->writeSharedToPconn(i);
+    this->writeSurfCgns("ifluid_b", i);
     this->writeSurfCgns("ifluid_ni", i);
+    this->writeSurfCgns("burn", i);
+    this->writeSurfCgns("iburn_all", i);
+
   }
+
+//-----------------------------------------------------------------------------------------------------
+// This is currently a really hacky way to accumulate the number of unique volume faces for the grid
+// speed data entry. We have to accumulate the number of unique volume faces in first, then subtract
+// off the surface faces, and then call the volume routine again to write out the actual total faces.
+// (note the "gsExists" flag passed into writeVolCgns())
+//-----------------------------------------------------------------------------------------------------
+
+  remeshedSurf->setContBool(false);
+  this->partitions = meshBase::partition(this->mesh.get(), numPartitions);
+  this->AddGlobalCellIds(this->remeshedSurf);
+  // initialize storage for surf partitions 
+  this->surfacePartitions.resize(numPartitions);
+  // initialize storage for virtual cells
+  this->virtualCellsOfPartitions.resize(numPartitions);
+  this->virtualCellsOfSurfPartitions.resize(numPartitions);
+  // get all required local-global node maps and node/cell ids
+  this->getGlobalIdsAndMaps(numPartitions,true);
+  // allocate storage for vol pconn vectors
+  this->volPconns.resize(numPartitions);
+  this->notGhostInPconn.resize(numPartitions);
+  for (int i = 0; i < numPartitions; ++i)
+  {
+    vtkSmartPointer<vtkAppendFilter> appendFilter =
+      vtkSmartPointer<vtkAppendFilter>::New();
+    appendFilter->AddInputData(
+                    deleteInterPartitionSurface(
+                      remeshedSurf, partitions[i]->extractSurface()));
+    appendFilter->Update();
+    // create surfs partitions casted from vtp to vtu
+    unstructuredGrid = appendFilter->GetOutput();
+    std::string basename("surfacePartition");
+    basename += std::to_string(i);
+    basename += ".vtu";
+    // construct meshBase surface partition from vtkUnstructuredGrid
+    this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
+    remeshedSurf->transfer(this->surfacePartitions[i].get(), 
+                           "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
+    if (this->writeAllFiles) this->surfacePartitions[i]->write();
+    // get ghost information for volume partitions
+    this->getGhostInformation(i,true);
+    // write pconn information for volume partition
+    std::string type("01");
+    notGhostInPconn[i] = this->writeSharedToPconn(i, type);
+    this->writeSentToPconn(i,type,true);
+    this->writeReceivedToPconn(i,type,true);
+    this->writeSentToPconn(i,type,false);
+    this->writeReceivedToPconn(i,type,false);
+    for (int j = 0; j < numPartitions; ++j)
+    {
+      // get virtual cells of each volume partition (t4:virtual)
+      this->getVirtualCells(i,j,true);
+    }
+    // write cgns for vol partition
+    this->writeVolCgns("fluid", i,1,1);
+  }
+
+//-----------------------------------------------------------------------------------------------------
+
 }
 
 void RocPartCommGenDriver::AddGlobalCellIds(std::shared_ptr<meshBase> _mesh)
@@ -241,6 +307,7 @@ int RocPartCommGenDriver::writeSharedToPconn(int proc, const std::string& type)
 
 void RocPartCommGenDriver::writeSharedToPconn(int proc)
 {
+
   auto it = this->sharedPatchNodes[proc].begin();
   while (it != sharedPatchNodes[proc].end())
   {
@@ -297,14 +364,14 @@ void RocPartCommGenDriver::writeSentToPconn(int proc, const std::string& type, b
       // number of ids
       this->volPconns[proc].push_back(sentItr->second.size());
       // indices
-  	  auto tmpIt = sentItr->second.begin();
-  	  while (tmpIt != sentItr->second.end())
-  	  {
+      auto tmpIt = sentItr->second.begin();
+      while (tmpIt != sentItr->second.end())
+      {
         this->volPconns[proc].push_back(*tmpIt + 1);
-  	  	++tmpIt;
-  	  }
-    }	
-  	++sentItr;
+        ++tmpIt;
+      }
+    } 
+    ++sentItr;
   }
 }
 
@@ -393,7 +460,19 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
                                                vtkSmartPointer<vtkIdList> cellIdsList,
                                                vtkSmartPointer<vtkGenericCell> genCell)
 {
-  meshBase* meMesh = (vol ? partitions[me].get() : surfacePartitions[me].get());
+  // We need volume mesh to determine which ghost cells are included in the surface
+  vtkSmartPointer<vtkIdList> volCellIdsList;
+  meshBase* meMesh;
+  meshBase* meVolMesh;
+  if (vol)
+  {
+    meMesh = partitions[me].get();
+  }
+  else
+  {
+    meMesh = surfacePartitions[me].get();
+    meVolMesh = partitions[me].get();
+  }
 
   // ------ shared nodes between me and proc i
   // compute the intersection and assign to sharedNodes vec
@@ -442,6 +521,13 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
     cellIdsList->Reset();
     // find cells using this shared node
     meMesh->getDataSet()->GetPointCells(localPntId, cellIdsList);
+    // Nodes that are not shared among partitions
+    std::vector<int> notSharedCellNodes;
+    // Surface nodes that are not shared with the volume ghost cells's nodes
+    std::vector<int> notSharedWithVolSurfNodes;
+    // vtkIdList for checking if surface nodes are in volume mesh
+    vtkSmartPointer<vtkIdList> result = vtkSmartPointer<vtkIdList>::New();
+    vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
     // for each cell using shared node (these will be cells on the boundary)
     for (int k = 0; k < cellIdsList->GetNumberOfIds(); ++k)
     {
@@ -450,6 +536,43 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       // get the cell in me for point extraction
       meMesh->getDataSet()->GetCell(localCellId, genCell);
       int numSharedInCell = 0;
+      vtkSmartPointer<vtkPolyData> virtualNodesSet = vtkSmartPointer<vtkPolyData>::New();
+      if (!vol)
+      {        
+        // Construct a list of all volume ghost points. These will be compared against
+        // the surface cells because ghost surface cells are a subset of ghost volume
+        // cells. TODO: This is currently a very slow check. Make it faster.
+        vtkSmartPointer<vtkIdList> cellPoints = vtkSmartPointer<vtkIdList>::New();
+        vtkSmartPointer<vtkPoints> virtualNodesList = vtkSmartPointer<vtkPoints>::New();
+        for (auto itr = sentCells[me][you].begin(); itr != sentCells[me][you].end(); ++itr)
+        {
+          meVolMesh->getDataSet()->GetCellPoints((*itr), cellPoints);
+          for (int ipt = 0; ipt < cellPoints->GetNumberOfIds(); ipt++)
+          {
+            virtualNodesList->InsertNextPoint(meVolMesh->getDataSet()->GetPoint(cellPoints->GetId(ipt)));
+          }
+        }
+        virtualNodesSet->SetPoints(virtualNodesList);
+        // Print out below for debugging
+        //vtkSmartPointer<vtkXMLPolyDataWriter> writer =  vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+        //std::string filebase("mypolydata");
+        //std::string ext(".vtp");
+        //std::string me_str = std::to_string(me);
+        //std::string you_str = std::to_string(you);
+        //std::string filename = filebase+me_str+you_str+ext;
+        //
+        //writer->SetFileName(filename.c_str());
+        //#if VTK_MAJOR_VERSION <= 5
+        //  writer->SetInput(virtualNodesSet);
+        //#else
+        //  writer->SetInputData(virtualNodesSet);
+        //#endif
+        //writer->SetDataModeToAscii();
+        //writer->Write();
+      }
+      // Clear lists of nodes
+      notSharedCellNodes.clear();
+      notSharedWithVolSurfNodes.clear();
       for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
       {
         // get node idx of cell point
@@ -460,47 +583,63 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
         {
           if (vol)
           {
-            // add idx to map of nodes me sends to you
-            this->sentNodes[me][you].insert(pntId);
-            // add idx to map of nodes you recevies from proc me 
-            this->receivedNodes[you][me].insert(globPntId);
+            notSharedCellNodes.push_back(pntId);
           }
           else
           {
-            // add idx to map of nodes me sends to you
-            this->sentSurfNodes[me][you].insert(pntId);
-            // add idx to map of nodes you recevies from proc me 
-            this->receivedSurfNodes[you][me].insert(globPntId);
+            double* pntCoor = meMesh->getDataSet()->GetPoint(pntId);
+            pointLocator->SetDataSet(virtualNodesSet);
+            pointLocator->AutomaticOn();
+            pointLocator->BuildLocator();
+            // search tolerance
+            double radius = 1e-8;
+            result->Reset();
+            pointLocator->FindPointsWithinRadius(radius, pntCoor, result);
+            //std::cout << "result = " << result->GetNumberOfIds() << std::endl;
+            if (result->GetNumberOfIds())
+            {
+              // add idx to map of nodes me sends to you
+              this->sentSurfNodes[me][you].insert(pntId);
+              // add idx to map of nodes you recevies from proc me 
+              this->receivedSurfNodes[you][me].insert(this->partToGlobNodeMap[me][pntId]);
+            }
+            else
+            {
+              notSharedWithVolSurfNodes.push_back(pntId);
+            }
           }
         }
         else 
         {
           numSharedInCell += 1;
         }
-        // if there are more than two shared node with other proc, we send the cell
-        if (numSharedInCell >= 2)
+        if (vol && numSharedInCell >= 3)
         {
-          if (vol)
+          // Add sent nodes only if the node belongs to a sent volume cell
+          for (auto itr = notSharedCellNodes.begin(); itr != notSharedCellNodes.end(); itr++)
           {
-            // add idx to sentCells to you map
-            this->sentCells[me][you].insert(localCellId);
-          }
-          else
-          {
-            this->sentSurfCells[me][you].insert(localCellId);
-          }
-          // get the global cell index
-          int globId = partToGlobCellMap[me][localCellId];
-          if (vol)
-          {
-            // add idx to map of cells proc you recieves from proc me
-            this->receivedCells[you][me].insert(globId);
-          }
-          else
-          {
-            this->receivedSurfCells[you][me].insert(globId);
+            // add idx to map of nodes me sends to you
+            this->sentNodes[me][you].insert(*itr);
+            // add idx to map of nodes you recevies from proc me 
+            this->receivedNodes[you][me].insert(this->partToGlobNodeMap[me][*itr]);
           }
         }
+      }
+      if (vol && numSharedInCell >= 3)
+      {
+        // add idx to sentCells to you map
+        this->sentCells[me][you].insert(localCellId);
+        // get the global cell index
+        int globId = partToGlobCellMap[me][localCellId];
+        // add idx to map of cells proc you recieves from proc me
+        this->receivedCells[you][me].insert(globId);
+      }
+      else if (!vol && numSharedInCell >= 2 && notSharedWithVolSurfNodes.empty())
+      {
+        int globId = partToGlobCellMap[me][localCellId];
+        this->sentSurfCells[me][you].insert(localCellId);
+        // add idx to map of cells proc you recieves from proc me
+        this->receivedSurfCells[you][me].insert(globId);
       }
     }
   }
@@ -509,9 +648,9 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
 void RocPartCommGenDriver::getSharedPatchInformation()
 {
   // get glob to part node maps for intersection calc
-  std::map<int, std::vector<std::map<int,int>>> patchProcGlobToPartNodeMaps;
-  std::map<int, std::vector<std::map<int,int>>> patchProcPartToGlobNodeMaps;
-  std::map<int, std::vector<std::vector<int>>> patchProcGlobNodeIdsMaps;
+  std::map<int, std::map<int, std::map<int,int>>> patchProcGlobToPartNodeMaps;
+  std::map<int, std::map<int, std::map<int,int>>> patchProcPartToGlobNodeMaps;
+  std::map<int, std::map<int, std::vector<int>>> patchProcGlobNodeIdsMaps;
 
   for (int i = 0; i < this->sharedPatchNodes.size(); ++i)
   {
@@ -529,9 +668,9 @@ void RocPartCommGenDriver::getSharedPatchInformation()
         patchGlobToPartNodeMap[globNodeId] = j;
         patchPartToGlobNodeMap[j] = globNodeId;
       }
-      patchProcGlobToPartNodeMaps[it->first].push_back(patchGlobToPartNodeMap);
-      patchProcPartToGlobNodeMaps[it->first].push_back(patchPartToGlobNodeMap);
-      patchProcGlobNodeIdsMaps[it->first].push_back(getSortedKeys(patchGlobToPartNodeMap)); 
+      patchProcGlobToPartNodeMaps[it->first][i] = patchGlobToPartNodeMap;
+      patchProcPartToGlobNodeMaps[it->first][i] = patchPartToGlobNodeMap;
+      patchProcGlobNodeIdsMaps[it->first][i] = getSortedKeys(patchGlobToPartNodeMap);
       ++it;
     }
   }
@@ -540,15 +679,14 @@ void RocPartCommGenDriver::getSharedPatchInformation()
     auto it = this->patchesOfSurfacePartitions[me].begin();
     while (it != this->patchesOfSurfacePartitions[me].end())
     {   
-      if (me < patchProcGlobNodeIdsMaps[it->first].size())
+      if (!(patchProcGlobNodeIdsMaps[it->first].find(me) == patchProcGlobNodeIdsMaps[it->first].end()))
       {  
         for (int you = 0; you < this->surfacePartitions.size(); ++you)
         {
           auto it1 = this->patchesOfSurfacePartitions[you].begin();
-
           while (it1 != this->patchesOfSurfacePartitions[you].end())
-          {
-            if (you < patchProcGlobNodeIdsMaps[it1->first].size())   
+          {  
+            if (!(patchProcGlobNodeIdsMaps[it1->first].find(you) == patchProcGlobNodeIdsMaps[it1->first].end()))
             {
               if (!(you == me && it->first == it1->first))
               {
@@ -564,10 +702,8 @@ void RocPartCommGenDriver::getSharedPatchInformation()
                   this->sharedPatchNodes[you][it1->first][me][it->first].resize(tmpVec.size());
                   for (int i = 0; i < tmpVec.size(); ++i)
                   {
-                    // get local id in patch in proc me
                     int localPntId = patchProcGlobToPartNodeMaps[it->first][me][tmpVec[i]];
                     this->sharedPatchNodes[me][it->first][you][it1->first][i] = localPntId;
-                    // get local id in patch in proc you
                     localPntId = patchProcGlobToPartNodeMaps[it1->first][you][tmpVec[i]];
                     this->sharedPatchNodes[you][it1->first][me][it->first][i] = localPntId;
                   }
@@ -701,8 +837,6 @@ void RocPartCommGenDriver::extractPatches()
       auto it1 = virtualPatchPartitionCellMap.begin();
       while (it1 != virtualPatchPartitionCellMap.end())
       {
-        std::cout << "virtual patch num " << it1->first << " of proc " << i << " from proc " << it->first
-                  << "\n\n" << std::endl;
         this->virtualCellsOfPatchesOfSurfacePartitions[i][it->first][it1->first]
           = meshBase::CreateShared(
               meshBase::extractSelectedCells(it->second.get(), it1->second));
@@ -735,6 +869,7 @@ RocPartCommGenDriver::~RocPartCommGenDriver()
 
 void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
 {
+
   std::stringstream ss;
   ss << prefix << "_" << this->base_t << 
     (me < 1000 ? (me < 100 ? (me < 10 ? "_000" : "_00") : "_0") : "_") << me << ".cgns";
@@ -753,10 +888,22 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   flowsolpntr += this->trimmed_base_t;
   ss.str("");
   ss.clear();
+  if (!(prefix == "burn" || prefix == "iburn_all"))
+  {
+    // set Win data
+    std::string winName("WinData");
+    winName += this->trimmed_base_t;
+    writer->setIntData(winName, 1);
+    writer->writeWinToFile();
+  }
+
+  // Always one volumetric "fluid" zone (1)
+  // Currently assumes exactly 1 burning patch
   //TODO : // determine whether this surface partition has a burning patch
+  //TODO: add support for "nb" files
   int zone = 2;
   if (this->patchesOfSurfacePartitions[me].find(1) 
-        != this->patchesOfSurfacePartitions[me].end())
+        != this->patchesOfSurfacePartitions[me].end() && prefix == "ifluid_ni")
   {
     zone += 1; // zone starts at 3 in case there is a burning patch on partition 
   }
@@ -764,7 +911,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   auto it = this->patchesOfSurfacePartitions[me].begin();
   while (it != this->patchesOfSurfacePartitions[me].end())
   {
-    if (it->first != 1) // ni files have zones > 1 and 1 is a burning patch number
+    if ((prefix == "ifluid_ni" && it->first != 1) || (prefix == "ifluid_b" && it->first == 1) ||
+          (prefix == "burn" && it->first == 1) || (prefix == "iburn_all" && it->first == 1)) // ni files have zones > 1 and 1 is a burning patch number
     {
       int numVirtualCells = 0;;
       // setting zone iter data
@@ -775,8 +923,11 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       zone += 1;    
       // vector to hold real patch mesh and all virtuals from same patch on other procs
       std::vector<std::shared_ptr<meshBase>> patchOfPartitionWithAllVirtualCells;
+      // vector to hold real patch mesh and all virtuals from same patch on other procs
+      std::vector<std::shared_ptr<meshBase>> patchOfPartition;
       // first push back real cells
       patchOfPartitionWithAllVirtualCells.push_back(it->second);
+      patchOfPartition.push_back(it->second);
       // iterate over virtual cells of the partition's patch and push back
       auto virtItr = this->virtualCellsOfPatchesOfSurfacePartitions[me].begin();
       while (virtItr != this->virtualCellsOfPatchesOfSurfacePartitions[me].end())
@@ -803,6 +954,9 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       // next n meshBases are virtual: "extractedVirtualPatch*.vtu"
       if (numVirtualCells)
       { 
+        // merge real cells for this partition
+        std::shared_ptr<meshBase> patchOfPartitionWithRealMesh
+          = meshBase::stitchMB(patchOfPartition);
         // merge virtual cells into real mesh for this partition
         std::shared_ptr<meshBase> patchOfPartitionWithVirtualMesh
           = meshBase::stitchMB(patchOfPartitionWithAllVirtualCells);
@@ -834,15 +988,97 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         {
           *tmpit += 1;
         }
-        writer->setSection(":T3:real", TRI_3, cgConnReal);
-        writer->setNCell(numVirtualCells);
-        writer->setSection(":T3:virtual", TRI_3, cgConnVirtual);
-        writer->setVirtElmRind(numVirtualCells);
-        writer->setPconnVec(this->surfPconns[me][it->first]);
-        writer->writeZoneToFile();
+
+        writer->setSection(":t3:real", TRI_3, cgConnReal);
+
+        if (!(prefix == "burn" || prefix == "iburn_all"))
+        {
+          // get pane data that is stored in element data (patchNo , bcflag, cnstr_type)
+          vtkSmartPointer<vtkDataArray> patchNos = 
+            patchOfPartitionWithVirtualMesh->getDataSet()->GetCellData()->GetArray("patchNo");
+          double patchNo[1];
+          patchNos->GetTuple(0, patchNo);
+  
+          vtkSmartPointer<vtkDataArray> bcflags = 
+            patchOfPartitionWithVirtualMesh->getDataSet()->GetCellData()->GetArray("bcflag");
+          double bcflag[1];
+          bcflags->GetTuple(0, bcflag);
+  
+          vtkSmartPointer<vtkDataArray> cnstr_types = 
+            patchOfPartitionWithVirtualMesh->getDataSet()->GetCellData()->GetArray("cnstr_type");
+          double cnstr_type[1];
+          cnstr_types->GetTuple(0, cnstr_type); 
+
+          writer->setNCell(numVirtualCells); 
+          writer->setSection(":t3:virtual", TRI_3, cgConnVirtual);
+          writer->setVirtElmRind(numVirtualCells);
+  
+          writer->setPconnVec(this->surfPconns[me][it->first]);
+  
+          // TODO: update this so that we support different element types automatically
+          //writer->setGlobalSection(":t3g:real#1of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+          //writer->setGlobalSection(":t3g:real#2of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+          //writer->setGlobalSection(":t3g:real#3of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+          //writer->setGlobalSection(":t3g:virtual#1of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+          //writer->setGlobalSection(":t3g:virtual#1of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+          //writer->setGlobalSection(":t3g:virtual#1of3", TRI_3, placeholder);
+          //writer->setGlobalNCell(0);
+  
+          writer->setGlobalSection(":q4g:real#1of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:real#2of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:real#3of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:real#4of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:virtual#1of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:virtual#2of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:virtual#3of4", TETRA_4);
+          writer->setGlobalNCell(0);
+          writer->setGlobalSection(":q4g:virtual#4of4", TETRA_4);
+          writer->setGlobalNCell(0);
+  
+          writer->setPatchNo((int) patchNo[0]);
+          writer->setBcflag((int) bcflag[0]);
+          writer->setCnstrtype((int) cnstr_type[0]);
+        }
+        else
+        {
+          writer->setNCell(1);
+          writer->setSection("Empty:t3:virtual", TRI_3, cgConnVirtual);
+          writer->setVirtElmRind(numVirtualCells);
+        }
+
+        std::cout << "writing zone..." << std::endl;
+
+        // Subtract surface faces off of volume faces total
+        this->nUniqueVolFaces[me] -= patchOfPartitionWithVirtualMesh->getDataSet()->GetNumberOfCells();
+
+        if (!(prefix == "burn" || prefix == "iburn_all"))
+        {
+          // rocflu surface
+          writer->writeZoneToFile(1);
+        }
+        else
+        {
+          // rocburn surface
+          writer->writeZoneToFile(2);
+        }
+
         // write solution data
         if (this->surfWithSol)
-        {   
+        {
+          // transfer data to the surf-partition-with-virtual-cells mesh 
+          this->burnSurfWithSol
+                ->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
           // transfer data to the surf-partition-with-virtual-cells mesh 
           this->surfWithSol
                 ->transfer(patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
@@ -853,6 +1089,10 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           {
             std::string nodeName("NodeData");
             nodeName += this->trimmed_base_t;
+            if (prefix == "burn" || prefix == "iburn_all")
+            {
+              numPointDataArr = 0;
+            }
             writer->writeSolutionNode(nodeName, Vertex);
             for (int i = 0; i < numPointDataArr; ++i)
             {
@@ -862,28 +1102,47 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               writer->writeSolutionField(dataName, nodeName, RealDouble, &pointData[0u]);
             } 
           }
-          int numCellDataArr
-            = this->surfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
+          int numCellDataArr;
+          if (prefix == "burn" || prefix == "iburn_all")
+          {
+          numCellDataArr
+            = this->burnSurfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
+          }
+          else
+          {
+          numCellDataArr
+            = this->surfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();            
+          }
           if (numCellDataArr)
           {
-            std::string nodeName("ElemData"); 
+            std::string nodeName("ElemData");
             nodeName += this->trimmed_base_t;
             writer->writeSolutionNode(nodeName, CellCenter); 
             // now do cell data
             for (int i = 0; i < numCellDataArr; ++i)
             {
               std::vector<double> cellData;
-              patchOfPartitionWithVirtualMesh->getCellDataArray(i, cellData);
-              std::string dataName(this->surfWithSol->getDataSet()->GetCellData()->GetArrayName(i));
-              // TODO: these fields are stored as cell data in the stitchedSurf.vtu, i.e. surfWithSol
-              //       we don't want to write it back to cgns as solution data. instead, grab one of the 
-              //       values from each using something like:
-    // patchOfPartitionWithVirtualMesh->getDataSet()->GetPointData()->GetArray("patchNo")->GetTuple(0);
-              // add a line like above BEFORE writeZoneToFile
-              // use set methods and add members to cgnsWriter and add the data to PaneData in the 
-              // writeZoneToFile function of cgnsWriter (see PaneData example there)
+              std::string dataName;
+              if (!(prefix == "burn" || prefix == "iburn_all"))
+              {
+                patchOfPartitionWithVirtualMesh->getCellDataArray(i, cellData);
+                dataName = this->surfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+              }
+              else
+              {
+                patchOfPartitionWithRealMesh->getCellDataArray(i, cellData);
+                dataName = this->burnSurfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+              }
               if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
               {
+                // Zero out grid speed for re-meshing
+                if (dataName == "gs")
+                {
+                  for (auto itr = cellData.begin(); itr != cellData.end(); ++itr)
+                  {
+                    *itr = 0;
+                  }
+                }
                 writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
               }
             }
@@ -891,13 +1150,14 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         }
         // reset the section info
         writer->resetSections();
+        writer->resetGlobalSections();
       }
     }
     ++it;
   }
 }
 
-void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int type)
+void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int type, int gsExists)
 {
   std::stringstream ss;
   ss << prefix << "_" << this->base_t << 
@@ -969,8 +1229,39 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   writer->setSection(":T4:virtual", TETRA_4, cgConnVirtual);
   writer->setVirtElmRind(numVirtualCells);
   writer->setPconnVec(this->volPconns[proc]);
+  writer->setNCell(numVirtualCells);
+  //writer->setSection(":T4:virtual", TETRA_4, cgConnVirtual);
+
+  // Get number of unique faces in the volume mesh
+  if (!gsExists)
+  {
+    std::vector<std::vector<int>> allFaces;
+    std::vector<int> idList;
+    for (int iCell = 0; iCell < partitionWithVirtualMesh->getDataSet()->GetNumberOfCells(); iCell++)
+    {
+      auto myCell = partitionWithVirtualMesh->getDataSet()->GetCell(iCell);
+      for (int iFace = 0; iFace < myCell->GetNumberOfFaces(); iFace++)
+      {
+        auto myFace = myCell->GetFace(iFace);
+        idList.clear();
+        auto ptIds = myFace->GetPointIds();
+        for (int iPt = 0; iPt < myFace->GetNumberOfPoints(); iPt++)
+        {
+          idList.push_back(ptIds->GetId(iPt));
+        }
+        std::sort(idList.begin(), idList.end());
+        allFaces.push_back(idList);
+      }
+    }
+    std::sort(allFaces.begin(), allFaces.end());
+    allFaces.erase(std::unique(allFaces.begin(), allFaces.end()), allFaces.end());
+    this->nUniqueVolFaces[proc] = allFaces.size();
+  }
+  
+  writer->setVolCellFacesNumber(this->nUniqueVolFaces[proc]);
+
   writer->writeGridToFile();
-  writer->writeZoneToFile();
+  writer->writeZoneToFile(0);
   // write solution data  
   if (this->volWithSol)
   {
@@ -1010,147 +1301,3 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     }
   } 
 }
-
-  //if (!partitions.empty())
-  //{
-  //  for (int i = 0; i < partitions.size(); ++i)
-  //  {
-  //    if (partitions[i])
-  //    {
-  //      delete partitions[i];
-  //      partitions[i] = nullptr;
-  //    }
-  //  }
-  //}
-  //if (!virtualCellsOfPartitions.empty())
-  //{
-  //  for (int i = 0; i < virtualCellsOfPartitions.size(); ++i)
-  //  {
-  //    auto it = virtualCellsOfPartitions[i].begin();
-  //    while (it != virtualCellsOfPartitions[i].end())
-  //    {
-  //      if (it->second)
-  //      {
-  //        delete it->second;
-  //        it->second = nullptr;
-  //      }
-  //      ++it;
-  //    }
-  //  }
-  //}
-  //if (!surfacePartitions.empty())
-  //{
-  //  for (int i = 0; i < surfacePartitions.size(); ++i)
-  //  {
-  //    if (surfacePartitions[i])
-  //    {
-  //      delete surfacePartitions[i];
-  //      surfacePartitions[i] = nullptr;
-  //    }
-  //  }
-  //}
-  //if (!virtualCellsOfSurfPartitions.empty())
-  //{
-  //  for (int i = 0; i < virtualCellsOfSurfPartitions.size(); ++i)
-  //  {
-  //    auto it = virtualCellsOfSurfPartitions[i].begin();
-  //    while (it != virtualCellsOfSurfPartitions[i].end())
-  //    {
-  //      if (it->second)
-  //      {
-  //        delete it->second;
-  //        it->second = nullptr;
-  //      }
-  //      ++it;
-  //    }
-  //  }
-  //}
-  //if (!patchesOfSurfacePartitions.empty())
-  //{
-  //  for (int i = 0; i < patchesOfSurfacePartitions.size(); ++i)
-  //  {
-  //    auto it = patchesOfSurfacePartitions[i].begin();
-  //    while (it != patchesOfSurfacePartitions[i].end())
-  //    {
-  //      if (it->second)
-  //      {
-  //        delete it->second;
-  //        it->second = nullptr;
-  //      }
-  //      ++it;
-  //    }
-  //  }
-  //}
-  //if (!virtualCellsOfPatchesOfSurfacePartitions.empty())
-  //{
-  //  for (int i = 0; i < virtualCellsOfPatchesOfSurfacePartitions.size(); ++i)
-  //  {
-  //    auto it = virtualCellsOfPatchesOfSurfacePartitions[i].begin();
-  //    while (it != virtualCellsOfPatchesOfSurfacePartitions[i].end())
-  //    {
-  //      auto it1 = it->second.begin();
-  //      while (it1 != it->second.end())
-  //      {
-  //        if (it1->second)
-  //        {
-  //          delete it1->second;
-  //          it1->second = nullptr;
-  //        }
-  //        ++it1;
-  //      }    
-  //    ++it;
-  //    }
-  //  }
-  //}
-//  auto it = sharedPatchNodes[0].begin();
-//  std::cout << "Partition 0 : " << std::endl;
-//  while (it != sharedPatchNodes[0].end())
-//  {
-//    std::cout << "Patch " << it->first << " shared nodes with ";
-//    auto it1 = it->second.begin();
-//    while (it1 != it->second.end())
-//    {
-//      std::cout << "proc " << it1->first << ", patch ";
-//      auto it2 = it1->second.begin();
-//      while (it2 != it1->second.end())
-//      {
-//        std::cout << it2->first << " : \n";
-//        for (int k = 0; k < it2->second.size(); ++k)
-//          std::cout << it2->second[k] << " ";
-//        std::cout << std::endl;
-//        ++it2;
-//      }
-//      std::cout << std::endl;
-//      ++it1;
-//    }
-//    std::cout << std::endl;  
-//    ++it;
-//  } 
-//  std::cout << "pconn for proc 0, patch 3" << std::endl;
-//  printVec(surfPconns[0][3]);
-//  std::cout << std::endl;
-  //for (int i = 0; i < partSurf->GetNumberOfPoints(); ++i)
-  //{
-  //  // get point from part surf
-  //  double point[3];
-  //  partSurf->GetPoint(i,point);
-  //  // params to find cell with locator
-  //  double closestPoint[3];
-  //  vtkIdType id;
-  //  int subid;
-  //  double minDist2;
-  //  // look for point in full surf cells
-  //  fullSurfCellLocator->FindClosestPoint(point, closestPoint, genCell, id, subid, minDist2);  
-  //  if (minDist2 > this->searchTolerance)
-  //  {
-  //    // find cells in part surf using point from part surf not found in full surf
-  //    partSurf->GetPointCells(i, patchCellIds);
-  //    for (int j = 0; j < patchCellIds->GetNumberOfIds(); ++j)
-  //    {
-  //      int cellToDelete = static_cast<int>(patchCellIds->GetId(j));
-  //      cellsToDelete.insert(cellToDelete);
-  //    }
-  //    partSurf->DeletePoint(i);
-  //    numToDelete += 1;
-  //  }
-  //} 

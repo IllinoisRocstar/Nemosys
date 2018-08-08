@@ -99,6 +99,7 @@ void cgnsAnalyzer::loadGrid(int verb)
   if (nTStep != 1)
     std::cerr << "More than one time step is not supported.\n";
   int nArrays;
+  std::cout << baseItrName << std::endl;
   if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
   if (cg_array_read_as(1, RealDouble, &timeLabel)) cg_error_exit();
   if (verb > 0) std::cout << "Time label = " << timeLabel << std::endl;
