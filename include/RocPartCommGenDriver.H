@@ -11,6 +11,7 @@ class RocPartCommGenDriver : public NemDriver
                          std::shared_ptr<meshBase> surf, 
                          std::shared_ptr<meshBase> volWithSol,
                          std::shared_ptr<meshBase> surfWithSol,
+                         std::shared_ptr<meshBase> burnSurfWithSol,
                          int numPartitions, const std::string& base_t,
                          bool writeIntermediateFiles, double searchTolerance);
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
@@ -46,9 +47,10 @@ class RocPartCommGenDriver : public NemDriver
   // --- write cgns files
   private:
     // write vol cgns (proc is partition num, type is patch num, prefix usually fluid)
-    void writeVolCgns(const std::string& prefix, int proc, int type); 
+    void writeVolCgns(const std::string& prefix, int proc, int type, int gsExists); 
     // write surf cgns (proc is partition num, other info is deduced from maps)
     void writeSurfCgns(const std::string& prefix, int proc); 
+    //void writeVolGs(const std::string& prefix, int proc, int type);
 
   // --- real and virtual meshes 
   private:
@@ -60,6 +62,8 @@ class RocPartCommGenDriver : public NemDriver
     std::shared_ptr<meshBase> volWithSol;
     // original surface mesh with solution data
     std::shared_ptr<meshBase> surfWithSol;
+    // original burning surface mesh with solution data (iburn)
+    std::shared_ptr<meshBase> burnSurfWithSol;
     // TODO: add meshBase (mbObj[2) from remeshDriver) for iburn solution mesh (iBurnWithSol)
     //       figure out a way to extract the cells with bflag on each surf/vol partition
     //        transfer data from iBurnWithSol to surf partitions and write them out to cgns
@@ -139,6 +143,10 @@ class RocPartCommGenDriver : public NemDriver
     // pconn for each patch of each surf partition
     // <proc, <patch, pconns>>
     std::vector<std::map<int, std::vector<int>>> surfPconns;
+
+  // --- storing number of unique volumetric faces for each partition
+    // <proc, number of faces>
+    std::map<int, int> nUniqueVolFaces;
 
   // --- write pconn information into pconn vectors
   private:

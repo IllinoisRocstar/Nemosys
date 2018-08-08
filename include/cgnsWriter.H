@@ -46,30 +46,41 @@ public:
                 TimeUnits_t tu, TemperatureUnits_t tpu, AngleUnits_t au);
   void setBaseItrData(std::string bsitrname, int ntstp, double tval);
   void setZoneItrData(std::string zitrname, std::string grdptr, std::string slnptr);
+  void setIntData(std::string intname, int intval);
   void setZone(std::string zName, ZoneType_t zt);
   void setNVrtx(int nVt);
   void setNCell(int nCl);
+  void setGlobalNCell(int gnCl);
   void setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z);
   void setCoordRind(int rind);  
   void setVirtElmRind(int rind); 
   void setPconnVec(const vect<int>::v1d& pConnVec); 
+  void setPatchNo(int patchNo);
+  void setBcflag(int bcflag);
+  void setCnstrtype(int cnstr_type);
+  void setVolCellFacesNumber(int nVolCellFaces);
   void setPconnGhostDescriptor(int ghostDescriptor);
   void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
+  void setGlobalSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
+  void setGlobalSection(std::string gsName, ElementType_t gst);
   void resetSections();
+  void resetGlobalSections();
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
   void writeGridToFile();
-  void writeZoneToFile();
+  void writeZoneToFile(int volSurfFlag);
+  void writeWinToFile();
+  //void writeVolGs(double* data);
 
 private:
   // general CGNS manager
   std::string myCgFileName;
   ZoneType_t zoneType;
-  ElementType_t sectionType;
+  ElementType_t sectionType, gsectionType;
   int rmin[3], rmax[3];
   cgsize_t cgCoreSize[9];
-  std::string baseName, zoneName, sectionName;
+  std::string baseName, zoneName, sectionName, gsectionName;
   int indexFile, indexBase;
   int indexZone, indexCoord;
   int indexSection;
@@ -78,13 +89,20 @@ private:
   int nZone;
   int nVrtx;
   int nCell;
+  int gnCell;
   int nSection;
+  int gnSection;
   int nVrtxElem;
   int coordRind;
   int virtElmRind;
   int pConnGhostDescriptor;
   vect<int>::v1d pConnVec;
   vect<int>::v1d elmConn;
+  int patchNo;
+  int bcflag;
+  int cnstr_type;
+  int intVal;
+  int nVolCellFaces;
   // units
   MassUnits_t massU;
   LengthUnits_t lengthU;
@@ -93,6 +111,7 @@ private:
   AngleUnits_t angleU;
   // time-dependent data
   std::string baseItrName, zoneItrName;
+  std::string intName;
   std::string gridCrdPntr, flowSlnPntr;
   int nTStep;
   double timeLabel;
@@ -101,9 +120,13 @@ private:
   vect<std::string>::v1d zoneNames;
   vect<ZoneType_t>::v1d zoneTypes;
   vect<std::string>::v1d sectionNames;
+  vect<std::string>::v1d gsectionNames;
   vect<ElementType_t>::v1d sectionTypes;
+  vect<ElementType_t>::v1d gsectionTypes;
   vect<int>::v2d elmConns;
+  vect<int>::v2d gelmConns;
   vect<int>::v1d nCells;
+  vect<int>::v1d gnCells;
   // solution data 
   int nSlnFld;
   int nVrtxSln;
