@@ -118,7 +118,7 @@ void RemeshDriver::stitchSurfaces()
   stitchedSurf->setFileName("stitchedSurf.vtu");
 
   std::vector<std::shared_ptr<meshBase>> burnSurfs;
-  burnSurfs.insert(burnSurfs.begin(), mbObjs.begin()+2, mbObjs.begin()+2);
+  burnSurfs.insert(burnSurfs.begin(), mbObjs.begin()+2, mbObjs.begin()+3);
   std::cout << "stitching burning surfaces" << std::endl;
   stitchedBurnSurf = meshBase::stitchMB(burnSurfs);
 }
