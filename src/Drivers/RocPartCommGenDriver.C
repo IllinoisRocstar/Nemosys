@@ -876,6 +876,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname,prefix,2,3));
+  // set time stamp
+  writer->setTimestamp(this->trimmed_base_t);
   // define elementary information
   writer->setUnits(Kilogram, Meter, Second, Kelvin, Degree);
   // baseitrname, nTstep, timeVal
@@ -969,12 +971,30 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         // set num real cells for this patch of this partition
         writer->setNCell(it->second->getNumberOfCells());
         // define and set coordinates
-        std::vector<std::vector<double>> 
-          coords(patchOfPartitionWithVirtualMesh->getVertCrds());
-        writer->setGridXYZ(coords[0], coords[1], coords[2]);
-        // set num virtual vertices for this partition
-        writer->setCoordRind(patchOfPartitionWithVirtualMesh->getNumberOfPoints()
-                             - it->second->getNumberOfPoints());
+        std::vector<std::vector<double>> coords;
+        if (!(prefix == "burn" || prefix == "iburn_all"))
+        {
+          //std::vector<std::vector<double>> 
+          //  coords(patchOfPartitionWithVirtualMesh->getVertCrds());
+          coords = patchOfPartitionWithVirtualMesh->getVertCrds();
+          writer->setGridXYZ(coords[0], coords[1], coords[2]);
+          // set num virtual vertices for this partition
+          writer->setCoordRind(patchOfPartitionWithVirtualMesh->getNumberOfPoints()
+                               - it->second->getNumberOfPoints());
+        }
+        else
+        {
+
+          coords = patchOfPartitionWithRealMesh->getVertCrds();
+
+          //vtkSmartPointer<vtkDataArray> mycelldata = patchOfPartitionWithRealMesh->getDataSet()->GetCellData();
+          //std::cout << "size of my real mesh = " << mycelldata->GetNumberOfCells() << std::endl;
+          writer->setGridXYZ(coords[0], coords[1], coords[2]);
+          // set num virtual vertices for this partition
+          //writer->setCoordRind(patchOfPartitionWithRealMesh->getNumberOfPoints()
+          //                    - it->second->getNumberOfPoints());
+        }
+
         // define real connectivities and 1-base indexing
         std::vector<int> cgConnReal(it->second->getConnectivities());
         for (auto tmpit = cgConnReal.begin(); tmpit != cgConnReal.end(); ++tmpit)
@@ -1089,18 +1109,21 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           {
             std::string nodeName("NodeData");
             nodeName += this->trimmed_base_t;
-            if (prefix == "burn" || prefix == "iburn_all")
+            if (!(prefix == "burn" || prefix == "iburn_all"))
             {
-              numPointDataArr = 0;
+              writer->writeSolutionNode(nodeName, Vertex, 0, 1, 0);
+              for (int i = 0; i < numPointDataArr; ++i)
+              {
+                std::vector<double> pointData;
+                patchOfPartitionWithVirtualMesh->getPointDataArray(i, pointData);
+                std::string dataName(this->surfWithSol->getDataSet()->GetPointData()->GetArrayName(i));
+                writer->writeSolutionField(dataName, nodeName, RealDouble, &pointData[0u]);
+              }
             }
-            writer->writeSolutionNode(nodeName, Vertex);
-            for (int i = 0; i < numPointDataArr; ++i)
+            else
             {
-              std::vector<double> pointData;
-              patchOfPartitionWithVirtualMesh->getPointDataArray(i, pointData);
-              std::string dataName(this->surfWithSol->getDataSet()->GetPointData()->GetArrayName(i));
-              writer->writeSolutionField(dataName, nodeName, RealDouble, &pointData[0u]);
-            } 
+              writer->writeSolutionNode(nodeName, Vertex, 1, 1, 0);
+            }
           }
           int numCellDataArr;
           if (prefix == "burn" || prefix == "iburn_all")
@@ -1115,35 +1138,79 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           }
           if (numCellDataArr)
           {
-            std::string nodeName("ElemData");
-            nodeName += this->trimmed_base_t;
-            writer->writeSolutionNode(nodeName, CellCenter); 
-            // now do cell data
-            for (int i = 0; i < numCellDataArr; ++i)
+            if (prefix != "burn")
             {
-              std::vector<double> cellData;
-              std::string dataName;
+              std::string nodeName("ElemData");
+              nodeName += this->trimmed_base_t;
               if (!(prefix == "burn" || prefix == "iburn_all"))
               {
-                patchOfPartitionWithVirtualMesh->getCellDataArray(i, cellData);
-                dataName = this->surfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+                writer->writeSolutionNode(nodeName, CellCenter, 0, 1, 0);
               }
-              else
+              else if (prefix == "iburn_all")
               {
-                patchOfPartitionWithRealMesh->getCellDataArray(i, cellData);
-                dataName = this->burnSurfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+                writer->writeSolutionNode(nodeName, CellCenter, 0, 0, 0);
               }
-              if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
+              // now do cell data
+              for (int i = 0; i < numCellDataArr; ++i)
               {
-                // Zero out grid speed for re-meshing
-                if (dataName == "gs")
+                std::vector<double> cellData;
+                std::string dataName;
+                if (!(prefix == "burn" || prefix == "iburn_all"))
                 {
-                  for (auto itr = cellData.begin(); itr != cellData.end(); ++itr)
-                  {
-                    *itr = 0;
-                  }
+                  patchOfPartitionWithVirtualMesh->getCellDataArray(i, cellData);
+                  dataName = this->surfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
                 }
-                writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+                else if (prefix == "iburn_all")
+                {
+                  patchOfPartitionWithRealMesh->getCellDataArray(i, cellData);
+                  //std::cout << "cellData size = " << cellData.size() << std::endl;
+                  dataName = this->burnSurfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+                }
+                if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
+                {
+                  // Zero out grid speed for re-meshing
+                  if (dataName == "gs")
+                  {
+                    for (auto itr = cellData.begin(); itr != cellData.end(); ++itr)
+                    {
+                      *itr = 0;
+                    }
+                  }
+                  std::cout << "calling writesolutionfield for " << prefix << " " << std::endl;
+                  std::cout << "array of cell Data size = " << cellData.size() << std::endl;
+                  std::cout << "dataName = " << dataName << std::endl;
+                  std::cout << "nodeName = " << nodeName << std::endl;
+
+                  // If writing out cell centers, recompute them after re-meshing
+                  if (dataName == "centersX" || dataName == "centersY" || dataName == "centersZ")
+                  {
+                    int ind;
+                    if (dataName == "centersX")
+                    {
+                      ind = 0;
+                    }
+                    else if (dataName == "centersY")
+                    {
+                      ind = 1;
+                    }
+                    else if (dataName == "centersZ")
+                    {
+                      ind = 2;
+                    }
+                    std::vector<double> centers;
+                    // Get total number of real nodes
+                    int nCells = cgConnReal.size()/3;
+                    //int elmId;
+                    //double corr;
+                    for (int i=0; i<nCells; i++)
+                    {
+                      centers.push_back((coords[ind][cgConnReal[i]] + coords[ind][cgConnReal[i+1]] + coords[ind][cgConnReal[i+2]])/3);
+                    }
+                    cellData = centers;
+                  }
+                  // set num real cells for this patch of this partition
+                  writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+                }
               }
             }
           }
@@ -1166,6 +1233,8 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer 
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname, "fluid", 3, 3));
+  // set time stamp
+  writer->setTimestamp(this->trimmed_base_t);
   // define elementary information 
   writer->setUnits(Kilogram, Meter, Second, Kelvin, Degree);
   // baseitrname, nTstep, timeVal 
@@ -1273,7 +1342,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     {
       std::string nodeName("NodeData");
       nodeName += this->trimmed_base_t;
-      writer->writeSolutionNode(nodeName, Vertex); 
+      writer->writeSolutionNode(nodeName, Vertex, 0, 1, 1); 
       // begin with point data
       for (int i = 0; i < numPointDataArr; ++i)
       {
@@ -1289,7 +1358,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     {
       std::string nodeName("ElemData"); 
       nodeName += this->trimmed_base_t;
-      writer->writeSolutionNode(nodeName, CellCenter); 
+      writer->writeSolutionNode(nodeName, CellCenter, 0, 1, 1); 
       // now do cell data
       for (int i = 0; i < numCellDataArr; ++i)
       {
