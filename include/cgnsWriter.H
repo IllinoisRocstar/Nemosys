@@ -48,6 +48,7 @@ public:
   void setZoneItrData(std::string zitrname, std::string grdptr, std::string slnptr);
   void setIntData(std::string intname, int intval);
   void setZone(std::string zName, ZoneType_t zt);
+  void setTimestamp(std::string trimmed_base_t);
   void setNVrtx(int nVt);
   void setNCell(int nCl);
   void setGlobalNCell(int gnCl);
@@ -66,11 +67,17 @@ public:
   void resetSections();
   void resetGlobalSections();
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
-  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc);
+  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag, int typeFlag);
   void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
   void writeGridToFile();
   void writeZoneToFile(int volSurfFlag);
   void writeWinToFile();
+  void setFluidUnitsMap();
+  void setFluidDimMap();
+  void setFluidMagMap();
+  void setiFluidUnitsMap();
+  void setiFluidDimMap();
+  void setiFluidMagMap();
   //void writeVolGs(double* data);
 
 private:
@@ -85,6 +92,7 @@ private:
   int indexZone, indexCoord;
   int indexSection;
   int cellDim, physDim;
+  std::string trimmed_base_t;
   int nBase;
   int nZone;
   int nVrtx;
@@ -141,6 +149,13 @@ private:
   std::map<int,std::pair<int,keyValueList> > solutionMap; // (#sln, <slnIdx, [fldIdx, fldName]>)
   vect<std::string>::v1d solutionName;
   vect<GridLocation_t>::v1d solutionGridLocation;
+  // Rocstar variable units lookup dictionary
+  std::map <std::string, std::string> fluidUnitsMap;
+  std::map <std::string, float*> fluidDimMap;
+  std::map <std::string, int> fluidMagMap;
+  std::map <std::string, std::string> ifluidUnitsMap;
+  std::map <std::string, float*> ifluidDimMap;
+  std::map <std::string, int> ifluidMagMap;
 };
 
 #endif
