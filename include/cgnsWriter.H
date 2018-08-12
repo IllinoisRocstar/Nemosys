@@ -33,7 +33,7 @@ class cgnsWriter{
 public:
   cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim) :
   myCgFileName(fname), cellDim(cellDim), physDim(physDim),
-  baseName(baseName), nBase(1), nZone(0), nSection(0),
+  baseName(baseName), nBase(1), nZone(0), nSection(0), gnSection(0),
   nVrtx(0), nCell(0), nSlnFld(0), coordRind(0),virtElmRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
@@ -67,10 +67,10 @@ public:
   void resetSections();
   void resetGlobalSections();
   void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
-  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag, int typeFlag);
-  void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data);
+  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag);
+  void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* dat);
   void writeGridToFile();
-  void writeZoneToFile(int volSurfFlag);
+  void writeZoneToFile();
   void writeWinToFile();
   void setFluidUnitsMap();
   void setFluidDimMap();
@@ -78,6 +78,10 @@ public:
   void setiFluidUnitsMap();
   void setiFluidDimMap();
   void setiFluidMagMap();
+  void setBurnUnitsMap();
+  void setBurnDimMap();
+  void setBurnMagMap();
+  void setTypeFlag(int typeFlag);
   //void writeVolGs(double* data);
 
 private:
@@ -104,6 +108,7 @@ private:
   int coordRind;
   int virtElmRind;
   int pConnGhostDescriptor;
+  int typeFlag;
   vect<int>::v1d pConnVec;
   vect<int>::v1d elmConn;
   int patchNo;
@@ -151,11 +156,14 @@ private:
   vect<GridLocation_t>::v1d solutionGridLocation;
   // Rocstar variable units lookup dictionary
   std::map <std::string, std::string> fluidUnitsMap;
-  std::map <std::string, float*> fluidDimMap;
+  std::map <std::string, std::vector<float>> fluidDimMap;
   std::map <std::string, int> fluidMagMap;
   std::map <std::string, std::string> ifluidUnitsMap;
-  std::map <std::string, float*> ifluidDimMap;
+  std::map <std::string, std::vector<float>> ifluidDimMap;
   std::map <std::string, int> ifluidMagMap;
+  std::map <std::string, std::string> burnUnitsMap;
+  std::map <std::string, std::vector<float>> burnDimMap;
+  std::map <std::string, int> burnMagMap;
 };
 
 #endif

@@ -12,6 +12,9 @@ void cgnsWriter::setUnits(MassUnits_t mu, LengthUnits_t lu,
  angleU = au;
 }
 
+// TODO: Check if these units are used. Really, they should be the same regardless of file (volume, surface,
+// burning, etc.) We could unify them all in one call, rather than separate. Or, we could figure out a way
+// to transfer this data from the old to new CGNS files upon remeshing.
 void cgnsWriter::setFluidUnitsMap()
 {
   // fluid
@@ -32,30 +35,32 @@ void cgnsWriter::setFluidUnitsMap()
   fluidUnitsMap.insert(std::pair<std::string,std::string>("rhoEf",        "(J/(m^3))"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("pf",           "N/(m^2)"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("Tf",           "K"));
+  fluidUnitsMap.insert(std::pair<std::string,std::string>("af",           "m/s"));
 }
 
 void cgnsWriter::setFluidDimMap()
 {
   // fluid
-  float dim1[5] = {0, 1, 0, 0, 0};
-  float dim2[5] = {0, 0, 0, 0, 0};
-  fluidDimMap.insert(std::pair<std::string,float*>("CoordinateX",   dim1));
-  fluidDimMap.insert(std::pair<std::string,float*>("CoordinateY",   dim1));
-  fluidDimMap.insert(std::pair<std::string,float*>("CoordinateZ",   dim1));
+  std::vector<float> dim1 = {0, 1, 0, 0, 0};
+  std::vector<float> dim2 = {0, 0, 0, 0, 0};
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",   dim1));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateY",   dim1));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateZ",   dim1));
   //fluidDimMap.insert(std::pair<std::string,float*>("dispX",         dim));
   //fluidDimMap.insert(std::pair<std::string,float*>("dispY",         dim));
   //fluidDimMap.insert(std::pair<std::string,float*>("dispZ",         dim));
   //fluidDimMap.insert(std::pair<std::string,float*>("pconn", {}));      
   //fluidDimMap.insert(std::pair<std::string,float*>("ridges#1of2", {}));
   //fluidDimMap.insert(std::pair<std::string,float*>("ridges#1of2", {}));
-  fluidDimMap.insert(std::pair<std::string,float*>("gs",            dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("rhof",          dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("rhovfX",        dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("rhovfY",        dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("rhovfZ",        dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("rhoEf",         dim2)); 
-  fluidDimMap.insert(std::pair<std::string,float*>("pf",            dim2));
-  fluidDimMap.insert(std::pair<std::string,float*>("Tf",            dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("gs",            dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhof",          dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhovfX",        dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhovfY",        dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhovfZ",        dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhoEf",         dim2)); 
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("pf",            dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("Tf",            dim2));
+  fluidDimMap.insert(std::pair<std::string,std::vector<float>>("af",            dim2));
 }
 
 void cgnsWriter::setFluidMagMap()
@@ -77,7 +82,8 @@ void cgnsWriter::setFluidMagMap()
   fluidMagMap.insert(std::pair<std::string,int>("rhovfZ",       0));
   fluidMagMap.insert(std::pair<std::string,int>("rhoEf",        0));
   fluidMagMap.insert(std::pair<std::string,int>("pf",           0));
-  fluidMagMap.insert(std::pair<std::string,int>("Tf",           0));        
+  fluidMagMap.insert(std::pair<std::string,int>("Tf",           0));
+  fluidMagMap.insert(std::pair<std::string,int>("af",           0));              
 }
 
 void cgnsWriter::setiFluidUnitsMap()
@@ -117,36 +123,36 @@ void cgnsWriter::setiFluidUnitsMap()
 void cgnsWriter::setiFluidDimMap()
 {
   // ifluid_ni/ifluid_b
-  float dim1[5] = {0, 1, 0, 0, 0};
-  float dim2[5] = {0, 0, 0, 0, 0};
-  ifluidDimMap.insert(std::pair<std::string,float*>("CoordinateX",  dim1));
-  ifluidDimMap.insert(std::pair<std::string,float*>("CoordinateY",  dim1));
-  ifluidDimMap.insert(std::pair<std::string,float*>("CoordinateZ",  dim1));
-  ifluidDimMap.insert(std::pair<std::string,float*>("du_alpX",      dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("du_alpY",      dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("du_alpZ",      dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("vmX",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("vmY",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("vmZ",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("mdot_alp",     dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("rhofvf_alpX",  dim2)); 
-  ifluidDimMap.insert(std::pair<std::string,float*>("rhofvf_alpY",  dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("rhofvf_alpZ",  dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("Tflm_alp",     dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("Tb_alp",       dim2));
+  std::vector<float> dim1 = {0, 1, 0, 0, 0};
+  std::vector<float> dim2 = {0, 0, 0, 0, 0};
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",  dim1));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateY",  dim1));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateZ",  dim1));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("du_alpX",      dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("du_alpY",      dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("du_alpZ",      dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("vmX",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("vmY",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("vmZ",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("mdot_alp",     dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhofvf_alpX",  dim2)); 
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhofvf_alpY",  dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhofvf_alpZ",  dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_alp",     dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("Tb_alp",       dim2));
   //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpX",      dim));         
   //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpY",      dim));
   //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpZ",      dim));
-  ifluidDimMap.insert(std::pair<std::string,float*>("pf",           dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("tfX",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("tfY",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("tfZ",          dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("qc",           dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("qr",           dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("rhof_alp",     dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("zoomFact",     dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("bflag",        dim2));
-  ifluidDimMap.insert(std::pair<std::string,float*>("mdot_old",     dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("pf",           dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("tfX",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("tfY",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("tfZ",          dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("qc",           dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("qr",           dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhof_alp",     dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("zoomFact",     dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("bflag",        dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("mdot_old",     dim2));
 }
 
 void cgnsWriter::setiFluidMagMap()
@@ -180,6 +186,67 @@ void cgnsWriter::setiFluidMagMap()
   ifluidMagMap.insert(std::pair<std::string,int>("zoomFact",    0));
   ifluidMagMap.insert(std::pair<std::string,int>("bflag",       0));
   ifluidMagMap.insert(std::pair<std::string,int>("mdot_old",    0));
+}
+
+void cgnsWriter::setBurnUnitsMap()
+{
+  // burn, iburn_all
+  burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateX", "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateY", "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateZ", "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("bflag",       "none"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("pf",          "Pa"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("centersX",    "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("centersY",    "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("centersZ",    "m"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("rb",          "m/s"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm",        "K"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("rb_old",      "m/s"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("pf_old",      "Pa"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm_old",        "K"));
+}
+
+void cgnsWriter::setBurnDimMap()
+{
+  // burn, iburn_all
+  std::vector<float> dim1 = {0, 1, 0, 0, 0};
+  std::vector<float> dim2 = {0, 0, 0, 0, 0};
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",  dim1));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateY",  dim1));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateZ",  dim1));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("bflag",       dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf",          dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersX",    dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersY",    dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersZ",    dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb",          dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm",        dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb_old",      dim2)); 
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf_old",      dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_old",    dim2));
+}
+
+void cgnsWriter::setBurnMagMap()
+{
+  // burn, iburn_all
+  burnMagMap.insert(std::pair<std::string,int>("CoordinateX", 0));
+  burnMagMap.insert(std::pair<std::string,int>("CoordinateY", 0));
+  burnMagMap.insert(std::pair<std::string,int>("CoordinateZ", 0));
+  burnMagMap.insert(std::pair<std::string,int>("bflag",       0));
+  burnMagMap.insert(std::pair<std::string,int>("pf",          0));
+  burnMagMap.insert(std::pair<std::string,int>("centersX",    1));
+  burnMagMap.insert(std::pair<std::string,int>("centersY",    0));
+  burnMagMap.insert(std::pair<std::string,int>("centersZ",    0));
+  burnMagMap.insert(std::pair<std::string,int>("rb",          0));
+  burnMagMap.insert(std::pair<std::string,int>("Tflm",        0));
+  burnMagMap.insert(std::pair<std::string,int>("rb_old",      0));
+  burnMagMap.insert(std::pair<std::string,int>("pf_old",      0));
+  burnMagMap.insert(std::pair<std::string,int>("Tflm_old",    0));
+}
+
+void cgnsWriter::setTypeFlag(int _typeFlag)
+{
+  typeFlag = _typeFlag;
 }
 
 void cgnsWriter::setBaseItrData(std::string bsitrname, int ntstp, double tval)
@@ -317,7 +384,6 @@ void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
 void cgnsWriter::setPatchNo(int _patchNo)
 {
   patchNo = _patchNo;
-  //std::cout << "patchNo = " << patchNo << std::endl;
 }
 
 void cgnsWriter::setVolCellFacesNumber(int _nVolCellFaces)
@@ -328,13 +394,11 @@ void cgnsWriter::setVolCellFacesNumber(int _nVolCellFaces)
 void cgnsWriter::setBcflag(int _bcflag)
 {
   bcflag = _bcflag;
-  //std::cout << "bcflag = " << bcflag << std::endl;
 }
 
 void cgnsWriter::setCnstrtype(int _cnstr_type)
 {
   cnstr_type = _cnstr_type;
-  //std::cout << "cnstr_type = " << cnstr_type << std::endl;
 }
 
 void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
@@ -350,7 +414,7 @@ void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
 }
 
 // write solution data node
-void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag, int typeFlag)
+void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag)
 {
   // emptyFlag
   // 0 = write
@@ -376,17 +440,16 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
   if (cg_sol_write(indexFile, indexBase, indexZone, 
                    ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
 
-
   float* exponents;
   std::string units;
   if (typeFlag == 0)
   {
-    if (ifluidDimMap.find("ndeName.c_str()") != ifluidDimMap.end())
+    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
     {
-      exponents = ifluidDimMap[ndeName.c_str()];
+      exponents = &ifluidDimMap[ndeName.c_str()][0];
       if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
     }
-    if (ifluidDimMap.find("ndeName.c_str()") != ifluidDimMap.end())
+    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
     {
       units = ifluidUnitsMap[ndeName.c_str()];
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
@@ -394,14 +457,29 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
   }
   else if (typeFlag == 1)
   {
-    if (fluidDimMap.find("ndeName.c_str()") != fluidDimMap.end())
+    if (fluidDimMap.find(ndeName) != fluidDimMap.end())
     {
-      exponents = fluidDimMap[ndeName.c_str()];
+      exponents = &fluidDimMap[ndeName.c_str()][0];
       if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
     }
-    if (fluidDimMap.find("ndeName.c_str()") != fluidDimMap.end())
+    if (fluidDimMap.find(ndeName) != fluidDimMap.end())
     {
       units = fluidUnitsMap[ndeName.c_str()];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+    }
+  }
+  else if (typeFlag == 2)
+  {
+    if (burnDimMap.find(ndeName) != burnDimMap.end())
+    {
+      exponents = &burnDimMap[ndeName.c_str()][0];
+      std::vector<float> test;
+      test = burnDimMap[ndeName.c_str()];
+      if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+    }
+    if (burnDimMap.find(ndeName) != burnDimMap.end())
+    {
+      units = burnUnitsMap[ndeName.c_str()];
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
@@ -437,7 +515,6 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
    We assume the skeleton of the file is already written properly */
 void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data)
 {
-  std::cout << "writing out " << fname << std::endl;
   int slnIdx=-1;
   auto is = solutionNameLocMap.begin();
   while (is!=solutionNameLocMap.end())
@@ -455,7 +532,6 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
               << " is not an existing solution node.\n";
     return;
   }
-  //std::cout << "1" << std::endl;
   // check vertex or cell based
   if (is->second == Vertex)
     nVrtxFld++;
@@ -463,15 +539,9 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
     nCellFld++;
   // write solution to file
   int fldIdx;
-  //std::cout << "Sol Node Index : " << slnIdx << std::endl;
-  //std::cout << "Node Name: " << ndeName << std::endl;
-  //std::cout << "Sol name : " << fname << std::endl;
-  //std::cout << "Index from name map : " << solutionNameSolIdxMap[ndeName] << std::endl;
-  //std::cout << "sizeof(arr)/sizeof(*arr) = " << sizeof(data)/sizeof(*data) << std::endl;
   int currSlnIdx = solutionNameSolIdxMap[ndeName];
   if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,//solutionIdx[slnIdx],
                      dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
-  //std::cout << "2" << std::endl;
   keyValueList fldIdxName;
   fldIdxName[fldIdx] = fname;
   std::pair<int, keyValueList> slnPair;
@@ -493,7 +563,6 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
     min = std::min(tmpData[it], min);
     max = std::max(tmpData[it], max);
   }
-  //std::cout << "3" << std::endl;
   // writing range descriptor
   std::ostringstream os;
   os << min << ", " << max;
@@ -502,15 +571,52 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
               "FlowSolution_t", currSlnIdx, "DataArray_t", fldIdx, "end")) cg_error_exit();
   if (cg_descriptor_write("Range", range.c_str())) cg_error_exit();
   // write DimensionalExponents and units for cell data
-  //if (is->second == CellCenter)
-  //{
-  //  if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
-  //              "DataArray_t", fldIdx, "end")) cg_error_exit();
-  //  // dummy exponents 
-  //  float exponents[5] = {0, 0, 0, 0, 0};
-  //  if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
-  //  if (cg_descriptor_write("Units", "dmy")) cg_error_exit();
-  //}
+  if (is->second == CellCenter)
+  {
+    float* exponents;
+    std::string units;
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
+                "DataArray_t", fldIdx, "end")) cg_error_exit();
+    if (typeFlag == 0)
+    {
+      if (fluidUnitsMap.find(fname) != fluidUnitsMap.end())
+      {
+        units = fluidUnitsMap[fname];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+      }
+      if (fluidDimMap.find(fname) != fluidDimMap.end())
+      {
+        exponents = &fluidDimMap[fname][0];
+        if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+      }
+    }
+    else if (typeFlag == 1)
+    {
+      if (ifluidUnitsMap.find(fname) != ifluidUnitsMap.end())
+      {
+        units = ifluidUnitsMap[fname];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+      }
+      if (ifluidDimMap.find(fname) != ifluidDimMap.end())
+      {
+        exponents = &ifluidDimMap[fname][0];
+        if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+      }
+    }
+    else if (typeFlag == 2)
+    {
+      if (burnUnitsMap.find(fname) != burnUnitsMap.end())
+      {
+        units = burnUnitsMap[fname];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+      }
+      if (burnDimMap.find(fname) != burnDimMap.end())
+      {
+        exponents = &burnDimMap[fname][0];
+        if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+      }
+    }
+  }
 }
 
 void cgnsWriter::writeGridToFile()
@@ -535,20 +641,16 @@ void cgnsWriter::writeGridToFile()
 
 void cgnsWriter::writeWinToFile()
 {
-  std::cout << "in writeWinToFile" << std::endl;
   intVal = 1;
   char basename[33];
   strcpy(basename, baseName.c_str()); 
   cgsize_t tmpDim[1] = {1};
   // create Integral data for window
-  std::cout << "1" << std::endl;
   if (cg_goto(indexFile, indexBase, "end")) cg_error_exit();
   if (cg_integral_write(intName.c_str())) cg_error_exit();
-  std::cout << "2" << std::endl;
   if (cg_goto(indexFile, indexBase, intName.c_str(), 0, "end")) cg_error_exit();
   double zoomFact_arr[1] = {intVal};
   if (cg_array_write("zoomFact", RealDouble, 1, tmpDim, zoomFact_arr)) cg_error_exit();
-  std::cout << "3" << std::endl;
   if (cg_goto(indexFile, indexBase, intName.c_str(), 0,"zoomFact",0,"end")) cg_error_exit();
   std::ostringstream os;
   std::string str;
@@ -558,7 +660,7 @@ void cgnsWriter::writeWinToFile()
   str = os.str();
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
   float dimUnits[5] = {0, 0, 0, 0, 0};
-  if (cg_exponents_write(RealSingle, ifluidDimMap["zoomFact"])) cg_error_exit();
+  if (cg_exponents_write(RealSingle, &ifluidDimMap["zoomFact"][0])) cg_error_exit();
   if (cg_descriptor_write("Units", ifluidUnitsMap["zoomFact"].c_str())) cg_error_exit();
   if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
 }
@@ -579,13 +681,12 @@ void cgnsWriter::writeWinToFile()
 //  if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
 //}
 
-void cgnsWriter::writeZoneToFile(int typeFlag)
+void cgnsWriter::writeZoneToFile()
 {
   // typeFlag
   // 0 = volume
   // 1 = rocflu surface
   // 2 = rocburn surface
-  std::cout << "writing zone type " << typeFlag << std::endl;
 
   // dummy variables
   std::ostringstream os;
@@ -642,29 +743,32 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
 
   float* exponents;
   std::string units;
+  std::vector<float> test;
   if (typeFlag == 0)
   {
     units = fluidUnitsMap["CoordinateX"];
-    exponents = fluidDimMap["CoordinateX"];
+    exponents = &fluidDimMap["CoordinateX"][0];
+    test = fluidDimMap["CoordinateX"];
   }
   else if (typeFlag == 1)
   {
     units = ifluidUnitsMap["CoordinateX"];
-    exponents = ifluidDimMap["CoordinateX"];
+    exponents = &ifluidDimMap["CoordinateX"][0];
+    test = ifluidDimMap["CoordinateX"];
   }
-  std::cout << "22" << std::endl;
-  std::cout << "exponents = " << exponents[0] << exponents[1] << exponents[2] << exponents[3] << exponents[4] << std::endl;
+  else if (typeFlag == 2)
+  {
+    units = burnUnitsMap["CoordinateX"];
+    exponents = &burnDimMap["CoordinateX"][0];
+    test = burnDimMap["CoordinateX"];
+  }
   if (cg_coord_write(indexFile,indexBase,indexZone,RealDouble,"CoordinateX",
        &xCrd[0],&indexCoord)) cg_error_exit();
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "GridCoordinates", 0,
               "CoordinateX", 0, "end")) cg_error_exit(); 
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
-  std::cout << "2" << std::endl;
-  std::cout << "exponents" << sizeof(exponents)/sizeof(*exponents) << std::endl;
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
-  std::cout << "3" << std::endl;
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
-  std::cout << "4" << std::endl;
 
   // y
   min = *std::min_element(yCrd.begin(), yCrd.end());
@@ -676,12 +780,17 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   if (typeFlag == 0)
   {
     units = fluidUnitsMap["CoordinateY"];
-    exponents = fluidDimMap["CoordinateY"];
+    exponents = &fluidDimMap["CoordinateY"][0];
   }
   else if (typeFlag == 1)
   {
     units = ifluidUnitsMap["CoordinateY"];
-    exponents = ifluidDimMap["CoordinateY"];
+    exponents = &ifluidDimMap["CoordinateY"][0];
+  }
+  else if (typeFlag == 2)
+  {
+    units = burnUnitsMap["CoordinateY"];
+    exponents = &burnDimMap["CoordinateY"][0];
   }
   if (cg_coord_write(indexFile,indexBase,indexZone,RealDouble,"CoordinateY",
        &yCrd[0],&indexCoord)) cg_error_exit();
@@ -700,12 +809,17 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   if (typeFlag == 0)
   {
     units = fluidUnitsMap["CoordinateZ"];
-    exponents = fluidDimMap["CoordinateZ"];
+    exponents = &fluidDimMap["CoordinateZ"][0];
   }
   else if (typeFlag == 1)
   {
     units = ifluidUnitsMap["CoordinateZ"];
-    exponents = ifluidDimMap["CoordinateZ"];
+    exponents = &ifluidDimMap["CoordinateZ"][0];
+  }
+  else if (typeFlag == 2)
+  {
+    units = burnUnitsMap["CoordinateZ"];
+    exponents = &burnDimMap["CoordinateZ"][0];
   }
   if (cg_coord_write(indexFile,indexBase,indexZone,RealDouble,"CoordinateZ",
        &zCrd[0],&indexCoord)) cg_error_exit();
@@ -714,9 +828,6 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
-
-  std::cout << "3" << std::endl;
-
  
   // create link to the grid coordinates
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "end")) cg_error_exit();
@@ -726,21 +837,15 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   str = os.str();
   if (cg_link_write(gridCrdPntr.c_str(), "", str.c_str())) cg_error_exit();
 
-  std::cout << "4" << std::endl;
-
   // write sections (real and virtual cells)
   int elm_start;
   for (int iSec=0; iSec<nSection; iSec++)
   {
-    std::cout << "isec = " << iSec << std::endl;
-    std::cout << "sectionNames[iSec]" << sectionNames[iSec] << std::endl;
     elm_start = (iSec == 0 ? 1 : elm_start+nCells[iSec-1]);
     int elm_end = elm_start + nCells[iSec] - 1;
     int nBdy = 0;
-    std::cout << "comparison = " << !sectionNames[iSec].compare("Empty:t3:virtual") << std::endl;
     if (!sectionNames[iSec].compare("Empty:t3:virtual"))
     {
-      std::cout << "5" << std::endl;
       int tmp_arr[3] = {0, 0, 0};
       if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                            sectionTypes[iSec], elm_start, elm_end, nBdy, 
@@ -748,7 +853,6 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
     }
     else
     {
-      std::cout << "6" << std::endl;
       if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                            sectionTypes[iSec], elm_start, elm_end, nBdy, 
                            &elmConns[iSec][0], &indexSection)) cg_error_exit();
@@ -783,10 +887,10 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   if (!pConnVec.empty())
   {
     std::cout << "writing Pconn" << std::endl;
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     tmpDim[0] = {pConnVec.size()};
     if (cg_array_write("pconn",Integer,1, tmpDim, &pConnVec[0])) cg_error_exit();
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0, "pconn",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, "pconn",0,"end")) 
       cg_error_exit();
     min = *std::min_element(pConnVec.begin(),pConnVec.end());
     max = *std::max_element(pConnVec.begin(),pConnVec.end());
@@ -802,15 +906,15 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
     if (cg_descriptor_write("Ghost", str.c_str())) cg_error_exit();
     tmpDim[0] = 1;
     int ridge[1] = {0};
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     if (cg_array_write("ridges#1of2", Integer,1,tmpDim,ridge)) cg_error_exit();
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"ridges#1of2",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"ridges#1of2",0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"end")) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
     if (cg_array_write("ridges#2of2", Integer,1,tmpDim,ridge)) cg_error_exit();  
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"ridges#2of2",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"ridges#2of2",0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
@@ -820,14 +924,14 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
     {
       tmpDim[0] = nVolCellFaces;
       double gsArray[nVolCellFaces] = {0};
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"end")) cg_error_exit();
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
       if (cg_array_write("gs", RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"gs",0,"end")) 
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"gs",0,"end")) 
         cg_error_exit();
       if (cg_descriptor_write("Range", "0, 0")) cg_error_exit(); 
       if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
       // dummy exponents 
-      if (cg_exponents_write(RealSingle, fluidDimMap["gs"])) cg_error_exit();
+      if (cg_exponents_write(RealSingle, &fluidDimMap["gs"][0])) cg_error_exit();
       if (cg_descriptor_write("Units", fluidUnitsMap["gs"].c_str())) cg_error_exit();
     }
 
@@ -836,10 +940,10 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
     {
       std::cout << "writing bcflag" << std::endl;
       // bcflag
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int bcflag_arr[1] = {bcflag};
       if (cg_array_write("bcflag", Integer,1,tmpDim,bcflag_arr)) cg_error_exit();
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"bcflag",0,"end")) 
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"bcflag",0,"end")) 
         cg_error_exit();
       os.str("");
       os.clear();
@@ -850,10 +954,10 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   
       std::cout << "writing patchNo" << std::endl;
       // patchNo
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int patchNo_arr[1] = {patchNo};
       if (cg_array_write("patchNo", Integer,1,tmpDim,patchNo_arr)) cg_error_exit();
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"patchNo",0,"end")) 
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"patchNo",0,"end")) 
         cg_error_exit();
       os.str("");
       os.clear();
@@ -864,10 +968,10 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   
       std::cout << "writing cnstr_type" << std::endl;
       // cnstr_type
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int cnstr_type_arr[1] = {cnstr_type};
       if (cg_array_write("cnstr_type", Integer,1,tmpDim,cnstr_type_arr)) cg_error_exit();
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"cnstr_type",0,"end")) 
+      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"cnstr_type",0,"end")) 
         cg_error_exit();
       os.str("");
       os.clear();
@@ -876,15 +980,12 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
       if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
       if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
   
-      std::cout << "typeflag = " << typeFlag << std::endl;
 
       // write sections (global real and virtual surface cells)
       int elm_start;
       for (int igSec=0; igSec<gnSection; igSec++)
       {
-        std::cout << "igSec = " << igSec << std::endl;
         elm_start = (igSec == 0 ? 1 : elm_start+gnCells[igSec-1]);
-        std::cout << "elm_start = " << elm_start << std::endl;
         int elm_end;
         os.str("");
         os.clear();
@@ -901,6 +1002,7 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
           elems.push_back(1);
           os << std::to_string(min) << ", " << std::to_string(max);
         }
+
         str = os.str();
         int min, max;
         int elem_arr[elems.size()];
@@ -911,9 +1013,9 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
           elem_arr[cnt] = *it;
           cnt++;
         }
-        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
         if (cg_array_write(gsectionNames[igSec].c_str(), Integer, 1, tmpDim, elem_arr)) cg_error_exit();
-        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,gsectionNames[igSec].c_str(),0,"end")) 
+        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,gsectionNames[igSec].c_str(),0,"end")) 
           cg_error_exit();
         if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
         if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
@@ -923,38 +1025,28 @@ void cgnsWriter::writeZoneToFile(int typeFlag)
   }
   else if (typeFlag == 2)
   {
-    std::cout << "writing pane data for rocburn" << std::endl;
     // write blank Pane Data
     tmpDim[0] = 1;
     int pconn[1] = {0};
     int ridge[1] = {0};
 
-    std::cout << "1" << std::endl;
-
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
-    std::cout << "1" << std::endl;
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     if (cg_array_write("pconn", Integer,1,tmpDim,ridge)) cg_error_exit();
-    std::cout << "1" << std::endl;
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0, "pconn",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, "pconn",0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
 
-    std::cout << "2" << std::endl;
-
-
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName, 0,"end")) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     if (cg_array_write("ridges#1of2", Integer,1,tmpDim,ridge)) cg_error_exit();
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"ridges#1of2",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"ridges#1of2",0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
 
-    std::cout << "3" << std::endl;
-
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"end")) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
     if (cg_array_write("ridges#2of2", Integer,1,tmpDim,ridge)) cg_error_exit();  
-    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName,0,"ridges#2of2",0,"end")) 
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"ridges#2of2",0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
