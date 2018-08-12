@@ -876,6 +876,16 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname,prefix,2,3));
+  // initialize Rocstar units, dimensions, and magnitude writing
+  writer->setFluidUnitsMap();
+  writer->setFluidDimMap();
+  writer->setFluidMagMap();
+  writer->setiFluidUnitsMap();
+  writer->setiFluidDimMap();
+  writer->setiFluidMagMap();
+  writer->setBurnUnitsMap();
+  writer->setBurnDimMap();
+  writer->setBurnMagMap();
   // set time stamp
   writer->setTimestamp(this->trimmed_base_t);
   // define elementary information
@@ -1085,12 +1095,14 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         if (!(prefix == "burn" || prefix == "iburn_all"))
         {
           // rocflu surface
-          writer->writeZoneToFile(1);
+          writer->setTypeFlag(1);
+          writer->writeZoneToFile();
         }
         else
         {
           // rocburn surface
-          writer->writeZoneToFile(2);
+          writer->setTypeFlag(2);
+          writer->writeZoneToFile();
         }
 
         // write solution data
@@ -1111,18 +1123,22 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
             nodeName += this->trimmed_base_t;
             if (!(prefix == "burn" || prefix == "iburn_all"))
             {
-              writer->writeSolutionNode(nodeName, Vertex, 0, 1, 0);
+              writer->setTypeFlag(0);
+              writer->writeSolutionNode(nodeName, Vertex, 0, 1);
               for (int i = 0; i < numPointDataArr; ++i)
               {
                 std::vector<double> pointData;
                 patchOfPartitionWithVirtualMesh->getPointDataArray(i, pointData);
                 std::string dataName(this->surfWithSol->getDataSet()->GetPointData()->GetArrayName(i));
+                writer->setTypeFlag(1);
+                std::cout << "writing out solution field 1" << std::endl;
                 writer->writeSolutionField(dataName, nodeName, RealDouble, &pointData[0u]);
               }
             }
             else
             {
-              writer->writeSolutionNode(nodeName, Vertex, 1, 1, 0);
+              writer->setTypeFlag(0);
+              writer->writeSolutionNode(nodeName, Vertex, 1, 1);
             }
           }
           int numCellDataArr;
@@ -1144,11 +1160,13 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               nodeName += this->trimmed_base_t;
               if (!(prefix == "burn" || prefix == "iburn_all"))
               {
-                writer->writeSolutionNode(nodeName, CellCenter, 0, 1, 0);
+                writer->setTypeFlag(0);
+                writer->writeSolutionNode(nodeName, CellCenter, 0, 1);
               }
               else if (prefix == "iburn_all")
               {
-                writer->writeSolutionNode(nodeName, CellCenter, 0, 0, 0);
+                writer->setTypeFlag(2);
+                writer->writeSolutionNode(nodeName, CellCenter, 0, 0);
               }
               // now do cell data
               for (int i = 0; i < numCellDataArr; ++i)
@@ -1209,7 +1227,17 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                     cellData = centers;
                   }
                   // set num real cells for this patch of this partition
-                  writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+                  if (prefix == "ifluid_ni" || prefix == "ifluid_b")
+                  {
+                    writer->setTypeFlag(1);
+                    std::cout << "writing out solution field 2" << std::endl;
+                    writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+                  }
+                  else if (prefix == "burn" || prefix == "iburn_all")
+                  {
+                    writer->setTypeFlag(2);
+                    writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+                  }
                 }
               }
             }
@@ -1233,6 +1261,16 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer 
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname, "fluid", 3, 3));
+  // initialize Rocstar units, dimensions, and magnitude writing
+  writer->setFluidUnitsMap();
+  writer->setFluidDimMap();
+  writer->setFluidMagMap();
+  writer->setiFluidUnitsMap();
+  writer->setiFluidDimMap();
+  writer->setiFluidMagMap();
+  writer->setBurnUnitsMap();
+  writer->setBurnDimMap();
+  writer->setBurnMagMap();
   // set time stamp
   writer->setTimestamp(this->trimmed_base_t);
   // define elementary information 
@@ -1330,7 +1368,8 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   writer->setVolCellFacesNumber(this->nUniqueVolFaces[proc]);
 
   writer->writeGridToFile();
-  writer->writeZoneToFile(0);
+  writer->setTypeFlag(0);
+  writer->writeZoneToFile();
   // write solution data  
   if (this->volWithSol)
   {
@@ -1342,13 +1381,15 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     {
       std::string nodeName("NodeData");
       nodeName += this->trimmed_base_t;
-      writer->writeSolutionNode(nodeName, Vertex, 0, 1, 1); 
+      writer->setTypeFlag(1);
+      writer->writeSolutionNode(nodeName, Vertex, 0, 1); 
       // begin with point data
       for (int i = 0; i < numPointDataArr; ++i)
       {
         std::vector<double> pointData;
         partitionWithVirtualMesh->getPointDataArray(i, pointData);
         std::string dataName(this->volWithSol->getDataSet()->GetPointData()->GetArrayName(i));
+        writer->setTypeFlag(0);
         writer->writeSolutionField(dataName, nodeName, RealDouble,&pointData[0u]);
       }
     }
@@ -1358,13 +1399,15 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     {
       std::string nodeName("ElemData"); 
       nodeName += this->trimmed_base_t;
-      writer->writeSolutionNode(nodeName, CellCenter, 0, 1, 1); 
+      writer->setTypeFlag(1);
+      writer->writeSolutionNode(nodeName, CellCenter, 0, 1); 
       // now do cell data
       for (int i = 0; i < numCellDataArr; ++i)
       {
         std::vector<double> cellData;
         partitionWithVirtualMesh->getCellDataArray(i, cellData);
         std::string dataName(this->volWithSol->getDataSet()->GetCellData()->GetArrayName(i));
+        writer->setTypeFlag(0);
         writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
       }
     }
