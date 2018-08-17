@@ -187,11 +187,10 @@ void exoMesh::write()
         _exErr = ex_put_elem_block(fid, _elmBlock[ieb].id, eTpe.c_str(), 
                 _elmBlock[ieb].nElm, _elmBlock[ieb].ndePerElm, 1);
         wrnErrMsg(_exErr, "Problem during writing elementBlock parameteres.");
-        int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
-        char elem_type[MAX_STR_LENGTH+1];
-        elem_blk_id = ieb+1;
-        ex_get_elem_block (fid, elem_blk_id, elem_type, &num_elem_this_blk,
-            &num_nodes_per_elem, &num_attr);
+        //int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
+        //char elem_type[MAX_STR_LENGTH+1];
+        //elem_blk_id = ieb+1;
+        //ex_get_elem_block (fid, elem_blk_id, elem_type, &num_elem_this_blk, &num_nodes_per_elem, &num_attr);
         //std::cout << "elem_blk_id : " << elem_blk_id 
         //          << "\nelem_type : " << std::string(elem_type)
         //          << "\nnum_elem_this_blk : " << num_elem_this_blk

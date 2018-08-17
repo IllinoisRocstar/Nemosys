@@ -296,11 +296,62 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
           // insert connectivities for tet elements into dataSet
           dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
         }
+        else if (type == 3)
+        {
+          int tmp;
+          if (!fndPhyGrp)
+          {
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
+          }
+          for (int j = 0; j < 4; ++j)
+          {
+            ss >> tmp;
+            // insert connectivities for cell into cellids container
+            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+          } 
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_QUAD,vtkcellIds);
+        }
+        else if (type == 5)
+        {
+          int tmp;
+          if (!fndPhyGrp)
+          {
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
+          }
+          for (int j = 0; j < 8; ++j)
+          {
+            ss >> tmp;
+            // insert connectivities for cell into cellids container
+            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+          } 
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON,vtkcellIds);
+        }
         else
         {
           if (warning)
           {
-            std::cout << "Warning: Only triangular and tetrahedral elements are supported, rest is ignored! " << std::endl;
+            std::cout << "Warning: Only triangular, quadrilateral, tetrahedral, hexahedral elements are supported, "
+                      << "everything else is ignored! " << std::endl;
             warning = false;
             //exit(1);
           }
@@ -452,6 +503,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
   vtkmesh->setFileName(trim_fname(fname,".vtu"));
+  //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
