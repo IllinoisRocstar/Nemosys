@@ -77,7 +77,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
   {
 #ifdef HAVE_EXODUSII // NEMOSYS is compiled with exodus
     // reading vitals
-    std::cout << "Converting to EXODUSII...\n";
+    std::cout << "Converting to EXODUS II...\n";
     json opts = inputjson["Conversion Options"];
     int nMsh = opts.get_with_default("Number of Mesh", 0);
     bool needsPP = opts.get_with_default("Post Processing", false);
@@ -127,25 +127,50 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             eb.name = mshName;
             eb.ndeIdOffset = ndeIdOffset;
             int iTet = 0; 
+            int iHex = 0; 
             for (int iElm=0; iElm<mb->getNumberOfCells(); iElm++)
             {
                 EXOMesh::elementType eTpe = EXOMesh::v2eEMap((VTKCellType) (mb->getDataSet()->GetCellType(iElm)));
-                if (eTpe != EXOMesh::elementType::TETRA)
+                if (eTpe == EXOMesh::elementType::TETRA)
+                {
+                    iTet++;
+                }
+                else if (eTpe == EXOMesh::elementType::HEX)
+                {
+                    iHex++;
+                }
+                else
                     continue;
-                iTet++;
                 vtkIdList* nids = vtkIdList::New();
                 mb->getDataSet()->GetCellPoints(iElm, nids);
                 for (int in=0; in< nids->GetNumberOfIds(); in++)
                     eb.conn.push_back(nids->GetId(in)+1);  // offset node ids by 1
             }
-            std::cout << "Number of tetrahedral elements = " << iTet << std::endl;
+            // sanity check
+            if (iTet*iHex != 0)
+            {
+                std::cerr << "Mixed Hex/Tet meshes are not supported!\n";
+                throw;
+            }
+            if (iTet != 0)
+                std::cout << "Number of tetrahedral elements = " << iTet << std::endl;
+            else
+                std::cout << "Number of hexahedral elements = " << iHex << std::endl;
             std::cout << "Min nde indx = " << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
                       << "Max nde indx = " << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
-            std::cout << "Size connectivity check = " << eb.conn.size()/4 << std::endl;
             std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
-            eb.nElm = iTet;
-            eb.eTpe = EXOMesh::elementType::TETRA;
-            eb.ndePerElm = 4;
+            if (iTet != 0)
+            {
+                eb.nElm = iTet;
+                eb.eTpe = EXOMesh::elementType::TETRA;
+                eb.ndePerElm = 4;
+            } 
+            else 
+            {
+                eb.nElm = iHex;
+                eb.eTpe = EXOMesh::elementType::HEX;
+                eb.ndePerElm = 8;
+            }
             em->addElmBlk(eb);
             // offseting starting node id for next file
             ndeIdOffset += ns.nNde;
@@ -154,7 +179,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
         {
             // get number of physical groups
             // loop through cell data and identify physical groups
-            // we also filter only TETRA cells
+            // we also filter only TETRA/HEX cells
             int nc = mb->getNumberOfCells();
             // check physical group exist and obtain id
             vtkCellData *cd = mb->getDataSet()->GetCellData();
@@ -183,7 +208,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             for (int ic=0; ic<nc; ic++)
             {
                 EXOMesh::elementType eTpe = EXOMesh::v2eEMap((VTKCellType) (mb->getDataSet()->GetCellType(ic)));
-                if (eTpe != EXOMesh::elementType::TETRA)
+                if (eTpe != EXOMesh::elementType::TETRA && eTpe != EXOMesh::elementType::HEX)
                     continue;
                 elmIds.push_back(ic);
                 double* tmp = physGrpIds->GetTuple(ic);
@@ -217,31 +242,52 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                 eb.name = mshName+"_PhysGrp_"+std::to_string(ieb);
                 eb.ndeIdOffset = ndeIdOffset;
                 int iTet = 0; 
+                int iHex = 0;
                 for (auto it2=elmIds.begin(); it2!=elmIds.end(); it2++)
                 {
                     double* tmp2 = physGrpIds->GetTuple(*it2);
                     if (int(*tmp2) != *it1)
                         continue;
-                    iTet++;
                     vtkIdList* nids = vtkIdList::New();
                     mb->getDataSet()->GetCellPoints(*it2, nids);
+                    if (nids->GetNumberOfIds() == 4)
+                        iTet++;
+                    else if (nids->GetNumberOfIds() == 8)
+                        iHex++;
                     for (int in=0; in< nids->GetNumberOfIds(); in++)
                         eb.conn.push_back(nids->GetId(in)+1);  // offset node ids by 1
                 }
-                std::cout << "Number of group tetrahedral elements = " << iTet << std::endl;
+                // sanity check
+                if (iTet*iHex != 0)
+                {
+                    std::cerr << "Mixed Hex/Tet meshes are not supported!\n";
+                    throw;
+                }
+                if (iTet != 0)
+                    std::cout << "Number of group tetrahedral elements = " << iTet << std::endl;
+                else if (iHex != 0)
+                    std::cout << "Number of group hexahedral elements = " << iHex << std::endl;
                 std::cout << "Min nde indx = " << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
                           << "Max nde indx = " << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
-                std::cout << "Size connectivity check = " << eb.conn.size()/4 << std::endl;
                 std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
-                eb.nElm = iTet;
-                eb.eTpe = EXOMesh::elementType::TETRA;
-                eb.ndePerElm = 4;
-                em->addElmBlk(eb);
+                if (iTet != 0)
+                {
+                    eb.nElm = iTet;
+                    eb.eTpe = EXOMesh::elementType::TETRA;
+                    eb.ndePerElm = 4;
+                    em->addElmBlk(eb);
+                }
+                else
+                {
+                    eb.nElm = iHex;
+                    eb.eTpe = EXOMesh::elementType::HEX;
+                    eb.ndePerElm = 8;
+                    em->addElmBlk(eb);
+                }
             }
             // offset starting node id for next file
             ndeIdOffset += ns.nNde;
         }
-
         // clean up
         delete mb;
         mb = NULL;
