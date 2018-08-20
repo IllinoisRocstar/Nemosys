@@ -839,6 +839,8 @@ void cgnsWriter::writeZoneToFile()
 
   // write sections (real and virtual cells)
   int elm_start;
+  int elm_end;
+  int nBdy;
   for (int iSec=0; iSec<nSection; iSec++)
   {
     elm_start = (iSec == 0 ? 1 : elm_start+nCells[iSec-1]);
@@ -894,6 +896,10 @@ void cgnsWriter::writeZoneToFile()
       cg_error_exit();
     min = *std::min_element(pConnVec.begin(),pConnVec.end());
     max = *std::max_element(pConnVec.begin(),pConnVec.end());
+    for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
+    {
+      std::cout << *itr << std::endl;
+    }
     os.str("");
     os.clear();
     os << min << ", " << max;
@@ -978,48 +984,7 @@ void cgnsWriter::writeZoneToFile()
       os << std::to_string(cnstr_type) << ", " << std::to_string(cnstr_type);
       str = os.str();
       if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
-      if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
-  
-
-      // write sections (global real and virtual surface cells)
-      int elm_start;
-      for (int igSec=0; igSec<gnSection; igSec++)
-      {
-        elm_start = (igSec == 0 ? 1 : elm_start+gnCells[igSec-1]);
-        int elm_end;
-        os.str("");
-        os.clear();
-        std::vector<int> elems;
-        if (gnCells[igSec] == 0)
-        {
-          elm_end = elm_start;
-          elems.push_back(0);
-          os << "EMPTY";
-        }
-        else
-        {
-          elm_end = elm_start + gnCells[igSec] - 1;
-          elems.push_back(1);
-          os << std::to_string(min) << ", " << std::to_string(max);
-        }
-
-        str = os.str();
-        int min, max;
-        int elem_arr[elems.size()];
-        int cnt = 0;
-        for (auto it=elems.begin(); it != elems.end(); it++) {
-          min = std::min(*it, min);
-          max = std::max(*it, max);
-          elem_arr[cnt] = *it;
-          cnt++;
-        }
-        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
-        if (cg_array_write(gsectionNames[igSec].c_str(), Integer, 1, tmpDim, elem_arr)) cg_error_exit();
-        if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,gsectionNames[igSec].c_str(),0,"end")) 
-          cg_error_exit();
-        if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
-        if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
-      }
+      if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
     }
 
   }
@@ -1051,6 +1016,60 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
   }
+
+  std::cout << "1" << std::endl;
+  // write sections (global real and virtual surface cells)
+  for (int igSec=0; igSec<gnSection; igSec++)
+  {        
+    std::cout << "igSec = " << igSec << std::endl;
+    elm_start = 1;
+    if (gnCells[igSec] == 0)
+    {
+      elm_end = elm_start;
+    }
+    else
+    {
+      elm_end = gnCells[igSec];
+    }
+    nBdy = 0;
+
+    if (gsectionNames[igSec] == ":t3g:virtual#1of3" || 
+        gsectionNames[igSec] == ":t3g:virtual#2of3" ||
+        gsectionNames[igSec] == ":t3g:virtual#3of3")
+    {
+      std::cout << "getting min and max" << std::endl;
+      //if (gelmConns[igSec].size() != 0)
+      //{
+        min = gelmConns[igSec][0];
+        max = gelmConns[igSec][0];
+      //}
+      //else
+      //{
+      //  min = 0;
+      //  max = 0;
+      //}
+    }
+    else
+    {
+      std::cout << "computing min and max" << std::endl;
+      min = *std::min_element(gelmConns[igSec].begin(),gelmConns[igSec].end());
+      max = *std::max_element(gelmConns[igSec].begin(),gelmConns[igSec].end());
+    }
+    os.str("");
+    os.clear();
+    os << min << ", " << max;
+    str = os.str();
+
+    std::cout << "cg write" << std::endl;
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
+    tmpDim[0] = {gelmConns[igSec].size()};
+    if (cg_array_write((gsectionNames[igSec]).c_str(),Integer,1, tmpDim, &gelmConns[igSec][0])) cg_error_exit();
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, (gsectionNames[igSec]).c_str(),0,"end")) 
+      cg_error_exit();
+    if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
+    if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
+  }
+  std::cout << "2" << std::endl;
 }
 
 
