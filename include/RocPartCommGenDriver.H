@@ -13,7 +13,8 @@ class RocPartCommGenDriver : public NemDriver
                          std::shared_ptr<meshBase> surfWithSol,
                          std::shared_ptr<meshBase> burnSurfWithSol,
                          int numPartitions, const std::string& base_t,
-                         bool writeIntermediateFiles, double searchTolerance);
+                         bool writeIntermediateFiles, double searchTolerance,
+                         const std::string& caseName);
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
     ~RocPartCommGenDriver();
     static RocPartCommGenDriver* readJSON(json inputjson);
@@ -43,6 +44,8 @@ class RocPartCommGenDriver : public NemDriver
     std::string trimmed_base_t;
     // if true, all intermediate files will be written (i.e. surf partitions, virtuals etc.)
     bool writeAllFiles;
+    // Rocstar case name, used to write Rocstar input file names
+    std::string caseName;
 
   // --- write cgns files
   private:
@@ -51,6 +54,22 @@ class RocPartCommGenDriver : public NemDriver
     // write surf cgns (proc is partition num, other info is deduced from maps)
     void writeSurfCgns(const std::string& prefix, int proc); 
     //void writeVolGs(const std::string& prefix, int proc, int type);
+
+  // --- write Rocstar files
+  private:
+    // write region mapping file
+    void mapWriter();
+    // write cell mapping file
+    void cmpWriter(int proc, int nCells);
+    // write communication lists file
+    void comWriter(int proc);
+    // write dimensions file
+    void dimWriter(int proc, std::shared_ptr<meshBase> realMB, std::shared_ptr<meshBase> totalMB);
+    void dimSurfWriter(int proc, std::vector<int> cgConnReal, std::vector<int> cgConnVirtual, int patchNo);
+    void dimSurfWriter(int proc);
+    // write processor mapping file
+    void txtWriter();
+    // utilities
 
   // --- real and virtual meshes 
   private:
@@ -148,13 +167,24 @@ class RocPartCommGenDriver : public NemDriver
     // <proc, number of faces>
     std::map<int, int> nUniqueVolFaces;
 
+  // --- volume to surface node maps for each partition
+  private: 
+    // <proc, <surface nodeId, volume nodeId>>
+    //std::vector<std::map<int,int>> surfToVolNodeMap;            
+    // <proc, <volume nodeId, surface nodeId>>
+    //std::vector<std::map<int,int>> volToSurfNodeMap; 
+    // Stores volume meshes for each proc
+        std::vector<std::shared_ptr<meshBase>> procVolMesh;
+    // Stores surface meshes for each proc
+    //std::vector<std::vector<std::vector<double>>> procSurfMesh;
+
   // --- write pconn information into pconn vectors
   private:
     // write shared pconn vec for vol partition proc - returns length
     int writeSharedToPconn(int proc, const std::string& type);
 
     // write shared pconn vec for all patches in surf pconn proc
-    void writeSharedToPconn(int proc);
+    void writeSharedToPconn(int proc, std::map<int, std::map<int, int>> surfZoneNumbers);
     // write sent pconn vec for vol partition proc for nodes (nodeOrCell=true) and cells
     void writeSentToPconn(int proc, const std::string& type, bool nodeOrCell);
     // write received pconn vec for vol partition proc for nodes (nodeOrCell=true) and cells
@@ -164,6 +194,22 @@ class RocPartCommGenDriver : public NemDriver
     void getGhostInformation(int me, int you, bool hasShared, bool vol,
                              vtkSmartPointer<vtkIdList> cellIdsList,
                              vtkSmartPointer<vtkGenericCell> genCell);
+
+  private:
+    // --- temporary vectors to assist with writing out pconn info to Rocstar input files
+    std::vector<int> neighborProcsTmp;
+    std::vector< std::vector<int> > sharedNodesTmp;
+    std::vector< std::vector<int> > sentNodesTmp;
+    std::vector< std::vector<int> > receivedNodesTmp;
+    std::vector< std::vector<int> > sentCellsTmp;
+    std::vector< std::vector<int> > receivedCellsTmp;
+    std::map<int,int> totalTrisPerPatch;
+
+  // --- utility to clear above vectors
+  private:
+    void clearPconnVectors();
+    void clearBorderVector();
+
   // --- descriptors for cgns writing
   private:  
   std::vector<int> notGhostInPconn;
