@@ -23,7 +23,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const std::vector<std::string>& _iBurnNames,
                            const json& remeshjson, int _numPartitions,
                            const std::string& base_t, bool writeIntermediateFiles,
-                           double searchTolerance)
+                           double searchTolerance, const std::string& caseName)
   : fluidNames(_fluidNames), ifluidniNames(_ifluidniNames), ifluidnbNames(_ifluidnbNames),
     ifluidbNames(_ifluidbNames), burnNames(_burnNames), iBurnNames(_iBurnNames),
     numPartitions(_numPartitions)
@@ -73,7 +73,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
         (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
                                   this->mbObjs[0], this->stitchedSurf,
                                   this->stitchedBurnSurf,
-                                  numPartitions, base_t, writeIntermediateFiles, searchTolerance));
+                                  numPartitions, base_t, writeIntermediateFiles, searchTolerance, caseName));
   std::cout << "RemeshDriver created" << std::endl;
 }
  
@@ -125,6 +125,7 @@ void RemeshDriver::stitchSurfaces()
 
 RemeshDriver* RemeshDriver::readJSON(json inputjson)
 {
+  std::string case_name = inputjson["Rocstar Case Name"].as<std::string>();
   std::string case_dir = inputjson["RocFluMP Case Directory"].as<std::string>();
   std::string burn_dir = inputjson["RocBurnAPN Case Directory"].as<std::string>();
   std::string base_t = inputjson["Base Time Step"].as<std::string>();
@@ -149,7 +150,8 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   RemeshDriver* remeshdrvobj = new RemeshDriver(fluNames, ifluniNames, iflunbNames, 
                                                 iflubNames, burnNames, iBurnNames,
                                                 remeshjson, numPartitions, base_t,
-                                                writeIntermediateFiles, searchTolerance);
+                                                writeIntermediateFiles, searchTolerance,
+                                                case_name);
   return remeshdrvobj;
 }
 
