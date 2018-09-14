@@ -37,17 +37,23 @@ public:
   nVrtx(0), nCell(0), nSlnFld(0), coordRind(0),virtElmRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
+    cg_set_file_type(1);
     if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
+    int file_type;
+    cg_get_file_type(indexFile, &file_type);
+    std::cout << "CGNS TYPE = " << file_type << std::endl;
   };
   ~cgnsWriter()
   { cg_close(indexFile);};
 
+  void deleteFile();
   void setUnits(MassUnits_t mu, LengthUnits_t lu, 
                 TimeUnits_t tu, TemperatureUnits_t tpu, AngleUnits_t au);
   void setBaseItrData(std::string bsitrname, int ntstp, double tval);
   void setZoneItrData(std::string zitrname, std::string grdptr, std::string slnptr);
   void setIntData(std::string intname, int intval);
   void setZone(std::string zName, ZoneType_t zt);
+  int getNSections();
   void setTimestamp(std::string trimmed_base_t);
   void setNVrtx(int nVt);
   void setNCell(int nCl);
@@ -56,6 +62,7 @@ public:
   void setCoordRind(int rind);  
   void setVirtElmRind(int rind); 
   void setPconnVec(const vect<int>::v1d& pConnVec); 
+  void setPconnLimits(int pconnProcMin, int pconnProcMax);
   void setPatchNo(int patchNo);
   void setBcflag(int bcflag);
   void setCnstrtype(int cnstr_type);
@@ -110,6 +117,8 @@ private:
   int pConnGhostDescriptor;
   int typeFlag;
   vect<int>::v1d pConnVec;
+  int pConnMin;
+  int pConnMax;
   vect<int>::v1d elmConn;
   int patchNo;
   int bcflag;

@@ -162,6 +162,9 @@ class RocPartCommGenDriver : public NemDriver
     // pconn for each patch of each surf partition
     // <proc, <patch, pconns>>
     std::vector<std::map<int, std::vector<int>>> surfPconns;
+    // maximum Pconn values for each proc
+    std::map<int,int> pconnProcMax;
+    std::map<int,int> pconnProcMin;
 
   // --- storing number of unique volumetric faces for each partition
     // <proc, number of faces>
@@ -173,7 +176,7 @@ class RocPartCommGenDriver : public NemDriver
     //std::vector<std::map<int,int>> surfToVolNodeMap;            
     // <proc, <volume nodeId, surface nodeId>>
     //std::vector<std::map<int,int>> volToSurfNodeMap; 
-    // Stores volume meshes for each proc
+    // Stores volume meshes with virtual for each proc
         std::vector<std::shared_ptr<meshBase>> procVolMesh;
     // Stores surface meshes for each proc
     //std::vector<std::vector<std::vector<double>>> procSurfMesh;
@@ -184,7 +187,7 @@ class RocPartCommGenDriver : public NemDriver
     int writeSharedToPconn(int proc, const std::string& type);
 
     // write shared pconn vec for all patches in surf pconn proc
-    void writeSharedToPconn(int proc, std::map<int, std::map<int, int>> surfZoneNumbers);
+    void writeSharedToPconn(int proc);
     // write sent pconn vec for vol partition proc for nodes (nodeOrCell=true) and cells
     void writeSentToPconn(int proc, const std::string& type, bool nodeOrCell);
     // write received pconn vec for vol partition proc for nodes (nodeOrCell=true) and cells
@@ -194,6 +197,13 @@ class RocPartCommGenDriver : public NemDriver
     void getGhostInformation(int me, int you, bool hasShared, bool vol,
                              vtkSmartPointer<vtkIdList> cellIdsList,
                              vtkSmartPointer<vtkGenericCell> genCell);
+    // restructure Pconn information so that Rocstar can read it properly
+    void restructurePconn(std::vector<int> &pconnVec, int proc, int volOrSurf, std::map<int,int> old2New);
+    // Map old to new indices for point data
+    void mapOld2NewPointData(std::vector<double> &pointData, const std::map<int,int> &new2Old);
+    // function for re-ordering tri indices
+    void swapTriOrdering(std::vector<int> &connVec);
+
 
   private:
     // --- temporary vectors to assist with writing out pconn info to Rocstar input files
@@ -204,6 +214,13 @@ class RocPartCommGenDriver : public NemDriver
     std::vector< std::vector<int> > sentCellsTmp;
     std::vector< std::vector<int> > receivedCellsTmp;
     std::map<int,int> totalTrisPerPatch;
+    // Rocflu
+    // <proc<patch,zone>>
+    std::vector<std::map<int, int>> surfZoneMap;
+    // <proc,zone>
+    std::vector<int> volZoneMap;
+    // Rocburn
+    std::vector<std::map<int, int>> burnSurfZoneMap;
 
   // --- utility to clear above vectors
   private:
