@@ -2,6 +2,12 @@
 #include "cgnsWriter.H"
 #include "GmshEntities.h"
 
+// delete file
+void cgnsWriter::deleteFile()
+{
+  std::remove(myCgFileName.c_str());
+}
+
 void cgnsWriter::setUnits(MassUnits_t mu, LengthUnits_t lu, 
                           TimeUnits_t tu, TemperatureUnits_t tpu, AngleUnits_t au)
 {
@@ -278,6 +284,11 @@ void cgnsWriter::setZone(std::string zName, ZoneType_t zt)
   zoneType = zt; 
 }
 
+int cgnsWriter::getNSections()
+{
+  return sectionNames.size();
+}
+
 void cgnsWriter::setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn)
 {
   nSection++;
@@ -305,7 +316,7 @@ void cgnsWriter::setGlobalSection(std::string gsName, ElementType_t gst)
   gsectionName = gsName;
   gsectionTypes.push_back(gst);
   gsectionType = gst;
-  std::vector<int> tmp = {-1};
+  std::vector<int> tmp = {0};
   gelmConns.push_back(tmp);
 }
 
@@ -379,6 +390,12 @@ void cgnsWriter::setPconnGhostDescriptor(int ghostDescriptor)
 void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
 {
   pConnVec = _pConnVec;
+}
+
+void cgnsWriter::setPconnLimits(int _pconnProcMin, int _pconnProcMax)
+{
+  pConnMax = _pconnProcMax;
+  pConnMin = _pconnProcMin;
 }
 
 void cgnsWriter::setPatchNo(int _patchNo)
@@ -515,6 +532,7 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
    We assume the skeleton of the file is already written properly */
 void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data)
 {
+
   int slnIdx=-1;
   auto is = solutionNameLocMap.begin();
   while (is!=solutionNameLocMap.end())
@@ -570,11 +588,12 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone,
               "FlowSolution_t", currSlnIdx, "DataArray_t", fldIdx, "end")) cg_error_exit();
   if (cg_descriptor_write("Range", range.c_str())) cg_error_exit();
+  
+  float* exponents;
+  std::string units;
   // write DimensionalExponents and units for cell data
   if (is->second == CellCenter)
   {
-    float* exponents;
-    std::string units;
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
                 "DataArray_t", fldIdx, "end")) cg_error_exit();
     if (typeFlag == 0)
@@ -613,6 +632,22 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
       if (burnDimMap.find(fname) != burnDimMap.end())
       {
         exponents = &burnDimMap[fname][0];
+        if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+      }
+    }
+  }
+  else if (is->second == Vertex)
+  {
+    if (typeFlag == 1)
+    {
+      if (ifluidUnitsMap.find(fname) != ifluidUnitsMap.end())
+      {
+        units = ifluidUnitsMap[fname];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+      }
+      if (ifluidDimMap.find(fname) != ifluidDimMap.end())
+      {
+        exponents = &ifluidDimMap[fname][0];
         if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
       }
     }
@@ -703,6 +738,7 @@ void cgnsWriter::writeZoneToFile()
     std::cerr << "Format is not supported.\n";
     cg_error_exit();
   }
+
   // create zone
   if (cg_zone_write(indexFile, indexBase, zonename, 
                     cgCoreSize, Unstructured, &indexZone)) cg_error_exit();
@@ -731,44 +767,71 @@ void cgnsWriter::writeZoneToFile()
     if (cg_rind_write(rindArr)) cg_error_exit();
   }
 
+  //std::cout << "1" << std::endl;
+
+
   // write coordinates + range, dimensional exponent, units
   float dimUnits[5] = {0, 1, 0, 0, 0};
   // x
+  //std::cout << "1a" << std::endl;
   min = *std::min_element(xCrd.begin(), xCrd.end());
   max = *std::max_element(xCrd.begin(), xCrd.end());
+  //std::cout << "1b" << std::endl;
   os.str("");
   os.clear();
   os << min << ", " << max;
   str = os.str();
 
+//std::cout << "a" << std::endl;
   float* exponents;
   std::string units;
   std::vector<float> test;
+//std::cout << "b" << std::endl;
   if (typeFlag == 0)
   {
+  //std::cout << "0f" << std::endl;
+//std::cout << "c" << std::endl;
     units = fluidUnitsMap["CoordinateX"];
+//std::cout << "d" << std::endl;
     exponents = &fluidDimMap["CoordinateX"][0];
+//std::cout << "e" << std::endl;
     test = fluidDimMap["CoordinateX"];
   }
   else if (typeFlag == 1)
   {
+  //std::cout << "1f" << std::endl;
+//std::cout << "c" << std::endl;
     units = ifluidUnitsMap["CoordinateX"];
+//std::cout << "d" << std::endl;
     exponents = &ifluidDimMap["CoordinateX"][0];
+//std::cout << "e" << std::endl;
     test = ifluidDimMap["CoordinateX"];
   }
   else if (typeFlag == 2)
   {
+  //std::cout << "2f" << std::endl;
+//std::cout << "c" << std::endl;
     units = burnUnitsMap["CoordinateX"];
+//std::cout << "d" << std::endl;
     exponents = &burnDimMap["CoordinateX"][0];
+//std::cout << "e" << std::endl;
     test = burnDimMap["CoordinateX"];
   }
+  //std::cout << "2" << std::endl;
+  std::cout << "xCrd length = " << xCrd.size() << std::endl;
   if (cg_coord_write(indexFile,indexBase,indexZone,RealDouble,"CoordinateX",
        &xCrd[0],&indexCoord)) cg_error_exit();
+  //std::cout << "3" << std::endl;
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "GridCoordinates", 0,
               "CoordinateX", 0, "end")) cg_error_exit(); 
+  //std::cout << "4" << std::endl;
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
+  //std::cout << "5" << std::endl;
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+  //std::cout << "6" << std::endl;
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+
+  //std::cout << "7" << std::endl;
 
   // y
   min = *std::min_element(yCrd.begin(), yCrd.end());
@@ -799,6 +862,7 @@ void cgnsWriter::writeZoneToFile()
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+  //std::cout << "8" << std::endl;
   // z
   min = *std::min_element(zCrd.begin(), zCrd.end());
   max = *std::max_element(zCrd.begin(), zCrd.end());
@@ -829,6 +893,8 @@ void cgnsWriter::writeZoneToFile()
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
  
+  //std::cout << "9" << std::endl;
+
   // create link to the grid coordinates
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "end")) cg_error_exit();
   os.str("");
@@ -836,6 +902,8 @@ void cgnsWriter::writeZoneToFile()
   os <<"/"<<baseName<<"/"<<zoneName<<"/GridCoordinates";
   str = os.str();
   if (cg_link_write(gridCrdPntr.c_str(), "", str.c_str())) cg_error_exit();
+
+  //std::cout << "10" << std::endl;
 
   // write sections (real and virtual cells)
   int elm_start;
@@ -860,7 +928,7 @@ void cgnsWriter::writeZoneToFile()
                            &elmConns[iSec][0], &indexSection)) cg_error_exit();
     }
     
-    std::cout << "on section " << iSec << " of " << nSection << "sections" << std::endl;
+    //std::cout << "on section " << iSec << " of " << nSection << "sections" << std::endl;
     // set virtual rind
     if (virtElmRind)
     {
@@ -876,8 +944,15 @@ void cgnsWriter::writeZoneToFile()
         if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,":T3:virtual",0,"end")) cg_error_exit();
         if (cg_rind_write(rindArr)) cg_error_exit();
       }
+      else if (!sectionNames[iSec].compare(":t3:virtual"))
+      {
+        if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,":t3:virtual",0,"end")) cg_error_exit();
+        if (cg_rind_write(rindArr)) cg_error_exit();
+      }
     }
   }
+
+  //std::cout << "11" << std::endl;
 
   // create pane data node
   std::string paneName("PaneData");
@@ -888,18 +963,83 @@ void cgnsWriter::writeZoneToFile()
   cgsize_t tmpDim[1];
   if (!pConnVec.empty())
   {
-    std::cout << "writing Pconn" << std::endl;
+    //std::cout << "writing Pconn" << std::endl;
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     tmpDim[0] = {pConnVec.size()};
     if (cg_array_write("pconn",Integer,1, tmpDim, &pConnVec[0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, "pconn",0,"end")) 
       cg_error_exit();
-    min = *std::min_element(pConnVec.begin(),pConnVec.end());
-    max = *std::max_element(pConnVec.begin(),pConnVec.end());
-    for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
-    {
-      std::cout << *itr << std::endl;
-    }
+  
+
+    //// Get maximum of PconnVec (maximum of shared nodes)
+    //int cntr1 = 0;
+    //int cntr2 = -1;
+    //int max = 0;
+    //int range = 0;
+    //int addflag = 0;
+    //std::vector<int> foundZones;
+    ////std::cout << "pconn vector:" << std::endl;
+    //for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
+    //{
+    //  std::cout << *itr << std::endl;
+    //}
+//
+    //for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
+    //{
+    //  //std::cout << "cntr1 = " << cntr1 << " cntr2 = " << cntr2 << std::endl;
+    //  if (cntr2 != -1)
+    //  {
+    //    //std::cout << "checking value " << *itr << " against max = " << max << std::endl;
+    //    if (*itr > max && addflag)
+    //    {
+    //      max = *itr;
+    //      //std::cout << "new max = " << max << std::endl;
+    //    }
+    //    cntr2++;
+    //  }
+    //  if (cntr1 == 1)
+    //  {
+    //    //std::cout << "searching for zone = " << *itr << std::endl;
+    //    auto it = find (foundZones.begin(), foundZones.end(), *itr);
+    //    if (it != foundZones.end())
+    //    {
+    //      //std::cout << "already have this zone " << *itr << std::endl;
+    //      addflag = 0;
+    //    }
+    //    else
+    //    {
+    //      //std::cout << "new zone " << *itr << std::endl;
+    //      addflag = 1;
+    //      foundZones.push_back(*itr);
+    //      //std::cout << "adding zone = " << *itr << std::endl;
+    //    }
+    //  }
+    //  if (cntr1 == 2)
+    //  {
+    //    range = *itr;
+    //    cntr2 = 0;
+    //    //std::cout << "new range = " << range << std::endl;
+    //  }
+    //  if (cntr2 == range)
+    //  {
+    //    //std::cout << "reached end of range" << std::endl;
+    //    cntr2 = -1;
+    //    cntr1 =  0;
+    //  }
+    //  else
+    //  {
+    //    cntr1++;
+    //  }
+    //}
+    ////std::cout << "new max = " << max << std::endl;
+    //min = *std::min_element(pConnVec.begin(),pConnVec.end());
+    ////max = *std::max_element(pConnVec.begin(),pConnVec.end());
+    ////std::cout << "min = " << min << std::endl;
+    ////std::cout << "max = " << max << std::endl;
+
+    min = pConnMin;
+    max = pConnMax;
+
     os.str("");
     os.clear();
     os << min << ", " << max;
@@ -925,11 +1065,14 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
 
+  //std::cout << "12" << std::endl;
+
     // only for volume
     if (typeFlag == 0)
     {
       tmpDim[0] = nVolCellFaces;
       double gsArray[nVolCellFaces] = {0};
+      std::cout << "grid speed number of volume faces = " << nVolCellFaces << std::endl;
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
       if (cg_array_write("gs", RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"gs",0,"end")) 
@@ -940,6 +1083,8 @@ void cgnsWriter::writeZoneToFile()
       if (cg_exponents_write(RealSingle, &fluidDimMap["gs"][0])) cg_error_exit();
       if (cg_descriptor_write("Units", fluidUnitsMap["gs"].c_str())) cg_error_exit();
     }
+
+  //std::cout << "13" << std::endl;
 
     // only for surface
     if (typeFlag == 1)
@@ -1017,11 +1162,13 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
   }
 
-  std::cout << "1" << std::endl;
+  //std::cout << "14" << std::endl;
+
   // write sections (global real and virtual surface cells)
+  //std::cout << "writing sections" << std::endl;
   for (int igSec=0; igSec<gnSection; igSec++)
-  {        
-    std::cout << "igSec = " << igSec << std::endl;
+  {
+    //std::cout << "gsection " << gsectionNames[igSec] << std::endl;   
     elm_start = 1;
     if (gnCells[igSec] == 0)
     {
@@ -1029,47 +1176,92 @@ void cgnsWriter::writeZoneToFile()
     }
     else
     {
+      //std::cout << "here" << std::endl;
       elm_end = gnCells[igSec];
+      //std::cout << "setting elm_end = " << elm_end << std::endl;
     }
     nBdy = 0;
 
-    if (gsectionNames[igSec] == ":t3g:virtual#1of3" || 
-        gsectionNames[igSec] == ":t3g:virtual#2of3" ||
-        gsectionNames[igSec] == ":t3g:virtual#3of3")
+    if (gsectionNames[igSec] == "t3g:virtual#1of3" || 
+        gsectionNames[igSec] == "t3g:virtual#2of3" ||
+        gsectionNames[igSec] == "t3g:virtual#3of3")
     {
-      std::cout << "getting min and max" << std::endl;
-      //if (gelmConns[igSec].size() != 0)
-      //{
-        min = gelmConns[igSec][0];
-        max = gelmConns[igSec][0];
-      //}
-      //else
-      //{
-      //  min = 0;
-      //  max = 0;
-      //}
+      min = gelmConns[igSec][0];
+      max = gelmConns[igSec][0];
+      os.str("");
+      os.clear();
+      if (min == 0 && max == 0)
+      {
+        os << "EMPTY";
+      }
+      else
+      {
+        os << min << ", " << max;
+      }
+      str = os.str();
+    }
+    else if (gsectionNames[igSec] == "q4g:real#1of4" || 
+             gsectionNames[igSec] == "q4g:real#2of4" ||
+             gsectionNames[igSec] == "q4g:real#3of4" ||
+             gsectionNames[igSec] == "q4g:real#4of4" ||
+             gsectionNames[igSec] == "q4g:virtual#1of4" ||
+             gsectionNames[igSec] == "q4g:virtual#2of4" ||
+             gsectionNames[igSec] == "q4g:virtual#3of4" ||
+             gsectionNames[igSec] == "q4g:virtual#4of4")
+    {
+      //std::cout << "setting " << gsectionNames[igSec] << std::endl;
+      os.str("");
+      os.clear();
+      os << "EMPTY";
+      str = os.str();
     }
     else
     {
-      std::cout << "computing min and max" << std::endl;
       min = *std::min_element(gelmConns[igSec].begin(),gelmConns[igSec].end());
       max = *std::max_element(gelmConns[igSec].begin(),gelmConns[igSec].end());
+      os.str("");
+      os.clear();
+      os << min << ", " << max;
+      str = os.str();
     }
-    os.str("");
-    os.clear();
-    os << min << ", " << max;
-    str = os.str();
 
-    std::cout << "cg write" << std::endl;
+    //std::cout << "writing range " << str << std::endl;
+
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     tmpDim[0] = {gelmConns[igSec].size()};
     if (cg_array_write((gsectionNames[igSec]).c_str(),Integer,1, tmpDim, &gelmConns[igSec][0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, (gsectionNames[igSec]).c_str(),0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
-    if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
+
+
+
+    if (gsectionNames[igSec] == "t3g:virtual#1of3" || 
+        gsectionNames[igSec] == "t3g:virtual#2of3" ||
+        gsectionNames[igSec] == "t3g:virtual#3of3")
+    {
+      os.str("");
+      os.clear();
+      if (gnCells[igSec] == 1 && (min == 0 && max == 0))
+      {
+        os << 0;
+      }
+      else
+      {
+        os << elm_end;
+      }
+      str = os.str();
+    }
+    else
+    {
+      os.str("");
+      os.clear();
+      os << 0;
+      str = os.str();
+    }
+    if (cg_descriptor_write("Ghost", str.c_str() )) cg_error_exit();
   }
-  std::cout << "2" << std::endl;
+  //std::cout << "done writing zone to file" << std::endl;
 }
 
 
