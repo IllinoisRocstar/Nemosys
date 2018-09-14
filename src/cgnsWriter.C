@@ -18,9 +18,12 @@ void cgnsWriter::setUnits(MassUnits_t mu, LengthUnits_t lu,
  angleU = au;
 }
 
-// TODO: Check if these units are used. Really, they should be the same regardless of file (volume, surface,
-// burning, etc.) We could unify them all in one call, rather than separate. Or, we could figure out a way
-// to transfer this data from the old to new CGNS files upon remeshing.
+// It is currently unclear whether or not Rocstar actually uses the coordinates or dimensional quantities.
+// Currently they are just stored in the pre-defined maps below. The units defined below are copied directly
+// from what is seen in Rocstar output files. Ideally, we could figure out a way to "transfer" this information
+// from the old CGNS files to the new CGNS files. For now, we use the maps.
+
+// Map defining fluid units
 void cgnsWriter::setFluidUnitsMap()
 {
   // fluid
@@ -44,6 +47,7 @@ void cgnsWriter::setFluidUnitsMap()
   fluidUnitsMap.insert(std::pair<std::string,std::string>("af",           "m/s"));
 }
 
+// Map defining fluid dimensions
 void cgnsWriter::setFluidDimMap()
 {
   // fluid
@@ -69,6 +73,10 @@ void cgnsWriter::setFluidDimMap()
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("af",            dim2));
 }
 
+// Map storing a boolean that determines whether or not the "Magnitude" quantity is
+// output to CGNS files. Currently, this is unused in the Remesh driver, but Rocstar
+// outputs the magnitudes of some x-coordinate quantities, as seen below. This is not
+// required functionality for Rocstar to run, however.
 void cgnsWriter::setFluidMagMap()
 {
   // fluid
@@ -92,6 +100,7 @@ void cgnsWriter::setFluidMagMap()
   fluidMagMap.insert(std::pair<std::string,int>("af",           0));              
 }
 
+// Map defining ifluid units
 void cgnsWriter::setiFluidUnitsMap()
 {
   // ifluid_ni/ifluid_b
@@ -125,7 +134,7 @@ void cgnsWriter::setiFluidUnitsMap()
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("mdot_old",    "kg/(m^2 s)"));
 }
 
-
+// Map defining ifluid dimensions
 void cgnsWriter::setiFluidDimMap()
 {
   // ifluid_ni/ifluid_b
@@ -161,6 +170,7 @@ void cgnsWriter::setiFluidDimMap()
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("mdot_old",     dim2));
 }
 
+// Map storing magnitude quantities for ifluid files.
 void cgnsWriter::setiFluidMagMap()
 {
   // ifluid_ni/ifluid_b
@@ -194,6 +204,7 @@ void cgnsWriter::setiFluidMagMap()
   ifluidMagMap.insert(std::pair<std::string,int>("mdot_old",    0));
 }
 
+// Map defining burn units
 void cgnsWriter::setBurnUnitsMap()
 {
   // burn, iburn_all
@@ -212,6 +223,7 @@ void cgnsWriter::setBurnUnitsMap()
   burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm_old",        "K"));
 }
 
+// Map defining burn dimensions
 void cgnsWriter::setBurnDimMap()
 {
   // burn, iburn_all
@@ -232,6 +244,7 @@ void cgnsWriter::setBurnDimMap()
   burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_old",    dim2));
 }
 
+// Map storing magnitude quantities for burn files.
 void cgnsWriter::setBurnMagMap()
 {
   // burn, iburn_all
@@ -250,11 +263,17 @@ void cgnsWriter::setBurnMagMap()
   burnMagMap.insert(std::pair<std::string,int>("Tflm_old",    0));
 }
 
+
+// Set type flag for CGNS writer
+// 0 = volume (fluid)
+// 1 = surface (ifluid)
+// 2 = burn (iburn_all, burn)
 void cgnsWriter::setTypeFlag(int _typeFlag)
 {
   typeFlag = _typeFlag;
 }
 
+// Set base time iteration stamp string
 void cgnsWriter::setBaseItrData(std::string bsitrname, int ntstp, double tval)
 {
   baseItrName = bsitrname;
@@ -262,12 +281,14 @@ void cgnsWriter::setBaseItrData(std::string bsitrname, int ntstp, double tval)
   timeLabel = tval;
 }
 
+// Set name and value for CGNS Integral writer
 void cgnsWriter::setIntData(std::string intname, int intval)
 {
   intName = intname;
   intVal = intval;
 }
 
+// Set CGNS Zone Iterative information
 void cgnsWriter::setZoneItrData(std::string zitrname, std::string grdptr, std::string slnptr)
 {
   zoneItrName = zitrname;
@@ -275,6 +296,7 @@ void cgnsWriter::setZoneItrData(std::string zitrname, std::string grdptr, std::s
   flowSlnPntr = slnptr;
 }
 
+// Set zones to write to file
 void cgnsWriter::setZone(std::string zName, ZoneType_t zt)
 {
   nZone++;
@@ -284,11 +306,13 @@ void cgnsWriter::setZone(std::string zName, ZoneType_t zt)
   zoneType = zt; 
 }
 
+// Get number of sections
 int cgnsWriter::getNSections()
 {
   return sectionNames.size();
 }
 
+// Set local patch sections
 void cgnsWriter::setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn)
 {
   nSection++;
@@ -299,6 +323,7 @@ void cgnsWriter::setSection(std::string sName, ElementType_t st, vect<int>::v1d 
   elmConns.push_back(elmConn);
 }
 
+// Set global partition sections
 void cgnsWriter::setGlobalSection(std::string gsName, ElementType_t gst, vect<int>::v1d gelmConn)
 {
   gnSection++;
@@ -309,6 +334,9 @@ void cgnsWriter::setGlobalSection(std::string gsName, ElementType_t gst, vect<in
   gelmConns.push_back(gelmConn);
 }
 
+// Set global partition sections.
+// This overload is for "blank" data sections. For this version of the driver which only supports
+// tetrahedral meshes, these blank sections include hexahedral and quadrilateral element sections.
 void cgnsWriter::setGlobalSection(std::string gsName, ElementType_t gst)
 {
   gnSection++;
@@ -320,6 +348,7 @@ void cgnsWriter::setGlobalSection(std::string gsName, ElementType_t gst)
   gelmConns.push_back(tmp);
 }
 
+// Reset local patch sections
 void cgnsWriter::resetSections()
 {
   nSection = 0;
@@ -330,6 +359,7 @@ void cgnsWriter::resetSections()
   nCells.clear();
 }
 
+// Reset global partition sections
 void cgnsWriter::resetGlobalSections()
 {
   gnSection = 0;
@@ -340,28 +370,33 @@ void cgnsWriter::resetGlobalSections()
   gnCells.clear();
 }
 
+// Set timestamp to write to CGNS file
 void cgnsWriter::setTimestamp(std::string _trimmed_base_t)
 {
   trimmed_base_t = _trimmed_base_t;
 }
 
+// Set number of vertices to write to CGNS node data
 void cgnsWriter::setNVrtx(int nVt)
 {
   nVrtx= nVt;
 }
 
+// Set number of cells to write to CGNS element data
 void cgnsWriter::setNCell(int nCl)
 {
   nCell= nCl;
   nCells.push_back(nCl);
 }
 
+// Set global number of cells
 void cgnsWriter::setGlobalNCell(int gnCl)
 {
   gnCell= gnCl;
   gnCells.push_back(gnCl);
 }
 
+// Set grid coordinates, stored separately in x,y,z for CGNS
 void cgnsWriter::setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z)
 {
   xCrd.clear();
@@ -372,52 +407,64 @@ void cgnsWriter::setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<doubl
   zCrd.insert(zCrd.begin(), z.begin(), z.end());
 }  
 
+// Set coordinate rind: virtual coordinates.
+// The rule of thumb in CGNS files is: Total coordinates = number of vertexes + number of Rind
 void cgnsWriter::setCoordRind(int rind)
 {
   coordRind = rind;
 }
 
+// Set rind of virtual elements
 void cgnsWriter::setVirtElmRind(int rind)
 {
   virtElmRind = rind;
 }
 
+// Set number of ghost elements in Pane connectivity array
 void cgnsWriter::setPconnGhostDescriptor(int ghostDescriptor)
 {
   pConnGhostDescriptor = ghostDescriptor;
 }
 
+// Set entire Pane Connectivity vector
 void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
 {
   pConnVec = _pConnVec;
 }
 
+// Set limits, min and max, of Pane Connectivity vector, used in defining Pconn Range
 void cgnsWriter::setPconnLimits(int _pconnProcMin, int _pconnProcMax)
 {
   pConnMax = _pconnProcMax;
   pConnMin = _pconnProcMin;
 }
 
+// Set patch number
 void cgnsWriter::setPatchNo(int _patchNo)
 {
   patchNo = _patchNo;
 }
 
+// Set number of faces in the interior of the volume mesh, not including the boundary
+// faces on the exterior of the volume mesh
 void cgnsWriter::setVolCellFacesNumber(int _nVolCellFaces)
 {
   nVolCellFaces = _nVolCellFaces;
 }
 
+// Set boundary condition flag
 void cgnsWriter::setBcflag(int _bcflag)
 {
   bcflag = _bcflag;
 }
 
+// Set cnstr type
 void cgnsWriter::setCnstrtype(int _cnstr_type)
 {
   cnstr_type = _cnstr_type;
 }
 
+// Sets names and locations of solutions to write
 void cgnsWriter::setSolutionNode(std::string ndeName, GridLocation_t slnLoc)
 {
   if (slnLoc == Vertex)
@@ -441,10 +488,6 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
   // 0 = only write real
   // 1 = write real and virtual
 
-  // typeFlag
-  // 0 = surface
-  // 1 = volume
-
   if (slnLoc == Vertex)
     nVrtxSln++;
   else if (slnLoc == CellCenter)
@@ -459,20 +502,8 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
 
   float* exponents;
   std::string units;
+  // surface (Rocflu fluid)
   if (typeFlag == 0)
-  {
-    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
-    {
-      exponents = &ifluidDimMap[ndeName.c_str()][0];
-      if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
-    }
-    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
-    {
-      units = ifluidUnitsMap[ndeName.c_str()];
-      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
-    }
-  }
-  else if (typeFlag == 1)
   {
     if (fluidDimMap.find(ndeName) != fluidDimMap.end())
     {
@@ -485,6 +516,21 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
+  // volume (Rocflu ifluid)
+  else if (typeFlag == 1)
+  {
+    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
+    {
+      exponents = &ifluidDimMap[ndeName.c_str()][0];
+      if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
+    }
+    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
+    {
+      units = ifluidUnitsMap[ndeName.c_str()];
+      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+    }
+  }
+  // burn (Rocburn iburn_all, burn)
   else if (typeFlag == 2)
   {
     if (burnDimMap.find(ndeName) != burnDimMap.end())
@@ -507,6 +553,7 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
     cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx, "end");
     cg_gridlocation_write(slnLoc);
   
+    // Write virtual
     if (virtFlag)
     {
       int rindArr[2]; 
@@ -532,7 +579,6 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, i
    We assume the skeleton of the file is already written properly */
 void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* data)
 {
-
   int slnIdx=-1;
   auto is = solutionNameLocMap.begin();
   while (is!=solutionNameLocMap.end())
@@ -558,7 +604,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   // write solution to file
   int fldIdx;
   int currSlnIdx = solutionNameSolIdxMap[ndeName];
-  if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,//solutionIdx[slnIdx],
+  if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,
                      dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
   keyValueList fldIdxName;
   fldIdxName[fldIdx] = fname;
@@ -596,6 +642,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
   {
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
                 "DataArray_t", fldIdx, "end")) cg_error_exit();
+    // surface (Rocflu fluid)
     if (typeFlag == 0)
     {
       if (fluidUnitsMap.find(fname) != fluidUnitsMap.end())
@@ -609,6 +656,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
         if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
       }
     }
+    // volume (Rocflu ifluid)
     else if (typeFlag == 1)
     {
       if (ifluidUnitsMap.find(fname) != ifluidUnitsMap.end())
@@ -622,6 +670,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
         if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
       }
     }
+    // burn (Rocburn iburn_all, burn)
     else if (typeFlag == 2)
     {
       if (burnUnitsMap.find(fname) != burnUnitsMap.end())
@@ -636,6 +685,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, Data
       }
     }
   }
+  // For vertex data only
   else if (is->second == Vertex)
   {
     if (typeFlag == 1)
@@ -671,7 +721,6 @@ void cgnsWriter::writeGridToFile()
   cgsize_t tmpDim = 1;
   if (cg_array_write("TimeValues", RealDouble, 1, (const cgsize_t*) 
                       &tmpDim, &timeLabel)) cg_error_exit();
-  //writeZoneToFile();
 }
 
 void cgnsWriter::writeWinToFile()
@@ -700,29 +749,8 @@ void cgnsWriter::writeWinToFile()
   if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
 }
 
-//void cgnsWriter::writeVolGs(double* data)
-//{
-//  char basename[33];
-//  strcpy(basename, baseName.c_str());
-//  if (cg_base_read(indexFile, 1, basename, &cellDim, &physDim)) cg_error_exit();
-//
-//  double gsArray[nVolCellFaces] = {0};
-//  cgsize_t tmpDim[1] = {nVolCellFaces};
-//  if (cg_goto(indexFile, 1, "Zone_t", 1, "PaneData0", 0,"end")) cg_error_exit();
-//  if (cg_array_write("gs", RealDouble, 1, tmpDim, data)) cg_error_exit();
-//  if (cg_goto(indexFile, 1, "Zone_t", 1, "PaneData0",0,"gs",0,"end")) 
-//    cg_error_exit();
-//  if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
-//  if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
-//}
-
 void cgnsWriter::writeZoneToFile()
 {
-  // typeFlag
-  // 0 = volume
-  // 1 = rocflu surface
-  // 2 = rocburn surface
-
   // dummy variables
   std::ostringstream os;
   double min, max;
@@ -767,79 +795,59 @@ void cgnsWriter::writeZoneToFile()
     if (cg_rind_write(rindArr)) cg_error_exit();
   }
 
-  //std::cout << "1" << std::endl;
-
-
   // write coordinates + range, dimensional exponent, units
   float dimUnits[5] = {0, 1, 0, 0, 0};
-  // x
-  //std::cout << "1a" << std::endl;
+
+  float* exponents;
+  std::string units;
+  std::vector<float> test;
+
+  // x-coordinates
+  //---------------
   min = *std::min_element(xCrd.begin(), xCrd.end());
   max = *std::max_element(xCrd.begin(), xCrd.end());
-  //std::cout << "1b" << std::endl;
   os.str("");
   os.clear();
   os << min << ", " << max;
   str = os.str();
 
-//std::cout << "a" << std::endl;
-  float* exponents;
-  std::string units;
-  std::vector<float> test;
-//std::cout << "b" << std::endl;
+  // Get units and dimension information for volume, surface and burning fields
   if (typeFlag == 0)
   {
-  //std::cout << "0f" << std::endl;
-//std::cout << "c" << std::endl;
     units = fluidUnitsMap["CoordinateX"];
-//std::cout << "d" << std::endl;
     exponents = &fluidDimMap["CoordinateX"][0];
-//std::cout << "e" << std::endl;
     test = fluidDimMap["CoordinateX"];
   }
   else if (typeFlag == 1)
   {
-  //std::cout << "1f" << std::endl;
-//std::cout << "c" << std::endl;
     units = ifluidUnitsMap["CoordinateX"];
-//std::cout << "d" << std::endl;
     exponents = &ifluidDimMap["CoordinateX"][0];
-//std::cout << "e" << std::endl;
     test = ifluidDimMap["CoordinateX"];
   }
   else if (typeFlag == 2)
   {
-  //std::cout << "2f" << std::endl;
-//std::cout << "c" << std::endl;
     units = burnUnitsMap["CoordinateX"];
-//std::cout << "d" << std::endl;
     exponents = &burnDimMap["CoordinateX"][0];
-//std::cout << "e" << std::endl;
     test = burnDimMap["CoordinateX"];
   }
-  //std::cout << "2" << std::endl;
-  std::cout << "xCrd length = " << xCrd.size() << std::endl;
   if (cg_coord_write(indexFile,indexBase,indexZone,RealDouble,"CoordinateX",
        &xCrd[0],&indexCoord)) cg_error_exit();
-  //std::cout << "3" << std::endl;
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "GridCoordinates", 0,
               "CoordinateX", 0, "end")) cg_error_exit(); 
-  //std::cout << "4" << std::endl;
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
-  //std::cout << "5" << std::endl;
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
-  //std::cout << "6" << std::endl;
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
 
-  //std::cout << "7" << std::endl;
-
-  // y
+  // y-coordinates
+  //---------------
   min = *std::min_element(yCrd.begin(), yCrd.end());
   max = *std::max_element(yCrd.begin(), yCrd.end());
   os.str("");
   os.clear();
   os << min << ", " << max;
   str = os.str();
+
+  // Get units and dimension information for volume, surface and burning fields
   if (typeFlag == 0)
   {
     units = fluidUnitsMap["CoordinateY"];
@@ -862,14 +870,17 @@ void cgnsWriter::writeZoneToFile()
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit();
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
-  //std::cout << "8" << std::endl;
-  // z
+
+  // z-coordinates
+  //---------------
   min = *std::min_element(zCrd.begin(), zCrd.end());
   max = *std::max_element(zCrd.begin(), zCrd.end());
   os.str("");
   os.clear();
   os << min << ", " << max;
   str = os.str();
+
+  // Get units and dimension information for volume, surface and burning fields
   if (typeFlag == 0)
   {
     units = fluidUnitsMap["CoordinateZ"];
@@ -893,8 +904,6 @@ void cgnsWriter::writeZoneToFile()
   if (cg_exponents_write(RealSingle, exponents)) cg_error_exit();
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
  
-  //std::cout << "9" << std::endl;
-
   // create link to the grid coordinates
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "end")) cg_error_exit();
   os.str("");
@@ -903,9 +912,7 @@ void cgnsWriter::writeZoneToFile()
   str = os.str();
   if (cg_link_write(gridCrdPntr.c_str(), "", str.c_str())) cg_error_exit();
 
-  //std::cout << "10" << std::endl;
-
-  // write sections (real and virtual cells)
+  // write Sections (real and virtual cells)
   int elm_start;
   int elm_end;
   int nBdy;
@@ -927,9 +934,7 @@ void cgnsWriter::writeZoneToFile()
                            sectionTypes[iSec], elm_start, elm_end, nBdy, 
                            &elmConns[iSec][0], &indexSection)) cg_error_exit();
     }
-    
-    //std::cout << "on section " << iSec << " of " << nSection << "sections" << std::endl;
-    // set virtual rind
+    // Write virtual elements
     if (virtElmRind)
     {
       int rindArr[2] = {0,virtElmRind};
@@ -952,8 +957,6 @@ void cgnsWriter::writeZoneToFile()
     }
   }
 
-  //std::cout << "11" << std::endl;
-
   // create pane data node
   std::string paneName("PaneData");
   paneName += this->trimmed_base_t;
@@ -963,80 +966,11 @@ void cgnsWriter::writeZoneToFile()
   cgsize_t tmpDim[1];
   if (!pConnVec.empty())
   {
-    //std::cout << "writing Pconn" << std::endl;
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     tmpDim[0] = {pConnVec.size()};
     if (cg_array_write("pconn",Integer,1, tmpDim, &pConnVec[0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, "pconn",0,"end")) 
       cg_error_exit();
-  
-
-    //// Get maximum of PconnVec (maximum of shared nodes)
-    //int cntr1 = 0;
-    //int cntr2 = -1;
-    //int max = 0;
-    //int range = 0;
-    //int addflag = 0;
-    //std::vector<int> foundZones;
-    ////std::cout << "pconn vector:" << std::endl;
-    //for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
-    //{
-    //  std::cout << *itr << std::endl;
-    //}
-//
-    //for (auto itr = pConnVec.begin(); itr != pConnVec.end(); ++itr)
-    //{
-    //  //std::cout << "cntr1 = " << cntr1 << " cntr2 = " << cntr2 << std::endl;
-    //  if (cntr2 != -1)
-    //  {
-    //    //std::cout << "checking value " << *itr << " against max = " << max << std::endl;
-    //    if (*itr > max && addflag)
-    //    {
-    //      max = *itr;
-    //      //std::cout << "new max = " << max << std::endl;
-    //    }
-    //    cntr2++;
-    //  }
-    //  if (cntr1 == 1)
-    //  {
-    //    //std::cout << "searching for zone = " << *itr << std::endl;
-    //    auto it = find (foundZones.begin(), foundZones.end(), *itr);
-    //    if (it != foundZones.end())
-    //    {
-    //      //std::cout << "already have this zone " << *itr << std::endl;
-    //      addflag = 0;
-    //    }
-    //    else
-    //    {
-    //      //std::cout << "new zone " << *itr << std::endl;
-    //      addflag = 1;
-    //      foundZones.push_back(*itr);
-    //      //std::cout << "adding zone = " << *itr << std::endl;
-    //    }
-    //  }
-    //  if (cntr1 == 2)
-    //  {
-    //    range = *itr;
-    //    cntr2 = 0;
-    //    //std::cout << "new range = " << range << std::endl;
-    //  }
-    //  if (cntr2 == range)
-    //  {
-    //    //std::cout << "reached end of range" << std::endl;
-    //    cntr2 = -1;
-    //    cntr1 =  0;
-    //  }
-    //  else
-    //  {
-    //    cntr1++;
-    //  }
-    //}
-    ////std::cout << "new max = " << max << std::endl;
-    //min = *std::min_element(pConnVec.begin(),pConnVec.end());
-    ////max = *std::max_element(pConnVec.begin(),pConnVec.end());
-    ////std::cout << "min = " << min << std::endl;
-    ////std::cout << "max = " << max << std::endl;
-
     min = pConnMin;
     max = pConnMax;
 
@@ -1065,14 +999,11 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
 
-  //std::cout << "12" << std::endl;
-
     // only for volume
     if (typeFlag == 0)
     {
       tmpDim[0] = nVolCellFaces;
       double gsArray[nVolCellFaces] = {0};
-      std::cout << "grid speed number of volume faces = " << nVolCellFaces << std::endl;
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
       if (cg_array_write("gs", RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"gs",0,"end")) 
@@ -1084,12 +1015,9 @@ void cgnsWriter::writeZoneToFile()
       if (cg_descriptor_write("Units", fluidUnitsMap["gs"].c_str())) cg_error_exit();
     }
 
-  //std::cout << "13" << std::endl;
-
     // only for surface
     if (typeFlag == 1)
     {
-      std::cout << "writing bcflag" << std::endl;
       // bcflag
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int bcflag_arr[1] = {bcflag};
@@ -1103,7 +1031,6 @@ void cgnsWriter::writeZoneToFile()
       if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
       if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
   
-      std::cout << "writing patchNo" << std::endl;
       // patchNo
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int patchNo_arr[1] = {patchNo};
@@ -1117,7 +1044,6 @@ void cgnsWriter::writeZoneToFile()
       if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
       if (cg_descriptor_write("Ghost", "0")) cg_error_exit(); 
   
-      std::cout << "writing cnstr_type" << std::endl;
       // cnstr_type
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
       int cnstr_type_arr[1] = {cnstr_type};
@@ -1133,6 +1059,7 @@ void cgnsWriter::writeZoneToFile()
     }
 
   }
+  // only for burn
   else if (typeFlag == 2)
   {
     // write blank Pane Data
@@ -1162,13 +1089,13 @@ void cgnsWriter::writeZoneToFile()
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
   }
 
-  //std::cout << "14" << std::endl;
-
-  // write sections (global real and virtual surface cells)
-  //std::cout << "writing sections" << std::endl;
+  // Write global sections. Global here means indexing according to partition, instead of local to
+  // patch (as above).
+  // There are far too many conditional statements below. This could be made neater, but the output
+  // format of the global surface sections is a little bit weird. It would be worth exploring how
+  // much of this "weirdness" Rocstar actually depends on.
   for (int igSec=0; igSec<gnSection; igSec++)
   {
-    //std::cout << "gsection " << gsectionNames[igSec] << std::endl;   
     elm_start = 1;
     if (gnCells[igSec] == 0)
     {
@@ -1176,9 +1103,7 @@ void cgnsWriter::writeZoneToFile()
     }
     else
     {
-      //std::cout << "here" << std::endl;
       elm_end = gnCells[igSec];
-      //std::cout << "setting elm_end = " << elm_end << std::endl;
     }
     nBdy = 0;
 
@@ -1209,7 +1134,6 @@ void cgnsWriter::writeZoneToFile()
              gsectionNames[igSec] == "q4g:virtual#3of4" ||
              gsectionNames[igSec] == "q4g:virtual#4of4")
     {
-      //std::cout << "setting " << gsectionNames[igSec] << std::endl;
       os.str("");
       os.clear();
       os << "EMPTY";
@@ -1225,16 +1149,12 @@ void cgnsWriter::writeZoneToFile()
       str = os.str();
     }
 
-    //std::cout << "writing range " << str << std::endl;
-
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
     tmpDim[0] = {gelmConns[igSec].size()};
     if (cg_array_write((gsectionNames[igSec]).c_str(),Integer,1, tmpDim, &gelmConns[igSec][0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, (gsectionNames[igSec]).c_str(),0,"end")) 
       cg_error_exit();
     if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
-
-
 
     if (gsectionNames[igSec] == "t3g:virtual#1of3" || 
         gsectionNames[igSec] == "t3g:virtual#2of3" ||
@@ -1261,7 +1181,4 @@ void cgnsWriter::writeZoneToFile()
     }
     if (cg_descriptor_write("Ghost", str.c_str() )) cg_error_exit();
   }
-  //std::cout << "done writing zone to file" << std::endl;
 }
-
-
