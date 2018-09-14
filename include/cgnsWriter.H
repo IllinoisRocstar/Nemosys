@@ -41,7 +41,6 @@ public:
     if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
     int file_type;
     cg_get_file_type(indexFile, &file_type);
-    std::cout << "CGNS TYPE = " << file_type << std::endl;
   };
   ~cgnsWriter()
   { cg_close(indexFile);};
@@ -89,7 +88,6 @@ public:
   void setBurnDimMap();
   void setBurnMagMap();
   void setTypeFlag(int typeFlag);
-  //void writeVolGs(double* data);
 
 private:
   // general CGNS manager

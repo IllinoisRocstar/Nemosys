@@ -38,7 +38,7 @@ class RocPartCommGenDriver : public NemDriver
 
   // --- info for write to cgns and intermediaries
   private:
-    // base time step (rocstar convention, eg. 04.210000)
+    // base time step (Rocstar convention, eg. 04.210000)
     std::string base_t;
     // trimmed time step (eg. 4.21)
     std::string trimmed_base_t;
@@ -65,6 +65,7 @@ class RocPartCommGenDriver : public NemDriver
     void comWriter(int proc);
     // write dimensions file
     void dimWriter(int proc, std::shared_ptr<meshBase> realMB, std::shared_ptr<meshBase> totalMB);
+    // write surface information for dimensions file
     void dimSurfWriter(int proc, std::vector<int> cgConnReal, std::vector<int> cgConnVirtual, int patchNo);
     void dimSurfWriter(int proc);
     // write processor mapping file
@@ -83,9 +84,10 @@ class RocPartCommGenDriver : public NemDriver
     std::shared_ptr<meshBase> surfWithSol;
     // original burning surface mesh with solution data (iburn)
     std::shared_ptr<meshBase> burnSurfWithSol;
-    // TODO: add meshBase (mbObj[2) from remeshDriver) for iburn solution mesh (iBurnWithSol)
+    // TODO: add meshBase (mbObj[2] from remeshDriver) for iburn solution mesh (iBurnWithSol)
     //       figure out a way to extract the cells with bflag on each surf/vol partition
-    //        transfer data from iBurnWithSol to surf partitions and write them out to cgns
+    //       transfer data from iBurnWithSol to surf partitions and write them out to cgns
+
     // partitions <proc, partition>
     std::vector<std::shared_ptr<meshBase>> partitions;
     // <proc, <proc, mesh>>
@@ -164,6 +166,7 @@ class RocPartCommGenDriver : public NemDriver
     std::vector<std::map<int, std::vector<int>>> surfPconns;
     // maximum Pconn values for each proc
     std::map<int,int> pconnProcMax;
+    // minimum Pconn values for each proc
     std::map<int,int> pconnProcMin;
 
   // --- storing number of unique volumetric faces for each partition
@@ -172,14 +175,8 @@ class RocPartCommGenDriver : public NemDriver
 
   // --- volume to surface node maps for each partition
   private: 
-    // <proc, <surface nodeId, volume nodeId>>
-    //std::vector<std::map<int,int>> surfToVolNodeMap;            
-    // <proc, <volume nodeId, surface nodeId>>
-    //std::vector<std::map<int,int>> volToSurfNodeMap; 
     // Stores volume meshes with virtual for each proc
         std::vector<std::shared_ptr<meshBase>> procVolMesh;
-    // Stores surface meshes for each proc
-    //std::vector<std::vector<std::vector<double>>> procSurfMesh;
 
   // --- write pconn information into pconn vectors
   private:
