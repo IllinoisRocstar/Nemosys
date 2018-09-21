@@ -37,7 +37,7 @@ public:
   nVrtx(0), nCell(0), nSlnFld(0), coordRind(0),virtElmRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
-    cg_set_file_type(1);
+    //cg_set_file_type(1);
     if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
     int file_type;
     cg_get_file_type(indexFile, &file_type);
@@ -46,12 +46,12 @@ public:
   { cg_close(indexFile);};
 
   void deleteFile();
-  void setUnits(MassUnits_t mu, LengthUnits_t lu, 
-                TimeUnits_t tu, TemperatureUnits_t tpu, AngleUnits_t au);
+  void setUnits(CG_MassUnits_t mu, CG_LengthUnits_t lu, 
+                CG_TimeUnits_t tu, CG_TemperatureUnits_t tpu, CG_AngleUnits_t au);
   void setBaseItrData(std::string bsitrname, int ntstp, double tval);
   void setZoneItrData(std::string zitrname, std::string grdptr, std::string slnptr);
   void setIntData(std::string intname, int intval);
-  void setZone(std::string zName, ZoneType_t zt);
+  void setZone(std::string zName, CG_ZoneType_t zt);
   int getNSections();
   void setTimestamp(std::string trimmed_base_t);
   void setNVrtx(int nVt);
@@ -67,14 +67,14 @@ public:
   void setCnstrtype(int cnstr_type);
   void setVolCellFacesNumber(int nVolCellFaces);
   void setPconnGhostDescriptor(int ghostDescriptor);
-  void setSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
-  void setGlobalSection(std::string sName, ElementType_t st, vect<int>::v1d elmConn);
-  void setGlobalSection(std::string gsName, ElementType_t gst);
+  void setSection(std::string sName, CG_ElementType_t st, vect<int>::v1d elmConn);
+  void setGlobalSection(std::string sName, CG_ElementType_t st, vect<int>::v1d elmConn);
+  void setGlobalSection(std::string gsName, CG_ElementType_t gst);
   void resetSections();
   void resetGlobalSections();
-  void setSolutionNode(std::string ndeName, GridLocation_t slnLoc);
-  void writeSolutionNode(std::string ndeName, GridLocation_t slnLoc, int emptyFlag, int virtFlag);
-  void writeSolutionField(std::string fname, std::string ndeName, DataType_t dt, void* dat);
+  void setSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc);
+  void writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc, int emptyFlag, int virtFlag);
+  void writeSolutionField(std::string fname, std::string ndeName, CG_DataType_t dt, void* dat);
   void writeGridToFile();
   void writeZoneToFile();
   void writeWinToFile();
@@ -92,8 +92,8 @@ public:
 private:
   // general CGNS manager
   std::string myCgFileName;
-  ZoneType_t zoneType;
-  ElementType_t sectionType, gsectionType;
+  CG_ZoneType_t zoneType;
+  CG_ElementType_t sectionType, gsectionType;
   int rmin[3], rmax[3];
   cgsize_t cgCoreSize[9];
   std::string baseName, zoneName, sectionName, gsectionName;
@@ -124,11 +124,11 @@ private:
   int intVal;
   int nVolCellFaces;
   // units
-  MassUnits_t massU;
-  LengthUnits_t lengthU;
-  TimeUnits_t timeU;
-  TemperatureUnits_t tempU;
-  AngleUnits_t angleU;
+  CG_MassUnits_t massU;
+  CG_LengthUnits_t lengthU;
+  CG_TimeUnits_t timeU;
+  CG_TemperatureUnits_t tempU;
+  CG_AngleUnits_t angleU;
   // time-dependent data
   std::string baseItrName, zoneItrName;
   std::string intName;
@@ -138,11 +138,11 @@ private:
   // mesh data
   vect<double>::v1d xCrd, yCrd, zCrd;
   vect<std::string>::v1d zoneNames;
-  vect<ZoneType_t>::v1d zoneTypes;
+  vect<CG_ZoneType_t>::v1d zoneTypes;
   vect<std::string>::v1d sectionNames;
   vect<std::string>::v1d gsectionNames;
-  vect<ElementType_t>::v1d sectionTypes;
-  vect<ElementType_t>::v1d gsectionTypes;
+  vect<CG_ElementType_t>::v1d sectionTypes;
+  vect<CG_ElementType_t>::v1d gsectionTypes;
   vect<int>::v2d elmConns;
   vect<int>::v2d gelmConns;
   vect<int>::v1d nCells;
@@ -155,12 +155,12 @@ private:
   int nCellFld;
   std::map<std::string, int> slnNameNFld; // number of filed in the given solution name
   vect<int>::v1d solutionIdx; // solution node indices
-  std::map<std::string, GridLocation_t> solutionNameLocMap;
+  std::map<std::string, CG_GridLocation_t> solutionNameLocMap;
   // maps sol node to index (eg. NodeData0.0=1,ElemData0.0=2)
   std::map<std::string, int> solutionNameSolIdxMap;  
   std::map<int,std::pair<int,keyValueList> > solutionMap; // (#sln, <slnIdx, [fldIdx, fldName]>)
   vect<std::string>::v1d solutionName;
-  vect<GridLocation_t>::v1d solutionGridLocation;
+  vect<CG_GridLocation_t>::v1d solutionGridLocation;
   // Rocstar variable units lookup dictionary
   std::map <std::string, std::string> fluidUnitsMap;
   std::map <std::string, std::vector<float>> fluidDimMap;

@@ -30,10 +30,10 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
 {
   // stitch fluid files
   this->stitchCGNS(fluidNames,0);
-	// stitch burn files
-	this->stitchCGNS(burnNames,0);
-	// stitch iburn files
-	this->stitchCGNS(iBurnNames,1);
+  // stitch burn files
+  this->stitchCGNS(burnNames,0);
+  // stitch iburn files
+  this->stitchCGNS(iBurnNames,1);
   // stitch ifluid_ni files
   this->stitchCGNS(ifluidniNames,1);
   // stitch ifluid_b files
@@ -73,7 +73,8 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
         (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
                                   this->mbObjs[0], this->stitchedSurf,
                                   this->stitchedBurnSurf,
-                                  numPartitions, base_t, writeIntermediateFiles, searchTolerance, caseName));
+                                  numPartitions, base_t, writeIntermediateFiles, 
+                                  searchTolerance, caseName));
   std::cout << "RemeshDriver created" << std::endl;
 }
  
@@ -134,7 +135,12 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   std::vector<std::string> iflunbNames(getCgFNames(case_dir, "ifluid_nb", base_t));
   std::vector<std::string> iflubNames(getCgFNames(case_dir, "ifluid_b", base_t));
   std::vector<std::string> burnNames(getCgFNames(burn_dir, "burn", base_t));
-	std::vector<std::string> iBurnNames(getCgFNames(burn_dir, "iburn", base_t));
+  std::vector<std::string> iBurnNames(getCgFNames(burn_dir, "iburn", base_t));
+  if (fluNames.size()==0 || burnNames.size()==0)
+  {
+    std::cerr << "Error finding Rocstar output files. Make sure folder locations are properly set in the input file and all folders are non-empty.\n";
+    throw;
+  }
   json remeshjson = inputjson["Remeshing Options"];
   int numPartitions = inputjson["Number Of New Partitions"].as<int>();
   bool writeIntermediateFiles = false;
