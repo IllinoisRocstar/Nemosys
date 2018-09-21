@@ -1032,7 +1032,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   // set time stamp
   writer->setTimestamp(this->trimmed_base_t);
   // define elementary information
-  writer->setUnits(Kilogram, Meter, Second, Kelvin, Degree);
+  writer->setUnits(CG_Kilogram, CG_Meter, CG_Second, CG_Kelvin, CG_Degree);
   // baseitrname, nTstep, timeVal
   writer->setBaseItrData("TimeIterValues", 1, std::stod(this->trimmed_base_t));
   // write elementary grid information to file
@@ -1135,7 +1135,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         std::shared_ptr<meshBase> patchOfPartitionWithVirtualMesh
           = meshBase::stitchMB(patchOfPartitionWithAllVirtualCells);
         // set the zone
-        writer->setZone(ss.str(), Unstructured);
+        writer->setZone(ss.str(), CG_Unstructured);
         // all pconn stuff is shared nodes, so no ghost entities
         writer->setPconnGhostDescriptor(0);
         //writer->setPconnGhostDescriptor(numVirtualCells);
@@ -1411,7 +1411,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           writer->setNVrtx(it->second->getNumberOfPoints() + numRealPointsInVirtualPatch);
         }
 
-        writer->setSection(":t3:real", TRI_3, cgConnReal);
+        writer->setSection(":t3:real", CG_TRI_3, cgConnReal);
 
         if (!(prefix == "burn" || prefix == "iburn_all"))
         {
@@ -1437,7 +1437,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           if (numVirtualCells)
           {
             writer->setNCell(numVirtualCells);
-            writer->setSection(":t3:virtual", TRI_3, cgConnVirtual);
+            writer->setSection(":t3:virtual", CG_TRI_3, cgConnVirtual);
             writer->setVirtElmRind(numVirtualCells);
           }
   
@@ -1447,34 +1447,34 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           writer->setPconnLimits(this->pconnProcMin[me], this->pconnProcMax[me]);
 
           // Note: only tri elements supported
-          writer->setGlobalSection("t3g:real#1of3", TRI_3, cgConnRealGlobal1);
+          writer->setGlobalSection("t3g:real#1of3", CG_TRI_3, cgConnRealGlobal1);
           writer->setGlobalNCell(cgConnRealGlobal1.size());
-          writer->setGlobalSection("t3g:real#2of3", TRI_3, cgConnRealGlobal2);
+          writer->setGlobalSection("t3g:real#2of3", CG_TRI_3, cgConnRealGlobal2);
           writer->setGlobalNCell(cgConnRealGlobal2.size());
-          writer->setGlobalSection("t3g:real#3of3", TRI_3, cgConnRealGlobal3);
+          writer->setGlobalSection("t3g:real#3of3", CG_TRI_3, cgConnRealGlobal3);
           writer->setGlobalNCell(cgConnRealGlobal3.size());
-          writer->setGlobalSection("t3g:virtual#1of3", TRI_3, cgConnVirtualGlobal1);
+          writer->setGlobalSection("t3g:virtual#1of3", CG_TRI_3, cgConnVirtualGlobal1);
           writer->setGlobalNCell(cgConnVirtualGlobal1.size());
-          writer->setGlobalSection("t3g:virtual#2of3", TRI_3, cgConnVirtualGlobal2);
+          writer->setGlobalSection("t3g:virtual#2of3", CG_TRI_3, cgConnVirtualGlobal2);
           writer->setGlobalNCell(cgConnVirtualGlobal2.size());
-          writer->setGlobalSection("t3g:virtual#3of3", TRI_3, cgConnVirtualGlobal3);
+          writer->setGlobalSection("t3g:virtual#3of3", CG_TRI_3, cgConnVirtualGlobal3);
           writer->setGlobalNCell(cgConnVirtualGlobal3.size());
 
-          writer->setGlobalSection("q4g:real#1of4", TETRA_4);
+          writer->setGlobalSection("q4g:real#1of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:real#2of4", TETRA_4);
+          writer->setGlobalSection("q4g:real#2of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:real#3of4", TETRA_4);
+          writer->setGlobalSection("q4g:real#3of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:real#4of4", TETRA_4);
+          writer->setGlobalSection("q4g:real#4of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:virtual#1of4", TETRA_4);
+          writer->setGlobalSection("q4g:virtual#1of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:virtual#2of4", TETRA_4);
+          writer->setGlobalSection("q4g:virtual#2of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:virtual#3of4", TETRA_4);
+          writer->setGlobalSection("q4g:virtual#3of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
-          writer->setGlobalSection("q4g:virtual#4of4", TETRA_4);
+          writer->setGlobalSection("q4g:virtual#4of4", CG_TETRA_4);
           writer->setGlobalNCell(0);
   
           writer->setPatchNo((int) patchNo[0]);
@@ -1484,7 +1484,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         else
         {
           writer->setNCell(1);
-          writer->setSection("Empty:t3:virtual", TRI_3, cgConnVirtual);
+          writer->setSection("Empty:t3:virtual", CG_TRI_3, cgConnVirtual);
           writer->setVirtElmRind(numVirtualCells);
         }
 
@@ -1529,7 +1529,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
             if (!(prefix == "burn" || prefix == "iburn_all"))
             {
               writer->setTypeFlag(0);
-              writer->writeSolutionNode(nodeName, Vertex, 0, 1);
+              writer->writeSolutionNode(nodeName, CG_Vertex, 0, 1);
               for (int i = 0; i < numPointDataArr; ++i)
               {
                 std::vector<double> pointData;
@@ -1538,13 +1538,13 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                 writer->setTypeFlag(1);
                 // Map point data from old coordinates to new coordinates
                 this->mapOld2NewPointData(pointData, new2Old);
-                writer->writeSolutionField(dataName, nodeName, RealDouble, &pointData[0u]);
+                writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &pointData[0u]);
               }
             }
             else
             {
               writer->setTypeFlag(0);
-              writer->writeSolutionNode(nodeName, Vertex, 1, 1);
+              writer->writeSolutionNode(nodeName, CG_Vertex, 1, 1);
             }
           }
           int numCellDataArr;
@@ -1567,12 +1567,12 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               if (!(prefix == "burn" || prefix == "iburn_all"))
               {
                 writer->setTypeFlag(0);
-                writer->writeSolutionNode(nodeName, CellCenter, 0, 1);
+                writer->writeSolutionNode(nodeName, CG_CellCenter, 0, 1);
               }
               else if (prefix == "iburn_all")
               {
                 writer->setTypeFlag(2);
-                writer->writeSolutionNode(nodeName, CellCenter, 0, 0);
+                writer->writeSolutionNode(nodeName, CG_CellCenter, 0, 0);
               }
               // now do cell data
               for (int i = 0; i < numCellDataArr; ++i)
@@ -1631,11 +1631,11 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                     writer->setTypeFlag(1);
                     if (dataName == "bflag")
                     {
-                      writer->writeSolutionField(dataName, nodeName, Integer, &cellData[0u]);
+                      writer->writeSolutionField(dataName, nodeName, CG_Integer, &cellData[0u]);
                     }
                     else
                     {
-                      writer->writeSolutionField(dataName, nodeName, RealDouble, &cellData[0u]);
+                      writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
                     }
                   }
                   else if (prefix == "burn" || prefix == "iburn_all")
@@ -1643,11 +1643,11 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                     writer->setTypeFlag(2);
                     if (dataName == "bflag")
                     {
-                      writer->writeSolutionField(dataName, nodeName, Integer, &cellData[0u]);
+                      writer->writeSolutionField(dataName, nodeName, CG_Integer, &cellData[0u]);
                     }
                     else
                     {
-                      writer->writeSolutionField(dataName, nodeName, RealDouble, &cellData[0u]);
+                      writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
                     }
                   }
                 }
@@ -1690,7 +1690,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   // set time stamp
   writer->setTimestamp(this->trimmed_base_t);
   // define elementary information 
-  writer->setUnits(Kilogram, Meter, Second, Kelvin, Degree);
+  writer->setUnits(CG_Kilogram, CG_Meter, CG_Second, CG_Kelvin, CG_Degree);
   // baseitrname, nTstep, timeVal 
   writer->setBaseItrData("TimeIterValues", 1, std::stod(this->trimmed_base_t));
   // setting zone iter data
@@ -1739,7 +1739,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   // Save vertex coordinates for mapping between volume and surface
   this->procVolMesh.push_back(partitionWithVirtualMesh);
   // set the zone
-  writer->setZone(ss.str(), Unstructured);
+  writer->setZone(ss.str(), CG_Unstructured);
   // get number of ghost entities in pconn vec
   int ghostDescriptor = this->volPconns[proc].size() - this->notGhostInPconn[proc];
   // register this with writer
@@ -1765,9 +1765,9 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   {
     *it += 1;
   }
-  writer->setSection(":T4:real", TETRA_4, cgConnReal);
+  writer->setSection(":T4:real", CG_TETRA_4, cgConnReal);
   writer->setNCell(numVirtualCells);
-  writer->setSection(":T4:virtual", TETRA_4, cgConnVirtual);
+  writer->setSection(":T4:virtual", CG_TETRA_4, cgConnVirtual);
   writer->setVirtElmRind(numVirtualCells);
 
   // Before writing Pconn vector, restructure format of vector
@@ -1828,7 +1828,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
       std::string nodeName("NodeData");
       nodeName += this->trimmed_base_t;
       writer->setTypeFlag(1);
-      writer->writeSolutionNode(nodeName, Vertex, 0, 1); 
+      writer->writeSolutionNode(nodeName, CG_Vertex, 0, 1); 
       // begin with point data
       for (int i = 0; i < numPointDataArr; ++i)
       {
@@ -1836,7 +1836,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
         partitionWithVirtualMesh->getPointDataArray(i, pointData);
         std::string dataName(this->volWithSol->getDataSet()->GetPointData()->GetArrayName(i));
         writer->setTypeFlag(0);
-        writer->writeSolutionField(dataName, nodeName, RealDouble,&pointData[0u]);
+        writer->writeSolutionField(dataName, nodeName, CG_RealDouble,&pointData[0u]);
       }
     }
     int numCellDataArr
@@ -1846,7 +1846,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
       std::string nodeName("ElemData"); 
       nodeName += this->trimmed_base_t;
       writer->setTypeFlag(1);
-      writer->writeSolutionNode(nodeName, CellCenter, 0, 1); 
+      writer->writeSolutionNode(nodeName, CG_CellCenter, 0, 1); 
       // now do cell data
       for (int i = 0; i < numCellDataArr; ++i)
       {
@@ -1854,7 +1854,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
         partitionWithVirtualMesh->getCellDataArray(i, cellData);
         std::string dataName(this->volWithSol->getDataSet()->GetCellData()->GetArrayName(i));
         writer->setTypeFlag(0);
-        writer->writeSolutionField(dataName, nodeName, RealDouble,&cellData[0u]);
+        writer->writeSolutionField(dataName, nodeName, CG_RealDouble,&cellData[0u]);
       }
     }
   }
