@@ -111,7 +111,6 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeSentToPconn(i,type,false);
     this->writeReceivedToPconn(i,type,false);
 
-    // Write pconn information to Rocstar com files
     this->comWriter(i+1);
     this->clearPconnVectors();
 
@@ -1012,7 +1011,6 @@ RocPartCommGenDriver::~RocPartCommGenDriver()
 
 void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
 {
-  std::cout << "Entered writeSurfCgns for prefix = " << prefix << ", proc = " << me << std::endl;
   std::stringstream ss;
   ss << prefix << "_" << this->base_t << 
     (me < 1000 ? (me < 100 ? (me < 10 ? "_000" : "_00") : "_0") : "_") << me << ".cgns";
@@ -1067,7 +1065,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   vtkSmartPointer<vtkIdList> result = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
   vtkSmartPointer<vtkPoints> myPoints = vtkSmartPointer<vtkPoints>::New();
-  std::cout << "Number of Points in whole mesh (real + virtual) = " << procVolMesh[me]->getDataSet()->GetNumberOfPoints() << std::endl;
   for (vtkIdType i = 0; i < procVolMesh[me]->getDataSet()->GetNumberOfPoints(); i++)
   {
     myPoints->InsertNextPoint(procVolMesh[me]->getDataSet()->GetPoint(i));
@@ -1095,7 +1092,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       writer->setZoneItrData("ZoneIterativeData", grdpntr, flowsolpntr);
       ss.str("");
       ss.clear();
-      ss << 0 << me+1 << (it->first < 10 ? "0" : "") <<  zone;
+      //ss << 0 << me+1 << (it->first < 10 ? "0" : "") <<  zone;
+      ss << ((me+1) >= 10 ? "" : "0") << me+1 << (it->first < 10 ? "0" : "") << zone;
       zone += 1;    
       // vector to hold real patch mesh and all virtuals from same patch on other procs
       std::vector<std::shared_ptr<meshBase>> patchOfPartitionWithAllVirtualCells;
@@ -1276,7 +1274,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         // Maps between old and new local Ids
         std::map<int,int> old2New;
         std::map<int,int> new2Old;
-        if (numVirtualCells)
+        if (numVirtualCells || !numVirtualCells)
         {
           // Sort coordinates according to global index
           std::vector<std::vector<double>> coordsTmp;
@@ -1337,40 +1335,47 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           std::vector<int> cgConnVirtualGlobal3Tmp;
           int oldGid;
           int newGid;
-          for (auto itr = cgConnVirtual.begin(); itr != cgConnVirtual.end(); ++itr)
+
+          if (numVirtualCells)
           {
-            oldLid = *itr;
-            newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
-            old2New[oldLid] = newLid;
-            new2Old[newLid] = oldLid;
-            cgConnVirtualTmp.push_back(newLid);
-            cgConnVirtualGlobal1Tmp.push_back(loc2Glob[oldLid]);
-            ++itr;
-  
-            oldLid = *itr;
-            newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
-            old2New[oldLid] = newLid;
-            new2Old[newLid] = oldLid;
-            cgConnVirtualTmp.push_back(newLid);
-            cgConnVirtualGlobal2Tmp.push_back(loc2Glob[oldLid]);
-            ++itr;
-  
-            oldLid = *itr;
-            newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
-            old2New[oldLid] = newLid;
-            new2Old[newLid] = oldLid;
-            cgConnVirtualTmp.push_back(newLid);
-            cgConnVirtualGlobal3Tmp.push_back(loc2Glob[oldLid]);
+            for (auto itr = cgConnVirtual.begin(); itr != cgConnVirtual.end(); ++itr)
+            {
+              oldLid = *itr;
+              newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
+              old2New[oldLid] = newLid;
+              new2Old[newLid] = oldLid;
+              cgConnVirtualTmp.push_back(newLid);
+              cgConnVirtualGlobal1Tmp.push_back(loc2Glob[oldLid]);
+              ++itr;
+    
+              oldLid = *itr;
+              newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
+              old2New[oldLid] = newLid;
+              new2Old[newLid] = oldLid;
+              cgConnVirtualTmp.push_back(newLid);
+              cgConnVirtualGlobal2Tmp.push_back(loc2Glob[oldLid]);
+              ++itr;
+    
+              oldLid = *itr;
+              newLid = std::distance(glob2Loc.begin(), glob2Loc.find(loc2Glob[*itr])) + 1;
+              old2New[oldLid] = newLid;
+              new2Old[newLid] = oldLid;
+              cgConnVirtualTmp.push_back(newLid);
+              cgConnVirtualGlobal3Tmp.push_back(loc2Glob[oldLid]);
+            }
           }
           coords = coordsTmp;
           cgConnReal = cgConnRealTmp;
           cgConnRealGlobal1 = cgConnRealGlobal1Tmp;
           cgConnRealGlobal2 = cgConnRealGlobal2Tmp;
           cgConnRealGlobal3 = cgConnRealGlobal3Tmp;
+          if (numVirtualCells)
+          {
           cgConnVirtual = cgConnVirtualTmp;
           cgConnVirtualGlobal1 = cgConnVirtualGlobal1Tmp;
           cgConnVirtualGlobal2 = cgConnVirtualGlobal2Tmp;
           cgConnVirtualGlobal3 = cgConnVirtualGlobal3Tmp;
+          }
         }
 
         int numRealPointsInVirtualPatch = 0;
@@ -1673,7 +1678,6 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   std::stringstream ss;
   ss << prefix << "_" << this->base_t << 
     (proc < 1000 ? (proc < 100 ? (proc < 10 ? "_000" : "_00") : "_0") : "_") << proc << ".cgns";
-
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer 
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname, "fluid", 3, 3));
@@ -1701,14 +1705,12 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   writer->setZoneItrData("ZoneIterativeData", gridpntr, flowsolpntr);
   ss.str("");
   ss.clear();
-  ss << 0 << proc+1 << (type < 10 ? "0" : "") << type;
+  ss << ((proc+1) >= 10 ? "" : "0") << proc+1 << (type < 10 ? "0" : "") << type;
   volZoneMap.push_back(std::stoi(ss.str()));
   // vector to hold all virtual meshes and the partition's mesh for merging
   std::vector<std::shared_ptr<meshBase>> partitionWithAllVirtualCells;
   partitionWithAllVirtualCells.push_back(this->partitions[proc]);
-  
   double myPoint[3];
-  std::cout << "Before adding virtuals:" << std::endl;
   for (vtkIdType i = 0; i < partitionWithAllVirtualCells[0]->getDataSet()->GetNumberOfPoints(); i++)
   {
     partitionWithAllVirtualCells[0]->getDataSet()->GetPoint(i, myPoint);
@@ -2085,6 +2087,7 @@ void RocPartCommGenDriver::cmpWriter(int proc, int nCells)
 // This data is the same as in PaneData/pconn in the fluid CGNS files
 void RocPartCommGenDriver::comWriter(int proc)
 {
+
   // Get number of partitions
   int nPart = this->partitions.size();
 
@@ -2108,7 +2111,7 @@ void RocPartCommGenDriver::comWriter(int proc)
   // Write number of neighboring procs
   comFile << "# Dimensions\n";
   comFile << std::setw(8) << std::to_string(this->neighborProcsTmp.size()) << std::endl;
-  
+
   // Write number of borders
   comFile << "# Information\n";
   std::string tmpStr;
@@ -2130,24 +2133,29 @@ void RocPartCommGenDriver::comWriter(int proc)
   std::string cellIdStr;
   std::string cellStr1;
   std::string cellStr2;
-  for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
+
+  //for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
+  for (auto itr = this->sentCellsTmp.begin(); itr != sentCellsTmp.end(); ++itr)
   {
-    cellStr1 = std::to_string(this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].size());
-    cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].size());
+
+    //cellStr1 = std::to_string(this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].size());
+    cellStr1 = std::to_string(this->sentCellsTmp[itr-this->sentCellsTmp.begin()].size());
+    //cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].size());
+    cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].size());
     tmpStr += std::string(8 - cellStr1.length(), ' ') + cellStr1;
     tmpStr += std::string(8 - cellStr2.length(), ' ') + cellStr2;
     comFile << tmpStr << std::endl;
     tmpStr = "";
-    for (auto itr2 = this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].end();
+    for (auto itr2 = this->sentCellsTmp[itr-this->sentCellsTmp.begin()].begin();
+        itr2 < this->sentCellsTmp[itr-this->sentCellsTmp.begin()].end();
         ++itr2)
     {
       cellIdStr = std::to_string(*itr2);
       tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
-      if (((itr2-this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
+      if (((itr2-this->sentCellsTmp[itr-this->sentCellsTmp.begin()].begin())+1) % 10 == 0)
       {
-       comFile << tmpStr << std::endl;
-       tmpStr = "";
+        comFile << tmpStr << std::endl;
+        tmpStr = "";
       }
     }
     if (tmpStr != "")
@@ -2155,13 +2163,13 @@ void RocPartCommGenDriver::comWriter(int proc)
       comFile << tmpStr << std::endl;
       tmpStr = "";
     }
-    for (auto itr2 = this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].end();
+    for (auto itr2 = this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].begin();
+        itr2 < this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].end();
         ++itr2)
     {
       cellIdStr = std::to_string(*itr2);
       tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
-      if (((itr2-this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
+      if (((itr2-this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].begin())+1) % 10 == 0)
       {        
         comFile << tmpStr << std::endl;
         tmpStr = "";
@@ -2181,8 +2189,10 @@ void RocPartCommGenDriver::comWriter(int proc)
   std::string vertStr1;
   std::string vertStr2;
   std::string vertStr3;
+
   for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
   {
+
     vertStr1 = std::to_string(this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].size());
     vertStr2 = std::to_string(this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
     vertStr3 = std::to_string(this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
@@ -2243,6 +2253,7 @@ void RocPartCommGenDriver::comWriter(int proc)
       tmpStr = "";
     }
   }
+
   comFile << "# End" << std::endl;
   comFile.close();
 }
@@ -2569,7 +2580,7 @@ void RocPartCommGenDriver::txtWriter()
     for (auto itr1 = surfZoneMap[iPart].begin(); itr1 != surfZoneMap[iPart].end(); ++itr1)
     {
       tmpStr += " " + std::to_string(iPart+1);
-      if ((iPart+1) < 10)
+      if ((itr1->second) < 10)
       {
         tmpStr += "0";
       }
@@ -2590,7 +2601,7 @@ void RocPartCommGenDriver::txtWriter()
         burnCnt += 1;
         iburn_in << "@Files: iburn*_" + this->base_t + "_%04p.cgns" << std::endl;
         tmpStr += " " + std::to_string(iPart+1);
-        if ((iPart+1) < 10)
+      if ((itr1->second) < 10)
         {
           tmpStr += "0";
         }
@@ -2615,7 +2626,7 @@ void RocPartCommGenDriver::txtWriter()
         burnCnt += 1;
         burn_in << "@Files: burn_" + this->base_t + "_%04p.cgns" << std::endl;
         tmpStr += " " + std::to_string(iPart+1);
-        if ((iPart+1) < 10)
+        if ((itr1->second) < 10)
         {
           tmpStr += "0";
         }
