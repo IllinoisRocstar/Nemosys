@@ -119,10 +119,10 @@ meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
   // coverting between CGNS to local type
   switch (inCg->getElementType())
   {
-    case TETRA_4:
+    case CG_TETRA_4:
       meshType = MESH_TETRA_4;
       break;
-    case TRI_3:
+    case CG_TRI_3:
       meshType = MESH_TRI_3;
       break;
     default:

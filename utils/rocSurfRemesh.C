@@ -65,11 +65,11 @@ int main(int argc, char* argv[])
   // reading cgns file1
   rocstarCgns* bCgObj = new rocstarCgns(bCgFileName);
   bCgObj->loadCgSeries(3);
-  bCgObj->dummy();
+  bCgObj->stitchGroup();
   // reading cgns file1
   rocstarCgns* niCgObj = new rocstarCgns(niCgFileName);
   niCgObj->loadCgSeries(4);
-  niCgObj->dummy();
+  niCgObj->stitchGroup();
   meshBase* stitched1 = meshBase::Create(bCgObj->getVTKMesh(), "bCgObjStitched.vtu");
   meshBase* stitched2 = meshBase::Create(niCgObj->getVTKMesh(), "niCgObjStitched.vtu");
   stitched1->write();

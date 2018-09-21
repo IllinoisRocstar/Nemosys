@@ -79,7 +79,7 @@ private:
 class cgnsAnalyzer {
 public:
   cgnsAnalyzer(std::string fname) :
-    cgFileName(fname), isUnstructured(false), zoneType(ZoneTypeNull),
+    cgFileName(fname), isUnstructured(false), zoneType(CG_ZoneTypeNull),
     indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
     nVertex(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
     solutionDataPopulated(false),
@@ -109,6 +109,17 @@ public:
    cgFileName = fname;
    loadGrid(verb);
   };
+
+  // closing cgns file
+  virtual void closeCG()
+  {
+    if (indexFile>0)
+    {
+       cg_close(indexFile);
+       indexFile = -1;
+    }
+  };
+
   void loadGrid(int verb=0);
   void loadZone(int zIdx, int verb=0);
  
@@ -133,12 +144,12 @@ public:
   int getPhysDim();
   int getElementType();
   int getNVrtxElem();
-  MassUnits_t getMassUnit();
-  LengthUnits_t getLengthUnit();
-  TimeUnits_t getTimeUnit();
-  TemperatureUnits_t getTemperatureUnit();
-  AngleUnits_t getAngleUnit();
-  ZoneType_t getZoneType();
+  CG_MassUnits_t getMassUnit();
+  CG_LengthUnits_t getLengthUnit();
+  CG_TimeUnits_t getTimeUnit();
+  CG_TemperatureUnits_t getTemperatureUnit();
+  CG_AngleUnits_t getAngleUnit();
+  CG_ZoneType_t getZoneType();
   bool isStructured();
   std::vector<double> getVertexCoords();
   std::vector<double> getVertexCoords(int vrtxId);
@@ -170,9 +181,9 @@ public:
 
   // access solution data related management data structures
   std::vector<std::string> getSolutionNodeNames();
-  std::vector<GridLocation_t> getSolutionGridLocations();
+  std::vector<CG_GridLocation_t> getSolutionGridLocations();
   std::map<int,std::pair<int,keyValueList> > getSolutionMap();
-  std::map<std::string, GridLocation_t> getSolutionNameLocMap();
+  std::map<std::string, CG_GridLocation_t> getSolutionNameLocMap();
 
   // mesh processing
   void exportToMAdMesh(MAd::pMesh MAdMesh);
@@ -188,7 +199,7 @@ public:
   vtkSmartPointer<vtkDataSet> getVTKMesh();
   // write data from existing vtkdataset into open cgns file (for replacing data in file)
   void overwriteSolData(meshBase* mbObj);
-  void overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, DataType_t dt, void* data);
+  void overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, CG_DataType_t dt, void* data);
 
   // utilities
   void writeSampleStructured();
@@ -210,14 +221,14 @@ protected:
   // type of the grid
   std::string baseName, zoneName, sectionName;
   bool isUnstructured;
-  ZoneType_t zoneType;
-  ElementType_t sectionType;
+  CG_ZoneType_t zoneType;
+  CG_ElementType_t sectionType;
   // units
-  MassUnits_t massU;
-  LengthUnits_t lengthU;
-  TimeUnits_t timeU;
-  TemperatureUnits_t tempU;
-  AngleUnits_t angleU;
+  CG_MassUnits_t massU;
+  CG_LengthUnits_t lengthU;
+  CG_TimeUnits_t timeU;
+  CG_TemperatureUnits_t tempU;
+  CG_AngleUnits_t angleU;
   // grid ints
   int rmin[3], rmax[3];
   int cgCoreSize[9];
@@ -244,10 +255,10 @@ protected:
   int nSolution;
   int nField;
   std::vector<solutionData*> slnDataCont;
-  std::map<std::string, GridLocation_t> solutionNameLocMap;
+  std::map<std::string, CG_GridLocation_t> solutionNameLocMap;
   std::map<int,std::pair<int,keyValueList> > solutionMap; // (#sln, <slnIdx, (fldIdx, fldName)>)
   std::vector<std::string> solutionName;
-  std::vector<GridLocation_t> solutionGridLocation;
+  std::vector<CG_GridLocation_t> solutionGridLocation;
   std::vector<std::string> appendedSolutionName;
   // export variables
   std::map<int,int> MAdToCgnsIds;
