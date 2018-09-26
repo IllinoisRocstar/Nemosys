@@ -32,8 +32,9 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
                                            std::shared_ptr<meshBase> _surfWithSol,
                                            std::shared_ptr<meshBase> _burnSurfWithSol,
                                            int numPartitions, const std::string& _base_t,
-                                           bool _writeIntermediateFiles,
-                                           double _searchTolerance, const std::string& _caseName)
+                                           int _writeIntermediateFiles,
+                                           double _searchTolerance, const std::string& _caseName,
+                                           bool _withC2CTransSmooth)
 {
   std::cout << "RocPartCommGenDriver created\n";
   this->mesh = _mesh;
@@ -48,6 +49,10 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
   this->trimmed_base_t.erase(this->trimmed_base_t.find_last_not_of('0')+1,std::string::npos);
   this->writeAllFiles = _writeIntermediateFiles;
   this->searchTolerance = _searchTolerance;
+  // transfer setting
+  this->smoothC2CTrans =_withC2CTransSmooth;
+  this->volWithSol->setContBool(this->smoothC2CTrans);
+  // running
   this->execute(numPartitions);
 }
 
@@ -59,7 +64,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::string& volname, std::string& su
   this->remeshedSurf = meshBase::CreateShared(surfname);
   this->base_t = "00.000000";
   this->trimmed_base_t = "0.0";
-  this->writeAllFiles = false;
+  this->writeAllFiles = 0;
   this->execute(numPartitions);
 }
 
@@ -67,29 +72,35 @@ void RocPartCommGenDriver::execute(int numPartitions)
 {
   std::cout << "executing" << std::endl;
   remeshedSurf->setContBool(false);
+  // breaking down to partitions
   this->partitions = meshBase::partition(this->mesh.get(), numPartitions);
   this->AddGlobalCellIds(this->remeshedSurf);
   std::vector<std::string> paneDataAndGlobalCellIds = {"patchNo","bcflag","cnstr_type","GlobalCellIds"};
+
   // initialize storage for surf partitions 
   vtkSmartPointer<vtkUnstructuredGrid> unstructuredGrid;
-  this->surfacePartitions.resize(numPartitions);
+  this->surfacePartitions.resize(numPartitions, nullptr);
+  
   // initialize storage for virtual cells
   this->virtualCellsOfPartitions.resize(numPartitions);
   this->virtualCellsOfSurfPartitions.resize(numPartitions);
+  
   // get all required local-global node maps and node/cell ids
   std::cout << "getting maps" << std::endl;
   this->getGlobalIdsAndMaps(numPartitions,true);
+  
   // allocate storage for vol pconn vectors
   this->volPconns.resize(numPartitions);
   this->notGhostInPconn.resize(numPartitions);
 
+  // processing surface partitions for next steps
+  // generating volumetric CGNS files
   for (int i = 0; i < numPartitions; ++i)
   {
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
-    appendFilter->AddInputData(
-                    deleteInterPartitionSurface(
-                      remeshedSurf, partitions[i]->extractSurface()));
+    appendFilter->AddInputData( 
+        deleteInterPartitionSurface(remeshedSurf, partitions[i]->extractSurface()) );
     appendFilter->Update();
     // create surfs partitions casted from vtp to vtu
     unstructuredGrid = appendFilter->GetOutput();
@@ -97,10 +108,11 @@ void RocPartCommGenDriver::execute(int numPartitions)
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
+    // and transfer some pane data
     this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
-    remeshedSurf->transfer(this->surfacePartitions[i].get(), 
-                           "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
-    if (this->writeAllFiles) this->surfacePartitions[i]->write();
+    remeshedSurf->transfer( this->surfacePartitions[i].get(), 
+        "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
+    if (this->writeAllFiles > 0) this->surfacePartitions[i]->write();
     // get ghost information for volume partitions
     this->getGhostInformation(i,true);
     // write pconn information for volume partition
@@ -110,46 +122,48 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeReceivedToPconn(i,type,true);
     this->writeSentToPconn(i,type,false);
     this->writeReceivedToPconn(i,type,false);
-
     this->comWriter(i+1);
     this->clearPconnVectors();
-
+    // get virtual cells of each volume partition (t4:virtual)
+    // for current partition
     for (int j = 0; j < numPartitions; ++j)
-    {
-      // get virtual cells of each volume partition (t4:virtual)
       this->getVirtualCells(i,j,true);
-    }
     // write cgns for vol partition
     this->writeVolCgns("fluid", i,1,0);
+    // MS : next two lines, if entire mesh why in this loop of partitions?
     // write cell mapping file for entire mesh
     this->cmpWriter(0, this->mesh->getDataSet()->GetNumberOfCells());
     // write dimension file for entire mesh
     this->dimWriter(0, this->mesh, this->mesh);
   }
+  
   // get global ids and maps for surface partitions
   this->getGlobalIdsAndMaps(numPartitions, false);
   for (int i = 0; i < numPartitions; ++i)
   {
     // get ghost information for each surface partition
     this->getGhostInformation(i,false);
+    // get virtual cells for each surface partition (t3:virtual)
     for (int j = 0; j < numPartitions; ++j)
-    {
-      // get virtual cells for each surface partition (t3:virtual)
       this->getVirtualCells(i,j,false); 
-    }
   }
+
   // extract patches of each partition and get virtual cells from patches in other
   // partitions for each partiition
   this->extractPatches();
+
   // allocate shared patch nodes 4d map
   this->sharedPatchNodes.resize(numPartitions);
+  
   // get shared nodes between patches both intra and inter partition
   this->getSharedPatchInformation();
+  
   // allocate storage for surf pconn vectors
   this->surfPconns.resize(numPartitions);
 
-  // Determining patch to zone numbers for surfaces
+  // determining patch to zone numbers for surfaces
   // before writing surface Pconns
+  // TODO: refactor to a method for the class
   std::map<int, int> surfZoneNumbersMap;
   for (int iProc = 0; iProc < numPartitions; ++iProc)
   {
@@ -164,7 +178,6 @@ void RocPartCommGenDriver::execute(int numPartitions)
     }
     surfZoneMap.push_back(surfZoneNumbersMap);
   }
-
   for (int i = 0; i < numPartitions; ++i)
   {
     this->writeSharedToPconn(i);
@@ -173,25 +186,33 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeSurfCgns("burn", i);
     this->writeSurfCgns("iburn_all", i);
   }
+  // writing rocflu dim files
   this->dimSurfWriter(0);
-
+  // writing rocin pane/window info files
   this->txtWriter();
 
-//=====================================================================================================
-// !!!
-// This is currently a really hacky way to accumulate the number of unique volume faces for the grid
-// speed data entry. We have to accumulate the number of unique volume faces in first, then subtract
-// off the surface faces, and then call the volume routine again to write out the actual total faces.
-// (note the "gsExists" flag passed into writeVolCgns()). This works fine, but makes the driver run
-// slower than it should.
-// !!!
-//=====================================================================================================
+  // MS
+  //exit(0);
+  // MS
+
+  // MS : we can not afford to repeat these calculations for very large sims
+  //      this is basically repeatation of all above calcs
+  // TODO: refactoring needed here to avoid redundant calcs
+  //=====================================================================================================
+  // !!!
+  // This is currently a really hacky way to accumulate the number of unique volume faces for the grid
+  // speed data entry. We have to accumulate the number of unique volume faces in first, then subtract
+  // off the surface faces, and then call the volume routine again to write out the actual total faces.
+  // (note the "gsExists" flag passed into writeVolCgns()). This works fine, but makes the driver run
+  // slower than it should.
+  // !!!
+  //=====================================================================================================
 
   remeshedSurf->setContBool(false);
   this->partitions = meshBase::partition(this->mesh.get(), numPartitions);
   this->AddGlobalCellIds(this->remeshedSurf);
   // initialize storage for surf partitions 
-  this->surfacePartitions.resize(numPartitions);
+  this->surfacePartitions.resize(numPartitions,nullptr);
   // initialize storage for virtual cells
   this->virtualCellsOfPartitions.resize(numPartitions);
   this->virtualCellsOfSurfPartitions.resize(numPartitions);
@@ -206,8 +227,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
     appendFilter->AddInputData(
-                    deleteInterPartitionSurface(
-                      remeshedSurf, partitions[i]->extractSurface()));
+        deleteInterPartitionSurface(remeshedSurf, partitions[i]->extractSurface()) );
     appendFilter->Update();
     // create surfs partitions casted from vtp to vtu
     unstructuredGrid = appendFilter->GetOutput();
@@ -216,9 +236,9 @@ void RocPartCommGenDriver::execute(int numPartitions)
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
     this->surfacePartitions[i] =  meshBase::CreateShared(unstructuredGrid, basename);
-    remeshedSurf->transfer(this->surfacePartitions[i].get(), 
-                           "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
-    if (this->writeAllFiles) this->surfacePartitions[i]->write();
+    remeshedSurf->transfer(
+        this->surfacePartitions[i].get(), "Consistent Interpolation", paneDataAndGlobalCellIds, 1);
+    if (this->writeAllFiles>0) this->surfacePartitions[i]->write();
     // get ghost information for volume partitions
     this->getGhostInformation(i,true);
     // write pconn information for volume partition
@@ -236,8 +256,9 @@ void RocPartCommGenDriver::execute(int numPartitions)
     // write cgns for vol partition
     this->writeVolCgns("fluid", i,1,1);
   }
-//=====================================================================================================
+  //=====================================================================================================
 
+  // writing rocflu map files
   this->mapWriter();
 }
 
@@ -477,7 +498,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
     std::vector<int> virtuals(receivedCells[me][you].begin(), receivedCells[me][you].end());
     this->virtualCellsOfPartitions[me][you] = 
       meshBase::CreateShared(meshBase::extractSelectedCells(this->mesh.get(),virtuals));
-    if (this->writeAllFiles)  
+    if (this->writeAllFiles>0)  
     {
       std::stringstream ss;
       ss << "virtual" << "Vol" << "Of" << me << "from" << you << ".vtu";
@@ -489,7 +510,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
     std::vector<int> virtuals(receivedSurfCells[me][you].begin(), receivedSurfCells[me][you].end());
     this->virtualCellsOfSurfPartitions[me][you] 
       = meshBase::CreateShared(meshBase::extractSelectedCells(this->remeshedSurf.get(),virtuals));
-    if (this->writeAllFiles)  
+    if (this->writeAllFiles>0)  
     {
       std::stringstream ss;
       ss << "virtual" << "Surf" << "Of" << me << "from" << you << ".vtu";
@@ -936,6 +957,7 @@ RocPartCommGenDriver::deleteInterPartitionSurface(std::shared_ptr<meshBase> full
 
 void RocPartCommGenDriver::extractPatches()
 {
+  // calculating patches of surface partitions
   this->patchesOfSurfacePartitions.resize(surfacePartitions.size());
   for (int i = 0; i < this->surfacePartitions.size(); ++i)
   {
@@ -953,7 +975,7 @@ void RocPartCommGenDriver::extractPatches()
       this->patchesOfSurfacePartitions[i][it->first] 
         = meshBase::CreateShared(
             meshBase::extractSelectedCells(this->surfacePartitions[i].get(), it->second));
-      if (this->writeAllFiles)
+      if (this->writeAllFiles>0)
       {
         std::stringstream ss;
         ss << "extractedPatch" << it->first << "OfProc" << i << ".vtu";
@@ -962,6 +984,8 @@ void RocPartCommGenDriver::extractPatches()
       ++it;
     }
   }
+
+  // calculating virtual cells of the patches of surface partitions
   this->virtualCellsOfPatchesOfSurfacePartitions.resize(surfacePartitions.size());
   for (int i = 0; i < this->virtualCellsOfSurfPartitions.size(); ++i)
   {
@@ -982,7 +1006,7 @@ void RocPartCommGenDriver::extractPatches()
         this->virtualCellsOfPatchesOfSurfacePartitions[i][it->first][it1->first]
           = meshBase::CreateShared(
               meshBase::extractSelectedCells(it->second.get(), it1->second));
-        if (this->writeAllFiles)
+        if (this->writeAllFiles>0)
         {
           std::stringstream ss;
           ss << "extractedVirtualPatch" << it1->first 
@@ -994,6 +1018,7 @@ void RocPartCommGenDriver::extractPatches()
       ++it;
     }   
   }
+
 }
 
 RocPartCommGenDriver* RocPartCommGenDriver::readJSON(json inputjson)
@@ -1011,13 +1036,15 @@ RocPartCommGenDriver::~RocPartCommGenDriver()
 
 void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
 {
+  // generating file name and instantiating a writer
   std::stringstream ss;
   ss << prefix << "_" << this->base_t << 
     (me < 1000 ? (me < 100 ? (me < 10 ? "_000" : "_00") : "_0") : "_") << me << ".cgns";
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer
     = std::unique_ptr<cgnsWriter>(new cgnsWriter(cgFname,prefix,2,3));
-  // initialize Rocstar units, dimensions, and magnitude writing
+
+  // initialize units, dimensions, and magnitude based on rocstar convention
   writer->setFluidUnitsMap();
   writer->setFluidDimMap();
   writer->setFluidMagMap();
@@ -1027,12 +1054,16 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   writer->setBurnUnitsMap();
   writer->setBurnDimMap();
   writer->setBurnMagMap();
+
   // set time stamp
   writer->setTimestamp(this->trimmed_base_t);
+  
   // define elementary information
   writer->setUnits(CG_Kilogram, CG_Meter, CG_Second, CG_Kelvin, CG_Degree);
+  
   // baseitrname, nTstep, timeVal
   writer->setBaseItrData("TimeIterValues", 1, std::stod(this->trimmed_base_t));
+  
   // write elementary grid information to file
   writer->writeGridToFile();
   std::string grdpntr("Grid");
@@ -1050,25 +1081,21 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
     writer->writeWinToFile();
   }
 
-  // Always one volumetric "fluid" zone (1)
-  // Currently assumes exactly 1 burning patch
-  // TODO: Support more than 1 burning patch
+  // always one volumetric "fluid" zone (1)
+  // currently assumes exactly 1 burning patch
+  // TODO: support more than 1 burning patch
   // TODO: add support for "nb" files (currently only "b" and "ni")
   int zone = 2;
   if (this->patchesOfSurfacePartitions[me].find(1) 
         != this->patchesOfSurfacePartitions[me].end() && prefix == "ifluid_ni")
-  {
     zone += 1; // zone starts at 3 in case there is a burning patch on partition 
-  }
 
   // vtkIdList for mapping surface node indices to volume indices
   vtkSmartPointer<vtkIdList> result = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
   vtkSmartPointer<vtkPoints> myPoints = vtkSmartPointer<vtkPoints>::New();
   for (vtkIdType i = 0; i < procVolMesh[me]->getDataSet()->GetNumberOfPoints(); i++)
-  {
     myPoints->InsertNextPoint(procVolMesh[me]->getDataSet()->GetPoint(i));
-  }
   vtkSmartPointer<vtkPolyData> myPointsData = vtkSmartPointer<vtkPolyData>::New();
   myPointsData->SetPoints(myPoints);
   pointLocator->SetDataSet(myPointsData);
@@ -1076,9 +1103,10 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   pointLocator->BuildLocator();
 
   // search tolerance for VTK searches
+  // MS: where this random number comes from?
   double radius = 1e-8;
 
-  // begin loop over patches of this partition
+  // begin loop over surface patches of this partition
   auto it = this->patchesOfSurfacePartitions[me].begin();
   int patchesFound = 0;
   while (it != this->patchesOfSurfacePartitions[me].end())
@@ -1097,7 +1125,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       zone += 1;    
       // vector to hold real patch mesh and all virtuals from same patch on other procs
       std::vector<std::shared_ptr<meshBase>> patchOfPartitionWithAllVirtualCells;
-      // vector to hold real patch mesh and all virtuals from same patch on other procs
+      // vector to hold real patch mesh 
       std::vector<std::shared_ptr<meshBase>> patchOfPartition;
       // first push back real cells
       patchOfPartitionWithAllVirtualCells.push_back(it->second);
@@ -1111,19 +1139,18 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         {
           // if the patch is the same as the one on the other proc
           if (it->first == virtItr1->first) 
-          {
             if (virtItr1->second->getNumberOfCells())  
             {
               // push back virtual cells from same patch on other proc
               patchOfPartitionWithAllVirtualCells.push_back(virtItr1->second);
               numVirtualCells += virtItr1->second->getNumberOfCells(); 
             }
-          }
           ++virtItr1;
         } 
         ++virtItr;
       } 
 
+      // MS: really? the condition is always true!
       if (numVirtualCells || !numVirtualCells)
       { 
         // merge real cells for this partition
@@ -1144,63 +1171,75 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         // define and set coordinates
         std::vector<std::vector<double>> coords;
 
+        // MS: what is the purpose of this conditional structure?
+        //     regardless of condition same thing happens
         if (!(prefix == "burn" || prefix == "iburn_all"))
-        {
           coords = patchOfPartitionWithVirtualMesh->getVertCrds();
-        }
         else
-        {
           coords = patchOfPartitionWithVirtualMesh->getVertCrds();
-        }
 
         // define real connectivities and 1-base indexing
         double myPoint[3];
+        // MS: what is the purpose of this loop? mypoint variable is never used
         for (vtkIdType i = 0; i < it->second->getDataSet()->GetNumberOfPoints(); i++)
-        {
             it->second->getDataSet()->GetPoint(i, myPoint);
-        }
         std::vector<int> cgConnReal(it->second->getConnectivities());
         for (auto tmpit = cgConnReal.begin(); tmpit != cgConnReal.end(); ++tmpit)
-        {
-          *tmpit += 1;
-        }
+          (*tmpit) += 1;
+
         // define virtual connectivies and 1-base indexing
         std::vector<int> cgConnVirtual(patchOfPartitionWithVirtualMesh->getConnectivities());
+        // MS
         cgConnVirtual.erase(cgConnVirtual.begin(), cgConnVirtual.begin()+cgConnReal.size());
-
         for (auto tmpit = cgConnVirtual.begin(); tmpit != cgConnVirtual.end(); ++tmpit)
-        {
-          *tmpit += 1;
-        }
+          (*tmpit) += 1;
+
+        // swap ordering of triangles
+        // from counter-clockwise to clockwise convention
         this->swapTriOrdering(cgConnReal);
         this->swapTriOrdering(cgConnVirtual);
 
-        // Construct surface-to-volume mapping of vertex IDs
-        // Create vectors for t3g indices
+        // construct surface-to-volume mapping of vertex IDs
+        // create vectors for t3g indices
+        // map real vertices
+        // construct map from local to global vertices and vice versa
         std::vector<int> cgConnRealGlobal1;
         std::vector<int> cgConnRealGlobal2;
         std::vector<int> cgConnRealGlobal3;
         std::vector<int> cgConnVirtualGlobal1;
         std::vector<int> cgConnVirtualGlobal2;
         std::vector<int> cgConnVirtualGlobal3;
-        // Map real vertices
         vtkIdType foundId;
         double pntCoor[3];
-        //Construct map from local to global vertices and vice versa
         std::map<int,int> loc2Glob;
         std::map<int,int> glob2Loc;
-        // Get Global Real IDs
+
+        // get global real IDs
         for (auto itr = cgConnReal.begin(); itr != cgConnReal.end(); ++itr)
         {
-          // Undo 1-base indexing
+          // connectivity information before reshuffeling
+          //std::cout << "Conn (" << *itr << " " << *(itr+1) << " " << *(itr+2) << ")\n";
+          // undo 1-base indexing
           pntCoor[0] = coords[0][*itr-1];
           pntCoor[1] = coords[1][*itr-1];
           pntCoor[2] = coords[2][*itr-1];
           foundId = pointLocator->FindClosestPoint(pntCoor);
+          // MS
+          //double d2,rad;
+          //rad=1e-15;
+          //foundId = pointLocator->FindClosestPointWithinRadius (rad, pntCoor, d2);
+          //std::cout << "Local point "<<(*itr-1)
+          //    << " at coords " 
+          //    << pntCoor[0] << " "
+          //    << pntCoor[1] << " "
+          //    << pntCoor[2] << " "
+          //    << "is close to global point "<< foundId
+          //    << " with d2 " << d2
+          //    <<"\n";
           cgConnRealGlobal1.push_back(foundId+1); // redo 1-base indexing
           loc2Glob[*itr] = foundId+1;   // build up local-to-global map
           glob2Loc[foundId+1] = *itr;   // build up global-to-local map
-
+          
           ++itr;
           pntCoor[0] = coords[0][*itr-1];
           pntCoor[1] = coords[1][*itr-1];
@@ -1219,7 +1258,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           loc2Glob[*itr] = foundId+1;
           glob2Loc[foundId+1] = *itr;
         }
-        // Get Global Virtual IDs
+
+        // get global virtual IDs
         if (numVirtualCells)
         {
           for (auto itr = cgConnVirtual.begin(); itr != cgConnVirtual.end(); ++itr)
@@ -1234,8 +1274,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               loc2Glob[*itr] = foundId+1;
               glob2Loc[foundId+1] = *itr;
             }
-            double myPoint[3];
-            pointLocator->GetDataSet()->GetPoint(foundId, myPoint);
             ++itr;
 
             pntCoor[0] = coords[0][*itr-1];
@@ -1248,9 +1286,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               loc2Glob[*itr] = foundId+1;
               glob2Loc[foundId+1] = *itr;
             }
-            pointLocator->GetDataSet()->GetPoint(foundId, myPoint);
-
             ++itr;
+
             pntCoor[0] = coords[0][*itr-1];
             pntCoor[1] = coords[1][*itr-1];
             pntCoor[2] = coords[2][*itr-1];
@@ -1261,7 +1298,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               loc2Glob[*itr] = foundId+1;
               glob2Loc[foundId+1] = *itr;
             }
-            pointLocator->GetDataSet()->GetPoint(foundId, myPoint);
           }
         }
         else
@@ -1271,12 +1307,16 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           cgConnVirtualGlobal3.push_back(0);
         }
 
-        // Maps between old and new local Ids
+        // building maps between old and new local Ids
+        // old : local index enumerated for the patch inside the process
+        // new : index enumerated for the patch with all its virtual cells
+        //       in neighbouring processes
         std::map<int,int> old2New;
         std::map<int,int> new2Old;
+        // MS : another always true condition
         if (numVirtualCells || !numVirtualCells)
         {
-          // Sort coordinates according to global index
+          // sort coordinates according to global index
           std::vector<std::vector<double>> coordsTmp;
           std::vector<double> coordsXTmp;
           std::vector<double> coordsYTmp;
@@ -1294,7 +1334,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           coordsTmp.push_back(coordsYTmp);
           coordsTmp.push_back(coordsZTmp);        
 
-          // Sort local and global real connectivites
+          // sort local and global real connectivites
           std::vector<int> cgConnRealTmp;
           std::vector<int> cgConnRealGlobal1Tmp;
           std::vector<int> cgConnRealGlobal2Tmp;
@@ -1328,7 +1368,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
             cgConnRealGlobal3Tmp.push_back(loc2Glob[oldLid]);
           }
   
-          // Sort local and global virtual connectivites
+          // sort local and global virtual connectivites
           std::vector<int> cgConnVirtualTmp;
           std::vector<int> cgConnVirtualGlobal1Tmp;
           std::vector<int> cgConnVirtualGlobal2Tmp;
@@ -1371,10 +1411,10 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           cgConnRealGlobal3 = cgConnRealGlobal3Tmp;
           if (numVirtualCells)
           {
-          cgConnVirtual = cgConnVirtualTmp;
-          cgConnVirtualGlobal1 = cgConnVirtualGlobal1Tmp;
-          cgConnVirtualGlobal2 = cgConnVirtualGlobal2Tmp;
-          cgConnVirtualGlobal3 = cgConnVirtualGlobal3Tmp;
+            cgConnVirtual = cgConnVirtualTmp;
+            cgConnVirtualGlobal1 = cgConnVirtualGlobal1Tmp;
+            cgConnVirtualGlobal2 = cgConnVirtualGlobal2Tmp;
+            cgConnVirtualGlobal3 = cgConnVirtualGlobal3Tmp;
           }
         }
 
@@ -1383,28 +1423,31 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         {
             patchOfPartitionWithVirtualMesh->getDataSet()->GetPoint(i, pntCoor);
             foundId = pointLocator->FindClosestPoint(pntCoor);
+            // MS : shouldn't be (foundId) instead of (foundId+1)
             if ((foundId+1) < partitions[me]->getNumberOfPoints())
-            {
               numRealPointsInVirtualPatch++;
-            }
         }
         if (!(prefix == "burn" || prefix == "iburn_all"))
         {
           // set num virtual vertices for this partition
-          writer->setCoordRind(patchOfPartitionWithVirtualMesh->getNumberOfPoints() // 330 - 326 = 4, total - real = virtual
+          // example: 330 - 326 = 4, total - real = virtual
+          writer->setCoordRind(patchOfPartitionWithVirtualMesh->getNumberOfPoints() 
                                - it->second->getNumberOfPoints() - numRealPointsInVirtualPatch);
           // update number of real vertices in zone:
           writer->setNVrtx(it->second->getNumberOfPoints() + numRealPointsInVirtualPatch);
           writer->setGridXYZ(coords[0], coords[1], coords[2]);
           // Note on why we do the above:
-          // The "real" are determined by looking at the real patch. However, it's possible that the virtual faces on the patch have nodes
-          // that are "real" on other patches of the same proc. If this is the case, we need to add them to the virtual.
-          // Do this by looping through the virtual nodes (last n of the patchOfPartitionWithVirtualMesh, and check if any of them are
-          // present in the partitions[me] (local real processor nodes) using the same sort of check as we do below. If this is the case,
-          // then we simply accumulate this number. Then subtract it from the rind. The coordinates will still be ordered by global ids,
-          // so they are implicitly ordered [real][virtual] according to the global nodes. The element connectivities will be fine, because
-          // they reference the order according to global id. Then, after the maps are constructed, the node data will also be assigned
-          // the same ids according to the maps. 
+          // The "real" are determined by looking at the real patch. However, it's possible that 
+          // the virtual faces on the patch have nodes that are "real" on other patches of the same proc. 
+          // If this is the case, we need to add them to the virtual.
+          // Do this by looping through the virtual nodes (last n of the patchOfPartitionWithVirtualMesh, 
+          // and check if any of them are present in the partitions[me] (local real processor nodes) 
+          // using the same sort of check as we do below. If this is the case,
+          // then we simply accumulate this number. Then subtract it from the rind. The coordinates will
+          // still be ordered by global ids, so they are implicitly ordered [real][virtual] 
+          // according to the global nodes. The element connectivities will be fine, because
+          // they reference the order according to global id. Then, after the maps are constructed, 
+          // the node data will also be assigned the same ids according to the maps. 
         }
         else
         {
@@ -1415,7 +1458,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           writer->setGridXYZ(coords[0], coords[1], coords[2]);
           writer->setNVrtx(it->second->getNumberOfPoints() + numRealPointsInVirtualPatch);
         }
-
         writer->setSection(":t3:real", CG_TRI_3, cgConnReal);
 
         if (!(prefix == "burn" || prefix == "iburn_all"))
@@ -1426,7 +1468,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           double patchNo[1];
           patchNos->GetTuple(0, patchNo);
   
-          // Write real and virtual patch information to Rocstar dimension file
+          // write real and virtual patch information to Rocstar dimension file
           this->dimSurfWriter(me+1, cgConnReal, cgConnVirtual, patchNo[0]);
 
           vtkSmartPointer<vtkDataArray> bcflags = 
@@ -1493,11 +1535,9 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           writer->setVirtElmRind(numVirtualCells);
         }
 
+        // Subtract surface faces off of volume faces total
         if (!(prefix == "burn" || prefix == "iburn_all"))
-        {
-          // Subtract surface faces off of volume faces total
           this->nUniqueVolFaces[me] -= patchOfPartitionWithVirtualMesh->getDataSet()->GetNumberOfCells();
-        }
 
         // If the file only contains 1 section, it is empty
         // If we moved this condition furthur up in the file, before all setSection()
@@ -1519,50 +1559,57 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         if (this->surfWithSol)
         {
           // transfer data to the surf-partition-with-virtual-cells mesh 
-          this->burnSurfWithSol
-                ->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
+          std::cout << "Working on  " << "_"+std::to_string(me)+"_real_patch_"+std::to_string(it->first)+".vtu\n";   
+          this->burnSurfWithSol->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
+          if (this->writeAllFiles>1) 
+              patchOfPartitionWithRealMesh.get()->write("_"+std::to_string(me)+
+                      "_real_patch_"+std::to_string(it->first)+".vtu");
           // transfer data to the surf-partition-with-virtual-cells mesh 
-          this->surfWithSol
-                ->transfer(patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
-          int numPointDataArr
-            = this->surfWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
-          // begin with point data
+          this->surfWithSol->transfer(patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
+          if (this->writeAllFiles>1) 
+              patchOfPartitionWithVirtualMesh.get()->write("_"+std::to_string(me)+
+                      "_virtual_patch_"+std::to_string(it->first)+".vtu");
+          int numPointDataArr = this->surfWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
+
+          // working on point data
           if (numPointDataArr)
           {
             std::string nodeName("NodeData");
             nodeName += this->trimmed_base_t;
             if (!(prefix == "burn" || prefix == "iburn_all"))
             {
-              writer->setTypeFlag(0);
+              writer->setTypeFlag(1);
               writer->writeSolutionNode(nodeName, CG_Vertex, 0, 1);
               for (int i = 0; i < numPointDataArr; ++i)
               {
                 std::vector<double> pointData;
-                patchOfPartitionWithVirtualMesh->getPointDataArray(i, pointData);
                 std::string dataName(this->surfWithSol->getDataSet()->GetPointData()->GetArrayName(i));
+                patchOfPartitionWithVirtualMesh->getPointDataArray(dataName, pointData);
                 writer->setTypeFlag(1);
-                // Map point data from old coordinates to new coordinates
+                // map point data from old coordinates to new coordinates
                 this->mapOld2NewPointData(pointData, new2Old);
+                //for (int jj=0; jj<coords[0].size(); jj++)
+                //    std::cout << "Data " << dataName
+                //        << " at coordinates " << coords[0][jj] << " " << coords[1][jj] << " " << coords[2][jj]
+                //        << " is " << pointData[jj] << "\n";
                 writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &pointData[0u]);
               }
             }
             else
             {
-              writer->setTypeFlag(0);
+              writer->setTypeFlag(1);
               writer->writeSolutionNode(nodeName, CG_Vertex, 1, 1);
             }
           }
+
+          // working on cell data
+          // number of cell data
           int numCellDataArr;
           if (prefix == "burn" || prefix == "iburn_all")
-          {
-          numCellDataArr
-            = this->burnSurfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
-          }
+              numCellDataArr = this->burnSurfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
           else
-          {
-          numCellDataArr
-            = this->surfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();            
-          }
+              numCellDataArr = this->surfWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();            
+          // registering to writer
           if (numCellDataArr)
           {
             if (prefix != "burn")
@@ -1571,7 +1618,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
               nodeName += this->trimmed_base_t;
               if (!(prefix == "burn" || prefix == "iburn_all"))
               {
-                writer->setTypeFlag(0);
+                writer->setTypeFlag(1);
                 writer->writeSolutionNode(nodeName, CG_CellCenter, 0, 1);
               }
               else if (prefix == "iburn_all")
@@ -1579,56 +1626,41 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                 writer->setTypeFlag(2);
                 writer->writeSolutionNode(nodeName, CG_CellCenter, 0, 0);
               }
-              // now do cell data
+              // now loop through all cell data attributes
               for (int i = 0; i < numCellDataArr; ++i)
               {
                 std::vector<double> cellData;
                 std::string dataName;
                 if (!(prefix == "burn" || prefix == "iburn_all"))
                 {
-                  patchOfPartitionWithVirtualMesh->getCellDataArray(i, cellData);
                   dataName = this->surfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+                  patchOfPartitionWithVirtualMesh->getCellDataArray(dataName, cellData);
                 }
                 else if (prefix == "iburn_all")
                 {
-                  patchOfPartitionWithRealMesh->getCellDataArray(i, cellData);
                   dataName = this->burnSurfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
+                  patchOfPartitionWithRealMesh->getCellDataArray(dataName, cellData);
                 }
                 if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
                 {
                   // Zero out grid speed for re-meshing
                   if (dataName == "gs")
-                  {
                     for (auto itr = cellData.begin(); itr != cellData.end(); ++itr)
-                    {
-                      *itr = 0;
-                    }
-                  }
-
+                      (*itr) = 0;
                   // If writing out cell centers, recompute them after re-meshing
                   if (dataName == "centersX" || dataName == "centersY" || dataName == "centersZ")
                   {
                     int ind;
                     if (dataName == "centersX")
-                    {
                       ind = 0;
-                    }
                     else if (dataName == "centersY")
-                    {
                       ind = 1;
-                    }
                     else if (dataName == "centersZ")
-                    {
                       ind = 2;
-                    }
-                    std::vector<double> centers;
                     // Get total number of real nodes
                     int nCells = cgConnReal.size()/3;
                     for (int i=0; i<nCells; i++)
-                    {
-                      centers.push_back((coords[ind][cgConnReal[i]] + coords[ind][cgConnReal[i+1]] + coords[ind][cgConnReal[i+2]])/3);
-                    }
-                    cellData = centers;
+                      cellData.push_back((coords[ind][cgConnReal[3*i]] + coords[ind][cgConnReal[3*i+1]] + coords[ind][cgConnReal[3*i+2]])/3);
                   }
                   // set num real cells for this patch of this partition
                   if (prefix == "ifluid_ni" || prefix == "ifluid_b")
@@ -1636,24 +1668,22 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                     writer->setTypeFlag(1);
                     if (dataName == "bflag")
                     {
-                      writer->writeSolutionField(dataName, nodeName, CG_Integer, &cellData[0u]);
+                      std::vector<int> bflag(cellData.begin(), cellData.end());
+                      writer->writeSolutionField(dataName, nodeName, CG_Integer, &bflag[0u]);
                     }
                     else
-                    {
                       writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
-                    }
                   }
                   else if (prefix == "burn" || prefix == "iburn_all")
                   {
                     writer->setTypeFlag(2);
                     if (dataName == "bflag")
                     {
-                      writer->writeSolutionField(dataName, nodeName, CG_Integer, &cellData[0u]);
-                    }
-                    else
-                    {
+                      //writer->writeSolutionField(dataName, nodeName, CG_Integer, &cellData[0u]);
                       writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
                     }
+                    else
+                      writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
                   }
                 }
               }
@@ -1710,11 +1740,10 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   // vector to hold all virtual meshes and the partition's mesh for merging
   std::vector<std::shared_ptr<meshBase>> partitionWithAllVirtualCells;
   partitionWithAllVirtualCells.push_back(this->partitions[proc]);
+  // MS : this loop is not doing any useful thing?
   double myPoint[3];
   for (vtkIdType i = 0; i < partitionWithAllVirtualCells[0]->getDataSet()->GetNumberOfPoints(); i++)
-  {
     partitionWithAllVirtualCells[0]->getDataSet()->GetPoint(i, myPoint);
-  }
 
   // iterate over vitual meshes to merge them and get number of virtual coords
   auto virtItr = this->virtualCellsOfPartitions[proc].begin();
@@ -1731,10 +1760,9 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   std::shared_ptr<meshBase> partitionWithVirtualMesh
     = meshBase::stitchMB(partitionWithAllVirtualCells);
 
+  // MS : what is the purpose of this loop?
   for (vtkIdType i = 0; i < partitionWithVirtualMesh->getDataSet()->GetNumberOfPoints(); i++)
-  {
     partitionWithVirtualMesh->getDataSet()->GetPoint(i, myPoint);
-  }
 
   // define coordinates
   std::vector<std::vector<double>> coords(partitionWithVirtualMesh->getVertCrds());
@@ -1822,7 +1850,11 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   if (this->volWithSol)
   {
     // transfer data to the partition-with-virtual-cells mesh
+    this->volWithSol->setContBool(this->smoothC2CTrans);
     this->volWithSol->transfer(partitionWithVirtualMesh.get(),"Consistent Interpolation");
+    // output volumetric information if needed
+    if (this->writeAllFiles>1) partitionWithVirtualMesh.get()->write("_vol_part_"+std::to_string(proc)+".vtu");
+
     int numPointDataArr
       = this->volWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
     if (numPointDataArr)

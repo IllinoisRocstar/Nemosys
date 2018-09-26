@@ -22,12 +22,14 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const std::vector<std::string>& _burnNames,
                            const std::vector<std::string>& _iBurnNames,
                            const json& remeshjson, int _numPartitions,
-                           const std::string& base_t, bool writeIntermediateFiles,
+                           const std::string& base_t, int writeIntermediateFiles,
                            double searchTolerance, const std::string& caseName)
   : fluidNames(_fluidNames), ifluidniNames(_ifluidniNames), ifluidnbNames(_ifluidnbNames),
     ifluidbNames(_ifluidbNames), burnNames(_burnNames), iBurnNames(_iBurnNames),
     numPartitions(_numPartitions)
 {
+  // preparing input for the actural operator class
+
   // stitch fluid files
   this->stitchCGNS(fluidNames,0);
   // stitch burn files
@@ -47,6 +49,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     this->mbObjs.push_back(stitchers[i]->getStitchedMB());
     this->mbObjs[i]->setContBool(0);
   }
+  if (writeIntermediateFiles) this->mbObjs[0]->write("stitchedVol.vtu");
   // creates remeshedVol and remeshedSurf
   this->remesh(remeshjson);
   // creates stitchedSurf
@@ -58,7 +61,6 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     // stitches b, ni and nb surfaces into one stitchedSurf
     // also stitches iburn files
     this->stitchSurfaces();
-
     // do not smooth for cell data transfer
     this->stitchedSurf->setContBool(0);
     this->stitchedBurnSurf->setContBool(0);
@@ -66,15 +68,22 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     std::vector<std::string> transferPaneData{"patchNo", "bcflag", "cnstr_type"};
     this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation", transferPaneData, 1);
     if (writeIntermediateFiles) this->stitchedSurf->write();
+    if (writeIntermediateFiles) this->stitchedBurnSurf->write("stitchedBurnSurf.vtu");
   }
   if (writeIntermediateFiles) this->remeshedSurf->write();
+  bool withC2CTransSmooth = 
+      (remeshjson.has_key("C2CTransSmooth") ? remeshjson["C2CTransSmooth"].as<bool>() : false);
+
+  // instantiating and executing actual operator class
   std::unique_ptr<RocPartCommGenDriver> rocprepdrvr 
     = std::unique_ptr<RocPartCommGenDriver>
         (new RocPartCommGenDriver(this->remeshedVol, this->remeshedSurf, 
                                   this->mbObjs[0], this->stitchedSurf,
                                   this->stitchedBurnSurf,
                                   numPartitions, base_t, writeIntermediateFiles, 
-                                  searchTolerance, caseName));
+                                  searchTolerance, caseName,
+                                  withC2CTransSmooth));
+
   std::cout << "RemeshDriver created" << std::endl;
 }
  
@@ -94,14 +103,12 @@ void RemeshDriver::stitchCGNS(const std::vector<std::string>& fnames, bool surf)
 
 void RemeshDriver::remesh(const json& remeshjson)
 {
-  std::cout << "Extracting surface mesh #############################################\n";
-  std::unique_ptr<meshBase> surf 
-    = std::unique_ptr<meshBase>
+  std::cout << "Extracting surface mesh\n";
+  std::unique_ptr<meshBase> surf = std::unique_ptr<meshBase>
         (meshBase::Create(mbObjs[0]->extractSurface(), "extractedSurface.vtp")); 
   // remeshing with engine specified in input
   surf->write("extractedSurface.stl"); 
-  mshgendrvr 
-    = std::unique_ptr<MeshGenDriver>
+  mshgendrvr = std::unique_ptr<MeshGenDriver>
         (MeshGenDriver::readJSON("extractedSurface.stl", "remeshedVol.vtu", remeshjson));
   // get the remeshed volume from the mesh generator
   remeshedVol = mshgendrvr->getNewMesh();
@@ -143,7 +150,7 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   }
   json remeshjson = inputjson["Remeshing Options"];
   int numPartitions = inputjson["Number Of New Partitions"].as<int>();
-  bool writeIntermediateFiles = false;
+  int writeIntermediateFiles = 0;
   double searchTolerance = 1e-9;
   if (inputjson.has_key("Search Tolerance"))
   {
@@ -151,7 +158,7 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   }
   if (inputjson.has_key("Write Intermediate Files"))
   {
-    writeIntermediateFiles = inputjson["Write Intermediate Files"].as<bool>();
+    writeIntermediateFiles = inputjson["Write Intermediate Files"].as<int>();
   }
   RemeshDriver* remeshdrvobj = new RemeshDriver(fluNames, ifluniNames, iflunbNames, 
                                                 iflubNames, burnNames, iBurnNames,

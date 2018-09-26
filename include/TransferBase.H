@@ -9,7 +9,7 @@ class TransferBase
   public:
     TransferBase()
       :source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL),
-       checkQual(0), continuous(0)
+       checkQual(0), continuous(0), c2cTrnsDistTol(1.e-6)
     { 
       std::cout << "TransferBase constructed" << std::endl;
     }
@@ -51,6 +51,7 @@ class TransferBase
     vtkSmartPointer<vtkCellLocator> trgCellLocator;
     bool checkQual; 
     bool continuous; // switch on / off weighted averaging for cell transfer
+    double c2cTrnsDistTol;
 };
 
 

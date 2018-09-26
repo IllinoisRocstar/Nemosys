@@ -255,6 +255,7 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
   // and assigning cell data
   if (!continuous) 
   {
+    std::cout << "Non-continuous cell data transfer invoked\n";
     vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
     for (int i = 0; i < target->getNumberOfCells(); ++i)
     {
@@ -269,6 +270,12 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
       srcCellLocator->FindClosestPoint(x, closestPoint, genCell,id,subId,minDist2);
       if (id >= 0)
       {
+        if (minDist2 > c2cTrnsDistTol)
+            std::cout << "Warnning: For cell at " << x[0] << " " << x[1] << " " << x[2]
+                << " closest cell point found is at " 
+                << closestPoint[0] << " " << closestPoint[1] << " " << closestPoint[2]
+                << " with distance " << minDist2
+                << ", Cell IDs: source " << id << " target " << i << std::endl;
         for (int j = 0; j < dasSource.size(); ++j)
         {
           int numComponent = dasSource[j]->GetNumberOfComponents();
@@ -279,8 +286,8 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
       }
       else
       {
-        std::cout << "Could not locate center of cell " 
-                  << i << " from target in source mesh" << std::endl;
+        std::cout << "Could not locate target cell " 
+                  << i << " from in the source mesh! Check the source mesh." << std::endl;
         exit(1);
       }
     }
@@ -288,6 +295,7 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
 
   else // transfer with weighted averaging
   {
+    std::cout << "Continuous cell data transfer invoked\n";    
     // ---------------------- Convert source cell data to point data -------- // 
     std::vector<vtkSmartPointer<vtkDoubleArray>> dasSourceToPoint(arrayIDs.size());
     

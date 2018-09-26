@@ -42,7 +42,7 @@ class meshBase
 
     meshBase()
       : dataSet(0),numPoints(0),numCells(0),
-        hasSizeField(0),checkQuality(0), continuous(0),order(1)
+        hasSizeField(0),checkQuality(0), continuous(false),order(1)
     {
       std::cout << "meshBase constructed" << std::endl;
     }

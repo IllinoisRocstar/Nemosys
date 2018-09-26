@@ -84,7 +84,7 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
 
       if (MS_checkMeshIntersections(mesh,0,prog))
       {
-        std::cerr << "There are intersections in the input mesh" << std::endl;
+        std::cerr << "There are intersections in the input surface mesh" << std::endl;
         MS_deleteMeshCase(mcase);
         M_release(mesh);
         GM_release(dModel);
@@ -132,7 +132,7 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
     } 
     catch (...) 
     {
-      std::cerr << "Unhandled exception caught" << std::endl;
+      std::cerr << "Unhandled exception caught during surface mesh generation" << std::endl;
       return 1;
     }
     return 0; 
@@ -164,7 +164,7 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
     } 
     catch (...) 
     {
-      std::cerr << "Unhandled exception caught" << std::endl;
+      std::cerr << "Unhandled exception caught during volume mesh generation" << std::endl;
       return 1;
     }
     return 0; 
@@ -251,7 +251,7 @@ int symmxGen::createModelFromSTL(const char* stlFName)
   } 
   catch (...) 
   {
-    std::cerr << "Unhandled exception caught" << std::endl;
+    std::cerr << "Unhandled exception caught during discrete model generation step" << std::endl;
     return 1;
   }
   return 0; 
