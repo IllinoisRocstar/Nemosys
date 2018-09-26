@@ -493,16 +493,18 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
   else if (slnLoc == CG_CellCenter)
     nCellSln++;
   else
-    std::cerr << "Can not write to requested solution location.\n";
+  {
+    std::cerr << "Can not write to requested solution location of type " << slnLoc <<".\n";
+    throw;
+  }
   solutionNameLocMap[ndeName] = slnLoc;
   slnNameNFld[ndeName] = 0;  
   int slnIdx;
   if (cg_sol_write(indexFile, indexBase, indexZone, 
-                   ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
-
+    ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
   float* exponents;
   std::string units;
-  // surface (Rocflu fluid)
+  // volume (Rocflu fluid)
   if (typeFlag == 0)
   {
     if (fluidDimMap.find(ndeName) != fluidDimMap.end())
@@ -516,7 +518,7 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
-  // volume (Rocflu ifluid)
+  // surface (Rocflu ifluid)
   else if (typeFlag == 1)
   {
     if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())

@@ -24,12 +24,26 @@ void meshStitcher::initVolCgObj()
     partitions[iCg]->loadGrid(1);
   	// defining partition flags
     std::vector<double> slnData(partitions[iCg]->getNElement(),iCg);
-    partitions[iCg]->appendSolutionData("partitionOld", slnData, ELEMENTAL, 
-            partitions[iCg]->getNElement(),1);
+    // append partition number data if not already existing
+    bool exists = false;
+    std::vector<std::string> slnNamelist;
+    partitions[iCg]->getSolutionDataNames(slnNamelist);
+    for (auto in=slnNamelist.begin(); in!=slnNamelist.end(); in++)
+      if (!strcmp((*in).c_str(),"partitionOld"))
+      {
+          exists = true;
+          break;
+      }
+    if (!exists)
+        partitions[iCg]->appendSolutionData("partitionOld", slnData, 
+            ELEMENTAL, partitions[iCg]->getNElement(),1);
+    // stitiching new partions to partition 0
+    // close partition CGNS file to avoid clutter
     if (iCg)
+    {
       partitions[0]->stitchMesh(partitions[iCg].get(),true);
-    // close CGNS file to avoid clutter
-    partitions[iCg]->closeCG();
+      partitions[iCg]->closeCG();
+    }
   } 
   std::cout << "Meshes stitched successfully.\n";
   std::cout << "Exporting stitched mesh to VTK format.\n";

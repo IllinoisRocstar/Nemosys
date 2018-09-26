@@ -13,8 +13,9 @@ class RocPartCommGenDriver : public NemDriver
                          std::shared_ptr<meshBase> surfWithSol,
                          std::shared_ptr<meshBase> burnSurfWithSol,
                          int numPartitions, const std::string& base_t,
-                         bool writeIntermediateFiles, double searchTolerance,
-                         const std::string& caseName);
+                         int writeIntermediateFiles, double searchTolerance,
+                         const std::string& caseName,
+                         bool _withC2CTransSmooth=false);
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
     ~RocPartCommGenDriver();
     static RocPartCommGenDriver* readJSON(json inputjson);
@@ -43,7 +44,7 @@ class RocPartCommGenDriver : public NemDriver
     // trimmed time step (eg. 4.21)
     std::string trimmed_base_t;
     // if true, all intermediate files will be written (i.e. surf partitions, virtuals etc.)
-    bool writeAllFiles;
+    int writeAllFiles;
     // Rocstar case name, used to write Rocstar input file names
     std::string caseName;
 
@@ -176,7 +177,11 @@ class RocPartCommGenDriver : public NemDriver
   // --- volume to surface node maps for each partition
   private: 
     // Stores volume meshes with virtual for each proc
-        std::vector<std::shared_ptr<meshBase>> procVolMesh;
+    std::vector<std::shared_ptr<meshBase>> procVolMesh;
+
+  // --- Data Transfer props
+  private:
+    bool smoothC2CTrans;
 
   // --- write pconn information into pconn vectors
   private:

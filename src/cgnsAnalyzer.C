@@ -255,8 +255,8 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
       std::cerr << "Error in load, " << cg_get_error();
     if (nSection > 1)
       if (verb)
-        std::cerr << "Number of sections is " << nSection
-                  << ", only section one will be read." << std::endl;
+        std::cout << nSection << " element connectivity sections were found (real+virtual in case of rocstar)"
+                  << ", only first section will be read for now." << std::endl;
     indexSection = 1;
     if (cg_section_read(indexFile, indexBase, indexZone, indexSection,
                         sectionname, &sectionType, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
@@ -1613,13 +1613,14 @@ void cgnsAnalyzer::stitchFields(cgnsAnalyzer* inCg)
         //std::cout << " will append " << outNData << " data points.\n";
       }
       // attaching data
-      for (auto &icnt : slnDataCont)
+      int nData = slnDataCont.size();
+      for (int icd=0; icd<nData; icd++)
       {
-        if (!strcmp((icnt->getDataName()).c_str(), id.c_str()))
+        if (!strcmp((slnDataCont[icd]->getDataName()).c_str(), id.c_str()))
         {
-          std::cout << "To -> " << icnt->getDataName() << std::endl;
+          std::cout << "To -> " << slnDataCont[icd]->getDataName() << std::endl;
           //std::cout << "Current size = " << icnt->getNData() << std::endl;
-          icnt->appendData(inCgSlnData, inCgSlnData.size(), 1);
+          slnDataCont[icd]->appendData(inCgSlnData, inCgSlnData.size(), 1);
           //std::cout << "Size after = " << icnt->getNData() << std::endl;
         }
       }

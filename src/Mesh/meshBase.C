@@ -161,7 +161,7 @@ meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
 
   if (fname.find(".stl") == -1)
   {
-    std::cout << "Only CAD files in STL format are supported" << std::endl;
+    std::cerr << "Only CAD files in STL format are supported" << std::endl;
     exit(1);
   }
 
@@ -307,6 +307,8 @@ int meshBase::transfer(meshBase* target, std::string method,
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
+  // adding continuity flag, set by this object
+  transobj->setContBool(continuous);
   if (!pointOrCell)
   {
     transobj->transferPointData(arrayIDs, newArrayNames);
