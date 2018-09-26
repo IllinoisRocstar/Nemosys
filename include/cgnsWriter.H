@@ -29,6 +29,9 @@ struct vect{
   typedef std::vector<std::vector<T> > v2d;
 };
 
+// TODO: This writer is heavily specfic to Rocstar. This is not the original
+//       intent for this class and it should be generalized to base class and 
+//       a derived one for rocstar.
 class cgnsWriter{
 public:
   cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim) :
@@ -42,8 +45,8 @@ public:
     int file_type;
     cg_get_file_type(indexFile, &file_type);
   };
-  ~cgnsWriter()
-  { cg_close(indexFile);};
+
+  ~cgnsWriter() { cg_close(indexFile); };
 
   void deleteFile();
   void setUnits(CG_MassUnits_t mu, CG_LengthUnits_t lu, 

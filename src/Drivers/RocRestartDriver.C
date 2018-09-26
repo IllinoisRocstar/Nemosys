@@ -11,25 +11,25 @@ RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm
                                    const std::vector<std::string>& _ifluidniNamesLts,  
                                    const std::vector<std::string>& _ifluidnbNamesLts,   
                                    const std::vector<std::string>& _ifluidbNamesLts,
-										 							 const std::vector<std::string>& _burnNamesRm, 
-										 							 const std::vector<std::string>& _iBurnNamesRm, 
-										 							 const std::vector<std::string>& _burnNamesLts, 
-										 							 const std::vector<std::string>& _iBurnNamesLts)
+                                   const std::vector<std::string>& _burnNamesRm,
+                                   const std::vector<std::string>& _iBurnNamesRm, 
+                                   const std::vector<std::string>& _burnNamesLts, 
+                                   const std::vector<std::string>& _iBurnNamesLts)
   : fluidNamesRm(_fluidNamesRm), ifluidniNamesRm(_ifluidniNamesRm),
     ifluidnbNamesRm(_ifluidnbNamesRm), ifluidbNamesRm(_ifluidbNamesRm),
     fluidNamesLts(_fluidNamesLts), ifluidniNamesLts(_ifluidniNamesLts),
     ifluidnbNamesLts(_ifluidnbNamesLts), ifluidbNamesLts(_ifluidbNamesLts),
-		burnNamesRm(_burnNamesRm), iBurnNamesRm(_iBurnNamesRm), 
-		burnNamesLts(_iBurnNamesLts), iBurnNamesLts(_iBurnNamesLts)
+	burnNamesRm(_burnNamesRm), iBurnNamesRm(_iBurnNamesRm), 
+	burnNamesLts(_iBurnNamesLts), iBurnNamesLts(_iBurnNamesLts)
 {
   //---- stitch files from last time step
   
   // fluid
   stitchCGNS(fluidNamesLts,0);
-	// burn
-	stitchCGNS(burnNamesLts,0);
-	// iburn
-	stitchCGNS(iBurnNamesLts,1);
+  // burn
+  stitchCGNS(burnNamesLts,0);
+  // iburn
+  stitchCGNS(iBurnNamesLts,1);
   // ifluid_ni 
   stitchCGNS(ifluidniNamesLts,1);
   // ifluid_b 

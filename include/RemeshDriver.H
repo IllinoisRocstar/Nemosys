@@ -18,7 +18,7 @@ class RemeshDriver : public NemDriver
                  const std::vector<std::string>& _burnNames,
                  const std::vector<std::string>& _iBurnNames,
                  const json& remeshjson, int numPartitions,
-                 const std::string& base_t, bool writeIntermediateFiles, 
+                 const std::string& base_t, int writeIntermediateFiles, 
                  double searchTolerance, const std::string& caseName);
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
