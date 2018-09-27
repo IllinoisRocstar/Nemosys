@@ -56,7 +56,7 @@ $ export CXX=mpicxx
 $ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON .. 
 $ make -j6 (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
-$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$NEMOSYS_INSTALL_PATH/vtk/lib:$LD_LIBRARY_PATH
+$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$LD_LIBRARY_PATH
 $ export PYTHONPATH=$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH
 ```
 Executing the commands above will build all libraries, executables and bindings. The libraries are
