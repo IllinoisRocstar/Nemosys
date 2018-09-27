@@ -58,7 +58,7 @@ ls Mesh/MeshDataBase.h Mesh/MeshDataBaseInterface.h Mesh/MeshDataBaseIterators.h
 
 # build vtk
 cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
-tar xzf VTK-7.1.0.tar.gz
+tar xzf vtk-7.1.0.tar.gz
 cd VTK-7.1.0
 mkdir build
 cd build
