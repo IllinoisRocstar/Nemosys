@@ -115,6 +115,8 @@ inline std::vector<int> cellsToRefineMaxdev(std::vector<double>& values, double 
 inline std::string trim_fname(std::string name, std::string ext);
 // find file extension
 inline std::string find_ext(std::string fname);
+// find file extension
+inline std::string find_name(std::string fname);
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
@@ -407,11 +409,30 @@ inline std::string find_ext(std::string fname)
   }
   else
   {
-    std::cout << "Error finding file extension for " << fname << std::endl;
+    std::cout << "error finding file extension for " << fname << std::endl;
     exit(1);
   }
 
 }
+
+// find file name
+inline std::string find_name(std::string fname)
+{
+  size_t first = fname.find_last_of('/');
+  size_t last = fname.find_last_of('.');
+  if (first != -1 && last != -1)
+  {
+    return fname.substr(first+1,last);  
+  }
+  else
+  {
+    std::cout << "error finding file extension for " << fname << std::endl;
+    exit(1);
+  }
+
+}
+
+
 // print vector
 template<typename T>
 void printVec(const std::vector<T>& v)
