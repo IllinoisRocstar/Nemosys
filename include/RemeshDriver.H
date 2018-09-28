@@ -19,7 +19,8 @@ class RemeshDriver : public NemDriver
                  const std::vector<std::string>& _iBurnNames,
                  const json& remeshjson, int numPartitions,
                  const std::string& base_t, int writeIntermediateFiles, 
-                 double searchTolerance, const std::string& caseName);
+                 double searchTolerance, const std::string& caseName,
+                 const std::string _prefix_path = std::string());
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
  
@@ -50,6 +51,8 @@ class RemeshDriver : public NemDriver
     std::shared_ptr<meshBase> remeshedSurf;
     // number of partitions
     int numPartitions;
+    // prefix path
+    std::string prefixPath;
 
   //helpers
   private:
@@ -65,5 +68,4 @@ class RemeshDriver : public NemDriver
 inline std::vector<std::string> getCgFNames(const std::string& case_dir, 
                                             const std::string& prefix,
                                             const std::string& base_t);
-
 #endif

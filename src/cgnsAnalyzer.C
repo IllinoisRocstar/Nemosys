@@ -3,6 +3,7 @@
 #include <string.h>
 #include <iostream>
 #include <meshBase.H>
+#include <algorithm>
 
 
 /********************************************
@@ -546,6 +547,176 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
 
   return elmConn;
 }
+
+
+void cgnsAnalyzer::getSectionNames(std::vector<std::string> &names)
+{
+  // reading section names 
+  int eBeg, eEnd, nBdry, parentFlag;
+  CG_ElementType_t secTyp;
+  char sectionname[33];
+  if (cg_nsections(indexFile, indexBase, indexZone, &nSection) != CG_OK)
+    std::cerr << "Error in reading sections, " << cg_get_error();
+  for (int iSec=1; iSec<= nSection; iSec++)
+  {
+    if (cg_section_read(indexFile, indexBase, indexZone, iSec, sectionname, 
+                &secTyp, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
+        std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    names.push_back(sectionname);
+    if (_verb)
+      std::cout << "Section " << names[iSec]
+              << " Type = " << secTyp
+              << " eBeg = " << eBeg
+              << " eEnd = " << eEnd
+              << " nBdry = " << nBdry
+              << std::endl;
+  }
+}
+
+CG_ElementType_t cgnsAnalyzer::getSectionType(std::string secName)
+{
+  std::vector<std::string> secNames;
+  getSectionNames(secNames);
+  auto it = std::find(secNames.begin(), secNames.end(), secName);
+  if (it == secNames.end())
+  {
+      std::cerr << "No section found named " << secName << "\n";
+      throw;
+  }
+  int iSec = it-secNames.begin();
+
+  // reading section info 
+  int eBeg, eEnd, nBdry, parentFlag;
+  CG_ElementType_t secTyp;
+  char sectionname[33];
+  if (cg_section_read(indexFile, indexBase, indexZone, iSec, sectionname, 
+                &secTyp, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
+        std::cerr << "Error in load, " << cg_get_error() << std::endl;
+  return secTyp;
+}
+
+void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<int>& conn, int& nElm)
+{
+    std::vector<std::string> secNames;
+    getSectionNames(secNames);
+    auto it = std::find(secNames.begin(), secNames.end(), secName);
+    if (it == secNames.end())
+    {
+        std::cerr << "No section found named " << secName << "\n";
+        nElm = 0;
+        return;
+    }
+    // reading connectivities
+    int eBeg, eEnd, nBdry, parentFlag, nVrtxElem;
+    char sectionname[33];
+    CG_ElementType_t secTyp;
+    int iSec = it-secNames.begin()+1;
+    if (cg_section_read(indexFile, indexBase, indexZone, iSec,
+                        sectionname, &secTyp, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
+      std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    switch (secTyp)
+    {
+      case CG_TETRA_4:
+        nVrtxElem = 4;
+        break;
+      case CG_HEXA_8:
+        nVrtxElem = 8;
+        break;
+      case CG_TRI_3:
+        nVrtxElem = 3;
+        break;
+      case CG_QUAD_4:
+        nVrtxElem = 4;
+        break;
+      default:
+        std::cerr << "Unknown element type " << secTyp << std::endl;
+        break;
+    }
+    nElm = eEnd - eBeg + 1;
+    conn.resize(nVrtxElem * nElm, -1);
+    if (cg_elements_read(indexFile, indexBase, indexZone, iSec, &conn[0], nullptr) != CG_OK)
+      std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    if (_verb) std::cout << "Size of connectivity vector = " << conn.size() << std::endl;
+}
+
+
+vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
+{
+    // rind information test
+    int rdata[2];
+    if (cg_goto(indexFile, indexBase, "Zone_t", indexZone,
+              "GridCoordinates", 0, "end"))
+        cg_error_exit();
+    if (cg_rind_read(rdata))
+        cg_error_exit();
+    int nRindNde = rdata[1];
+    int one=1;
+    int rmax = nVertex + nRindNde;
+    // reading all coordinates
+    std::vector<double> xCrdR, yCrdR, zCrdR;
+    xCrdR.resize(rmax, 0);
+    yCrdR.resize(rmax, 0);
+    zCrdR.resize(rmax, 0);
+    if (cg_coord_read(indexFile, indexBase, indexZone,
+                      "CoordinateX", CG_RealDouble, &one, &rmax, &xCrdR[0]) != CG_OK)
+      std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    if (cg_coord_read(indexFile, indexBase, indexZone,
+                      "CoordinateY", CG_RealDouble, &one, &rmax, &yCrdR[0]) != CG_OK)
+      std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    if (cg_coord_read(indexFile, indexBase, indexZone,
+                      "CoordinateZ", CG_RealDouble, &one, &rmax, &zCrdR[0]) != CG_OK)
+      std::cerr << "Error in load, " << cg_get_error() << std::endl;
+    int nElmSec;
+    std::vector<int> connSec;
+    getSectionConn(secName, connSec, nElmSec);
+    CG_ElementType_t secTyp = getSectionType(secName);
+
+    // points to be pushed into dataSet
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    // declare vtk dataset
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp
+            = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    // allocate size for vtk point container 
+    points->SetNumberOfPoints(rmax);
+    for (int i = 0; i < rmax; ++i)
+      points->SetPoint(i, xCrdR[i], yCrdR[i], zCrdR[i]);
+
+    // add points to vtk mesh data structure 
+    dataSet_tmp->SetPoints(points);
+
+    // allocate space for elements
+    dataSet_tmp->Allocate(nElmSec);
+    // add the elements
+    int nNdeElm = connSec.size()/nElmSec;
+    for (int i = 0; i < nElmSec; i++)
+    {
+        vtkSmartPointer<vtkIdList> vtkElmIds = vtkSmartPointer<vtkIdList>::New();
+        vtkElmIds->SetNumberOfIds(nNdeElm);
+        for (int j = 0; j < nNdeElm; ++j)
+          vtkElmIds->SetId(j, connSec[i*nNdeElm+j] - 1);
+        switch (secTyp)
+        {
+          case CG_TETRA_4:
+            dataSet_tmp->InsertNextCell(VTK_TETRA, vtkElmIds);
+            break;
+          case CG_HEXA_8:
+            dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON, vtkElmIds);
+            break;
+          case CG_TRI_3:
+            dataSet_tmp->InsertNextCell(VTK_TRIANGLE, vtkElmIds);
+            break;
+          case CG_QUAD_4:
+            dataSet_tmp->InsertNextCell(VTK_QUAD, vtkElmIds);
+            break;
+          default:
+            std::cerr << "Unknown element type " << sectionType << std::endl;
+            break;
+        }
+    }
+    return(dataSet_tmp);
+}
+
 
 void cgnsAnalyzer::writeSampleStructured()
 {
