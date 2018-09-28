@@ -33,6 +33,8 @@ You will need to `apt install` at least the following dependencies:
 * tk-dev
 * libxmu-dev
 * python-dev
+* libcgns-dev
+* libhdf5-dev
 * swig (if you want python bindings)
 * an MPI compiler
 

@@ -123,13 +123,13 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeSentToPconn(i,type,false);
     this->writeReceivedToPconn(i,type,false);
     this->comWriter(i+1);
-    this->clearPconnVectors();
     // get virtual cells of each volume partition (t4:virtual)
     // for current partition
     for (int j = 0; j < numPartitions; ++j)
       this->getVirtualCells(i,j,true);
     // write cgns for vol partition
     this->writeVolCgns("fluid", i,1,0);
+    this->clearPconnVectors();
     // MS : next two lines, if entire mesh why in this loop of partitions?
     // write cell mapping file for entire mesh
     this->cmpWriter(0, this->mesh->getDataSet()->GetNumberOfCells());
@@ -354,7 +354,7 @@ int RocPartCommGenDriver::writeSharedToPconn(int proc, const std::string& type)
         this->volPconns[proc].push_back(sharedItr->second[i] + 1);
         tmpInd.push_back(sharedItr->second[i] + 1);
       }
-      this->sharedNodesTmp.push_back(tmpInd);
+      this->sharedNodesTmp[sharedItr->first] = tmpInd;
     }
     ++sharedItr;
   }
@@ -372,18 +372,28 @@ void RocPartCommGenDriver::writeSharedToPconn(int proc)
       auto it2 = it1->second.begin();  // patch
       while (it2 != it1->second.end())
       {
-        // num blocks for this proc and current patch
-        this->surfPconns[proc][it->first].push_back(1);
-        // zone number
-        std::stringstream ss;
-        ss << it1->first + 1 << ((it->first+1) < 10 ? "0" : "") <<  this->surfZoneMap[it1->first][it2->first];
-        this->surfPconns[proc][it->first].push_back(std::stoi(ss.str())); 
-        // number of ids
-        this->surfPconns[proc][it->first].push_back(it2->second.size());
-        for (int k =0; k < it2->second.size(); ++k)
+        if (it2->second.size() > 0)
         {
-          this->surfPconns[proc][it->first].push_back(it2->second[k]+1);
-        } 
+          this->surfPconns[proc][it->first].push_back(1);
+          // zone number
+          std::stringstream ss;
+          ss << it1->first + 1 << ((it->first+1) < 10 ? "0" : "") <<  this->surfZoneMap[it1->first][it2->first];
+          this->surfPconns[proc][it->first].push_back(std::stoi(ss.str()));
+          // num blocks for this proc and current patch
+          if (it2->second.size() > 0)
+          {
+            // number of ids
+            this->surfPconns[proc][it->first].push_back(it2->second.size());
+            for (int k =0; k < it2->second.size(); ++k)
+            {
+              this->surfPconns[proc][it->first].push_back(it2->second[k]+1);
+            }
+          }
+          else
+          {
+            this->surfPconns[proc][it->first].push_back(0);
+          }
+        }
         ++it2;
       }
       ++it1;
@@ -431,11 +441,11 @@ void RocPartCommGenDriver::writeSentToPconn(int proc, const std::string& type, b
       }
       if (nodeOrCell)
       {
-        this->sentNodesTmp.push_back(tmpInd);
+        this->sentNodesTmp[sentItr->first] = tmpInd;
       }
       else
       {
-        this->sentCellsTmp.push_back(tmpInd);
+        this->sentCellsTmp[sentItr->first] = tmpInd;
       }
     } 
     ++sentItr;
@@ -463,30 +473,33 @@ void RocPartCommGenDriver::writeReceivedToPconn(int proc, const std::string& typ
   std::vector<int> tmpInd;
   while(receivedItr != end)
   {
-    // num blocks  
-    this->volPconns[proc].push_back(1);
-    std::stringstream ss;
-    ss << receivedItr->first + 1 << type;
-    // zone number
-    this->volPconns[proc].push_back(std::stoi(ss.str()));
-    // number of ids; 
-    int numReceived = receivedItr->second.size();
-    this->volPconns[proc].push_back(numReceived);
-    tmpInd.clear();
-    for (int id = numPrevReceived; id < numPrevReceived+numReceived; ++id)
+    if (receivedItr->second.size() != 0)
     {
-      this->volPconns[proc].push_back(offset+id+1);
-      tmpInd.push_back(offset+id+1);
+      // num blocks  
+      this->volPconns[proc].push_back(1);
+      std::stringstream ss;
+      ss << receivedItr->first + 1 << type;
+      // zone number
+      this->volPconns[proc].push_back(std::stoi(ss.str()));
+      // number of ids; 
+      int numReceived = receivedItr->second.size();
+      this->volPconns[proc].push_back(numReceived);
+      tmpInd.clear();
+      for (int id = numPrevReceived; id < numPrevReceived+numReceived; ++id)
+      {
+        this->volPconns[proc].push_back(offset+id+1);
+        tmpInd.push_back(offset+id+1);
+      }
+      if (nodeOrCell)
+      {
+        this->receivedNodesTmp[receivedItr->first] = tmpInd;
+      }
+      else
+      {
+        this->receivedCellsTmp[receivedItr->first] = tmpInd;
+      }
+      numPrevReceived += numReceived;
     }
-    if (nodeOrCell)
-    {
-      this->receivedNodesTmp.push_back(tmpInd);
-    }
-    else
-    {
-      this->receivedCellsTmp.push_back(tmpInd);
-    }
-    numPrevReceived += numReceived;
     ++receivedItr;
   }
 }
@@ -1989,10 +2002,24 @@ void RocPartCommGenDriver::restructurePconn(std::vector<int> &pConnVec, int proc
       for (auto itr1 = zoneToBlocks.begin(); itr1 != zoneToBlocks.end(); ++itr1)
       {
         volPconnsTmpProc.push_back(itr1->first);
-        volPconnsTmpProc.push_back((itr1->second)[iBlock].size());
-        for (auto itr2 = (itr1->second)[iBlock].begin(); itr2 != (itr1->second)[iBlock].end(); ++itr2)
+        if (itr1->second.size() > iBlock)
         {
-          volPconnsTmpProc.push_back(*itr2);
+          if (!(itr1->second)[iBlock].empty())
+          {
+            volPconnsTmpProc.push_back((itr1->second)[iBlock].size());
+            for (auto itr2 = (itr1->second)[iBlock].begin(); itr2 != (itr1->second)[iBlock].end(); ++itr2)
+            {
+              volPconnsTmpProc.push_back(*itr2);
+            }
+          }
+          else
+          {
+            volPconnsTmpProc.push_back(0);
+          }
+        }
+        else
+        {
+          volPconnsTmpProc.push_back(0);
         }
       }
     } 
@@ -2008,10 +2035,24 @@ void RocPartCommGenDriver::restructurePconn(std::vector<int> &pConnVec, int proc
       for (auto itr1 = zoneToBlocks.begin(); itr1 != zoneToBlocks.end(); ++itr1)
       {
         surfPconnsTmpProc.push_back(itr1->first);
-        surfPconnsTmpProc.push_back((itr1->second)[iBlock].size());
-        for (auto itr2 = (itr1->second)[iBlock].begin(); itr2 != (itr1->second)[iBlock].end(); ++itr2)
+        if (itr1->second.size() > iBlock)
         {
-          surfPconnsTmpProc.push_back(*itr2);
+          if (!(itr1->second)[iBlock].empty())
+          {
+            surfPconnsTmpProc.push_back((itr1->second)[iBlock].size());
+            for (auto itr2 = (itr1->second)[iBlock].begin(); itr2 != (itr1->second)[iBlock].end(); ++itr2)
+            {
+              surfPconnsTmpProc.push_back(*itr2);
+            }
+          }
+          else
+          {
+            surfPconnsTmpProc.push_back(0);
+          }
+        }
+        else
+        {
+          surfPconnsTmpProc.push_back(0);
         }
       }
     } 
@@ -2166,48 +2207,74 @@ void RocPartCommGenDriver::comWriter(int proc)
   std::string cellStr1;
   std::string cellStr2;
 
-  //for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
-  for (auto itr = this->sentCellsTmp.begin(); itr != sentCellsTmp.end(); ++itr)
+  for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
   {
-
-    //cellStr1 = std::to_string(this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].size());
-    cellStr1 = std::to_string(this->sentCellsTmp[itr-this->sentCellsTmp.begin()].size());
-    //cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].size());
-    cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].size());
+    if (this->sentCellsTmp.find(*itr) == this->sentCellsTmp.end())
+    {
+      cellStr1 = std::to_string(0);
+    }
+    else
+    {
+      cellStr1 = std::to_string(this->sentCellsTmp[*itr].size());
+    }
+    if (this->receivedCellsTmp.find(*itr) == this->receivedCellsTmp.end())
+    {
+      cellStr2 = std::to_string(0);
+    }
+    else
+    {
+      cellStr2 = std::to_string(this->receivedCellsTmp[*itr].size());
+    }
     tmpStr += std::string(8 - cellStr1.length(), ' ') + cellStr1;
     tmpStr += std::string(8 - cellStr2.length(), ' ') + cellStr2;
     comFile << tmpStr << std::endl;
     tmpStr = "";
-    for (auto itr2 = this->sentCellsTmp[itr-this->sentCellsTmp.begin()].begin();
-        itr2 < this->sentCellsTmp[itr-this->sentCellsTmp.begin()].end();
-        ++itr2)
+
+    if (!(this->sentCellsTmp.find(*itr) == this->sentCellsTmp.end()))
     {
-      cellIdStr = std::to_string(*itr2);
-      tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
-      if (((itr2-this->sentCellsTmp[itr-this->sentCellsTmp.begin()].begin())+1) % 10 == 0)
+      for (auto itr2 = sentCellsTmp[*itr].begin(); itr2 < sentCellsTmp[*itr].end(); ++itr2)
+      {
+        cellIdStr = std::to_string(*itr2);
+        tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
+        //if (((itr2-itr->second.begin())+1) % 10 == 0)
+        if (((itr2-sentCellsTmp[*itr].begin())+1) % 10 == 0)
+        {
+          comFile << tmpStr << std::endl;
+          tmpStr = "";
+        }
+      }
+      if (tmpStr != "")
       {
         comFile << tmpStr << std::endl;
         tmpStr = "";
       }
     }
-    if (tmpStr != "")
+    else
     {
       comFile << tmpStr << std::endl;
       tmpStr = "";
     }
-    for (auto itr2 = this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].begin();
-        itr2 < this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].end();
-        ++itr2)
+
+    if (!(this->receivedCellsTmp.find(*itr) == this->receivedCellsTmp.end()))
     {
-      cellIdStr = std::to_string(*itr2);
-      tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
-      if (((itr2-this->receivedCellsTmp[itr-this->sentCellsTmp.begin()].begin())+1) % 10 == 0)
-      {        
+      for (auto itr2 = receivedCellsTmp[*itr].begin(); itr2 < receivedCellsTmp[*itr].end(); ++itr2)
+      {
+        cellIdStr = std::to_string(*itr2);
+        tmpStr += std::string(8 - cellIdStr.length(), ' ') + cellIdStr;
+        if (((itr2-receivedCellsTmp[*itr].begin())+1) % 10 == 0)
+        //if (((itr2-itr->second.begin())+1) % 10 == 0)
+        {
+          comFile << tmpStr << std::endl;
+          tmpStr = "";
+        }
+      }
+      if (tmpStr != "")
+      {
         comFile << tmpStr << std::endl;
         tmpStr = "";
       }
     }
-    if (tmpStr != "")
+    else
     {
       comFile << tmpStr << std::endl;
       tmpStr = "";
@@ -2224,62 +2291,108 @@ void RocPartCommGenDriver::comWriter(int proc)
 
   for (auto itr = this->neighborProcsTmp.begin(); itr != neighborProcsTmp.end(); ++itr)
   {
+    if (this->sentNodesTmp.find(*itr) == this->sentNodesTmp.end())
+    {
+      vertStr1 = std::to_string(0);
+    }
+    else
+    {
+      vertStr1 = std::to_string(this->sentNodesTmp[*itr].size());
+    }
 
-    vertStr1 = std::to_string(this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].size());
-    vertStr2 = std::to_string(this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
-    vertStr3 = std::to_string(this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
+    if (this->receivedNodesTmp.find(*itr) == this->receivedNodesTmp.end())
+    {
+      vertStr2 = std::to_string(0);
+    }
+    else
+    {
+      vertStr2 = std::to_string(this->receivedNodesTmp[*itr].size());
+    }
+
+    if (this->sharedNodesTmp.find(*itr) == this->sharedNodesTmp.end())
+    {
+      vertStr3 = std::to_string(0);
+    }
+    else
+    {
+      vertStr3 = std::to_string(this->sharedNodesTmp[*itr].size());
+    }
+
     tmpStr += std::string(8 - vertStr1.length(), ' ') + vertStr1;
     tmpStr += std::string(8 - vertStr2.length(), ' ') + vertStr2;
     tmpStr += std::string(8 - vertStr3.length(), ' ') + vertStr3;
     comFile << tmpStr << std::endl;
     tmpStr = "";
-    for (auto itr2 = this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].end();
-        ++itr2)
+
+    if (!(this->sentNodesTmp.find(*itr) == this->sentNodesTmp.end()))
     {
-      vertIdStr = std::to_string(*itr2);
-      tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
-      if (((itr2-this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
+      for (auto itr2 = sentNodesTmp[*itr].begin(); itr2 < sentNodesTmp[*itr].end(); ++itr2)
       {
-       comFile << tmpStr << std::endl;
-       tmpStr = "";
+        vertIdStr = std::to_string(*itr2);
+        tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
+        if (((itr2-sentNodesTmp[*itr].begin())+1) % 10 == 0)
+        {
+          comFile << tmpStr << std::endl;
+          tmpStr = "";
+        }
+      }
+      if (tmpStr != "")
+      {
+        comFile << tmpStr << std::endl;
+        tmpStr = "";
       }
     }
-    if (tmpStr != "")
+    else
     {
       comFile << tmpStr << std::endl;
       tmpStr = "";
     }
-    for (auto itr2 = this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].end();
-        ++itr2)
+
+    if (!(this->receivedNodesTmp.find(*itr) == this->receivedNodesTmp.end()))
     {
-      vertIdStr = std::to_string(*itr2);
-      tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
-      if (((itr2-this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
+      for (auto itr2 = receivedNodesTmp[*itr].begin(); itr2 < receivedNodesTmp[*itr].end(); ++itr2)
       {
-       comFile << tmpStr << std::endl;
-       tmpStr = "";
+        vertIdStr = std::to_string(*itr2);
+        tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
+        if (((itr2-receivedNodesTmp[*itr].begin())+1) % 10 == 0)
+        //if (((itr2-itr->second.begin())+1) % 10 == 0)
+        {
+          comFile << tmpStr << std::endl;
+          tmpStr = "";
+        }
+      }
+      if (tmpStr != "")
+      {
+        comFile << tmpStr << std::endl;
+        tmpStr = "";
       }
     }
-    if (tmpStr != "")
+    else
     {
       comFile << tmpStr << std::endl;
       tmpStr = "";
     }
-    for (auto itr2 = this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].end();
-        ++itr2)
+
+    if (!(this->sharedNodesTmp.find(*itr) == this->sharedNodesTmp.end()))
     {
-      vertIdStr = std::to_string(*itr2);
-      tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
-      if (((itr2-this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
+      for (auto itr2 = sharedNodesTmp[*itr].begin(); itr2 < sharedNodesTmp[*itr].end(); ++itr2)
       {
-       comFile << tmpStr << std::endl;
-       tmpStr = "";
+        vertIdStr = std::to_string(*itr2);
+        tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
+        if (((itr2-sharedNodesTmp[*itr].begin())+1) % 10 == 0)
+        //if (((itr2-itr->second.begin())+1) % 10 == 0)
+        {
+          comFile << tmpStr << std::endl;
+          tmpStr = "";
+        }
+      }
+      if (tmpStr != "")
+      {
+        comFile << tmpStr << std::endl;
+        tmpStr = "";
       }
     }
-    if (tmpStr != "")
+    else
     {
       comFile << tmpStr << std::endl;
       tmpStr = "";
@@ -2381,15 +2494,50 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
       nBorders[*itr] += 1;
 
       // sent, received cells
-      cellStr1 = std::to_string(this->sentCellsTmp[itr-this->neighborProcsTmp.begin()].size());
-      cellStr2 = std::to_string(this->receivedCellsTmp[itr-this->neighborProcsTmp.begin()].size());
+      if (this->sentCellsTmp.find(*itr) == this->sentCellsTmp.end())
+      {
+        cellStr1 = std::to_string(0);
+      }
+      else
+      {
+        cellStr1 = std::to_string(this->sentCellsTmp[*itr].size());
+      }
+      if (this->receivedCellsTmp.find(*itr) == this->receivedCellsTmp.end())
+      {
+        cellStr2 = std::to_string(0);
+      }
+      else
+      {
+        cellStr2 = std::to_string(this->receivedCellsTmp[*itr].size());
+      }
       tmpStr += std::string(8 - cellStr1.length(), ' ') + cellStr1;
       tmpStr += std::string(8 - cellStr2.length(), ' ') + cellStr2;
 
       // sent, received, shared vertices
-      vertStr1 = std::to_string(this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].size());
-      vertStr2 = std::to_string(this->receivedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
-      vertStr3 = std::to_string(this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].size());
+      if (this->sentNodesTmp.find(*itr) == this->sentNodesTmp.end())
+      {
+        vertStr1 = std::to_string(0);
+      }
+      else
+      {
+        vertStr1 = std::to_string(this->sentNodesTmp[*itr].size());
+      }
+      if (this->receivedNodesTmp.find(*itr) == this->receivedNodesTmp.end())
+      {
+        vertStr2 = std::to_string(0);
+      }
+      else
+      {
+        vertStr2 = std::to_string(this->receivedNodesTmp[*itr].size());
+      }
+      if (this->sharedNodesTmp.find(*itr) == this->sharedNodesTmp.end())
+      {
+        vertStr3 = std::to_string(0);
+      }
+      else
+      {
+        vertStr3 = std::to_string(this->sharedNodesTmp[*itr].size());
+      }
       tmpStr += std::string(8 - vertStr1.length(), ' ') + vertStr1;
       tmpStr += std::string(8 - vertStr2.length(), ' ') + vertStr2;
       tmpStr += std::string(8 - vertStr3.length(), ' ') + vertStr3;
@@ -2440,7 +2588,6 @@ void RocPartCommGenDriver::dimSurfWriter(int proc, std::vector<int> cgConnReal, 
   std::string tmpStr;
   for (auto itr = myLines.begin(); itr != myLines.end(); ++itr)
   {
-    //if ((*itr).find("Patches (v2)") != std::string::npos)
     if ((*itr).find("Borders") != std::string::npos)
     {
       if ((*(itr-1)).find("Patches (v2)") != std::string::npos)
@@ -2484,7 +2631,6 @@ void RocPartCommGenDriver::dimSurfWriter(int proc, std::vector<int> cgConnReal, 
   {
     dimFile << *itr << std::endl;
   }
-
   dimFile.close();
 }
 
