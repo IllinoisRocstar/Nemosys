@@ -3,6 +3,7 @@
 #include <NemDriver.H>
 #include <vtkPolyData.h>
 #include <unordered_set>
+#include <vtkEdgeTable.h>
 
 class RocPartCommGenDriver : public NemDriver
 {
@@ -239,6 +240,9 @@ class RocPartCommGenDriver : public NemDriver
        removing those from the extracted surface which are not found in the full surface */
     vtkSmartPointer<vtkPolyData>
     deleteInterPartitionSurface(std::shared_ptr<meshBase> fullSurf, vtkSmartPointer<vtkDataSet> partSurf);
+
+  private:
+    vtkSmartPointer<vtkEdgeTable> createPartitionEdgeTable(int i);
 };
 
 
