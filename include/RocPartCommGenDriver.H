@@ -16,7 +16,8 @@ class RocPartCommGenDriver : public NemDriver
                          int numPartitions, const std::string& base_t,
                          int writeIntermediateFiles, double searchTolerance,
                          const std::string& caseName,
-                         bool _withC2CTransSmooth=false);
+                         bool _withC2CTransSmooth= false,
+                         std::string _prefix_path = std::string() );
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
     ~RocPartCommGenDriver();
     static RocPartCommGenDriver* readJSON(json inputjson);
@@ -111,7 +112,6 @@ class RocPartCommGenDriver : public NemDriver
   // --- global to local node and cell index maps
   // --- the following are cleared and reused for vol and surf partitions 
   private: 
-
     // global node indices of partition
     std::vector<std::vector<int>> globalNodeIds;             
     // global cell indices of partition  
@@ -180,9 +180,13 @@ class RocPartCommGenDriver : public NemDriver
     // Stores volume meshes with virtual for each proc
     std::vector<std::shared_ptr<meshBase>> procVolMesh;
 
-  // --- Data Transfer props
+  // --- data transfer props
   private:
     bool smoothC2CTrans;
+
+  // --- other props
+  private:
+    std::string prefixPath;
 
   // --- write pconn information into pconn vectors
   private:
@@ -233,6 +237,7 @@ class RocPartCommGenDriver : public NemDriver
   // --- descriptors for cgns writing
   private:  
   std::vector<int> notGhostInPconn;
+
   // helpers
   private:  
     /* deletes inter partition surfaces which result from extracting surface of vol partition.
@@ -240,8 +245,6 @@ class RocPartCommGenDriver : public NemDriver
        removing those from the extracted surface which are not found in the full surface */
     vtkSmartPointer<vtkPolyData>
     deleteInterPartitionSurface(std::shared_ptr<meshBase> fullSurf, vtkSmartPointer<vtkDataSet> partSurf);
-
-  private:
     vtkSmartPointer<vtkEdgeTable> createPartitionEdgeTable(int i);
 };
 
