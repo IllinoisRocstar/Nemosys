@@ -78,13 +78,13 @@ private:
 
 class cgnsAnalyzer {
 public:
-  cgnsAnalyzer(std::string fname) :
+  cgnsAnalyzer(std::string fname, int verb = 0) :
     cgFileName(fname), isUnstructured(false), zoneType(CG_ZoneTypeNull),
     indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
     nVertex(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
     solutionDataPopulated(false),
     searchEps(1e-9), kdTree(NULL), kdTreeElem(NULL),vrtxCrd(NULL),vrtxIdx(NULL),
-    isMltZone(false),vtkMesh(0)
+    isMltZone(false),vtkMesh(0),_verb(verb)
   {};
 
   virtual ~cgnsAnalyzer()
@@ -161,6 +161,11 @@ public:
   std::vector<double> getVrtZCrd();
   std::vector<int> getElementConnectivity(int elemId);
 
+  // other general purpose mesh query (such as virtual meshes)
+  void getSectionNames(std::vector<std::string> &secNames);
+  void getSectionConn(std::string secName, std::vector<int>& conn, int& nElm);
+  vtkSmartPointer<vtkDataSet> getSectionMesh(std::string secName);
+
   // get solution information
   void clearAllSolutionData();
   void getSolutionDataNames(std::vector<std::string>& list );
@@ -214,7 +219,7 @@ protected:
    void buildElementKDTree();
    void loadSolutionDataContainer(int verb = 0);   
    virtual void stitchFields(cgnsAnalyzer* inCg);
-
+   CG_ElementType_t getSectionType(std::string secName);
 
 protected:
   std::string cgFileName;
@@ -277,6 +282,8 @@ protected:
   bool isMltZone;
   std::vector<std::string> multZoneNames;
   vtkSmartPointer<vtkDataSet> vtkMesh;
+  // other flags
+  int _verb;
 
 };
 
