@@ -34,9 +34,12 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
                                            int numPartitions, const std::string& _base_t,
                                            int _writeIntermediateFiles,
                                            double _searchTolerance, const std::string& _caseName,
-                                           bool _withC2CTransSmooth)
+                                           bool _withC2CTransSmooth,
+                                           std::string _prefix_path)
 {
   std::cout << "RocPartCommGenDriver created\n";
+  // setting inputs
+  prefixPath = _prefix_path;
   this->mesh = _mesh;
   // load stitched surf mesh with patch info
   this->remeshedSurf = _remeshedSurf;
@@ -60,6 +63,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::string& volname, std::string& su
 {
   std::cout << "RocPartCommGenDriver created\n";
   // load full volume mesh and create METIS partitions
+  prefixPath = std::string();
   this->mesh = meshBase::CreateShared(volname);
   this->remeshedSurf = meshBase::CreateShared(surfname);
   this->base_t = "00.000000";
@@ -104,7 +108,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     appendFilter->Update();
     // create surfs partitions casted from vtp to vtu
     unstructuredGrid = appendFilter->GetOutput();
-    std::string basename("surfacePartition");
+    std::string basename(prefixPath+"surfacePartition");
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
@@ -231,7 +235,7 @@ void RocPartCommGenDriver::execute(int numPartitions)
     appendFilter->Update();
     // create surfs partitions casted from vtp to vtu
     unstructuredGrid = appendFilter->GetOutput();
-    std::string basename("surfacePartition");
+    std::string basename(prefixPath+"surfacePartition");
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase surface partition from vtkUnstructuredGrid
@@ -501,7 +505,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
     if (this->writeAllFiles>0)  
     {
       std::stringstream ss;
-      ss << "virtual" << "Vol" << "Of" << me << "from" << you << ".vtu";
+      ss << prefixPath << "virtual" << "Vol" << "Of" << me << "from" << you << ".vtu";
       this->virtualCellsOfPartitions[me][you]->write(ss.str());
     }
   }
@@ -513,7 +517,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
     if (this->writeAllFiles>0)  
     {
       std::stringstream ss;
-      ss << "virtual" << "Surf" << "Of" << me << "from" << you << ".vtu";
+      ss << prefixPath << "virtual" << "Surf" << "Of" << me << "from" << you << ".vtu";
       this->virtualCellsOfSurfPartitions[me][you]->write(ss.str());
     }
   }
@@ -819,7 +823,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
     {
         std::cerr << "Problem in building partition edge table.\n";
     }
-    std::cout << "Number of edges : " << eTab->GetNumberOfEdges() << std::endl;
+    //std::cout << "Number of edges : " << eTab->GetNumberOfEdges() << std::endl;
     std::vector<int> rmvLst;
     for (auto icId = sentCells[me][you].begin(); icId != sentCells[me][you].end(); icId++)
     {
@@ -842,7 +846,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       if (nShrEdg < 3)
           rmvLst.push_back(*icId);
     }
-    std::cout << " Number of cells to remove " << rmvLst.size() << std::endl;
+    std::cout << " Number of false positive virtual volume cells to remove " << rmvLst.size() << std::endl;
     for (auto icId = rmvLst.begin(); icId != rmvLst.end(); icId++)
     {
         sentCells[me][you].erase(*icId);
@@ -1056,7 +1060,7 @@ void RocPartCommGenDriver::extractPatches()
       if (this->writeAllFiles>0)
       {
         std::stringstream ss;
-        ss << "extractedPatch" << it->first << "OfProc" << i << ".vtu";
+        ss << prefixPath+"extractedPatch" << it->first << "OfProc" << i << ".vtu";
         this->patchesOfSurfacePartitions[i][it->first]->write(ss.str());
       }
       ++it;
@@ -1087,7 +1091,7 @@ void RocPartCommGenDriver::extractPatches()
         if (this->writeAllFiles>0)
         {
           std::stringstream ss;
-          ss << "extractedVirtualPatch" << it1->first 
+          ss << prefixPath+"extractedVirtualPatch" << it1->first 
             << "Of" << i << "FromProc" << it->first  << ".vtu";
           this->virtualCellsOfPatchesOfSurfacePartitions[i][it->first][it1->first]->write(ss.str());
         }
@@ -1116,7 +1120,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
 {
   // generating file name and instantiating a writer
   std::stringstream ss;
-  ss << prefix << "_" << this->base_t << 
+  ss << prefixPath << prefix << "_" << this->base_t << 
     (me < 1000 ? (me < 100 ? (me < 10 ? "_000" : "_00") : "_0") : "_") << me << ".cgns";
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer
@@ -1639,12 +1643,12 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
           // transfer data to the surf-partition-with-virtual-cells mesh 
           this->burnSurfWithSol->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
           if (this->writeAllFiles>1) 
-              patchOfPartitionWithRealMesh.get()->write("_"+std::to_string(me)+
+              patchOfPartitionWithRealMesh.get()->write(prefixPath+"_"+std::to_string(me)+
                       "_real_patch_"+std::to_string(it->first)+".vtu");
           // transfer data to the surf-partition-with-virtual-cells mesh 
           this->surfWithSol->transfer(patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
           if (this->writeAllFiles>1) 
-              patchOfPartitionWithVirtualMesh.get()->write("_"+std::to_string(me)+
+              patchOfPartitionWithVirtualMesh.get()->write(prefixPath+"_"+std::to_string(me)+
                       "_virtual_patch_"+std::to_string(it->first)+".vtu");
           int numPointDataArr = this->surfWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
 
@@ -1720,14 +1724,14 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                 }
                 // MS : working on cell data for virtual cells
                 // getting number of virtual cells for partition
-                std::cout << "prefix = " << prefix << " nVirtualCell = " << numVirtualCells << std::endl;
+                //std::cout << "prefix = " << prefix << " nVirtualCell = " << numVirtualCells << std::endl;
                 // setting virtual cell values to -NaN or 0 depending on type
                 // knowing the virtual data are always at the end
                 // just applying to ifluid_b files for now
-                if (prefix =="ifluid_b")
-                    for (int k=cellData.size()-numVirtualCells; k<cellData.size(); k++)
-                        cellData[k] = -987654321;
-                std::cout << "Size of cell data = " << cellData.size() << std::endl;
+                //if (prefix =="ifluid_b")
+                //    for (int k=cellData.size()-numVirtualCells; k<cellData.size(); k++)
+                //        cellData[k] = -987654321;
+                //std::cout << "Size of cell data = " << cellData.size() << std::endl;
                 // MS end
                 if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
                 {
@@ -1794,7 +1798,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
 void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int type, int gsExists)
 {
   std::stringstream ss;
-  ss << prefix << "_" << this->base_t << 
+  ss << prefixPath << prefix << "_" << this->base_t << 
     (proc < 1000 ? (proc < 100 ? (proc < 10 ? "_000" : "_00") : "_0") : "_") << proc << ".cgns";
   std::string cgFname(ss.str());
   std::unique_ptr<cgnsWriter> writer 
@@ -1873,16 +1877,14 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
   // define real connectivities and 1-base indexing
   std::vector<int> cgConnReal(partitions[proc]->getConnectivities());
   for (auto it = cgConnReal.begin(); it != cgConnReal.end(); ++it)
-  {
     *it += 1;
-  }
+
   // define virtual connectivities and 1-base indexing
   std::vector<int> cgConnVirtual(partitionWithVirtualMesh->getConnectivities());
   cgConnVirtual.erase(cgConnVirtual.begin(),cgConnVirtual.begin() + cgConnReal.size());
   for (auto it = cgConnVirtual.begin(); it != cgConnVirtual.end(); ++it)
-  {
     *it += 1;
-  }
+
   writer->setSection(":T4:real", CG_TETRA_4, cgConnReal);
   writer->setNCell(numVirtualCells);
   writer->setSection(":T4:virtual", CG_TETRA_4, cgConnVirtual);
@@ -1916,9 +1918,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
         idList.clear();
         auto ptIds = myFace->GetPointIds();
         for (int iPt = 0; iPt < myFace->GetNumberOfPoints(); iPt++)
-        {
           idList.push_back(ptIds->GetId(iPt));
-        }
         std::sort(idList.begin(), idList.end());
         allFaces.push_back(idList);
       }
@@ -1941,7 +1941,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
     this->volWithSol->setContBool(this->smoothC2CTrans);
     this->volWithSol->transfer(partitionWithVirtualMesh.get(),"Consistent Interpolation");
     // output volumetric information if needed
-    if (this->writeAllFiles>1) partitionWithVirtualMesh.get()->write("_vol_part_"+std::to_string(proc)+".vtu");
+    if (this->writeAllFiles>1) partitionWithVirtualMesh.get()->write(prefixPath+"_vol_part_"+std::to_string(proc)+".vtu");
 
     int numPointDataArr
       = this->volWithSol->getDataSet()->GetPointData()->GetNumberOfArrays();
@@ -1961,8 +1961,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string& prefix, int proc, int
         writer->writeSolutionField(dataName, nodeName, CG_RealDouble,&pointData[0u]);
       }
     }
-    int numCellDataArr
-      = this->volWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
+    int numCellDataArr = this->volWithSol->getDataSet()->GetCellData()->GetNumberOfArrays();
     if (numCellDataArr)
     {
       std::string nodeName("ElemData"); 
@@ -2129,7 +2128,7 @@ void RocPartCommGenDriver::mapWriter()
   int nPart = this->partitions.size();
 
   // Create mapping file
-  std::string fname = this->caseName + ".map";
+  std::string fname = prefixPath+this->caseName + ".map";
   ofstream mapFile;
   mapFile.open(fname);
 
@@ -2170,7 +2169,7 @@ void RocPartCommGenDriver::cmpWriter(int proc, int nCells)
   // Write cell mapping file
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
-  std::string fname = this->caseName + ".cmp_" + procStrPadded;
+  std::string fname = prefixPath + this->caseName + ".cmp_" + procStrPadded;
   ofstream cmpFile;
   cmpFile.open(fname);
 
@@ -2221,7 +2220,7 @@ void RocPartCommGenDriver::comWriter(int proc)
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
-  std::string fname = this->caseName + ".com_" + procStrPadded;
+  std::string fname = prefixPath+this->caseName + ".com_" + procStrPadded;
   ofstream comFile;
   comFile.open(fname);
 
@@ -2360,9 +2359,7 @@ void RocPartCommGenDriver::comWriter(int proc)
         ++itr2)
     {
       vertIdStr = std::to_string(*itr2);
-  std::cout << __FILE__ << __LINE__ << std::endl;
       tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
-  std::cout << __FILE__ << __LINE__ << std::endl;
       if (((itr2-this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
       {
        comFile << tmpStr << std::endl;
@@ -2394,7 +2391,7 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
-  std::string fname = this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
+  std::string fname = prefixPath + this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
   ofstream dimFile;
   dimFile.open(fname);
 
@@ -2499,7 +2496,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc, std::vector<int> cgConnReal, 
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
-  std::string fname = this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
+  std::string fname = prefixPath+this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
 
   std::string line;
   std::vector< std::string > myLines;
@@ -2586,7 +2583,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc)
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
-  std::string fname = this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
+  std::string fname = prefixPath+this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
 
   std::string line;
   std::vector< std::string > myLines;
@@ -2664,19 +2661,19 @@ void RocPartCommGenDriver::txtWriter()
 {
   // Write txt files for fluid and ifluid
   std::string fname;
-  fname = "fluid_in_" + this->base_t + ".txt";
+  fname = prefixPath+"fluid_in_" + this->base_t + ".txt";
   ofstream fluid_in;
   fluid_in.open(fname);
 
-  fname = "ifluid_in_" + this->base_t + ".txt";
+  fname = prefixPath+"ifluid_in_" + this->base_t + ".txt";
   ofstream ifluid_in;
   ifluid_in.open(fname);
 
-  fname = "burn_in_" + this->base_t + ".txt";
+  fname = prefixPath+"burn_in_" + this->base_t + ".txt";
   ofstream burn_in;
   burn_in.open(fname);
 
-  fname = "iburn_in_" + this->base_t + ".txt";
+  fname = prefixPath+"iburn_in_" + this->base_t + ".txt";
   ofstream iburn_in;
   iburn_in.open(fname);
 

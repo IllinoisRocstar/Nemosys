@@ -130,6 +130,15 @@ IF (ENABLE_SYMMX)
     MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
 ENDIF()
 
+# boost
+SET(Boost_USE_STATIC_LIBS OFF)
+SET(Boost_USE_MULTITHREADED ON)
+SET(Boost_USE_STATIC_RUNTIME OFF)
+FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
+IF(Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+ENDIF()
+
 ## add include files to path
 INCLUDE_DIRECTORIES(include)
 INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
@@ -208,8 +217,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
                  src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
                  src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C                  
-                 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C 
+                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C
+                 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C
                  src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocPartCommGenDriver.C
                  src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
@@ -217,8 +226,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
                  src/SolutionVerification/OrderOfAccuracy.C src/vtkAnalyzer.C
                  src/cgnsAnalyzer.C src/rocstarCgns.C
-                 src/MeshPartitioning/meshPartitioner.C 
-                 src/MeshPartitioning/meshStitcher.C 
+                 src/MeshPartitioning/meshPartitioner.C
+                 src/MeshPartitioning/meshStitcher.C
                  src/cgnsWriter.C src/gridTransfer.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
               utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
@@ -258,7 +267,8 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS} ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} interp)
+TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS}
+                              ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES} interp)
 
 INSTALL(TARGETS r8 interp Nemosys
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
