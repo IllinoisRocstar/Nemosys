@@ -53,7 +53,7 @@ $ cd $NEMOSYS_PROJECT_PATH
 $ mkdir build && cd build
 $ export CC=mpicc
 $ export CXX=mpicxx
-$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/vtk:$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/hdf5:$NEMOSYS_INSTALL_PATH/cgns:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON .. 
+$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON .. 
 $ make -j6 (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
 $ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$NEMOSYS_INSTALL_PATH/vtk/lib:$LD_LIBRARY_PATH
@@ -130,33 +130,6 @@ need to be manually copied into `$NEMOSYS_INSTALL_PATH/madlib/include/MAdLib`:
 * Geo/Physical.h
 * Adapt/utils/NodalDataManager.h
 
-#### Building HDF5 ####
-Unpack HDF5 from the `nemosys_tpls` directory:
-```
-$ tar zxf hdf5-1.8.21.tar.gz
-$ cd hdf5-1.8.21
-```
-Build hdf5:
-```
-$ ./configure --prefix=$NEMOSYS_INSTALL_PATH/hdf5
-$ make -j8
-$ make install
-```
-
-#### Building CGNS ####
-Unpack CGNS from the `neomsys_tpls` directory:
-```
-$ tar zxf cgnslib_3.2.1.tar.gz
-$ cd cgnslib_3.2.1
-```
-Build cgns:
-```
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH/cgns -DCGNS_BUILD_SHARED=ON -DCGNS_BUILD_CGNSTOOLS=ON -DCGNS_ENABLE_HDF5=ON -DHDF5_INCLUDE_PATH=$NEMOSYS_INSTALL_PATH/hdf5/include -DHDF5_LIBRARY=$NEMOSYS_INSTALL_PATH/hdf5/lib/libhdf5.so ..
-$ make -j8
-$ make install
-```
 
 #### Building Netgen ####
 Unpack Netgen from the `nemosys_tpls` directory:
@@ -172,22 +145,6 @@ $ make -j8
 $ make install
 ```
 
-#### Build VTK ####
-Unpack VTK from the `nemosys_tpls` directory:
-```
-$ tar xzf VTK-8.1.1.tar.gz
-cd VTK-8.1.1
-```
-Build vtk:
-```
-$ mkdir build
-$ cd build
-$ export CC=mpicc
-$ export CXX=mpicxx
-$ cmake -DVTK_Group_MPI=ON -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH/vtk ..
-$ make -j8
-$ make install
-```
 See the building Nemosys section to proceed from this point and complete the build.
 
 ## License ##
