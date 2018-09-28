@@ -39,6 +39,13 @@ void meshStitcher::initVolCgObj()
             ELEMENTAL, partitions[iCg]->getNElement(),1);
     // stitiching new partions to partition 0
     // close partition CGNS file to avoid clutter
+    // MS: writing ghost mesh before closing
+    std::vector<std::string> secNames;
+    partitions[iCg]->getSectionNames(secNames);
+    auto its = std::find(secNames.begin(),secNames.end(),":T4:virtual");
+    if ( its!=secNames.end() )
+        meshBase::Create(partitions[iCg]->getSectionMesh(*its),"_virtual_"+find_name(cgFileNames[iCg])+".vtu")->write();
+    // End of ghost mesh
     if (iCg)
     {
       partitions[0]->stitchMesh(partitions[iCg].get(),true);

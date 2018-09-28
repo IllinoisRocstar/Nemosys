@@ -806,7 +806,85 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       }
     }
   }
+  // MS -> Taiyo
+  // removig false positive cells (cells with three 
+  // shared node and zero shared face with the partition
+  // strategy: all real virtual cells should have at least
+  //           a face shared with current partition
+  if (vol)
+  {
+    // create an edge table for the other partition
+    vtkSmartPointer<vtkEdgeTable> eTab = createPartitionEdgeTable(you);
+    if (!eTab)
+    {
+        std::cerr << "Problem in building partition edge table.\n";
+    }
+    std::cout << "Number of edges : " << eTab->GetNumberOfEdges() << std::endl;
+    std::vector<int> rmvLst;
+    for (auto icId = sentCells[me][you].begin(); icId != sentCells[me][you].end(); icId++)
+    {
+      // get all edges of the cells and make sure at least three are
+      // shared with the current partition
+      std::map<int, std::vector<double>> cellPntIdCrd = partitions[me]->getCell(*icId);
+      // loop through point pairs
+      int nShrEdg = 0;
+      for (auto iid1=cellPntIdCrd.begin(); iid1!=cellPntIdCrd.end(); iid1++)
+      {
+        for (auto iid2=std::next(iid1,1); iid2!=cellPntIdCrd.end(); iid2++)  
+        {
+          // convert to process local
+          int pntId1 = partToGlobNodeMap[me][iid1->first];
+          int pntId2 = partToGlobNodeMap[me][iid2->first];
+          if ( (eTab->IsEdge(globToPartNodeMap[you][pntId1], globToPartNodeMap[you][pntId2]))>0 )
+            nShrEdg++;
+        }
+      }
+      if (nShrEdg < 3)
+          rmvLst.push_back(*icId);
+    }
+    std::cout << " Number of cells to remove " << rmvLst.size() << std::endl;
+    for (auto icId = rmvLst.begin(); icId != rmvLst.end(); icId++)
+    {
+        sentCells[me][you].erase(*icId);
+        int globId = partToGlobCellMap[me][*icId];
+        this->receivedCells[you][me].erase(globId);
+    }
+  }
+  // MS
+
 }
+
+vtkSmartPointer<vtkEdgeTable> RocPartCommGenDriver::createPartitionEdgeTable(int iPart)
+{
+    if (iPart>partitions.size())
+    {
+        std::cerr << "Wrong partition number, there are " << partitions.size() << " partitions exisiting.\n";
+        throw;
+    }
+    vtkSmartPointer<vtkEdgeTable> eTab = vtkSmartPointer<vtkEdgeTable>::New();    
+    eTab->Initialize();
+    eTab->Reset();
+    eTab->InitEdgeInsertion(partitions[iPart]->getNumberOfPoints());
+    int test;
+    // loop through all cells of the partition
+    for (int ic=0; ic<partitions[iPart]->getNumberOfCells(); ic++)
+    {
+      // traverse all edges of the cell
+      // get all edges of the cells and make sure at least three are
+      // shared with the current partition
+      std::map<int, std::vector<double>> cellPntIdCrd = partitions[iPart]->getCell(ic);
+      // only works for tets for now
+      for (auto iid1=cellPntIdCrd.begin(); iid1!=cellPntIdCrd.end(); iid1++)
+        for (auto iid2=std::next(iid1,1); iid2!=cellPntIdCrd.end(); iid2++)  
+        {
+            test = eTab->InsertEdge(iid1->first, iid2->first);   
+            //if (test>0)
+            //    std::cout << "Added " << iid1->first << " " << iid2->first << std::endl;
+        }
+    }
+    return eTab;
+}
+
 
 void RocPartCommGenDriver::getSharedPatchInformation()
 {
@@ -1559,7 +1637,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
         if (this->surfWithSol)
         {
           // transfer data to the surf-partition-with-virtual-cells mesh 
-          std::cout << "Working on  " << "_"+std::to_string(me)+"_real_patch_"+std::to_string(it->first)+".vtu\n";   
           this->burnSurfWithSol->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
           if (this->writeAllFiles>1) 
               patchOfPartitionWithRealMesh.get()->write("_"+std::to_string(me)+
@@ -1641,6 +1718,17 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                   dataName = this->burnSurfWithSol->getDataSet()->GetCellData()->GetArrayName(i);
                   patchOfPartitionWithRealMesh->getCellDataArray(dataName, cellData);
                 }
+                // MS : working on cell data for virtual cells
+                // getting number of virtual cells for partition
+                std::cout << "prefix = " << prefix << " nVirtualCell = " << numVirtualCells << std::endl;
+                // setting virtual cell values to -NaN or 0 depending on type
+                // knowing the virtual data are always at the end
+                // just applying to ifluid_b files for now
+                if (prefix =="ifluid_b")
+                    for (int k=cellData.size()-numVirtualCells; k<cellData.size(); k++)
+                        cellData[k] = -987654321;
+                std::cout << "Size of cell data = " << cellData.size() << std::endl;
+                // MS end
                 if (dataName != "bcflag" && dataName != "patchNo" && dataName != "cnstr_type")
                 {
                   // Zero out grid speed for re-meshing
@@ -2179,7 +2267,7 @@ void RocPartCommGenDriver::comWriter(int proc)
     comFile << tmpStr << std::endl;
     tmpStr = "";
     for (auto itr2 = this->sentCellsTmp[itr-this->sentCellsTmp.begin()].begin();
-        itr2 < this->sentCellsTmp[itr-this->sentCellsTmp.begin()].end();
+        itr2 != this->sentCellsTmp[itr-this->sentCellsTmp.begin()].end();
         ++itr2)
     {
       cellIdStr = std::to_string(*itr2);
@@ -2234,7 +2322,7 @@ void RocPartCommGenDriver::comWriter(int proc)
     comFile << tmpStr << std::endl;
     tmpStr = "";
     for (auto itr2 = this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].begin();
-        itr2 < this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].end();
+        itr2 != this->sentNodesTmp[itr-this->neighborProcsTmp.begin()].end();
         ++itr2)
     {
       vertIdStr = std::to_string(*itr2);
@@ -2272,7 +2360,9 @@ void RocPartCommGenDriver::comWriter(int proc)
         ++itr2)
     {
       vertIdStr = std::to_string(*itr2);
+  std::cout << __FILE__ << __LINE__ << std::endl;
       tmpStr += std::string(8 - vertIdStr.length(), ' ') + vertIdStr;
+  std::cout << __FILE__ << __LINE__ << std::endl;
       if (((itr2-this->sharedNodesTmp[itr-this->neighborProcsTmp.begin()].begin())+1) % 10 == 0)
       {
        comFile << tmpStr << std::endl;
