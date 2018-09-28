@@ -210,11 +210,11 @@ class RocPartCommGenDriver : public NemDriver
   private:
     // --- temporary vectors to assist with writing out pconn info to Rocstar input files
     std::vector<int> neighborProcsTmp;
-    std::vector< std::vector<int> > sharedNodesTmp;
-    std::vector< std::vector<int> > sentNodesTmp;
-    std::vector< std::vector<int> > receivedNodesTmp;
-    std::vector< std::vector<int> > sentCellsTmp;
-    std::vector< std::vector<int> > receivedCellsTmp;
+    std::map<int,std::vector<int> > sharedNodesTmp;
+    std::map<int,std::vector<int> > sentNodesTmp;
+    std::map<int,std::vector<int> > receivedNodesTmp;
+    std::map<int,std::vector<int> > sentCellsTmp;
+    std::map<int,std::vector<int> > receivedCellsTmp;
     std::map<int,int> totalTrisPerPatch;
     // Rocflu
     // <proc<patch,zone>>
