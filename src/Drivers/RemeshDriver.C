@@ -169,9 +169,10 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   int writeIntermediateFiles = 0;
   double searchTolerance = 1e-9;
   if (inputjson.has_key("Search Tolerance"))
-  {
     searchTolerance = inputjson["Search Tolerance"].as<double>();
-  }
+  else
+    searchTolerance = 1.e-16;    
+
   if (inputjson.has_key("Write Intermediate Files"))
   {
     writeIntermediateFiles = inputjson["Write Intermediate Files"].as<int>();
