@@ -81,11 +81,13 @@ public:
   cgnsAnalyzer(std::string fname, int verb = 0) :
     cgFileName(fname), isUnstructured(false), zoneType(CG_ZoneTypeNull),
     indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
-    nVertex(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
+    nVertex(0), nRindNdeStr(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
     solutionDataPopulated(false),
     searchEps(1e-9), kdTree(NULL), kdTreeElem(NULL),vrtxCrd(NULL),vrtxIdx(NULL),
     isMltZone(false),vtkMesh(0),_verb(verb)
-  {};
+  {
+    cgRindCellIds.clear();
+  };
 
   virtual ~cgnsAnalyzer()
   {
@@ -244,6 +246,7 @@ protected:
   int nBase;
   int nZone;
   int nVertex;
+  int nRindNdeStr;
   int nElem;
   int nSection;
   int nVrtxElem;
@@ -282,6 +285,7 @@ protected:
   bool isMltZone;
   std::vector<std::string> multZoneNames;
   vtkSmartPointer<vtkDataSet> vtkMesh;
+  std::vector<int> cgRindCellIds;  
   // other flags
   int _verb;
 
