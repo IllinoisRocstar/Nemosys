@@ -134,6 +134,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   else if (zoneType == CG_Structured)
   {
     if (verb) std::cout << "Zone type = CG_Structured\n";
+    std::cerr << "Warning: Structured meshes only supported experimentally.\n";
   }
   else if (zoneType == CG_Unstructured)
   {
@@ -283,6 +284,9 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
       case CG_QUAD_4:
         nVrtxElem = 4;
         break;
+      case CG_TETRA_10:
+        nVrtxElem = 10;
+        break;
       default:
         std::cerr << "Unknown element type " << sectionType << std::endl;
         break;
@@ -294,6 +298,50 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
     // using lambda function
     //std::for_each(elemConn.begin(), elemConn.end(), [](int& d) { d -= 1; });
     if (verb) std::cout << "Size of connectivity vector = " << elemConn.size() << std::endl;
+  }
+  else if (zoneType == CG_Structured)
+  {
+    std::cerr << "Warning: converting implicit structured connectivity to 8-Node hexahedrals.\n";
+    sectionType = CG_HEXA_8;
+    elemConn.resize(8*nElem, -1);
+    int iElm;
+    int bs,d1,d2,d3,d4,d5;
+    iElm = 0;
+    bs = 0;
+    d4 = cgCoreSize[1]*cgCoreSize[0];
+    for (int k=1; k < cgCoreSize[2]; k++)
+    {
+      d1 = d4*k;      
+      for (int j=1; j < cgCoreSize[1]; j++)
+      {
+        d2 = d1 + cgCoreSize[0]*j;
+        for (int i=1; i < cgCoreSize[0]; i++)
+        {
+          d3 = d2 + i;
+          elemConn[bs] = d3;
+          elemConn[bs+1] = d3 + 1;
+          elemConn[bs+2] = d3 + 1 + cgCoreSize[0];
+          elemConn[bs+3] = d3 + cgCoreSize[0];
+          elemConn[bs+4] = d3 + d4;
+          elemConn[bs+5] = d3 + 1 + d4;
+          elemConn[bs+6] = d3 + 1 + cgCoreSize[0] + d4;
+          elemConn[bs+7] = d3 + cgCoreSize[0] + d4;
+          std::cout << "Elem conn = "
+              << elemConn[bs] << " "
+              << elemConn[bs+1] << " "
+              << elemConn[bs+2] << " "
+              << elemConn[bs+3] << " "
+              << elemConn[bs+4] << " "
+              << elemConn[bs+5] << " "
+              << elemConn[bs+6] << " "
+              << elemConn[bs+7] << "\n";
+          bs += 8;
+          iElm +=1;
+        }
+      }
+    }
+
+    std::cerr << "nElm = " << iElm << "\n";
   }
 }
 
@@ -538,6 +586,9 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
     case CG_QUAD_4:
       nNdeElm = 4;
       break;
+    case CG_TETRA_10:
+      nNdeElm = 10;
+      break;
     default:
       std::cerr << "Unknown element type " << sectionType << std::endl;
       break;
@@ -628,6 +679,9 @@ void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<int>& conn, i
       case CG_QUAD_4:
         nVrtxElem = 4;
         break;
+      case CG_TETRA_10:
+        nVrtxElem = 10;
+        break;
       default:
         std::cerr << "Unknown element type " << secTyp << std::endl;
         break;
@@ -708,6 +762,9 @@ vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
             break;
           case CG_QUAD_4:
             dataSet_tmp->InsertNextCell(VTK_QUAD, vtkElmIds);
+            break;
+          case CG_TETRA_10:
+            dataSet_tmp->InsertNextCell(VTK_QUADRATIC_TETRA, vtkElmIds);
             break;
           default:
             std::cerr << "Unknown element type " << sectionType << std::endl;
@@ -1008,22 +1065,50 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
   // reading actual data from the file
   int one = 1;
   dataType = solutionGridLocation[slnCntr];
-  if (dataType == CG_Vertex)
+  if (isUnstructured)
   {
-    slnData.resize(nVertex, -1.0);
-    rmax[0] = nVertex;
-  }
-  else if (dataType == CG_CellCenter)
-  {
-    slnData.resize(nElem, -1.0);
-    rmax[0] = nElem;
+    if (dataType == CG_Vertex)
+    {
+      slnData.resize(nVertex, -1.0);
+      rmax[0] = nVertex;
+    }
+    else if (dataType == CG_CellCenter)
+    {
+      slnData.resize(nElem, -1.0);
+      rmax[0] = nElem;
+    }
+    else
+    {
+      std::cerr << "Unknown data gird location " << solutionGridLocation[slnCntr]
+                << std::endl;
+      return UNKNOWN;
+    }
   }
   else
   {
-    std::cerr << "Unknown data gird location " << solutionGridLocation[slnCntr]
-              << std::endl;
-    return UNKNOWN;
+    if (dataType == CG_Vertex)
+    {
+      slnData.resize(nVertex, -1.0);
+      rmax[0] = cgCoreSize[0]; 
+      rmax[1] = cgCoreSize[1]; 
+      rmax[2] = cgCoreSize[2]; 
+    }
+    else if (dataType == CG_CellCenter)
+    {
+      slnData.resize(nElem, -1.0);
+      rmax[0] = cgCoreSize[3]; 
+      rmax[1] = cgCoreSize[4]; 
+      rmax[2] = cgCoreSize[5]; 
+    }
+    else
+    {
+      std::cerr << "Unknown data gird location " << solutionGridLocation[slnCntr]
+                << std::endl;
+      return UNKNOWN;
+    }
+  
   }
+
   if (isUnstructured)
   {
     if (dt == CG_RealDouble)
@@ -1258,6 +1343,9 @@ void cgnsAnalyzer::exportToVTKMesh()
           break;
         case CG_QUAD_4:
           dataSet_tmp->InsertNextCell(VTK_QUAD, vtkElmIds);
+          break;
+        case CG_TETRA_10:
+          dataSet_tmp->InsertNextCell(VTK_QUADRATIC_TETRA, vtkElmIds);
           break;
         default:
           std::cerr << "Unknown element type " << sectionType << std::endl;
