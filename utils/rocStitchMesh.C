@@ -32,6 +32,10 @@ int main(int argc, char* argv[])
   
   std::vector<std::string> cgFnames(getCgFNames(argv[1], argv[2], argv[3]));
   printVec(cgFnames);
+
+  cgFnames.pop_back();
+  cgFnames.pop_back();
+  cgFnames.pop_back();
   
   int surf = std::stoi(argv[4]);
   meshStitcher* stitcher = new meshStitcher(cgFnames, (bool) surf);
