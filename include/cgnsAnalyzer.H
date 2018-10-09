@@ -85,7 +85,7 @@ public:
     nVertex(0), nRindNdeStr(0), nElem(0), cellDim(0), physDim(0), nVrtxElem(0),
     solutionDataPopulated(false),
     searchEps(1e-9), kdTree(NULL), kdTreeElem(NULL),vrtxCrd(NULL),vrtxIdx(NULL),
-    isMltZone(false),vtkMesh(0),_verb(verb)
+    isMltZone(false),vtkMesh(0),_verb(verb), _rindOff(false)
   {
     cgRindCellIds.clear();
     cgRindNodeIds.clear();
@@ -299,6 +299,7 @@ protected:
   std::vector<int> cgRindNodeIds;  
   // other flags
   int _verb;
+  bool _rindOff;
 
 };
 

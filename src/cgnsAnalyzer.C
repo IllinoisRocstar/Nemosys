@@ -69,7 +69,7 @@ void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
   {
     auto it = std::find(rmvIdx.begin(), rmvIdx.end(), id);
     if (it != rmvIdx.end())
-        continue;
+      continue;
     else
     {
       nnd++;
@@ -1788,6 +1788,10 @@ void cgnsAnalyzer::stitchMesh(cgnsAnalyzer* inCg, bool withFields)
     return;
   }
 
+  // removing rind data (if any)
+  cleanRind();
+  inCg->cleanRind();
+
   // (re)building the kdTree
   buildVertexKDTree();
 
@@ -2043,6 +2047,9 @@ void cgnsAnalyzer::cleanRind()
    // only supports structured meshes for now
    if (!isStructured())
       return;
+   if (_rindOff)
+      return;
+   std::cout << "Cleaning up rind data from the grid.\n";
    // create map btw real and rind node ids
    std::map<int, int> old2NewNdeIds;
    int nNewNde = 1;
@@ -2111,17 +2118,29 @@ void cgnsAnalyzer::cleanRind()
       for (auto i : cgRindCellIds)
           intRindCellId.push_back(i-1);
       // removing rind data
+      std::cout << "Cleaning up rind solution data ";
+      int cntr = 29;
       for (auto sd : slnDataCont)
       {
-        std::cerr << sd->getDataName() << std::endl;
+        std::cout << "..";
+        cntr+=2;
+        if (cntr > 70)
+        {
+            cntr = 0;
+            std::cout << "\n";
+        }
+        //std::cerr << sd->getDataName() << std::endl;
         if (sd->getDataType() == NODAL)
           sd->rmvDataIdx(intRindNodeId);
         else if (sd->getDataType() == ELEMENTAL)
           sd->rmvDataIdx(intRindCellId);
       }
+      std::cout << "\n";
    }
    // fix number of nodes
    nVertex -= cgRindNodeIds.size();
    // fix number of elements
    nElem -= cgRindCellIds.size();
+   // setting flag
+   _rindOff = true;
 }
