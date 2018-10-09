@@ -61,6 +61,7 @@ public:
   void appendData(const vecSlnType& data, int inNData, int inNDim);
   void getData(vecSlnType& inBuff, int& outNData, int& outNDim);
   void getData(vecSlnType& inBuff, int& outNData, int& outNDim, std::vector<bool> mask);
+  void rmvDataIdx(const std::vector<int> rmvIdx);
   solutionData* getPtr() { return(this); };
   std::string getDataName() { return(dataName); };
   int getNDim() { return(nDim); };
@@ -87,8 +88,10 @@ public:
     isMltZone(false),vtkMesh(0),_verb(verb)
   {
     cgRindCellIds.clear();
+    cgRindNodeIds.clear();
   };
 
+  // destructor
   virtual ~cgnsAnalyzer()
   {
     // close file if still open
@@ -105,7 +108,7 @@ public:
     clearAllSolutionData(); 
   };
 
-  // loading mesh
+  // top-level loading mesh
   void loadGrid(std::string fname, int verb=0)
   {
    cgFileName = fname;
@@ -122,6 +125,7 @@ public:
     }
   };
 
+  // general purpose IO
   void loadGrid(int verb=0);
   void loadZone(int zIdx, int verb=0);
  
@@ -201,9 +205,11 @@ public:
   void checkVertex();
   bool checkElmConn(int nSharedNde);
   std::vector<double> getElmCntCoords(MAd::pMesh msh);
+
   // export to vtk format without going through madlib/gmsh (needed for simmetrix interface)
   void exportToVTKMesh(); 
   vtkSmartPointer<vtkDataSet> getVTKMesh();
+  
   // write data from existing vtkdataset into open cgns file (for replacing data in file)
   void overwriteSolData(meshBase* mbObj);
   void overwriteSolData(const std::string& fname, const std::string& ndeName, int slnIdx, CG_DataType_t dt, void* data);
@@ -214,6 +220,10 @@ public:
 
   // others (special purpose)
   bool isMultiZone();
+  bool isCgRindNode(int cgNdeId);
+  bool isCgRindCell(int cgCellId);
+  void cleanRind();
+
 
 protected:
    void populateSolutionDataNames();
@@ -286,6 +296,7 @@ protected:
   std::vector<std::string> multZoneNames;
   vtkSmartPointer<vtkDataSet> vtkMesh;
   std::vector<int> cgRindCellIds;  
+  std::vector<int> cgRindNodeIds;  
   // other flags
   int _verb;
 
