@@ -61,6 +61,27 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
   outNDim = nDim;
 }
 
+void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
+{
+  vecSlnType nsdv;
+  int nnd = 0;
+  for (int id=0; id<nData; id++)
+  {
+    auto it = std::find(rmvIdx.begin(), rmvIdx.end(), id);
+    if (it != rmvIdx.end())
+        continue;
+    else
+    {
+      nnd++;
+      for (int iDim=0; iDim<nDim; iDim++)
+        nsdv.push_back(slnData[id*nDim + iDim]); 
+    }
+  }
+  slnData = nsdv;
+  nData = nnd; 
+}
+
+
 /********************************************
     cgnsAnalyzer class implementation
 *********************************************/
@@ -82,6 +103,7 @@ void cgnsAnalyzer::loadGrid(int verb)
     indexBase = 1;
   if (cg_base_read(indexFile, indexBase, basename, &cellDim, &physDim)) cg_error_exit();
   baseName = basename;
+
   // reading units
   if (cg_goto(indexFile, indexBase, "end")) cg_error_exit();
   if (cg_units_read(&massU, &lengthU, &timeU, &tempU, &angleU)) cg_error_exit();
@@ -133,6 +155,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   }
   else if (zoneType == CG_Structured)
   {
+    isUnstructured = false;
     if (verb) std::cout << "Zone type = CG_Structured\n";
     std::cerr << "Warning: Structured meshes only supported experimentally.\n";
   }
@@ -195,15 +218,19 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
         cg_error_exit();
     if (cg_rind_read(rdata))
         cg_error_exit();
-    nRindNdeStr = 2*rdata[1]; // assuming same number in each direction
+    nRindNdeStr = rdata[1]; 
+    // assuming same number in each direction and same number
+    // of rind cells layers as the number of rind node layers
+    // (true condition for Rocflo)
+    std::cout << "nRindNdeStr = " << nRindNdeStr << "\n";
     // number of real vertices + nRindNode in each direction
-    cgCoreSize[0] += nRindNdeStr;
-    cgCoreSize[1] += nRindNdeStr;
-    cgCoreSize[2] += nRindNdeStr;
+    cgCoreSize[0] += 2*nRindNdeStr;
+    cgCoreSize[1] += 2*nRindNdeStr;
+    cgCoreSize[2] += 2*nRindNdeStr;
     // each rind node adds a row of elements as well
-    cgCoreSize[3] += nRindNdeStr;
-    cgCoreSize[4] += nRindNdeStr;
-    cgCoreSize[5] += nRindNdeStr;
+    cgCoreSize[3] += 2*nRindNdeStr;
+    cgCoreSize[4] += 2*nRindNdeStr;
+    cgCoreSize[5] += 2*nRindNdeStr;
     nVertex = cgCoreSize[0] * cgCoreSize[1] * cgCoreSize[2] ; 
     nElem = cgCoreSize[3] * cgCoreSize[4] * cgCoreSize[5];
     rmin[0] = 1;
@@ -218,6 +245,21 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
     std::cout << "Number of vertex = " << nVertex
               << "\nNumber of elements = " << nElem
               << std::endl;
+
+  // capturing rinde node ids
+  int ndId = 0;
+  if (nRindNdeStr != 0)
+    for (int i=rmin[2]; i<=rmax[2]; i++)
+      for (int j=rmin[1]; j<=rmax[1]; j++)
+        for (int k=rmin[0]; k<=rmax[0]; k++)
+        {
+          ndId++;
+          if ( (i<=nRindNdeStr || (rmax[2]-i)<nRindNdeStr) ||
+               (j<=nRindNdeStr || (rmax[1]-j)<nRindNdeStr) ||
+               (k<=nRindNdeStr || (rmax[0]-k)<nRindNdeStr) )
+              cgRindNodeIds.push_back(ndId);
+        }
+  std::cout << "Total number of rind nodes = " << cgRindNodeIds.size() << "\n";
 
   // reading coordinates
   int one = 1;
@@ -324,16 +366,8 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   {
     // Generating connectivity for structured meshes since file does not contain data
     std::cerr << "Warning: converting implicit structured connectivity to 8-Node hexahedrals.\n";
-    std::cout << "cgCoreSize = " 
-        << cgCoreSize[0] << " "
-        << cgCoreSize[1] << " "
-        << cgCoreSize[2] << " "
-        << cgCoreSize[3] << " "
-        << cgCoreSize[4] << " "
-        << cgCoreSize[5] << "\n";
     sectionType = CG_HEXA_8;
     elemConn.resize(8*nElem, -1);
-    bool isRindCell1, isRindCell2, isRindCell3;
     int iElm;
     int bs,d1,d2,d3,d4,d5;
     iElm = 0;
@@ -341,24 +375,13 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
     d4 = cgCoreSize[1]*cgCoreSize[0];
     for (int k=1; k < cgCoreSize[2]; k++)
     {
-      // rind detector
-      isRindCell1 = false;
-      if (k <= nRindNdeStr || (cgCoreSize[2]-k) <= nRindNdeStr)
-         isRindCell1 = true;
       d1 = d4*(k-1);      
       for (int j=1; j < cgCoreSize[1]; j++)
       {
-        // rind detector
-        isRindCell2 = false;
-        if (j <= nRindNdeStr || (cgCoreSize[1]-j) <= nRindNdeStr)
-           isRindCell2 = true;
         d2 = d1 + (cgCoreSize[0])*(j-1);
         for (int i=1; i < cgCoreSize[0]; i++)
         {
           // rind detector
-          isRindCell3 = false;            
-          if (i <= nRindNdeStr || (cgCoreSize[0]-i) <= nRindNdeStr)
-             isRindCell3 = true;
           d3 = d2 + i;
           elemConn[bs] = d3;
           elemConn[bs+1] = d3 + 1;
@@ -379,7 +402,9 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
           //    << elemConn[bs+7] << "\n";
           bs += 8;
           iElm +=1;
-          if (isRindCell1 || isRindCell2 || isRindCell3)
+          if ( (k <= nRindNdeStr || (cgCoreSize[2]-k) <= nRindNdeStr) ||
+               (j <= nRindNdeStr || (cgCoreSize[1]-j) <= nRindNdeStr) ||
+               (i <= nRindNdeStr || (cgCoreSize[0]-i) <= nRindNdeStr) )
              cgRindCellIds.push_back(iElm);
         }
       }
@@ -1351,6 +1376,8 @@ void cgnsAnalyzer::exportToVTKMesh()
 {
   if (!vtkMesh)
   {
+    // remove rind data if any
+    cleanRind();
     // points to be pushed into dataSet
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
     // declare vtk dataset
@@ -1364,22 +1391,11 @@ void cgnsAnalyzer::exportToVTKMesh()
     }
     // add points to vtk mesh data structure 
     dataSet_tmp->SetPoints(points);
-
     // allocate space for elements
     dataSet_tmp->Allocate(nElem);
-
-    // for structured zones we should avoid writing rind cells
-    bool neglectRind = !(cgRindCellIds.empty());
-
     // add the elements
     for (int i = 0; i < nElem; ++i)
     {
-      if (neglectRind)
-      {
-        auto it = std::find(cgRindCellIds.begin(), cgRindCellIds.end(), i+1);
-        if ( it != cgRindCellIds.end() )
-           continue;
-      }
       vtkSmartPointer<vtkIdList> vtkElmIds = vtkSmartPointer<vtkIdList>::New();
       std::vector<int> cgnsElmIds(getElementConnectivity(i));
       vtkElmIds->SetNumberOfIds(cgnsElmIds.size());
@@ -1995,4 +2011,117 @@ void cgnsAnalyzer::stitchFields(cgnsAnalyzer* inCg)
       }
     }
   }
+}
+
+bool cgnsAnalyzer::isCgRindNode(int cgNodeId)
+{
+  // for structured zones we should avoid writing rind cells
+  if (!cgRindNodeIds.empty())
+  {
+      auto it = std::find(cgRindNodeIds.begin(), cgRindNodeIds.end(), cgNodeId);
+      return ( it != cgRindNodeIds.end() );
+  } 
+  else
+      return false;
+}
+
+bool cgnsAnalyzer::isCgRindCell(int cgCellId)
+{
+  // for structured zones we should avoid writing rind cells
+  if (!cgRindCellIds.empty())
+  {
+      auto it = std::find(cgRindCellIds.begin(), cgRindCellIds.end(), cgCellId);
+      return ( it != cgRindCellIds.end() );
+  } 
+  else
+      return false;
+}
+
+void cgnsAnalyzer::cleanRind()
+{
+   // sanity check
+   // only supports structured meshes for now
+   if (!isStructured())
+      return;
+   // create map btw real and rind node ids
+   std::map<int, int> old2NewNdeIds;
+   int nNewNde = 1;
+   int nRindNde = 0;
+   for (int iNde=1; iNde<=nVertex; iNde++)
+     if (isCgRindNode(iNde))
+     {
+       old2NewNdeIds[iNde] = -1;
+       nRindNde++;
+     }
+     else 
+       old2NewNdeIds[iNde] = nNewNde++;
+   // sanity check
+   if (nRindNde != cgRindNodeIds.size())
+   {
+       std::cerr << "Problem occured during rind node removal.\n";
+       throw;
+   }
+   // remove rind node coords
+   nRindNde = 0;
+   std::vector<double> nxCrd, nyCrd, nzCrd;
+   for (int iVrt=0; iVrt<nVertex; iVrt++)
+   {
+     if (old2NewNdeIds[iVrt+1] < 0)
+     {
+       nRindNde++;
+       continue;
+     }
+     else
+     {
+       nxCrd.push_back(xCrd[iVrt]);
+       nyCrd.push_back(yCrd[iVrt]);
+       nzCrd.push_back(zCrd[iVrt]);
+     }
+   }
+   xCrd = nxCrd;
+   yCrd = nyCrd;
+   zCrd = nzCrd;
+   // sanity check
+   if (nRindNde != cgRindNodeIds.size())
+   {
+     std::cerr << "Problem occured during rind coord removal.\n";
+     throw;
+   }
+   // remove rind elements
+   std::vector<int> newElemConn;
+   for (int iElm=0; iElm <nElem; iElm++)
+   {
+     if (isCgRindCell(iElm+1))
+         continue;
+     for (int id=0; id<8; id++)
+       newElemConn.push_back(old2NewNdeIds[ elemConn[iElm*8+id] ] ); 
+   }
+   elemConn = newElemConn;
+   // update connectivity
+   for (auto i : elemConn)
+       i = old2NewNdeIds[i];
+   // remove rind nodal data
+   // remove rind elemental data
+   if (!slnDataCont.empty())
+   {
+      // internal data index start from zero
+      std::vector<int> intRindCellId, intRindNodeId;
+      for (auto i : cgRindNodeIds)
+          intRindNodeId.push_back(i-1);
+      for (auto i : cgRindCellIds)
+          intRindCellId.push_back(i-1);
+      // removing rind data
+      for (auto sd : slnDataCont)
+      {
+        std::cerr << sd->getDataName() << std::endl;
+        if (sd->getDataType() == NODAL)
+          sd->rmvDataIdx(intRindNodeId);
+        else if (sd->getDataType() == ELEMENTAL)
+          sd->rmvDataIdx(intRindCellId);
+      }
+   }
+   // fix number of nodes
+   nVertex -= cgRindNodeIds.size();
+   // fix number of elements
+   nElem -= cgRindCellIds.size();
 }
