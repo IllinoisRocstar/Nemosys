@@ -206,10 +206,6 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   {
       std::cout << "Created " << rmsh_dir << std::endl;
   }
-
-  // backing up all old cgns files for rocflu (TODO: expensive remove)
-  backUpDir(case_dir, rmsh_dir.string()+"/_flu_bak");
-  backUpDir(burn_dir, rmsh_dir.string()+"/_burn_bak");
   
 
   // remeshing, repartitioning and solution transfer actions
@@ -218,6 +214,16 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
                                                 remeshjson, numPartitions, base_t,
                                                 writeIntermediateFiles, searchTolerance,
                                                 case_name, rmsh_dir.string());
+
+
+  // remove rocout files from remesh time step
+  rmFileName(case_dir, base_t);
+  rmFileName(burn_dir, base_t);
+
+  // backing up all old cgns files for rocflu (TODO: expensive remove)
+  backUpDir(case_dir, rmsh_dir.string()+"/_flu_bak");
+  backUpDir(burn_dir, rmsh_dir.string()+"/_burn_bak");
+  
   // post action
   // remove old cgns files (TODO: copy somewhere)
   // remove old cgns and files
