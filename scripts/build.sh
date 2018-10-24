@@ -2,7 +2,7 @@
 
 # This script will build Nemosys and all of the necessary dependencies
 # given a tarball of projects with gmsh, madlib, hdf5, cgns, netgen and vtk.
-# Usage: 
+# Usage:
 #		./build.sh PATH_TO_NEMOSYS PATH_TO_NEMOSYS_TPLS_TARBALL PATH_TO_INSTALL_DIR
 
 
@@ -62,8 +62,6 @@ tar xzf vtk-7.1.0.tar.gz
 cd VTK-7.1.0
 mkdir build
 cd build
-export CC=mpicc
-export CXX=mpicxx
-cmake -DModule_vtkParallelMPI=ON -DModule_vtkFiltersParallelMPI=ON -DModule_vtkFiltersParallelGeometry=ON -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/vtk ..
+cmake  -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/vtk ..
 make -j${num_threads}
 make install
