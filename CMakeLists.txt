@@ -327,7 +327,7 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
   TARGET_LINK_LIBRARIES(mshTransfer Nemosys)
 
-  INSTALL(TARGETS xmlDump cgns2msh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
+  INSTALL(TARGETS xmlDump cgns2msh rocStitchMesh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
