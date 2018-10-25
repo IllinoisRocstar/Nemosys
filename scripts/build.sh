@@ -43,7 +43,8 @@ cd gmsh-2.15.0-source
 mkdir lib
 cd lib
 cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/gmsh -DDEFAULT=0 -DENABLE_BUILD_LIB=1 -DENABLE_BUILD_SHARED=1 ..
-make lib shared install/fast -j${num_threads}
+make lib shared
+make install/fast -j${num_threads}
 cp ../Mesh/meshPartitionObjects.h $NEMOSYS_DEPS_INSTALL_PATH/gmsh/include/gmsh/
 cp ../Mesh/Generator.h $NEMOSYS_DEPS_INSTALL_PATH/gmsh/include/gmsh/
 
