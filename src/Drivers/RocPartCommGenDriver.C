@@ -2252,7 +2252,9 @@ void RocPartCommGenDriver::comWriter(int proc)
   int nPart = this->partitions.size();
 
   // Set number of borders for each proc
-  int nBorders[partitions.size()] = {0};
+  //int nBorders[partitions.size()] = {0};
+  int nBorders[partitions.size()];
+  memset(nBorders, 0, partitions.size()*sizeof(int));
   for (int i = 0; i < partitions.size(); i++)
   {
     nBorders[i] = 1;
@@ -2492,7 +2494,10 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
 {
 
   // Set number of borders for each proc
-  int nBorders[partitions.size()] = {0};
+  //int nBorders[partitions.size()] = {0};
+  int nBorders[partitions.size()];
+  memset(nBorders, 0, partitions.size()*sizeof(int));
+
   for (int i = 0; i < partitions.size(); i++)
   {
     nBorders[i] = 1;

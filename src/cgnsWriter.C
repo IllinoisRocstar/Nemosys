@@ -1005,7 +1005,9 @@ void cgnsWriter::writeZoneToFile()
     if (typeFlag == 0)
     {
       tmpDim[0] = nVolCellFaces;
-      double gsArray[nVolCellFaces] = {0};
+      //double gsArray[nVolCellFaces] = {0};
+      double gsArray[nVolCellFaces];
+      memset(gsArray, 0.0, nVolCellFaces*sizeof(double));
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
       if (cg_array_write("gs", CG_RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
       if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"gs",0,"end")) 
