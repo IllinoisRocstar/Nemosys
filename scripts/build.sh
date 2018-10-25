@@ -65,3 +65,10 @@ cd build
 cmake  -DCMAKE_INSTALL_PREFIX=$NEMOSYS_DEPS_INSTALL_PATH/vtk ..
 make -j${num_threads}
 make install
+
+# build boost
+cd $NEMOSYS_DEPS_BUILD_DIR/nemosys_tpls
+tar xzf boost_1_68_0.tar.gz
+cd boost_1_68_0
+./bootstrap.sh --prefix=$NEMOSYS_DEPS_INSTALL_PATH/boost
+./b2 install --prefix=$NEMOSYS_DEPS_INSTALL_PATH/boost --with=all
