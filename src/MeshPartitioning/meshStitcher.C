@@ -134,7 +134,10 @@ void meshStitcher::initSurfCgObj()
     {
       // gs field is 'weird' in irocstar files- we don't write it back
       //if (!(*is).compare("gs"))
-      //  continue;
+      if (!(*is).compare("mdot_old"))
+      {
+        continue;
+      }
       std::cout << "Embedding cell-based " << *is << std::endl;
       stitchedMesh->setCellDataArray((*is).c_str(), physData);
     }

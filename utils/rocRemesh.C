@@ -274,7 +274,7 @@ int main(int argc, char* argv[])
      fCgName = fCgName.substr(pos+1);
      std::cout << "Writing remeshed " << fCgName << std::endl;
      // define elementary information
-     cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObj1->getBaseName(), 3, 3);
+     cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObj1->getBaseName(), 3, 3, 0);
      cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
 			cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
 			cgObj1->getAngleUnit());

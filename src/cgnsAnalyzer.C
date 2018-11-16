@@ -1452,10 +1452,16 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
       else
       {
         //gs field is weird in irocstar files we don't write it back
-        if (/*!(ifl->second).compare("gs") ||*/ !(ifl.second).compare("mdot_old"))
+        //if (/*!(ifl->second).compare("gs") ||*/ !(ifl.second).compare("mdot_old"))
+        //
+        // TJW: Removed condition above because we now write out gs
+        // We don't write out mdot_old because it is only on burning surfaces; when
+        // we stitch burning with non-interacting surfaces (which don't have mdot_old),
+        // the VTK stitcher utility only keeps fields that both surfaces have
+        if (!(ifl.second).compare("mdot_old"))
         {
           continue;
-        }
+        } 
         mbObj->getCellDataArray(ifl.second, newData);
       }
       std::cout << "Writing "
