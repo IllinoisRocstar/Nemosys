@@ -53,10 +53,11 @@ class RocPartCommGenDriver : public NemDriver
   // --- write cgns files
   private:
     // write vol cgns (proc is partition num, type is patch num, prefix usually fluid)
-    void writeVolCgns(const std::string& prefix, int proc, int type, int gsExists); 
+    void writeVolCgns(const std::string& prefix, int proc, int type); 
     // write surf cgns (proc is partition num, other info is deduced from maps)
     void writeSurfCgns(const std::string& prefix, int proc); 
     //void writeVolGs(const std::string& prefix, int proc, int type);
+    void writeVolCellFaces(const std::string& prefix, int proc, int type);
 
   // --- write Rocstar files
   private:
@@ -205,7 +206,7 @@ class RocPartCommGenDriver : public NemDriver
                              vtkSmartPointer<vtkIdList> cellIdsList,
                              vtkSmartPointer<vtkGenericCell> genCell);
     // restructure Pconn information so that Rocstar can read it properly
-    void restructurePconn(std::vector<int> &pconnVec, int proc, int volOrSurf, std::map<int,int> old2New);
+    void restructurePconn(std::vector<int> &pconnVec, int proc, int volOrSurf, std::map<int,int> old2New, int& nGhost);
     // Map old to new indices for point data
     void mapOld2NewPointData(std::vector<double> &pointData, const std::map<int,int> &new2Old);
     // function for re-ordering tri indices

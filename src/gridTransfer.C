@@ -362,7 +362,7 @@ void gridTransfer::writeTrgCg(std::string cgFName)
   std::cout << "Writing " << cgFName << std::endl;
   cgnsAnalyzer* cgObj1 = trgCgObjs[0];
   // define elementary information
-  cgnsWriter* cgWrtObj = new cgnsWriter(cgFName, cgObj1->getBaseName(), 3, 3);
+  cgnsWriter* cgWrtObj = new cgnsWriter(cgFName, cgObj1->getBaseName(), 3, 3, 0);
   cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
         cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
         cgObj1->getAngleUnit());

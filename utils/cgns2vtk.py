@@ -53,46 +53,42 @@ def get_time(fname):
     return t
 
 
+# Get list of files
+file_list = glob.glob(file_string[0])
+file_list = sorted(file_list, key=get_time)
+
+# Get number of time steps output
+all_base_t = []
+for file in file_list:
+    base_t = file.split('_')[1]
+    if (base_t not in all_base_t):
+        all_base_t.append(base_t)
+
 # For each type of file
 for itype in range(len(file_string)):
+
+    # Check if file of each type exist in directory
+    file_list = glob.glob(file_string[itype])
+    if len(file_list) == 0:
+        continue
 
     # Create stitched result subdirectory
     os.system('rm -rf ' + file_type[itype])
     os.system('mkdir ' + file_type[itype])
 
-    # Get and sort filenames by time
-    file_list = glob.glob(file_string[itype])
-    file_list = sorted(file_list, key=get_time)
+    itime = 0
+    # For each time step
+    for base_t in all_base_t:
 
-    # Get number of partitions for each file type
-    surf = surf_bool[itype]
-    file_list_single = []
-    if len(file_list) != 0:
-        if surf:
-            base_t = file_list[0].split('_')[2]
-        else:
-            base_t = file_list[0].split('_')[1]
-        for file in file_list:
-            if base_t in file:
-                print(file)
-                file_list_single.append(file)
-
-    if len(file_list_single) != 0:
-        npart = len(file_list_single)
-        ntime = int(len(file_list) / npart)
-
-        # For each time step
-        for itime in range(ntime):
-            file = file_list[itime * npart]
-
+        # Get and sort filenames by time
+        file_list = glob.glob(file_string[itype].split('*')[0]+base_t+"*"+file_string[itype].split('*')[1])
+        file_list = sorted(file_list, key=get_time)
+    
+        if len(file_list) != 0:
+            npart = len(file_list)
+    
             surf = surf_bool[itype]
-
-            if surf:
-                base_t = file.split('_')[2]
-            else:
-                base_t = file.split('_')[1]
             prefix = file_prefix_string[itype]
-
             os.system('rocStitchMesh ' + '.' + ' ' + prefix + ' ' + base_t + ' ' + str(surf))
 
             list_of_files = glob.glob('./*.vtu')
@@ -100,3 +96,5 @@ for itype in range(len(file_string)):
                 latest_file = max(list_of_files, key=os.path.getctime)
                 fname = file_type[itype] + '_' + str(itime)
                 os.system('mv ' + latest_file + ' ' + file_type[itype] + '/' + fname + '.vtu')
+
+            itime = itime + 1
