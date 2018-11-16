@@ -91,12 +91,38 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
         return 1;
       }
 
+      // Mesh Size
+      //--------------------------------------------
       // set the mesh size
+      // params->meshSize is multiplied by the largest edge of the coordinate-aligned bonding box
+      // to give a typical size of the cell edges
       MS_setMeshSize(mcase, modelDomain, 2, params->meshSize, 0);
+
+      // Anisotropic Curvature Refinement
+      //--------------------------------------------
       // setting curvature-based refinement params
+      // params->anisoMeshCurv must be < 0.5
+      // The mesh size h is selected such that d/h < par. par should always be less than 0.5.
+      // Useful values for par are typically in the range of 0.01 to 0.4 (smaller value = more refinement).
       MS_setAnisoMeshCurv(mcase, modelDomain, 2, params->anisoMeshCurv);
+
+      // Minimum Curvature Size (not set in JSON, defaults to 0.01)
+      //--------------------------------------------
+      // params->minCurvSize must be < 0.5
+      // The mesh size h is selected such that d/h < par. par should always be less than 0.5.
+      // Useful values for par are typically in the range of 0.01 to 0.4 (smaller value = more refinement).
       MS_setMinCurvSize(mcase, modelDomain, 2, params->minCurvSize);
+
+      // Global Gradation Rate
+      //--------------------------------------------
+      // Allows faster transition of mesh size from finer to coarser areas.
+      // By default, mesh size approximately doubles with each element until it reaches the coarser size.
+      // This function allows a faster transition. For a slower than default transition, MS_setGlobalSizeGradationRate() should be used.
+      // Valid values of factor are between 0 and 1. A factor of 1 is the same as default, ie. the mesh size will double with each element.
+      // As factor decreases, the transition in size will happen in fewer elements (larger jumps in element size), until at a factor = 0,
+      // the mesh will immediately jump to the coarser mesh size with no transition.
       MS_setGlobalSizeGradationRate(mcase, params->glbSizeGradRate);
+
       pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
       // snap model vertices to resulting surface mesh (ensures consistency with model)
       // this causes seg faults when trying to change topology of mesh during improvement
@@ -110,11 +136,25 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
       SurfaceMeshImprover_setShapeMetric(surfaceMeshImprover, ShapeMetricType_MaxAngle,145.);
       // set smoothing type to move vertices down gradient of shape metric
       SurfaceMeshImprover_setSmoothType(surfaceMeshImprover, 1);
-      // set gradation rate
+
+      // Surface Mesh Improver Gradation Rate
+      //--------------------------------------------
+      // Sets the mesh size gradation rate for improvement refinement.
+      // In order to meet the shape metric criteria, the surface mesh improver may locally refine the mesh.
+      // This control sets the gradation rate from the refined entities. Similar to setGlobalSizeGradationRate.
+      // Default value is 2/3.
       SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, params->surfMshImprovGradRate);
-      // allow improver to refine mesh in areas to meet metric
+
+
+      // Surface Mesh Improver Min Size
+      //--------------------------------------------
+      // Allows the mesh improver to refine the mesh to meet the specified criteria.
+      // If this function is called, the mesh improver will be permitted to refine the mesh in areas where
+      // required to meet the specified criteria. The size passed in is the minimum size to which the mesh
+      // will be refined.
       SurfaceMeshImprover_setMinRefinementSize
         (surfaceMeshImprover, 2, params->surfMshImprovMinSize);
+
       // fix intersections after improvement
       SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
       SurfaceMeshImprover_execute(surfaceMeshImprover, prog);

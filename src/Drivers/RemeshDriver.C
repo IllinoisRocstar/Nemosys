@@ -24,6 +24,9 @@ void rmDirContent(boost::filesystem::path const & _dir, bool _skipDir);
 bool expContains(std::string _name, std::string _exp);
 void rmFileName(boost::filesystem::path const & _dir, std::string _fn);
 void cpFileName(boost::filesystem::path const & _src_dir, boost::filesystem::path const & _des_dir, std::string _fn, std::string _starts);
+bool createDir(boost::filesystem::path const & directory);
+
+
 
 
 RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
@@ -57,6 +60,8 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
   // stitch ifluid_nb files
   this->stitchCGNS(ifluidnbNames,1);
   // get stitched meshes from stitcher vector
+
+
   for (int i = 0; i < this->stitchers.size(); ++i)
   {
     //cgObjs.push_back(stitchers[i]->getStitchedCGNS());
@@ -84,6 +89,8 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
     if (writeIntermediateFiles) this->stitchedSurf->write();
     if (writeIntermediateFiles) this->stitchedBurnSurf->write();
   }
+
+
   if (writeIntermediateFiles) this->remeshedSurf->write();
   bool withC2CTransSmooth = 
       (remeshjson.has_key("C2CTransSmooth") ? remeshjson["C2CTransSmooth"].as<bool>() : false);
@@ -133,7 +140,6 @@ void RemeshDriver::remesh(const json& remeshjson)
 
 void RemeshDriver::stitchSurfaces()
 {
-  std::cout << mbObjs.size() << std::endl;
   // stitch b, ni and nb surfaces
   std::vector<std::shared_ptr<meshBase>> surfs;
   surfs.insert(surfs.begin(), mbObjs.begin()+3,mbObjs.end());
@@ -142,7 +148,6 @@ void RemeshDriver::stitchSurfaces()
 
   std::vector<std::shared_ptr<meshBase>> burnSurfs;
   burnSurfs.insert(burnSurfs.begin(), mbObjs.begin()+2, mbObjs.begin()+3);
-  std::cout << "stitching burning surfaces" << std::endl;
   stitchedBurnSurf = meshBase::stitchMB(burnSurfs);
   stitchedBurnSurf->setFileName(prefixPath+"stitchedBurnSurf.vtu");
 }
@@ -176,6 +181,25 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
   if (inputjson.has_key("Write Intermediate Files"))
   {
     writeIntermediateFiles = inputjson["Write Intermediate Files"].as<int>();
+  }
+
+  int writeToTemporaryDirectory = 0;
+  std::string tmp_main_dir;
+  if (inputjson.has_key("Write To Temporary Directory"))
+  {
+    writeToTemporaryDirectory = inputjson["Write To Temporary Directory"].as<int>();
+    if (writeToTemporaryDirectory)
+    {
+      if (inputjson.has_key("Temporary Rocstar Case Directory"))
+      {
+        tmp_main_dir = inputjson["Temporary Rocstar Case Directory"].as<std::string>();
+      }
+      else
+      {
+        std::cerr << "Specify Temporary RocfluMP Case Directory and Temporary RocburnAPN Case Directory in input file.\n";
+        throw;
+      }
+    }
   }
   
   // set temporary dir
@@ -215,14 +239,24 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
                                                 writeIntermediateFiles, searchTolerance,
                                                 case_name, rmsh_dir.string());
 
+  if (writeToTemporaryDirectory)
+  {
+      // backing up all old cgns files for rocflu (TODO: expensive remove)
+      boost::filesystem::remove_all(tmp_main_dir);
+      backUpDir(case_dir+"/../..", tmp_main_dir);
+
+      // set output file to temporary directory
+      case_dir = tmp_main_dir+"/Rocflu/Rocout";
+      burn_dir = tmp_main_dir+"/RocburnAPN/Rocout";
+  }
 
   // remove rocout files from remesh time step
   rmFileName(case_dir, base_t);
   rmFileName(burn_dir, base_t);
 
   // backing up all old cgns files for rocflu (TODO: expensive remove)
-  backUpDir(case_dir, rmsh_dir.string()+"/_flu_bak");
-  backUpDir(burn_dir, rmsh_dir.string()+"/_burn_bak");
+  backUpDir(case_dir, rmsh_dir.string()+"/_flu_bak/");
+  backUpDir(burn_dir, rmsh_dir.string()+"/_burn_bak/");
   
   // post action
   // remove old cgns files (TODO: copy somewhere)

@@ -18,10 +18,10 @@ void cgnsWriter::setUnits(CG_MassUnits_t mu, CG_LengthUnits_t lu,
  angleU = au;
 }
 
-// It is currently unclear whether or not Rocstar actually uses the coordinates or dimensional quantities.
-// Currently they are just stored in the pre-defined maps below. The units defined below are copied directly
-// from what is seen in Rocstar output files. Ideally, we could figure out a way to "transfer" this information
-// from the old CGNS files to the new CGNS files. For now, we use the maps.
+// Note: It is unclear whether or not Rocstar actually uses the coordinates or dimensional quantities.
+// We store them in the pre-defined maps below. The units defined below are copied directly from what is
+// seen in Rocstar output files. However, there are some inconsistencies in units of the same quantities
+// across files. Ideally, we could transfer this information upon remeshing. For now, we use the maps.
 
 // Map defining fluid units
 void cgnsWriter::setFluidUnitsMap()
@@ -33,9 +33,6 @@ void cgnsWriter::setFluidUnitsMap()
   fluidUnitsMap.insert(std::pair<std::string,std::string>("dispX",        "none"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("dispY",        "none"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("dispZ",        "none"));
-  //fluidUnitsMap.insert(std::pair<std::string,std::string>("pconn","none"));      
-  //fluidUnitsMap.insert(std::pair<std::string,std::string>("ridges#1of2","none"));
-  //fluidUnitsMap.insert(std::pair<std::string,std::string>("ridges#1of2","none"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("gs",           "m/s"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("rhof",         "kg/(m^3)"));
   fluidUnitsMap.insert(std::pair<std::string,std::string>("rhovfX",       "kg/(m^2 s)"));
@@ -56,12 +53,6 @@ void cgnsWriter::setFluidDimMap()
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",   dim1));
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateY",   dim1));
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateZ",   dim1));
-  //fluidDimMap.insert(std::pair<std::string,float*>("dispX",         dim));
-  //fluidDimMap.insert(std::pair<std::string,float*>("dispY",         dim));
-  //fluidDimMap.insert(std::pair<std::string,float*>("dispZ",         dim));
-  //fluidDimMap.insert(std::pair<std::string,float*>("pconn", {}));      
-  //fluidDimMap.insert(std::pair<std::string,float*>("ridges#1of2", {}));
-  //fluidDimMap.insert(std::pair<std::string,float*>("ridges#1of2", {}));
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("gs",            dim2));
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhof",          dim2));
   fluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhovfX",        dim2));
@@ -74,9 +65,9 @@ void cgnsWriter::setFluidDimMap()
 }
 
 // Map storing a boolean that determines whether or not the "Magnitude" quantity is
-// output to CGNS files. Currently, this is unused in the Remesh driver, but Rocstar
-// outputs the magnitudes of some x-coordinate quantities, as seen below. This is not
-// required functionality for Rocstar to run, however.
+// output to CGNS files. Currently not used. Rocstar outputs the magnitudes of some
+// x-coordinate quantities, as seen below. This is not required functionality for Rocstar
+// to run, however.
 void cgnsWriter::setFluidMagMap()
 {
   // fluid
@@ -86,9 +77,6 @@ void cgnsWriter::setFluidMagMap()
   fluidMagMap.insert(std::pair<std::string,int>("dispX",        1));
   fluidMagMap.insert(std::pair<std::string,int>("dispY",        0));
   fluidMagMap.insert(std::pair<std::string,int>("dispZ",        0));
-  //fluidMagMap.insert(std::pair<std::strinfloat*ng>("pconn", {}));
-  //fluidMagMap.insert(std::pair<std::strinfloat*ng>("ridges#1of2",
-  //fluidMagMap.insert(std::pair<std::strinfloat*ng>("ridges#1of2",
   fluidMagMap.insert(std::pair<std::string,int>("gs",           0));
   fluidMagMap.insert(std::pair<std::string,int>("rhof",         0));
   fluidMagMap.insert(std::pair<std::string,int>("rhovfX",       1));
@@ -97,7 +85,7 @@ void cgnsWriter::setFluidMagMap()
   fluidMagMap.insert(std::pair<std::string,int>("rhoEf",        0));
   fluidMagMap.insert(std::pair<std::string,int>("pf",           0));
   fluidMagMap.insert(std::pair<std::string,int>("Tf",           0));
-  fluidMagMap.insert(std::pair<std::string,int>("af",           0));              
+  fluidMagMap.insert(std::pair<std::string,int>("af",           0));      
 }
 
 // Map defining ifluid units
@@ -130,7 +118,7 @@ void cgnsWriter::setiFluidUnitsMap()
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("qr",          "kgK/(m^2s)"));
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("rhof_alp",    "kg/m^3"));
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("zoomFact",    "none"));
-  ifluidUnitsMap.insert(std::pair<std::string,std::string>("bflag",       "none"));
+  ifluidUnitsMap.insert(std::pair<std::string,std::string>("gs",          "m/s"));
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("mdot_old",    "kg/(m^2 s)"));
 }
 
@@ -155,9 +143,6 @@ void cgnsWriter::setiFluidDimMap()
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhofvf_alpZ",  dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_alp",     dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("Tb_alp",       dim2));
-  //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpX",      dim));         
-  //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpY",      dim));
-  //ifluidDimMap.insert(std::pair<std::string,float*>("nf_alpZ",      dim));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("pf",           dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("tfX",          dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("tfY",          dim2));
@@ -166,7 +151,7 @@ void cgnsWriter::setiFluidDimMap()
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("qr",           dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("rhof_alp",     dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("zoomFact",     dim2));
-  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("bflag",        dim2));
+  ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("gs",           dim2));
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("mdot_old",     dim2));
 }
 
@@ -211,7 +196,6 @@ void cgnsWriter::setBurnUnitsMap()
   burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateX", "m"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateY", "m"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("CoordinateZ", "m"));
-  burnUnitsMap.insert(std::pair<std::string,std::string>("bflag",       "none"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("pf",          "Pa"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("centersX",    "m"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("centersY",    "m"));
@@ -220,7 +204,8 @@ void cgnsWriter::setBurnUnitsMap()
   burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm",        "K"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("rb_old",      "m/s"));
   burnUnitsMap.insert(std::pair<std::string,std::string>("pf_old",      "Pa"));
-  burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm_old",        "K"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("pf_alp",      "Pa"));
+  burnUnitsMap.insert(std::pair<std::string,std::string>("Tflm_old",    "K"));
 }
 
 // Map defining burn dimensions
@@ -232,16 +217,16 @@ void cgnsWriter::setBurnDimMap()
   burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",  dim1));
   burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateY",  dim1));
   burnDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateZ",  dim1));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("bflag",       dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf",          dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersX",    dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersY",    dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersZ",    dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb",          dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm",        dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb_old",      dim2)); 
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf_old",      dim2));
-  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_old",    dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf",           dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersX",     dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersY",     dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("centersZ",     dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb",           dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm",         dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("rb_old",       dim2)); 
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf_old",       dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("pf_alp",       dim2));
+  burnDimMap.insert(std::pair<std::string,std::vector<float>>("Tflm_old",     dim2));
 }
 
 // Map storing magnitude quantities for burn files.
@@ -262,7 +247,6 @@ void cgnsWriter::setBurnMagMap()
   burnMagMap.insert(std::pair<std::string,int>("pf_old",      0));
   burnMagMap.insert(std::pair<std::string,int>("Tflm_old",    0));
 }
-
 
 // Set type flag for CGNS writer
 // 0 = volume (fluid)
@@ -504,6 +488,7 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
     ndeName.c_str(), slnLoc, &slnIdx)) cg_error_exit();
   float* exponents;
   std::string units;
+
   // volume (Rocflu fluid)
   if (typeFlag == 0)
   {
@@ -512,12 +497,13 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
       exponents = &fluidDimMap[ndeName.c_str()][0];
       if (cg_exponents_write(CG_RealSingle, exponents)) cg_error_exit();
     }
-    if (fluidDimMap.find(ndeName) != fluidDimMap.end())
+    if (fluidUnitsMap.find(ndeName) != fluidUnitsMap.end())
     {
       units = fluidUnitsMap[ndeName.c_str()];
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
+
   // surface (Rocflu ifluid)
   else if (typeFlag == 1)
   {
@@ -526,12 +512,13 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
       exponents = &ifluidDimMap[ndeName.c_str()][0];
       if (cg_exponents_write(CG_RealSingle, exponents)) cg_error_exit();
     }
-    if (ifluidDimMap.find(ndeName) != ifluidDimMap.end())
+    if (ifluidUnitsMap.find(ndeName) != ifluidUnitsMap.end())
     {
       units = ifluidUnitsMap[ndeName.c_str()];
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
+
   // burn (Rocburn iburn_all, burn)
   else if (typeFlag == 2)
   {
@@ -542,12 +529,13 @@ void cgnsWriter::writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc
       test = burnDimMap[ndeName.c_str()];
       if (cg_exponents_write(CG_RealSingle, exponents)) cg_error_exit();
     }
-    if (burnDimMap.find(ndeName) != burnDimMap.end())
+    if (burnUnitsMap.find(ndeName) != burnUnitsMap.end())
     {
       units = burnUnitsMap[ndeName.c_str()];
       if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
     }
   }
+
   if (!emptyFlag)
   {
     solutionIdx.push_back(slnIdx);
@@ -592,32 +580,76 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CG_D
    }
    is++;
   }
+
   // sanity check
   if (is==solutionNameLocMap.end()){
     std::cerr << ndeName 
               << " is not an existing solution node.\n";
     return;
   }
+
   // check vertex or cell based
   if (is->second == CG_Vertex)
     nVrtxFld++;
   else
     nCellFld++;
+
   // write solution to file
   int fldIdx;
   int currSlnIdx = solutionNameSolIdxMap[ndeName];
-  if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,
-                     dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
+  if (fname == "bflag")
+  {
+    if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,
+                       dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
+  }
+  else
+  {
+    if (cg_field_write(indexFile, indexBase, indexZone, currSlnIdx,
+                       dt, fname.c_str(), data, &fldIdx)) cg_error_exit();
+  }
+
   keyValueList fldIdxName;
   fldIdxName[fldIdx] = fname;
   std::pair<int, keyValueList> slnPair;
   slnPair.first = slnIdx;
   slnPair.second = fldIdxName;
-  solutionMap[++nSlnFld] = slnPair; 
+  solutionMap[++nSlnFld] = slnPair;
+
   // finding range of data
-  double* tmpData = (double*) data;
-  double min = tmpData[0];
-  double max = tmpData[0];
+  double* tmpData;
+  int* tmpIntData;
+  double min, max;
+  int intMin, intMax;
+  std::ostringstream os;
+  if (fname == "bflag")
+  {
+    tmpIntData = (int*) data;
+    intMin = tmpIntData[0];
+    intMax = tmpIntData[0];
+    for (int it=0; it<nVrtx; it++) {
+      if (intMin > tmpIntData[it])
+      {
+        intMin = (int) tmpIntData[it];
+      }
+      if (intMax < tmpIntData[it])
+      {
+        intMax = (int) tmpIntData[it];
+      }
+    }
+    os << intMin << ", " << intMax;
+  }
+  else
+  {
+    tmpData = (double*) data;
+    min = tmpData[0];
+    max = tmpData[0];
+    for (int it=0; it<nVrtx; it++)
+    {
+      min = std::min(tmpData[it], min);
+      max = std::max(tmpData[it], max);
+    }
+    os << min << ", " << max;
+  }
   int nItr = 0;
   if (is->second == CG_Vertex)
   {
@@ -625,13 +657,8 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CG_D
   } else {
     nItr = nCell;
   }
-  for (int it=0; it<nVrtx; it++) {
-    min = std::min(tmpData[it], min);
-    max = std::max(tmpData[it], max);
-  }
+
   // writing range descriptor
-  std::ostringstream os;
-  os << min << ", " << max;
   std::string range = os.str();
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone,
               "FlowSolution_t", currSlnIdx, "DataArray_t", fldIdx, "end")) cg_error_exit();
@@ -639,18 +666,20 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CG_D
   
   float* exponents;
   std::string units;
+
   // write DimensionalExponents and units for cell data
   if (is->second == CG_CellCenter)
   {
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", currSlnIdx,
                 "DataArray_t", fldIdx, "end")) cg_error_exit();
+
     // surface (Rocflu fluid)
     if (typeFlag == 0)
     {
       if (fluidUnitsMap.find(fname) != fluidUnitsMap.end())
       {
         units = fluidUnitsMap[fname];
-      if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
+        if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
       }
       if (fluidDimMap.find(fname) != fluidDimMap.end())
       {
@@ -687,6 +716,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CG_D
       }
     }
   }
+
   // For vertex data only
   else if (is->second == CG_Vertex)
   {
@@ -712,6 +742,7 @@ void cgnsWriter::writeGridToFile()
   std::ostringstream os;
   double min, max;
   std::string str;
+
   // writing base data
   char basename[33];
   strcpy(basename, baseName.c_str()); 
@@ -731,6 +762,7 @@ void cgnsWriter::writeWinToFile()
   char basename[33];
   strcpy(basename, baseName.c_str()); 
   cgsize_t tmpDim[1] = {1};
+
   // create Integral data for window
   if (cg_goto(indexFile, indexBase, "end")) cg_error_exit();
   if (cg_integral_write(intName.c_str())) cg_error_exit();
@@ -751,12 +783,37 @@ void cgnsWriter::writeWinToFile()
   if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
 }
 
+void cgnsWriter::writeVolCellFacesNumber()
+{
+  // create pane data node
+  std::string paneName("PaneData");
+  paneName += this->trimmed_base_t;
+
+  // only for volume
+  cgsize_t tmpDim[1];
+  tmpDim[0] = nVolCellFaces;
+  double gsArray[nVolCellFaces];
+  memset(gsArray, 0.0, nVolCellFaces*sizeof(double));
+  indexBase = 1;
+  if (cg_goto(indexFile, indexBase, "Zone_t", 1, paneName.c_str(),0,"end")) cg_error_exit();
+  if (cg_array_write("gs", CG_RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
+  if (cg_goto(indexFile, indexBase, "Zone_t", 1, paneName.c_str(),0,"gs",0,"end")) 
+    cg_error_exit();
+  if (cg_descriptor_write("Range", "0, 0")) cg_error_exit(); 
+  if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
+
+  // dummy exponents 
+  if (cg_exponents_write(CG_RealSingle, &fluidDimMap["gs"][0])) cg_error_exit();
+  if (cg_descriptor_write("Units", fluidUnitsMap["gs"].c_str())) cg_error_exit();
+}
+
 void cgnsWriter::writeZoneToFile()
 {
   // dummy variables
   std::ostringstream os;
   double min, max;
   std::string str;
+
   // define zone name 
   char zonename[33];
   strcpy(zonename, zoneName.c_str());
@@ -777,6 +834,7 @@ void cgnsWriter::writeZoneToFile()
   if (cg_ziter_write(indexFile, indexBase, indexZone, zoneItrName.c_str())) cg_error_exit();
   if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, 
                          zoneItrName.c_str(), 0, "end")) cg_error_exit();
+
   cgsize_t tmpDim2[2];
   tmpDim2[0] = 32;
   tmpDim2[1] = 1;
@@ -805,9 +863,8 @@ void cgnsWriter::writeZoneToFile()
   std::vector<float> test;
 
   // x-coordinates
-  //---------------
-  min = *std::min_element(xCrd.begin(), xCrd.end());
-  max = *std::max_element(xCrd.begin(), xCrd.end());
+  min = *std::min_element(xCrd.begin(), xCrd.begin()+nVrtx);
+  max = *std::max_element(xCrd.begin(), xCrd.begin()+nVrtx);
   os.str("");
   os.clear();
   os << min << ", " << max;
@@ -841,9 +898,8 @@ void cgnsWriter::writeZoneToFile()
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
 
   // y-coordinates
-  //---------------
-  min = *std::min_element(yCrd.begin(), yCrd.end());
-  max = *std::max_element(yCrd.begin(), yCrd.end());
+  min = *std::min_element(yCrd.begin(), yCrd.begin()+nVrtx);
+  max = *std::max_element(yCrd.begin(), yCrd.begin()+nVrtx);
   os.str("");
   os.clear();
   os << min << ", " << max;
@@ -874,9 +930,8 @@ void cgnsWriter::writeZoneToFile()
   if (cg_descriptor_write("Units", units.c_str())) cg_error_exit();
 
   // z-coordinates
-  //---------------
-  min = *std::min_element(zCrd.begin(), zCrd.end());
-  max = *std::max_element(zCrd.begin(), zCrd.end());
+  min = *std::min_element(zCrd.begin(), zCrd.begin()+nVrtx);
+  max = *std::max_element(zCrd.begin(), zCrd.begin()+nVrtx);
   os.str("");
   os.clear();
   os << min << ", " << max;
@@ -964,6 +1019,7 @@ void cgnsWriter::writeZoneToFile()
   paneName += this->trimmed_base_t;
   if (cg_goto(indexFile, indexBase, "Zone_t",indexZone,0,"end")) cg_error_exit();
   if (cg_integral_write(paneName.c_str())) cg_error_exit();
+
   // write pconn (and ridges)
   cgsize_t tmpDim[1];
   if (!pConnVec.empty())
@@ -1000,24 +1056,6 @@ void cgnsWriter::writeZoneToFile()
       cg_error_exit();
     if (cg_descriptor_write("Range", "EMPTY")) cg_error_exit(); 
     if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
-
-    // only for volume
-    if (typeFlag == 0)
-    {
-      tmpDim[0] = nVolCellFaces;
-      //double gsArray[nVolCellFaces] = {0};
-      double gsArray[nVolCellFaces];
-      memset(gsArray, 0.0, nVolCellFaces*sizeof(double));
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"end")) cg_error_exit();
-      if (cg_array_write("gs", CG_RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
-      if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(),0,"gs",0,"end")) 
-        cg_error_exit();
-      if (cg_descriptor_write("Range", "0, 0")) cg_error_exit(); 
-      if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
-      // dummy exponents 
-      if (cg_exponents_write(CG_RealSingle, &fluidDimMap["gs"][0])) cg_error_exit();
-      if (cg_descriptor_write("Units", fluidUnitsMap["gs"].c_str())) cg_error_exit();
-    }
 
     // only for surface
     if (typeFlag == 1)
@@ -1095,9 +1133,8 @@ void cgnsWriter::writeZoneToFile()
 
   // Write global sections. Global here means indexing according to partition, instead of local to
   // patch (as above).
-  // There are far too many conditional statements below. This could be made neater, but the output
-  // format of the global surface sections is a little bit weird. It would be worth exploring how
-  // much of this "weirdness" Rocstar actually depends on.
+  // Note: There are a lot of conditional statements below because the output format of the global
+  // surface sections is inconsistent. How much of this does Rocstar actually require?
   for (int igSec=0; igSec<gnSection; igSec++)
   {
     elm_start = 1;

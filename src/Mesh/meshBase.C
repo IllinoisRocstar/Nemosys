@@ -343,7 +343,7 @@ int meshBase::transfer(meshBase* target, std::string method)
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
   transobj->setContBool(continuous);
-  return transobj->run(newArrayNames); 
+  return transobj->run(newArrayNames);
 }
 
 // partition mesh into numPartition pieces (static fcn)
@@ -1379,7 +1379,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
   if (arrayID == -1)
   {
     std::cout << "Array " << arrayName
-              << " not fuond in set of point data arrays" << std::endl;
+              << " not found in set of point data arrays" << std::endl;
     exit(1);
   }
   refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData, sizeFactor);
@@ -1392,7 +1392,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName, int order,
   if (arrayID == -1)
   {
     std::cout << "Array " << arrayName
-              << " not fuond in set of point data arrays" << std::endl;
+              << " not found in set of point data arrays" << std::endl;
     exit(1);
   }
 

@@ -271,7 +271,7 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
       if (id >= 0)
       {
         if (minDist2 > c2cTrnsDistTol)
-            std::cout << "Warnning: For cell at " << x[0] << " " << x[1] << " " << x[2]
+            std::cout << "Warning: For cell at " << x[0] << " " << x[1] << " " << x[2]
                 << " closest cell point found is at " 
                 << closestPoint[0] << " " << closestPoint[1] << " " << closestPoint[2]
                 << " with distance " << minDist2

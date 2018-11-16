@@ -34,14 +34,20 @@ struct vect{
 //       a derived one for rocstar.
 class cgnsWriter{
 public:
-  cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim) :
+  cgnsWriter(std::string fname, std::string baseName, int cellDim, int physDim, int mode) :
   myCgFileName(fname), cellDim(cellDim), physDim(physDim),
   baseName(baseName), nBase(1), nZone(0), nSection(0), gnSection(0),
   nVrtx(0), nCell(0), nSlnFld(0), coordRind(0),virtElmRind(0), 
   nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
   {
-    //cg_set_file_type(1);
-    if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
+    if (mode == 0)
+    {
+      if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE, &indexFile)) cg_error_exit();
+    }
+    else if (mode == 1)
+    {
+      if (cg_open(myCgFileName.c_str(), CG_MODE_MODIFY, &indexFile)) cg_error_exit();
+    }
     int file_type;
     cg_get_file_type(indexFile, &file_type);
   };
@@ -77,7 +83,7 @@ public:
   void resetGlobalSections();
   void setSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc);
   void writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc, int emptyFlag, int virtFlag);
-  void writeSolutionField(std::string fname, std::string ndeName, CG_DataType_t dt, void* dat);
+  void writeSolutionField(std::string fname, std::string ndeName, CG_DataType_t dt, void* data);
   void writeGridToFile();
   void writeZoneToFile();
   void writeWinToFile();
@@ -91,6 +97,7 @@ public:
   void setBurnDimMap();
   void setBurnMagMap();
   void setTypeFlag(int typeFlag);
+  void writeVolCellFacesNumber();
 
 private:
   // general CGNS manager
