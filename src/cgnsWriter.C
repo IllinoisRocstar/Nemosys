@@ -987,9 +987,12 @@ void cgnsWriter::writeZoneToFile()
     }
     else
     {
+      if (elmConns[iSec].size() > 0)
+      {
       if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                            sectionTypes[iSec], elm_start, elm_end, nBdy, 
                            &elmConns[iSec][0], &indexSection)) cg_error_exit();
+      }
     }
     // Write virtual elements
     if (virtElmRind)
