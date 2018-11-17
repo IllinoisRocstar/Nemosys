@@ -161,7 +161,9 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->getGhostInformation(i,false);
     // get virtual cells for each surface partition (t3:virtual)
     for (int j = 0; j < numPartitions; ++j)
+    {
       this->getVirtualCells(i,j,false); 
+    }
   }
 
   // extract patches of each partition and get virtual cells from patches in other
@@ -196,9 +198,13 @@ void RocPartCommGenDriver::execute(int numPartitions)
   for (int i = 0; i < numPartitions; ++i)
   {
     this->writeSharedToPconn(i);
+    std::cout << "writing rocflu ifluid_b cgns files" << std::endl;
     this->writeSurfCgns("ifluid_b", i);
+    std::cout << "writing rocflu ifluid_ni cgns files" << std::endl;
     this->writeSurfCgns("ifluid_ni", i);
+    std::cout << "writing rocburn burn cgns files" << std::endl;
     this->writeSurfCgns("burn", i);
+    std::cout << "writing rocburn iburn_all files" << std::endl;
     this->writeSurfCgns("iburn_all", i);
   }
   // writing rocflu dim files
@@ -708,6 +714,13 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       // Keep track of virtual volume cell Ids that contain each potential virtual surface point Id
       std::vector<int> virtVolCellIds;
       virtVolCellIds.clear();
+
+      //if (virtualNodesSet->GetNumberOfPoints() == 0)
+      //{
+      //  continue;
+      //}
+      //else
+      //{
       for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
       {
         // get node idx of cell point
@@ -725,6 +738,8 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
           else
           {
             double* pntCoor = meMesh->getDataSet()->GetPoint(pntId);
+            if (virtualNodesSet->GetNumberOfPoints() > 0)
+            {
             pointLocator->SetDataSet(virtualNodesSet);
             pointLocator->AutomaticOn();
             pointLocator->BuildLocator();
@@ -758,6 +773,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
               {
                 virtVolCellIds.push_back(*itr);
               }
+            }
             }
             else
             {
@@ -772,6 +788,8 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
           if (!vol)
           {
             double* pntCoor = meMesh->getDataSet()->GetPoint(pntId);
+            if (virtualNodesSet->GetNumberOfPoints() > 0)
+            {
             pointLocator->SetDataSet(virtualNodesSet);
             pointLocator->AutomaticOn();
             pointLocator->BuildLocator();
@@ -804,6 +822,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
               {
                 virtVolCellIds.push_back(*itr);
               }
+            }
             }
             else
             {
@@ -824,6 +843,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
           }
         }
       }
+      //}
       // sort list of accumulated virtual volume cell Ids that the potential virtual surface node
       // points belong to, and determine if all 3 (for tets) share a single cell
       int currId = -1;
@@ -914,7 +934,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       if (nShrEdg < 3)
           rmvLst.push_back(*icId);
     }
-    std::cout << " Number of false positive virtual volume cells to remove " << rmvLst.size() << std::endl;
+    //std::cout << " Number of false positive virtual volume cells to remove " << rmvLst.size() << std::endl;
     for (auto icId = rmvLst.begin(); icId != rmvLst.end(); icId++)
     {
         //std::cout << "removing cell " << *icId << std::endl;
@@ -965,7 +985,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
         rmvNodeLst.push_back(*inId);
       }
     }
-    std::cout << " Number of false positive virtual volume nodes to remove " << rmvNodeLst.size() << std::endl;
+    //std::cout << " Number of false positive virtual volume nodes to remove " << rmvNodeLst.size() << std::endl;
     for (auto inId = rmvNodeLst.begin(); inId != rmvNodeLst.end(); inId++)
     {
       //std::cout << "removing node: " << *inId << std::endl;
@@ -1536,7 +1556,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       {
         for (int j = 0; j < realCoords[0].size(); j++)
         {
-          //std::cout << "j = " << j << std::endl;
           if (coordsTmp[0][i] == realCoords[0][j] &&
               coordsTmp[1][i] == realCoords[1][j] &&
               coordsTmp[2][i] == realCoords[2][j])
@@ -1879,14 +1898,12 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       if (this->surfWithSol)
       {
         // transfer data to the surf-partition-with-virtual-cells mesh 
-        std::cout << "calling transfer 1" << std::endl;
         this->burnSurfWithSol->transfer(patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
         if (this->writeAllFiles>1) 
             patchOfPartitionWithRealMesh.get()->write(prefixPath+"_"+std::to_string(me)+
                     "_real_patch_"+std::to_string(it->first)+".vtu");
 
         // transfer data to the surf-partition-with-virtual-cells mesh 
-        std::cout << "calling transfer 2" << std::endl;
         this->surfWithSol->transfer(patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
         if (this->writeAllFiles>1) 
             patchOfPartitionWithVirtualMesh.get()->write(prefixPath+"_"+std::to_string(me)+
