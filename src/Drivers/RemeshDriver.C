@@ -187,6 +187,7 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
 
   // Map surface patch numbers to surface types
   std::map<std::string,std::vector<int>> surfacePatchTypes;
+
   if (inputjson.has_key("Burning Surface Patches"))
   {
     std::vector<int> bPatchMap = inputjson["Burning Surface Patches"].as<std::vector<int>>();
@@ -196,6 +197,11 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
     {
       surfacePatchTypes["Burning"] = bPatchMap;
     }
+  }
+  else
+  {
+    std::cerr << "Specify Burning Surface Patches in input file.\n";
+    throw;
   }
   if (inputjson.has_key("Non-Burning Surface Patches"))
   {
@@ -207,6 +213,11 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
       surfacePatchTypes["Non-Burning"] = nbPatchMap;
     }
   }
+  else
+  {
+    std::cerr << "Specify Non-Burning Surface Patches in input file.\n";
+    throw;
+  }
   if (inputjson.has_key("Non-Interacting Surface Patches"))
   {
     std::vector<int> niPatchMap = inputjson["Non-Interacting Surface Patches"].as<std::vector<int>>();
@@ -216,6 +227,11 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
     {
       surfacePatchTypes["Non-Interacting"] = niPatchMap;
     }
+  }
+  else
+  {
+    std::cerr << "Specify Non-Interacting Surface Patches in input file.\n";
+    throw;
   }
 
   int writeToTemporaryDirectory = 0;
