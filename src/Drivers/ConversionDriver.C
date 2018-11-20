@@ -449,6 +449,12 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
       std::cout << "Removing Block " << blkName << std::endl;
       em->removeElmBlkByName(blkName);
   }
+  else if (!opr.compare("Snap Node Coords To Zero"))
+  {
+      double tol = ppJson.get_with_default("Tolerance", 0.0);
+      std::cout << "Snapping nodal coordinates to zero using tolerance " << tol << std::endl;
+      em->snapNdeCrdsZero(tol);
+  }
   else
   {
       std::cout << "Unknown operation requested : " << opr << std::endl;
