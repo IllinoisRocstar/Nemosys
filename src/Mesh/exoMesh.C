@@ -5,6 +5,7 @@
 #include <set>
 #include <fstream>
 #include <algorithm>
+#include <math.h>
 
 using namespace EXOMesh;
 
@@ -425,6 +426,27 @@ void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int> lst)
     exoPopulate(false);
 }
 
+void exoMesh::snapNdeCrdsZero(double tol)
+{
+    int nPnt = 0;
+    // loop through node sets
+    for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
+    {
+        bool chk;
+        for (auto it2=(it1->crds).begin(); it2!=(it1->crds).end(); it2++)
+        {
+            chk = false;
+            for (int idx=0; idx<3; idx++)
+                if (fabs((*it2)[idx]) <= tol)
+                {
+                    (*it2)[idx]=0.0;
+                    chk = true;
+                }
+            if (chk) nPnt++;
+        }
+    }
+    std::cout << "Number of points snapped : " << nPnt << std::endl;
+}
 
 void exoMesh::removeElmBlkByName(std::string blkName)
 {
