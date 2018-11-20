@@ -91,7 +91,7 @@ void cgnsWriter::setFluidMagMap()
 // Map defining ifluid units
 void cgnsWriter::setiFluidUnitsMap()
 {
-  // ifluid_ni/ifluid_b
+  // ifluid_ni/ifluid_b/ifluid_nb
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("CoordinateX", "m"));
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("CoordinateY", "m"));
   ifluidUnitsMap.insert(std::pair<std::string,std::string>("CoordinateZ", "m"));
@@ -125,7 +125,7 @@ void cgnsWriter::setiFluidUnitsMap()
 // Map defining ifluid dimensions
 void cgnsWriter::setiFluidDimMap()
 {
-  // ifluid_ni/ifluid_b
+  // ifluid_ni/ifluid_b/ifluid_nb
   std::vector<float> dim1 = {0, 1, 0, 0, 0};
   std::vector<float> dim2 = {0, 0, 0, 0, 0};
   ifluidDimMap.insert(std::pair<std::string,std::vector<float>>("CoordinateX",  dim1));
@@ -158,7 +158,7 @@ void cgnsWriter::setiFluidDimMap()
 // Map storing magnitude quantities for ifluid files.
 void cgnsWriter::setiFluidMagMap()
 {
-  // ifluid_ni/ifluid_b
+  // ifluid_ni/ifluid_b/ifluid_nb
   ifluidMagMap.insert(std::pair<std::string,int>("CoordinateX", 0));
   ifluidMagMap.insert(std::pair<std::string,int>("CoordinateY", 0));
   ifluidMagMap.insert(std::pair<std::string,int>("CoordinateZ", 0));

@@ -26,6 +26,7 @@
 #include <fstream>
 #include <typeinfo>
 
+
 RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh, 
                                            std::shared_ptr<meshBase> _remeshedSurf, 
                                            std::shared_ptr<meshBase> _volWithSol,
@@ -34,6 +35,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
                                            int numPartitions, const std::string& _base_t,
                                            int _writeIntermediateFiles,
                                            double _searchTolerance, const std::string& _caseName,
+                                           std::map<std::string,std::vector<int>> _surfacePatchTypes,
                                            bool _withC2CTransSmooth,
                                            std::string _prefix_path)
 {
@@ -54,6 +56,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(std::shared_ptr<meshBase> _mesh,
   this->trimmed_base_t.erase(this->trimmed_base_t.find_last_not_of('0')+1,std::string::npos);
   this->writeAllFiles = _writeIntermediateFiles;
   this->searchTolerance = _searchTolerance;
+  this->surfacePatchTypes =_surfacePatchTypes;
 
   // transfer setting
   this->smoothC2CTrans =_withC2CTransSmooth;
@@ -184,8 +187,9 @@ void RocPartCommGenDriver::execute(int numPartitions)
   std::map<int, int> surfZoneNumbersMap;
   for (int iProc = 0; iProc < numPartitions; ++iProc)
   {
-    int zoneCounter = 2;
+    int zoneCounter = 2; // first zone is always volume
     surfZoneNumbersMap.clear();
+
     auto it = this->sharedPatchNodes[iProc].begin(); // patch
     while (it != sharedPatchNodes[iProc].end())
     {
@@ -202,6 +206,8 @@ void RocPartCommGenDriver::execute(int numPartitions)
     this->writeSurfCgns("ifluid_b", i);
     std::cout << "writing rocflu ifluid_ni cgns files" << std::endl;
     this->writeSurfCgns("ifluid_ni", i);
+    std::cout << "writing rocflu ifluid_nb cgns files" << std::endl;
+    this->writeSurfCgns("ifluid_nb", i);
     std::cout << "writing rocburn burn cgns files" << std::endl;
     this->writeSurfCgns("burn", i);
     std::cout << "writing rocburn iburn_all files" << std::endl;
@@ -209,6 +215,11 @@ void RocPartCommGenDriver::execute(int numPartitions)
   }
   // writing rocflu dim files
   this->dimSurfWriter(0);
+  for (int i = 0; i < numPartitions; ++i)
+  {
+    this->dimSurfSort(i);
+  }
+
   // writing rocin pane/window info files
   this->txtWriter();
 
@@ -715,12 +726,6 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
       std::vector<int> virtVolCellIds;
       virtVolCellIds.clear();
 
-      //if (virtualNodesSet->GetNumberOfPoints() == 0)
-      //{
-      //  continue;
-      //}
-      //else
-      //{
       for (int l = 0; l < genCell->GetNumberOfPoints(); ++l)
       {
         // get node idx of cell point
@@ -843,7 +848,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, int you, bool hasShared, 
           }
         }
       }
-      //}
+
       // sort list of accumulated virtual volume cell Ids that the potential virtual surface node
       // points belong to, and determine if all 3 (for tets) share a single cell
       int currId = -1;
@@ -1305,15 +1310,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
     writer->writeWinToFile();
   }
 
-  // always one volumetric "fluid" zone (1)
-  // currently assumes exactly 1 burning patch
-  // TODO: support more than 1 burning patch
-  // TODO: add support for "nb" files (currently only "b" and "ni")
-  int zone = 2;
-  if (this->patchesOfSurfacePartitions[me].find(1) 
-        != this->patchesOfSurfacePartitions[me].end() && prefix == "ifluid_ni")
-    zone += 1; // zone starts at 3 in case there is a burning patch on partition 
-
   // vtkIdList for mapping surface node indices to volume indices
   vtkSmartPointer<vtkIdList> result = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkPointLocator> pointLocator = vtkSmartPointer<vtkPointLocator>::New();
@@ -1329,10 +1325,10 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
   // begin loop over surface patches of this partition
   auto it = this->patchesOfSurfacePartitions[me].begin();
   int patchesFound = 0;
+  int zone;
   while (it != this->patchesOfSurfacePartitions[me].end())
   {
-    if ((prefix == "ifluid_ni" && it->first != 1) || (prefix == "ifluid_b" && it->first == 1) ||
-          (prefix == "burn" && it->first == 1) || (prefix == "iburn_all" && it->first == 1)) // ni files have zones > 1 and 1 is a burning patch number
+    if (prefix == this->getPatchType(it->first) || ((prefix == "burn" || prefix == "iburn_all") && (this->getPatchType(it->first) == "ifluid_b")))
     {
       patchesFound += 1;
       int numVirtualCells = 0;
@@ -1341,8 +1337,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
       writer->setZoneItrData("ZoneIterativeData", grdpntr, flowsolpntr);
       ss.str("");
       ss.clear();
+      zone = this->surfZoneMap[me][it->first];
       ss << ((me+1) >= 10 ? "" : "0") << me+1 << (it->first < 10 ? "0" : "") << zone;
-      zone += 1;
 
       // vector to hold real patch mesh and all virtuals from same patch on other procs
       std::vector<std::shared_ptr<meshBase>> patchOfPartitionWithAllVirtualCells;
@@ -2005,7 +2001,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                 }
 
                 // set num real cells for this patch of this partition
-                if (prefix == "ifluid_ni" || prefix == "ifluid_b")
+                if (prefix == "ifluid_ni" || prefix == "ifluid_b" || prefix == "ifluid_nb")
                 {
                   writer->setTypeFlag(1);
                   if (dataName == "bflag")
@@ -2015,22 +2011,6 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string& prefix, int me)
                   }
                   else
                   {
-                    // Remove data from virtual for certain fields:
-                    //if (dataName == "rhof_alp" || dataName == "qr" || dataName == "qc" || dataName == "tfZ" || 
-                    //    dataName == "tfY" || dataName == "tfX" || dataName == "pf" || dataName == "nf" ||
-                    //    dataName == "nf_alpX" || dataName == "nf_alpY" || dataName == "nf_alpZ")
-                    //{
-                    //  int cnt = 1;
-                    //  for (auto itr = cellData.begin(); itr != cellData.end(); itr++)
-                    //  {
-                    //    if (cnt > (cellData.size()-numVirtualCells))
-                    //    {
-                    //      *itr = -9.87654e+08;
-                    //    }
-                    //    cnt++;
-                    //  }
-                    //}
-
                     // write cell data to file
                     writer->writeSolutionField(dataName, nodeName, CG_RealDouble, &cellData[0u]);
                   }
@@ -3234,66 +3214,60 @@ void RocPartCommGenDriver::txtWriter()
     ifluid_in << "@Proc: " << std::to_string(iPart) << std::endl;;
     ifluid_in << "@Files: ifluid*_" + this->base_t + "_%04p.cgns" << std::endl;
     tmpStr = "@Panes:";
+    int burnFlag;
+    std::string burnStrTmp;
     for (auto itr1 = surfZoneMap[iPart].begin(); itr1 != surfZoneMap[iPart].end(); ++itr1)
     {
+      burnFlag = 0;
+      if (std::find(surfacePatchTypes["Burning"].begin(), surfacePatchTypes["Burning"].end(), itr1->first) != surfacePatchTypes["Burning"].end())
+      {
+        burnFlag = 1;
+      }
       tmpStr += " " + std::to_string(iPart+1);
+      if (burnFlag)
+        burnStrTmp += " " + std::to_string(iPart+1);
       if ((itr1->second) < 10)
       {
         tmpStr += "0";
+        if (burnFlag)
+          burnStrTmp += "0";
       }
       tmpStr += std::to_string(itr1->second);
+      if (burnFlag)
+        burnStrTmp += std::to_string(itr1->second);
     }
+
     tmpStr += "\n";
     ifluid_in << tmpStr << std::endl;
 
 
-    // Write to iburn_file
+    // Write to burn_file
     iburn_in << "@Proc: " << std::to_string(iPart) << std::endl;;
-    tmpStr = "@Panes:";
-    int burnCnt = 0;
-    for (auto itr1 = surfZoneMap[iPart].begin(); itr1 != surfZoneMap[iPart].end(); ++itr1)
-    {
-      if (itr1->first == 1)
-      {
-        burnCnt += 1;
-        iburn_in << "@Files: iburn*_" + this->base_t + "_%04p.cgns" << std::endl;
-        tmpStr += " " + std::to_string(iPart+1);
-      if ((itr1->second) < 10)
-        {
-          tmpStr += "0";
-        }
-        tmpStr += std::to_string(itr1->second);
-      }
-    }
-    if (burnCnt == 0)
+    if (burnStrTmp == "")
     {
       iburn_in << "@Files:" << std::endl;
     }
+    else
+    {
+      iburn_in << "@Files: iburn*_" + this->base_t + "_%04p.cgns" << std::endl;
+    }
+    tmpStr = "@Panes:";
+    tmpStr += burnStrTmp;
     tmpStr += "\n";
     iburn_in << tmpStr << std::endl;
 
     // Write to iburn_file
-    burn_in << "@Proc: " << std::to_string(iPart) << std::endl;;
-    tmpStr = "@Panes:";
-    burnCnt = 0;
-    for (auto itr1 = surfZoneMap[iPart].begin(); itr1 != surfZoneMap[iPart].end(); ++itr1)
-    {
-      if (itr1->first == 1)
-      {
-        burnCnt += 1;
-        burn_in << "@Files: burn_" + this->base_t + "_%04p.cgns" << std::endl;
-        tmpStr += " " + std::to_string(iPart+1);
-        if ((itr1->second) < 10)
-        {
-          tmpStr += "0";
-        }
-        tmpStr += std::to_string(itr1->second);
-      }
-    }
-    if (burnCnt == 0)
+    burn_in << "@Proc: " << std::to_string(iPart) << std::endl;
+    if (burnStrTmp == "")
     {
       burn_in << "@Files:" << std::endl;
     }
+    else
+    {
+      burn_in << "@Files: burn*_" + this->base_t + "_%04p.cgns" << std::endl;
+    }
+    tmpStr = "@Panes:";
+    tmpStr += burnStrTmp;
     tmpStr += "\n";
     burn_in << tmpStr << std::endl;
   }
@@ -3327,4 +3301,92 @@ void RocPartCommGenDriver::swapTriOrdering(std::vector<int> &connVec)
     }
   }
   connVec = connVecTmp;
+}
+
+std::string RocPartCommGenDriver::getPatchType(int patchNo)
+{
+  if (std::find(surfacePatchTypes["Burning"].begin(), surfacePatchTypes["Burning"].end(), patchNo) != surfacePatchTypes["Burning"].end())
+  {
+    return "ifluid_b";
+  }
+  else if (std::find(surfacePatchTypes["Non-Burning"].begin(), surfacePatchTypes["Non-Burning"].end(), patchNo) != surfacePatchTypes["Non-Burning"].end())
+  {
+    return "ifluid_nb";
+  }
+  else if (std::find(surfacePatchTypes["Non-Interacting"].begin(), surfacePatchTypes["Non-Interacting"].end(), patchNo) != surfacePatchTypes["Non-Interacting"].end())
+  {
+    return "ifluid_ni";
+  }
+}
+
+
+// Write surface information for Rocstar dimension file
+void RocPartCommGenDriver::dimSurfSort(int proc)
+{
+
+  // Write com file for this proc
+  std::string procStr = std::to_string(proc);
+  std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
+  std::string fname = prefixPath+this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
+
+  std::string line;
+  std::vector< std::string > myLines;
+  std::ifstream myfile(fname);
+
+  // Get current dim file
+  while (std::getline(myfile, line))
+  {
+    myLines.push_back(line);
+  }
+
+  std::map<int,std::string> patchLines;
+  int patchCounter = 0;
+
+  // Get patch lines, implicitly sorted by patch number
+  for (auto itr = myLines.begin(); itr != myLines.end(); ++itr)
+  {
+    if ((std::distance(myLines.begin(), itr) > 1) && (*(itr-1)).find("Patches (v2)") != std::string::npos)
+    {
+      while ((*itr).find("Borders") == std::string::npos)
+      {
+        if (patchCounter > 0)
+        {
+          std::istringstream strs(*itr);
+          int tmp;
+          std::vector<int> ints;
+          while (strs >> tmp)
+          {
+            ints.push_back(tmp);
+          }
+          patchLines[ints[0]] = *itr;
+        }
+        patchCounter++;
+        itr++;
+      }
+    }
+  }
+
+  // Insert patch lines in newly sorted order
+  for (auto itr = myLines.begin(); itr != myLines.end(); ++itr)
+  {
+    if ((std::distance(myLines.begin(), itr) > 2) && (*(itr-2)).find("Patches (v2)") != std::string::npos)
+    {
+      for (auto itr2 = patchLines.begin(); itr2 != patchLines.end(); ++itr2)
+      {
+        *itr = itr2->second;
+        itr++;
+      }
+    }
+  }
+
+  // Write new lines to file
+  ofstream dimFile;
+  dimFile.open(fname);
+  for (auto itr = myLines.begin(); itr != myLines.end(); ++itr)
+  {
+    dimFile << *itr << std::endl;
+  }
+
+  dimFile.close();
+
 }

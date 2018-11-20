@@ -270,9 +270,17 @@ int meshPartitioner::partition()
   options[METIS_OPTION_NUMBERING] = 0; // 0-based index
   options[METIS_OPTION_CONTIG] = 1;    // try for contiguous partitions
   options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY; // multilevel k-way partitioning
+  //options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB; // multileve recursive bisectioning
   options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL; // minimize edge cut METIS_OBJTYPE_VOL(comm vol)
+  //options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
   options[METIS_OPTION_UFACTOR] = 1; // load imbalance of 1.001 
-  
+  //options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM; // sorted heavy-edge matching
+
+  // To try to match METIS in Rocstar partitioner, the options can be changed to:
+  // - Add SHEM method:      options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
+  // - Replace KWAY with RB: options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB
+  // - Replace VOL with CUT: options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT
+
   //options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO | METIS_DBG_TIME | 
   //                               METIS_DBG_CONNINFO | METIS_DBG_CONTIGINFO;   
   int res;

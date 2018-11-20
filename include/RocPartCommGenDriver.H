@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vtkEdgeTable.h>
 
+
 class RocPartCommGenDriver : public NemDriver
 {
   public:
@@ -16,8 +17,9 @@ class RocPartCommGenDriver : public NemDriver
                          int numPartitions, const std::string& base_t,
                          int writeIntermediateFiles, double searchTolerance,
                          const std::string& caseName,
+                         std::map<std::string,std::vector<int>> surfacePatchTypes,
                          bool _withC2CTransSmooth= false,
-                         std::string _prefix_path = std::string() );
+                         std::string _prefix_path = std::string());
     RocPartCommGenDriver(std::string& volname, std::string& surfname, int numPartitions);
     ~RocPartCommGenDriver();
     static RocPartCommGenDriver* readJSON(json inputjson);
@@ -72,6 +74,7 @@ class RocPartCommGenDriver : public NemDriver
     // write surface information for dimensions file
     void dimSurfWriter(int proc, std::vector<int> cgConnReal, std::vector<int> cgConnVirtual, int patchNo);
     void dimSurfWriter(int proc);
+    void dimSurfSort(int proc);
     // write processor mapping file
     void txtWriter();
     // utilities
@@ -229,6 +232,9 @@ class RocPartCommGenDriver : public NemDriver
     std::vector<int> volZoneMap;
     // Rocburn
     std::vector<std::map<int, int>> burnSurfZoneMap;
+    // Map of surface type to patch numbers
+    // <type,<patch>>
+    std::map<std::string,std::vector<int>> surfacePatchTypes;
 
   // --- utility to clear above vectors
   private:
@@ -247,6 +253,10 @@ class RocPartCommGenDriver : public NemDriver
     vtkSmartPointer<vtkPolyData>
     deleteInterPartitionSurface(std::shared_ptr<meshBase> fullSurf, vtkSmartPointer<vtkDataSet> partSurf);
     vtkSmartPointer<vtkEdgeTable> createPartitionEdgeTable(int i);
+
+    // gets Patch type for each patch number
+    std::string getPatchType(int patchNo);
+
 };
 
 

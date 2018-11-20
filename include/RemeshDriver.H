@@ -20,6 +20,7 @@ class RemeshDriver : public NemDriver
                  const json& remeshjson, int numPartitions,
                  const std::string& base_t, int writeIntermediateFiles, 
                  double searchTolerance, const std::string& caseName,
+                 const std::map<std::string,std::vector<int>> surfacePatchTypes,
                  const std::string _prefix_path = std::string());
     ~RemeshDriver();
     static RemeshDriver* readJSON(json inputjson);
