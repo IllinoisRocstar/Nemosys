@@ -38,6 +38,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                            const json& remeshjson, int _numPartitions,
                            const std::string& base_t, int writeIntermediateFiles,
                            double searchTolerance, const std::string& caseName,
+                           const std::map<std::string,std::vector<int>> surfacePatchTypes,
                            const std::string _prefix_path)
   : fluidNames(_fluidNames), ifluidniNames(_ifluidniNames), ifluidnbNames(_ifluidnbNames),
     ifluidbNames(_ifluidbNames), burnNames(_burnNames), iBurnNames(_iBurnNames),
@@ -48,6 +49,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
 
   // preparing input for the actural operator class
   // stitch fluid files
+
   this->stitchCGNS(fluidNames,0);
   // stitch burn files
   this->stitchCGNS(burnNames,0);
@@ -103,7 +105,7 @@ RemeshDriver::RemeshDriver(const std::vector<std::string>& _fluidNames,
                                   this->mbObjs[0], this->stitchedSurf,
                                   this->stitchedBurnSurf,
                                   numPartitions, base_t, writeIntermediateFiles, 
-                                  searchTolerance, caseName,
+                                  searchTolerance, caseName, surfacePatchTypes,
                                   withC2CTransSmooth, prefixPath) 
         );
   std::cout << "RemeshDriver created" << std::endl;
@@ -183,6 +185,39 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
     writeIntermediateFiles = inputjson["Write Intermediate Files"].as<int>();
   }
 
+  // Map surface patch numbers to surface types
+  std::map<std::string,std::vector<int>> surfacePatchTypes;
+  if (inputjson.has_key("Burning Surface Patches"))
+  {
+    std::vector<int> bPatchMap = inputjson["Burning Surface Patches"].as<std::vector<int>>();
+    // sort by patch ID
+    std::sort(bPatchMap.begin(), bPatchMap.end());
+    if (bPatchMap.size() > 0)
+    {
+      surfacePatchTypes["Burning"] = bPatchMap;
+    }
+  }
+  if (inputjson.has_key("Non-Burning Surface Patches"))
+  {
+    std::vector<int> nbPatchMap = inputjson["Non-Burning Surface Patches"].as<std::vector<int>>();
+    // sort by patch ID
+    std::sort(nbPatchMap.begin(), nbPatchMap.end());
+    if (nbPatchMap.size() > 0)
+    {
+      surfacePatchTypes["Non-Burning"] = nbPatchMap;
+    }
+  }
+  if (inputjson.has_key("Non-Interacting Surface Patches"))
+  {
+    std::vector<int> niPatchMap = inputjson["Non-Interacting Surface Patches"].as<std::vector<int>>();
+    // sort by patch ID
+    std::sort(niPatchMap.begin(), niPatchMap.end());
+    if (niPatchMap.size() > 0)
+    {
+      surfacePatchTypes["Non-Interacting"] = niPatchMap;
+    }
+  }
+
   int writeToTemporaryDirectory = 0;
   std::string tmp_main_dir;
   if (inputjson.has_key("Write To Temporary Directory"))
@@ -237,7 +272,7 @@ RemeshDriver* RemeshDriver::readJSON(json inputjson)
                                                 iflubNames, burnNames, iBurnNames,
                                                 remeshjson, numPartitions, base_t,
                                                 writeIntermediateFiles, searchTolerance,
-                                                case_name, rmsh_dir.string());
+                                                case_name, surfacePatchTypes, rmsh_dir.string());
 
   if (writeToTemporaryDirectory)
   {
