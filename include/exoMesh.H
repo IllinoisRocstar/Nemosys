@@ -113,6 +113,8 @@ class exoMesh
       void removeByElmIdLst(int blkId, std::vector<int>& idLst);
       // creates a new element block and augments previous oweners
       void addElmBlkByElmIdLst(std::string name, std::vector<int> idLst); 
+      // filter nodal coordinates and snap to zero
+      void snapNdeCrdsZero(double tol=1e-5);
     
      
     // I/O
