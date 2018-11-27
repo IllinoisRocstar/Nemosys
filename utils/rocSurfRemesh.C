@@ -30,11 +30,12 @@
 #include "meshPartitioner.H"
 #include "cgnsWriter.H"
 
-// MAdLib headers 
+// MAdLib + gmsh headers 
 #include "ModelInterface.h"
 #include "MAdLib.h"
 #include "NodalDataManager.h"
-
+#include "GmshEntities.h"
+#include <meshBase.H>
 // typedefs
 
 /* auxiliary functions */
@@ -64,11 +65,17 @@ int main(int argc, char* argv[])
   // reading cgns file1
   rocstarCgns* bCgObj = new rocstarCgns(bCgFileName);
   bCgObj->loadCgSeries(3);
-  bCgObj->dummy();
+  bCgObj->stitchGroup();
   // reading cgns file1
   rocstarCgns* niCgObj = new rocstarCgns(niCgFileName);
   niCgObj->loadCgSeries(4);
-  niCgObj->dummy();
+  niCgObj->stitchGroup();
+  meshBase* stitched1 = meshBase::Create(bCgObj->getVTKMesh(), "bCgObjStitched.vtu");
+  meshBase* stitched2 = meshBase::Create(niCgObj->getVTKMesh(), "niCgObjStitched.vtu");
+  stitched1->write();
+  stitched2->write();
+  delete stitched1;
+  delete stitched2;
   // stiching two files
   bCgObj->stitchMe(niCgObj); 
   

@@ -5,11 +5,12 @@
 #include <RefineDriver.H>
 #include <ConversionDriver.H>
 #include "InputGenDriver.H"
+#include <RemeshDriver.H>
+#include <RocPartCommGenDriver.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver* NemDriver::readJSON(json inputjson)
 {
-
   std::string program_type = inputjson["Program Type"].as<std::string>();
   if (!program_type.compare("Transfer"))
   {
@@ -35,11 +36,27 @@ NemDriver* NemDriver::readJSON(json inputjson)
   {
     return InputGenDriver::readJSON(inputjson);
   }
+  else if (!program_type.compare("Rocstar Remeshing"))
+  {
+    return RemeshDriver::readJSON(inputjson);
+  }
+  //else if (!program_type.compare("Post Rocstar Remeshing"))
+  //{
+  //  return RocRestartDriver::readJSON(inputjson);
+  //}
+  //else if (!program_type.compare("Rocstar Communication Generation"))
+  //{
+  //  return RocPrepDriver::readJSON(inputjson);
+  //}
+  else if (!program_type.compare("Rocstar Communication Generation"))
+  {
+    return RocPartCommGenDriver::readJSON(inputjson);
+  }
   else
   {
     std::cout << "Program Type " << program_type 
               << " is not supported by Nemosys" << std::endl;
     exit(1);
   }
-  
 }
+

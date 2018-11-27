@@ -7,7 +7,6 @@
 #include <vtkXMLPolyDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLRectilinearGridReader.h>
-#include <vtkXMLHyperOctreeReader.h>
 #include <vtkXMLCompositeDataReader.h>
 #include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLImageDataReader.h>
@@ -15,7 +14,6 @@
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkRectilinearGrid.h>
-#include <vtkHyperOctree.h>
 #include <vtkImageData.h>
 #include <vtkPolyData.h>
 #include <vtkStructuredGrid.h>
@@ -30,7 +28,6 @@
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLHyperOctreeWriter.h>
 #include <vtkXMLCompositeDataWriter.h>
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLImageDataReader.h>
@@ -73,6 +70,15 @@ template<class TWriter, class TObject> void WriteAnXMLFile(const char*fileName, 
   writer->Write();
 }
 
+template<class TWriter> void writeVTFile(const std::string& fname, 
+                                         vtkSmartPointer<vtkDataSet> dataSet)
+{
+  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
+  Writer->SetFileName(&fname[0u]);
+  Writer->SetInputData(dataSet);
+  Writer->Write();
+}
+
 class vtkAnalyzer {
 
    typedef std::map<int,int> CellContainer;
@@ -84,79 +90,88 @@ public:
    int numberOfCellData;
 
 public:
-   // constructor stuff
-   vtkAnalyzer(char* fName): 
-   xmlFileName(fName), numberOfPoints(0), numberOfCells(0),
-   numberOfPointData(0), numberOfCellData(0), dataSet(NULL),
-   pointData(NULL), cellData(NULL)
-   {
+  // constructor stuff
+  vtkAnalyzer(char* fName): 
+  xmlFileName(fName), numberOfPoints(0), numberOfCells(0),
+  numberOfPointData(0), numberOfCellData(0), dataSet(NULL),
+  pointData(NULL), cellData(NULL)
+  {
 
-   };
+  };
+  vtkAnalyzer(vtkDataSet* _dataSet, char* fName): 
+    dataSet(_dataSet), xmlFileName(fName),numberOfPointData(0),
+    numberOfCellData(0),pointData(0),cellData(0)
+  {
+    numberOfPoints = dataSet->GetNumberOfPoints();
+    numberOfCells = dataSet->GetNumberOfCells();
+  };
 
-   ~vtkAnalyzer()
-     {};
+  ~vtkAnalyzer()
+    {
+      dataSet->Delete();  
+    };
  
-   // read file and populate the class
-   void read();
-   void write(char* outXMLFileName);
+  // read file and populate the class
+  void read();
+  void write(char* outXMLFileName);
 
-   // inquiry 
+  // inquiry 
 
-   // number of points
-   int getNumberOfPoints();
-   // number of cells
-   int getNumberOfCells();
-   // number of point data
-   int getNumberOfPointData();
-   // number of cell data
-   int getNumberOfCellData();
+  // number of points
+  int getNumberOfPoints();
+  // number of cells
+  int getNumberOfCells();
+  // number of point data
+  int getNumberOfPointData();
+  // number of cell data
+  int getNumberOfCellData();
 
-   vtkDataSet* getDataSet() { return dataSet; }
+  vtkDataSet* getDataSet() { return dataSet; }
  
-   std::multimap<int, std::vector<int> > findBoundaryFaces();
+  std::multimap<int, std::vector<int> > findBoundaryFaces();
 
  
-   //get given point ID coordinates
-   double* getPointCoords(int pntId);
-   // returns coordinates of member points in cell with ID 
-   std::vector<double* > getCellCoords(int pntId, int& numComponent);
-   // get number of nonTri
-   int getNumberOfNonTri();
-   std::vector<std::vector<double*>> getSurfaceTriElements(int& numComponent);
-   void writeSurfaceTriElements(std::string fname);
-   // returns coordinates of centers of all cells 
-   std::vector<double > getCellCenters(int& numComponent);
-   // returns cells sharing point (topological search)
-   std::vector<int> getCellsWithPoint(int pnt);
-   // returns min extent
-   double getMinExtent(int nDim, const std::vector<double>& pntCrds);
-   //return coordinates of all points in mesh
-   std::vector<double> getAllPointCoords(int nDim); 
-   // check for named array in vtk
-   int IsArrayName(std::string name);
-   // access to data
-   // get a point data array
-   int getPointDataArray(int id, std::vector<std::vector<double>> &pntData, 
-                         int &numTuple, int &numComponent);
-
-   // get a cell data array
-   int getCellDataArray(int id, std::vector<std::vector<double> > &cllData, 
+  //get given point ID coordinates
+  double* getPointCoords(int pntId);
+  // returns coordinates of member points in cell with ID 
+  std::vector<double* > getCellCoords(int pntId, int& numComponent);
+  // get number of nonTri
+  int getNumberOfNonTri();
+  std::vector<std::vector<double*>> getSurfaceTriElements(int& numComponent);
+  void writeSurfaceTriElements(std::string fname);
+  // returns coordinates of centers of all cells 
+  std::vector<double > getCellCenters(int& numComponent);
+  // returns cells sharing point (topological search)
+  std::vector<int> getCellsWithPoint(int pnt);
+  // returns min extent
+  double getMinExtent(int nDim, const std::vector<double>& pntCrds);
+  //return coordinates of all points in mesh
+  std::vector<double> getAllPointCoords(int nDim); 
+  // check for named array in vtk
+  int IsArrayName(std::string name);
+  // access to data
+  // get a point data array
+  int getPointDataArray(int id, std::vector<std::vector<double>> &pntData, 
                         int &numTuple, int &numComponent);
 
-   std::vector<std::vector<double> >
-   getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,     
-                 std::vector<std::vector<double>>& volDataMat,
-                 std::vector<double>& PlaneCellCenters,
-                 std::vector<double>& VolPointCoords, double tol);
+  // get a cell data array
+  int getCellDataArray(int id, std::vector<std::vector<double> > &cllData, 
+                       int &numTuple, int &numComponent);
 
-   // consider inclusions in interpolation
-   std::vector<std::vector<double>>
-   getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+  std::vector<std::vector<double> >
+  getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,     
                 std::vector<std::vector<double>>& volDataMat,
                 std::vector<double>& PlaneCellCenters,
-                std::vector<double>& VolPointCoords,
-                std::vector<sphere>& spheres, 
-                std::vector<double>& maskData, double tol);
+                std::vector<double>& VolPointCoords, double tol);
+
+  // consider inclusions in interpolation
+  std::vector<std::vector<double>>
+  getInterpData(int nDim, int num_neighbors, int numComponent, int numTuple,
+               std::vector<std::vector<double>>& volDataMat,
+               std::vector<double>& PlaneCellCenters,
+               std::vector<double>& VolPointCoords,
+               std::vector<sphere>& spheres, 
+               std::vector<double>& maskData, double tol);
 
  
   // add data

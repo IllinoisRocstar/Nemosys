@@ -1,6 +1,8 @@
 /* implementation of mesh partition class(es) */
 
-#include "meshPartitioner.H"
+#include <meshPartitioner.H>
+#include <cgnsAnalyzer.H>
+#include <meshBase.H>
 
 /* Implementation of meshPartition class */
 //meshPartition::meshPartition(int pidx, std::vector<int> glbNdePartedIdx, std::vector<int> glbElmPartedIdx)
@@ -50,6 +52,9 @@ meshPartition::meshPartition(int pidx, std::vector<int> glbElmPartedIdx, std::ve
     }
     glbElmIdx++;
   }
+  //std::cout <<  "Min connectivity passed to partitioner = "
+  //          << *std::min_element(glbElmConn.begin(), glbElmConn.end()) << std::endl;
+
   // Debug information
   //std::cout << "I am partition " << pidx 
   //          << "\n cycled on " << glbElmIdx-1 << " global elements "
@@ -90,6 +95,15 @@ std::vector<double> meshPartition::getElmSlnsVec(std::vector<double>& slns, int 
   return(x);
 }
 
+std::map<int,int> meshPartition::getPartToGlobNodeMap()
+{
+  return ndeIdxPartToGlob;
+}  
+
+std::map<int,int> meshPartition::getPartToGlobElmMap()
+{
+  return elmIdxPartToGlob;
+}  
 
 /* Implementation of class partitioner class */
 meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
@@ -105,13 +119,60 @@ meshPartitioner::meshPartitioner(cgnsAnalyzer* inCg)
   // coverting between CGNS to local type
   switch (inCg->getElementType())
   {
-    case TETRA_4:
+    case CG_TETRA_4:
       meshType = MESH_TETRA_4;
+      break;
+    case CG_TRI_3:
+      meshType = MESH_TRI_3;
       break;
     default:
       std::cerr << "Unknown element type!\n";
       break;
   }
+}
+
+
+meshPartitioner::meshPartitioner(const meshBase* inMB)
+{
+  vtkSmartPointer<vtkCellTypes> celltypes = vtkSmartPointer<vtkCellTypes>::New();
+  inMB->getDataSet()->GetCellTypes(celltypes);
+  for (int i = 0; i < celltypes->GetNumberOfTypes(); ++i)
+  {
+    if (!(celltypes->IsType(VTK_TETRA)) && !(celltypes->IsType(VTK_TRIANGLE)))
+    {
+      std::cerr << "Partitioner works for 4-node tet and 3-node tri elements only.\n";
+      exit(-1);
+    }
+  }
+  nNde = inMB->getNumberOfPoints();
+  elmConnVec = inMB->getConnectivities(); 
+  elmConn = elmConnVec;
+  // 1 based idex for elmConnVec, 0 based for elmConn
+  for (int i= 0; i < elmConnVec.size(); ++i)
+  {
+    elmConnVec[i] = elmConnVec[i] + 1;
+  }
+  nElm = inMB->getNumberOfCells();
+  if (celltypes->IsType(VTK_TETRA))
+    meshType = MESH_TETRA_4;
+  else if (celltypes->IsType(VTK_TRIANGLE))
+    meshType = MESH_TRI_3;
+  else
+  {
+    std::cerr << "Mesh with unspported element types.\n";
+    exit(-1);
+  }
+  nPart = 0;
+  std::cout << " ------------------- Partitioner Stats ---------------------\n";
+  std::cout << "Mesh type : " << ( meshType==0 ? "Triangular":"Tetrahedral") << std::endl;
+  std::cout << "Number of nodes = " << nNde
+            << "\nNumber of elements = " << nElm << std::endl;
+  std::cout << "Size of elmConn = " << elmConnVec.size() << std::endl;
+  std::cout <<  "Min connectivity passed to partitioner = "
+            << *std::min_element(elmConnVec.begin(), elmConnVec.end()) << std::endl;
+  std::cout <<  "Max connectivity passed to partitioner = "
+            << *std::max_element(elmConnVec.begin(), elmConnVec.end()) << std::endl;
+  std::cout << " ----------------------------------------------------------\n";
 }
 
 
@@ -206,8 +267,20 @@ int meshPartitioner::partition()
   }
   // setting options (some default values, should be tailored)
   METIS_SetDefaultOptions(options);
-  options[METIS_OPTION_NUMBERING] = 0; 
-  options[METIS_OPTION_CONTIG] = 1;
+  options[METIS_OPTION_NUMBERING] = 0; // 0-based index
+  options[METIS_OPTION_CONTIG] = 1;    // try for contiguous partitions
+  options[METIS_OPTION_PTYPE] = METIS_PTYPE_KWAY; // multilevel k-way partitioning
+  //options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB; // multileve recursive bisectioning
+  options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_VOL; // minimize edge cut METIS_OBJTYPE_VOL(comm vol)
+  //options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT;
+  options[METIS_OPTION_UFACTOR] = 1; // load imbalance of 1.001 
+  //options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM; // sorted heavy-edge matching
+
+  // To try to match METIS in Rocstar partitioner, the options can be changed to:
+  // - Add SHEM method:      options[METIS_OPTION_CTYPE] = METIS_CTYPE_SHEM;
+  // - Replace KWAY with RB: options[METIS_OPTION_PTYPE] = METIS_PTYPE_RB
+  // - Replace VOL with CUT: options[METIS_OPTION_OBJTYPE] = METIS_OBJTYPE_CUT
+
   //options[METIS_OPTION_DBGLVL] = METIS_DBG_INFO | METIS_DBG_TIME | 
   //                               METIS_DBG_CONNINFO | METIS_DBG_CONTIGINFO;   
   int res;
@@ -245,24 +318,29 @@ int meshPartitioner::partition()
     std::cout << "eptr[end] = " << eptr[nElm] << std::endl;
     std::cout << "eind = " << elmConn[0] << std::endl;
     */
+  
+   // res = METIS_PartMeshNodal(&nElm, &nNde, &eptr[0], &elmConn[0], NULL, NULL,
+   //                           &nPart, NULL, options, &objval, &epart[0], &npart[0]);
     res = METIS_PartMeshDual(&nElm, &nNde, &eptr[0], &elmConn[0], NULL, NULL, 
-                             //&ncommon, &nPart, NULL, NULL, &objval, &epart[0], &npart[0]);
                              &ncommon, &nPart, NULL, options, &objval, &epart[0], &npart[0]);
+    
     std::cout << "Received data from METIS" << std::endl;
   }
   // output partitioning results
   // check success
-  if (res == METIS_OK){
+  if (res == METIS_OK)
+  {
     std::cout << "Successfully partitioned the mesh.\n";
     // removing the first member of the npart as default 
     // index starts from 1
     npart.erase(npart.begin());
     buildPartitions();
-    return(1);
-  } else {
+    return 0;
+  } 
+  else 
+  {
     std::cerr << "Failed to partition with error code " << res << std::endl;
-    exit(-1);
-    return(0);
+    return 1;
   }
 }
 
@@ -334,4 +412,25 @@ std::vector<double> meshPartitioner::getElmSlnScalar(int iPart, std::vector<doub
 std::vector<double> meshPartitioner::getElmSlnVec(int iPart, std::vector<double>& slns, int nComp)
 {
   return(meshParts[iPart]->getElmSlnsVec(slns, nComp));
+}
+  
+
+std::map<int,int> meshPartitioner::getPartToGlobNodeMap(int iPart)
+{
+  if (iPart > meshParts.size())
+  {
+    std::cerr << "requested partition number exceeds available partitions" << std::endl;
+    exit(1);
+  }
+  return meshParts[iPart]->getPartToGlobNodeMap();
+}
+
+std::map<int,int> meshPartitioner::getPartToGlobElmMap(int iPart)
+{
+  if (iPart > meshParts.size())
+  {
+    std::cerr << "requested partition number exceeds available partitions" << std::endl;
+    exit(1);
+  }
+  return meshParts[iPart]->getPartToGlobElmMap();
 }
