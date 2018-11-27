@@ -1,6 +1,12 @@
-#ifndef CUBATURE_H #define CUBATURE_H
+#ifndef CUBATURE_H 
+#define CUBATURE_H
 #include <meshBase.H>
 #include <vtkMesh.H>
+#include <vtkPolyData.h>
+#include <vtkGenericCell.h>
+#include <vtkQuadratureSchemeDefinition.h>
+#include <vtkPointData.h>
+#include <vtkDoubleArray.h>
 #include <Eigen/Dense>
 
 // 3 point symmetric gaussian quadrature for triangle element

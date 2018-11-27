@@ -1,14 +1,17 @@
-image: snatesh/testdoc:testimg
+image: snatesh/nemosys-test-img:v1
 
 before_script:
- - apt -y install swig
+ - apt install -y python2.7-dev python-pip
  - cp -r /tmp/install .
+ - SRCDIR=$PWD
  - mkdir build && cd build
- - CMAKE_PREFIX_PATH=../install/madlib:../install/gmsh:../install/cgns:../install/netgen cmake -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=../install ..
- - make
+ - CC=mpicc
+ - CXX=mpicxx
+ - CMAKE_PREFIX_PATH=../install/vtk:../install/madlib:../install/gmsh:../install/hdf5:../install/cgns:../install/netgen cmake -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=../install ..
+ - make -j$(nproc)
  - make install 
- - export LD_LIBRARY_PATH=../install/Nemosys/lib:$LD_LIBRARY_PATH
- - export PYTHONPATH=../install/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH 
+ - export LD_LIBRARY_PATH=$SRCDIR/install/Nemosys/lib:$SRCDIR/install/vtk/lib
+ - export PYTHONPATH=../install/Nemosys/python/lib/python2.7/site-packages 
 job1:
  script:
   - make test

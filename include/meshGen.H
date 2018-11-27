@@ -1,82 +1,39 @@
 #ifndef MESHGEN_H
 #define MESHGEN_H
 
-#include <meshBase.H>
+#include <string>
+#include <vtkSmartPointer.h>
+#include <vtkDataSet.h>
 
-class meshingParams
-{
-  public:
-    meshingParams(){};
-    virtual ~meshingParams(){};    
-    
-};
+class meshingParams;
 
-class NetgenParams : public meshingParams
+// method to write vtk grids
+template<class TWriter> void writeVTFile(const std::string& fname, 
+                                         vtkSmartPointer<vtkDataSet> dataSet)
 {
-  
-  public:
-    // initializing params with defaults
-    NetgenParams();
-    ~NetgenParams(){};
-  
-  public:
-    bool uselocalh;
-    double maxh;
-    double fineness;  
-    double grading;
-    double elementsperedge;
-    double elementspercurve;
-    bool closeedgeenable;
-    double closeedgefact;
-    bool second_order;
-    std::string meshsize_filename;
-    bool quad_dominated;
-    bool optvolmeshenable;
-    int optsteps_2d;
-    int optsteps_3d;
-    bool invert_tets;
-    bool invert_trigs;
-    bool check_overlap;
-    bool check_overlapping_boundary;
-    bool refine_with_geom;
-    bool refine_without_geom;
-};
+  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
+  Writer->SetFileName(&fname[0u]);
+  Writer->SetInputData(dataSet);
+  Writer->Write();
+}
 
 class meshGen 
 {
   public:
-    meshGen(){};
-    virtual ~meshGen(){}
+    meshGen():dataSet(0){std::cout << "Base mesh generator created" << std::endl;}
+    virtual ~meshGen(){ std::cout << "Base mesh generator destroyed" << std::endl;}
     
     // creates generator with default parameters
     static meshGen* Create(std::string fname, std::string meshEngine);
     // creates generater with specified parameters
     static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
-    virtual int createMeshFromSTL(char* fname) = 0;
+    virtual int createMeshFromSTL(const char* fname) = 0;
+    vtkSmartPointer<vtkDataSet> getDataSet(); 
+ 
+  protected:
+    vtkSmartPointer<vtkDataSet> dataSet;    
 
 };
 
-class meshNetgen : public meshGen
-{
-
-  public:
-    meshNetgen();
-
-    meshNetgen(NetgenParams* params);
-    
-    ~meshNetgen();
-
-    void set_mp(NetgenParams* params);
-      
-
-  // netgen mesh creation
-  public:
-    int createMeshFromSTL(char* fname);
-  private:
-    nglib::Ng_Meshing_Parameters mp; // params for netgen meshing  
-    nglib::Ng_Mesh* mesh; // netgen mesh object
-    bool refine_with_geom; // if refinement enabled, adapt to geom
-    bool refine_without_geom; // if refinement enabled, just do uniform
-};
 
 #endif

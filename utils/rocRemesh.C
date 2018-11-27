@@ -11,12 +11,12 @@
 #include "meshPartitioner.H"
 #include "cgnsWriter.H"
 
-// MAdLib headers 
+// MAdLib + gmsh headers 
 #include "ModelInterface.h"
 #include "MAdLib.h"
 #include "NodalDataManager.h"
 #include "MeshDataBaseIO.h"
-
+#include "GmshEntities.h"
 // typedefs
 //typedef std::shared_ptr<cgnsAnalyzer> cgPtr;
 
@@ -72,6 +72,10 @@ int main(int argc, char* argv[])
   // experiment with mesh partitioner
   //meshPartitioner* mPart1 = new meshPartitioner(cgObj1);
   //mPart1->partition(4);
+
+  std::cout << "Exporting mesh to VTK format ########################################\n";
+  //writeVTFile<vtkXMLUnstructuredGridWriter>("test.vtu", cgObj1->getVTKMesh());
+   
 
   std::cout << "Exporting mesh to MAdLib format #####################################\n";
   // exporting mesh to the MAdLib
@@ -184,6 +188,10 @@ int main(int argc, char* argv[])
   MAd::GM_create(&tmpMdl,"");
   MAd::pMesh skinMesh = M_new(tmpMdl);
   mesh->skin_me(skinMesh, skinElmIds);
+  for (auto it = skinElmIds.begin(); it != skinElmIds.end(); ++it)
+    std::cout << *it << std::endl;
+
+  
   std::cout << "Num of elements in the mesh = " << MAd::M_numRegions(skinMesh) << std::endl;
   std::cout << "Num of triangles in the mesh = " << MAd::M_numTriangles(skinMesh) << std::endl;
   std::cout << "Minimum surface element index = " << *std::min_element(skinElmIds.begin(),skinElmIds.end()) << std::endl;
@@ -241,7 +249,7 @@ int main(int argc, char* argv[])
   std::cout << " Partitioning the mesh with METIS.\n";
   //meshPartitioner* mPart = new meshPartitioner(cgObj1);
   meshPartitioner* mPart = new meshPartitioner(mesh);
-  nOutCgFile = 1;
+  //nOutCgFile = 1;
   mPart->partition(nOutCgFile);
   
   // write partitin ids for the surface mesh
@@ -266,7 +274,7 @@ int main(int argc, char* argv[])
      fCgName = fCgName.substr(pos+1);
      std::cout << "Writing remeshed " << fCgName << std::endl;
      // define elementary information
-     cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObj1->getBaseName(), 3, 3);
+     cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObj1->getBaseName(), 3, 3, 0);
      cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
 			cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
 			cgObj1->getAngleUnit());
@@ -281,18 +289,18 @@ int main(int argc, char* argv[])
 			  mPart->getCrds(iCg, MAd::M_getVrtZCrds(mesh)));
      // define connctivity
      cgWrtObj->setSection(cgObj1->getSectionName(), 
-			  (ElementType_t) cgObj1->getElementType(), 
+			  (CG_ElementType_t) cgObj1->getElementType(), 
 			  mPart->getConns(iCg));
      // define vertex and cell data 
-     std::map<std::string, GridLocation_t> slnNLMap = cgObj1->getSolutionNameLocMap();
+     std::map<std::string, CG_GridLocation_t> slnNLMap = cgObj1->getSolutionNameLocMap();
      for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
        cgWrtObj->setSolutionNode(is->first, is->second);
-     // write skelleton of the file
+     // write skeleton of the file
      cgWrtObj->writeGridToFile();
-     /* 
-     // write individual data fields
+     
+    // write individual data fields
      std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
-     std::vector<GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
+     std::vector<CG_GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
      std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
      std::vector<double> regCntCrdsPart = mPart->getElmSlnVec(iCg, regCntCrdsNew, 3);
      //cog = getCOG(regCntCrdsPart);
@@ -304,39 +312,40 @@ int main(int argc, char* argv[])
        keyValueList fldLst = slnPair.second;
        for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
        {
-	 iSol++;
-	 std::vector<double> stitPhysData;
-	 std::vector<double> partPhysData;
-	 int nData;
-	 if (gLoc[iSol] == Vertex)
-	 {
-	   nData = mPart->getNNdePart(iCg);
-	   ma->getMeshData(ifl->second, &stitPhysData);
-	   partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
-	 } else {
-	   nData = mPart->getNElmPart(iCg);
-	   std::vector<double> oldPhysData;
-	   int nDataT, nDimT;
-	   cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT, nDimT);
-	   int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart, oldPhysData, partPhysData);      
-           //std::cout << "Minimum element = " 
-           //          << *std::min_element(partPhysData.begin(), partPhysData.end())
-           //          << "\n Maximum element = " 
-           //          << *std::max_element(partPhysData.begin(), partPhysData.end())
-           //          << std::endl;
-	 }
-	 std::cout << "Writing "
-		   << nData 
-		   << " to "
-		   << ifl->second
-		   << " located in "
-		   << slnName[iSol]
-		   << std::endl;
-	 // write to file
-	 cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], RealDouble, &partPhysData[0]);
+	       iSol++;
+	       std::vector<double> stitPhysData;
+	       std::vector<double> partPhysData;
+	       int nData;
+	       if (gLoc[iSol] == CG_Vertex)
+	       {
+	         nData = mPart->getNNdePart(iCg);
+	         ma->getMeshData(ifl->second, &stitPhysData);
+	         partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
+	       } 
+         else 
+         {
+	         nData = mPart->getNElmPart(iCg);
+	         std::vector<double> oldPhysData;
+	         int nDataT, nDimT;
+	         cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT, nDimT);
+	         int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart, oldPhysData, partPhysData);      
+                 //std::cout << "Minimum element = " 
+                 //          << *std::min_element(partPhysData.begin(), partPhysData.end())
+                 //          << "\n Maximum element = " 
+                 //          << *std::max_element(partPhysData.begin(), partPhysData.end())
+                 //          << std::endl;
+	       }
+	       std::cout << "Writing "
+	           << nData 
+	           << " to "
+	           << ifl->second
+	           << " located in "
+	           << slnName[iSol]
+	           << std::endl;
+	       // write to file
+	       cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], CG_RealDouble, &partPhysData[0]);
        }
      }
-     */
      delete cgWrtObj;
   }
   

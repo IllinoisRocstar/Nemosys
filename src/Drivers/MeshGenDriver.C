@@ -1,25 +1,36 @@
 #include <MeshGenDriver.H>
-#include <meshGen.H>
+#include <netgenGen.H>
+#include <netgenParams.H>
+#ifdef HAVE_SYMMX
+  #include <symmxGen.H>
+  #include <symmxParams.H>
+#endif
 // ----------------------------- MeshGen Driver -----------------------------------//
 
-MeshGenDriver::MeshGenDriver(std::string ifname, std::string meshEngine, 
-                             meshingParams* _params, std::string ofname)
+MeshGenDriver::MeshGenDriver(const std::string& ifname, const std::string& meshEngine, 
+                             meshingParams* _params, const std::string& ofname)
 {
   params = _params;
-  mesh = meshBase::generateMesh(ifname, meshEngine, params);
+  mesh = meshBase::CreateShared(meshBase::generateMesh(ifname, meshEngine, params));
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();
   std::cout << "MeshGenDriver created" << std::endl;
 }
 
-MeshGenDriver::~MeshGenDriver()
+std::shared_ptr<meshBase> MeshGenDriver::getNewMesh()
 {
   if (mesh)
-  {
-    delete mesh;
-    mesh = 0;
-  }
+    return mesh;
+}
+
+MeshGenDriver::~MeshGenDriver()
+{
+  //if (mesh)
+  //{
+  //  delete mesh;
+  //  mesh = 0;
+  //}
   if (params)
   {
     delete params;
@@ -28,20 +39,27 @@ MeshGenDriver::~MeshGenDriver()
   std::cout << "MeshGenDriver destroyed" << std::endl;
 }
 
-MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
+MeshGenDriver* MeshGenDriver::readJSON(const json& inputjson)
 {
-  std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
   std::string ifname = inputjson["Mesh File Options"]
                                 ["Input Geometry File"].as<std::string>();
   std::string ofname = inputjson["Mesh File Options"]
                                 ["Output Mesh File"].as<std::string>();
+  return readJSON(ifname, ofname, inputjson);
+}
+
+MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname, 
+                                       const std::string& ofname,
+                                       const json& inputjson)
+{
+  std::string meshEngine = inputjson["Mesh Generation Engine"].as<std::string>();
   if (!meshEngine.compare("netgen"))
   {
     std::string defaults = inputjson["Meshing Parameters"]
                                     ["Netgen Parameters"].as<std::string>();
     if (!defaults.compare("default"))
     {
-      NetgenParams* params = new NetgenParams();
+      netgenParams* params = new netgenParams();
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
@@ -49,7 +67,7 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
     {
       json ngparams = inputjson["Meshing Parameters"]["Netgen Parameters"];
       
-      NetgenParams* params = new NetgenParams();  
+      netgenParams* params = new netgenParams();  
      
       if (ngparams.has_key("uselocalh")) 
         params->uselocalh = ngparams["uselocalh"].as<bool>();
@@ -95,9 +113,50 @@ MeshGenDriver* MeshGenDriver::readJSON(json inputjson)
       MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
-
-
   }
+  else if (!meshEngine.compare("simmetrix"))
+  {
+    #ifndef HAVE_SYMMX
+      std::cerr << "Nemosys must be recompiled with simmetrix support" << std::endl;
+      exit(1);
+    #else
+      if (!inputjson.has_key("License File"))
+      {
+        std::cerr << "Simmetrix License file must be specified in json" << std::endl;
+        exit(1);
+      }
+      
+      symmxParams* params = new symmxParams();
+      params->licFName = inputjson["License File"].as<std::string>();
+      params->features = inputjson["Features"].as<std::string>();
+      params->logFName = inputjson["Log File"].as<std::string>();
+      
+      std::string defaults = inputjson["Meshing Parameters"]["Simmetrix Parameters"].as<std::string>();
+      if (!defaults.compare("default"))
+      {
+        MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+        return mshgndrvobj; 
+      }
+      else
+      {
+        json symmxparams = inputjson["Meshing Parameters"]["Simmetrix Parameters"];
+        if (symmxparams.has_key("Mesh Size"))
+          params->meshSize = symmxparams["Mesh Size"].as<double>();
+        if (symmxparams.has_key("Anisotropic Curvature Refinement"))
+          params->anisoMeshCurv = symmxparams["Anisotropic Curvature Refinement"].as<double>();
+        if (symmxparams.has_key("Global Gradation Rate"))
+          params->glbSizeGradRate = symmxparams["Global Gradation Rate"].as<double>();
+        if (symmxparams.has_key("Surface Mesh Improver Gradation Rate"))
+          params->surfMshImprovGradRate = symmxparams["Surface Mesh Improver Gradation Rate"].as<double>();
+        if (symmxparams.has_key("Surface Mesh Improver Min Size"))
+          params->surfMshImprovMinSize = symmxparams["Surface Mesh Improver Min Size"].as<double>();
+      
+        MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+        return mshgndrvobj;
+      } 
+    #endif
+  }
+
   else
   {
     std::cout << "Mesh generation engine " << meshEngine << " is not supported" << std::endl;

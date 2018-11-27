@@ -9,8 +9,9 @@
 
 // third party
 #include <ANN.h>
-#include <spheres.H>
 // types
+
+class sphere;
 
 class basicInterpolant {
 

@@ -6,6 +6,17 @@ web-services environments. The focus of the project is on providing a framework 
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
 between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
+## Vesion ##
+Version 0.25.0
+
+NEMoSys follows semantic versioning. The versions will be major.minor.patch. We will:
+* Increase the patch version for bug fixes, security fixes, and code documentation. 
+Backwards compatible; no breaking changes.
+* Increase the minor version for new features and additions to the library’s interface. 
+Backwards compatible; no breaking changes.
+* Increase the major version for breaking changes to the library’s interface or breaking 
+changes to behavior.
+
 ## Getting Started ##
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
@@ -18,11 +29,8 @@ You will need to `apt install` at least the following dependencies:
 
 * build-essential
 * cmake
-* libvtk6-dev
 * libproj-dev
-* libcgns-dev
 * libmetis-dev
-* libhdf5-dev
 * libfltk1.3-dev
 * liblapack-dev
 * libgmp-dev
@@ -30,7 +38,16 @@ You will need to `apt install` at least the following dependencies:
 * libsm-dev
 * libice-dev
 * gfortran
+* libxt-dev
+* zlib1g-dev
+* tcl-dev
+* tk-dev
+* libxmu-dev
+* python-dev
+* libcgns-dev
+* libhdf5-dev
 * swig (if you want python bindings)
+* an MPI compiler
 
 Once these dependencies are installed, the easiest way to build the required third party
 libraries is with the script `build.sh`. Assume $NEMOSYS_PROJECT_PATH is the path to Nemosys, 
@@ -43,35 +60,32 @@ $ $NEMOSYS_PROJECT_PATH/scripts/build.sh $NEMOSYS_PROJECT_PATH $NEMOSYS_PROJECT_
 ```
 
 ### Build Nemosys ###
-Now, we can compile the Nemosys library, create its python binding and build utilities: 
+Now, we can compile the Nemosys library, create its python bindings and other utilities: 
 ```
 $ cd $NEMOSYS_PROJECT_PATH
 $ mkdir build && cd build
-$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/cgns:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON .. 
-$ make -j
-$ make install
-$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$LD_LIBRARY_PATH
-$ export PYTHONPATH=$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages:$PYTHONPATH
+$ CMAKE_PREFIX_PATH=$NEMOSYS_INSTALL_PATH/madlib:$NEMOSYS_INSTALL_PATH/gmsh:$NEMOSYS_INSTALL_PATH/netgen cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DBUILD_SHARED_LIBS=ON .. 
+$ make -j6 (or however many threads you'd like to use)
+$ make install (sudo if install location requires it)
+$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:$NEMOSYS_INSTALL_PATH/vtk/lib:$LD_LIBRARY_PATH
 ```
 Executing the commands above will build all libraries, executables and bindings. The libraries are
 installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`. Executables are installed in 
 `$NEMOSYS_INSTALL_PATH/Nemosys/bin`. If python bindings are enabled, the `pyNemosys` module files are
 installed in `$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages`.
-The last two export commands are only required if python bindings are enabled. The `pyNemosys` module 
-can be imported in python as `import pyNemosys`. Building of the utilities and python bindings
-can be enabled/disabled either through the CMake curses interface (ccmake) or by passing the 
-corresponding command line definitions to cmake (ON or OFF). 
+The `pyNemosys` module can be imported in python as `import pyNemosys`. The build configuration 
+can modified through the CMake curses interface (ccmake) or by passing the command line options to cmake.
 
 ## Testing Nemosys ##
 From the build directory, execute the following command to test the installation:
 ```
 $ make test
 ```
-This will execute several tests in `$NEMOSYS_PROJECT_PATH/testing`. See the testing directories
-here for more details.
+This will execute several tests found in `$NEMOSYS_PROJECT_PATH/testing`.
 
 ### Manually Build Third Party Libraries ###
-If execution of `build.sh` fails, you can try building the tpls independently
+If execution of `build.sh` fails, or you have already installed some of the dependecies,
+you can try building the remaining tpls independently
 Extract the whole archive as such:
 ```
 $ cd $NEMOSYS_PROJECT_PATH/
@@ -89,10 +103,10 @@ Build Gmsh by running the following commands:
 ```
 $ mkdir lib
 $ cd lib
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/gmsh -DDEFAULT=0
+$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH/gmsh -DDEFAULT=0
         -DENABLE_BUILD_LIB=1 -DENABLE_BUILD_SHARED=1 ..
 $ make lib shared install/fast -j8
-$ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_PROJECT_PATH/install/gmsh/include/gmsh/
+$ cp ./Mesh/meshPartitionObjects.h $NEMOSYS_INSTALL_PATH/gmsh/include/gmsh/
 ```
 
 #### Building madlib ####
@@ -103,14 +117,14 @@ $ cd madlib-1.3.0/
 ```
 Build madlib:
 ```
-$ ./configure --prefix=$NEMOSYS_PROJECT_PATH/install/madlib --enable-moveIt
+$ ./configure --prefix=$NEMOSYS_INSTALL_PATH/madlib --enable-moveIt
               --enable-benchmarks --enable-ann
-              --enable-gmsh --with-gmsh-prefix=$NEMOSYS_PROJECT_PATH/install/gmsh
+              --enable-gmsh --with-gmsh-prefix=$NEMOSYS_INSTAL_PATH/gmsh
 $ make -j8
 $ make install
 ```
 Afterwards, a number of header files from the madlib source directory will
-need to be manually copied into `$NEMOSYS_PROJECT_PATH/install/madlib/include/MAdLib`:
+need to be manually copied into `$NEMOSYS_INSTALL_PATH/madlib/include/MAdLib`:
 
 * Mesh/MeshDataBase.h
 * Mesh/MeshDataBaseInterface.h
@@ -126,19 +140,6 @@ need to be manually copied into `$NEMOSYS_PROJECT_PATH/install/madlib/include/MA
 * Geo/Physical.h
 * Adapt/utils/NodalDataManager.h
 
-#### Building CGNS ####
-Unpack Gmsh from the `neomsys_tpls` directory:
-```
-$ tar zxf cgns.tar.gz
-$ cd CGNS
-```
-Build CGNS:
-```
-$ mkdir build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/cgns ..
-$ make -j8
-$ make install
-```
 
 #### Building Netgen ####
 Unpack Netgen from the `nemosys_tpls` directory:
@@ -150,9 +151,10 @@ Build Netgen:
 ```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen -DUSE_GUI=OFF ..
-$ make
+$ make -j8
 $ make install
 ```
+
 See the building Nemosys section to proceed from this point and complete the build.
 
 ## License ##
