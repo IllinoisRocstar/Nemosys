@@ -6,7 +6,7 @@ web-services environments. The focus of the project is on providing a framework 
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
 between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
-## Vesion ##
+## Version ##
 Version 0.25.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch. We will:
@@ -157,6 +157,3 @@ $ make install
 
 See the building Nemosys section to proceed from this point and complete the build.
 
-## License ##
-This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for
-more details.
