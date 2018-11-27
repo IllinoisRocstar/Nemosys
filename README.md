@@ -21,10 +21,12 @@ changes to behavior.
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
 ```
-$ git clone git@git.illinois.rocstar:Nemosys/Nemosys.git
+$ git clone git@github.com:IllinoisRocstar/Nemosys.git
 ```
 ## Build Instructions ##
 ### Build Dependencies ###
+***IMPORTANT NOTE:*** Because of the file size limitations enforced by GitHub the TPL archieve needed for the build script is not provided here. NEMoSys TPLs can be built manually according to the directions provided in **Manually Build Third Party Libraries** sections. In case you require this file please contact Illinois Rocstar LLC at info@illinoisrocstar.com.
+
 You will need to `apt install` at least the following dependencies:
 
 * build-essential
