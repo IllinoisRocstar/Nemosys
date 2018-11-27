@@ -1,5 +1,7 @@
-#include "meshBase.H"
-#include "pntMesh.H"
+#include <meshBase.H>
+#include <pntMesh.H>
+#include <vtkIdList.h>
+#include <vtkCell.h>
 #include <fstream>
 #include <algorithm>
 

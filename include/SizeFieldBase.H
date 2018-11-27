@@ -2,8 +2,7 @@
 #define SIZEFIELDGEN_H
 
 #include <meshBase.H>
-
-using namespace nemAux;
+#include <vtkDataArray.h>
 
 class SizeFieldBase
 {
@@ -29,12 +28,7 @@ class SizeFieldBase
                                 double _dev_mult, bool _maxIsmin, double _sizeFactor=1.);
     static std::unique_ptr<SizeFieldBase> 
     CreateUnique(meshBase* _mesh, std::string method, int arrayID, double _dev_mult, 
-            bool _maxIsmin, double _sizeFactor=1.)
-    {
-      std::cout << __FILE__ << __LINE__ << std::endl;
-      std::cout << "Size Factor = " << _sizeFactor << std::endl;
-      return std::unique_ptr<SizeFieldBase>(SizeFieldBase::Create(_mesh,method,arrayID,_dev_mult,_maxIsmin, _sizeFactor));
-    }
+            bool _maxIsmin, double _sizeFactor=1.);
 
   // method
   public:
@@ -59,13 +53,5 @@ class SizeFieldBase
     void initialize(meshBase* _mesh, int arrayID, double _dev_mult, 
                     bool _maxIsmin, const std::string& arrName);
 };
-
-
-
-
-//class ErrorSF: public SizeFieldBase
-//{
-//
-//}
 
 #endif

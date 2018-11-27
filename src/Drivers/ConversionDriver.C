@@ -4,6 +4,11 @@
 // Nemosys
 #include <ConversionDriver.H>
 #include "meshSrch.H"
+#include <AuxiliaryFunctions.H>
+
+// vtk
+#include <vtkIdList.h>
+#include <vtkCellData.h>
 
 //----------------------- Conversion Driver -----------------------------------------//
 ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,

@@ -8,6 +8,8 @@
 
 
 #include <meshBase.H> 
+#include <vtkPointData.h>
+#include <vtkCellData.h>
 
 int main (int argc, char *argv[])
 {

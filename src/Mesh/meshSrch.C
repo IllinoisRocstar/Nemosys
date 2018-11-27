@@ -3,6 +3,8 @@
 
 // VTK
 #include <vtkCellLocator.h>
+#include <vtkCell.h>
+#include <vtkIdList.h>
 
 using namespace nemAux;
 

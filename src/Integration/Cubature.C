@@ -1,4 +1,15 @@
 #include <Cubature.H>
+#include <vtkInformation.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
+#include <vtkQuadraturePointsGenerator.h>
+#include <vtkCellTypes.h>
+#include <vtkIdTypeArray.h>
+#include <vtkGenericCell.h>
+#include <vtkDataArray.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkMeshQuality.h>
 
 // Table 10.4 Quadrature for unit tetrahedra in http://me.rice.edu/~akin/Elsevier/Chap_10.pdf
 // OR

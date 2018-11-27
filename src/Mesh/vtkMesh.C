@@ -1,7 +1,39 @@
-#include<vtkMesh.H>
+#include <vtkMesh.H>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkUnstructuredGridWriter.h>
 #include <vtkTriangleFilter.h>
+#include <vtkDoubleArray.h>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <vtkFieldData.h>
+#include <vtkPoints.h>
+#include <vtkCell.h>
+#include <vtkIdList.h>
+#include <vtksys/SystemTools.hxx>
+#include <vtkCellTypes.h>
+#include <vtkXMLWriter.h>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLStructuredGridWriter.h>
+#include <vtkXMLRectilinearGridWriter.h>
+#include <vtkSTLWriter.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkXMLPolyDataReader.h>
+#include <vtkXMLStructuredGridReader.h>
+#include <vtkXMLRectilinearGridReader.h>
+#include <vtkXMLImageDataReader.h>
+#include <vtkSTLReader.h>
+#include <vtkExtractEdges.h>
+#include <vtkGenericCell.h>
+#include <vtkStructuredGrid.h>
+#include <vtkCellIterator.h>
+#include <vtkRectilinearGrid.h>
+#include <vtkImageData.h>
+#include <AuxiliaryFunctions.H>
+
+using namespace nemAux;
 
 void vtkMesh::write()
 {
@@ -21,12 +53,9 @@ void vtkMesh::write()
     writeVTFile<vtkXMLRectilinearGridWriter> (filename,dataSet);
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
-  else if (extension == ".vto")
-    writeVTFile<vtkXMLHyperOctreeWriter> (filename,dataSet);
-  else if (extension == ".stl") // stl written to vtp
+  else if (extension == ".stl") 
   {
-    filename = trim_fname(filename , ".vtp");
-    writeVTFile<vtkXMLPolyDataWriter> (filename, dataSet);
+    writeVTFile<vtkSTLWriter> (filename, dataSet);
   }
   else if (extension == ".vtk")
     writeVTFile<vtkUnstructuredGridWriter> (filename, dataSet); // legacy vtk writer
@@ -55,8 +84,6 @@ void vtkMesh::write(std::string fname)
     writeVTFile<vtkXMLRectilinearGridWriter> (fname,dataSet);
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (fname, dataSet);
-  else if (extension == ".vto")
-    writeVTFile<vtkXMLHyperOctreeWriter> (fname,dataSet);
   else if (extension == ".stl")
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
   else if (extension == ".vtk")
@@ -66,13 +93,90 @@ void vtkMesh::write(std::string fname)
   
 }
 
-vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, const char* fname)
+vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, std::string fname)
 {
-  dataSet = dataSet_tmp;
-  std::string newname(fname);
-  setFileName(newname);
-  numCells = dataSet->GetNumberOfCells();
-  numPoints = dataSet->GetNumberOfPoints();
+  if (dataSet_tmp)
+  {  
+    dataSet = dataSet_tmp;
+    filename = fname;
+    numCells = dataSet->GetNumberOfCells();
+    numPoints = dataSet->GetNumberOfPoints();
+    std::cout << "vtkMesh constructed" << std::endl;
+  }
+  else
+  {
+    std::cerr << "Nothing to copy!" << std::endl;
+    exit(1);
+  }
+}
+
+vtkMesh::vtkMesh(const std::vector<double>& xCrds,
+                 const std::vector<double>& yCrds,
+                 const std::vector<double>& zCrds,
+                 const std::vector<int>& elemConn, const int cellType,
+                 std::string newname)
+{
+  if (!(xCrds.size() == yCrds.size() && xCrds.size() == zCrds.size()))
+  {
+    std::cerr << "Length of coordinate arrays must match!" << std::endl;
+    exit(1);
+  }
+  // point to be pushed into dataSet
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New(); 
+  // declare vtk dataset
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp 
+    = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  numPoints = xCrds.size();
+  // allocate size for vtk point container 
+  points->SetNumberOfPoints(numPoints);
+  for (int i = 0; i < numPoints; ++i)
+  {
+    points->SetPoint(i, xCrds[i], yCrds[i], zCrds[i]); 
+  }
+  // add points to vtk mesh data structure 
+  dataSet_tmp->SetPoints(points);  
+  switch(cellType)
+  {
+    case VTK_TETRA:
+    {
+      numCells = elemConn.size()/4;
+      dataSet_tmp->Allocate(numCells);
+      for (int i = 0; i < numCells; ++i)
+      {
+        vtkSmartPointer<vtkIdList> elmConn = vtkSmartPointer<vtkIdList>::New();
+        elmConn->SetNumberOfIds(4);
+        for (int j = 0; j < 4; ++j)
+        {
+          elmConn->SetId(j,elemConn[i*4 + j]);
+        }
+        dataSet_tmp->InsertNextCell(VTK_TETRA, elmConn);
+      }
+      break;
+    }
+    case VTK_TRIANGLE:
+    {
+      numCells = elemConn.size()/3;
+      dataSet_tmp->Allocate(numCells);
+      for (int i = 0; i < numCells; ++i)
+      {
+        vtkSmartPointer<vtkIdList> elmConn = vtkSmartPointer<vtkIdList>::New();
+        elmConn->SetNumberOfIds(3);
+        for (int j = 0; j < 3; ++j)
+        {
+          elmConn->SetId(j,elemConn[i*3 + j]);
+        }
+        dataSet_tmp->InsertNextCell(VTK_TRIANGLE, elmConn);
+      }
+      break;
+    }
+    default:
+    {
+      std::cout << "Unknown element type " << cellType << std::endl;
+      exit(1);
+    }
+  }
+  filename = newname;  
+  dataSet = dataSet_tmp; 
   std::cout << "vtkMesh constructed" << std::endl;
 }
 
@@ -100,10 +204,6 @@ vtkMesh::vtkMesh(const char* fname)
   else if (extension == ".vti")
   {
     dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLImageDataReader> (fname));
-  }
-  else if (extension == ".vto")
-  {
-    dataSet.TakeReference(ReadAnXMLOrSTLFile<vtkXMLHyperOctreeReader> (fname));
   }
   else if (extension == ".stl")
   {
@@ -134,7 +234,7 @@ vtkMesh::vtkMesh(const char* fname)
       numCells = dataSet->GetNumberOfCells();
       numPoints = dataSet->GetNumberOfPoints();
       vtkMesh vtkMesh_tmp(vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname)),fname);
-      vtkMesh_tmp.transfer(this,"Finite Element");     
+      vtkMesh_tmp.transfer(this,"Consistent Interpolation");     
       std::cout << "vtkMesh constructed" << std::endl;
     }
     else
@@ -687,6 +787,25 @@ std::vector<double> vtkMesh::getPoint(int id) const
   return result;
 }
 
+// get 3 vectors with x,y and z coords
+std::vector<std::vector<double>> vtkMesh::getVertCrds() const
+{
+  std::vector<std::vector<double>> comp_crds(3);
+  for (int i = 0; i < 3; ++i)
+  {
+    comp_crds[i].resize(numPoints);
+  }
+  double coords[3];
+  for (int i = 0; i < numPoints; ++i)
+  {
+    dataSet->GetPoint(i,coords);
+    comp_crds[0][i] = coords[0];
+    comp_crds[1][i] = coords[1];
+    comp_crds[2][i] = coords[2];
+  }
+  return comp_crds;
+}
+
 // get cell with id : returns point indices and respective coordinates
 std::map<int, std::vector<double>> vtkMesh::getCell(int id) const
 {
@@ -760,6 +879,22 @@ void vtkMesh::inspectEdges(const std::string& ofname)
     double len = sqrt(pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2) + pow(p1[2]-p2[2],2));
     outputStream << len << std::endl;
   } 
+}
+
+std::vector<int> vtkMesh::getConnectivities() const
+{
+  std::vector<int> connectivities;
+  vtkSmartPointer<vtkCellIterator> it 
+    = vtkSmartPointer<vtkCellIterator>::Take(dataSet->NewCellIterator()); 
+  for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
+  {
+    vtkSmartPointer<vtkIdList> pointIds = it->GetPointIds();
+    for (int i = 0; i < pointIds->GetNumberOfIds(); ++i)
+    {
+      connectivities.push_back(pointIds->GetId(i));
+    } 
+  }
+  return connectivities;
 }
 
 void vtkMesh::report()
@@ -841,6 +976,24 @@ void vtkMesh::report()
   }
 }
 
+vtkSmartPointer<vtkDataSet> vtkMesh::extractSurface()
+{
+  // extract surface polygons
+  vtkSmartPointer<vtkDataSetSurfaceFilter> surfFilt =
+    vtkSmartPointer<vtkDataSetSurfaceFilter>::New();
+  surfFilt->SetInputData(dataSet);
+  surfFilt->Update();
+
+  // triangulate the surface
+  vtkSmartPointer<vtkTriangleFilter> triFilt =
+    vtkSmartPointer<vtkTriangleFilter>::New();
+  triFilt->SetInputData(surfFilt->GetOutput());
+  triFilt->Update();
+
+  return triFilt->GetOutput();
+}
+
+
 // get diameter of circumsphere of each cell
 std::vector<double> vtkMesh::getCellLengths() const
 {
@@ -856,7 +1009,7 @@ std::vector<double> vtkMesh::getCellLengths() const
 // get center of a cell
 std::vector<double> vtkMesh::getCellCenter(int cellID) const
 {
-  std::vector<double> center(3);
+  std::vector<double> center(3,0.0);
   std::vector<std::vector<double>> cell = getCellVec(cellID); 
  
   for (int i = 0; i < cell.size(); ++i)
@@ -873,6 +1026,18 @@ int vtkMesh::getCellType() const
 }
 
 
+
+// set point data  
+void vtkMesh::setPointDataArray(const char* name, const std::vector<double>& data)
+{
+  vtkSmartPointer<vtkDoubleArray> da = vtkSmartPointer<vtkDoubleArray>::New();
+  da->SetName(name);
+  da->SetNumberOfComponents(1);
+  for(int i=0; i < numPoints; i++)
+    da->InsertNextTuple1(data[i]);
+  dataSet->GetPointData()->AddArray(da);
+}
+
 // set point data (numComponets per point determined by dim of data[0] 
 void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<double>>& data)
 {
@@ -886,6 +1051,111 @@ void vtkMesh::setPointDataArray(const char* name, const std::vector<std::vector<
   //dataSet->GetPointData()->SetScalars(da);
 }
 
+void vtkMesh::getPointDataArray(const std::string& name, std::vector<double>& data)
+{
+  int idx;  
+  vtkSmartPointer<vtkDataArray> pd 
+    = dataSet->GetPointData()->GetArray(&name[0u],idx);
+  if (idx != -1)
+  {
+    if (pd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(pd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < pd->GetNumberOfTuples(); ++i)
+    {
+      pd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "could not find data with name " << name << std::endl;
+    exit(1);
+  }
+}
+
+void vtkMesh::getPointDataArray(int arrayId, std::vector<double>& data)
+{
+  if (arrayId < dataSet->GetPointData()->GetNumberOfArrays())
+  {
+    vtkSmartPointer<vtkDataArray> pd
+      = dataSet->GetPointData()->GetArray(arrayId);
+    if (pd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(pd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < pd->GetNumberOfTuples(); ++i)
+    {
+      pd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "arrayId exceeds number of point data arrays " << std::endl;
+    exit(1);
+  }
+}
+
+void vtkMesh::getCellDataArray(const std::string& name, std::vector<double>& data)
+{
+  int idx;  
+  vtkSmartPointer<vtkDataArray> cd 
+    = dataSet->GetCellData()->GetArray(&name[0u],idx);
+  if (idx != -1)
+  {
+    if (cd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(cd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < cd->GetNumberOfTuples(); ++i)
+    {
+      cd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "could not find data with name " << name << std::endl;
+    exit(1);
+  }
+}
+
+void vtkMesh::getCellDataArray(int arrayId, std::vector<double>& data)
+{
+  if (arrayId < dataSet->GetCellData()->GetNumberOfArrays())
+  {
+    vtkSmartPointer<vtkDataArray> cd
+      = dataSet->GetCellData()->GetArray(arrayId);
+    if (cd->GetNumberOfComponents() > 1)
+    {
+      std::cerr << __func__ << " is only suitable for scalar data, i.e. 1 component\n";
+      exit(1);
+    }
+    data.resize(cd->GetNumberOfTuples());
+    double x[1];
+    for (int i = 0; i < cd->GetNumberOfTuples(); ++i)
+    {
+      cd->GetTuple(i,x);
+      data[i] = x[0];
+    }
+  }
+  else
+  {
+    std::cerr << "arrayId exceeds number of cell data arrays " << std::endl;
+    exit(1);
+  }
+}
 // set cell data (numComponents per cell determined by dim of data[0])
 void vtkMesh::setCellDataArray(const char* name, const std::vector<std::vector<double>>& data)
 {
@@ -937,6 +1207,8 @@ void vtkMesh::unsetFieldDataArray(const char* name)
 {
   dataSet->GetFieldData()->RemoveArray(name);
 }
+
+
 
 //void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell, 
 //                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)

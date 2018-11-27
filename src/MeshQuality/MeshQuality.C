@@ -1,4 +1,9 @@
 #include <MeshQuality.H>
+#include <vtkCellData.h>
+#include <vtkFieldData.h>
+#include <vtkCell.h>
+#include <vtkCellType.h>
+#include <AuxiliaryFunctions.H>
 
 MeshQuality::MeshQuality(meshBase* _mesh)
   : mesh(_mesh)

@@ -1,4 +1,7 @@
 #include <Refine.H>
+#include <vtkPointData.h>
+#include <vtkCellData.h>
+#include <AuxiliaryFunctions.H>
 
 Refine::Refine(meshBase* _mesh, const std::string& method, 
                int arrayID, double dev_mult, bool maxIsmin, 
@@ -181,7 +184,7 @@ void Refine::run(bool transferData)
   meshBase* refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   //mesh->setCheckQuality(1);
   if (transferData)
-    mesh->transfer(refinedVTK,"Finite Element");
+    mesh->transfer(refinedVTK,"Consistent Interpolation");
 
   refinedVTK->setFileName(ofname);
   refinedVTK->report();

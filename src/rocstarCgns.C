@@ -8,11 +8,18 @@
 ///////////////////////////////////////////////////
 
 rocstarCgns::rocstarCgns(std::string fname) :
-cgnsAnalyzer(fname), myCgFName(fname)
+cgnsAnalyzer(fname), myCgFName(fname),_burn(0)
 {
   std::size_t _loc = myCgFName.find_last_of("_");
   baseCgFName = myCgFName.substr(0,_loc+1);
   padSize = myCgFName.size() - baseCgFName.size() - 5;
+}
+
+rocstarCgns::rocstarCgns(const std::vector<std::string>& fnames)
+  : cgnsAnalyzer(fnames[0]), cgFNames(fnames),_burn(0)
+{
+  std::size_t _loc = fnames[0].find_last_of("_");
+  baseCgFName = fnames[0].substr(0,_loc+1);
 }
 
 rocstarCgns::~rocstarCgns()
@@ -43,7 +50,22 @@ void rocstarCgns::loadCgSeries(int nCg)
     myCgObjs.push_back(cgTmp);
     cgFNames.push_back(fName);
   }
+}
 
+void rocstarCgns::loadCgSeries()
+{
+  for (int i = 0; i < cgFNames.size(); ++i)
+  {
+    cgnsAnalyzer* cgTmp = new cgnsAnalyzer(cgFNames[i]);
+    cgTmp->loadGrid();
+    myCgObjs.push_back(cgTmp);
+  } 
+}
+
+void rocstarCgns::closeCG()
+{
+    for (auto it=myCgObjs.begin()+1; it!=myCgObjs.end(); it++)
+        (*it)->closeCG();
 }
 
 int rocstarCgns::getNCgObj()
@@ -62,6 +84,7 @@ std::string rocstarCgns::getBaseName(int indx)
     return(myCgObjs[indx]->getBaseName());
   return("INVALID");
 }
+
 
 std::string rocstarCgns::getCgFName(int indx)
 {
@@ -117,15 +140,14 @@ std::string rocstarCgns::getSolutionPntr(int indx, int zidx)
 ////////////////////////////////////////////////////
 // DATA PROCESSING
 ////////////////////////////////////////////////////
-void rocstarCgns::dummy()
+void rocstarCgns::stitchGroup()
 {
   for (int iObj=0; iObj<getNCgObj(); iObj++)
   {
-    std::cout << "-------------------------------------------------------\n";
-    std::cout << "fileName = " << myCgObjs[iObj]->getFileName() << std::endl;
+    std::cout << "Reading " << myCgObjs[iObj]->getFileName() << std::endl;
     for (int iz = 1; iz<=myCgObjs[iObj]->getNZone(); iz++)
     {
-      std::cout << "Zone = " << getZoneName(myCgObjs[iObj], iz) << std::endl;
+      std::cout << "Zone " << getZoneName(myCgObjs[iObj], iz) << std::endl;
       stitchMe(myCgObjs[iObj], iz);
     }
   }
@@ -159,7 +181,7 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
     xCrd = getZoneCoords(cgObj, 1, 1);
     yCrd = getZoneCoords(cgObj, 1, 2);
     zCrd = getZoneCoords(cgObj, 1, 3);
-    sectionType = (ElementType_t) getZoneRealSecType(cgObj, 1);
+    sectionType = (CG_ElementType_t) getZoneRealSecType(cgObj, 1);
     elemConn = getZoneRealConn(cgObj, 1);
     stitchFldBc(cgObj, zoneIdx);
     return;
@@ -205,6 +227,9 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
       rptVrtIdx.push_back(iVrt);
       rptVrtMap[iVrt] = nnIdx[0]+1;
     }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
   }
   std::cout << "Found " << nNewVrt << " new vertices.\n"; 
   std::cout << "Number of repeating index " << rptVrtIdx.size()
@@ -216,7 +241,6 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
     std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
-    
     // just adding all elements
     elmDataMask.push_back(true);
     nNewElem++;
@@ -273,24 +297,30 @@ void rocstarCgns::stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx)
     indexZone = zoneIdx;
     loadSolutionDataContainer();
     // append Rocstar specific BCs as solution fields
-    appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+    if (!_burn)
+    {
+        appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx), 
+     	                   		ELEMENTAL, cgObj->getNElement(), 1); 
+		appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
+    	                    	ELEMENTAL, cgObj->getNElement(), 1); 
+    	appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
                          ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
-    appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx), 
-                         ELEMENTAL, cgObj->getNElement(), 1); 
+    }
     return;
   }
   // Rocstar specific BCs remove the old exisiting field 
-  cgObj->delAppSlnData("patchNo");
-  cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
+  if (!_burn)
+  {
+		cgObj->delAppSlnData("patchNo");
+  	    cgObj->appendSolutionData("patchNo", getPanePatchNo(cgObj, zoneIdx),
+    		                         ELEMENTAL, cgObj->getNElement(), 1);
+		cgObj->delAppSlnData("bcflag");
+  	    cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
+  	                           ELEMENTAL, cgObj->getNElement(), 1);
+  	    cgObj->delAppSlnData("cnstr_type");
+    	cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
                              ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("bcflag");
-  cgObj->appendSolutionData("bcflag", getPaneBcflag(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
-  cgObj->delAppSlnData("cnstr_type");
-  cgObj->appendSolutionData("cnstr_type", getPaneCnstrType(cgObj, zoneIdx),
-                             ELEMENTAL, cgObj->getNElement(), 1);
+  }
   // call current object stitch field
   stitchFields(cgObj);
 }
@@ -345,6 +375,9 @@ void rocstarCgns::stitchMe(rocstarCgns* cgObj)
       rptVrtIdx.push_back(iVrt);
       rptVrtMap[iVrt] = nnIdx[0]+1;
     }
+    delete [] nnIdx;
+    delete [] dists;
+    annDeallocPt(qryVrtx);
   }
   std::cout << "Found " << nNewVrt << " new vertices.\n"; 
   std::cout << "Number of repeating index " << rptVrtIdx.size()
@@ -415,10 +448,10 @@ std::string rocstarCgns::getZoneName(int cgIdx, int zoneIdx)
   return(zonename);
 }
 
-ZoneType_t rocstarCgns::getZoneType(int indx, int zidx)
+CG_ZoneType_t rocstarCgns::getZoneType(int indx, int zidx)
 {
   if (indx > cgFNames.size())
-    return(ZoneTypeNull);
+    return(CG_ZoneTypeNull);
   myCgObjs[indx]->loadZone(zidx);
   return(myCgObjs[indx]->getZoneType());
 }
@@ -470,7 +503,7 @@ std::vector<double> rocstarCgns::getZoneCoords(cgnsAnalyzer* cgObj, int zoneIdx,
               "GridCoordinates_t", 1, "end"))
     cg_error_exit();
   char arrName[33];
-  DataType_t dt;
+  CG_DataType_t dt;
   int dd;
   cgsize_t dimVec[3];
   if (cg_array_info(dim, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -487,7 +520,7 @@ std::vector<int> rocstarCgns::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   std::vector<int> conn;
   int secidx = 1;
   char secname[33];
-  ElementType_t et;
+  CG_ElementType_t et;
   cgsize_t st, en;
   int nbndry, parflag;
   if (cg_section_read(cgObj->getIndexFile(),
@@ -505,16 +538,16 @@ std::vector<int> rocstarCgns::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   int nVrtxElm;
   switch(et)
   {
-    case TETRA_4:
+    case CG_TETRA_4:
       nVrtxElm = 4;
       break;
-    case HEXA_8:
+    case CG_HEXA_8:
       nVrtxElm = 8;
       break;
-    case TRI_3:
+    case CG_TRI_3:
       nVrtxElm = 3;
       break;
-    case QUAD_4:
+    case CG_QUAD_4:
       nVrtxElm = 4;
       break;
     default:
@@ -536,7 +569,7 @@ int rocstarCgns::getZoneRealSecType(cgnsAnalyzer* cgObj, int zoneIdx)
   std::vector<int> conn;
   int secidx = 1;
   char secname[33];
-  ElementType_t et;
+  CG_ElementType_t et;
   cgsize_t st, en;
   int nbndry, parflag;
   if (cg_section_read(cgObj->getIndexFile(),
@@ -570,7 +603,7 @@ int rocstarCgns::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-    DataType_t dt;
+    CG_DataType_t dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -600,7 +633,7 @@ int rocstarCgns::getPanePatchNo(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-    DataType_t dt;
+    CG_DataType_t dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -630,7 +663,7 @@ int rocstarCgns::getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-    DataType_t dt;
+    CG_DataType_t dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -639,7 +672,7 @@ int rocstarCgns::getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx)
   }
   if (iArr>nArr)
   {
-    std::cerr << "Can not find patchNo." << std::endl;
+    std::cerr << "Can not find cnstr_type." << std::endl;
     cg_error_exit();
   }
   int cnstrType;
