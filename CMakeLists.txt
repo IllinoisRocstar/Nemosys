@@ -230,7 +230,8 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/MeshPartitioning/meshStitcher.C
                  src/cgnsWriter.C src/gridTransfer.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
-              utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
+              utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C
+              utils/gmsh2Cobalt.C)
 SET(TUTR_SRCS utils/writeStructured.C tutorials/mshTransfer.C tutorials/dtkTutorial.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C src/spheres.C)
@@ -309,6 +310,10 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(rocStitchMesh utils/rocStitchMesh.C)
   TARGET_LINK_LIBRARIES(rocStitchMesh Nemosys)
 
+  # Gmsh to Cobalt converter for Rocflu input
+  ADD_EXECUTABLE(gmsh2Cobalt utils/gmsh2Cobalt.C)
+  TARGET_LINK_LIBRARIES(gmsh2Cobalt Nemosys)
+
   # Rocstart volume remesh utility
   ADD_EXECUTABLE(rocRemesh utils/rocRemesh.C)
   TARGET_LINK_LIBRARIES(rocRemesh Nemosys)
@@ -327,7 +332,7 @@ IF(ENABLE_BUILD_UTILS)
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
   TARGET_LINK_LIBRARIES(mshTransfer Nemosys)
 
-  INSTALL(TARGETS xmlDump cgns2msh rocStitchMesh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
+  INSTALL(TARGETS xmlDump cgns2msh rocStitchMesh gmsh2Cobalt rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
           RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
