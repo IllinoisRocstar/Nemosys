@@ -1,0 +1,5 @@
+{
+    "Program Type": "Mesh Quality",
+    "Input Mesh File": "refined_uniform_hinge.vtu",
+    "Output File": "meshQual.txt"
+}
