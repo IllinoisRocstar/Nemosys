@@ -476,6 +476,12 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   // map to hold true index of points (gmsh allows non-contiguous ordering)
   std::map<int,int> trueIndex;
+
+  // declare array to store physical entity for each element
+  vtkSmartPointer<vtkDataArray> physicalEntity = vtkSmartPointer<vtkIdTypeArray>::New();;
+  physicalEntity->SetNumberOfComponents(1);
+  physicalEntity->SetName("patchNo");
+
   while (getline(meshStream, line))
   {
     if (line.find("$Nodes") != -1)
@@ -502,7 +508,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       dataSet_tmp->SetPoints(points);
 
     }
- 
 
     if (line.find("$Elements") != -1)
     {
@@ -510,6 +515,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
+      double tmp2[1];
       // allocate space for cell connectivities
       dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i)
@@ -522,7 +528,14 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         {
           int tmp;
           for (int j = 0; j < numTags; ++j)
+          {
             ss >> tmp;
+            if (j == 0)
+            {
+              tmp2[0] = tmp;
+              physicalEntity->InsertNextTuple(tmp2);
+            }
+          }
           for (int j = 0; j < 3; ++j)
           {
             ss >> tmp;
@@ -536,7 +549,14 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         {
           int tmp;
           for (int j = 0; j < numTags; ++j)
+          {
             ss >> tmp;
+            if (j == 0)
+            {
+              tmp2[0] = tmp;
+              physicalEntity->InsertNextTuple(tmp2);
+            }
+          }
           for (int j = 0; j < 4; ++j)
           {
             ss >> tmp;
@@ -690,16 +710,21 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
- 
+  vtkmesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
+
   // Temporary changed to legacy vtk for AMR demos
   // switch back to vtu when done
   std::cout << __FILE__ << __LINE__ << std::endl;
-  vtkmesh->setFileName(trim_fname(fname,".vtk"));
+  vtkmesh->setFileName(trim_fname(fname,".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   return vtkmesh;
 
 }
+
+
+
+
 
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
@@ -1249,6 +1274,7 @@ void meshBase::writeCobalt(meshBase* surfWithPatches,
       {
         facePntIds[k] = face->GetPointId(k)+1;
       }
+      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
         faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
