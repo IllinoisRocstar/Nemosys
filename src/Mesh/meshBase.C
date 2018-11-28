@@ -1217,14 +1217,17 @@ void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMa
   outputStream << patchMap.size() << std::endl;
   outputStream << patchMap.size() << std::endl;
   auto it = patchMap.begin();
+  int normPatchNo = 1;
   while (it != patchMap.end())
   {
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 2; ++i)
     {
       outputStream << std::setw(2) << std::left << it->first << " ";
     }
+    outputStream << std::setw(2) << std::left << normPatchNo << " ";
     outputStream << std::endl;
     ++it;
+    normPatchNo++;
   }
 }
 
