@@ -13,6 +13,7 @@
 
 // Nemosys
 #include <pntMesh.H>
+#include <cobalt.H>
 
 // stl
 #include <vector>

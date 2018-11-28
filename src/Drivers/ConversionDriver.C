@@ -1,5 +1,8 @@
 #include <ConversionDriver.H>
 #include <AuxiliaryFunctions.H>
+#include <vtkMesh.H>
+#include <vtkCellData.h>
+
 
 //----------------------- Conversion Driver -----------------------------------------//
 ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
@@ -66,6 +69,298 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     PNTMesh::pntMesh* pm = new PNTMesh::pntMesh(source, dim, nBlk, elmBlkMap);
     pm->write(trgmsh);
   }
+  else if (!method.compare("GMSH->VTK"))
+  {
+    if (srcmsh.find(".msh") != -1)
+    {
+      std::cout << "Detected file in GMSH format" << std::endl;
+      std::cout << "Converting to VTK ...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in GMSH format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }
+  
+    std::string line;
+    int numPoints,numCells; 
+    std::vector<std::vector<std::vector<double>>> pointData;
+    std::vector<std::vector<std::vector<double>>> cellData;
+    std::vector<std::string> pointDataNames;
+    std::vector<std::string> cellDataNames;
+  
+    // declare points to be pushed into dataSet_tmp
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    // declare dataSet_tmp which will be associated to output vtkMesh
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    // map to hold true index of points (gmsh allows non-contiguous ordering)
+    std::map<int,int> trueIndex;
+  
+    // declare array to store physical entity for each element
+    vtkSmartPointer<vtkDataArray> physicalEntity = vtkSmartPointer<vtkIdTypeArray>::New();;
+    physicalEntity->SetNumberOfComponents(1);
+    physicalEntity->SetName("patchNo");
+  
+    while (getline(meshStream, line))
+    {
+      if (line.find("$Nodes") != -1)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line); 
+        ss >> numPoints;
+        int id;
+        double x,y,z;
+        // allocate memory for points
+        points->SetNumberOfPoints(numPoints);
+        for (int i = 0; i < numPoints; ++i)
+        {
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id >> x >> y >> z;
+          double point[3];
+          point[0] = x; point[1] = y; point[2] = z;
+          // insert point i
+          points->SetPoint(i,point);     
+          trueIndex.insert(std::pair<int,int> (id,i));
+        }
+        // inserting point array into dataSet_tmp
+        dataSet_tmp->SetPoints(points);
+  
+      }
+  
+      if (line.find("$Elements") != -1)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> numCells;
+        int id, type, numTags;
+        double tmp2[1];
+        // allocate space for cell connectivities
+        dataSet_tmp->Allocate(numCells);
+        for (int i = 0; i < numCells; ++i)
+        {
+          getline(meshStream, line);
+          std::stringstream ss(line);
+          ss >> id >> type >> numTags;
+          vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+          if (type == 2)
+          {
+            int tmp;
+            for (int j = 0; j < numTags; ++j)
+            {
+              ss >> tmp;
+              if (j == 0)
+              {
+                tmp2[0] = tmp;
+                physicalEntity->InsertNextTuple(tmp2);
+              }
+            }
+            for (int j = 0; j < 3; ++j)
+            {
+              ss >> tmp;
+              // insert connectivies for cell into cellIds container
+              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            }
+            // insert connectivies for triangle elements into dataSet 
+            dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds); 
+          } 
+          else if (type == 4)
+          {
+            int tmp;
+            for (int j = 0; j < numTags; ++j)
+            {
+              ss >> tmp;
+              if (j == 0)
+              {
+                tmp2[0] = tmp;
+                physicalEntity->InsertNextTuple(tmp2);
+              }
+            }
+            for (int j = 0; j < 4; ++j)
+            {
+              ss >> tmp;
+              // insert connectivities for cell into cellids container
+              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            } 
+            // insert connectivities for tet elements into dataSet
+            dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
+          }
+          else
+          {
+            std::cout << "Only triangular and tetrahedral elements are supported!" << std::endl;
+            exit(1);
+          }
+        }
+      }
+    
+      if (line.find("$NodeData") != -1)
+      {
+        std::vector<std::vector<double>> currPointData;
+        getline(meshStream,line); // moving to num_string_tags
+        std::stringstream ss(line);
+        int num_string_tags;
+        ss >> num_string_tags;
+        std::string dataname;
+        for (int i = 0; i < num_string_tags; ++i)
+        { 
+          getline(meshStream,line); // get string tag
+          if (i == 0)
+          {
+            std::stringstream ss(line);
+            ss >> dataname;
+          }
+        }
+        dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+        pointDataNames.push_back(dataname);
+        getline(meshStream,line); // moving to num_real_tags
+        std::stringstream ss1(line);
+        int num_real_tags;
+        ss1 >> num_real_tags;
+        for (int i = 0; i < num_real_tags; ++i)
+          getline(meshStream,line);
+  
+        getline(meshStream,line); // moving to num_int_tags
+        std::stringstream ss2(line);
+        int num_int_tags;
+        ss2 >> num_int_tags;
+        int dt,dim,numFields,tmp;
+        for (int i = 0; i < num_int_tags; ++i)
+        {   
+          getline(meshStream,line); // get int tag
+          std::stringstream ss(line);
+          if (i == 0)
+            ss >> dt;
+          else if (i == 1)
+            ss >> dim;
+          else if (i == 2)
+            ss >> numFields;
+          else
+            ss >> tmp;
+        }
+        for (int i = 0; i < numFields; ++i) 
+        { 
+          std::vector<double> data(dim);
+          int id;
+          double val;
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id;
+          for (int j = 0; j < dim; ++j)
+          {
+            ss >> val;
+            data[j] = val;
+          }
+          currPointData.push_back(data);
+        }
+        pointData.push_back(currPointData);
+      }
+      
+      if (line.find("$ElementData") != -1)
+      {
+        std::vector<std::vector<double>> currCellData;
+        getline(meshStream,line); // moving to num_string_tags
+        std::stringstream ss(line);
+        int num_string_tags;
+        ss >> num_string_tags;
+        std::string dataname;
+        for (int i = 0; i < num_string_tags; ++i)
+        { 
+          getline(meshStream,line); // get string tag
+          if (i == 0)
+          {
+            std::stringstream ss(line);
+            ss >> dataname;
+          }
+        }
+        dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+        cellDataNames.push_back(dataname);
+        getline(meshStream,line); // moving to num_real_tags
+        std::stringstream ss1(line);
+        int num_real_tags;
+        ss1 >> num_real_tags;
+        for (int i = 0; i < num_real_tags; ++i)
+          getline(meshStream,line);
+  
+        getline(meshStream,line); // moving to num_int_tags
+        std::stringstream ss2(line);
+        int num_int_tags;
+        ss2 >> num_int_tags;
+        int dt,dim,numFields,tmp;
+        for (int i = 0; i < num_int_tags; ++i)
+        {   
+          getline(meshStream,line); // get int tag
+          std::stringstream ss(line);
+          if (i == 0)
+            ss >> dt;
+          else if (i == 1)
+            ss >> dim;
+          else if (i == 2)
+            ss >> numFields;
+          else
+            ss >> tmp;
+        }
+        for (int i = 0; i < numFields; ++i) 
+        { 
+          std::vector<double> data(dim);
+          int id;
+          double val;
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id;
+          for (int j = 0; j < dim; ++j)
+          {
+            ss >> val;
+            data[j] = val;
+          }
+          currCellData.push_back(data);
+        }
+        cellData.push_back(currCellData);
+      }
+    }  
+  
+    vtkMesh* outputMesh = new vtkMesh(dataSet_tmp, trgmsh);
+
+    for (int i = 0; i < pointData.size(); ++i)
+      outputMesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
+    for (int i = 0; i < cellData.size(); ++i)
+      outputMesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
+    outputMesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
+
+    outputMesh->write();
+  }
+  else if (!method.compare("VTK->COBALT"))
+  {
+    if (srcmsh.find(".vt") != -1)
+    {
+      std::cout << "Detected file in VTK format" << std::endl;
+      std::cout << "Converting to COBALT ...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in VTK format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }  
+    
+    // create meshbase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
+
+    // create Cobalt object from meshBase
+    COBALT::cobalt* cm = new COBALT::cobalt(myMesh, srcmsh, trgmsh, ofname);
+    cm->write();
+  }
+
   T.stop();
 }
 
