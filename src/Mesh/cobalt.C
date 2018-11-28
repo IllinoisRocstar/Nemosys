@@ -84,7 +84,7 @@ cobalt::cobalt(const std::shared_ptr<meshBase> fullMesh, const std::string _inFn
 }
 
 // writes COBALT mesh data into file
-void cobalt::write() const
+void cobalt::write()
 {
 
   std::ofstream outputStream(outFnameCgr);
@@ -207,4 +207,34 @@ void cobalt::write() const
     ++it;
   }
 
+}
+
+void cobalt::writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap)
+{
+  std::ofstream outputStream(mapFile);
+  if (!outputStream.good())
+  {
+    std::cout << "Error opening file " << mapFile << std::endl;
+    exit(1);
+  }
+  writePatchMap(outputStream, patchMap);
+}
+
+void cobalt::writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap)
+{
+  outputStream << patchMap.size() << std::endl;
+  outputStream << patchMap.size() << std::endl;
+  auto it = patchMap.begin();
+  int normPatchNo = 1;
+  while (it != patchMap.end())
+  {
+    for (int i = 0; i < 2; ++i)
+    {
+      outputStream << std::setw(2) << std::left << it->first << " ";
+    }
+    outputStream << std::setw(2) << std::left << normPatchNo << " ";
+    outputStream << std::endl;
+    ++it;
+    normPatchNo++;
+  }
 }
