@@ -229,7 +229,7 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/MeshPartitioning/meshPartitioner.C
                  src/MeshPartitioning/meshStitcher.C
                  src/cgnsWriter.C src/gridTransfer.C
-                 src/Mesh/cobalt.C)
+                 src/Mesh/cobalt.C src/Mesh/patran.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
               utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C
               utils/gmsh2Cobalt.C)
