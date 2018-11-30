@@ -360,6 +360,66 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     COBALT::cobalt* cm = new COBALT::cobalt(myMesh, srcmsh, trgmsh, ofname);
     cm->write();
   }
+  else if (!method.compare("VTK->PATRAN"))
+  {
+    if (srcmsh.find(".vt") != -1)
+    {
+      std::cout << "Detected file in VTK format" << std::endl;
+      std::cout << "Converting to PATRAN NEUTRAL...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in VTK format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }  
+    
+    // looping through blocks
+    int nBC = inputjson["Conversion Options"]["BC Info"].size();
+    std::cout << "Number of Boundary Conditions : " << nBC << std::endl;
+    int iBC = 0;
+
+    std::map<int, int> faceTypeMap;
+    std::map<int, int> nodeTypeMap;
+    std::map<int, bool> nodeStructuralMap;
+    std::map<int, bool> nodeMeshMotionMap;
+    std::map<int, bool> nodeThermalMap;
+
+    for (auto it = inputjson["Conversion Options"]
+                            ["BC Info"].array_range().begin();
+              it!= inputjson["Conversion Options"]
+                            ["BC Info"].array_range().end();
+              ++it)
+    {
+      if ((*it)["BC Type"].as<std::string>() == "Face")
+      {
+        faceTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["Rocfrac FSI Type"].as<int>();
+      }
+      else if ((*it)["BC Type"].as<std::string>() == "Node")
+      {
+        nodeTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["RocfracControl Type"].as<int>();
+        nodeStructuralMap[(*it)["Patch Number"].as<int>()] = (*it)["Structural"].as<bool>();
+        nodeMeshMotionMap[(*it)["Patch Number"].as<int>()] = (*it)["Mesh Motion"].as<bool>();
+        nodeThermalMap[(*it)["Patch Number"].as<int>()] = (*it)["Thermal"].as<bool>();
+      }
+    }
+
+
+    // create meshbase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
+
+    // create Patran object from meshBase
+    PATRAN::patran* ptm = new PATRAN::patran(myMesh, srcmsh, trgmsh,
+                                            faceTypeMap, nodeTypeMap,
+                                            nodeStructuralMap, nodeMeshMotionMap,
+                                            nodeThermalMap);
+    //ptm->write();
+  }
 
   T.stop();
 }

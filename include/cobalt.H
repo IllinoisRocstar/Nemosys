@@ -28,7 +28,6 @@ class cobalt
       void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap);
 
 
-
     private:
       std::shared_ptr<meshBase> volMeshBase;
       std::shared_ptr<meshBase> surfMeshBase;
