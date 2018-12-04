@@ -161,28 +161,17 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             // loop through cell data and identify physical groups
             // we also filter only TETRA cells
             int nc = mb->getNumberOfCells();
-            // check physical group exist and obtain id
-            vtkCellData *cd = mb->getDataSet()->GetCellData();
-            int physGrpArrIdx = -1;
-            if (cd)
-            {
-                for (int ida=0; ida < cd->GetNumberOfArrays(); ida++)
-                {
-                    std::cout << cd->GetArrayName(ida) << std::endl;
-                    if (!strcmp( cd->GetArrayName(ida), "PhysGrpId"))
-                    {
-                        physGrpArrIdx = ida;
-                        break;
-                    }
-                }
-            }
+            // check physical group (PhysGrpId) exists, obtain id, and data array
+            int physGrpArrIdx = mb->getCellDataIdx("PhysGrpId");
             if (physGrpArrIdx < 0)
             {
                 std::cerr << "Error : Input dataset does not have PhyGrpId cell data! Aborting.\n";
                 exit(-1);
             }
+            vtkCellData *cd = mb->getDataSet()->GetCellData();
             vtkDataArray* physGrpIds = cd->GetArray(physGrpArrIdx);
-            // loop trhough elements and obtain physical group ids
+            
+            // loop through elements and obtain physical group ids
             std::vector<int> elmIds;
             std::vector<int> elmPhysGrp;
             for (int ic=0; ic<nc; ic++)
@@ -194,6 +183,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                 double* tmp = physGrpIds->GetTuple(ic);
                 elmPhysGrp.push_back(int(*tmp));
             }
+
             // number of unique physical groups
             std::set<int> unqPhysGrpIds;
             int nPhysGrp;
@@ -202,7 +192,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             nPhysGrp = unqPhysGrpIds.size();
             std::cout << "Number of physical groups : " << nPhysGrp << std::endl;
 
-            // one nodeset for all groups
+            // one node set for all groups
             // node coordinate to nodeSet
             EXOMesh::ndeSetType ns;
             ns.id = ++ins;
@@ -383,18 +373,17 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
     
 }
 
-
 #ifdef HAVE_EXODUSII
 void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh* em)
 {
   // converting to mesh base for geometric inquiry
   meshBase* mb = meshBase::Create(fname); 
-  meshSrch* ms = meshSrch::Create(mb);
 
   // performing requested operation
   std::string opr = ppJson.get_with_default("Operation", "");
   if (!opr.compare("Material Assignment"))
   {
+      meshSrch* ms = meshSrch::Create(mb);
       // gathering information about all zones
       std::map<std::string, std::set<int> > zoneGeom;
       json zones = ppJson["Zones"];
@@ -439,6 +428,7 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
   else if (!opr.compare("Check Duplicate Elements"))
   {
       std::cout << "Checking for existance of duplicate elements ... ";
+      meshSrch* ms = meshSrch::Create(mb);
       bool ret = ms->chkDuplElm(); 
       if (ret)
       {
@@ -459,6 +449,64 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
       double tol = ppJson.get_with_default("Tolerance", 0.0);
       std::cout << "Snapping nodal coordinates to zero using tolerance " << tol << std::endl;
       em->snapNdeCrdsZero(tol);
+  }
+  else if (!opr.compare("Boundary Condition Assignment"))
+  {
+      // For EP16 boundary conditions are simply translated
+      // to node sets. Node sets may have shared nodes. In
+      // that case a node the order of nodeset matter. A later
+      // node set superceeds an earlier one.
+      meshSrch* ms = meshSrch::Create(mb);      
+      // gathering information about all boundary node sets
+      json bcs = ppJson["Condition"];
+      int nBC = bcs.size();
+      for (auto bc : bcs.array_range())
+      {
+        std::set<int> pntIds;              
+        // identify node ids on each boundary
+        std::string bcName = bc["Name"].as<std::string>();
+        std::string bcTyp = bc["Boundary Type"].as<std::string>();
+        if (!bcTyp.compare("Faces"))
+        {
+           std::vector<double> srfCrd;
+           std::vector<int> srfConn;
+           json nc = bc["Params"]["Node Coordinates"];
+           for (auto crds : nc.array_range())
+               for (auto cmp : crds.array_range())
+                   srfCrd.push_back(cmp.as<double>());
+           json conn = bc["Params"]["Connectivities"];
+           for (auto tri : conn.array_range())
+               for (auto idx : tri.array_range())
+                   srfConn.push_back(idx.as<int>());
+           ms->FindPntsOnTriSrf(srfCrd, srfConn, pntIds);
+           std::cout << "Number of points resinding on the boundary " 
+               << bcName << " is " << pntIds.size() << "\n";
+        }
+        else if (!bcTyp.compare("Edges"))
+        {
+           std::vector<double> edgeCrd;
+           json ncs = bc["Params"]["Start"];
+           for (auto crds : ncs.array_range())
+               for (auto cmp : crds.array_range())
+                   edgeCrd.push_back(cmp.as<double>());
+           json nce = bc["Params"]["End"];
+           for (auto crds : nce.array_range())
+               for (auto cmp : crds.array_range())
+                   edgeCrd.push_back(cmp.as<double>());
+           ms->FindPntsOnEdge(edgeCrd, pntIds);
+           std::cout << "Number of points resinding on the boundary " 
+               << bcName << " is " << pntIds.size() << "\n";
+        }
+        else
+            std::cerr << "Warning: unsupported bounday type " << bcTyp << std::endl;
+        // register node set in Exodus II database
+        if (!pntIds.empty())
+        {
+            std::vector<int> nv;
+            std::copy(pntIds.begin(), pntIds.end(), std::back_inserter(nv));
+            em->addNdeSetByNdeIdLst(bcName, nv);
+        }
+      }
   }
   else
   {

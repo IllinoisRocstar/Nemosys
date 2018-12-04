@@ -1,0 +1,34 @@
+[
+    {
+        "Program Type": "Conversion",
+        "Mesh File Options": {
+            "Input Mesh Files": "Custom",
+            "Output Mesh File": "bctest.g"
+        },
+        "Conversion Options": {
+            "Method": "EXODUSII",
+            "Number of Mesh": 2,
+            "Mesh Data": [
+                {
+                 "File": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/Ep16Test/prj.msh",
+                 "Name": "PRJ_01", 
+                 "Use Physical Groups": true,
+                 "Node Sets": [],
+                 "Element Blocks": []
+                },
+                {
+                 "File": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/Ep16Test/trg.msh",
+                 "Name": "TRG_01", 
+                 "Use Physical Groups": false,
+                 "Node Sets": [],
+                 "Element Blocks": []
+                }
+            ],
+            "Post Processing": true,
+            "Number of Tasks": 1,
+            "Tasks":[ 
+                {"File": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/Ep16Test/bcs.json"}
+            ]
+        }
+    }
+]
