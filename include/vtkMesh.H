@@ -132,6 +132,7 @@ class vtkMesh : public meshBase
     // get scalar point or cell data array. assumes data is not allocated prior to calling
     void getPointDataArray(const std::string& name, std::vector<double>& data);
     void getPointDataArray(int arrayId, std::vector<double>& data);
+    int getCellDataIdx(const char* name);
     void getCellDataArray(const std::string& name, std::vector<double>& data);
     void getCellDataArray(int arrayId, std::vector<double>& data);
 
