@@ -13,7 +13,7 @@
             "BC Info": [
             {"Patch Number": 2,
              "BC Type": "Face",
-             "Rocfrac FSI Type": 2},
+             "Rocfrac FSI Type": 1},
             {"Patch Number": 3,
              "BC Type": "Face",
              "Rocfrac FSI Type": 2},
@@ -25,20 +25,20 @@
              "Structural": true,
              "Mesh Motion": true,
              "Thermal": false,
-             "RocfracControl Type": 1},
+             "RocfracControl Type": 2},
             {"Patch Number": 3,
              "BC Type": "Node",
              "Structural": true,
              "Mesh Motion": true,
              "Thermal": false,
-             "RocfracControl Type": 1},
+             "RocfracControl Type": 3},
             {"Patch Number": 4,
              "BC Type": "Node",
              "Structural": true,
              "Mesh Motion": true,
              "Thermal": false,
-             "RocfracControl Type": 2}
-            ]
+             "RocfracControl Type": 4}],
+            "Node Patch Preference": [2, 4, 3]
         }
     }
 ]
