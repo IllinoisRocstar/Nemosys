@@ -98,7 +98,11 @@ void patran::write1(std::ofstream& outputStream)
     volMeshBase->getDataSet()->GetPoint(iNode, coords);
     for (int i = 0; i < 3; i++)
     {
-      outputStream << std::setw(16) << std::right << std::scientific << std::setprecision(9) << coords[i];
+      char buffer[17];
+      snprintf(buffer,17,"%16.9E",coords[i]);
+      outputStream << buffer;
+      //outputStream << std::setw(16) << std::left << printf("%14.12E",coords[i]);
+      //outputStream << std::setw(16) << std::right << std::scientific << std::setprecision(9) << coords[i];
     }
     outputStream << std::endl;
 
@@ -169,7 +173,10 @@ void patran::write2(std::ofstream& outputStream)
       // Material Orientation Angles (unused)
       for (int i = 0; i < 3; i++)
       {
-        outputStream << std::setw(16) << std::right << std::scientific << std::setprecision(9) << 0.0;
+        char buffer[17];
+        snprintf(buffer,17,"%16.9E",0.0);
+        outputStream << buffer;
+        //outputStream << std::setw(16) << std::right << std::scientific << std::setprecision(9) << 0.0;
       }
       outputStream << std::endl;
   
@@ -180,7 +187,7 @@ void patran::write2(std::ofstream& outputStream)
       volMeshBase->getDataSet()->GetCellPoints(iCell, cellPtIds);
       for (int iPt = 0; iPt < cellPtIds->GetNumberOfIds(); iPt++)
       {
-        outputStream << std::setw(8) << std::right << cellPtIds->GetId(iPt);
+        outputStream << std::setw(8) << std::right << cellPtIds->GetId(iPt)+1;
       }
       outputStream << std::endl;
   
@@ -301,7 +308,11 @@ void patran::write6(std::ofstream& outputStream)
 
         // Data Card 2
         // card number
-        outputStream << std::setw(16) << std::setprecision(9) << std::scientific << (double) faceTypeMap[patchNo[0]];
+        char buffer[17];
+        snprintf(buffer,17,"%16.9E",(double) faceTypeMap[patchNo[0]]);
+        outputStream << buffer;
+
+        //outputStream << std::setw(16) << std::setprecision(9) << std::scientific << (double) faceTypeMap[patchNo[0]];
         outputStream << std::endl;
       }
     }
@@ -401,6 +412,24 @@ void patran::write6(std::ofstream& outputStream)
 //  }
 //}
 
+bool patran::comparePatch(int i, int j)
+{
+  auto posi = find(nppVec.begin(), nppVec.end(), i);
+  auto posj = find(nppVec.begin(), nppVec.end(), j);
+  //std::cout << "i = " << i << std::endl;
+  //std::cout << "posi = " << posi-nppVec.begin() << std::endl;
+  //std::cout << "j = " << j << std::endl;
+  //std::cout << "posj = " << posj-nppVec.begin() << std::endl;
+  if (posi-nppVec.begin() < posj-nppVec.begin())
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 // Write node displacements
 void patran::write8(std::ofstream& outputStream)
 {
@@ -433,12 +462,95 @@ void patran::write8(std::ofstream& outputStream)
     outputStream << std::endl;
 
     // Get patch no
-    int patchNo[boundaryNodeId2PatchNo[iNode].size()];
-    int iPatch = 0;
+    std::vector<int> patchNoVec;
+    //std::cout << "original order = " << std::endl;
     for (auto patchItr = boundaryNodeId2PatchNo[iNode].begin(); patchItr != boundaryNodeId2PatchNo[iNode].end(); patchItr++)
     {
-      patchNo[iPatch] = *patchItr;
+      //std::cout << *patchItr << std::endl;
+      patchNoVec.push_back(*patchItr);
     }
+    // sort patches
+    int outFlag = 0;
+    int patchVal = -1;
+    for (auto patchItr = patchNoVec.begin(); patchItr != patchNoVec.end()-1; ++patchItr)
+    {
+      int firstVal = *patchItr;
+      if (patchVal == -1)
+      {
+        patchVal = *patchItr;
+      }
+      else
+      {
+        //if (*patchItr != patchVal)
+        //{
+        //  std::cout << "comparing new ... " << *patchItr << " with old " << patchVal << std::endl;
+        //}
+        if (comparePatch(*patchItr,patchVal))
+        {
+          //std::cout << "----------------" << std::endl;
+          //std::cout << "old Patch = " << patchVal << std::endl;
+          //std::cout << "new patch = " << *patchItr << std::endl;
+          patchVal = *patchItr;
+        }
+      }
+      //int secondVal = *(patchItr+1);
+      //if (firstVal != secondVal)
+      //{
+      //  outFlag = 1;
+      //  //std::cout << "comparing " << firstVal << " and " << secondVal << std::endl;
+      //  if (!comparePatch(firstVal,secondVal))
+      //  {
+      //   //std::cout << "swapping..." << std::endl;
+      //   iter_swap(patchItr,patchItr+1);
+      //  }
+      //}
+    }
+    //std::sort(patchNoVec.begin(),patchNoVec.end(),comparePatch);
+    // put in array
+    int patchNo[boundaryNodeId2PatchNo[iNode].size()];
+    //int iPatch = 0;
+    //if (outFlag)
+    //{
+    //  std::cout << "new order = ";
+    //}
+    //for (auto patchItr = patchNoVec.begin(); patchItr != patchNoVec.end(); ++patchItr)
+    //{
+    //  if (outFlag)
+    //  {
+    //    std::cout << *patchItr << " ";
+    //  }
+    //  patchNo[iPatch] = *patchItr;
+    //  iPatch++;
+    //}
+    //if (outFlag)
+    //{
+    //  std::cout << std::endl;
+    //}
+//
+
+    // Assign patches according to node patch preference ordering
+    // sort patch numbers by preference
+    //std::vector<int> patchNoTmp;
+    //iPatch = 0;
+    //for (auto nppItr = nppVec.begin(); nppItr != nppVec.end(); ++nppItr)
+    //{
+    //  if (patchNoTmp.size() == 0)
+    //  {
+    //    patchNoTmp.push_back(*nppItr);
+    //  }
+    //  else
+    //  {
+    //    for (auto pnItr = patchNoTmp.begin(); pnItr != patchNoTmp.end(); ++pnItr)
+    //    {
+    //      auto it = std::find(pnnVec.begin(), pnnVec.end(), *pnItr);
+    //      if (it)
+    //      posCurrent = ;
+    //      posInsert;
+    //    }
+    //  }
+    //}
+
+    patchNo[0] = patchVal;
 
     // Data Card 1
     // coordinate frame id, set default to 0
@@ -481,7 +593,11 @@ void patran::write8(std::ofstream& outputStream)
     // card number
     for (int i = 0; i < nFlags; i++)
     {
-      outputStream << std::setw(16) << std::setprecision(9) << std::scientific << (double) nodeTypeMap[patchNo[0]];
+      char buffer[17];
+      snprintf(buffer,17,"%16.9E",(double) nodeTypeMap[patchNo[0]]);
+      outputStream << buffer;
+
+      //outputStream << std::setw(16) << std::setprecision(9) << std::scientific << (double) nodeTypeMap[patchNo[0]];
     }
     outputStream << std::endl;
   }
@@ -587,7 +703,8 @@ void patran::write99(std::ofstream& outputStream)
 patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inFnameVtk,
   const std::string _outFnameNeu, std::map<int, int> _faceTypeMap,
   std::map<int, int> _nodeTypeMap, std::map<int, bool> _nodeStructuralMap,
-  std::map<int, bool> _nodeMeshMotionMap, std::map<int, bool> _nodeThermalMap)
+  std::map<int, bool> _nodeMeshMotionMap, std::map<int, bool> _nodeThermalMap,
+  std::vector<int> _nppVec)
 {
 
   std::cout << "writing patran file..." << std::endl;
@@ -600,6 +717,7 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   nodeStructuralMap = _nodeStructuralMap;
   nodeMeshMotionMap = _nodeMeshMotionMap;
   nodeThermalMap = _nodeThermalMap;
+  nppVec = _nppVec;
 
   // Todo is this the right ordering?
   face2nodes[0] = "01110000";
@@ -685,12 +803,17 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   write2(outputStream);
   // write distributed loads
   write6(outputStream);
-  // write node forces
-  //write7(outputStream);
   // write all node BCs
   write8(outputStream);
-  // write node temperatures
-  //write10(outputStream);
   // write end of file flag
   write99(outputStream);
+
+
+
+
+
+  // write node temperatures
+  //write10(outputStream);
+  // write node forces
+  //write7(outputStream);
 }
