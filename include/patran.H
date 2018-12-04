@@ -20,7 +20,7 @@ class patran
         const std::string outFnameNeu, std::map<int, int> faceTypeMap, 
         std::map<int, int> nodeTypeMap,
         std::map<int, bool> nodeStructuralMap, std::map<int, bool> nodeMeshMotionMap,
-        std::map<int, bool> nodeThermalMap);
+        std::map<int, bool> nodeThermalMap, std::vector<int> nppItr);
 
     public:
       void write25(std::ofstream& outputStream);
@@ -32,6 +32,7 @@ class patran
       void write8(std::ofstream& outputStream);
       void write10(std::ofstream& outputStream);
       void write99(std::ofstream& outputStream);
+      bool comparePatch(int i, int j);
 
     private:
       std::shared_ptr<meshBase> fullMesh;
@@ -44,6 +45,7 @@ class patran
       std::map<int,bool> nodeStructuralMap;
       std::map<int,bool> nodeMeshMotionMap;
       std::map<int,bool> nodeThermalMap;
+      std::vector<int> nppVec;
 
       std::map<int,std::string> face2nodes;
       std::map<int,std::vector<int>> boundaryNodeId2PatchNo;

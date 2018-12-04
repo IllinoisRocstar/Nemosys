@@ -408,7 +408,15 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
         nodeThermalMap[(*it)["Patch Number"].as<int>()] = (*it)["Thermal"].as<bool>();
       }
     }
-
+    
+    // Accumulate node patch preference (determines which patch a node belongs to if it borders
+    // two patches
+    std::vector<int> nppVec;
+    for (auto nppItr = inputjson["Conversion Options"]["Node Patch Preference"].array_range().begin();
+      nppItr != inputjson["Conversion Options"]["Node Patch Preference"].array_range().end(); ++nppItr)
+    {
+      nppVec.push_back((*nppItr).as<int>());
+    }
 
     // create meshbase object
     std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
@@ -417,7 +425,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     PATRAN::patran* ptm = new PATRAN::patran(myMesh, srcmsh, trgmsh,
                                             faceTypeMap, nodeTypeMap,
                                             nodeStructuralMap, nodeMeshMotionMap,
-                                            nodeThermalMap);
+                                            nodeThermalMap, nppVec);
     //ptm->write();
   }
 
