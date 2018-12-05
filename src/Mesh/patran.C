@@ -220,16 +220,16 @@ void patran::write6(std::ofstream& outputStream)
   for (int i = 0; i < volMeshBase->getNumberOfCells(); ++i)
   {
 
-    std::cout << "Cell " << i << std::endl;
+    //std::cout << "Cell " << i << std::endl;
     //---------------------------------------------------------------------------
-    vtkSmartPointer<vtkIdList> cellPtIdsTmp = vtkSmartPointer<vtkIdList>::New();
-    volMeshBase->getDataSet()->GetCellPoints(i, cellPtIdsTmp);
-    for (int iPt = 0; iPt < cellPtIdsTmp->GetNumberOfIds(); iPt++)
-    {
-      double coords[3];
-      volMeshBase->getDataSet()->GetPoint(cellPtIdsTmp->GetId(iPt), coords);
-      std::cout << "Node " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
-    }
+    //vtkSmartPointer<vtkIdList> cellPtIdsTmp = vtkSmartPointer<vtkIdList>::New();
+    //volMeshBase->getDataSet()->GetCellPoints(i, cellPtIdsTmp);
+    //for (int iPt = 0; iPt < cellPtIdsTmp->GetNumberOfIds(); iPt++)
+    //{
+    //  double coords[3];
+    //  volMeshBase->getDataSet()->GetPoint(cellPtIdsTmp->GetId(iPt), coords);
+    //  std::cout << "Node " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
+    //}
     //---------------------------------------------------------------------------
 
     // get cell i 
@@ -248,13 +248,13 @@ void patran::write6(std::ofstream& outputStream)
 
 
       //-----------------------------------
-      std::cout << "Face " << j << std::endl;
-      for (int iPt = 0; iPt < facePtIds->GetNumberOfIds(); iPt++)
-      {
-        double coords[3];
-        volMeshBase->getDataSet()->GetPoint(facePtIds->GetId(iPt), coords);
-        std::cout << "Pt " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
-      }
+      //std::cout << "Face " << j << std::endl;
+      //for (int iPt = 0; iPt < facePtIds->GetNumberOfIds(); iPt++)
+      //{
+      //  double coords[3];
+      //  volMeshBase->getDataSet()->GetPoint(facePtIds->GetId(iPt), coords);
+      //  std::cout << "Pt " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
+      //}
       //-----------------------------------
 
       volMeshBase->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
@@ -303,7 +303,7 @@ void patran::write6(std::ofstream& outputStream)
         // packet number
         outputStream << std::setw(2) << std::right << "6";
         // element number
-        outputStream << std::setw(8) << std::right << i;
+        outputStream << std::setw(8) << std::right << i+1;
         // default load set = 1
         outputStream << std::setw(8) << std::right << "1";
         // defalt KC = 2
