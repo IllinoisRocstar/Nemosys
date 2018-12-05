@@ -219,6 +219,19 @@ void patran::write6(std::ofstream& outputStream)
   std::map<std::vector<int>, std::pair<int,int>, sortIntVec_compare> faceMap;
   for (int i = 0; i < volMeshBase->getNumberOfCells(); ++i)
   {
+
+    std::cout << "Cell " << i << std::endl;
+    //---------------------------------------------------------------------------
+    vtkSmartPointer<vtkIdList> cellPtIdsTmp = vtkSmartPointer<vtkIdList>::New();
+    volMeshBase->getDataSet()->GetCellPoints(i, cellPtIdsTmp);
+    for (int iPt = 0; iPt < cellPtIdsTmp->GetNumberOfIds(); iPt++)
+    {
+      double coords[3];
+      volMeshBase->getDataSet()->GetPoint(cellPtIdsTmp->GetId(iPt), coords);
+      std::cout << "Node " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
+    }
+    //---------------------------------------------------------------------------
+
     // get cell i 
     volMeshBase->getDataSet()->GetCell(i, genCell1);
     // get faces, find cells sharing it. if no cell shares it, 
@@ -232,6 +245,18 @@ void patran::write6(std::ofstream& outputStream)
       int numVerts = faceObj->GetNumberOfPoints();
       nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
       facePtIds = faceObj->GetPointIds(); 
+
+
+      //-----------------------------------
+      std::cout << "Face " << j << std::endl;
+      for (int iPt = 0; iPt < facePtIds->GetNumberOfIds(); iPt++)
+      {
+        double coords[3];
+        volMeshBase->getDataSet()->GetPoint(facePtIds->GetId(iPt), coords);
+        std::cout << "Pt " << iPt << ": " << coords[0] << ", " << coords[1] << ", " << coords[2] << std::endl;    
+      }
+      //-----------------------------------
+
       volMeshBase->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
       std::vector<int> facePntIds(numVerts);
       for (int k = 0; k < numVerts; ++k)
@@ -732,10 +757,16 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   //face2nodes[2] = "01110000";
   //face2nodes[3] = "10110000";
 
-  face2nodes[0] = "11100000";
+  //face2nodes[0] = "11100000";
+  //face2nodes[1] = "11010000";
+  //face2nodes[2] = "10110000";
+  //face2nodes[3] = "01110000";
+
+  face2nodes[0] = "10110000";
   face2nodes[1] = "11010000";
-  face2nodes[2] = "10110000";
+  face2nodes[2] = "11100000";
   face2nodes[3] = "01110000";
+
 
   if (inFnameVtk.find(".vt") != -1) 
   {
