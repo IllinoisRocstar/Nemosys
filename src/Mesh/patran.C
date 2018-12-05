@@ -762,10 +762,15 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   //face2nodes[2] = "10110000";
   //face2nodes[3] = "01110000";
 
-  face2nodes[0] = "10110000";
-  face2nodes[1] = "11010000";
-  face2nodes[2] = "11100000";
-  face2nodes[3] = "01110000";
+  //face2nodes[0] = "10110000";
+  //face2nodes[1] = "11010000";
+  //face2nodes[2] = "11100000";
+  //face2nodes[3] = "01110000";
+
+  face2nodes[0] = "11010000";
+  face2nodes[1] = "01110000";
+  face2nodes[2] = "10110000";
+  face2nodes[3] = "11100000";
 
 
   if (inFnameVtk.find(".vt") != -1) 
