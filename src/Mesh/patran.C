@@ -283,11 +283,11 @@ void patran::write6(std::ofstream& outputStream)
         outputStream << std::setw(8) << std::right << "1";
         // defalt KC = 2
         outputStream << std::setw(8) << std::right << "2";
-          // Fill in remaining zeros
-          for (int i = 0; i < 5; i++)
-          {
-            outputStream << std::setw(8) << std::right << "0";
-          }
+        // Fill in remaining zeros
+        for (int i = 0; i < 5; i++)
+        {
+          outputStream << std::setw(8) << std::right << "0";
+        }
         outputStream << std::endl;
 
         // Data Card 1
@@ -309,6 +309,8 @@ void patran::write6(std::ofstream& outputStream)
         // Data Card 2
         // card number
         char buffer[17];
+        //std::cout << "patchNo[0] = " << patchNo[0] << std::endl;
+        //std::cout << "faceTypeMap[patchNo[0]] = " << faceTypeMap[patchNo[0]] << std::endl;
         snprintf(buffer,17,"%16.9E",(double) faceTypeMap[patchNo[0]]);
         outputStream << buffer;
 
@@ -720,10 +722,16 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   nppVec = _nppVec;
 
   // Todo is this the right ordering?
-  face2nodes[0] = "01110000";
-  face2nodes[1] = "10110000";
-  face2nodes[2] = "11010000";
-  face2nodes[3] = "11100000";
+  //face2nodes[0] = "01110000";
+  //face2nodes[1] = "10110000";
+  //face2nodes[2] = "11010000";
+  //face2nodes[3] = "11100000";
+
+  face2nodes[0] = "11100000";
+  face2nodes[1] = "11010000";
+  face2nodes[2] = "01110000";
+  face2nodes[3] = "10110000";
+
 
   if (inFnameVtk.find(".vt") != -1) 
   {
