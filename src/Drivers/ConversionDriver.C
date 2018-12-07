@@ -140,7 +140,6 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
         std::stringstream ss(line);
         ss >> numCells;
         int id, type, numTags;
-        double tmp2[1];
         // allocate space for cell connectivities
         dataSet_tmp->Allocate(numCells);
         for (int i = 0; i < numCells; ++i)
@@ -152,12 +151,12 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
           if (type == 2)
           {
             int tmp;
+            double tmp2[1];
             for (int j = 0; j < numTags; ++j)
             {
-              ss >> tmp;
+              ss >> tmp2[0];
               if (j == 0)
               {
-                tmp2[0] = tmp;
                 physicalEntity->InsertNextTuple(tmp2);
               }
             }
@@ -173,12 +172,12 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
           else if (type == 4)
           {
             int tmp;
+            double tmp2[1];
             for (int j = 0; j < numTags; ++j)
             {
-              ss >> tmp;
+              ss >> tmp2[0];
               if (j == 0)
               {
-                tmp2[0] = tmp;
                 physicalEntity->InsertNextTuple(tmp2);
               }
             }
@@ -329,9 +328,9 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     for (int i = 0; i < pointData.size(); ++i)
       outputMesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
     for (int i = 0; i < cellData.size(); ++i)
-      outputMesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
+      outputMesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
+    // add physical entity mesh to VTK
     outputMesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
-
     outputMesh->write();
   }
   else if (!method.compare("VTK->COBALT"))
@@ -358,6 +357,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
 
     // create Cobalt object from meshBase
     COBALT::cobalt* cm = new COBALT::cobalt(myMesh, srcmsh, trgmsh, ofname);
+    // write to file
     cm->write();
   }
   else if (!method.compare("VTK->PATRAN"))
@@ -365,7 +365,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     if (srcmsh.find(".vt") != -1)
     {
       std::cout << "Detected file in VTK format" << std::endl;
-      std::cout << "Converting to PATRAN NEUTRAL...." << std::endl;
+      std::cout << "Converting to PATRAN ...." << std::endl;
     }
     else
     {
@@ -381,14 +381,19 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     
     // looping through blocks
     int nBC = inputjson["Conversion Options"]["BC Info"].size();
-    std::cout << "Number of Boundary Conditions : " << nBC << std::endl;
-    int iBC = 0;
+    std::cout << "Number of Boundary Conditions read: " << nBC << std::endl;
 
-    std::map<int, int> faceTypeMap;
-    std::map<int, int> nodeTypeMap;
-    std::map<int, bool> nodeStructuralMap;
-    std::map<int, bool> nodeMeshMotionMap;
-    std::map<int, bool> nodeThermalMap;
+    // Patran specific BC information
+    // Each map below maps the indicated information from the "Patch Number" specified in the file
+
+    std::map<int, int> faceTypeMap;         // Rocfrac FSI Type;
+                                            // 0 = no FSI, 1 = FSI w/ burn, 2 = FSI w/o burn, etc.
+                                            // see Rocfrac manual for details
+    std::map<int, int> nodeTypeMap;         // patch numbers as specified in RocfracControl.txt
+    std::map<int, bool> nodeStructuralMap;  // boolean indicating structural BC
+    std::map<int, bool> nodeMeshMotionMap;  // boolean indicating mesh motion BC
+    std::map<int, bool> nodeThermalMap;     // boolean indicating heat transfer BC
+
 
     for (auto it = inputjson["Conversion Options"]
                             ["BC Info"].array_range().begin();
@@ -409,8 +414,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
       }
     }
     
-    // Accumulate node patch preference (determines which patch a node belongs to if it borders
-    // two patches
+    // Accumulate node patch preference (determines which patch a node belongs to if it borders two or more patches)
     std::vector<int> nppVec;
     for (auto nppItr = inputjson["Conversion Options"]["Node Patch Preference"].array_range().begin();
       nppItr != inputjson["Conversion Options"]["Node Patch Preference"].array_range().end(); ++nppItr)
@@ -422,11 +426,11 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
 
     // create Patran object from meshBase
-    PATRAN::patran* ptm = new PATRAN::patran(myMesh, srcmsh, trgmsh,
+    PATRAN::patran* pat = new PATRAN::patran(myMesh, srcmsh, trgmsh,
                                             faceTypeMap, nodeTypeMap,
                                             nodeStructuralMap, nodeMeshMotionMap,
                                             nodeThermalMap, nppVec);
-    //ptm->write();
+    //pat->write();
   }
 
   T.stop();

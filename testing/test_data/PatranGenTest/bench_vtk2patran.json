@@ -4,7 +4,7 @@
         "Mesh File Options": {
             "Input Mesh Files": {
                 "Source Mesh": "test_input.vtu",
-                "Target Mesh": "test_output.neu"
+                "Target Mesh": "test_output.out"
             },
             "Output Mesh File": ""
         },
