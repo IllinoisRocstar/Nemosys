@@ -17,9 +17,9 @@ file_string = {0: 'fluid_*.cgns',  # volumetric
                1: 'ifluid_b_*.cgns',  # burning
                2: 'ifluid_nb_*.cgns',  # non-burning
                3: 'ifluid_ni_*.cgns',  # non-interacting
-               4: 'burn*.cgns',
-               5: 'iburn*.cgns',
-               6: 'solid*.cgns'}
+               4: 'burn_*.cgns',
+               5: 'iburn_*.cgns',
+               6: 'solid_*.cgns'}
 
 # Is surface?
 surf_bool = {0: 0,
