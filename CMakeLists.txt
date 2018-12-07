@@ -37,14 +37,15 @@ FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
+opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 opt(TESTING "Enable testing" ON)
 opt(BUILD_UTILS "Build utilities" OFF)
 opt(SYMMX "Enable SYMMETRIX Meshing engine" OFF)
 
 # set up version
-SET(NEMOSYS_MAJOR_VERSION 1)
-SET(NEMOSYS_MINOR_VERSION 2)
+SET(NEMOSYS_MAJOR_VERSION 0)
+SET(NEMOSYS_MINOR_VERSION 26)
 SET(NEMOSYS_PATCH_VERSION 0)
 SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -128,15 +129,14 @@ IF (ENABLE_SYMMX)
     MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
     MESSAGE(STATUS "SYMMETRIX libraries ${SYMMX_LIBS}")
     MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
-ENDIF()
-
-# boost
-SET(Boost_USE_STATIC_LIBS OFF)
-SET(Boost_USE_MULTITHREADED ON)
-SET(Boost_USE_STATIC_RUNTIME OFF)
-FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
-IF(Boost_FOUND)
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+    # boost
+    SET(Boost_USE_STATIC_LIBS OFF)
+    SET(Boost_USE_MULTITHREADED ON)
+    SET(Boost_USE_STATIC_RUNTIME OFF)
+    FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
+    IF(Boost_FOUND)
+        INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+    ENDIF()
 ENDIF()
 
 ## add include files to path
@@ -191,6 +191,20 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 ENDIF()
 
+# additional compiler flags
+IF (ENABLE_EXODUS)
+    FIND_LIBRARY(EXO_LIB exodus)
+    FIND_FILE(EXO_HDR exodusII.h)
+    GET_FILENAME_COMPONENT(EXO_INCPATH ${EXO_HDR} PATH)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EXODUSII")
+    SET(NEMOSYS_LNK ${EXO_LIB})
+ENDIF()
+
+IF (ENABLE_EPIC)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EPIC")
+ENDIF()
+
+
 # other flags for dependencies
 IF (ENABLE_SYMMX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
@@ -229,7 +243,22 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/MeshPartitioning/meshPartitioner.C
                  src/MeshPartitioning/meshStitcher.C
                  src/cgnsWriter.C src/gridTransfer.C
-                 src/Mesh/cobalt.C src/Mesh/patran.C)
+                 src/Mesh/cobalt.C src/Mesh/patran.C
+                 src/MeshOperation/meshSrch.C
+                 src/InputGeneration/inputGen.C
+                 src/Drivers/InputGenDriver.C)
+
+# optinal source files
+IF (ENABLE_EXODUS)
+    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
+ENDIF()
+IF (ENABLE_EPIC)
+    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
+ENDIF()
+
+SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
+                src/cgnsWriter.C src/gridTransfer.C)
+SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
               utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
 
@@ -244,6 +273,7 @@ SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${SYMMX_SRCS})
 SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
+
 
 # Builiding libraries #########################################################
 
@@ -270,7 +300,9 @@ ELSE()
   add_definitions( -DSTATIC_LINK )
 ENDIF()
 TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS}
-                              ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES} interp)
+                              ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES}
+                              ${NEMOSYS_LNK}
+                              interp)
 
 INSTALL(TARGETS r8 interp Nemosys
         LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
@@ -279,7 +311,7 @@ INSTALL(TARGETS r8 interp Nemosys
 # Builiding utilities #########################################################
 
 SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
-SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
+#SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
 # Building Nemosys Core utility ###########################################
 ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
@@ -383,10 +415,13 @@ IF (ENABLE_TESTING)
     # adding gtest subdir with its own cmake file
     ADD_SUBDIRECTORY(testing)
     ADD_SUBDIRECTORY(testing/lib/gtest-1.6.0)
+
     # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
     INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
     SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
+
+    # standard tests
     ADD_EXECUTABLE(runCubatureInterpTest testing/test_scripts/testCubature.C)
     ADD_EXECUTABLE(runConversionTest testing/test_scripts/testConversion.C)
     ADD_EXECUTABLE(runOrthoPolyTest testing/test_scripts/testOrthoPoly.C)
@@ -403,5 +438,12 @@ IF (ENABLE_TESTING)
     TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runPNTGenTest gtest gtest_main Nemosys)
     TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
+
+    # custom built test for EPIC
+    IF (ENABLE_EPIC)
+        ADD_EXECUTABLE(runEp16Test testing/test_scripts/testEP16.C)
+        TARGET_LINK_LIBRARIES(runEp16Test gtest gtest_main Nemosys)
+    ENDIF()
+
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
 ENDIF(ENABLE_TESTING)

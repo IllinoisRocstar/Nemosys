@@ -1104,6 +1104,14 @@ void vtkMesh::getPointDataArray(int arrayId, std::vector<double>& data)
   }
 }
 
+int vtkMesh::getCellDataIdx(const char* name)
+{
+  // check physical group exist and obtain id
+  int idx; 
+  dataSet->GetCellData()->GetArray(&name[0u],idx);
+  return idx;
+}
+
 void vtkMesh::getCellDataArray(const std::string& name, std::vector<double>& data)
 {
   int idx;  
