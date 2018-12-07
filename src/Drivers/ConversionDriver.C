@@ -2,6 +2,7 @@
 #include <AuxiliaryFunctions.H>
 #include <vtkMesh.H>
 #include <vtkCellData.h>
+#include <vtkIdList.h>
 
 
 //----------------------- Conversion Driver -----------------------------------------//
