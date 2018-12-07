@@ -1,9 +1,9 @@
 #include <meshBase.H>
 #include <cobalt.H>
-#include <vtkIdList.h>
-#include <vtkCell.h>
 #include <fstream>
 #include <algorithm>
+#include <vtkIdList.h>
+#include <vtkCell.h>
 #include <vtkCellData.h>
 #include <vtkThreshold.h>
 #include <vtkGeometryFilter.h>
@@ -19,19 +19,9 @@ using namespace COBALT;
 // constructor from meshBase object
 cobalt::cobalt(const std::shared_ptr<meshBase> fullMesh, const std::string _inFnameVtk, const std::string _outFnameCgr, const std::string _outFnameCgi)
 {
-  inFnameVtk = _inFnameVtk;
-  outFnameCgr = _outFnameCgr;
-  outFnameCgi = _outFnameCgi;
-  if (inFnameVtk.find(".vt") != -1) 
-  {
-    // get trimmed filename
-    size_t lastindex = inFnameVtk.find_last_of("."); 
-  }
-  else
-  {
-    std::cout << "File must be in VTK format." << std::endl;
-    exit(1);
-  }
+  inFnameVtk = _inFnameVtk;     // vtk input file
+  outFnameCgr = _outFnameCgr;   // cobalt output grid file
+  outFnameCgi = _outFnameCgi;   // cobalt output patch mapping file
 
   // declare array to store element type
   vtkSmartPointer<vtkDataArray> elementTypeArray = vtkSmartPointer<vtkIdTypeArray>::New();;
@@ -45,7 +35,7 @@ cobalt::cobalt(const std::shared_ptr<meshBase> fullMesh, const std::string _inFn
     if (fullMesh->getDataSet()->GetCellType(iCell) != VTK_TETRA &&
         fullMesh->getDataSet()->GetCellType(iCell) != VTK_TRIANGLE)
     {
-      std::cout << "Only triangle and tetrahedral elements supported." << std::endl;
+      std::cout << "Error: only triangle and tetrahedral elements supported." << std::endl;
       exit(1);
     }
     tmp[0] = fullMesh->getDataSet()->GetCellType(iCell);
@@ -53,7 +43,7 @@ cobalt::cobalt(const std::shared_ptr<meshBase> fullMesh, const std::string _inFn
   }
   fullMesh->getDataSet()->GetCellData()->AddArray(elementTypeArray);
 
-  // threshold to get only volume cells
+  // threshold to extract only volume cells
   vtkSmartPointer<vtkThreshold> volThreshold = vtkSmartPointer<vtkThreshold>::New();
   volThreshold->SetInputData(fullMesh->getDataSet());
   volThreshold->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "elemType");
@@ -65,7 +55,7 @@ cobalt::cobalt(const std::shared_ptr<meshBase> fullMesh, const std::string _inFn
   volMeshBase = meshBase::CreateShared(volUG, "extractedVolume.vtu");
   //volUG_mb->write();  // write to file
 
-  // threshold to get only surface cells
+  // threshold to extract only surface cells
   vtkSmartPointer<vtkThreshold> surfThreshold = vtkSmartPointer<vtkThreshold>::New();
   surfThreshold->SetInputData(fullMesh->getDataSet());
   surfThreshold->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "elemType");
@@ -137,7 +127,6 @@ void cobalt::write()
       {
         facePntIds[k] = face->GetPointId(k)+1;
       }
-      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
         faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
