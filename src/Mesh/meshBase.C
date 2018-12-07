@@ -36,6 +36,11 @@ namespace nglib
 // aux
 #include <AuxiliaryFunctions.H>
 
+#ifdef HAVE_EXODUSII
+#include "exodusII.h"
+#include "exoMesh.H"
+#endif
+
 // TODO: Stop using setPoint/CellDataArray in export methods
 //        - instead, use the faster vtkDataArray creation and insertion
 
@@ -67,6 +72,13 @@ meshBase* meshBase::Create(std::string fname)
     std::cout << "Detected file in PNTmesh format" << std::endl;
     std::cout << "Processing the file ...." << std::endl;
     return exportPntToVtk(fname);
+  }
+
+  else if (fname.find(".g") != -1 || fname.find(".exo") != -1)
+  {
+    std::cout << "Detected file in Exodus II format" << std::endl;
+    std::cout << "Processing the file ...." << std::endl;
+    return exportExoToVtk(fname);
   }
 
   else
@@ -463,10 +475,16 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     exit(1);
   }
 
+  bool warning = true;
+
   std::string line;
-  int numPoints,numCells; 
+  int numPoints,numCells,numPhysGrps;
+  bool fndPhyGrp = false;
+  std::vector<int> physGrpDims;
+  std::map<int, std::string> physGrpIdName;
   std::vector<std::vector<std::vector<double>>> pointData;
   std::vector<std::vector<std::vector<double>>> cellData;
+  std::vector<std::vector<double>> cellPhysGrpIds;
   std::vector<std::string> pointDataNames;
   std::vector<std::string> cellDataNames;
 
@@ -477,13 +495,32 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   // map to hold true index of points (gmsh allows non-contiguous ordering)
   std::map<int,int> trueIndex;
 
-  // declare array to store physical entity for each element
-  vtkSmartPointer<vtkDataArray> physicalEntity = vtkSmartPointer<vtkIdTypeArray>::New();;
-  physicalEntity->SetNumberOfComponents(1);
-  physicalEntity->SetName("patchNo");
-
   while (getline(meshStream, line))
   {
+    if (line.find("$PhysicalNames") != -1)
+    {
+      fndPhyGrp = true;
+      getline(meshStream,line);
+      std::stringstream ss(line); 
+      ss >> numPhysGrps;
+      std::cout << "Found " << numPhysGrps << " physical groups!\n";
+      int grpDim, grpId;
+      std::string grpName;
+      for (int i = 0; i < numPhysGrps; ++i)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> grpDim >> grpId >> grpName;
+        grpName.erase(std::remove(grpName.begin(),grpName.end(),'\"'),grpName.end());
+        //std::cout << "Group Dim = " << grpDim
+        //    << "\nGroup Id = " << grpId
+        //    << "\nGroup Name = " << grpName 
+        //    << std::endl;
+        physGrpDims.push_back(grpDim);
+        physGrpIdName[grpId] = grpName;
+      }
+    }
+    
     if (line.find("$Nodes") != -1)
     {
       getline(meshStream,line);
@@ -528,14 +565,18 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         if (type == 2)
         {
           int tmp;
-          for (int j = 0; j < numTags; ++j)
+          if (!fndPhyGrp)
           {
-            ss >> tmp;
-            if (j == 0)
-            {
-              tmp2[0] = tmp;
-              physicalEntity->InsertNextTuple(tmp2);
-            }
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
           }
           for (int j = 0; j < 3; ++j)
           {
@@ -549,14 +590,18 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         else if (type == 4)
         {
           int tmp;
-          for (int j = 0; j < numTags; ++j)
+          if (!fndPhyGrp)
           {
-            ss >> tmp;
-            if (j == 0)
-            {
-              tmp2[0] = tmp;
-              physicalEntity->InsertNextTuple(tmp2);
-            }
+            for (int j = 0; j < numTags; ++j)
+                ss >> tmp;
+          } 
+          else 
+          {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags-1; ++j)
+                ss >> tmp;
           }
           for (int j = 0; j < 4; ++j)
           {
@@ -569,9 +614,12 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         }
         else
         {
-          //std::cout << "type = " << type << std::endl;
-          std::cout << "Only triangular and tetrahedral elements are supported!" << std::endl;
-          exit(1);
+          if (warning)
+          {
+            std::cout << "Warning: Only triangular and tetrahedral elements are supported, rest is ignored! " << std::endl;
+            warning = false;
+            //exit(1);
+          }
         }
       }
     }
@@ -699,7 +747,13 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       }
       cellData.push_back(currCellData);
     }
-  }  
+  }
+
+  if (fndPhyGrp)
+  {
+      cellDataNames.push_back("PhysGrpId");
+      cellData.push_back(cellPhysGrpIds);
+  }
 
   vtkMesh* vtkmesh = new vtkMesh();
   //vtkmesh->dataSet = dataSet_tmp->NewInstance();
@@ -712,10 +766,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
-  vtkmesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
-
-  // Temporary changed to legacy vtk for AMR demos
-  // switch back to vtu when done
+ 
   vtkmesh->setFileName(trim_fname(fname,".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
@@ -882,6 +933,150 @@ meshBase* meshBase::exportPntToVtk(std::string fname)
 
   return vtkmesh;
 
+}
+
+// exports exodusII to vtk format
+meshBase* meshBase::exportExoToVtk(std::string fname)
+{
+#ifdef HAVE_EXODUSII
+  // opening the file
+  int CPU_word_size,IO_word_size;
+  int fid, _exErr;
+  float version;
+  CPU_word_size = sizeof(float);
+  IO_word_size = 0;
+
+  /* open EXODUS II files */
+  fid = ex_open(fname.c_str(),EX_READ,&CPU_word_size,&IO_word_size,&version);
+  EXOMesh::wrnErrMsg(_exErr, "Problem opening file "+fname+"\n");
+
+  // building mesh database
+  vtkMesh* vtkmesh = new vtkMesh();
+
+  // declare points to be pushed into dataSet_tmp
+  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+  // declare dataSet_tmp which will be associated to output vtkMesh
+  vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = 
+    vtkSmartPointer<vtkUnstructuredGrid>::New();
+  
+  int numPoints;
+  int numVolCells;
+  int numElmBlk;
+  int numNdeSet;
+  int numSideSet;
+
+  // parameter inquiry from Exodus file
+  int num_props;
+  float fdum;
+  char *cdum;
+  _exErr = ex_inquire(fid, EX_INQ_API_VERS, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Exodus II API version is "<< fdum << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_DB_VERS, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Exodus II Database version is "<< fdum << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_DIM, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  std::cout << "Number of coordinate dimensions is "<< num_props << std::endl;
+  if (num_props != 3)
+    EXOMesh::wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
+  _exErr = ex_inquire(fid, EX_INQ_NODES, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numPoints = num_props;
+  std::cout << "Number of points "<< numPoints << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_ELEM, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numVolCells =  num_props;
+  std::cout << "Number of elements "<< numVolCells << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_ELEM_BLK, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numElmBlk = num_props;
+  std::cout << "Number of element blocks "<< numElmBlk << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_NODE_SETS, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numNdeSet = num_props;
+  std::cout << "Number of node sets "<< numNdeSet << std::endl;
+  _exErr = ex_inquire(fid, EX_INQ_SIDE_SETS, &num_props, &fdum, cdum);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  numSideSet = num_props;
+  std::cout << "Number of side sets "<< numSideSet << std::endl;
+
+  // nodal coordinates
+  std::vector<float> x,y,z;
+  x.resize(numPoints,0);
+  y.resize(numPoints,0);
+  z.resize(numPoints,0);
+  _exErr = ex_get_coord(fid, &x[0], &y[0], &z[0]);
+  EXOMesh::wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
+  
+  // allocate memory for points
+  points->SetNumberOfPoints(numPoints);
+  for (int i=0; i<numPoints; ++i)
+  {
+    std::vector<double> pt = {x[i], y[i], z[i]};
+    points->SetPoint(i,&pt[0]); 
+  }
+  // inserting point array into dataSet_tmp
+  dataSet_tmp->SetPoints(points);
+
+  // Connectivities
+  // allocating space for cell connectivities
+  dataSet_tmp->Allocate(numVolCells);
+  // read element blocks
+  for (int iEB=1; iEB<=numElmBlk; iEB++)
+  {
+    int num_el_in_blk, num_nod_per_el, num_attr, *connect;
+    float *attrib;
+    char elem_type[MAX_STR_LENGTH+1];
+    // read element block parameters
+    _exErr = ex_get_elem_block (fid, iEB, elem_type, &num_el_in_blk, &num_nod_per_el, &num_attr);
+    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
+    // read element connectivity
+    std::vector<int> conn;
+    conn.resize(num_el_in_blk*num_nod_per_el,0);
+    _exErr = ex_get_elem_conn (fid, iEB, &conn[0]);
+    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block connectivites.\n");
+    // read element block attributes
+    //std::vector<float> attr;
+    //attr.resize(0.,num_el_in_blk*num_nod_per_el);
+    //_exErr = ex_get_elem_attr (fid, iEB, &attrib[0]);
+    //EXOMesh::wrnErrMsg(_exErr, "Problem reading element block attributes.\n");
+    for (int iEl = 0; iEl < num_el_in_blk; ++iEl)
+    {
+      vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+      VTKCellType vct = EXOMesh::e2vEMap(EXOMesh::elmTypeNum(elem_type));
+      for (int jc=iEl*num_nod_per_el; 
+               jc<(iEl+1)*num_nod_per_el;
+               jc++)
+      {
+        // insert connectivies for cell into cellIds container
+        vtkcellIds->InsertNextId(conn[jc]-1);
+      }
+      // insert connectivies
+      dataSet_tmp->InsertNextCell(vct, vtkcellIds); 
+    }
+  }
+
+  vtkmesh->dataSet = dataSet_tmp;
+  vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+
+  std::cout << "Trimmed name = "
+      << trim_fname(fname, ".vtu") << std::endl;
+  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+  //vtkmesh->write();
+  std::cout << "vtkMesh constructed" << std::endl;
+
+  // closing the file
+  _exErr = ex_close(fid);
+  EXOMesh::wrnErrMsg(_exErr, "Problem closing the exodusII file.");
+  
+  return vtkmesh;
+#else
+  std::cerr << "Error: Compile with Exodus II to use this.\n";
+  exit(-1);
+#endif
 }
 
 // convert to gmsh format without data

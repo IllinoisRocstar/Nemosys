@@ -6,6 +6,17 @@ web-services environments. The focus of the project is on providing a framework 
 automated mesh generation, mesh quality analysis, adaptive mesh refinement and data transfer
 between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
+## Version ##
+Version 0.26.0
+
+NEMoSys follows semantic versioning. The versions will be major.minor.patch. We will:
+* Increase the patch version for bug fixes, security fixes, and code documentation. 
+Backwards compatible; no breaking changes.
+* Increase the minor version for new features and additions to the library’s interface. 
+Backwards compatible; no breaking changes.
+* Increase the major version for breaking changes to the library’s interface or breaking 
+changes to behavior.
+
 ## Getting Started ##
 To acquire NEMosys, you can download it from Illinois Rocstar's GitHub
 or clone it with the following command:
@@ -146,6 +157,3 @@ $ make install
 
 See the building Nemosys section to proceed from this point and complete the build.
 
-## License ##
-This project is licensed under the University of Illinois/NCSA Open Source License- see LICENSE for
-more details.

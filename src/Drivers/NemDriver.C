@@ -4,9 +4,8 @@
 #include <MeshGenDriver.H>
 #include <RefineDriver.H>
 #include <ConversionDriver.H>
+#include "InputGenDriver.H"
 #include <RemeshDriver.H>
-//#include <RocRestartDriver.H>
-//#include <RocPrepDriver.H>
 #include <RocPartCommGenDriver.H>
 
 //------------------------------ Factory of Drivers ----------------------------------------//
@@ -32,6 +31,10 @@ NemDriver* NemDriver::readJSON(json inputjson)
   else if (!program_type.compare("Conversion"))
   {
     return ConversionDriver::readJSON(inputjson);
+  }
+  else if (!program_type.compare("Input Generation"))
+  {
+    return InputGenDriver::readJSON(inputjson);
   }
   else if (!program_type.compare("Rocstar Remeshing"))
   {
