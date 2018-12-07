@@ -716,7 +716,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
 
   // Temporary changed to legacy vtk for AMR demos
   // switch back to vtu when done
-  std::cout << __FILE__ << __LINE__ << std::endl;
   vtkmesh->setFileName(trim_fname(fname,".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
