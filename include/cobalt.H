@@ -1,12 +1,6 @@
 #ifndef cobalt_H
 #define cobalt_H
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <vtkCellTypes.h>
-
 // stl
 #include <memory>
 
@@ -26,7 +20,6 @@ class cobalt
       void write();
       void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap);
       void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap);
-
 
     private:
       std::shared_ptr<meshBase> volMeshBase;

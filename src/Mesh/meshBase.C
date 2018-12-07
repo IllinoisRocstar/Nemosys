@@ -512,6 +512,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
     if (line.find("$Elements") != -1)
     {
       getline(meshStream,line);
+      //std::cout << "line = " << line << std::endl;
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
@@ -568,6 +569,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
         }
         else
         {
+          //std::cout << "type = " << type << std::endl;
           std::cout << "Only triangular and tetrahedral elements are supported!" << std::endl;
           exit(1);
         }
