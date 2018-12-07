@@ -17,9 +17,9 @@ file_string = {0: 'fluid_*.cgns',  # volumetric
                1: 'ifluid_b_*.cgns',  # burning
                2: 'ifluid_nb_*.cgns',  # non-burning
                3: 'ifluid_ni_*.cgns',  # non-interacting
-               4: 'burn*.cgns',
-               5: 'iburn*.cgns',
-               6: 'solid*.cgns'}
+               4: 'burn_*.cgns',
+               5: 'iburn_*.cgns',
+               6: 'solid_*.cgns'}
 
 # Is surface?
 surf_bool = {0: 0,
@@ -54,7 +54,11 @@ def get_time(fname):
 
 
 # Get list of files
-file_list = glob.glob(file_string[0])
+file_list = []
+i = 0
+while len(file_list) == 0:
+    file_list = glob.glob(file_string[i])
+    i = i + 1
 file_list = sorted(file_list, key=get_time)
 
 # Get number of time steps output

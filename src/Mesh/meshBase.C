@@ -494,6 +494,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   // map to hold true index of points (gmsh allows non-contiguous ordering)
   std::map<int,int> trueIndex;
+
   while (getline(meshStream, line))
   {
     if (line.find("$PhysicalNames") != -1)
@@ -544,14 +545,15 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       dataSet_tmp->SetPoints(points);
 
     }
- 
 
     if (line.find("$Elements") != -1)
     {
       getline(meshStream,line);
+      //std::cout << "line = " << line << std::endl;
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
+      double tmp2[1];
       // allocate space for cell connectivities
       dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i)
@@ -771,6 +773,10 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   return vtkmesh;
 
 }
+
+
+
+
 
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
@@ -1407,14 +1413,17 @@ void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMa
   outputStream << patchMap.size() << std::endl;
   outputStream << patchMap.size() << std::endl;
   auto it = patchMap.begin();
+  int normPatchNo = 1;
   while (it != patchMap.end())
   {
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 2; ++i)
     {
       outputStream << std::setw(2) << std::left << it->first << " ";
     }
+    outputStream << std::setw(2) << std::left << normPatchNo << " ";
     outputStream << std::endl;
     ++it;
+    normPatchNo++;
   }
 }
 
@@ -1464,6 +1473,7 @@ void meshBase::writeCobalt(meshBase* surfWithPatches,
       {
         facePntIds[k] = face->GetPointId(k)+1;
       }
+      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
         faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>

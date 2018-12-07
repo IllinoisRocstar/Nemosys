@@ -32,7 +32,6 @@ class meshSrch : public meshBase
       return std::unique_ptr<meshSrch>(meshSrch::Create(mb));
     }
 
-
     ~meshSrch() {};
 
   // general access
@@ -46,6 +45,14 @@ class meshSrch : public meshBase
   // cell search methods
   public:
     void FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& ids, bool fulImrsd=true);
+    // get coordinates and connectivities of the surface triangulation
+    // and returns ids for the nodes that reside on the triangulation with
+    // given tolerance
+    void FindPntsOnTriSrf(std::vector<double>& crds, std::vector<int>& conn, std::set<int>& ids, double tol=0.1e-15);
+    // get coordinates of the start and end points of an edge 
+    // and returns ids for the nodes that reside on the edge with
+    // given tolerance
+    void FindPntsOnEdge(std::vector<double>& crds, std::set<int>& ids, double tol=0.1e-15);
 
   // misc
   public:

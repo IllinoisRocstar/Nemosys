@@ -13,6 +13,8 @@
 
 // Nemosys
 #include <pntMesh.H>
+#include <cobalt.H>
+#include <patran.H>
 
 // stl
 #include <vector>
@@ -147,7 +149,6 @@ class meshBase
     // helper wrapped by function above
     static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh, 
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
-
  
   // --- access
   public:
@@ -165,7 +166,6 @@ class meshBase
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // extract the surface mesh
     virtual vtkSmartPointer<vtkDataSet> extractSurface(){}
-
     // register data to dataSet's point data
     virtual void setPointDataArray(const char* name, 
                                    const std::vector<std::vector<double>>& data){}
@@ -180,6 +180,7 @@ class meshBase
                                    std::vector<double>& data) {}
     virtual void getPointDataArray(int arrayId,
                                    std::vector<double>& data) {}
+    virtual int getCellDataIdx(const char* name){}
     virtual void getCellDataArray(const std::string& name,
                                   std::vector<double>& data) {}
     virtual void getCellDataArray(int arrayId,
@@ -205,7 +206,6 @@ class meshBase
     // or you have information on the number of cells of each type and the order in 
     // which they appear (for look up in resulting vector)
     virtual std::vector<int> getConnectivities() const {}
-
 
   // --- data transfer
   public:
@@ -262,6 +262,7 @@ class meshBase
                     std::string ofname, bool transferData);
     void refineMesh(std::string method, std::string arrayName, int order, 
                     std::string ofname, bool transferData);
+
   // --- diagnostics
   public:
     // generate a report of the mesh
@@ -310,8 +311,6 @@ class meshBase
                      std::ofstream& outputStream);
     void writeCobalt(meshBase* surfWithPatch, 
                      const std::string& mapFile, const std::string& ofname);
-
-
     // set the file name - this will allow vtk to dispatch appropriate writers based on
     // the extension and whether it is supported by vtk. 
     void setFileName(std::string fname) { filename = fname; }
