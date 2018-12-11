@@ -494,7 +494,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   // map to hold true index of points (gmsh allows non-contiguous ordering)
   std::map<int,int> trueIndex;
-
   while (getline(meshStream, line))
   {
     if (line.find("$PhysicalNames") != -1)
@@ -773,10 +772,6 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   return vtkmesh;
 
 }
-
-
-
-
 
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
@@ -1473,7 +1468,6 @@ void meshBase::writeCobalt(meshBase* surfWithPatches,
       {
         facePntIds[k] = face->GetPointId(k)+1;
       }
-      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
         faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>

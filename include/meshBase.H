@@ -149,7 +149,7 @@ class meshBase
     // helper wrapped by function above
     static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh, 
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
- 
+
   // --- access
   public:
     // get point with id

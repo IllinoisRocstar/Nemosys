@@ -261,7 +261,6 @@ SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
               utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
-
 SET(TUTR_SRCS utils/writeStructured.C tutorials/mshTransfer.C tutorials/dtkTutorial.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C src/spheres.C)
@@ -415,7 +414,6 @@ IF (ENABLE_TESTING)
     # adding gtest subdir with its own cmake file
     ADD_SUBDIRECTORY(testing)
     ADD_SUBDIRECTORY(testing/lib/gtest-1.6.0)
-
     # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
     INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
     SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -444,6 +442,5 @@ IF (ENABLE_TESTING)
         ADD_EXECUTABLE(runEp16Test testing/test_scripts/testEP16.C)
         TARGET_LINK_LIBRARIES(runEp16Test gtest gtest_main Nemosys)
     ENDIF()
-
     SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
 ENDIF(ENABLE_TESTING)

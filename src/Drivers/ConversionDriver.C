@@ -9,7 +9,6 @@
 #include <vtkCellData.h>
 #include <vtkIdList.h>
 
-
 // vtk
 #include <vtkIdList.h>
 #include <vtkCellData.h>
@@ -167,6 +166,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             int nc = mb->getNumberOfCells();
             // check physical group (PhysGrpId) exists, obtain id, and data array
             int physGrpArrIdx = mb->getCellDataIdx("PhysGrpId");
+
             if (physGrpArrIdx < 0)
             {
                 std::cerr << "Error : Input dataset does not have PhyGrpId cell data! Aborting.\n";
@@ -187,7 +187,6 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                 double* tmp = physGrpIds->GetTuple(ic);
                 elmPhysGrp.push_back(int(*tmp));
             }
-
             // number of unique physical groups
             std::set<int> unqPhysGrpIds;
             int nPhysGrp;
@@ -195,7 +194,6 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                 unqPhysGrpIds.insert(*it);
             nPhysGrp = unqPhysGrpIds.size();
             std::cout << "Number of physical groups : " << nPhysGrp << std::endl;
-
             // one node set for all groups
             // node coordinate to nodeSet
             EXOMesh::ndeSetType ns;
@@ -651,7 +649,6 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                                             nodeThermalMap, nppVec);
     //pat->write();
   }
-
   T.stop();
 }
 
@@ -882,4 +879,3 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
   }
 }
 #endif
-

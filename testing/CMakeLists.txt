@@ -48,7 +48,10 @@ CONFIGURE_FILE( ${meshgengeom_in} ${meshgengeom} @ONLY )
 CONFIGURE_FILE( ${pntgenbench1_in} ${pntgenbench1} @ONLY )
 CONFIGURE_FILE( ${pntgenbench5_in} ${pntgenbench5} @ONLY )
 CONFIGURE_FILE( ${pntgenbench6_in} ${pntgenbench6} @ONLY )
-CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
+IF (ENABLE_EPIC)
+    CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
+ENDIF()
+
 
 ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp ${CUBATURE_TESTDIR}/integrationREF.vtu ${CUBATURE_TESTDIR}/single-hex.vtu)
 
@@ -69,7 +72,6 @@ IF (ENABLE_EPIC)
     ADD_TEST(NAME ep16test COMMAND runEp16Test ${ep16test1} ${EP16_TESTDIR}/bctest_ref.g ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat)
 ENDIF()
 
-#Python wrapper testing
 FIND_PACKAGE(PythonInterp 2.7 REQUIRED)
 IF (ENABLE_PYTHON_BINDINGS)
     if (NOT PYTHONINTERP_FOUND)

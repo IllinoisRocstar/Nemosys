@@ -54,11 +54,15 @@ def get_time(fname):
 
 
 # Get list of files
+<<<<<<< HEAD
 file_list = []
 i = 0
 while len(file_list) == 0:
     file_list = glob.glob(file_string[i])
     i = i + 1
+=======
+file_list = glob.glob(file_string[0])
+>>>>>>> 9e3961565116ea8aca937fca55166773202e999c
 file_list = sorted(file_list, key=get_time)
 
 # Get number of time steps output
@@ -87,10 +91,10 @@ for itype in range(len(file_string)):
         # Get and sort filenames by time
         file_list = glob.glob(file_string[itype].split('*')[0]+base_t+"*"+file_string[itype].split('*')[1])
         file_list = sorted(file_list, key=get_time)
-    
+
         if len(file_list) != 0:
             npart = len(file_list)
-    
+
             surf = surf_bool[itype]
             prefix = file_prefix_string[itype]
             os.system('rocStitchMesh ' + '.' + ' ' + prefix + ' ' + base_t + ' ' + str(surf))

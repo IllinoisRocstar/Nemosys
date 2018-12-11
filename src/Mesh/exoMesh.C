@@ -460,7 +460,6 @@ void exoMesh::addNdeSetByNdeIdLst(std::string name, std::vector<int> idLst)
     exoPopulate(false);
 }
 
-
 void exoMesh::snapNdeCrdsZero(double tol)
 {
     int nPnt = 0;
