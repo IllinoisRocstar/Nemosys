@@ -7,7 +7,9 @@ class TransferBase
 {
   // constructors and destructors
   public:
-    TransferBase():source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL)
+    TransferBase()
+      :source(NULL),target(NULL),srcCellLocator(NULL),trgCellLocator(NULL),
+       checkQual(0), continuous(0), c2cTrnsDistTol(1.e-6)
     { 
       std::cout << "TransferBase constructed" << std::endl;
     }
@@ -29,17 +31,18 @@ class TransferBase
   public:
     // transfer point data with given id from source to target
     virtual int transferPointData(const std::vector<int>& arrayIDs,
-                                  const std::vector<string>& newnames 
+                                  const std::vector<std::string>& newnames 
                                     = std::vector<std::string>()) = 0; 
     // transfer cell data with given id from source to target
     virtual int transferCellData(const std::vector<int>& arrayIDs,
-                                  const std::vector<string>& newnames 
+                                  const std::vector<std::string>& newnames 
                                     = std::vector<std::string>()) = 0; 
     // transfer all data from source to target
     virtual int run(const std::vector<std::string>& newnames 
                       = std::vector<std::string>()) = 0; 
     // set whether to check transfer quality
     void setCheckQual(bool x) { checkQual = x; }
+    void setContBool(bool x) { continuous = x; }
 
   protected:
     meshBase* source;
@@ -47,6 +50,8 @@ class TransferBase
     meshBase* target;  
     vtkSmartPointer<vtkCellLocator> trgCellLocator;
     bool checkQual; 
+    bool continuous; // switch on / off weighted averaging for cell transfer
+    double c2cTrnsDistTol;
 };
 
 

@@ -4,6 +4,15 @@
 // Nemosys
 #include <ConversionDriver.H>
 #include "meshSrch.H"
+#include <AuxiliaryFunctions.H>
+#include <vtkMesh.H>
+#include <vtkCellData.h>
+#include <vtkIdList.h>
+
+
+// vtk
+#include <vtkIdList.h>
+#include <vtkCellData.h>
 
 //----------------------- Conversion Driver -----------------------------------------//
 ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
@@ -181,28 +190,17 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             // loop through cell data and identify physical groups
             // we also filter only TETRA/HEX cells
             int nc = mb->getNumberOfCells();
-            // check physical group exist and obtain id
-            vtkCellData *cd = mb->getDataSet()->GetCellData();
-            int physGrpArrIdx = -1;
-            if (cd)
-            {
-                for (int ida=0; ida < cd->GetNumberOfArrays(); ida++)
-                {
-                    std::cout << cd->GetArrayName(ida) << std::endl;
-                    if (!strcmp( cd->GetArrayName(ida), "PhysGrpId"))
-                    {
-                        physGrpArrIdx = ida;
-                        break;
-                    }
-                }
-            }
+            // check physical group (PhysGrpId) exists, obtain id, and data array
+            int physGrpArrIdx = mb->getCellDataIdx("PhysGrpId");
             if (physGrpArrIdx < 0)
             {
                 std::cerr << "Error : Input dataset does not have PhyGrpId cell data! Aborting.\n";
                 exit(-1);
             }
+            vtkCellData *cd = mb->getDataSet()->GetCellData();
             vtkDataArray* physGrpIds = cd->GetArray(physGrpArrIdx);
-            // loop trhough elements and obtain physical group ids
+            
+            // loop through elements and obtain physical group ids
             std::vector<int> elmIds;
             std::vector<int> elmPhysGrp;
             for (int ic=0; ic<nc; ic++)
@@ -214,6 +212,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
                 double* tmp = physGrpIds->GetTuple(ic);
                 elmPhysGrp.push_back(int(*tmp));
             }
+
             // number of unique physical groups
             std::set<int> unqPhysGrpIds;
             int nPhysGrp;
@@ -222,7 +221,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
             nPhysGrp = unqPhysGrpIds.size();
             std::cout << "Number of physical groups : " << nPhysGrp << std::endl;
 
-            // one nodeset for all groups
+            // one node set for all groups
             // node coordinate to nodeSet
             EXOMesh::ndeSetType ns;
             ns.id = ++ins;
@@ -335,6 +334,370 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     exit(-1);
 #endif
   }
+  else if (!method.compare("GMSH->VTK"))
+  {
+    if (srcmsh.find(".msh") != -1)
+    {
+      std::cout << "Detected file in GMSH format" << std::endl;
+      std::cout << "Converting to VTK ...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in GMSH format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }
+  
+    std::string line;
+    int numPoints,numCells; 
+    std::vector<std::vector<std::vector<double>>> pointData;
+    std::vector<std::vector<std::vector<double>>> cellData;
+    std::vector<std::string> pointDataNames;
+    std::vector<std::string> cellDataNames;
+  
+    // declare points to be pushed into dataSet_tmp
+    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    // declare dataSet_tmp which will be associated to output vtkMesh
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    // map to hold true index of points (gmsh allows non-contiguous ordering)
+    std::map<int,int> trueIndex;
+  
+    // declare array to store physical entity for each element
+    vtkSmartPointer<vtkDataArray> physicalEntity = vtkSmartPointer<vtkIdTypeArray>::New();;
+    physicalEntity->SetNumberOfComponents(1);
+    physicalEntity->SetName("patchNo");
+  
+    while (getline(meshStream, line))
+    {
+      if (line.find("$Nodes") != -1)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line); 
+        ss >> numPoints;
+        int id;
+        double x,y,z;
+        // allocate memory for points
+        points->SetNumberOfPoints(numPoints);
+        for (int i = 0; i < numPoints; ++i)
+        {
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id >> x >> y >> z;
+          double point[3];
+          point[0] = x; point[1] = y; point[2] = z;
+          // insert point i
+          points->SetPoint(i,point);     
+          trueIndex.insert(std::pair<int,int> (id,i));
+        }
+        // inserting point array into dataSet_tmp
+        dataSet_tmp->SetPoints(points);
+  
+      }
+  
+      if (line.find("$Elements") != -1)
+      {
+        getline(meshStream,line);
+        std::stringstream ss(line);
+        ss >> numCells;
+        int id, type, numTags;
+        // allocate space for cell connectivities
+        dataSet_tmp->Allocate(numCells);
+        for (int i = 0; i < numCells; ++i)
+        {
+          getline(meshStream, line);
+          std::stringstream ss(line);
+          ss >> id >> type >> numTags;
+          vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
+          if (type == 2)
+          {
+            int tmp;
+            double tmp2[1];
+            for (int j = 0; j < numTags; ++j)
+            {
+              ss >> tmp2[0];
+              if (j == 0)
+              {
+                physicalEntity->InsertNextTuple(tmp2);
+              }
+            }
+            for (int j = 0; j < 3; ++j)
+            {
+              ss >> tmp;
+              // insert connectivies for cell into cellIds container
+              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            }
+            // insert connectivies for triangle elements into dataSet 
+            dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds); 
+          } 
+          else if (type == 4)
+          {
+            int tmp;
+            double tmp2[1];
+            for (int j = 0; j < numTags; ++j)
+            {
+              ss >> tmp2[0];
+              if (j == 0)
+              {
+                physicalEntity->InsertNextTuple(tmp2);
+              }
+            }
+            for (int j = 0; j < 4; ++j)
+            {
+              ss >> tmp;
+              // insert connectivities for cell into cellids container
+              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            } 
+            // insert connectivities for tet elements into dataSet
+            dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
+          }
+          else
+          {
+            std::cout << "Only triangular and tetrahedral elements are supported!" << std::endl;
+            exit(1);
+          }
+        }
+      }
+    
+      if (line.find("$NodeData") != -1)
+      {
+        std::vector<std::vector<double>> currPointData;
+        getline(meshStream,line); // moving to num_string_tags
+        std::stringstream ss(line);
+        int num_string_tags;
+        ss >> num_string_tags;
+        std::string dataname;
+        for (int i = 0; i < num_string_tags; ++i)
+        { 
+          getline(meshStream,line); // get string tag
+          if (i == 0)
+          {
+            std::stringstream ss(line);
+            ss >> dataname;
+          }
+        }
+        dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+        pointDataNames.push_back(dataname);
+        getline(meshStream,line); // moving to num_real_tags
+        std::stringstream ss1(line);
+        int num_real_tags;
+        ss1 >> num_real_tags;
+        for (int i = 0; i < num_real_tags; ++i)
+          getline(meshStream,line);
+  
+        getline(meshStream,line); // moving to num_int_tags
+        std::stringstream ss2(line);
+        int num_int_tags;
+        ss2 >> num_int_tags;
+        int dt,dim,numFields,tmp;
+        for (int i = 0; i < num_int_tags; ++i)
+        {   
+          getline(meshStream,line); // get int tag
+          std::stringstream ss(line);
+          if (i == 0)
+            ss >> dt;
+          else if (i == 1)
+            ss >> dim;
+          else if (i == 2)
+            ss >> numFields;
+          else
+            ss >> tmp;
+        }
+        for (int i = 0; i < numFields; ++i) 
+        { 
+          std::vector<double> data(dim);
+          int id;
+          double val;
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id;
+          for (int j = 0; j < dim; ++j)
+          {
+            ss >> val;
+            data[j] = val;
+          }
+          currPointData.push_back(data);
+        }
+        pointData.push_back(currPointData);
+      }
+      
+      if (line.find("$ElementData") != -1)
+      {
+        std::vector<std::vector<double>> currCellData;
+        getline(meshStream,line); // moving to num_string_tags
+        std::stringstream ss(line);
+        int num_string_tags;
+        ss >> num_string_tags;
+        std::string dataname;
+        for (int i = 0; i < num_string_tags; ++i)
+        { 
+          getline(meshStream,line); // get string tag
+          if (i == 0)
+          {
+            std::stringstream ss(line);
+            ss >> dataname;
+          }
+        }
+        dataname.erase(std::remove(dataname.begin(),dataname.end(),'\"'),dataname.end());
+        cellDataNames.push_back(dataname);
+        getline(meshStream,line); // moving to num_real_tags
+        std::stringstream ss1(line);
+        int num_real_tags;
+        ss1 >> num_real_tags;
+        for (int i = 0; i < num_real_tags; ++i)
+          getline(meshStream,line);
+  
+        getline(meshStream,line); // moving to num_int_tags
+        std::stringstream ss2(line);
+        int num_int_tags;
+        ss2 >> num_int_tags;
+        int dt,dim,numFields,tmp;
+        for (int i = 0; i < num_int_tags; ++i)
+        {   
+          getline(meshStream,line); // get int tag
+          std::stringstream ss(line);
+          if (i == 0)
+            ss >> dt;
+          else if (i == 1)
+            ss >> dim;
+          else if (i == 2)
+            ss >> numFields;
+          else
+            ss >> tmp;
+        }
+        for (int i = 0; i < numFields; ++i) 
+        { 
+          std::vector<double> data(dim);
+          int id;
+          double val;
+          getline(meshStream,line);
+          std::stringstream ss(line);
+          ss >> id;
+          for (int j = 0; j < dim; ++j)
+          {
+            ss >> val;
+            data[j] = val;
+          }
+          currCellData.push_back(data);
+        }
+        cellData.push_back(currCellData);
+      }
+    }  
+  
+    vtkMesh* outputMesh = new vtkMesh(dataSet_tmp, trgmsh);
+
+    for (int i = 0; i < pointData.size(); ++i)
+      outputMesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
+    for (int i = 0; i < cellData.size(); ++i)
+      outputMesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
+    // add physical entity mesh to VTK
+    outputMesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
+    outputMesh->write();
+  }
+  else if (!method.compare("VTK->COBALT"))
+  {
+    if (srcmsh.find(".vt") != -1)
+    {
+      std::cout << "Detected file in VTK format" << std::endl;
+      std::cout << "Converting to COBALT ...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in VTK format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }  
+    
+    // create meshbase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
+
+    // create Cobalt object from meshBase
+    COBALT::cobalt* cm = new COBALT::cobalt(myMesh, srcmsh, trgmsh, ofname);
+    // write to file
+    cm->write();
+  }
+  else if (!method.compare("VTK->PATRAN"))
+  {
+    if (srcmsh.find(".vt") != -1)
+    {
+      std::cout << "Detected file in VTK format" << std::endl;
+      std::cout << "Converting to PATRAN ...." << std::endl;
+    }
+    else
+    {
+      std::cout << "Source mesh file is not in VTK format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cout << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }  
+    
+    // looping through blocks
+    int nBC = inputjson["Conversion Options"]["BC Info"].size();
+    std::cout << "Number of Boundary Conditions read: " << nBC << std::endl;
+
+    // Patran specific BC information
+    // Each map below maps the indicated information from the "Patch Number" specified in the file
+
+    std::map<int, int> faceTypeMap;         // Rocfrac FSI Type;
+                                            // 0 = no FSI, 1 = FSI w/ burn, 2 = FSI w/o burn, etc.
+                                            // see Rocfrac manual for details
+    std::map<int, int> nodeTypeMap;         // patch numbers as specified in RocfracControl.txt
+    std::map<int, bool> nodeStructuralMap;  // boolean indicating structural BC
+    std::map<int, bool> nodeMeshMotionMap;  // boolean indicating mesh motion BC
+    std::map<int, bool> nodeThermalMap;     // boolean indicating heat transfer BC
+
+
+    for (auto it = inputjson["Conversion Options"]
+                            ["BC Info"].array_range().begin();
+              it!= inputjson["Conversion Options"]
+                            ["BC Info"].array_range().end();
+              ++it)
+    {
+      if ((*it)["BC Type"].as<std::string>() == "Face")
+      {
+        faceTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["Rocfrac FSI Type"].as<int>();
+      }
+      else if ((*it)["BC Type"].as<std::string>() == "Node")
+      {
+        nodeTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["RocfracControl Type"].as<int>();
+        nodeStructuralMap[(*it)["Patch Number"].as<int>()] = (*it)["Structural"].as<bool>();
+        nodeMeshMotionMap[(*it)["Patch Number"].as<int>()] = (*it)["Mesh Motion"].as<bool>();
+        nodeThermalMap[(*it)["Patch Number"].as<int>()] = (*it)["Thermal"].as<bool>();
+      }
+    }
+    
+    // Accumulate node patch preference (determines which patch a node belongs to if it borders two or more patches)
+    std::vector<int> nppVec;
+    for (auto nppItr = inputjson["Conversion Options"]["Node Patch Preference"].array_range().begin();
+      nppItr != inputjson["Conversion Options"]["Node Patch Preference"].array_range().end(); ++nppItr)
+    {
+      nppVec.push_back((*nppItr).as<int>());
+    }
+
+    // create meshbase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
+
+    // create Patran object from meshBase
+    PATRAN::patran* pat = new PATRAN::patran(myMesh, srcmsh, trgmsh,
+                                            faceTypeMap, nodeTypeMap,
+                                            nodeStructuralMap, nodeMeshMotionMap,
+                                            nodeThermalMap, nppVec);
+    //pat->write();
+  }
+
   T.stop();
 }
 
@@ -424,18 +787,17 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
     
 }
 
-
 #ifdef HAVE_EXODUSII
 void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh* em)
 {
   // converting to mesh base for geometric inquiry
   meshBase* mb = meshBase::Create(fname); 
-  meshSrch* ms = meshSrch::Create(mb);
 
   // performing requested operation
   std::string opr = ppJson.get_with_default("Operation", "");
   if (!opr.compare("Material Assignment"))
   {
+      meshSrch* ms = meshSrch::Create(mb);
       // gathering information about all zones
       std::map<std::string, std::set<int> > zoneGeom;
       json zones = ppJson["Zones"];
@@ -480,6 +842,7 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
   else if (!opr.compare("Check Duplicate Elements"))
   {
       std::cout << "Checking for existance of duplicate elements ... ";
+      meshSrch* ms = meshSrch::Create(mb);
       bool ret = ms->chkDuplElm(); 
       if (ret)
       {
@@ -494,6 +857,70 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
       std::string blkName = ppJson.get_with_default("Block Name", "");
       std::cout << "Removing Block " << blkName << std::endl;
       em->removeElmBlkByName(blkName);
+  }
+  else if (!opr.compare("Snap Node Coords To Zero"))
+  {
+      double tol = ppJson.get_with_default("Tolerance", 0.0);
+      std::cout << "Snapping nodal coordinates to zero using tolerance " << tol << std::endl;
+      em->snapNdeCrdsZero(tol);
+  }
+  else if (!opr.compare("Boundary Condition Assignment"))
+  {
+      // For EP16 boundary conditions are simply translated
+      // to node sets. Node sets may have shared nodes. In
+      // that case a node the order of nodeset matter. A later
+      // node set superceeds an earlier one.
+      meshSrch* ms = meshSrch::Create(mb);      
+      // gathering information about all boundary node sets
+      json bcs = ppJson["Condition"];
+      int nBC = bcs.size();
+      for (auto bc : bcs.array_range())
+      {
+        std::set<int> pntIds;              
+        // identify node ids on each boundary
+        std::string bcName = bc["Name"].as<std::string>();
+        std::string bcTyp = bc["Boundary Type"].as<std::string>();
+        if (!bcTyp.compare("Faces"))
+        {
+           std::vector<double> srfCrd;
+           std::vector<int> srfConn;
+           json nc = bc["Params"]["Node Coordinates"];
+           for (auto crds : nc.array_range())
+               for (auto cmp : crds.array_range())
+                   srfCrd.push_back(cmp.as<double>());
+           json conn = bc["Params"]["Connectivities"];
+           for (auto tri : conn.array_range())
+               for (auto idx : tri.array_range())
+                   srfConn.push_back(idx.as<int>());
+           ms->FindPntsOnTriSrf(srfCrd, srfConn, pntIds);
+           std::cout << "Number of points resinding on the boundary " 
+               << bcName << " is " << pntIds.size() << "\n";
+        }
+        else if (!bcTyp.compare("Edges"))
+        {
+           std::vector<double> edgeCrd;
+           json ncs = bc["Params"]["Start"];
+           for (auto crds : ncs.array_range())
+               for (auto cmp : crds.array_range())
+                   edgeCrd.push_back(cmp.as<double>());
+           json nce = bc["Params"]["End"];
+           for (auto crds : nce.array_range())
+               for (auto cmp : crds.array_range())
+                   edgeCrd.push_back(cmp.as<double>());
+           ms->FindPntsOnEdge(edgeCrd, pntIds);
+           std::cout << "Number of points resinding on the boundary " 
+               << bcName << " is " << pntIds.size() << "\n";
+        }
+        else
+            std::cerr << "Warning: unsupported bounday type " << bcTyp << std::endl;
+        // register node set in Exodus II database
+        if (!pntIds.empty())
+        {
+            std::vector<int> nv;
+            std::copy(pntIds.begin(), pntIds.end(), std::back_inserter(nv));
+            em->addNdeSetByNdeIdLst(bcName, nv);
+        }
+      }
   }
   else
   {

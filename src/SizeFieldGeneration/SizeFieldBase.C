@@ -2,6 +2,11 @@
 #include <GradSizeField.H>
 #include <ValSizeField.H>
 #include <Z2ErrorSizeField.H>
+#include <vtkCellData.h>
+#include <vtkPointData.h>
+#include <AuxiliaryFunctions.H>
+
+using namespace nemAux;
 
 SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int arrayID,
                                    double _dev_mult, bool _maxIsmin, double sizeFactor)
@@ -36,6 +41,15 @@ SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int ar
   
 }
 
+std::unique_ptr<SizeFieldBase> 
+SizeFieldBase::CreateUnique(meshBase* _mesh, std::string method, int arrayID, double _dev_mult, 
+                            bool _maxIsmin, double _sizeFactor)
+{
+  std::cout << __FILE__ << __LINE__ << std::endl;
+  std::cout << "Size Factor = " << _sizeFactor << std::endl;
+  return std::unique_ptr<SizeFieldBase>(
+          SizeFieldBase::Create(_mesh,method,arrayID,_dev_mult,_maxIsmin, _sizeFactor));
+}
 // initializes derived class, only difference is tmp arrName 
 void SizeFieldBase::initialize(meshBase* _mesh, int arrayID, double _dev_mult, 
                                bool _maxIsmin, const std::string& arrName)

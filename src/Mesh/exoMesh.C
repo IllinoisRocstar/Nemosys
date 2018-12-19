@@ -1,3 +1,4 @@
+#include "AuxiliaryFunctions.H"
 #include "meshBase.H"
 #include "exodusII.h"
 #include "exoMesh.H"
@@ -5,6 +6,7 @@
 #include <set>
 #include <fstream>
 #include <algorithm>
+#include <math.h>
 
 using namespace EXOMesh;
 
@@ -228,10 +230,10 @@ void exoMesh::write()
 void exoMesh::exoPopulate(bool updElmLst) 
 {
     numNdes = 0;
-    numElms = 0;
     xCrds.clear();
     yCrds.clear();
     zCrds.clear();
+    numElms = 0;
     ndeSetNames.clear();
     elmBlockNames.clear();
     sideSetNames.clear();
@@ -248,18 +250,30 @@ void exoMesh::exoPopulate(bool updElmLst)
     for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
     {
         // sanity check
-        if (it1->usrNdeIds == true)
-            wrnErrMsg(-666, "User setting for node ids is not supported yet.");
+        //if (it1->usrNdeIds == true)
+        //    wrnErrMsg(-666, "User setting for node ids is not supported yet.");
         ndeSetNames.push_back(it1->name);
-        for (auto it2=(it1->crds).begin(); it2!=(it1->crds).end(); it2++)
+        // carry out this only if node coordinates are updated
+        // because of new node sets
+        if (!(it1->usrNdeIds))
         {
-            numNdes++;
-            (it1->ndeIds).push_back(numNdes);
-            xCrds.push_back((*it2)[0]);
-            yCrds.push_back((*it2)[1]);
-            zCrds.push_back((*it2)[2]);
+            for (auto it2=(it1->crds).begin(); it2!=(it1->crds).end(); it2++)
+            {
+                numNdes++;
+                (it1->ndeIds).push_back(numNdes);
+                xCrds.push_back((*it2)[0]);
+                yCrds.push_back((*it2)[1]);
+                zCrds.push_back((*it2)[2]);
+            }
         }
     }
+
+    // removing empty node sets
+    std::vector<ndeSetType> nnss;
+    for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
+        if (it1->nNde > 0)
+            nnss.push_back(*it1);
+    _ndeSet = nnss;
 
     // removing empty element blocks
     std::vector<elmBlockType> nebs;
@@ -306,11 +320,12 @@ void exoMesh::exoPopulate(bool updElmLst)
 void exoMesh::report() const
 {
     std::cout << " ----- Exodus II Database Report ----- \n";
-    std::cout << "#Nodes = " << numNdes << std::endl;
-    std::cout << "#Elements = " << numElms << std::endl;
-    std::cout << "#Node sets = " << getNumberOfNodeSet() << std::endl;
-    std::cout << "#Element blocks = " << getNumberOfElementBlock() << std::endl;
-    std::cout << "#Side sets = " << getNumberOfSideSets() << std::endl;
+    std::cout << "Database : " << _ifname << std::endl;
+    std::cout << "Nodes: " << numNdes << std::endl;
+    std::cout << "Elements: " << numElms << std::endl;
+    std::cout << "Node sets: " << getNumberOfNodeSet() << std::endl;
+    std::cout << "Element blocks: " << getNumberOfElementBlock() << std::endl;
+    std::cout << "Side sets: " << getNumberOfSideSets() << std::endl;
     std::cout << "  Nde      nNde               Name\n";
     std::cout << "  ---      ----              ------\n";
     for (auto ib=_ndeSet.begin(); ib!=_ndeSet.end(); ib++)
@@ -424,6 +439,48 @@ void exoMesh::addElmBlkByElmIdLst(std::string name, std::vector<int> lst)
     exoPopulate(false);
 }
 
+void exoMesh::addNdeSetByNdeIdLst(std::string name, std::vector<int> idLst)
+{
+    // preparing database
+    if (!_isPopulated);
+        exoPopulate(false);
+
+    _isPopulated=false;
+    // create and add new node set
+    ndeSetType nns;
+    nns.id = _ndeSet.size()+1; // 1-indexed
+    nns.nNde = idLst.size();
+    nns.name = name;
+    nns.usrNdeIds = true;
+    nns.ndeIds = idLst;
+    addNdeSet(nns);
+
+    // update exodus information
+    exoPopulate(false);
+}
+
+
+void exoMesh::snapNdeCrdsZero(double tol)
+{
+    int nPnt = 0;
+    // loop through node sets
+    for (auto it1=_ndeSet.begin(); it1!=_ndeSet.end(); it1++)
+    {
+        bool chk;
+        for (auto it2=(it1->crds).begin(); it2!=(it1->crds).end(); it2++)
+        {
+            chk = false;
+            for (int idx=0; idx<3; idx++)
+                if (fabs((*it2)[idx]) <= tol)
+                {
+                    (*it2)[idx]=0.0;
+                    chk = true;
+                }
+            if (chk) nPnt++;
+        }
+    }
+    std::cout << "Number of points snapped : " << nPnt << std::endl;
+}
 
 void exoMesh::removeElmBlkByName(std::string blkName)
 {
@@ -625,7 +682,7 @@ void exoMesh::read(std::string ifname)
   for (int i=0; i<numNdeSet; i++)
   {
       char blk_name[MAX_STR_LENGTH];
-      int blk_id = elem_blk_ids[i];
+      int blk_id = nde_set_ids[i];
       _exErr = ex_get_name(fid, EX_NODE_SET, blk_id, blk_name);
       wrnErrMsg(_exErr, "Problem reading nodeSet names.");
       //std::cout << " " << blk_name << std::endl;
@@ -636,7 +693,7 @@ void exoMesh::read(std::string ifname)
   for (int iNS=0; iNS<numNdeSet; iNS++)
   {
       ndeSetType ns;
-      ns.id = elem_blk_ids[iNS];
+      ns.id = nde_set_ids[iNS];
       ns.name = ndeSetNames[iNS];
       ns.usrNdeIds = true;
       _exErr = ex_get_node_set_param(fid, ns.id, &(ns.nNde), &idum);

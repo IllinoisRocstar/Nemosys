@@ -6,6 +6,35 @@
 #include <Refine.H>
 #include <MeshQuality.H>
 #include <Cubature.H>
+#include <meshPartitioner.H>
+#include <vtkCellData.h>
+#include <vtkPointData.h>
+#include <vtkDataArray.h>
+#include <vtkIdList.h>
+#include <vtkIdTypeArray.h>
+#include <vtkCellTypes.h>
+#include <vtkPoints.h>
+#include <vtkCell.h>
+#include <vtkAppendFilter.h>
+#include <vtkSelection.h>
+#include <vtkSelectionNode.h>
+#include <vtkExtractSelection.h>
+
+// netgen
+namespace nglib
+{
+  #include<nglib.h>
+}
+// simmetrix
+#ifdef HAVE_SYMMX
+  #include <symmxGen.H>
+#endif
+
+// stl
+#include <algorithm>
+
+// aux
+#include <AuxiliaryFunctions.H>
 
 #ifdef HAVE_EXODUSII
 #include "exodusII.h"
@@ -62,39 +91,221 @@ meshBase* meshBase::Create(std::string fname)
   
 }
 
+meshBase* meshBase::Create(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  return new vtkMesh(other, newname);
+}
+
+meshBase* meshBase::Create(const std::vector<double>& xCrds,
+                           const std::vector<double>& yCrds,
+                           const std::vector<double>& zCrds,
+                           const std::vector<int>& elmConn, const int cellType,
+                           std::string newname)
+{
+  return new vtkMesh(xCrds, yCrds, zCrds, elmConn, cellType, newname);
+}
+
+std::unique_ptr<meshBase>
+meshBase::CreateUnique(const std::vector<double>& xCrds,
+                       const std::vector<double>& yCrds,
+                       const std::vector<double>& zCrds,
+                       const std::vector<int>& elmConn, const int cellType,
+                       std::string newname)
+{
+  return std::unique_ptr<meshBase>
+          (meshBase::Create(xCrds,yCrds,zCrds,elmConn,cellType,newname));
+}
+
+std::unique_ptr<meshBase> 
+meshBase::CreateUnique(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  return std::unique_ptr<meshBase>(meshBase::Create(other,newname));
+}
+
+std::unique_ptr<meshBase>
+meshBase::CreateUnique(meshBase* mesh)
+{
+  return std::unique_ptr<meshBase>(mesh);
+}
+
+std::shared_ptr<meshBase>
+meshBase::CreateShared(meshBase* mesh)
+{
+  std::shared_ptr<meshBase> sharedMesh;
+  sharedMesh.reset(mesh);
+  return sharedMesh;
+} 
+
+std::shared_ptr<meshBase> 
+meshBase::CreateShared(vtkSmartPointer<vtkDataSet> other, std::string newname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(other,newname));
+  return mesh;
+}
+std::shared_ptr<meshBase> meshBase::CreateShared(std::string fname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(fname));
+  return mesh;
+}
+
+std::shared_ptr<meshBase> meshBase::CreateShared(const std::vector<double>& xCrds,
+                                                 const std::vector<double>& yCrds,
+                                                 const std::vector<double>& zCrds,
+                                                 const std::vector<int>& elmConn, 
+                                                 const int cellType,
+                                                 std::string newname)
+{
+  std::shared_ptr<meshBase> mesh;
+  mesh.reset(meshBase::Create(xCrds, yCrds, zCrds, elmConn, cellType, newname));
+  return mesh;
+}
+
+std::unique_ptr<meshBase> meshBase::CreateUnique(std::string fname)
+{
+  return std::unique_ptr<meshBase>(meshBase::Create(fname));
+}
+
 meshBase* meshBase::generateMesh(std::string fname, std::string meshEngine,
                                  meshingParams* params)
 {
 
   if (fname.find(".stl") == -1)
   {
-    std::cout << "Only CAD files in STL format are supported" << std::endl;
+    std::cerr << "Only CAD files in STL format are supported" << std::endl;
     exit(1);
   }
 
   meshGen* generator = meshGen::Create(fname, meshEngine, params);
-  int status = generator->createMeshFromSTL(&fname[0u]);
-  if (generator) 
-  { 
+  if (generator)
+  {
+    int status = generator->createMeshFromSTL(&fname[0u]);
+    meshBase* ret;
+    if(!status)
+    {
+      if (meshEngine == "netgen") 
+      {
+        std::string newname = trim_fname(fname,".vol");
+        ret = exportVolToVtk(newname);    
+      }
+      else if (meshEngine == "simmetrix")
+      {
+        std::string newname = trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname); 
+      }
+    }
     delete generator;
     generator=nullptr;
+    return ret;
   }
-  if(!status) 
+  else
   {
-    std::string newname = trim_fname(fname,".vol");
-    return exportVolToVtk(newname);    
+    std::cerr << "Could not create mesh generator" << std::endl;
+    exit(1);
   }
 }
 
-// check for named array in vtk 
-int meshBase::IsArrayName(std::string name)
+meshBase* meshBase::stitchMB(const std::vector<meshBase*>& mbObjs)
 {
-  vtkPointData* pd = dataSet->GetPointData();
-  if (pd->GetNumberOfArrays()) {
-    for (int i = 0; i < pd->GetNumberOfArrays(); ++i) {
-      std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
-      if (!name.compare(curr_name)) {
-        return i;
+  if (mbObjs.size())
+  {
+    vtkSmartPointer<vtkAppendFilter> appender
+      = vtkSmartPointer<vtkAppendFilter>::New();
+    appender->MergePointsOn();
+    for (int i = 0; i < mbObjs.size(); ++i)
+    {
+      appender->AddInputData(mbObjs[i]->getDataSet());
+    }
+    appender->Update();
+    return meshBase::Create(appender->GetOutput(), "stitched.vtu");
+  }
+  else
+  {
+    std::cerr << "Nothing to stitch!" << std::endl;
+    exit(1);
+  }
+}
+
+std::shared_ptr<meshBase> 
+meshBase::stitchMB(const std::vector<std::shared_ptr<meshBase>>& _mbObjs)
+{
+  std::vector<meshBase*> mbObjs(_mbObjs.size());
+  for (int i = 0; i < mbObjs.size(); ++i)
+  {
+    mbObjs[i] = _mbObjs[i].get();
+  }
+  return meshBase::CreateShared(meshBase::stitchMB(mbObjs));
+}
+
+meshBase* meshBase::extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds)
+{
+  vtkSmartPointer<vtkIdTypeArray> selectionIds 
+    = vtkSmartPointer<vtkIdTypeArray>::New();
+  selectionIds->SetNumberOfComponents(1);
+  for (int i = 0; i < cellIds.size(); ++i)
+  {
+    selectionIds->InsertNextValue(cellIds[i]);
+  }
+  return extractSelectedCells(mesh->getDataSet(), selectionIds);
+}
+
+meshBase* meshBase::extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
+                                         vtkSmartPointer<vtkIdTypeArray> cellIds)
+{
+  vtkSmartPointer<vtkSelectionNode> selectionNode
+    = vtkSmartPointer<vtkSelectionNode>::New(); 
+  selectionNode->SetFieldType(vtkSelectionNode::CELL);
+  selectionNode->SetContentType(vtkSelectionNode::INDICES);
+  selectionNode->SetSelectionList(cellIds);
+  // create the selection
+  vtkSmartPointer<vtkSelection> selection = vtkSmartPointer<vtkSelection>::New();
+  selection->AddNode(selectionNode);
+  // creating extractor
+  vtkSmartPointer<vtkExtractSelection> extractSelection
+    = vtkSmartPointer<vtkExtractSelection>::New();
+  // set stitch surf as input on first port
+  extractSelection->SetInputData(0, mesh);
+  // set selectionNode as input on second port
+  extractSelection->SetInputData(1, selection);
+  extractSelection->Update();
+  vtkSmartPointer<vtkDataSet> extractedCellMesh
+    = vtkDataSet::SafeDownCast(extractSelection->GetOutput());
+  meshBase* selectedCellMesh 
+    = meshBase::Create(extractedCellMesh, "extracted.vtu");
+  return selectedCellMesh;
+}
+
+// check for named array in vtk 
+int meshBase::IsArrayName(std::string name, const bool pointOrCell)
+{
+  if (!pointOrCell)
+  {
+    vtkPointData* pd = dataSet->GetPointData();
+    if (pd->GetNumberOfArrays()) 
+    {
+      for (int i = 0; i < pd->GetNumberOfArrays(); ++i) 
+      {
+        std::string curr_name = (pd->GetArrayName(i) ? pd->GetArrayName(i) : "NULL");
+        if (!name.compare(curr_name)) 
+        {
+          return i;
+        }
+      }
+    }
+  }
+  else 
+  {
+    vtkCellData* cd = dataSet->GetCellData();
+    if (cd->GetNumberOfArrays())
+    {
+      for (int i = 0; i < cd->GetNumberOfArrays(); ++i)
+      {
+        std::string curr_name = (cd->GetArrayName(i) ? cd->GetArrayName(i) : "Null");
+        if (!name.compare(curr_name))
+        {
+          return i;
+        }
       }
     }
   }
@@ -102,31 +313,40 @@ int meshBase::IsArrayName(std::string name)
 }
 
 
-// transfer point data with given ids from this mesh to target
+// transfer point data or cell data with given ids from this mesh to target
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<int>& arrayIDs)
+                       const std::vector<int>& arrayIDs, bool pointOrCell)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  return transobj->transferPointData(arrayIDs,newArrayNames);
+  // adding continuity flag, set by this object
+  transobj->setContBool(continuous);
+  if (!pointOrCell)
+  {
+    transobj->transferPointData(arrayIDs, newArrayNames);
+  }
+  else
+  {
+    transobj->transferCellData(arrayIDs, newArrayNames);
+  }
 }
 
 int meshBase::transfer(meshBase* target, std::string method, 
-                       const std::vector<std::string>& arrayNames)
+                       const std::vector<std::string>& arrayNames, bool pointOrCell)
 {
   std::vector<int> arrayIDs(arrayNames.size());
   for (int i = 0; i < arrayNames.size(); ++i)
   {
-    int id = IsArrayName(arrayNames[i]);
+    int id = IsArrayName(arrayNames[i], pointOrCell);
     if (id == -1)
     {
       std::cout << "Array " << arrayNames[i] 
-                << " not found in set of point data arrays" << std::endl;
+                << " not found in set of data arrays" << std::endl;
       exit(1);
     }
     arrayIDs[i] = id;
   }
-  return transfer(target, method,arrayIDs);
+  return transfer(target, method,arrayIDs, pointOrCell);
 }
 
 // transfer all data from this mesh to target
@@ -134,7 +354,100 @@ int meshBase::transfer(meshBase* target, std::string method)
 {
   std::unique_ptr<TransferBase> transobj = TransferBase::CreateUnique(method,this,target);
   transobj->setCheckQual(checkQuality);
-  return transobj->run(newArrayNames); 
+  transobj->setContBool(continuous);
+  return transobj->run(newArrayNames);
+}
+
+// partition mesh into numPartition pieces (static fcn)
+std::vector<std::shared_ptr<meshBase>> 
+meshBase::partition(const meshBase* mbObj, const int numPartitions)
+{
+  // construct partitioner with meshBase object
+  meshPartitioner* mPart = new meshPartitioner(mbObj);
+  if (mPart->partition(numPartitions))
+  {
+    exit(1); 
+  }
+  // initialize vector of meshBase partitions
+  std::vector<std::shared_ptr<meshBase>> mbParts(numPartitions); 
+  for (int i = 0; i < numPartitions; ++i)
+  {
+    // define coordinates
+    std::vector<std::vector<double>> comp_crds(mbObj->getVertCrds()); 
+    // get partition connectivity and zero index it
+    std::vector<int> vtkConn(mPart->getConns(i));
+    for (auto it = vtkConn.begin(); it != vtkConn.end(); ++it)
+    {
+      *it -= 1;
+    }
+    std::string basename(trim_fname(mbObj->getFileName(), ""));
+    basename += std::to_string(i);
+    basename += ".vtu";
+    // construct meshBase partition from coordinates and connectivities from partitioner
+    mbParts[i] = meshBase::CreateShared(mPart->getCrds(i, comp_crds[0]),
+                                        mPart->getCrds(i, comp_crds[1]),
+                                        mPart->getCrds(i, comp_crds[2]),
+                                        vtkConn, VTK_TETRA, basename);
+    // add partition id to node and cell data of mbPart
+    vtkSmartPointer<vtkIntArray> nodePartitionIds = vtkSmartPointer<vtkIntArray>::New();
+    nodePartitionIds->SetName("NodePartitionIds");
+    nodePartitionIds->SetNumberOfComponents(1);
+    nodePartitionIds->SetNumberOfTuples(mbParts[i]->getNumberOfPoints());
+    nodePartitionIds->FillComponent(0, i);
+    mbParts[i]->getDataSet()->GetPointData()->AddArray(nodePartitionIds);
+
+    vtkSmartPointer<vtkIntArray> cellPartitionIds = vtkSmartPointer<vtkIntArray>::New();
+    cellPartitionIds->SetName("CellPartitionIds");
+    cellPartitionIds->SetNumberOfComponents(1);
+    cellPartitionIds->SetNumberOfTuples(mbParts[i]->getNumberOfCells());
+    cellPartitionIds->FillComponent(0, i);
+    mbParts[i]->getDataSet()->GetCellData()->AddArray(cellPartitionIds);
+
+    // add global node index array to partition
+    std::map<int,int> partToGlobNodeMap(mPart->getPartToGlobNodeMap(i)); 
+    vtkSmartPointer<vtkIdTypeArray> globalNodeIds = vtkSmartPointer<vtkIdTypeArray>::New();
+    globalNodeIds->SetName("GlobalNodeIds");
+    globalNodeIds->SetNumberOfComponents(1);
+    globalNodeIds->SetNumberOfTuples(mbParts[i]->getNumberOfPoints());
+    globalNodeIds->SetNumberOfValues(mbParts[i]->getNumberOfPoints());
+    auto it = partToGlobNodeMap.begin();
+    int idx = 0;
+    while (it != partToGlobNodeMap.end())
+    {
+      int globidx = it->second-1;
+      int locidx = it->first-1;
+      globalNodeIds->SetTuple1(idx,globidx);
+      mbParts[i]->globToPartNodeMap[globidx] = locidx; 
+      mbParts[i]->partToGlobNodeMap[locidx] = globidx;
+      ++idx; 
+      ++it;
+    }
+    mbParts[i]->getDataSet()->GetPointData()->AddArray(globalNodeIds);
+    // add global cell index array to partition
+    std::map<int,int> partToGlobCellMap(mPart->getPartToGlobElmMap(i));
+    //vtkSmartPointer<vtkIdTypeArray> globalCellIds = vtkSmartPointer<vtkIdTypeArray>::New();
+    //globalCellIds->SetName("GlobalCellIds");
+    //globalCellIds->SetNumberOfComponents(1);
+    //globalCellIds->SetNumberOfTuples(mbPart->getNumberOfCells());
+    //globalCellIds->SetNumberOfValues(mbPart->getNumberOfCells());
+    it = partToGlobCellMap.begin();
+    idx = 0;
+    while (it != partToGlobCellMap.end())
+    {
+      int globidx = it->second-1;
+      int locidx = it->first-1;
+  //    globalCellIds->SetTuple1(idx,globidx);
+      mbParts[i]->globToPartCellMap[globidx] = locidx;
+      mbParts[i]->partToGlobCellMap[locidx] = globidx;
+      ++idx;
+      ++it;
+    }
+    //mbPart->getDataSet()->GetCellData()->AddArray(globalCellIds);  
+    mbParts[i]->write();
+    //mbParts[i] = mbPart;
+  }
+  delete mPart; mPart = nullptr;
+  return mbParts;
 }
 
 std::vector<std::vector<double>> 
@@ -147,7 +460,8 @@ meshBase::integrateOverMesh(const std::vector<int>& arrayIDs)
 void meshBase::generateSizeField(std::string method, int arrayID, double dev_mult, bool maxIsmin, double sizeFactor)
 {
   std::cout << "Size Factor = " << sizeFactor << std::endl;
-  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
+  std::unique_ptr<SizeFieldBase> sfobj 
+    = SizeFieldBase::CreateUnique(this,method,arrayID,dev_mult,maxIsmin,sizeFactor);
   sfobj->setSizeFactor(sizeFactor);
   sfobj->computeSizeField(arrayID);
 }
@@ -180,6 +494,7 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
   // map to hold true index of points (gmsh allows non-contiguous ordering)
   std::map<int,int> trueIndex;
+
   while (getline(meshStream, line))
   {
     if (line.find("$PhysicalNames") != -1)
@@ -230,14 +545,15 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
       dataSet_tmp->SetPoints(points);
 
     }
- 
 
     if (line.find("$Elements") != -1)
     {
       getline(meshStream,line);
+      //std::cout << "line = " << line << std::endl;
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
+      double tmp2[1];
       // allocate space for cell connectivities
       dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i)
@@ -509,6 +825,10 @@ meshBase* meshBase::exportGmshToVtk(std::string fname)
   return vtkmesh;
 
 }
+
+
+
+
 
 meshBase* meshBase::exportVolToVtk(std::string fname)
 {
@@ -1129,6 +1449,166 @@ void meshBase::writeMSH(std::ofstream& outputStream, std::string pointOrCell, in
   }
 }
 
+void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap)
+{
+  std::ofstream outputStream(mapFile);
+  if (!outputStream.good())
+  {
+    std::cout << "Error opening file " << mapFile << std::endl;
+    exit(1);
+  }
+  writePatchMap(outputStream, patchMap);
+}
+
+void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap)
+{
+  outputStream << patchMap.size() << std::endl;
+  outputStream << patchMap.size() << std::endl;
+  auto it = patchMap.begin();
+  int normPatchNo = 1;
+  while (it != patchMap.end())
+  {
+    for (int i = 0; i < 2; ++i)
+    {
+      outputStream << std::setw(2) << std::left << it->first << " ";
+    }
+    outputStream << std::setw(2) << std::left << normPatchNo << " ";
+    outputStream << std::endl;
+    ++it;
+    normPatchNo++;
+  }
+}
+
+void meshBase::writeCobalt(meshBase* surfWithPatches,
+                           const std::string& mapFile, std::ofstream& outputStream)
+{
+  if (!surfWithPatches) 
+  {
+    std::cout << "surface mesh is empty!" << std::endl;
+    exit(1);
+  }
+  if (surfWithPatches->IsArrayName("patchNo", 1) == -1)
+  {
+    std::cout << "surface mesh must have patchNo cell array" << std::endl;
+    exit(1);
+  } 
+  vtkSmartPointer<vtkIdList> facePtIds;
+  vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
+  vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
+  vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
+  std::map<std::vector<int>, std::pair<int,int>, sortIntVec_compare> faceMap;
+  // building cell locator for looking up patch number in remeshed surface mesh
+  vtkSmartPointer<vtkCellLocator> surfCellLocator = surfWithPatches->buildLocator(); 
+  // maximum number of vertices per face (to be found in proceeding loop)
+  int nVerticesPerFaceMax = 0;
+  // maximum number of faces per cell (to be found in proceeding loop)
+  int nFacesPerCellMax = 0; 
+
+  for (int i = 0; i < this->getNumberOfCells(); ++i)
+  {
+    // get cell i 
+    dataSet->GetCell(i, genCell1);
+    // get faces, find cells sharing it. if no cell shares it, 
+    // use the locator of the surfWithPatches to find the patch number
+    int numFaces = genCell1->GetNumberOfFaces();
+    nFacesPerCellMax = (nFacesPerCellMax < numFaces ? numFaces : nFacesPerCellMax);
+    for (int j = 0; j < numFaces; ++j)
+    {
+      vtkCell* face = genCell1->GetFace(j);
+      bool shared = 0;
+      int numVerts = face->GetNumberOfPoints();
+      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
+      facePtIds = face->GetPointIds(); 
+      dataSet->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
+      std::vector<int> facePntIds(numVerts);
+      for (int k = 0; k < numVerts; ++k)
+      {
+        facePntIds[k] = face->GetPointId(k)+1;
+      }
+      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
+      if (sharedCellPtIds->GetNumberOfIds())
+      {
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
+                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1))); 
+      }
+      else
+      {
+        double p1[3], p2[3], p3[3];
+        face->GetPoints()->GetPoint(0,p1);
+        face->GetPoints()->GetPoint(1,p2);
+        face->GetPoints()->GetPoint(2,p3);
+        double faceCenter[3];
+        for (int k = 0; k < numVerts; ++k)
+        {
+          faceCenter[k] = (p1[k] + p2[k] + p3[k])/3.0;
+        } 
+        vtkIdType closestCellId;
+        int subId;
+        double minDist2;
+        double closestPoint[3];
+        // find closest point and closest cell to faceCenter
+        surfCellLocator->FindClosestPoint(
+          faceCenter, closestPoint, genCell2,closestCellId,subId,minDist2);
+        double patchNo[1];
+        surfWithPatches->getDataSet()->GetCellData()->GetArray("patchNo")
+                                                  ->GetTuple(closestCellId, patchNo);
+        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>      
+                  (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
+      }
+    }
+  }
+  
+  std::map<int,int> patchMap;
+  for (int i = 0; i < surfWithPatches->getNumberOfCells(); ++i)
+  {
+    double patchNo[1];
+    surfWithPatches->getDataSet()->GetCellData()->GetArray("patchNo")
+                                              ->GetTuple(i, patchNo);
+    patchMap.insert(std::pair<int,int>(patchNo[0],i));
+  }
+
+  // write patch mapping file
+  writePatchMap(mapFile, patchMap);
+  // write cobalt file
+  outputStream << 3 << "   " << 1 << "  " << patchMap.size() << std::endl;
+  outputStream << this->getNumberOfPoints() << " " << faceMap.size()
+               << " " << this->getNumberOfCells() << " "
+               << nVerticesPerFaceMax << " " << nFacesPerCellMax << std::endl;
+  for (int i = 0; i < this->getNumberOfPoints(); ++i)
+  {
+    std::vector<double> pnt(this->getPoint(i));
+    outputStream << std::setw(21) << std::fixed << std::setprecision(15)
+                 << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
+  }
+  
+  auto it = faceMap.begin();
+  while (it != faceMap.end())
+  {
+    outputStream << it->first.size() << " ";
+    auto faceIdIter = it->first.begin();
+    while (faceIdIter != it->first.end())
+    {
+      outputStream << *faceIdIter << " ";
+      ++faceIdIter;
+    }
+    outputStream << it->second.first << " " << it->second.second << std::endl;
+    ++it;
+  }
+
+}
+
+void meshBase::writeCobalt(meshBase* surfWithPatches, 
+                           const std::string& mapFile, const std::string& ofname)
+{
+  std::ofstream outputStream(ofname);
+  if(!outputStream.good()) 
+  {
+    std::cout << "Cannot open file " << ofname << std::endl;
+    exit(1);
+  }
+  writeCobalt(surfWithPatches, mapFile,outputStream); 
+}
+
 void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                         bool onlyVol)
 {
@@ -1147,8 +1627,6 @@ void meshBase::writeMSH(std::string fname, std::string pointOrCell, int arrayID)
   std::ofstream outputStream(fname.c_str());
   writeMSH(outputStream, pointOrCell, arrayID);
 }
-
-
 
 void meshBase::refineMesh(std::string method, int arrayID, 
                           double dev_mult, bool maxIsmin, 
@@ -1178,7 +1656,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName,
   if (arrayID == -1)
   {
     std::cout << "Array " << arrayName
-              << " not fuond in set of point data arrays" << std::endl;
+              << " not found in set of point data arrays" << std::endl;
     exit(1);
   }
   refineMesh(method, arrayID, dev_mult, maxIsmin, edge_scale, ofname, transferData, sizeFactor);
@@ -1191,7 +1669,7 @@ void meshBase::refineMesh(std::string method, std::string arrayName, int order,
   if (arrayID == -1)
   {
     std::cout << "Array " << arrayName
-              << " not fuond in set of point data arrays" << std::endl;
+              << " not found in set of point data arrays" << std::endl;
     exit(1);
   }
 
@@ -1309,16 +1787,10 @@ int diffMesh(meshBase* mesh1, meshBase* mesh2)
   return 0;
 }
 
-
-/*meshBase* meshBase::exportStlToVtk(std::string fname)
+bool sortIntVec_compare::operator() (std::vector<int> lhs, 
+                                     std::vector<int> rhs) const
 {
-  netgenInterface* tmp = new netgenInterface();
-  tmp->createMeshFromSTL(&fname[0u]);
-  char* name = &(trim_fname(fname,".vtk"))[0u];
-  tmp->exportToVTK(name);
-  delete tmp;
-  vtkMesh* vtkmesh = new vtkMesh(name);
-  return vtkmesh;
-}*/
-
-
+  std::sort(lhs.begin(), lhs.end());
+  std::sort(rhs.begin(), rhs.end());
+  return lhs < rhs;
+}

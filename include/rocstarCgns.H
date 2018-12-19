@@ -11,10 +11,13 @@
 class rocstarCgns: public cgnsAnalyzer {
 public:
   rocstarCgns(std::string fname);
- ~rocstarCgns();
+  rocstarCgns(const std::vector<std::string>& fnames);
+  ~rocstarCgns();
 
-  // loading
+  // loading/unloading
+  void loadCgSeries();
   void loadCgSeries(int nCg);
+  virtual void closeCG();
 
   // cgObjects access
   int getNCgObj();
@@ -34,7 +37,7 @@ public:
   int getNZone(int indx);
   std::string getZoneName(cgnsAnalyzer* cgObj, int zoneIdx);
   std::string getZoneName(int cgIdx, int zoneIdx);
-  ZoneType_t getZoneType(int indx, int zidx);
+  CG_ZoneType_t getZoneType(int indx, int zidx);
   std::string getSectionName(int cgIdx, int zoneIdx);
   int getElementType(int cgIdx, int zoneIdx);
   int getZoneNVrtx(cgnsAnalyzer* cgObj, int zoneIdx);
@@ -49,15 +52,17 @@ public:
   int getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx);
 
   // data processing
-  void dummy();
+  void stitchGroup();
   void stitchMe(cgnsAnalyzer* cgObj, int zoneIdx);
   void stitchFldBc(cgnsAnalyzer* cgObj, int zoneIdx); 
   void stitchMe(rocstarCgns* cgObj);
+  void setBurnBool(bool b) { _burn = b; };
 
   // management data
 private:
   std::string myCgFName;
   std::string baseCgFName;
+  bool _burn;
   std::vector<std::string> cgFNames;
   int padSize;
   std::vector<cgnsAnalyzer*> myCgObjs;

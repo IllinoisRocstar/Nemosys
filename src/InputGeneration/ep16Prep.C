@@ -114,6 +114,16 @@ void ep16Prep::process()
         _mat[toLower(km.key())] = km.value().as<int>();
     }
 
+    // boundary conditions information
+    json _bcsj = _jstrm["Boundary Condition"];
+    for (const auto& km: _bcsj.object_range())
+    {
+        _bcs[toLower(km.key())] = km.value().as<std::string>();
+        // translate to EPIC language
+        if (!toLower(_bcs[toLower(km.key())]).compare("fixed"))
+            _bcs[toLower(km.key())] = "111";
+    }
+
     // begin processing based on order specified
     std::vector<std::string> ord = getOrder();
     for (auto oi=ord.begin(); oi!=ord.end(); oi++)
@@ -297,7 +307,14 @@ void ep16Prep::wrtMsh(std::string _tsk, std::string __tsk)
             if (!pre.compare(preStr))
             {
                 int _nset = _mdb->getNdeSetId(ns);
-                _tstr << std::setw(5) << _nset << "     000";
+                std::string nsName = toLower(_mdb->getNdeSetName(ns));
+                std::string nsChar;
+                auto srch =_bcs.find(nsName);
+                if (srch != _bcs.end())
+                    nsChar = srch->second;
+                else
+                    nsChar = "000";
+                _tstr << std::setw(5) << _nset << std::setw(8) << nsChar;
                 _write(_tstr);    
             }
         }

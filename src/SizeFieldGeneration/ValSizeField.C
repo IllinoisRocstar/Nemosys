@@ -1,4 +1,8 @@
 #include <ValSizeField.H>
+#include <vtkCell.h>
+#include <vtkIdList.h>
+#include <vtkPointData.h>
+#include <AuxiliaryFunctions.H>
 
 // constructor
 ValSizeField::ValSizeField(meshBase* _mesh, int arrayID, double _dev_mult, bool _maxIsmin)

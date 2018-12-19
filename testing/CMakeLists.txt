@@ -25,6 +25,7 @@ SET(PATCHRECOVERY_TESTDIR ${TEST_DATA}/PatchRecoveryTest)
 SET(TRANSFER_TESTDIR ${TEST_DATA}/TransferTest)
 SET(MESHGEN_TESTDIR ${TEST_DATA}/MeshGenTest)
 SET(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
+SET(EP16_TESTDIR ${TEST_DATA}/Ep16Test)
 SET(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
 SET(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 SET(meshgendefault ${MESHGEN_TESTDIR}/default.json)
@@ -38,13 +39,16 @@ SET(pntgenbench5_in ${PNTGEN_TESTDIR}/bench5_in.json)
 SET(pntgenbench5 ${PNTGEN_TESTDIR}/bench5.json)
 SET(pntgenbench6_in ${PNTGEN_TESTDIR}/bench6_in.json)
 SET(pntgenbench6 ${PNTGEN_TESTDIR}/bench6.json)
+SET(ep16test1_in ${EP16_TESTDIR}/gmsh2exo_in.json)
+SET(ep16test1 ${EP16_TESTDIR}/gmsh2exo.json)
+SET(ep16test2 ${EP16_TESTDIR}/ep16.json)
 CONFIGURE_FILE( ${meshgendefault_in} ${meshgendefault} @ONLY )
 CONFIGURE_FILE( ${meshgenunif_in} ${meshgenunif} @ONLY )
 CONFIGURE_FILE( ${meshgengeom_in} ${meshgengeom} @ONLY )
 CONFIGURE_FILE( ${pntgenbench1_in} ${pntgenbench1} @ONLY )
 CONFIGURE_FILE( ${pntgenbench5_in} ${pntgenbench5} @ONLY )
 CONFIGURE_FILE( ${pntgenbench6_in} ${pntgenbench6} @ONLY )
-
+CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
 
 ADD_TEST(NAME cubatureInterpTest COMMAND runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp ${CUBATURE_TESTDIR}/integrationREF.vtu ${CUBATURE_TESTDIR}/single-hex.vtu)
 
@@ -56,13 +60,16 @@ ADD_TEST(NAME patchRecoveryTest COMMAND runPatchRecoveryTest ${PATCHRECOVERY_TES
 ADD_TEST(NAME transferTest COMMAND runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu ${TRANSFER_TESTDIR}/cellSource.vtu ${TRANSFER_TESTDIR}/target.vtu ${TRANSFER_TESTDIR}/pntRef.vtu ${TRANSFER_TESTDIR}/cellRef.vtu)
 ADD_TEST(NAME meshGenTest COMMAND runMeshGenTest ${MESHGEN_TESTDIR}/default.json ${MESHGEN_TESTDIR}/hingeRef.vtu ${MESHGEN_TESTDIR}/unif.json ${MESHGEN_TESTDIR}/hingeUnifRef.vtu ${MESHGEN_TESTDIR}/geom.json ${MESHGEN_TESTDIR}/hingeGeomRef.vtu)
 ADD_TEST(NAME autVerifTest COMMAND runAutoVerifTest ${AUTOVERIF_TESTDIR}/finer.vtu ${AUTOVERIF_TESTDIR}/fine.vtu ${AUTOVERIF_TESTDIR}/coarse.vtu ${AUTOVERIF_TESTDIR}/richardson.vtu)
-
-ADD_TEST(NAME PNTGenTest COMMAND runPNTGenTest
+ADD_TEST(NAME pntgentest COMMAND runPNTGenTest
     ${PNTGEN_TESTDIR}/bench1.json ${PNTGEN_TESTDIR}/bench1_conv_gold.pntmesh
     ${PNTGEN_TESTDIR}/bench5.json ${PNTGEN_TESTDIR}/bench5_conv_gold.pntmesh
     ${PNTGEN_TESTDIR}/bench6.json ${PNTGEN_TESTDIR}/bench6_conv_gold.pntmesh)
-#Python wrapper testing
 
+IF (ENABLE_EPIC)
+    ADD_TEST(NAME ep16test COMMAND runEp16Test ${ep16test1} ${EP16_TESTDIR}/bctest_ref.g ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat)
+ENDIF()
+
+#Python wrapper testing
 FIND_PACKAGE(PythonInterp 2.7 REQUIRED)
 IF (ENABLE_PYTHON_BINDINGS)
     if (NOT PYTHONINTERP_FOUND)
@@ -73,7 +80,7 @@ IF (ENABLE_PYTHON_BINDINGS)
                COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys27.py
                --topsrcdir ${CMAKE_CURRENT_SOURCE_DIR} )
            set_property(TEST testPyNemosys
-                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/")
+                        PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/:${CMAKE_INSTALL_PREFIX}/vtk/lib")
            set_property(TEST testPyNemosys
                         APPEND
                         PROPERTY ENVIRONMENT "PYTHONPATH=${CMAKE_INSTALL_PREFIX}/Nemosys/python/src:${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib/python2.7/site-packages")
