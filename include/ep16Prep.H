@@ -60,6 +60,7 @@ private:
     bool _shortForm;
     EXOMesh::exoMesh* _mdb;
     std::map<std::string,int> _mat;
+    std::map<std::string,std::string> _bcs;
 
 };
 

@@ -1,4 +1,5 @@
 #include <NemDriver.H>
+#include <AuxiliaryFunctions.H>
 
 int main(int argc, char* argv[])
 {
@@ -18,17 +19,27 @@ int main(int argc, char* argv[])
 
   json inputjson;
   inputStream >> inputjson;
-  for(const auto& prog : inputjson.array_range())
+  if (inputjson.is_array())
+      for(const auto& prog : inputjson.array_range())
+      {
+        NemDriver* nemdrvobj = NemDriver::readJSON(prog);
+        if (nemdrvobj) 
+        { 
+          delete nemdrvobj;
+          nemdrvobj = 0;
+        }
+      }
+  else
   {
-    NemDriver* nemdrvobj = NemDriver::readJSON(prog);
-    if (nemdrvobj) 
-    { 
-      delete nemdrvobj;
-      nemdrvobj = 0;
-    }
+      NemDriver* nemdrvobj = NemDriver::readJSON(inputjson);
+      if (nemdrvobj) 
+      { 
+        delete nemdrvobj;
+        nemdrvobj = 0;
+      }
   }
-  return 0;
 
+  return 0;
 }
 
       //TODO

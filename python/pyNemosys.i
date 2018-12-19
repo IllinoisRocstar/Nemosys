@@ -11,10 +11,12 @@
 #include "MeshGenDriver.H"
 #include "MeshQualityDriver.H"
 #include "ConversionDriver.H"
-#include "RichardsonExtrapolation.H"
 #include "OrderOfAccuracy.H"
 #include "jsoncons/json.hpp"
+#include "meshGen.H"
+#include "meshingParams.H"
 %}
+
 
 
 %template(vectorString) std::vector<std::string>;
@@ -22,6 +24,8 @@
 %template(intV) std::vector<int>;
 %template(doubleVV) std::vector<std::vector<double>>;
 %template(cellMap) std::map<int, std::vector<double>>;
+%template(meshBaseV) std::vector<meshBase*>;
+
 class meshBase
 {
 
@@ -29,15 +33,24 @@ class meshBase
   public:
 
     meshBase():numPoints(0),numCells(0),hasSizeField(0),checkQuality(0);
-    ~meshBase();
+    virtual ~meshBase();
 
     static meshBase* Create(std::string fname);
+    static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
     static std::shared_ptr<meshBase> CreateShared(std::string fname);
     //static std::unique_ptr<meshBase> CreateUnique(std::string fname);
+    static meshBase* generateMesh(std::string fname, std::string meshEngine,
+                                  meshingParams* params); 
+    static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
+    static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
+                                          vtkSmartPointer<vtkIdTypeArray> cellIds);
+    static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds);
     virtual std::vector<double> getPoint(int id);
+    virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);
     virtual std::vector<std::vector<double>> getCellVec(int id);
     vtkSmartPointer<vtkDataSet> getDataSet();
+    virtual vtkSmartPointer<vtkDataSet> extractSurface();
     virtual void inspectEdges(const std::string& ofname);
     virtual void setPointDataArray(const char* name,
                                      const std::vector<std::vector<double>>& data);
@@ -93,10 +106,13 @@ class meshBase
                     bool onlyVol);
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
                     bool onlyVol);
+    void writeCobalt(meshBase* surfWithPatch, 
+                     const std::string& mapFile, const std::string& ofname);
 
     void setFileName(std::string fname);
     std::string getFileName();
     void setCheckQuality(bool x);
+    void setContBool(bool x);
     void setNewArrayNames(const std::vector<std::string>& newnames);
     void unsetNewArrayNames();
 };
@@ -109,6 +125,7 @@ class vtkMesh : public meshBase
     vtkMesh();
     vtkMesh(const char* fname);
     vtkMesh(const char* fname1, const char* fname2);
+    vtkMesh(vtkSmartPointer<vtkDataSet> other, std::string fname);
     ~vtkMesh();
 
   // access
@@ -131,6 +148,10 @@ class vtkMesh : public meshBase
     void report();
     void write();
     void write(std::string fname); 
+
+  // processing
+  public:
+    vtkSmartPointer<vtkDataSet> extractSurface();
 
   // set and get point and cell data
   public:
@@ -432,25 +453,6 @@ class ConversionDriver : public NemDriver
     %}
 };
 
-class RichardsonExtrapolation
-{
-
-  public:
-    RichardsonExtrapolation(meshBase* _fineMesh, meshBase* coarseMesh,
-                            double _ref_factor, int _order, 
-                            const std::vector<int>& _arrayIDs)
-      : fineMesh(_fineMesh), ref_factor(_ref_factor), order(_order),
-        arrayIDs(_arrayIDs);
-
-    std::vector<std::vector<double>> computeDiscretizationError();
-    std::vector<double> computeObservedOrderOfAccuracy(meshBase* finerMesh);
-  private:
-    meshBase* fineMesh;
-    double ref_factor;
-    int order;
-    const std::vetor<int> arrayIDs;
-    std::vector<std::string> newArrNames; 
-};
 
 class OrderOfAccuracy
 {
@@ -487,3 +489,26 @@ class OrderOfAccuracy
     std::vector<std::vector<double>> GCI_21;
     std::vector<std::vector<double>> orderOfAccuracy; 
 };
+
+class meshingParams
+{
+  public:
+    meshingParams();
+    virtual ~meshingParams();    
+    
+};
+
+class meshGen 
+{
+  public:
+    meshGen();
+    virtual ~meshGen();
+    
+    // creates generator with default parameters
+    static meshGen* Create(std::string fname, std::string meshEngine);
+    // creates generater with specified parameters
+    static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
+    virtual int createMeshFromSTL(const char* fname) = 0;
+    vtkSmartPointer<vtkDataSet> getDataSet(); 
+};
+

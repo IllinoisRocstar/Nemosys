@@ -43,10 +43,6 @@ void vtkAnalyzer::read()
       imageDataSetReader->GetOutput()->Register(imageDataSetReader);
       dataSet = vtkDataSet::SafeDownCast(imageDataSetReader->GetOutput());
     }
-    else if (extension == ".vto")
-    {
-      //dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (xmlFileName);
-    }
     // NOTE: There seems to be an issue with reading array data in .vtk format
     else if (extension == ".vtk")
     {
@@ -88,10 +84,6 @@ void vtkAnalyzer::write(char* outXMLFileName)
     else if (extension == ".vti")
     {
       //dataSet = ReadAnXMLFile<vtkXMLImageDataReader> (xmlFileName);
-    }
-    else if (extension == ".vto")
-    {
-      //dataSet = ReadAnXMLFile<vtkXMLHyperOctreeReader> (xmlFileName);
     }
     else if (extension == ".vtk")
     {

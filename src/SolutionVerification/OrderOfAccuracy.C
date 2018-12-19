@@ -1,4 +1,7 @@
 #include <OrderOfAccuracy.H>
+#include <vtkPointData.h>
+#include <vtkDoubleArray.h>
+#include <AuxiliaryFunctions.H>
 
 OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
                 const std::vector<int>& _arrayIDs)
@@ -24,8 +27,8 @@ OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
   }
   f3->setNewArrayNames(f3ArrNames);
   f2->setNewArrayNames(f2ArrNames);
-  f3->transfer(f2, "Finite Element", arrayIDs);
-  f2->transfer(f1, "Finite Element", arrayIDs); 
+  f3->transfer(f2, "Consistent Interpolation", arrayIDs);
+  f2->transfer(f1, "Consistent Interpolation", arrayIDs); 
   diffF3F2 = computeDiff(f2,f3ArrNames);
   diffF2F1 = computeDiff(f1,f2ArrNames);
   r21 = pow(f1->getNumberOfPoints()/f2->getNumberOfPoints(),1./3.);
@@ -63,7 +66,7 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeDiffF3F1()
     f1->unsetCellDataArray(&arrname[0u]);  
   }
 
-  f3->transfer(f1, "Finite Element", arrayIDs);
+  f3->transfer(f1, "Consistent Interpolation", arrayIDs);
   return computeDiff(f1,f3ArrNames);
 }
 
@@ -180,7 +183,7 @@ void OrderOfAccuracy::computeMeshWithResolution(double gciStar, const std::strin
   f3->refineMesh("uniform", ave, ofname, 0);
   meshBase* refined = meshBase::Create(ofname);
   f3->unsetNewArrayNames();
-  f3->transfer(refined, "Finite Element", arrayIDs);
+  f3->transfer(refined, "Consistent Interpolation", arrayIDs);
   delete f3;
   f3 = refined;
   computeRichardsonExtrapolation();
@@ -262,7 +265,7 @@ void OrderOfAccuracy::computeRichardsonExtrapolation()
     finePD->AddArray(richardsonDatas[id]);
     finePD->GetArray(&(names[id])[0u],richExtrapIDs[id]);
   }
-  f1->transfer(f3, "Finite Element", richExtrapIDs);
+  f1->transfer(f3, "Consistent Interpolation", richExtrapIDs);
 }
 
 std::vector<std::vector<double>> 

@@ -80,9 +80,7 @@ TEST_F(CubatureTest, integrateOverAllCells)
     for (int j = 0; j < totalIntegralData[i].size(); ++j)
     {
       EXPECT_FLOAT_EQ(totalIntegralData[i][j],refTotalIntegralData[i][j]);
-      std::cout << totalIntegralData[i][j] << " ";
     }
-    std::cout << std::endl;
   }
   
   std::unique_ptr<meshBase> integralMesh = meshBase::CreateUnique(refInt);

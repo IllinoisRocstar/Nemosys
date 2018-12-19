@@ -1,5 +1,6 @@
 #include <Z2ErrorSizeField.H>
 #include <patchRecovery.H>
+#include <vtkCellData.h>
 
 Z2ErrorSizeField::Z2ErrorSizeField(meshBase* _mesh, int arrayID)
 {
