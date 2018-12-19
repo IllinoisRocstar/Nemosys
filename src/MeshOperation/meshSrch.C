@@ -119,14 +119,14 @@ void meshSrch::FindPntsOnTriSrf(std::vector<double>& crds, std::vector<int>& con
     polyData->SetPolys(polys);
 
     // Write the file
-    //tkSmartPointer<vtkXMLPolyDataWriter> writer =  
+    //vtkSmartPointer<vtkXMLPolyDataWriter> writer =  
     // vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    //riter->SetFileName("test.vtp");
-    //riter->SetInputData(polyData);
-    /// Optional - set the mode. The default is binary.
-    ///writer->SetDataModeToBinary();
-    //riter->SetDataModeToAscii();
-    //riter->Write();
+    //writer->SetFileName("test.vtp");
+    //writer->SetInputData(polyData);
+    //// Optional - set the mode. The default is binary.
+    ////writer->SetDataModeToBinary();
+    //writer->SetDataModeToAscii();
+    //writer->Write();
 
     // find nodes residing on the trisurf
     // create cell locator
@@ -145,7 +145,7 @@ void meshSrch::FindPntsOnTriSrf(std::vector<double>& crds, std::vector<int>& con
       std::vector<double> pnt = getPoint(iPt);
       cellLocator->FindClosestPoint(&pnt[0], closestPoint, cellId, subId, closestPointDist2);
       if (closestPointDist2 < tol)
-        ids.insert(iPt);
+        ids.insert(iPt+1);
     }
 }
 
@@ -191,7 +191,7 @@ void meshSrch::FindPntsOnEdge(std::vector<double>& crds, std::set<int>& ids, dou
       std::vector<double> pnt = getPoint(iPt);
       cellLocator->FindClosestPoint(&pnt[0], closestPoint, cellId, subId, closestPointDist2);
       if (closestPointDist2 < tol)
-        ids.insert(iPt);
+        ids.insert(iPt+1);
     }
 
 }
