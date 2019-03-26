@@ -3,6 +3,9 @@
 #include "exodusII.h"
 #include "exoMesh.H"
 
+// third party
+#include <ANN.h>
+
 #include <set>
 #include <fstream>
 #include <algorithm>
@@ -129,7 +132,7 @@ int EXOMesh::elmNumSrf (elementType tag)
 
 exoMesh::exoMesh(std::string ifname) :
     _ifname(ifname), _isSupported(true), _isPopulated(false), 
-    _isOpen(true), _isVerbose(false)
+    _isOpen(true), _isVerbose(false), _avoidPopulation(false)
 {}
 
 exoMesh::~exoMesh() 
@@ -157,7 +160,10 @@ void exoMesh::write()
 {
     // preparing database
     // regadless we update it
+    std::cout << __FILE__ << __LINE__ << std::endl;
     exoPopulate(true);
+    std::cout << "nNodes = " << numNdes << std::endl;
+    std::cout << __FILE__ << __LINE__ << std::endl;
 
     // writing to file
     int comp_ws = 8;
@@ -229,6 +235,16 @@ void exoMesh::write()
 
 void exoMesh::exoPopulate(bool updElmLst) 
 {
+    // for node mergin operation we directly update
+    // internal database for node coordinates and element
+    // connectivities in blocks, so there is no need to 
+    // rebuild them from nodeSets and elementBlocks
+    if (_avoidPopulation)
+    {
+        std::cout << "Not populating " << numNdes <<"\n";
+        return;
+    }
+
     numNdes = 0;
     xCrds.clear();
     yCrds.clear();
@@ -391,6 +407,7 @@ void exoMesh::removeByElmIdLst(int blkIdx, std::vector<int>& idLst)
             neb.conn.push_back(oeb.conn[ni]);
 
     }
+    std::cout << "Removed " << oeb.elmIds.size() - neb.elmIds.size() << " elements from original\n"; 
     _elmBlock[blkIdx] = neb;
 }
 
@@ -555,9 +572,7 @@ std::vector<int> exoMesh::lstElmInBlck(int blkId, std::vector<int> elmIds, bool 
     // compare elmIds with list of the elements within block
     std::set<int> current;
     for (auto it=_elmBlock[blkId].elmIds.begin(); it!=_elmBlock[blkId].elmIds.end(); it++)
-    {
         current.insert(*it);
-    }
     std::pair<std::set<int>::iterator, bool> ret;
     for (auto it=elmIds.begin(); it!=elmIds.end(); it++)
     {
@@ -730,4 +745,182 @@ void exoMesh::read(std::string ifname)
   _isPopulated = true;    
 }
 
+void exoMesh::mergeNodes(double tol)
+{
+  // build all point kdtree
+  int nDim = 3;
+  ANNpointArray pntCrd;
+  pntCrd = annAllocPts(numNdes, nDim);
+  for (int iPnt=0; iPnt<numNdes; iPnt++)
+  {
+     pntCrd[iPnt][0] = xCrds[iPnt] ;
+     pntCrd[iPnt][1] = yCrds[iPnt];
+     pntCrd[iPnt][2] = zCrds[iPnt];
+  }
+  ANNkd_tree* kdTree = new ANNkd_tree(pntCrd, numNdes, nDim);
 
+  // finding duplicate node ids
+  // exomesh is one-indexed
+  std::map<int,int> dupNdeMap;
+  int nNib = 2;
+  ANNpoint     qryPnt;
+  ANNidxArray  nnIdx = new ANNidx[nNib];
+  ANNdistArray dists = new ANNdist[nNib];  
+  qryPnt = annAllocPt(nDim);
+  for (int iNde=0; iNde<numNdes; iNde++)
+  {
+    qryPnt[0] = xCrds[iNde];
+    qryPnt[1] = yCrds[iNde];
+    qryPnt[2] = zCrds[iNde];
+    kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
+    if (dists[1] <= tol)
+      dupNdeMap[nnIdx[0]+1] = nnIdx[1]+1;
+  }
+  std::cout << "Found " << dupNdeMap.size() << " duplicate nodes.\n";
+
+  // removing duplicated nodal coordinates and 
+  // creating map from old ids to new ones
+  std::vector<double> xn,yn,zn;
+  std::map<int,int> old2NewNde;
+  int newNdeIdx=0;
+  for (int iNde=0; iNde<numNdes; iNde++)
+  {
+      auto ite = dupNdeMap.find(iNde+1);
+      if (ite == dupNdeMap.end())
+      {
+          xn.push_back(xCrds[iNde]);
+          yn.push_back(yCrds[iNde]);
+          zn.push_back(zCrds[iNde]);
+      }
+  }
+  // mapping
+  delete kdTree;
+  for (int iPnt=0; iPnt<xn.size(); iPnt++)
+  {
+     pntCrd[iPnt][0] = xn[iPnt] ;
+     pntCrd[iPnt][1] = yn[iPnt];
+     pntCrd[iPnt][2] = zn[iPnt];
+  }
+  kdTree = new ANNkd_tree(pntCrd, xn.size(), nDim);
+  for (int iNde=0; iNde<numNdes; iNde++)
+  {
+    qryPnt[0] = xCrds[iNde];
+    qryPnt[1] = yCrds[iNde];
+    qryPnt[2] = zCrds[iNde];
+    kdTree->annkSearch(qryPnt, 1, nnIdx, dists);
+    if (dists[0] <= tol)
+      old2NewNde[iNde+1] = nnIdx[0]+1;
+    else
+    {
+      cerr << "Found a node in database which is not copied properly \n";
+      exit(1);
+    }
+
+  }
+
+  // sanity check and node coordinate re-assignement
+  int max,min;
+  max = 0;
+  min = 1e6;
+  for (auto im=old2NewNde.begin(); im!=old2NewNde.end(); im++)
+  {
+      max = std::max(max, im->second);
+      min = std::min(min, im->second);
+  }
+  std::cout << "Max/Min : " << max << "/" << min << std::endl;
+
+  xCrds.clear();
+  yCrds.clear();
+  zCrds.clear();
+  xCrds.assign(xn.begin(), xn.end()); 
+  yCrds.assign(yn.begin(), yn.end()); 
+  zCrds.assign(zn.begin(), zn.end());
+  cout << "Number of nodes changed from " << numNdes 
+       << " to " << xn.size() << "\n";
+  numNdes = xn.size();
+
+  // update nodesets node ids
+  // update nodeset node coordinates
+  std::set<int> idTally;
+  std::set<int> idTally2;
+  for (auto ins=_ndeSet.begin(); ins!=_ndeSet.end(); ins++)
+  {
+
+      std::set<int> idsToKeep;
+      int nsLocalNdeIds = 0;
+      for (auto itc=(ins->crds).begin(); itc!=(ins->crds).end(); itc++)
+      {
+          qryPnt[0] = (*itc)[0];
+          qryPnt[1] = (*itc)[1];
+          qryPnt[2] = (*itc)[2];
+          kdTree->annkSearch(qryPnt, 1, nnIdx, dists);
+          auto ret = idTally.insert(nnIdx[0]);
+          if (ret.second == true)
+              idsToKeep.insert(nsLocalNdeIds++);
+      }
+      cout << "Original node set with " << ins->nNde
+          << " nodes after cleaning becomes " << idsToKeep.size() << "\n";
+      
+      std::vector<std::vector<double> > ncrds;
+      std::vector<double> crds;
+      crds.resize(3,-1);
+      for (auto k=idsToKeep.begin(); k!=idsToKeep.end(); k++)
+      {
+          crds[0] = ((ins->crds)[*k])[0];
+          crds[1] = ((ins->crds)[*k])[1];
+          crds[2] = ((ins->crds)[*k])[2];
+          ncrds.push_back(crds);
+      }
+      cout << "Size of node set coords " << ncrds.size() << "\n";
+
+      // updating node indices
+      std::set<int> newNSNdeIds;
+      for (auto itn=(ins->ndeIds).begin(); itn!=(ins->ndeIds).end(); itn++)
+      {
+          int nid = *itn;
+          int newId = old2NewNde[nid];
+          auto ret = idTally2.insert(newId);
+          if (ret.second == true)
+              newNSNdeIds.insert(newId);
+      }
+      (ins->ndeIds).clear();
+      (ins->ndeIds).insert((ins->ndeIds).end(), 
+              newNSNdeIds.begin(), newNSNdeIds.end());
+      cout << "NdeId size after " << (ins->ndeIds).size() << "\n";
+
+      // updating the nodeset datastructure
+      (ins->nNde) = idsToKeep.size();
+      (ins->crds) = ncrds;
+
+  }
+
+
+  // update element block connectivities
+  max = 0; min = 1e15;
+  for (auto ieb=_elmBlock.begin(); ieb!=_elmBlock.end(); ieb++)
+  {
+      for (auto itn=(ieb->conn).begin(); itn!=(ieb->conn).end(); itn++)
+      {
+          int nid = *itn;
+          *itn = old2NewNde[nid];
+          min = std::min(min, *itn);
+          max = std::max(max, *itn);
+      }
+  }
+  std::cout << "Min conn = " << min << std::endl;
+  std::cout << "Max conn = " << max << std::endl;
+
+  // sidesets does not need to be updated since 
+  // they contain only element ids
+
+  // TODO: avoid using this flag
+  // avoiding database rebuilding since it is already upto
+  // date
+  _avoidPopulation = true;
+
+  // deleting KDTree
+  if (kdTree)
+      delete kdTree;
+  delete nnIdx;
+  delete dists;
+}

@@ -41,6 +41,10 @@ public:
     virtual void process() = 0;
     // wrting into the file, implementation can be different
     virtual void write(std::string key=std::string());
+    // reading input file, implementation can be different
+    virtual void read(std::string fname) = 0;
+    // closing input file opened by read, implementation can be different
+    virtual void close(std::string fname) = 0;
 
     // commonly used feature specifications
 public:
@@ -66,6 +70,7 @@ public:
     virtual void wrtNdeSet() = 0;
     virtual void wrtElmSet() = 0;
     virtual void wrtMisc(std::string _tsk, std::string __tsk) = 0;
+    virtual void edit(std::string _tsk, std::string __tsk) = 0;
 
     // raw methods
 protected:
@@ -85,6 +90,7 @@ protected:
     std::map<std::string, std::string > _fn;
     std::map<std::string, inpFileType > _tpe;
     std::map<std::string, std::string > _cmnt;
+
 };
 
 #endif

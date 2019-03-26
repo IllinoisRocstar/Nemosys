@@ -4,6 +4,7 @@
 #include "inputGen.H"
 #include "ep16Prep.H"
 #include "exoMesh.H"
+#include <iomanip>
 
 ep16Prep::~ep16Prep()
 {
@@ -55,28 +56,44 @@ void ep16Prep::readJSON()
 {
 
     std::cout << "Reading Epic 2016 Input Generation JSON.\n";
-    std::string fname;
-    std::string type = "short_form";
 
     // reading mandatory fields
-    fname = _jstrm["File Name"].as<std::string>();
+    std::string type;
+    _fname = _jstrm["File Name"].as<std::string>();
     if (_jstrm.has_key("Type"))
     {
         type = _jstrm["Type"].as<std::string>();
         type = toLower(type);
     }
-   
-    // sanity checking
-    if (type.compare("short_form"))
+
+    if (type.compare("short form") && 
+            type.compare("long form") && 
+            type.compare("long form edit"))
     {
-        std::cerr << "Error: Only short form is supported.\n";
-        exit(-1);
+        std::cerr << "Unknown type " << type 
+            << ", switching to short form.\n";
+        type = "short form";
     }
 
+    if (!type.compare("long form"))
+    {
+        std::cerr << "Long form is not supported yet.\n";
+        exit(1);
+    }
+    else if (!type.compare("short form"))
+    {
+        _shortForm = true;    
+    }
+   
     // order definition
-    _set_key(fname); 
-    setNameType(fname, INPGEN_TXT);
-    std::vector<std::string> order = {
+    _set_key(_fname); 
+    setNameType(_fname, INPGEN_TXT);
+    std::vector<std::string> order;
+
+    // ordering the process based on type
+    if (!type.compare("short form"))
+    {
+        order = {
         "prep.case", 
         "prep.run", 
         "prep.exodus", 
@@ -86,8 +103,21 @@ void ep16Prep::readJSON()
         "mesh.elementset.projectile",
         "mesh.elementset.target",
         "misc.velocity",
-        "misc.detonation"  
-    };
+        "misc.detonation"
+        };
+    } 
+    else if (!type.compare("long form edit"))
+    {
+        order = {
+        "edit.read",
+        "edit.slideline.seek",
+        "edit.detonation",
+        "edit.main",
+        "edit.close"
+        };
+    }
+
+    // set order
     setOrder(order);
 
     // other preps
@@ -98,30 +128,33 @@ void ep16Prep::readJSON()
 void ep16Prep::process()
 {
     // Top level information
-    wrtCmnt("EPIC 2016 INPUT FILE");
-    wrtCmnt("Generated on " + getTimeStr() + " by NEMoSys");
-    wrtCmnt("Short Form Description Card for ExodusII/CUBIT Data");
-
-    // reading mesh databse
-    std::string exo_fname = _jstrm["Mesh"]["File"].as<std::string>();
-    _mdb = new EXOMesh::exoMesh(exo_fname);
-    _mdb->read();
-
-    // material information
-    json _matj = _jstrm["Material"];
-    for (const auto& km: _matj.object_range())
+    if (_shortForm)
     {
-        _mat[toLower(km.key())] = km.value().as<int>();
-    }
+        wrtCmnt("EPIC 2016 INPUT FILE");
+        wrtCmnt("Generated on " + getTimeStr() + " by NEMoSys");
+        wrtCmnt("Short Form Description Card for ExodusII/CUBIT Data");
 
-    // boundary conditions information
-    json _bcsj = _jstrm["Boundary Condition"];
-    for (const auto& km: _bcsj.object_range())
-    {
-        _bcs[toLower(km.key())] = km.value().as<std::string>();
-        // translate to EPIC language
-        if (!toLower(_bcs[toLower(km.key())]).compare("fixed"))
-            _bcs[toLower(km.key())] = "111";
+        // reading mesh databse
+        std::string exo_fname = _jstrm["Mesh"]["File"].as<std::string>();
+        _mdb = new EXOMesh::exoMesh(exo_fname);
+        _mdb->read();
+
+        // material information
+        json _matj = _jstrm["Material"];
+        for (const auto& km: _matj.object_range())
+        {
+            _mat[toLower(km.key())] = km.value().as<int>();
+        }
+
+        // boundary conditions information
+        json _bcsj = _jstrm["Boundary Condition"];
+        for (const auto& km: _bcsj.object_range())
+        {
+            _bcs[toLower(km.key())] = km.value().as<std::string>();
+            // translate to EPIC language
+            if (!toLower(_bcs[toLower(km.key())]).compare("fixed"))
+                _bcs[toLower(km.key())] = "111";
+        }
     }
 
     // begin processing based on order specified
@@ -139,7 +172,8 @@ void ep16Prep::process()
             wrtMsh(_tsk,__tsk);
         else if (!tsk.compare("misc"))
             wrtMisc(_tsk,__tsk);
-
+        else if (!tsk.compare("edit"))
+            edit(_tsk,__tsk);
     }
 
 }
@@ -185,6 +219,7 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
         _rmde = _jstrm["Run"]["Mode"].as<int>();
         _unt = _jstrm["Run"]["Unit"].as<int>();
         _tmx = _jstrm["Run"]["Tmax"].as<double>();
+        _ssld = _jstrm["Run"].get_with_default("SSLD",1);
         _tcmnt << "Run Card\n";
         _tcmnt << getCmntStr() << " RUN UNIT  PAT DPLT      TMAX     CPMAX";
         _tstr.precision(4);
@@ -193,7 +228,8 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
               << std::setw(5) << _pat
               << std::setw(5) << _dplt
               << std::setw(10) << std::scientific << _tmx
-              << std::setw(10) << _cpmx;
+              << std::setw(10) << _cpmx
+              << std::setw(1) << _ssld;
     }
     else if (!_tsk.compare("exodus"))
     {
@@ -261,10 +297,10 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
         _tcmnt.str(std::string());        
         _tcmnt << "Array Size/Dimension Card\n";
         _tcmnt << getCmntStr() << "      MXN       MXL      MXMN      MXSN";
-        _tstr << std::setw(10) << _mxn*10
-              << std::setw(10) << _mxl*10
-              << std::setw(10) << _mxmn*10
-              << std::setw(10) << _mxsn*10;
+        _tstr << std::setw(10) << _mxn*50
+              << std::setw(10) << _mxl*50
+              << std::setw(10) << _mxmn*50
+              << std::setw(10) << _mxsn*50;
     }
     // write to stream
     if (!_tcmnt.str().empty())
@@ -435,4 +471,241 @@ void ep16Prep::wrtMisc(std::string _tsk, std::string __tsk)
     }
 
 }
+
+void ep16Prep::edit(std::string _tsk, std::string __tsk)
+{
+    if (!_tsk.compare("read"))
+        read(_fname);
+    else if (!_tsk.compare("slideline") && !__tsk.compare("seek"))
+    {
+        // slide line keyword check
+        if (!_jstrm.has_key("Slideline"))
+            return;
+        int seek = _jstrm["Slideline"].get_with_default("Seek",6);
+
+        std::stringstream iss;
+        std::stringstream oss;
+        iss << _buffer.rdbuf();
+        while (iss.rdbuf()->in_avail() != 0)
+        {
+            char cl[81];
+            iss.getline(cl,81);
+            std::string line(cl);
+            if (line.find("seek")!=std::string::npos)
+            {
+               // put back the line
+               oss << line << "\n";               
+               int dmy;
+               // copying nmg value
+               iss >> dmy;
+               oss << std::setw(5) << dmy;
+               // change seek value to "seek" 
+               iss >> dmy;
+               oss <<  std::setw(5) << seek;
+               char rem[70];
+               iss.read(rem,70);
+               oss << std::string(rem);
+            } 
+            else 
+            {
+                oss << line << "\n";            
+            }
+        }
+        // updating buffer
+        _buffer.str(std::string());
+        _buffer << oss.rdbuf();
+    }
+    else if (!_tsk.compare("detonation"))
+    {
+        // detonation information
+        if (!_jstrm.has_key("Detonation"))
+            return;
+
+        std::vector<double> _g;
+        _g.resize(3,0.0);
+        double tburn = 0.0;
+
+        if (_jstrm["Detonation"].has_key("Gravity"))
+        {
+            _g[0] = _jstrm["Detonation"]["Gravity"][0].as<double>();
+            _g[1] = _jstrm["Detonation"]["Gravity"][1].as<double>();
+            _g[2] = _jstrm["Detonation"]["Gravity"][2].as<double>();
+        }
+        
+        if (_jstrm["Detonation"].has_key("Tburn"))
+            tburn = _jstrm["Detonation"]["Tburn"].as<double>();
+
+        std::stringstream iss;
+        std::stringstream oss;
+        iss << _buffer.rdbuf();
+        while (iss.rdbuf()->in_avail() != 0)
+        {
+            char cl[81];
+            iss.getline(cl,81);
+            std::string line(cl);
+            if (line.find("rdet")!=std::string::npos)
+            {
+               // put back the line
+               oss << line << "\n";               
+               double dmy;
+               int dmyi;
+               // copying x/rdet value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << dmy;
+               // copying y/tdet value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << dmy;
+               // copying zdet value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << dmy;
+               // copying new tburn value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << tburn;
+               // copying shad value
+               iss >> dmyi;
+               oss << std::setw(5) << dmyi;
+               // copying npnt value
+               iss >> dmyi;
+               oss << std::setw(5) << dmyi;
+               // copying new xdd value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << _g[0];
+               // copying new ydd value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << _g[1];
+               // copying new zdd value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(3) << std::scientific << _g[2];
+            } 
+            else 
+            {
+                oss << line << "\n";            
+            }
+        }
+        // updating buffer
+        _buffer.str(std::string());
+        _buffer << oss.rdbuf();
+
+
+    }
+    else if (!_tsk.compare("main"))
+    {
+        // detonation information
+        if (!_jstrm.has_key("Main"))
+            return;
+
+        // set defaults to unused values
+        int dplt = _jstrm["Main"].get_with_default("DPLT",-666);
+        double dtdyn = _jstrm["Main"].get_with_default("DTDYN",-666.0);
+
+        std::stringstream iss;
+        std::stringstream oss;
+        iss << _buffer.rdbuf();
+        while (iss.rdbuf()->in_avail() != 0)
+        {
+            char cl[81];
+            iss.getline(cl,81);
+            std::string line(cl);
+            if (line.find("sys")!=std::string::npos)
+            {
+               char * buf = new char [5];
+               // put back the line
+               oss << line << "\n";               
+               double dmy;
+               int dmyi;
+
+               // copying sys value
+               iss >> dmyi;
+               oss << std::setw(5) << dmyi;
+
+               // copying nplt value
+               iss >> dmyi;
+               oss << std::setw(5) << dmyi;
+
+               // copying lplt value
+               iss >> dmyi;
+               oss << std::setw(5) << dmyi;
+
+               // copying dplt value
+               iss.read(buf,5);
+               dmyi = std::stoi(std::string(buf));
+               oss << std::setw(5) << (dplt == -666 ? dmyi:dplt);
+
+               // copying dtsys value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << dmy;
+
+               // copying tsys value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << dmy;
+
+               // copying dtnode value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << dmy;
+
+               // copying tnode value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << dmy;
+
+               // copying dtdyn value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << (dtdyn == -666 ? dmy:dtdyn);
+
+               // copying tdyn value
+               iss >> dmy;
+               oss << std::setw(10) << std::setprecision(4) << std::scientific 
+                   << dmy;
+
+               delete[] buf;
+            }
+            else 
+            {
+                oss << line << "\n";            
+            }
+        }
+        // updating buffer
+        _buffer.str(std::string());
+        _buffer << oss.rdbuf();
+    }
+    else if (!_tsk.compare("close"))
+    {
+        std::string ofname = _jstrm.get_with_default("Output File Name",_fname);
+        close(ofname);
+    }
+}
+
+
+void ep16Prep::read(std::string fname)
+{
+    std::ifstream _ifile;
+    _ifile.open (fname);
+    if (!_ifile.good())
+    {
+        std::cerr << "Error opening file "<< fname << std::endl;
+        throw;
+    }
+    _buffer.clear();
+    _buffer << _ifile.rdbuf();
+    //std::cout << "Buffer :\n" << _buffer.str() << std::endl;
+    _ifile.close();
+}
+
+void ep16Prep::close(std::string fname)
+{
+    std::ofstream _ofile;
+    _ofile.open (fname);
+    if (!_ofile.is_open())
+    {
+        std::cerr << "Problem opening the output file.\n";
+        exit(1);
+    }
+    _ofile << _buffer.rdbuf();
+    _ofile.close();
+}
+
 #endif

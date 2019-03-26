@@ -117,6 +117,8 @@ class exoMesh
       void addNdeSetByNdeIdLst(std::string name, std::vector<int> idLst); 
       // filter nodal coordinates and snap to zero
       void snapNdeCrdsZero(double tol=1e-5);
+      // merges duplicated and nodes within given proximity
+      void mergeNodes(double tol=1e-15);
     
      
     // I/O
@@ -136,6 +138,7 @@ class exoMesh
       bool _isPopulated;
       bool _isOpen;
       bool _isVerbose;
+      bool _avoidPopulation;
       int _exErr;
       ndeSet _ndeSet;
       elmBlock _elmBlock;
