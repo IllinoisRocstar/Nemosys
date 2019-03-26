@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <map>
+#include <unordered_map>
 
 // Nemosys
 #include <ConversionDriver.H>
@@ -299,31 +300,31 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     // performing post-processing tasks
     if (needsPP)
     {   
-        int nTsk = opts.get_with_default("Number of Tasks", 0);
-        json ppTsk = opts["Tasks"];
-        for (int iTsk=0; iTsk<nTsk; iTsk++)
+      int nTsk = opts.get_with_default("Number of Tasks", 0);
+      json ppTsk = opts["Tasks"];
+      for (int iTsk=0; iTsk<nTsk; iTsk++)
+      {
+        std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
+        std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
+        std::ifstream inputStream(ppFName);
+        if (!inputStream.good() || find_ext(ppFName) != ".json")
         {
-            std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
-            std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
-            std::ifstream inputStream(ppFName);
-            if (!inputStream.good() || find_ext(ppFName) != ".json")
-            {
-              std::cout << "Error opening file " << ppFName << std::endl;
-              exit(1);
-            }
-            if (find_ext(ppFName) != ".json")
-            {
-              std::cout << "Input File must be in .json format" << std::endl;
-              exit(1);
-            }
-            json ppJson;
-            inputStream >> ppJson;
-            procExo(ppJson, ofname, em);
+          std::cout << "Error opening file " << ppFName << std::endl;
+          exit(1);
         }
+        if (find_ext(ppFName) != ".json")
+        {
+          std::cout << "Input File must be in .json format" << std::endl;
+          exit(1);
+        }
+        json ppJson;
+        inputStream >> ppJson;
+        procExo(ppJson, ofname, em);
+      }
 
-        // writing augmented exo file
-        em->write();
-        em->report();
+      // writing augmented exo file
+      em->write();
+      em->report();
     }
     
     // clean up
@@ -799,42 +800,75 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
   {
       meshSrch* ms = meshSrch::Create(mb);
       // gathering information about all zones
-      std::map<std::string, std::set<int> > zoneGeom;
+      // if densities are defined materials with higher
+      // density will be prioratized 
+      bool appDen = ppJson.get_with_default("Apply Density", false);
+      std::unordered_map<std::string, std::set<int> > zoneGeom;
       json zones = ppJson["Zones"];
       int nZn = zones.size();
-      for (int iZn=0; iZn<nZn; iZn++)
+      // ordering zones based on density 
+      // default is 1.0
+      std::map<double,std::vector<int> > znOrd;
+      if (appDen)
       {
-          // assuming first element is zone infomration
-          // keyed by zone name that we do not care about
-          // yet
-          json znInfo = zones[iZn][0];
-          std::string matName = znInfo.get_with_default("Material Name","N/A");
-          std::string shape = znInfo.get_with_default("Shape","N/A");
-          std::cout <<"Processing zone "<<iZn<<" Material "<<matName<<" Shape "<<shape<<std::endl;
-
-          if (!shape.compare("Box"))
+          std::cout << "Applying material zones based on density ordering\n";
+          // order based of density
+          for (int iZn=0; iZn<nZn; iZn++)
           {
-              std::vector<double> bb;
-              bb.push_back( znInfo["Params"]["Min"][0].as<double>() ); 
-              bb.push_back( znInfo["Params"]["Max"][0].as<double>() ); 
-              bb.push_back( znInfo["Params"]["Min"][1].as<double>() ); 
-              bb.push_back( znInfo["Params"]["Max"][1].as<double>() ); 
-              bb.push_back( znInfo["Params"]["Min"][2].as<double>() ); 
-              bb.push_back( znInfo["Params"]["Max"][2].as<double>() ); 
-              
-              std::vector<int> lst;
-              ms->FindCellsWithinBounds(bb, lst, true);
-              zoneGeom[matName].insert(lst.begin(), lst.end());
-              
+              json znInfo = zones[iZn][0];
+              double density = znInfo.get_with_default("Density",1.0);
+              znOrd[density].push_back(iZn);
           }
-          else
-              std::cout << "WARNNING: Skipiing unkown zone shape: " << shape << std::endl;     
+      } 
+      else 
+      {
+          // order based on apperance in the file
+          for (int iZn=0; iZn<nZn; iZn++)
+              znOrd[1.0].push_back(iZn);
+      }
+
+      for (auto im=znOrd.begin(); im!=znOrd.end(); im++)
+      {
+          for (auto iz=(im->second).begin(); iz!=(im->second).end(); iz++)
+          {
+              int iZn = *iz;
+              // assuming first element is zone infomration
+              // keyed by zone name that we do not care about
+              // yet
+              json znInfo = zones[iZn][0];
+              std::string matName = znInfo.get_with_default("Material Name","N/A");
+              std::string shape = znInfo.get_with_default("Shape","N/A");
+              std::cout <<"Processing zone "<<iZn
+                  <<" Material "<<matName
+                  <<" Shape "<<shape<<std::endl;
+
+              if (!shape.compare("Box"))
+              {
+                  std::vector<double> bb;
+                  bb.push_back( znInfo["Params"]["Min"][0].as<double>() ); 
+                  bb.push_back( znInfo["Params"]["Max"][0].as<double>() ); 
+                  bb.push_back( znInfo["Params"]["Min"][1].as<double>() ); 
+                  bb.push_back( znInfo["Params"]["Max"][1].as<double>() ); 
+                  bb.push_back( znInfo["Params"]["Min"][2].as<double>() ); 
+                  bb.push_back( znInfo["Params"]["Max"][2].as<double>() ); 
+                  
+                  std::vector<int> lst;
+                  ms->FindCellsWithinBounds(bb, lst, true);
+                  zoneGeom[matName].insert(lst.begin(), lst.end());
+                  
+              }
+              else
+                  std::cout << "WARNNING: Skipiing unkown zone shape: " 
+                      << shape << std::endl;     
+          }
       }
 
       // adjusting exodus database accordingly
+      // unordered_maps act LIFO
       for (auto it1=zoneGeom.begin(); it1!=zoneGeom.end(); it1++)
       {
           std::vector<int> elmLst;
+          std::cout << "Manipulating ExodusDB for " << (it1->first) << std::endl;
           elmLst.insert(elmLst.end(), (it1->second).begin(), (it1->second).end());
           em->addElmBlkByElmIdLst(it1->first, elmLst);
       }
@@ -921,6 +955,10 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
             em->addNdeSetByNdeIdLst(bcName, nv);
         }
       }
+  }
+  else if (!opr.compare("Merge Nodes"))
+  {
+      em->mergeNodes();
   }
   else
   {

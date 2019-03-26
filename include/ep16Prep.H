@@ -21,7 +21,7 @@ using jsoncons::json;
 class ep16Prep : public inputGen
 {
 public:
-    ep16Prep(json inputjson):_shortForm(true),_mdb(NULL),inputGen(inputjson) {};
+    ep16Prep(json inputjson):_shortForm(false),_mdb(NULL),inputGen(inputjson) {};
     ~ep16Prep();
 
     static ep16Prep* readJSON(std::string jsonFName);
@@ -31,6 +31,8 @@ public:
 public:
     void readJSON();
     void process();
+    void read(std::string fname);
+    void close(std::string fname);
 
     // feature specifications
 public:
@@ -55,12 +57,16 @@ public:
     void wrtNdeSet() {};
     void wrtElmSet() {};
     void wrtMisc(std::string _tsk, std::string __tsk);
+    void edit(std::string _tsk, std::string __tsk);
+
 
 private:
+    std::string _fname;    
     bool _shortForm;
     EXOMesh::exoMesh* _mdb;
     std::map<std::string,int> _mat;
     std::map<std::string,std::string> _bcs;
+    std::stringstream _buffer;
 
 };
 
