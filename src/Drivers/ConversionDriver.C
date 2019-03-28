@@ -816,7 +816,7 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
           for (int iZn=0; iZn<nZn; iZn++)
           {
               json znInfo = zones[iZn][0];
-              double density = znInfo.get_with_default("Density",1.0);
+              double density = 1.0/znInfo.get_with_default("Density",1.0);
               znOrd[density].push_back(iZn);
           }
       } 
@@ -839,8 +839,12 @@ void ConversionDriver::procExo(json ppJson, std::string fname, EXOMesh::exoMesh*
               std::string matName = znInfo.get_with_default("Material Name","N/A");
               std::string shape = znInfo.get_with_default("Shape","N/A");
               std::cout <<"Processing zone "<<iZn
-                  <<" Material "<<matName
-                  <<" Shape "<<shape<<std::endl;
+                  <<" Material "<< matName
+                  <<" Shape " << shape;
+              if (appDen)
+                  std::cout << " Density " << 1.0/(im->first) << std::endl;
+              else
+                  std::cout << std::endl;
 
               if (!shape.compare("Box"))
               {
