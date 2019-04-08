@@ -38,7 +38,13 @@ NemDriver* NemDriver::readJSON(json inputjson)
   }
   else if (!program_type.compare("Rocstar Remeshing"))
   {
+#ifdef ENABLE_SYMMX
     return RemeshDriver::readJSON(inputjson);
+#else
+    std::cerr << "Program Type " << program_type
+              << " is not enabled. Build Nemosys with Simmetrix capabilities." << std::endl;
+    exit(1);
+#endif // ENABLE_SYMMX
   }
   //else if (!program_type.compare("Post Rocstar Remeshing"))
   //{
@@ -54,8 +60,8 @@ NemDriver* NemDriver::readJSON(json inputjson)
   }
   else
   {
-    std::cout << "Program Type " << program_type 
-              << " is not supported by Nemosys" << std::endl;
+    std::cerr << "Program Type " << program_type
+              << " is not supported by Nemosys." << std::endl;
     exit(1);
   }
 }
