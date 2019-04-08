@@ -6,6 +6,8 @@ ENABLE_TESTING()
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
 # -DDEFAULT=0 -DENABLE_DTK=1")
 SET(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+# creating code compilation database
+SET( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
 MACRO(opt OPTION HELP VALUE)
   OPTION(ENABLE_${OPTION} ${HELP} ${VALUE})

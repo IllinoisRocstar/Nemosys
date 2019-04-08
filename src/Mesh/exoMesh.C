@@ -132,7 +132,8 @@ int EXOMesh::elmNumSrf (elementType tag)
 
 exoMesh::exoMesh(std::string ifname) :
     _ifname(ifname), _isSupported(true), _isPopulated(false), 
-    _isOpen(true), _isVerbose(false), _avoidPopulation(false)
+    _isOpen(true), _isVerbose(false), _avoidPopulation(false),
+    _exErr(0)
 {}
 
 exoMesh::~exoMesh() 
@@ -160,10 +161,8 @@ void exoMesh::write()
 {
     // preparing database
     // regadless we update it
-    std::cout << __FILE__ << __LINE__ << std::endl;
     exoPopulate(true);
     std::cout << "nNodes = " << numNdes << std::endl;
-    std::cout << __FILE__ << __LINE__ << std::endl;
 
     // writing to file
     int comp_ws = 8;
@@ -620,7 +619,7 @@ void exoMesh::read(std::string ifname)
 
   /* open EXODUS II files */
   fid = ex_open(_ifname.c_str(),EX_READ,&CPU_word_size,&IO_word_size,&version);
-  wrnErrMsg(_exErr, "Problem opening file "+_ifname+"\n");
+  wrnErrMsg((fid>0 ? 0:-1), "Problem opening file "+_ifname+"\n");
 
   int numElmBlk;
   int numNdeSet;
