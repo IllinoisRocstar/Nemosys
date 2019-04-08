@@ -56,7 +56,7 @@ int exoTestConv(const char* jsonF, const char* ofname, const char* refname)
       = std::unique_ptr<NemDriver>(NemDriver::readJSON(prog));
   } 
  
-  rm = new EXOMesh::exoMesh(refname);
+  rm = new EXOMesh::exoMesh(std::string(refname));
   nm = new EXOMesh::exoMesh(ofname);
   rm->read();
   nm->read();
