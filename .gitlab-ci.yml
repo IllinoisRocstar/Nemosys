@@ -1,6 +1,7 @@
-image: snatesh/nemosys-test-img:v1
+image: ilrocstar/nemosys-test-img:v1
 
 before_script:
+ - apt update --fix-missing
  - apt install -y python2.7-dev python-pip
  - cp -r /tmp/install .
  - SRCDIR=$PWD
