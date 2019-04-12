@@ -1,0 +1,137 @@
+// -*- C++ -*-
+
+Input {
+  Mesh {
+//     GeoFile = "cube.geo";
+    MshFile = "cube.msh";
+//     MshFile = "cube_fullGeo.msh";
+//     GeoFile = "cube_fullGeo.geo";
+  }
+}
+Output {
+  Prefix = "result/";
+  Frequency = 1;
+  Type = Msh;
+}
+Task {
+  Type = MobileObject; // MobileObject RemoveRegion SizeField RemoveSliverFaces LaplaceSmoothing GeoConstraints TopoConstraints FaceSwap UglyMesh RemoveSliverRegions DESC EdgeSwap GeoMatcher EdgeSplit EdgeCollapse EdgeSplitCollapse FaceCollapse OptimizeLength OptimizeShape None
+}
+Debug {
+  DebugLevel = 1;
+}
+Adaptation {
+   MaxNumberOfInnerIteration = 5;
+//   LowerLengthBound     = 0.5; // 0.8
+//   UpperLengthBound     = 2.0; // 2.4
+//   SwapMinImproveRatio  = 1.0;
+//   SliverQuality        = 0.001;
+//   SplitCanMakeSlivers    = Yes;
+//   CollapseCanMakeSlivers = Yes;
+//   SliverLowerLengthBound = 0.2; // 0.2
+//   SliverUpperLengthBound = 5.0; // 5.0
+  CollapseOnBoundary = Yes;
+  BoundaryCollapses {
+    Tolerance = 1.e-6;
+  }
+  SwapOnBoundary = Yes;
+  BoundarySwaps {
+    Tolerance = 1.e-6;
+  }
+//   TrackGeometry = No;
+//   VertexSnapping {
+//     IsMeshTheCavity = No;
+//     CavityThickness = 3;
+//     StiffnessAlteration = 1.;
+//   }
+}
+MovingObjects {
+  Object = "CubeFix" {
+    Geometry {
+      GeometricalType = Face; 
+      GeometricalTags = [1];
+    }
+    Kinematics {
+      KinematicsSpecification = Displacement;
+      Displacement {
+        Formulation = ["0." "0." "0."];
+      }
+    }
+//     LocalSizeField = "localSF" {
+//       DistanceComputation = ToWallFaces;
+//       Orientation = Anisotropic;
+//       Radius = 0.3;
+// //       Isotropic {
+// //         Size  = "0.005+(x/1.0)*(0.1-0.005)"; // linear
+// //         //Size  = "0.02+(sqrt(x)/sqrt(0.5))*(0.2-0.02)"; // sqrt
+// //       }
+//       Anisotropic {
+//         NormalSize  = "0.0002+(x/0.3)*(0.05-0.0002)"; // linear
+//         TangentSize = "0.3";
+//       }
+//       CurvatureBasedLimiter {
+//         Enable = Yes; // Yes No
+//         // TangentSizeOverRadius = 1.000000e+00;
+//         // CurvatureLimiter = 1.000000e+06;
+//       }
+//     }
+  }
+}
+// SizeField = "InitLength" {
+//   Type = PiecewiseLinear;
+//   PiecewiseLinear {
+//     Source = InitialLength;
+//   }
+// }
+SizeField = "Analytical" {
+  Type = Analytical;
+  Analytical {
+    OrientationType = Isotropic;
+    Isotropic {
+      Length = "0.3+0.25*sin(6.28*t)";
+    }
+//     Anisotropic {
+//       Lengths = ["1.2" "1.2" "0.1"];
+//       Direction1 = ["1." "0." "0."];
+//       Direction2 = ["0." "1." "0."];
+//       Direction3 = ["0." "0." "1."];
+//     }
+  }
+}
+// SizeField = "A" {
+//   Type = Analytical;
+//   Analytical {
+//     OrientationType = Anisotropic;
+//     Anisotropic {
+//       Lengths = ["1." "1." "0.01+0.32*z"];
+//       Direction1 = ["1." "0." "0."];
+//       Direction2 = ["0." "1." "0."];
+//       Direction3 = ["0." "0." "1."];
+//     }
+//   }
+// }
+// SizeField = "A2" {
+//   Type = Analytical;
+//   Analytical {
+//     OrientationType = Anisotropic;
+//     Anisotropic {
+//       Lengths = ["1." "0.01+0.32*y" "1."];
+//       Direction1 = ["1." "0." "0."];
+//       Direction2 = ["0." "1." "0."];
+//       Direction3 = ["0." "0." "1."];
+//     }
+//   }
+// }
+// SizeField = "CurvatureSF" {
+//   Type = PiecewiseLinear;
+//   PiecewiseLinear {
+//     Source = Curvature; // InitialLength Curvature
+//   }
+// }
+NodeMotion {
+  Type = None;
+}
+TimeSpecifications {
+  //  MaxTimeSteps = 20;
+  TimeStep = 0.2;
+  FinalTime = 3.;
+}

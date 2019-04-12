@@ -1,0 +1,234 @@
+// -------------------------------------------------------------------
+// MAdLib - Copyright (C) 2008-2009 Universite catholique de Louvain
+//
+// See the Copyright.txt and License.txt files for license information. 
+// You should have received a copy of these files along with MAdLib. 
+// If not, see <http://www.madlib.be/license/>
+//
+// Please report all bugs and problems to <contrib@madlib.be>
+//
+// Authors: Jean-Francois Remacle, Gaetan Compere
+// -------------------------------------------------------------------
+
+#ifdef _HAVE_GMSH_
+
+#include "GmshEntities.h"
+#include "GmshModel.h"
+
+namespace MAd {
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  void GmshGEntity::setPhysical(int d, int t)
+  {
+//     if ( phys ) phys.delGE(this);
+    phys = model->getPhysical(d,t);
+//     phys.addGE(this);
+  }
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  GmshGRegion::GmshGRegion(GmshModel& m, int tag, Physical *_p) : 
+    GmshGEntity(&m,_p) 
+  {
+    gr = model->getModel()->getRegionByTag(tag);
+    if ( !gr ) {
+      gr = new discreteRegion(model->getModel(),tag);
+      model->getModel()->add(gr);
+    }
+  }
+
+  // -------------------------------------------------------------------
+  GmshGRegion::GmshGRegion(const GmshGRegion& ggr) : 
+    GmshGEntity(ggr),gr(ggr.gr) {}
+
+  // -------------------------------------------------------------------
+   GmshGRegion::~GmshGRegion() {}
+
+  // -------------------------------------------------------------------
+  std::list<GmshGFace *> GmshGRegion::faces() const
+  {
+    std::list<GmshGFace*> res;
+    std::list<GFace*> lst = gr->faces();
+    std::list<GFace*>::const_iterator it = lst.begin();
+    for (; it != lst.end(); it++ ){
+      res.push_back( model->getFaceByTag( (*it)->tag() ) );
+    }
+    return res;
+  }
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  GmshGFace::GmshGFace(GmshModel& m, int tag, Physical *_p) : 
+    GmshGEntity(&m, _p)
+  {
+    gf = model->getModel()->getFaceByTag(tag);
+    if ( !gf ) {
+      gf = new discreteFace(model->getModel(),tag);
+      model->getModel()->add(gf);
+    }
+  }
+
+  // -------------------------------------------------------------------
+  GmshGFace::GmshGFace(const GmshGFace& ggf) : 
+    GmshGEntity(ggf),gf(ggf.gf) {}
+
+  // -------------------------------------------------------------------
+  GmshGFace::~GmshGFace() {}
+
+  // -------------------------------------------------------------------
+  std::list<GmshGEdge*> GmshGFace::edges() const
+  {
+    std::list<GmshGEdge*> res;
+    std::list<GEdge*> lst = gf->edges();
+    std::list<GEdge*>::const_iterator it = lst.begin();
+    for (; it != lst.end(); it++ ){
+      res.push_back( model->getEdgeByTag( (*it)->tag() ) );
+    }
+    return res;
+  }
+
+  // -------------------------------------------------------------------
+  GPoint GmshGFace::point(double par1, double par2) const
+  {
+    return gf->point(par1,par2);
+  }
+
+  // -------------------------------------------------------------------
+  double GmshGFace::curvatures(const SPoint2 &param, SVector3 *dirMax, 
+                               SVector3 *dirMin, double *curvMax, 
+                               double *curvMin) const
+  {
+    return gf->curvatures(param,dirMax,dirMin,curvMax,curvMin);
+  }
+
+  // -------------------------------------------------------------------
+  double GmshGFace::curvatureDiv(const SPoint2 &param) const
+  {
+    return gf->curvatureDiv(param);
+  }
+
+  // -------------------------------------------------------------------
+  SPoint2 GmshGFace::geodesic(const SPoint2 &pt1, const SPoint2 &pt2, double t)
+  {
+    return gf->geodesic(pt1,pt2,t);
+  }
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  GmshGEdge::GmshGEdge(GmshModel& m, int tag, Physical *_p) : 
+    GmshGEntity(&m,_p) 
+  {
+    ge = model->getModel()->getEdgeByTag(tag);
+    if ( !ge ) {
+      ge = new discreteEdge(model->getModel(),tag,NULL,NULL);
+      model->getModel()->add(ge);
+    }
+  }
+
+  // -------------------------------------------------------------------
+  GmshGEdge::GmshGEdge(const GmshGEdge& gge) : 
+    GmshGEntity(gge),ge(gge.ge) {}
+
+  // -------------------------------------------------------------------
+  GmshGEdge::~GmshGEdge() {}
+
+  // -------------------------------------------------------------------
+  std::list<GmshGVertex *> GmshGEdge::vertices() const
+  {
+    std::list<GmshGVertex *> res;
+    res.push_back(getBeginVertex());
+    res.push_back(getEndVertex());
+    return res;
+  }
+
+  // -------------------------------------------------------------------
+  GmshGVertex *GmshGEdge::getBeginVertex() const
+  {
+    GVertex * v = ge->getBeginVertex();
+    return model->getVertexByTag(v->tag());
+  }
+
+  // -------------------------------------------------------------------
+  GmshGVertex *GmshGEdge::getEndVertex() const
+  {
+    GVertex * v = ge->getEndVertex();
+    return model->getVertexByTag(v->tag());
+  }
+
+  // -------------------------------------------------------------------
+  SPoint2 GmshGEdge::reparamOnFace(const GmshGFace *face, double epar, int dir) const
+  {
+    return ge->reparamOnFace(face->getGFace(),epar,dir);
+  }
+
+  // -------------------------------------------------------------------
+  Range<double> GmshGEdge::parBounds(int i) const
+  {
+    return ge->parBounds(i);
+  }
+
+  // -------------------------------------------------------------------
+  double GmshGEdge::curvature(double par) const
+  {
+    return ge->curvature(par);
+  }
+
+  // -------------------------------------------------------------------
+  bool GmshGEdge::isSeam(const GmshGFace *face) const
+  {
+    return ge->isSeam(face->getGFace());
+  }
+
+  // -------------------------------------------------------------------
+  GPoint GmshGEdge::point(double p) const
+  {
+    return ge->point(p);
+  }
+
+  // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  GmshGVertex::GmshGVertex(GmshModel& m, int tag, Physical *_p) : 
+    GmshGEntity(&m,_p) 
+  {
+    gv = model->getModel()->getVertexByTag(tag);
+    if ( !gv ) {
+      gv = new discreteVertex(model->getModel(),tag);
+      model->getModel()->add(gv);
+    }
+  }
+  // -------------------------------------------------------------------
+  GmshGVertex::GmshGVertex(const GmshGVertex& ggv) : 
+    GmshGEntity(ggv),gv(ggv.gv) {}
+
+  // -------------------------------------------------------------------
+  GmshGVertex::~GmshGVertex() {}
+
+  // -------------------------------------------------------------------
+  std::list<GmshGEdge*> GmshGVertex::edges() const
+  {
+    std::list<GmshGEdge*> res;
+    std::list<GEdge*> lst = gv->edges();
+    std::list<GEdge*>::const_iterator it = lst.begin();
+    for (; it != lst.end(); it++ ){
+      res.push_back( model->getEdgeByTag( (*it)->tag() ) );
+    }
+    return res;
+  }
+
+  // -------------------------------------------------------------------
+  SPoint2 GmshGVertex::reparamOnFace(const GmshGFace *gf, int i) const
+  {
+    return gv->reparamOnFace(gf->getGFace(),i);
+  }
+
+  // -------------------------------------------------------------------
+  bool GmshGVertex::isOnSeam(const GmshGFace *gf) const
+  {
+    return gv->isOnSeam(gf->getGFace());
+  }
+
+  // -------------------------------------------------------------------
+}
+
+#endif
