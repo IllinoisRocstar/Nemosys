@@ -1,0 +1,77 @@
+// -*- C++ -*-
+
+Input {
+  Mesh {
+    MshFile = "square.msh";
+//     GeoFile = "square.geo";
+  }
+}
+Output {
+  Prefix = "result/";
+  Frequency = 1;
+  Type = MshAndPos;
+}
+Task {
+  Type = MobileObject; 
+}
+Debug {
+  // DebugLevel = 1;
+  //OpenJournal = Yes; // Yes No
+  // ReferenceJournal = "";
+//   ReportSlivers = No;
+}
+Adaptation {
+  Enable = No;
+}
+MovingObjects {
+  Object = "Translation" {
+    Geometry {
+      GeometricalType = Edge; 
+//       GeometricalTags = [4 1 2 3];
+      GeometricalTags = [10];
+    }
+    Kinematics {
+      KinematicsSpecification = Displacement;
+      Displacement {
+        Formulation = ["0" "0." "0."];
+      }
+    }
+    LocalSizeField = "LSF" {
+      DistanceComputation = ToWallFaces;
+      Orientation = Anisotropic;
+      Radius = 0.5;
+      Anisotropic {
+        NormalSize  = "0.1"; // linear
+        TangentSize = "10.0";
+      }
+      CurvatureBasedLimiter {
+        Enable = Yes;
+        TangentSizeOverRadius = 0.5;
+        CurvatureLimiter = 0.5; // in the geometry, smallest radius is around 2.5
+      }
+    }
+  }
+}
+SizeField {
+  Type = Analytical; // Null Analytical PiecewiseLinear
+  Analytical {
+    OrientationType = Isotropic; // Isotropic Anisotropic
+    Isotropic {
+      Length = "0.4";
+    }
+  }
+}
+NodeMotion {
+  Type = ElasticAnalogy; // ElasticAnalogy ForceBoundaries None
+  ElasticParameters {
+    AllowSubAdaptation = No;
+    StiffnessAlteration = 1.;
+    IsMeshTheCavity = Yes;
+    CavityThickness = 3;
+  }
+}
+TimeSpecifications {
+  //  MaxTimeSteps = 0;
+  TimeStep = 0.1;
+  FinalTime = 1.0;
+}
