@@ -75,6 +75,8 @@ int get_time_of_day(struct timeval *tv, struct timezone *tz)
 
 #if defined(__linux) || defined(linux)
 
+#include "unistd.h"
+
 void process_mem_usage(double& vm_usage, double& resident_set)
 {
   using std::ios_base;
