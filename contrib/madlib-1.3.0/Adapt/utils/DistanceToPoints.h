@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 #ifdef _HAVE_ANN_
-#include "ANN.h"
+#include "ANN/ANN.h"
 #endif
 
 namespace MAd {
