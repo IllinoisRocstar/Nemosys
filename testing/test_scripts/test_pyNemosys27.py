@@ -129,10 +129,10 @@ class TestPyNemosys(unittest.TestCase):
         from pyNemosys import RefineDriver, diffMesh, meshBase
         #tmpdirname = tempfile.mkdtemp()
         #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        #path =  topsrcdir + '/test_data/RefinementTest/'
         #for f in os.listdir(path):
         #    copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        path =  topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
 
@@ -162,10 +162,10 @@ class TestPyNemosys(unittest.TestCase):
         from pyNemosys import RefineDriver, diffMesh, meshBase
         #tmpdirname = tempfile.mkdtemp()
         #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        #path =  topsrcdir + '/test_data/RefinementTest/'
         #for f in os.listdir(path):
         #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        path =  topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
         with open('refine_uniform.json', 'r') as jsonfile:
@@ -190,10 +190,10 @@ class TestPyNemosys(unittest.TestCase):
 
         #tmpdirname = tempfile.mkdtemp()
         #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        #path =  topsrcdir + '/test_data/RefinementTest/'
         #for f in os.listdir(path):
         #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        path =  topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
         with open('refine_value.json', 'r') as jsonfile:
@@ -212,10 +212,10 @@ class TestPyNemosys(unittest.TestCase):
 
         #tmpdirname = tempfile.mkdtemp()
         #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        #path =  topsrcdir + '/test_data/RefinementTest/'
         #for f in os.listdir(path):
         #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        path =  topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
         output_file   = 'refined_beam1.vtu'
