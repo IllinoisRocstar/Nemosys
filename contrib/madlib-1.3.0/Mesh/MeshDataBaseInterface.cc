@@ -304,6 +304,147 @@ namespace MAd {
     SaveGmshMeshPer(mesh,name,deperiodic,version);
   }
 
+  // MS added
+  // returns point (X,Y,Z) coordinates as a 2d vector
+  v2dd M_getVrtCrds(pMesh mesh)
+  {
+    std::vector<double> pCrd;
+    v2dd pCrds;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = MAd::V_point(pv);
+      pCrd.push_back(pp->X);
+      pCrd.push_back(pp->Y);
+      pCrd.push_back(pp->Z);
+      pCrds.push_back(pCrd);
+    }
+    return(pCrds);
+  }
+
+  // returns point (X) coordinates as a 1d vector
+  v1dd M_getVrtXCrds(pMesh mesh)
+  {
+    std::vector<double> pCrd;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = MAd::V_point(pv);
+      pCrd.push_back(pp->X);
+    }
+    return(pCrd);
+  }
+
+  // returns point (Y) coordinates as a 1d vector
+  v1dd M_getVrtYCrds(pMesh mesh)
+  {
+    std::vector<double> pCrd;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = MAd::V_point(pv);
+      pCrd.push_back(pp->Y);
+    }
+    return(pCrd);
+  }
+
+  // returns point (Z) coordinates as a 1d vector
+  v1dd M_getVrtZCrds(pMesh mesh)
+  {
+    std::vector<double> pCrd;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = MAd::V_point(pv);
+      pCrd.push_back(pp->Z);
+    }
+    return(pCrd);
+  }
+
+  // returns old vertex ids
+  v1di M_getVrtIds(pMesh mesh)
+  {
+    std::vector<int> pIdx;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = V_point(pv);
+      pIdx.push_back(V_id(pp));
+    }
+    return(pIdx);
+  }
+
+  // returns a map (new -> old) for vrtx ids
+  std::map<int, int> M_getVrtIdxMapNew2Old(pMesh mesh)
+  {
+    std::map<int, int> pMap;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    int nPnt = 1; // assume first point id is 1
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = V_point(pv);
+      pMap[nPnt++] = V_id(pp);
+    }
+    return(pMap);
+  }
+
+  // returns a map (old -> new) for vrtx ids
+  std::map<int, int> M_getVrtIdxMapOld2New(pMesh mesh)
+  {
+    std::map<int, int> pMap;
+    VIter vit = M_vertexIter(mesh);
+    pVertex pv;
+    int nPnt = 1; // assume first point id is 1
+    while (pv = VIter_next(vit))
+    {
+      pPoint pp = V_point(pv);
+      pMap[V_id(pp)] = nPnt++;
+    }
+    return(pMap);
+  }
+
+  // return a 1d int vector containing all connectivities of the
+  // current mesh. For this it will internally convert old vertex
+  // ids to new ones
+  v1di M_getConnectivities(pMesh mesh)
+  {
+    std::vector<int> elmConnVec;
+    std::map<int, int> o2n = M_getVrtIdxMapOld2New(mesh);
+    if (M_numTets(mesh) > 0)
+    {
+       RIter rit = M_regionIter(mesh);
+       pRegion pr;
+       while (pr = RIter_next(rit))
+       {
+	 pPList ppl = R_vertices(pr);
+	 void* temp = NULL;
+	 while( pPoint point = (pPoint)PList_next(ppl,&temp) ) {
+	   elmConnVec.push_back(o2n[point->iD]);
+	 }
+       }
+       return(elmConnVec);
+    } else if (M_numTriangles(mesh) > 0) {
+       FIter fit = M_faceIter(mesh);
+       pFace pf;
+       while (pf = FIter_next(fit))
+       {
+	 pPList ppl = F_vertices(pf);
+	 void* temp = NULL;
+	 while( pPoint point = (pPoint)PList_next(ppl,&temp) ) {
+	   elmConnVec.push_back(o2n[point->iD]);
+	 }
+       }
+       return(elmConnVec);
+    }
+  }
+  // MS End
+
   //! returns geometric model \ingroup mesh
   pGModel M_model(pMesh mesh)
   {
@@ -2218,7 +2359,6 @@ namespace MAd {
   bool E_params(const pEdge edge, double u[2][2])
   {
 #ifdef _HAVE_GMSH_
-
     pGEntity edgeGE = E_whatIn(edge);
     int gDim = GEN_type(edgeGE);
   

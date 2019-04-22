@@ -45,7 +45,12 @@ namespace MAd {
 
     // Gmsh mesh file format
     int readMSH(const std::string &filename);
-  
+
+    // MS
+    // VTK file format
+    int readVTK(const std::string &filename);
+    // MS END
+
     // Gmsh native CAD format
     int readGEO(const std::string &filename);
   

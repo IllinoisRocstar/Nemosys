@@ -52,6 +52,10 @@ namespace MAd {
                                      pMeshDataId id);
   void MAdAttachedNodalDataVecOutput(const pMesh m, const char *fn, 
                                      pMeshDataId id);
+  // MS
+  void MAdAttachedNodalDataCSVOutput(const pMesh m, const char *fn,
+                                     pMeshDataId id, std::string dataName = "DATA");
+  // MS
 
   void printPosEntities(const pPList ents, std::string fn, MAdOutputData type, 
                         const pSField sf=NULL, int id=0);

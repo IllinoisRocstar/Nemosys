@@ -15,8 +15,17 @@
 #define H_MESHDATABASEINTEFACE
 
 #include "ModelInterface.h"
+// MS
+#include "MeshDataBase.h"
+// MS End
 #include <iostream>
 #include <set>
+
+// MS
+  typedef std::vector<double> v1dd;
+  typedef std::vector<int> v1di;
+  typedef std::vector<std::vector<double> > v2dd;
+// MS End
 
 namespace MAd {
 
@@ -67,6 +76,16 @@ namespace MAd {
                      const int * partitionTable=NULL);
   void    M_writeMshPer(pMesh, const char *name, 
                         MDB_DataExchangerPeriodic &, int version);
+  // MS
+  v2dd     M_getVrtCrds(pMesh);
+  v1dd     M_getVrtXCrds(pMesh);
+  v1dd     M_getVrtYCrds(pMesh);
+  v1dd     M_getVrtZCrds(pMesh);
+  v1di     M_getVrtIds(pMesh);
+  std::map<int, int> M_getVrtIdxMapNew2Old(pMesh);
+  std::map<int, int> M_getVrtIdxMapOld2New(pMesh);
+  v1di     M_getConnectivities(pMesh);
+  // MS End
 
 #ifdef _HAVE_METIS_
   void    M_Partition(pMesh, int nbParts, const char * filename);
