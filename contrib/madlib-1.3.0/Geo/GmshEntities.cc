@@ -112,7 +112,28 @@ namespace MAd {
   // -------------------------------------------------------------------
   SPoint2 GmshGFace::geodesic(const SPoint2 &pt1, const SPoint2 &pt2, double t)
   {
-    return gf->geodesic(pt1,pt2,t);
+//    return gf->geodesic(pt1,pt2,t);
+
+  // by default we assume that straight lines are geodesics
+  if(CTX::instance()->mesh.secondOrderExperimental && gf->geomType() != GEntity::Plane ){
+      // FIXME: this is buggy -- remove the CTX option once we do it in
+      // a robust manner
+      GPoint gp1 = point(pt1.x(), pt1.y());
+      GPoint gp2 = point(pt2.x(), pt2.y());
+      SPoint2 guess = pt1 + (pt2 - pt1) * t;
+      GPoint gp = gf->closestPoint(SPoint3(gp1.x() + t * (gp2.x() - gp1.x()),
+                                           gp1.y() + t * (gp2.y() - gp1.y()),
+                                           gp1.z() + t * (gp2.z() - gp1.z())),
+                                   (double*)guess);
+      if (gp.g())
+          return SPoint2(gp.u(), gp.v());
+      else
+          return pt1 + (pt2 - pt1) * t;
+  }
+  else{
+      return pt1 + (pt2 - pt1) * t;
+  }
+
   }
 
   // -------------------------------------------------------------------
