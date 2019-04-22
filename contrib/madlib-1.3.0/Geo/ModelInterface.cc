@@ -47,12 +47,12 @@ namespace MAd {
   
   // -------------------------------------------------------------------
   enum GeoFileFormat {
-    FORMAT_MSH,
-    FORMAT_GEO,
-    FORMAT_STEP,
-    FORMAT_BREP,
-    FORMAT_IGES,
-    FORMAT_UNKNOWN
+    MAD_FORMAT_MSH,
+    MAD_FORMAT_GEO,
+    MAD_FORMAT_STEP,
+    MAD_FORMAT_BREP,
+    MAD_FORMAT_IGES,
+    MAD_FORMAT_UNKNOWN
   };
 
   // -------------------------------------------------------------------
@@ -76,24 +76,24 @@ namespace MAd {
   GeoFileFormat guessFormatFromExtension(const std::string fileName)
   {
     std::string ext = SplitFileName(fileName)[2];
-    if     ( !strcmp(ext.c_str(),".msh" ) )  return FORMAT_MSH;
-    if     ( !strcmp(ext.c_str(),".geo" ) )  return FORMAT_GEO;
-    if     ( !strcmp(ext.c_str(),".stp" ) )  return FORMAT_STEP;
-    if     ( !strcmp(ext.c_str(),".step") )  return FORMAT_STEP;
-    if     ( !strcmp(ext.c_str(),".brep") )  return FORMAT_BREP;
-    if     ( !strcmp(ext.c_str(),".iges") )  return FORMAT_IGES;
-    return FORMAT_UNKNOWN;
+    if     ( !strcmp(ext.c_str(),".msh" ) )  return MAD_FORMAT_MSH;
+    if     ( !strcmp(ext.c_str(),".geo" ) )  return MAD_FORMAT_GEO;
+    if     ( !strcmp(ext.c_str(),".stp" ) )  return MAD_FORMAT_STEP;
+    if     ( !strcmp(ext.c_str(),".step") )  return MAD_FORMAT_STEP;
+    if     ( !strcmp(ext.c_str(),".brep") )  return MAD_FORMAT_BREP;
+    if     ( !strcmp(ext.c_str(),".iges") )  return MAD_FORMAT_IGES;
+    return MAD_FORMAT_UNKNOWN;
   }
 
   // -------------------------------------------------------------------
   int GM_read(pGModel model, const std::string fileName)
   {
     GeoFileFormat format = guessFormatFromExtension(fileName);
-    if ( format == FORMAT_MSH  ) return GM_readFromMSH (model,fileName);
-    if ( format == FORMAT_GEO  ) return GM_readFromGEO (model,fileName);
-    if ( format == FORMAT_STEP ) return GM_readFromSTEP(model,fileName);
-    if ( format == FORMAT_BREP ) return GM_readFromBREP(model,fileName);
-    if ( format == FORMAT_IGES ) return GM_readFromIGES(model,fileName);
+    if ( format == MAD_FORMAT_MSH  ) return GM_readFromMSH (model,fileName);
+    if ( format == MAD_FORMAT_GEO  ) return GM_readFromGEO (model,fileName);
+    if ( format == MAD_FORMAT_STEP ) return GM_readFromSTEP(model,fileName);
+    if ( format == MAD_FORMAT_BREP ) return GM_readFromBREP(model,fileName);
+    if ( format == MAD_FORMAT_IGES ) return GM_readFromIGES(model,fileName);
     MAdMsgSgl::instance().error(__LINE__,__FILE__,
                                 "Unknown geo file format %d",format);
     return 0;
@@ -240,32 +240,32 @@ namespace MAd {
 
 #ifdef _HAVE_GMSH_
   // -------------------------------------------------------------------
-  std::list<pGEntity> GEN_closure(const pGEntity pGE)
+  std::vector<pGEntity> GEN_closure(const pGEntity pGE)
   {
-    std::list<pGEntity> theList;
+    std::vector<pGEntity> theList;
 
     int type = GEN_type(pGE);
     switch (type) {
     case 0: break;
     case 1: {
-      std::list<pGVertex> vList = GE_vertices((pGEdge)pGE);
-      std::list<pGVertex>::const_iterator vIter = vList.begin();
+      std::vector<pGVertex> vList = GE_vertices((pGEdge)pGE);
+      std::vector<pGVertex>::const_iterator vIter = vList.begin();
       for (; vIter != vList.end(); vIter++) {
         theList.push_back(*vIter);
       }
       break;
     }
     case 2: {
-      std::list<pGEdge> eList = GF_edges((pGFace)pGE);
-      std::list<pGEdge>::const_iterator eIter = eList.begin();
+      std::vector<pGEdge> eList = GF_edges((pGFace)pGE);
+      std::vector<pGEdge>::const_iterator eIter = eList.begin();
       for (; eIter != eList.end(); eIter++) {
         theList.push_back(*eIter);
       }
       break;
     }
     case 3: {
-      std::list<pGFace> fList = GR_faces((pGRegion)pGE);
-      std::list<pGFace>::const_iterator fIter = fList.begin();
+      std::vector<pGFace> fList = GR_faces((pGRegion)pGE);
+      std::vector<pGFace>::const_iterator fIter = fList.begin();
       for (; fIter != fList.end(); fIter++) {
         theList.push_back(*fIter);
       }
@@ -277,7 +277,7 @@ namespace MAd {
   }
 
   // -------------------------------------------------------------------
-  std::list<pGFace> GR_faces(const pGRegion pGR)
+  std::vector<pGFace> GR_faces(const pGRegion pGR)
   {
     return pGR->faces();
   }
@@ -289,7 +289,7 @@ namespace MAd {
   }
 
   // -------------------------------------------------------------------
-  std::list<pGEdge> GF_edges(const pGFace pGF)
+  std::vector<pGEdge> GF_edges(const pGFace pGF)
   {
     return pGF->edges();
   }
@@ -420,7 +420,7 @@ namespace MAd {
   }
 
   // -------------------------------------------------------------------
-  std::list<pGVertex> GE_vertices(const pGEdge pGE)
+  std::vector<pGVertex> GE_vertices(const pGEdge pGE)
   {
     return pGE->vertices();
   }
@@ -500,7 +500,7 @@ namespace MAd {
 
   // -------------------------------------------------------------------
   //! returns a list of the lines including the vertex
-  std::list<pGEdge> GV_edges(const pGVertex pGV)
+  std::vector<pGEdge> GV_edges(const pGVertex pGV)
   {
     return pGV->edges();
   }

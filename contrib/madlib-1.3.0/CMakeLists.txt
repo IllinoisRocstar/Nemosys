@@ -9,6 +9,7 @@ macro(opt OPTION HELP VALUE)
 endmacro(opt)
 
 opt(ANN "Enable ANN library" ON)
+opt(GMSH "Enable Gmsh geometric model" ON)
 
 add_library(MAdLib
     Adapt/AdaptInterface.cc
@@ -88,7 +89,7 @@ add_library(MAdLib
     Mesh/ParallelUtils.cc
     Mesh/PeriodicInterfaceMigration.cc
 )
-target_include_directories(MAdLib PRIVATE
+target_include_directories(MAdLib PUBLIC
     Adapt
     Adapt/constraint
     Adapt/operator
@@ -115,4 +116,15 @@ if(ENABLE_ANN)
   add_subdirectory(Contrib/ANN)
   target_link_libraries(MAdLib PRIVATE ANN)
   target_compile_definitions(MAdLib PUBLIC _HAVE_ANN_)
+endif()
+
+if(ENABLE_GMSH)
+  find_library(GMSH_LIB gmsh HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/lib)
+  find_file(GMSH_HDR gmsh.h HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/include)
+  get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
+  message(STATUS "gmsh include path ${GMSH_INCPATH}")
+
+  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB})
+  target_include_directories(MAdLib PRIVATE ${GMSH_INCPATH})
+  target_compile_definitions(MAdLib PUBLIC _HAVE_GMSH_)
 endif()

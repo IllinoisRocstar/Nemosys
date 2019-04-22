@@ -261,8 +261,8 @@ namespace MAd {
             }
             case 0: {
               curv = -1.;
-              std::list<pGEdge> gEdges = GV_edges((pGVertex)pge);
-              std::list<pGEdge>::const_iterator eIter = gEdges.begin();
+              std::vector<pGEdge> gEdges = GV_edges((pGVertex)pge);
+              std::vector<pGEdge>::const_iterator eIter = gEdges.begin();
               for (; eIter != gEdges.end(); eIter++) {
                 pGEdge pGEd = *eIter;
                 double u;

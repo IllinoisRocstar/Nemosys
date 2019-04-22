@@ -52,8 +52,8 @@ namespace MAd {
   
 #ifdef _HAVE_GMSH_
     // constrain lower geometrical levels
-    std::list<pGEntity> subGE = GEN_closure(pGE);
-    std::list<pGEntity>::const_iterator subIter = subGE.begin();
+    std::vector<pGEntity> subGE = GEN_closure(pGE);
+    std::vector<pGEntity>::const_iterator subIter = subGE.begin();
     for (; subIter != subGE.end(); subIter++) constrain(*subIter);
 #endif
   }
