@@ -14,6 +14,7 @@
 
 #include "GmshEntities.h"
 #include "GmshModel.h"
+#include "gmsh/Context.h"
 
 namespace MAd {
 
@@ -46,11 +47,11 @@ namespace MAd {
    GmshGRegion::~GmshGRegion() {}
 
   // -------------------------------------------------------------------
-  std::list<GmshGFace *> GmshGRegion::faces() const
+  std::vector<GmshGFace *> GmshGRegion::faces() const
   {
-    std::list<GmshGFace*> res;
-    std::list<GFace*> lst = gr->faces();
-    std::list<GFace*>::const_iterator it = lst.begin();
+    std::vector<GmshGFace*> res;
+    std::vector<GFace*> lst = gr->faces();
+    std::vector<GFace*>::const_iterator it = lst.begin();
     for (; it != lst.end(); it++ ){
       res.push_back( model->getFaceByTag( (*it)->tag() ) );
     }
@@ -77,11 +78,11 @@ namespace MAd {
   GmshGFace::~GmshGFace() {}
 
   // -------------------------------------------------------------------
-  std::list<GmshGEdge*> GmshGFace::edges() const
+  std::vector<GmshGEdge*> GmshGFace::edges() const
   {
-    std::list<GmshGEdge*> res;
-    std::list<GEdge*> lst = gf->edges();
-    std::list<GEdge*>::const_iterator it = lst.begin();
+    std::vector<GmshGEdge*> res;
+    std::vector<GEdge*> lst = gf->edges();
+    std::vector<GEdge*>::const_iterator it = lst.begin();
     for (; it != lst.end(); it++ ){
       res.push_back( model->getEdgeByTag( (*it)->tag() ) );
     }
@@ -99,7 +100,7 @@ namespace MAd {
                                SVector3 *dirMin, double *curvMax, 
                                double *curvMin) const
   {
-    return gf->curvatures(param,dirMax,dirMin,curvMax,curvMin);
+    return gf->curvatures(param,*dirMax,*dirMin,*curvMax,*curvMin);
   }
 
   // -------------------------------------------------------------------
@@ -134,9 +135,9 @@ namespace MAd {
   GmshGEdge::~GmshGEdge() {}
 
   // -------------------------------------------------------------------
-  std::list<GmshGVertex *> GmshGEdge::vertices() const
+  std::vector<GmshGVertex *> GmshGEdge::vertices() const
   {
-    std::list<GmshGVertex *> res;
+    std::vector<GmshGVertex *> res;
     res.push_back(getBeginVertex());
     res.push_back(getEndVertex());
     return res;
@@ -205,11 +206,11 @@ namespace MAd {
   GmshGVertex::~GmshGVertex() {}
 
   // -------------------------------------------------------------------
-  std::list<GmshGEdge*> GmshGVertex::edges() const
+  std::vector<GmshGEdge*> GmshGVertex::edges() const
   {
-    std::list<GmshGEdge*> res;
-    std::list<GEdge*> lst = gv->edges();
-    std::list<GEdge*>::const_iterator it = lst.begin();
+    std::vector<GmshGEdge*> res;
+    std::vector<GEdge*> lst = gv->edges();
+    std::vector<GEdge*>::const_iterator it = lst.begin();
     for (; it != lst.end(); it++ ){
       res.push_back( model->getEdgeByTag( (*it)->tag() ) );
     }

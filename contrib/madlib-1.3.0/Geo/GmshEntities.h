@@ -20,7 +20,7 @@
 
 #include "gmsh/GEntity.h"
 #include "gmsh/discreteRegion.h"
-#include "gmsh/discreteFace.h"
+#include "discreteFace.h"  // use locally modified version
 #include "gmsh/discreteEdge.h"
 #include "gmsh/discreteVertex.h"
 
@@ -76,7 +76,7 @@ namespace MAd {
     int dim() const { return 3; }
     virtual int tag() const { return gr->tag(); }
 
-    std::list<GmshGFace *> faces() const;
+    std::vector<GmshGFace *> faces() const;
   };
 
   // -------------------------------------------------------------------
@@ -95,7 +95,7 @@ namespace MAd {
     GFace * getGFace() const { return gf; }
 
     int numRegions() const { return gf->numRegions(); }
-    std::list<GmshGEdge*> edges() const; 
+    std::vector<GmshGEdge*> edges() const; 
 
     // compute the parameters UV from a point XYZ
     void XYZtoUV(const double X, const double Y, const double Z,
@@ -133,7 +133,7 @@ namespace MAd {
     int dim() const { return 1; }
     virtual int tag() const { return ge->tag(); }
 
-    std::list<GmshGVertex *> vertices() const;
+    std::vector<GmshGVertex *> vertices() const;
     GmshGVertex *getBeginVertex() const;
     GmshGVertex *getEndVertex() const;
 
@@ -167,7 +167,7 @@ namespace MAd {
     virtual int tag() const { return gv->tag(); }
 
     // get the edges that this vertex bounds
-    std::list<GmshGEdge*> edges() const;
+    std::vector<GmshGEdge*> edges() const;
 
     SPoint2 reparamOnFace(const GmshGFace *gf, int i) const;
 

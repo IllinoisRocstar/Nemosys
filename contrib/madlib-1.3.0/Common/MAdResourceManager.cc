@@ -20,6 +20,7 @@
 #else
  #ifndef _WIN_
   #include <sys/time.h>
+  #include <unistd.h>
  #else
   #include <time.h>
   #include <windows.h> 
@@ -74,8 +75,6 @@ int get_time_of_day(struct timeval *tv, struct timezone *tz)
 #endif
 
 #if defined(__linux) || defined(linux)
-
-#include "unistd.h"
 
 void process_mem_usage(double& vm_usage, double& resident_set)
 {

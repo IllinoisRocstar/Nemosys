@@ -5,10 +5,10 @@
 #define _BASEINTERP_H_
 
 // standard
-#include<vector>
+#include <vector>
 
 // third party
-#include <ANN.h>
+#include <ANN/ANN.h>
 // types
 
 class sphere;

@@ -11,7 +11,7 @@
 // -------------------------------------------------------------------
 
 #ifdef _HAVE_GMSH_
-#include "gmsh/Gmsh.h"
+#include "gmsh/GmshGlobal.h"
 #endif
 
 #ifdef PARALLEL

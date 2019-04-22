@@ -4,7 +4,7 @@
 #include "exoMesh.H"
 
 // third party
-#include <ANN.h>
+#include <ANN/ANN.h>
 
 #include <set>
 #include <fstream>

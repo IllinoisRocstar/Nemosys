@@ -15,7 +15,7 @@
 #define _H_MODELINTERFACE
 
 #include <string>
-#include <list>
+#include <vector>
 
 namespace MAd {
 
@@ -120,16 +120,16 @@ namespace MAd {
   int GEN_physDim(const pGEntity);
 
 #ifdef _HAVE_GMSH_
-  std::list<pGEntity> GEN_closure(const pGEntity);
+  std::vector<pGEntity> GEN_closure(const pGEntity);
 
   // --- Region operators ---
 
-  std::list<pGFace> GR_faces(const pGRegion);
+  std::vector<pGFace> GR_faces(const pGRegion);
 
   // --- Face operators ---
 
   int GF_numRegions(const pGFace);
-  std::list<pGEdge> GF_edges(const pGFace);
+  std::vector<pGEdge> GF_edges(const pGFace);
   bool GF_getParams(const pGFace, const double[3], double[2]);
   void GF_closestPoint(const pGFace, const double[3],
                        const double[2], double[3]);
@@ -145,7 +145,7 @@ namespace MAd {
 
   // --- Edge operators ---
 
-  std::list<pGVertex> GE_vertices(const pGEdge);
+  std::vector<pGVertex> GE_vertices(const pGEdge);
   void GE_closestPoint(const pGEdge, const double[3], double[3]);
   void GE_xyz(const pGEdge, double, double[3]);
   void GE_reparamOnFace(const pGEdge, const pGFace, 
@@ -155,7 +155,7 @@ namespace MAd {
 
   // --- Vertex operators ---
 
-  std::list<pGEdge> GV_edges(const pGVertex);
+  std::vector<pGEdge> GV_edges(const pGVertex);
 
   void GV_reparamOnFace(const pGVertex, const pGFace, double [2], 
                         double uClose[2]=NULL);
