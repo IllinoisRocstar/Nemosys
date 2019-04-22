@@ -1107,6 +1107,12 @@ namespace MAd {
     // classify entities that are not classified
     void classify_unclassified_entities();
     void destroyStandAloneEntities();
+    // MS
+    void classify_grid_boundaries(pGEntity bndGEntity = 0);
+    void unclassify_grid_boundaries();
+    void classify_entities_to_region();
+    void skin_me(MDB_Mesh *skinMesh, std::vector<int>& regIds);
+    // MS End
 
 // #ifdef PARALLEL
 //     void bdryLinkRemotePoint();

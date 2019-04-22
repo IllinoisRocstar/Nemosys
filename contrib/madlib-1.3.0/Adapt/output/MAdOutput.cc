@@ -725,6 +725,32 @@ namespace MAd {
     fclose (f);
   }
 
+  // MS
+  // -------------------------------------------------------------------
+  void MAdAttachedNodalDataCSVOutput(const pMesh m, const char *fn,
+                                     pMeshDataId id, std::string dataName)
+  {
+    FILE *f = fopen (fn, "w");
+    if ( !f ) {
+      cerr << "Error: could not open file " << fn << endl; throw;
+    }
+
+    fprintf(f, "x, y, z, %s \n", dataName.c_str());
+    VIter vit = M_vertexIter(m);
+    while (pVertex pv = VIter_next(vit))
+      {
+        double xyz[3];
+        V_coord(pv,xyz);
+        double data[4];
+        //EN_getDataDbl(pv,id,data);
+        EN_getDataDbl((pEntity)pv, id, &(data[0]));
+        fprintf(f, "%g, %g, %g, %g \n",
+                xyz[0], xyz[1], xyz[2], data[0]);
+      }
+    fclose (f);
+  }
+  // MS END
+
   // -------------------------------------------------------------------
   void printPosRegions(const set<pRegion> regs, string fn, MAdOutputData type, 
                        const pSField sf, int id)

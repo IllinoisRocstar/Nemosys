@@ -133,14 +133,20 @@ namespace MAd {
               F_info(pf,"",out);
             }
           }
-          if ( ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,0) ) ) || 
-               ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,1) ) ) ) {
-            flag = 0;
-            if (verbose) {
-              out << "Face classif on dim 3 used by regions classif on different entities\n";
-              F_info(pf,"",out);
+          // MS added
+          if ( nRgn > 2 ) {
+          // MS End
+            if ( ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,0) ) ) ||
+                 ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,1) ) ) ) {
+              flag = 0;
+              if (verbose) {
+                out << "Face classif on dim 3 used by regions classif on different entities\n";
+                F_info(pf,"",out);
+              }
             }
+          // MS added
           }
+          // MS End
           break;
         }
         case 2: {
@@ -705,7 +711,6 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool checkMesh(MDB_Mesh * mesh, checkType type, int verbose, 
                  std::ostream& out, MeshStatus * status) {
-
     switch (type) {
     case CHECK_ALL: {
       if ( !checkRegionsVolume(mesh, verbose, out) ) {

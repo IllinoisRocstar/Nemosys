@@ -49,7 +49,18 @@ namespace MAd {
     importFromModel();
     return flag;
   }
-  
+
+  // MS
+  // -------------------------------------------------------------------
+  int GmshModel::readVTK(const std::string &filename)
+  {
+    clean();
+    int flag = model->readVTK(filename);
+    importFromModel();
+    return flag;
+  }
+  // MS END
+
   // -------------------------------------------------------------------
   int GmshModel::readGEO(const std::string &filename)
   {

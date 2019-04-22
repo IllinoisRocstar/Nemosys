@@ -530,6 +530,24 @@ namespace MAd {
     MAdAttachedNodalDataOutput(mesh, fn, id);
   }
 
+  // MS
+  // -------------------------------------------------------------------
+  void NodalDataManager::writeDataCSV(string name, const char *fn)
+  {
+    string dataName = prefix + name;
+
+    // check that this name exists
+    if ( !nameExists(dataName,0) ) {
+      cerr << "Error: this data \'"<<name<<"\' is not registered in the NodalDataManager\n";
+      throw;
+    }
+
+    pMeshDataId id = MD_lookupMeshDataId( dataName.c_str() );
+
+    MAdAttachedNodalDataCSVOutput(mesh, fn, id, name);
+  }
+  // MS END
+
   // -------------------------------------------------------------------
   void NodalDataManager::writeVData(string name, const char *fn)
   {

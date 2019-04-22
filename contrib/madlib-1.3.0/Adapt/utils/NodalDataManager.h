@@ -64,6 +64,9 @@ namespace MAd {
     // write the data in a postprocessing file
     void writeData  (std::string name, const char *fn);
     void writeVData (std::string name, const char *fn);
+    // MS
+    void writeDataCSV(std::string name, const char *fn);
+    // MS END
 
     // functions to keep track of the initial coordinates
     void storeCoordinates();
