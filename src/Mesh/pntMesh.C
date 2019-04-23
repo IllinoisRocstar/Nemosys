@@ -4,7 +4,7 @@
 #include <vtkCell.h>
 #include <fstream>
 #include <algorithm>
-
+#include <sstream>
 
 using namespace PNTMesh;
 
