@@ -8,9 +8,6 @@
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdTypeArray.h>
 
-//MAd Lib
-#include <MAdLib.h>
-
 // Nemosys
 #include <pntMesh.H>
 #include <cobalt.H>
