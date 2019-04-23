@@ -98,7 +98,7 @@ CONFIGURE_FILE( ${pntgenbench6_in} ${pntgenbench6} @ONLY )
 CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
 
 if(WIN32)
-  set(TEST_ENV_OPTIONS
+  set(TEST_ENV_PATH_OPTIONS
 "PATH=${CMAKE_BINARY_DIR};\
 ${gtest_BINARY_DIR};\
 ${MADLIB_LIB_PATH};\
@@ -113,11 +113,18 @@ ${METIS_LIB_PATH};\
 ${CGNS_LIB_PATH};\
 $ENV{PATH}")
 else()
-
+  set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
+  set(TEST_ENV_LD_OPTIONS
+"LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
+${VTK_LIB_DIR}:\
+${NETGEN_LIB_PATH}:\
+$ENV{LD_LIBRARY_PATH}")
 endif()
 
+message(STATUS "Test Env Options: ${TEST_ENV_PATH_OPTIONS} ${TEST_ENV_LD_OPTIONS}")
+
 ADD_TEST(NAME cubatureInterpTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu
                               ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp
                               ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp
@@ -125,7 +132,7 @@ ADD_TEST(NAME cubatureInterpTest
                               ${CUBATURE_TESTDIR}/single-hex.vtu
 )
 ADD_TEST(NAME conversionTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runConversionTest ${CONVERSION_TESTDIR}/case0001_ref.vtu
                           ${CONVERSION_TESTDIR}/case0001.msh
                           ${CONVERSION_TESTDIR}/hinge.vtu
@@ -145,17 +152,17 @@ ADD_TEST(NAME conversionTest
                           ${CONVERSION_TESTDIR}/pnt-mix-ref.vtu
 )
 ADD_TEST(NAME orthoPolyTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt
 )
 ADD_TEST(NAME patchRecoveryTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runPatchRecoveryTest ${PATCHRECOVERY_TESTDIR}/case0001.vtu
                              ${PATCHRECOVERY_TESTDIR}/testRef.vtu
                              ${PATCHRECOVERY_TESTDIR}/fixedWithData.vtu
 )
 ADD_TEST(NAME transferTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu
                         ${TRANSFER_TESTDIR}/cellSource.vtu
                         ${TRANSFER_TESTDIR}/target.vtu
@@ -163,7 +170,7 @@ ADD_TEST(NAME transferTest
                         ${TRANSFER_TESTDIR}/cellRef.vtu
 )
 ADD_TEST(NAME meshGenTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runMeshGenTest ${MESHGEN_TESTDIR}/default.json
                        ${MESHGEN_TESTDIR}/hingeRef.vtu
                        ${MESHGEN_TESTDIR}/unif.json
@@ -172,21 +179,21 @@ ADD_TEST(NAME meshGenTest
                        ${MESHGEN_TESTDIR}/hingeGeomRef.vtu
 )
 ADD_TEST(NAME autVerifTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runAutoVerifTest ${AUTOVERIF_TESTDIR}/finer.vtu
                          ${AUTOVERIF_TESTDIR}/fine.vtu
                          ${AUTOVERIF_TESTDIR}/coarse.vtu
                          ${AUTOVERIF_TESTDIR}/richardson.vtu
 )
 ADD_TEST(NAME pntgentest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
         runPNTGenTest ${PNTGEN_TESTDIR}/bench1.json ${PNTGEN_TESTDIR}/bench1_conv_gold.pntmesh
                       ${PNTGEN_TESTDIR}/bench5.json ${PNTGEN_TESTDIR}/bench5_conv_gold.pntmesh
                       ${PNTGEN_TESTDIR}/bench6.json ${PNTGEN_TESTDIR}/bench6_conv_gold.pntmesh
 )
 IF (ENABLE_EPIC)
   ADD_TEST(NAME ep16test
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
           runEp16Test ${ep16test1} ${EP16_TESTDIR}/bctest_ref.g
                       ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat
   )
@@ -200,7 +207,7 @@ IF (ENABLE_PYTHON_BINDINGS)
   else(NOT PYTHONINTERP_FOUND)
     message(STATUS "Python interpreter found")
     ADD_TEST(NAME testPyNemosys
-        COMMAND  ${CMAKE_COMMAND} -E env "${TEST_ENV_OPTIONS}"
+        COMMAND  ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
                                          "PATH=${SWIG_DIR};$ENV{PATH}"
                                          "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR};$ENV{PYTHONPATH}"
                                          #"PYTHONPATH=${CMAKE_INSTALL_PREFIX}/Nemosys/python/src:${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib/python2.7/site-packages"
