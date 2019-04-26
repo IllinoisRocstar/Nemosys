@@ -3,7 +3,7 @@
         "Program Type": "Conversion",
         "Mesh File Options": {
             "Input Mesh Files": {
-                "Source Mesh": "@CMAKE_CURRENT_SOURCE_DIR@/test_data/PNTGenTest/bench1.vtu",
+                "Source Mesh": "@PNTGEN_TESTDIR@/bench1.vtu",
                 "Target Mesh": "bench1_conv.pntmesh"
             },
             "Output Mesh File": ""
