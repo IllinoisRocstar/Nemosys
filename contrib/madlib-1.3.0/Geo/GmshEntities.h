@@ -20,7 +20,7 @@
 
 #include "gmsh/GEntity.h"
 #include "gmsh/discreteRegion.h"
-#include "discreteFace.h"  // use locally modified version
+#include "gmsh/discreteFace.h"
 #include "gmsh/discreteEdge.h"
 #include "gmsh/discreteVertex.h"
 

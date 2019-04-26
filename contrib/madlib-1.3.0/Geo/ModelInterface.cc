@@ -343,7 +343,7 @@ namespace MAd {
   {
     SPoint2 param(u[0],u[1]);
     double curv = surface->curvatureDiv(param);
-    if ( isnan(curv) ) {
+    if ( std::isnan(curv) ) {
       MAdMsgSgl::instance().warning(__LINE__,__FILE__,"NaN curvature");
       curv = cMaxBound;
     }
@@ -370,7 +370,7 @@ namespace MAd {
     dirMax[1] = dirMaxTmp.y();
     dirMax[2] = dirMaxTmp.z();
     if ( ( dotProd(dirMax,dirMax) <= MAdTOL ) ||
-         ( isnan(dirMax[0]) || isnan(dirMax[1]) || isnan(dirMax[2]) ) )
+         ( std::isnan(dirMax[0]) || std::isnan(dirMax[1]) || std::isnan(dirMax[2]) ) )
       {
         MAdMsgSgl::instance().warning(__LINE__,__FILE__,
                                       "NaN direction for maximum curvature");
@@ -383,7 +383,7 @@ namespace MAd {
     dirMin[1] = dirMinTmp.y();
     dirMin[2] = dirMinTmp.z();
     if ( ( dotProd(dirMin,dirMin) <= MAdTOL ) ||
-         ( isnan(dirMin[0]) || isnan(dirMin[1]) || isnan(dirMin[2]) ) )
+         ( std::isnan(dirMin[0]) || std::isnan(dirMin[1]) || std::isnan(dirMin[2]) ) )
       {
         MAdMsgSgl::instance().warning(__LINE__,__FILE__,
                                       "Inconsistent direction for minimum curvature (u,v)=(%f,%f), direction: %f, %f, %f, curvature: %f",
@@ -392,12 +392,12 @@ namespace MAd {
         crossProd(tmp,dirMax,dirMin);
       }
     
-    if ( isnan(*curvMax) ) {
+    if ( std::isnan(*curvMax) ) {
       MAdMsgSgl::instance().warning(__LINE__,__FILE__,"NaN maximum curvature");
       *curvMax = cMaxBound;
     }
     *curvMax = std::min(*curvMax,cMaxBound);
-    if ( isnan(*curvMin) ) {
+    if ( std::isnan(*curvMin) ) {
       MAdMsgSgl::instance().warning(__LINE__,__FILE__,"NaN minimum curvature");
       *curvMin = cMaxBound;
     }
@@ -491,7 +491,7 @@ namespace MAd {
   double GE_curvature(const pGEdge line, double u, double cMaxBound)
   {
     double curv = line->curvature(u);
-    if ( isnan(curv) ) {
+    if ( std::isnan(curv) ) {
       MAdMsgSgl::instance().warning(__LINE__,__FILE__,"NaN curvature");
       curv = cMaxBound;
     }
