@@ -1,5 +1,3 @@
-message(STATUS "Contrib/ANN")
-
 add_library(ANN
     src/ANN.cpp
     src/bd_fix_rad_search.cpp
