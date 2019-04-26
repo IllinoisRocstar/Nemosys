@@ -21,6 +21,10 @@ using std::string;
 #include <stdlib.h>
 #include <fstream>
 
+#if defined(__linux) || defined(linux)
+  #include <unistd.h>
+#endif
+
 using namespace MAd;
 
 #ifdef PARALLEL

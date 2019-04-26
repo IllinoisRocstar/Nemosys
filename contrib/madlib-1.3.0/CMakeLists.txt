@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(MAdLib)
+project(MAdLib CXX)
 
 message(STATUS "MAdLib Base")
 
@@ -10,6 +10,7 @@ endmacro(opt)
 
 opt(ANN "Enable ANN library" ON)
 opt(GMSH "Enable Gmsh geometric model" ON)
+opt(BENCHMARKS "Enable Benchmark executables" OFF)
 
 add_library(MAdLib
     Adapt/AdaptInterface.cc
@@ -106,25 +107,29 @@ target_include_directories(MAdLib PUBLIC
 target_sources(MAdLib PRIVATE Contrib/mathex/mathex.cpp)
 target_include_directories(MAdLib PRIVATE Contrib/mathex)
 
-add_subdirectory(Benchmarks/checkMesh)
-add_subdirectory(Benchmarks/meshInfo)
-add_subdirectory(Benchmarks/moveIt)
-add_subdirectory(Benchmarks/optimize)
-
-
 if(ENABLE_ANN)
   add_subdirectory(Contrib/ANN)
-  target_link_libraries(MAdLib PRIVATE ANN)
+  target_link_libraries(MAdLib PUBLIC ANN)
   target_compile_definitions(MAdLib PUBLIC _HAVE_ANN_)
 endif()
 
 if(ENABLE_GMSH)
-  find_library(GMSH_LIB gmsh HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/lib)
-  find_file(GMSH_HDR gmsh.h HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/include)
+  find_library(GMSH_LIB gmsh HINTS lib)
+  find_file(GMSH_HDR gmsh.h HINTS include)
   get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
   message(STATUS "gmsh include path ${GMSH_INCPATH}")
+  message(STATUS "gmsh libs ${GMSH_LIB}")
 
-  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB})
+  find_package(OpenCASCADE REQUIRED) # Used by Gmsh
+
+  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB} TKernel)
   target_include_directories(MAdLib PRIVATE ${GMSH_INCPATH})
   target_compile_definitions(MAdLib PUBLIC _HAVE_GMSH_)
+endif()
+
+if(ENABLE_BENCHMARKS)
+  add_subdirectory(Benchmarks/checkMesh)
+  add_subdirectory(Benchmarks/meshInfo)
+  add_subdirectory(Benchmarks/moveIt)
+  add_subdirectory(Benchmarks/optimize)
 endif()
