@@ -11,49 +11,43 @@
 // -------------------------------------------------------------------
 
 #ifdef _HAVE_GMSH_
-#include "gmsh/GmshGlobal.h"
+  #include <gmsh.h>
 #endif
 
 #ifdef PARALLEL
-#include "mpi.h"
-#include "autopack.h"
+  #include "mpi.h"
+  #include "autopack.h"
 #endif
 
 #include "MAdMessage.h"
 #include "MAdResourceManager.h"
 
 #include <string>
-using std::string;
 
-using namespace MAd;
-
-void MAdLibInitialize(int * argc, char** argv[])
-{
+void MAdLibInitialize(int *argc, char **argv[]) {
 #ifdef PARALLEL
   MPI_Init(argc,argv);
   AP_init(argc,argv);
 #endif
 
 #ifdef _HAVE_GMSH_
-  char * tmp[1];
-  tmp[0] = (char*)" ";
-  GmshInitialize(1,tmp);
+  char *tmp[1];
+  tmp[0] = (char *) " ";
+  gmsh::initialize(1, tmp, false);
   unsigned int i = 1;
-  int j = 0;
-  GmshSetOption("General","Terminal",i,j);
+  gmsh::option::setNumber("General.Terminal", i);
 #endif
 
-  MAdMsgSgl::instance().initialize();
-  MAdResourceManagerSgl::instance().initialize();
+  MAd::MAdMsgSgl::instance().initialize();
+  MAd::MAdResourceManagerSgl::instance().initialize();
 }
 
-void MAdLibFinalize()
-{
-  MAdResourceManagerSgl::instance().finalize();
-  MAdMsgSgl::instance().finalize();
+void MAdLibFinalize() {
+  MAd::MAdResourceManagerSgl::instance().finalize();
+  MAd::MAdMsgSgl::instance().finalize();
 
 #ifdef _HAVE_GMSH_
-  GmshFinalize();
+  gmsh::finalize();
 #endif
 
 #ifdef PARALLEL
@@ -62,4 +56,3 @@ void MAdLibFinalize()
   MPI_Finalize();
 #endif
 }
-
