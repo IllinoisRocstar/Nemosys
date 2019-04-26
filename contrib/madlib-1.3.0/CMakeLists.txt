@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(MAdLib CXX)
-
-message(STATUS "MAdLib Base")
+set(CMAKE_CXX_STANDARD 11)
 
 macro(opt OPTION HELP VALUE)
   option(ENABLE_${OPTION} ${HELP} ${VALUE})
