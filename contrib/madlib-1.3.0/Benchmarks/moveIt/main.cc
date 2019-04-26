@@ -19,6 +19,10 @@
  #include "MyParams.h"
 #endif
 
+#if defined(__linux) || defined(linux)
+  #include <unistd.h>
+#endif
+
 #include "MAdLib.h"
 
 #include <iostream>
