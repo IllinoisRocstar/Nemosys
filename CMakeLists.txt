@@ -86,10 +86,17 @@ message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
 add_subdirectory(contrib/madlib-1.3.0)
 
-FIND_LIBRARY(GMSH_LIB gmsh HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/lib)
-FIND_FILE(GMSH_HDR gmsh.h HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/include)
+FIND_LIBRARY(GMSH_LIB gmsh HINTS lib)
+FIND_FILE(GMSH_HDR gmsh.h HINTS include)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
+get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
+list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
 MESSAGE(STATUS "gmsh include path ${GMSH_INCPATH}")
+message(STATUS "gmsh libs ${GMSH_LIB}")
+
+find_package(OpenCASCADE REQUIRED) # Used by Gmsh
+message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
+message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
 
 if(WIN32)
   SET(HDF5_USE_STATIC_LIBRARIES ON) # Needed on WIN32. TODO: Test on UNIX
@@ -350,7 +357,7 @@ ENDIF()
 TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS}
                               ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES}
                               ${NEMOSYS_LNK}
-                              interp MAdLib)
+                              interp MAdLib TKernel)
 
 INSTALL(TARGETS r8 interp Nemosys
         RUNTIME DESTINATION Nemosys/bin
