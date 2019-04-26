@@ -16,7 +16,7 @@
 #include "MAdDefines.h"
 #include "MeshParametersManager.h"
 
-#include <math.h>
+#include <cmath>
 #include <iostream>
 using std::string;
 
@@ -170,7 +170,7 @@ namespace MAd {
     doubleVector S = doubleVector(3);
     M.eig(V,S,true);
     double s = 1. / sqrt( S(i) );
-    if ( isnan(s) ) return MeshParametersManagerSgl::instance().getBigLength();
+    if ( std::isnan(s) ) return MeshParametersManagerSgl::instance().getBigLength();
     return s;
   }
 
@@ -182,7 +182,7 @@ namespace MAd {
     M.eig(V,S,true);
     for (int i=0; i<3; i++) {
       _h[i] = ( 1. / sqrt( S(i) ) );
-      if ( isnan(_h[i]) ) _h[i] = MeshParametersManagerSgl::instance().getBigLength();
+      if ( std::isnan(_h[i]) ) _h[i] = MeshParametersManagerSgl::instance().getBigLength();
     }
   }
 
@@ -194,7 +194,7 @@ namespace MAd {
     M.eig(V,S,true); // each column of V is a direction, S gives corresponding 1/h^2
     for (int iC=0; iC<3; iC++) dir[iC] = V(iC,i);
     double s = 1. / sqrt( S(i) );
-    if ( isnan(s) ) return MeshParametersManagerSgl::instance().getBigLength();
+    if ( std::isnan(s) ) return MeshParametersManagerSgl::instance().getBigLength();
     return s;
   }
 
