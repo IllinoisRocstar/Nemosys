@@ -33,6 +33,7 @@ ADD_EXECUTABLE(runTransferTest test_scripts/testTransfer.C)
 ADD_EXECUTABLE(runMeshGenTest test_scripts/testMeshGen.C)
 ADD_EXECUTABLE(runPNTGenTest test_scripts/testPNTGen.C)
 ADD_EXECUTABLE(runAutoVerifTest test_scripts/testAutoVerification.C)
+add_executable(runRefinementTest test_scripts/testRefinement.C)
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
@@ -41,6 +42,7 @@ TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runPNTGenTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
+target_link_libraries(runRefinementTest gtest gtest_main Nemosys)
 
 add_custom_target(unittests)
 add_dependencies(unittests runCubatureInterpTest
@@ -50,7 +52,9 @@ add_dependencies(unittests runCubatureInterpTest
                            runTransferTest
                            runMeshGenTest
                            runPNTGenTest
-                           runAutoVerifTest)
+                           runAutoVerifTest
+                           runRefinementTest
+)
 
 # custom built test for EPIC
 IF (ENABLE_EPIC)
@@ -74,6 +78,7 @@ SET(MESHGEN_TESTDIR ${TEST_DATA}/MeshGenTest)
 SET(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
 SET(EP16_TESTDIR ${TEST_DATA}/Ep16Test)
 SET(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
+set(REFINEMENT_TESTDIR ${TEST_DATA}/RefinementTest)
 SET(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 SET(meshgendefault ${MESHGEN_TESTDIR}/default.json)
 SET(meshgenunif_in ${MESHGEN_TESTDIR}/unif_in.json)
@@ -89,6 +94,10 @@ SET(pntgenbench6 ${PNTGEN_TESTDIR}/bench6.json)
 SET(ep16test1_in ${EP16_TESTDIR}/gmsh2exo_in.json)
 SET(ep16test1 ${EP16_TESTDIR}/gmsh2exo.json)
 SET(ep16test2 ${EP16_TESTDIR}/ep16.json)
+set(refinementValue_in ${REFINEMENT_TESTDIR}/refine_value_in.json)
+set(refinementValue ${REFINEMENT_TESTDIR}/refine_value.json)
+set(refinementUniform_in ${REFINEMENT_TESTDIR}/refine_uniform_in.json)
+set(refinementUniform ${REFINEMENT_TESTDIR}/refine_uniform.json)
 CONFIGURE_FILE( ${meshgendefault_in} ${meshgendefault} @ONLY )
 CONFIGURE_FILE( ${meshgenunif_in} ${meshgenunif} @ONLY )
 CONFIGURE_FILE( ${meshgengeom_in} ${meshgengeom} @ONLY )
@@ -96,6 +105,8 @@ CONFIGURE_FILE( ${pntgenbench1_in} ${pntgenbench1} @ONLY )
 CONFIGURE_FILE( ${pntgenbench5_in} ${pntgenbench5} @ONLY )
 CONFIGURE_FILE( ${pntgenbench6_in} ${pntgenbench6} @ONLY )
 CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
+configure_file(${refinementValue_in} ${refinementValue} @ONLY)
+configure_file(${refinementUniform_in} ${refinementUniform} @ONLY)
 
 if(WIN32)
   set(TEST_ENV_PATH_OPTIONS
@@ -177,6 +188,15 @@ ADD_TEST(NAME meshGenTest
                        ${MESHGEN_TESTDIR}/hingeUnifRef.vtu
                        ${MESHGEN_TESTDIR}/geom.json
                        ${MESHGEN_TESTDIR}/hingeGeomRef.vtu
+)
+add_test(NAME refinementTest
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+        runRefinementTest ${REFINEMENT_TESTDIR}/refine_value.json
+                          ${REFINEMENT_TESTDIR}/refined_beam_value.vtu
+                          ${REFINEMENT_TESTDIR}/gold_refined_beam_value.vtu
+                          ${REFINEMENT_TESTDIR}/refine_uniform.json
+                          ${REFINEMENT_TESTDIR}/refined_beam_uniform.vtu
+                          ${REFINEMENT_TESTDIR}/gold_refined_beam_uniform.vtu
 )
 ADD_TEST(NAME autVerifTest
     COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
