@@ -231,6 +231,7 @@ IF (ENABLE_PYTHON_BINDINGS)
     configure_file(test_scripts/test_pyNemosys27.py ${CMAKE_CURRENT_BINARY_DIR}/../python/test_pyNemosys27.py)
     add_test(NAME testPyNemosys
         COMMAND  ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/../python/setup.py test)
+            ${PYTHON_EXECUTABLE} setup.py test
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../python)
   endif (NOT PYTHONINTERP_FOUND)
 ENDIF()
