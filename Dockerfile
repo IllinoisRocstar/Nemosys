@@ -1,25 +1,27 @@
 FROM ubuntu:16.04
 
-RUN apt-get update
+RUN apt update
 
-RUN apt-get -y install build-essential cmake libvtk6-dev libproj-dev libcgns-dev libmetis-dev libhdf5-dev libfltk1.3-dev liblapack-dev libgmp-dev libjpeg-dev libsm-dev libice-dev gfortran
+RUN apt -y install build-essential cmake gfortran
+RUN apt -y install zlib1g-dev libfreetype6-dev "libfltk1.3-dev" libxmu-dev libxi-dev
+RUN apt -y install libhdf5-dev liblapack-dev libjpeg-dev
 
-RUN apt-get -y install python3.5-dev python3-pip
+RUN apt -y install libcgns-dev libmetis-dev libexodusii-dev
+RUN apt -y install "python3.5-dev" python3-pip "python2.7-dev" python-pip swig
+#RUN apt -y install libvtk6-dev libproj-dev libgmp-dev libsm-dev libice-dev
+#RUN apt -y install vim
 
-RUN apt-get -y install swig
+#RUN pip3 install --upgrade pip
 
-RUN apt-get -y install vim
-
-RUN pip3 install --upgrade pip
-
-COPY . /Nemosys
+COPY ./contrib/nemosys_tpls.tar.gz /Nemosys/
+COPY ./scripts/build.sh /Nemosys/
 
 WORKDIR /Nemosys/
 
 #RUN pip3 install -r requirements.txt
 
-ENV PYTHONPATH=/Nemosys/python LD_LIBRARY_PATH=/Nemosys/build/lib
+#ENV PYTHONPATH=/Nemosys/python LD_LIBRARY_PATH=/Nemosys/build/lib
 
-#RUN ./build.sh $PWD $PWD/contrib/nemosys_tpls.tar.gz
+RUN ./build.sh $PWD/nemosys_tpls.tar.gz /Nemosys-Deps
 
 ENTRYPOINT /bin/bash
