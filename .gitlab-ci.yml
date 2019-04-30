@@ -7,14 +7,14 @@ before_script:
   - CXX=mpicxx
   - >
     cmake
-    -DCMAKE_PREFIX_PATH=/Nemosys-Deps/vtk:/Nemosys-Deps/opencascade:/Nemosys-Deps/gmsh:/Nemosys-Deps/netgen
+    -DCMAKE_PREFIX_PATH=/Nemosys-Deps/vtk;/Nemosys-Deps/opencascade;/Nemosys-Deps/gmsh;/Nemosys-Deps/netgen
     -DCMAKE_INSTALL_PREFIX=../install
     -DENABLE_PYTHON_BINDINGS=ON
     -DENABLE_BUILD_UTILS=ON
     -DENABLE_MPI=ON
     -DENABLE_TESTING=ON
-    -DBUILD_SHARED_LIBS=ON ..
-    -DENABLE_EXODUS=ON
+    -DBUILD_SHARED_LIBS=ON
+    -DENABLE_EXODUS=ON ..
   - make -j$(nproc)
   - make install
 
