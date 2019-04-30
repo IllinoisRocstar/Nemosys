@@ -468,7 +468,6 @@ ENDIF(ENABLE_BUILD_UTILS)
 # Building python wrapper #####################################################
 IF (ENABLE_PYTHON_BINDINGS)
   ADD_SUBDIRECTORY(python)
-  file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib)
 ENDIF()
 
 # Building converters ##########################################################
