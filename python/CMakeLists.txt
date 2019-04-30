@@ -20,7 +20,7 @@ configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
 
 add_custom_target(pyNemosys ALL
-                  COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build --prefix ${CMAKE_INSTALL_PREFIX}/Nemosys/python)
+                  COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build)
 add_dependencies(pyNemosys Nemosys)
 
 # set these so python can find the wrapping. Should look into generalizing this
