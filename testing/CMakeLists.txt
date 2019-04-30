@@ -127,6 +127,7 @@ else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   set(TEST_ENV_LD_OPTIONS
 "LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
+${CMAKE_CURRENT_BINARY_DIR}/..:\
 ${VTK_LIB_DIR}:\
 ${NETGEN_LIB_PATH}:\
 ${OpenCASCADE_LIBRARY_DIR}:\
@@ -227,13 +228,9 @@ IF (ENABLE_PYTHON_BINDINGS)
     message(STATUS "Python interpreter NOT found")
   else(NOT PYTHONINTERP_FOUND)
     message(STATUS "Python interpreter found")
-    ADD_TEST(NAME testPyNemosys
+    configure_file(test_scripts/test_pyNemosys27.py ${CMAKE_CURRENT_BINARY_DIR}/../python/test_pyNemosys27.py)
+    add_test(NAME testPyNemosys
         COMMAND  ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-                                         "PATH=${SWIG_DIR};$ENV{PATH}"
-                                         "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR};$ENV{PYTHONPATH}"
-                                         #"PYTHONPATH=${CMAKE_INSTALL_PREFIX}/Nemosys/python/src:${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib/python2.7/site-packages"
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/test_pyNemosys27.py --topsrcdir ${CMAKE_CURRENT_SOURCE_DIR} )
-    set_property(TEST testPyNemosys
-                 PROPERTY ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR}/lib/:${CMAKE_INSTALL_PREFIX}/vtk/lib")
+            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/../python/setup.py test)
   endif (NOT PYTHONINTERP_FOUND)
 ENDIF()
