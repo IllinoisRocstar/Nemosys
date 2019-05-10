@@ -56,9 +56,18 @@ class meshSrch : public meshBase
 
   // misc
   public:
-    std::vector<std::vector<double>> getCellVec(int id) const;
-    std::vector<double> getPoint(int id) const;    
-    int getCellType() const {};
+    std::vector<std::vector<double>> getCellVec(int id) const override;
+    std::vector<double> getPoint(int id) const override;
+    int getCellType() const override {};
+    std::vector<std::vector<double>> getVertCrds() const override {};
+    std::map<int, std::vector<double>> getCell(int id) const override {};
+    void inspectEdges(const std::string& ofname) const override {};
+    vtkSmartPointer<vtkDataSet> extractSurface() override {};
+    int getCellDataIdx(const char *name) override {};
+    std::vector<double> getCellLengths() const override {};
+    std::vector<int> getConnectivities() const override {};
+
+    void write(const std::string &fname) const override {};
 
   // internal management
   private:
