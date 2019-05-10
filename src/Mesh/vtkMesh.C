@@ -35,38 +35,7 @@
 
 using namespace nemAux;
 
-void vtkMesh::write()
-{
-  if (!dataSet)
-  {
-    std::cout << "No dataSet to write!" << std::endl;
-    exit(1);
-  }
-   
-  std::string extension = find_ext(filename);
- 
-  if (extension == ".vtp")
-    writeVTFile<vtkXMLPolyDataWriter> (filename,dataSet);
-  else if (extension == ".vts")
-    writeVTFile<vtkXMLStructuredGridWriter> (filename, dataSet);
-  else if (extension == ".vtr")
-    writeVTFile<vtkXMLRectilinearGridWriter> (filename,dataSet);
-  else if (extension == ".vti")
-    writeVTFile<vtkXMLImageDataWriter> (filename, dataSet);
-  else if (extension == ".stl") 
-  {
-    writeVTFile<vtkSTLWriter> (filename, dataSet);
-  }
-  else if (extension == ".vtk")
-    writeVTFile<vtkUnstructuredGridWriter> (filename, dataSet); // legacy vtk writer
-  else
-  {
-    std::string fname = trim_fname(filename, ".vtu");
-    writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
-  }
-} 
-
-void vtkMesh::write(std::string fname)
+void vtkMesh::write(const std::string &fname) const
 {
   if (!dataSet)
   {
@@ -88,23 +57,22 @@ void vtkMesh::write(std::string fname)
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
   else if (extension == ".vtk")
     writeVTFile<vtkUnstructuredGridWriter> (fname, dataSet); // legacy vtk writer
-  else
-    writeVTFile<vtkXMLUnstructuredGridWriter> (fname,dataSet);   // default is vtu 
-  
+  else {
+    std::string fname_tmp = trim_fname(fname, ".vtu");
+    writeVTFile<vtkXMLUnstructuredGridWriter>(fname_tmp, dataSet);   // default is vtu
+  }
 }
 
-vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, std::string fname)
+vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp,
+                 const std::string &fname)
 {
-  if (dataSet_tmp)
-  {  
+  if (dataSet_tmp) {
     dataSet = dataSet_tmp;
     filename = fname;
     numCells = dataSet->GetNumberOfCells();
     numPoints = dataSet->GetNumberOfPoints();
     std::cout << "vtkMesh constructed" << std::endl;
-  }
-  else
-  {
+  } else {
     std::cerr << "Nothing to copy!" << std::endl;
     exit(1);
   }
@@ -113,8 +81,9 @@ vtkMesh::vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, std::string fname)
 vtkMesh::vtkMesh(const std::vector<double>& xCrds,
                  const std::vector<double>& yCrds,
                  const std::vector<double>& zCrds,
-                 const std::vector<int>& elemConn, const int cellType,
-                 std::string newname)
+                 const std::vector<int>& elemConn,
+                 const int cellType,
+                 const std::string &newname)
 {
   if (!(xCrds.size() == yCrds.size() && xCrds.size() == zCrds.size()))
   {
@@ -854,7 +823,7 @@ std::vector<std::vector<double>> vtkMesh::getCellVec(int id) const
 }
 
 
-void vtkMesh::inspectEdges(const std::string& ofname)
+void vtkMesh::inspectEdges(const std::string& ofname) const
 {
   std::ofstream outputStream(ofname);
   if (!outputStream.good())
@@ -897,7 +866,7 @@ std::vector<int> vtkMesh::getConnectivities() const
   return connectivities;
 }
 
-void vtkMesh::report()
+void vtkMesh::report() const
 {
   if (!dataSet)
   {

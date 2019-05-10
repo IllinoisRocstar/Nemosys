@@ -5,7 +5,7 @@
 #include <vtkCellType.h>
 #include <AuxiliaryFunctions.H>
 
-MeshQuality::MeshQuality(meshBase* _mesh)
+MeshQuality::MeshQuality(const meshBase* _mesh)
   : mesh(_mesh)
 {
   qualityFilter = vtkSmartPointer<vtkMeshQuality>::New();
@@ -19,11 +19,11 @@ MeshQuality::MeshQuality(meshBase* _mesh)
 
 MeshQuality::~MeshQuality()
 {
-  mesh->unsetCellDataArray("Quality");
-  mesh->unsetFieldDataArray("Mesh Triangle Quality");
-  mesh->unsetFieldDataArray("Mesh Quadrilateral Quality"); 
-  mesh->unsetFieldDataArray("Mesh Tetrahedron Quality");  
-  mesh->unsetFieldDataArray("Mesh Hexahedron Quality");
+//  mesh->unsetCellDataArray("Quality");
+//  mesh->unsetFieldDataArray("Mesh Triangle Quality");
+//  mesh->unsetFieldDataArray("Mesh Quadrilateral Quality");
+//  mesh->unsetFieldDataArray("Mesh Tetrahedron Quality");
+//  mesh->unsetFieldDataArray("Mesh Hexahedron Quality");
 }
 
 void MeshQuality::checkMesh(std::ostream& outputStream)
@@ -114,7 +114,7 @@ void MeshQuality::checkMesh()
   checkMesh(std::cout);
 }
 
-void MeshQuality::checkMesh(std::string fname)
+void MeshQuality::checkMesh(const std::string &fname)
 {
   std::ofstream outputStream(fname);
   if (!outputStream.good())
