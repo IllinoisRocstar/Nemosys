@@ -302,6 +302,7 @@ INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 
 # Setting compile and link flags
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
+                 src/Mesh/gmshMesh.C
                  src/MeshGeneration/meshGen.C
                  src/MeshGeneration/netgenGen.C src/MeshGeneration/netgenParams.C
                  src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
