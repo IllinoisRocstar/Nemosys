@@ -34,6 +34,7 @@ ADD_EXECUTABLE(runMeshGenTest test_scripts/testMeshGen.C)
 ADD_EXECUTABLE(runPNTGenTest test_scripts/testPNTGen.C)
 ADD_EXECUTABLE(runAutoVerifTest test_scripts/testAutoVerification.C)
 add_executable(runRefinementTest test_scripts/testRefinement.C)
+add_executable(runGmshMeshTest test_scripts/testGmshMesh.C)
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
@@ -43,6 +44,7 @@ TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runPNTGenTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
 target_link_libraries(runRefinementTest gtest gtest_main Nemosys)
+target_link_libraries(runGmshMeshTest gtest gtest_main Nemosys)
 
 add_custom_target(unittests)
 add_dependencies(unittests runCubatureInterpTest
@@ -54,6 +56,7 @@ add_dependencies(unittests runCubatureInterpTest
                            runPNTGenTest
                            runAutoVerifTest
                            runRefinementTest
+                           runGmshMeshTest
 )
 
 # custom built test for EPIC
@@ -79,6 +82,7 @@ SET(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
 SET(EP16_TESTDIR ${TEST_DATA}/Ep16Test)
 SET(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
 set(REFINEMENT_TESTDIR ${TEST_DATA}/RefinementTest)
+set(GMSHMESH_TESTDIR ${TEST_DATA}/GmshMeshTest)
 SET(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 SET(meshgendefault ${MESHGEN_TESTDIR}/default.json)
 SET(meshgenunif_in ${MESHGEN_TESTDIR}/unif_in.json)
@@ -212,6 +216,10 @@ ADD_TEST(NAME pntgentest
         runPNTGenTest ${PNTGEN_TESTDIR}/bench1.json ${PNTGEN_TESTDIR}/bench1_conv_gold.pntmesh
                       ${PNTGEN_TESTDIR}/bench5.json ${PNTGEN_TESTDIR}/bench5_conv_gold.pntmesh
                       ${PNTGEN_TESTDIR}/bench6.json ${PNTGEN_TESTDIR}/bench6_conv_gold.pntmesh
+)
+add_test(NAME gmshMeshTest
+    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+        runGmshMeshTest ${GMSHMESH_TESTDIR}/cube.msh
 )
 IF (ENABLE_EPIC)
   ADD_TEST(NAME ep16test
