@@ -158,19 +158,19 @@ class meshBase
   // --- access
   public:
     // get point with id
-    virtual std::vector<double> getPoint(int id) const {}
+    virtual std::vector<double> getPoint(int id) const = 0;
     // get 3 vecs with x,y and z coords
-    virtual std::vector<std::vector<double>> getVertCrds() const {}
+    virtual std::vector<std::vector<double>> getVertCrds() const = 0;
     // get cell with id : returns point indices and respective coordinates
-    virtual std::map<int, std::vector<double>> getCell(int id) const {}
+    virtual std::map<int, std::vector<double>> getCell(int id) const = 0;
     // get vector of coords of cell with id
-    virtual std::vector<std::vector<double>> getCellVec(int id) const {}
+    virtual std::vector<std::vector<double>> getCellVec(int id) const = 0;
     // get edge lengths of dataSet
     virtual void inspectEdges(const std::string &ofname) const = 0;
     // get this meshes' dataSet
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
     // extract the surface mesh
-    virtual vtkSmartPointer<vtkDataSet> extractSurface(){}
+    virtual vtkSmartPointer<vtkDataSet> extractSurface() = 0;
     // register data to dataSet's point data
     virtual void
     setPointDataArray(const char *name,
@@ -203,18 +203,18 @@ class meshBase
     // delete array with id from dataSet's field data
     virtual void unsetFieldDataArray(const char *name) {}
     // get diameter of circumsphere of each cell
-    virtual std::vector<double> getCellLengths() const {}
+    virtual std::vector<double> getCellLengths() const = 0;
     // get center of a cell
-    virtual std::vector<double> getCellCenter(int cellID) const {}
+    virtual std::vector<double> getCellCenter(int cellID) const = 0;
     // build locators for efficient search operations
     vtkSmartPointer<vtkCellLocator> buildLocator();
     // get cell type as an integer
     // assumes all elements are the same type
     virtual int getCellType() const = 0;
-    // get connectivities. this is only safe to use if mesh has cells of the same type
-    // or you have information on the number of cells of each type and the order in 
-    // which they appear (for look up in resulting vector)
-    virtual std::vector<int> getConnectivities() const {}
+    // get connectivities. this is only safe to use if mesh has cells of the
+    // same type or you have information on the number of cells of each type and
+    // the order in which they appear (for look up in resulting vector)
+    virtual std::vector<int> getConnectivities() const = 0;
 
   // --- data transfer
   public:
