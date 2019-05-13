@@ -16,3 +16,9 @@ add_library(ANN
 )
 
 target_include_directories(ANN PUBLIC include)
+
+install(TARGETS ANN EXPORT NEMoSys
+        RUNTIME DESTINATION Nemosys/bin
+        LIBRARY DESTINATION Nemosys/lib
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

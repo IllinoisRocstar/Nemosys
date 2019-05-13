@@ -132,3 +132,9 @@ if(ENABLE_BENCHMARKS)
   add_subdirectory(Benchmarks/moveIt)
   add_subdirectory(Benchmarks/optimize)
 endif()
+
+install(TARGETS MAdLib EXPORT NEMoSys
+        RUNTIME DESTINATION Nemosys/bin
+        LIBRARY DESTINATION Nemosys/lib
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

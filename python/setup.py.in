@@ -22,6 +22,7 @@ pyNemosys = Extension(
 setup(
     name='pyNemosys',
     version='${NEMOSYS_VERSION}',
+    py_modules=['pyNemosys'],
     ext_modules=[pyNemosys],
     test_suite='test_pyNemosys27'
 )
