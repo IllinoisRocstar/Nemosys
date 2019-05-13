@@ -4,12 +4,14 @@
 
 // Nemosys
 #include <ConversionDriver.H>
-#include "meshSrch.H"
 #include <AuxiliaryFunctions.H>
 #include <vtkMesh.H>
 #include <vtkCellData.h>
 #include <vtkIdList.h>
 
+#ifdef HAVE_EXODUSII
+#include "meshSrch.H"
+#endif
 
 // vtk
 #include <vtkIdList.h>
