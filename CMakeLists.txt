@@ -325,13 +325,12 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/MeshPartitioning/meshStitcher.C
                  src/cgnsWriter.C src/gridTransfer.C
                  src/Mesh/cobalt.C src/Mesh/patran.C
-                 src/MeshOperation/meshSrch.C
                  src/InputGeneration/inputGen.C
                  src/Drivers/InputGenDriver.C)
 
 # optional source files
 IF (ENABLE_EXODUS)
-  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C src/MeshOperation/meshSrch.C)
 ENDIF()
 
 IF (ENABLE_EPIC)
