@@ -130,6 +130,9 @@ inline std::string find_name(std::string fname);
 // print a vector
 template<typename T>
 void printVec(const std::vector<T>& v);
+// find if in vector
+template<typename T>
+bool valInVec(const std::vector<T>& v, T val);
 // flip a pair
 template<typename A, typename B>
 std::pair<B,A> flip_pair(const std::pair<A,B> &p);
@@ -497,6 +500,19 @@ void printVec(const std::vector<T>& v)
     std::cout << std::setprecision(15) << v[i] << " ";
   std::cout << std::endl;
 }
+
+// find is val is in vector
+template<typename T>
+bool valInVec(const std::vector<T>& v, T val)
+{
+    //std::vector<T>::iterator it = v.begin();
+    auto it = v.begin();
+    for (; it!=v.end(); it++)
+        if (*it == val)
+            break;
+    return ( it != v.end() );
+}
+
 
 template<typename A, typename B>
 std::pair<B,A> flip_pair(const std::pair<A,B> &p)
