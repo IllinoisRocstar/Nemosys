@@ -61,12 +61,27 @@ gmshMesh::gmshMesh(const std::string &fname) {
 
   // Add mesh vertices
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  // Map from gmsh Index `long int` to vtk Id `vtkIdType`. Necessary since gmsh
+  // indices are not their position in the `mesh_vertices` array.
   std::map<long int, vtkIdType> gmshIndex2vtkId;
   for (const auto &entity : entities)
-    for (const auto &mesh_vertex : entity->mesh_vertices)
-      mesh_vertex->getIndex();
+    for (const auto &mesh_vertex : entity->mesh_vertices) {
+      // Order of inserting into map and inserting into vtkPoints is important.
+      // Be mindful if editing.
+      gmshIndex2vtkId[mesh_vertex->getIndex()] = points->GetNumberOfPoints();
       // `SPoint3` has implicit conversion into `double *`
       points->InsertNextPoint(mesh_vertex->point());
+
+//      std::cout << "Inserted point. From mesh_vertex: "
+//                << mesh_vertex->point().x() << "  "
+//                << mesh_vertex->point().y() << "  "
+//                << mesh_vertex->point().z() << "  "
+//                << "  To vtkPoints: "
+//                << *(points->GetPoint(gmshIndex2vtkId[mesh_vertex->getIndex()])) << "  "
+//                << *(points->GetPoint(gmshIndex2vtkId[mesh_vertex->getIndex()])+1) << "  "
+//                << *(points->GetPoint(gmshIndex2vtkId[mesh_vertex->getIndex()])+2) << "  "
+//                << std::endl;
+    }
   dataSet_tmp->SetPoints(points);
 
   // Count mesh elements
@@ -89,7 +104,9 @@ gmshMesh::gmshMesh(const std::string &fname) {
         // Add vertices to vtkIdList
         for (std::size_t k = 0; k != entity->getMeshElement(j)->getNumVertices(); ++k)
           idList->InsertNextId(
-              entity->getMeshElement(j)->getVertexVTK(k)->getIndex() - 1);
+//              entity->getMeshElement(j)->getVertexVTK(k)->getIndex() - 1);
+              gmshIndex2vtkId[entity->getMeshElement(j)->getVertex(k)->getIndex()]
+          );
         // Add cell to vtkUnstructuredGrid
         dataSet_tmp->InsertNextCell(entity->getMeshElement(j)->getTypeForVTK(), idList);
       } else {
