@@ -7,7 +7,7 @@ automated mesh generation, mesh quality analysis, adaptive mesh refinement and d
 between arbitrary meshes. Python bindings to the Nemosys library can also be enabled.
 
 ## Version ##
-Version 0.25.0 -
+Version 0.25.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch. We will:
 * Increase the patch version for bug fixes, security fixes, and code documentation. 
