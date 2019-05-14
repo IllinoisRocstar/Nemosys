@@ -205,6 +205,10 @@ void gmshMesh::write(const std::string &fname) const {
 //  for(int i = 0; i < 4; i++)
 //    _nemosysGModel.storePhysicalTagsInEntities(i, physicals[i]);
 
+  // Renumber the indices to be contiguous.
+  _nemosysGModel.renumberMeshVertices();
+  _nemosysGModel.renumberMeshElements();
+
   // Write the file.
   _nemosysGModel.save(fname);
 
