@@ -6,10 +6,10 @@
 #include <algorithm>
 #include <set>
 #include <algorithm>
-#include "Gmsh.h"
-#include "GModel.h"
-#include "GVertex.h"
-#include "MElement.h"
+#include "gmsh/GmshGlobal.h"
+#include "gmsh/GModel.h"
+#include "gmsh/GVertex.h"
+#include "gmsh/MElement.h"
 #include "exodusII.h"
 
 typedef std::set<int> tri;

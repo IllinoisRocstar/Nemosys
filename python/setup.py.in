@@ -1,18 +1,29 @@
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
+# from distutils.core import setup, Extension
 
-pyNemosys = Extension('_pyNemosys',
-                    sources = [file for file in '${WRAPPER_SOURCE_FILES}'.split(';')],
-                    include_dirs = [dir for dir in '${WRAPPER_INCLUDE_DIRS}'.split(';')] \
-                               + [dir for dir in '${VTK_INCLUDE_DIRS}'.split(';')]\
-                               + ['${MADLIB_INCPATH}', '${GMSH_INCPATH}', '${CGNS_INCPATH}', '${ANN_INCPATH}', '${METIS_INCPATH}', '${NETGEN_INCPATH}'],
-                    libraries = ['Nemosys'],
-                    library_dirs = ['${CMAKE_BINARY_DIR}/lib/'],
-                    swig_opts=['-c++'],
-                    extra_compile_args = ['-std=c++11', '-w']
-                    )
+pyNemosys = Extension(
+    '_pyNemosys',
+    sources='${WRAPPER_SOURCE_FILES}'.split(';'),
+    include_dirs=('${WRAPPER_INCLUDE_DIRS}'.split(';')
+                  + '${VTK_INCLUDE_DIRS}'.split(';')
+                  + '${GMSH_INCPATH}'.split(';')
+                  + '${OpenCASCADE_INCLUDE_DIR}'.split(';')
+                  + '${CGNS_INCPATH}'.split(';')
+                  + '${ANN_INCPATH}'.split(';')
+                  + '${METIS_INCPATH}'.split(';')
+                  + '${NETGEN_INCLUDE_DIRS}'.split(';')
+                  ),
+    libraries=['Nemosys'],
+    library_dirs=['${CMAKE_BINARY_DIR}'],
+    runtime_library_dirs=['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/Nemosys/lib'],
+    swig_opts=['-c++'],
+    extra_compile_args=['-std=c++11', '-w']
+)
 
-
-setup(name='_pyNemosys',
-      version='${NEMOSYS_VERSION}',
-      ext_modules = [pyNemosys]
-     )
+setup(
+    name='pyNemosys',
+    version='${NEMOSYS_VERSION}',
+    py_modules=['pyNemosys'],
+    ext_modules=[pyNemosys],
+    test_suite='test_pyNemosys27'
+)

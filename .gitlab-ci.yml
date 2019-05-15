@@ -1,18 +1,23 @@
-image: ilrocstar/nemosys-test-img:v1
+image: ilrocstar/nemosys-test-img:v2
 
 before_script:
- - apt update --fix-missing
- - apt install -y python2.7-dev python-pip libcgns-dev
- - cp -r /tmp/install .
- - SRCDIR=$PWD
- - mkdir build && cd build
- - CC=mpicc
- - CXX=mpicxx
- - CMAKE_PREFIX_PATH=../install/vtk:../install/madlib:../install/gmsh:../install/hdf5:../install/netgen cmake -DENABLE_PYTHON_BINDINGS=ON -DENABLE_BUILD_UTILS=ON -DENABLE_TESTING=ON -DENABLE_MPI=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=../install ..
- - make -j$(nproc)
- - make install 
- - export LD_LIBRARY_PATH=$SRCDIR/install/Nemosys/lib:$SRCDIR/install/vtk/lib
- - export PYTHONPATH=../install/Nemosys/python/lib/python2.7/site-packages 
+  - apt update --fix-missing
+  - mkdir build && cd build
+  - CC=mpicc
+  - CXX=mpicxx
+  - >
+    cmake ..
+    -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
+    -DCMAKE_INSTALL_PREFIX=../install
+    -DENABLE_PYTHON_BINDINGS=ON
+    -DENABLE_BUILD_UTILS=ON
+    -DENABLE_MPI=ON
+    -DENABLE_TESTING=ON
+    -DBUILD_SHARED_LIBS=ON
+    -DENABLE_EXODUS=ON
+  - make -j$(nproc)
+  - make install
+
 job1:
  script:
   - make test

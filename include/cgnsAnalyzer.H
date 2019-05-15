@@ -24,7 +24,7 @@
 
 // third party
 #include <cgnslib.h>
-#include <ANN.h>
+#include <ANN/ANN.h>
 //#include <Dense>
 
 //#if CGNS_VERSION < 3100

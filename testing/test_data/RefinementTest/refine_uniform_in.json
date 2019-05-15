@@ -1,8 +1,8 @@
 {
     "Program Type": "Refinement",
     "Mesh File Options": {
-        "Input Mesh File": "unrefined_beam.vtu",
-        "Output Mesh File": "refined_beam.vtu"
+        "Input Mesh File": "@REFINEMENT_TESTDIR@/unrefined_beam.vtu",
+        "Output Mesh File": "refined_beam_uniform.vtu"
     },
     "Refinement Options": {
         "Refinement Method": "uniform",

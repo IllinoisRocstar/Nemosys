@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <set>
+#include <map>
 #include <algorithm>
 #include <vtkCellTypes.h>
 

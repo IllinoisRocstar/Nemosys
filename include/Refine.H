@@ -3,6 +3,9 @@
 
 #include <meshBase.H>
 
+//MAd Lib
+#include <MAdLib.h>
+
 class Refine
 {
   // constructors and destructors

@@ -7,7 +7,8 @@ from shutil import copy2
 import argparse
 from inspect import currentframe, getframeinfo
 
-global topsrcdir 
+topsrcdir = "@CMAKE_CURRENT_BINARY_DIR@"
+
 
 class TestPyNemosys(unittest.TestCase):
 
@@ -17,25 +18,26 @@ class TestPyNemosys(unittest.TestCase):
 
     def testMeshBase(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import meshBase, diffMesh
-       # tmpdirname=tempfile.mkdtemp()
-       # os.chdir(tmpdirname)
-       # path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
-       # for f in os.listdir(path):
-       #     copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
+
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
         os.chdir(path)
 
         with open('transfer.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
 
-        source_file   = str(inputjson['Mesh File Options']['Input Mesh Files']['Source Mesh'])
-        target_file   = str(inputjson['Mesh File Options']['Input Mesh Files']['Target Mesh'])
-        method_name   = str(inputjson['Transfer Options']['Method'])
-        array_names   = inputjson['Transfer Options']['Array Names']
+        source_file = str(inputjson['Mesh File Options']['Input Mesh Files']['Source Mesh'])
+        target_file = str(inputjson['Mesh File Options']['Input Mesh Files']['Target Mesh'])
+        method_name = str(inputjson['Transfer Options']['Method'])
+        array_names = inputjson['Transfer Options']['Array Names']
         array_names = [str(i) for i in array_names]
-        output_file   = str(inputjson['Mesh File Options']['Output Mesh File'])
+        output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         source = meshBase.Create(source_file)
         target = meshBase.Create(target_file)
         source.transfer(target, method_name, array_names)
@@ -46,95 +48,93 @@ class TestPyNemosys(unittest.TestCase):
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), target), 0)
 
-
     def testTransferDriver(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
-        #tmpdirname=tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
-        #for f in os.listdir(path):
-        #    copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
+
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
         os.chdir(path)
 
         with open('transfer.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
 
-        source_file   = str(inputjson['Mesh File Options']['Input Mesh Files']['Source Mesh'])
-        target_file   = str(inputjson['Mesh File Options']['Input Mesh Files']['Target Mesh'])
-        method_name   = str(inputjson['Transfer Options']['Method'])
-        array_names   = inputjson['Transfer Options']['Array Names']
+        source_file = str(inputjson['Mesh File Options']['Input Mesh Files']['Source Mesh'])
+        target_file = str(inputjson['Mesh File Options']['Input Mesh Files']['Target Mesh'])
+        method_name = str(inputjson['Transfer Options']['Method'])
+        array_names = inputjson['Transfer Options']['Array Names']
         array_names = [str(i) for i in array_names]
-        output_file   = str(inputjson['Mesh File Options']['Output Mesh File'])
+        output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         check_quality = inputjson['Transfer Options']['Check Transfer Quality'] in ['true', 'True']
         gold_output_file = 'gold_transfer_test.vtu'
 
         TransferDriver(source_file, target_file, method_name, array_names, output_file, check_quality)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
-
     def testTransferDriver_load_json_obj(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
-        #for f in os.listdir(path):
-        #    copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
+
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
         os.chdir(path)
 
         with open('transfer.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
 
-        output_file   = str(inputjson['Mesh File Options']['Output Mesh File'])
+        output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         gold_output_file = 'gold_transfer_test.vtu'
 
         td = TransferDriver.readJSON(inputjson)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
-
     def testTransferDriver_load_json_filename(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import meshBase, TransferDriver, diffMesh
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
-        #for f in os.listdir(path):
-        #    copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/transfer/'
+
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/transfer/'
         os.chdir(path)
 
-        output_file   = 'transfer_test.vtu'
+        output_file = 'transfer_test.vtu'
         gold_output_file = 'gold_transfer_test.vtu'
 
         td = TransferDriver.readJSON('transfer.json')
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
-
     def testNemDriver_readJSON(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import NemDriver
-        #TODO: this
-
+        # TODO: this
 
     def testRefineDriver_value(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
-        #for f in os.listdir(path):
-        #    copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
-        os.chdir(path)
 
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/RefinementTest/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/RefinementTest/'
+        os.chdir(path)
 
         with open('refine_value.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
@@ -153,19 +153,19 @@ class TestPyNemosys(unittest.TestCase):
 
         refdrvobj = RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin,
                                  edgescale, ofname, transferData)
-        #self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
-
+        # self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
     def testRefineDriver_uniform(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/RefinementTest/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
         with open('refine_uniform.json', 'r') as jsonfile:
@@ -182,105 +182,101 @@ class TestPyNemosys(unittest.TestCase):
         refdrvobj = RefineDriver(_mesh, method, edgescale, ofname, transferData)
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(ofname)), 0)
 
-
     def testRefineDriver_readJSON_obj(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
 
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/RefinementTest/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
         with open('refine_value.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
 
-        output_file   = str(inputjson['Mesh File Options']['Output Mesh File'])
+        output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver.readJSON(inputjson)
-        #self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0) 
+        # self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
     def testRefineDriver_readJSON_filename(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import RefineDriver, diffMesh, meshBase
 
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/refine/'
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/RefinementTest/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/RefinementTest/'
         os.chdir(path)
 
-        output_file   = 'refined_beam1.vtu'
+        output_file = 'refined_beam1.vtu'
         gold_output_file = 'gold_refined_beam_value.vtu'
 
         refdrvobj = RefineDriver.readJSON('refine_value.json')
-        #self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
-
+        # self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
     def testMeshGenDriver_readJSON_obj(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import MeshGenDriver, diffMesh, meshBase
 
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/meshGen/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/meshGen/'
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/meshGen/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/meshGen/'
         os.chdir(path)
 
         with open('meshGen.json', 'r') as jsonfile:
             inputjson = json.load(jsonfile)
 
-        output_file   = str(inputjson['Mesh File Options']['Output Mesh File'])
+        output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         gold_output_file = 'gold_hinge.vtu'
 
         mshgndrvobj = MeshGenDriver.readJSON(inputjson)
 
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
-
     def testMeshGenDriver_readJSON_filename(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import MeshGenDriver, diffMesh, meshBase
 
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/meshGen/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/meshGen/'
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/meshGen/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/meshGen/'
         os.chdir(path)
 
-        output_file   = 'hinge.vtu'
+        output_file = 'hinge.vtu'
         gold_output_file = 'gold_hinge.vtu'
 
         mshgndrvobj = MeshGenDriver.readJSON('meshGen.json')
 
         self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
 
-
     def testMeshQualityDriver(self):
         frameinfo = getframeinfo(currentframe())
-        print (str(frameinfo.filename)+'-'+str(frameinfo.lineno))
+        print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
         from pyNemosys import MeshQualityDriver, meshBase
 
-        #tmpdirname = tempfile.mkdtemp()
-        #os.chdir(tmpdirname)
-        #path =  topsrcdir + '/test_data/test_pyNemosys/meshQuality/'
-        #for f in os.listdir(path):
-        #  copy2(os.path.join(path, f), tmpdirname)
-        path =  topsrcdir + '/test_data/test_pyNemosys/meshQuality/'
+        # tmpdirname = tempfile.mkdtemp()
+        # os.chdir(tmpdirname)
+        # path = topsrcdir + '/test_data/test_pyNemosys/meshQuality/'
+        # for f in os.listdir(path):
+        #     copy2(os.path.join(path, f), tmpdirname)
+        path = topsrcdir + '/test_data/test_pyNemosys/meshQuality/'
         os.chdir(path)
 
         with open('MeshQuality.json', 'r') as jsonfile:
@@ -310,17 +306,11 @@ def qualityfile_equals(filename1, filename2, epsilon):
     return True
 
 
-
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--topsrcdir', default='.')
     parser.add_argument('unittest_args', nargs='*')
 
     args = parser.parse_args()
-    global topsrcdir
-    topsrcdir = args.topsrcdir
 
     # Now set the sys.argv to the unittest_args (leaving sys.argv[0] alone)
     sys.argv[1:] = args.unittest_args

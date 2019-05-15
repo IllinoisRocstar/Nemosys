@@ -1,0 +1,89 @@
+// -*- C++ -*-
+
+Input {
+  Mesh {
+    MshFile = "spheresFull.msh";
+    GeoFile = "spheresFull.geo";
+  }
+}
+Output {
+  Frequency = 1;
+  Type = Msh;
+}
+Task {
+  Type = MobileObject; // MobileObject RemoveRegion SizeField RemoveSliverFaces LaplaceSmoothing GeoConstraints TopoConstraints FaceSwap UglyMesh RemoveSliverRegions DESC EdgeSwap GeoMatcher EdgeSplit EdgeCollapse EdgeSplitCollapse FaceCollapse OptimizeLength OptimizeShape None
+}
+Debug {
+  DebugLevel = 1;
+}
+Adaptation {
+  CollapseOnBoundary = Yes; // No Yes
+  BoundaryCollapses {
+    Tolerance = 1.e6;
+  }
+  SwapOnBoundary = Yes;
+  BoundarySwaps {
+    Tolerance = 1.e6;
+  }
+  TrackGeometry = Yes;
+  VertexSnapping {
+    IsMeshTheCavity = Yes;
+    CavityThickness = 0;
+    StiffnessAlteration = 1.;
+  }
+  // SmoothSizeField = No; // No Yes
+  SizeFieldSmoothing {
+    // MaximumGradient = 1.000000e+00;
+  }
+}
+MovingObjects {
+  Object = "Sphere" {
+    Geometry {
+      GeometricalType = Face; 
+//       GeometricalTags = [26 28 30 32 34 36 38 40];
+      GeometricalTags = [1];
+    }
+    Kinematics {
+      KinematicsSpecification = Velocity;
+      Velocity {
+        Formulation = ["0." "0." "0."];
+      }
+    } 
+//     LocalSizeField {
+//       DistanceComputation = ToWallFaces;
+//       Orientation = Anisotropic;
+//       Radius = 10.01;
+//       Isotropic {
+//         Size  = "0.005+(x/1.0)*(0.1-0.005)"; // linear
+//         //Size  = "0.02+(sqrt(x)/sqrt(0.5))*(0.2-0.02)"; // sqrt
+//       }
+//       Anisotropic {
+//         NormalSize  = "0.02+(x/1.0)*(0.2-0.02)"; // linear
+//         TangentSize = "0.2";
+//       }
+//       CurvatureBasedLimiter {
+//         Enable = Yes;
+//         TangentSizeOverRadius = 0.5;
+//         CurvatureLimiter = 0.5; // in the geometry, smallest radius is around 2.5
+//       }
+//     }
+  }
+}
+SizeField = "Analytical" {
+  Type = Analytical;
+  Analytical {
+    OrientationType = Isotropic; // Isotropic Anisotropic
+    Isotropic {
+      Length = "0.3";
+    }
+  }
+}
+NodeMotion {
+  Type = None; // ElasticAnalogy ForceBoundaries None
+  // StiffnessAlteration = 1.000000e+00;
+}
+TimeSpecifications {
+  MaxTimeSteps = 5;
+  TimeStep = 0.01;
+  FinalTime = 1.0;
+}

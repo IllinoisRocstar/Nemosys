@@ -1,0 +1,52 @@
+MAdLib - README file.
+
+See the Copyright.txt, License.txt and Credits.txt files for copyright, 
+license and authors informations. You should have received a copy of 
+these files along with MAdLib. If not, see <http://www.madlib.be/license/>.
+
+Please report bugs and problems to <contrib@madlib.be>.
+
+To compile and install the MAdLib library, you should first run the 
+following command:
+ make -f Makefile.svn
+This will generate the 'configure' and 'Makefile.in' files required in the 
+second step. You need the GNU Autotools (aclocal, autoconf, automake) to 
+generate these files.
+
+You can then compile the library by typing
+ ./configure [opts];
+ make;
+ make install;
+
+By default, no executable is compiled. Add 
+--enable-moveIt  (just the principal executable)
+or
+--enable-benchmarks   (all the executables)
+at the configure time to add it to the compilation/installation process.
+
+The documentation is generated and installed automatically if you have 
+Doxygen installed but you can also generate it (in doc/) by
+ make doc;
+
+The pkgconfig file MAdLib.pc is generated and installed by
+ make pc
+
+Note that the configure and make commands can be called from any 
+third-part directory. All files built during the compilation 
+processes will be stored in that directory, except the documentation.
+
+Also note that you need a linear system solver for the benchmarks that include 
+the global node repositioning algorithm, like 'moveIt/example/tube' (for inst. PETSc) 
+and a library to compute the distance to a cloud of points (for inst. ANN: add 
+--enable-ann in the configure command) for benchmarks including local size fields.
+
+To see what options are available, type
+ ./configure --help
+
+If you compile with the flag '--enable-gmsh', ensure that the version of 
+Gmsh your are linking with was compiled with a minimal number of external 
+packages: 
+disable all external packages at Gmsh configuration time except (optionally) 
+OpenCascade (use the corresponding option '--enable-occ' in MAdLib 
+configuration if Gmsh was compiled with OpenCascade). Enable the parser, 
+mathex, postpro. 

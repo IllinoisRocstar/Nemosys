@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(Nemosys)
+PROJECT(Nemosys CXX C)
 ENABLE_TESTING()
 
 # this variable controls the default value of the options which are normally set
@@ -15,25 +15,26 @@ MACRO(opt OPTION HELP VALUE)
 ENDMACRO(opt)
 
 ## writing remake scripts
-FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
-"#!/bin/bash
- rm -rf build
- mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
- make -j
- make install")
-FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
-"#!/bin/bash
- rm -rf build
- mkdir build && cd build
- CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
- make -j
- make install")
-FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
-     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
-     FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-
+if(NOT WIN32)
+  FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
+  "#!/bin/bash
+   rm -rf build
+   mkdir build && cd build
+   CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
+   make -j
+   make install")
+  FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
+  "#!/bin/bash
+   rm -rf build
+   mkdir build && cd build
+   CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
+   make -j
+   make install")
+  FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
+       FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+  FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
+       FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+endif()
 
 # set to $DEFAULT to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
@@ -43,16 +44,39 @@ opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 opt(TESTING "Enable testing" ON)
 opt(BUILD_UTILS "Build utilities" OFF)
+opt(METIS "Enable Metis interface" ON)
+opt(NETGEN "Enable Netgen interface" ON)
 opt(SYMMX "Enable SYMMETRIX Meshing engine" OFF)
 
 # set up version
 SET(NEMOSYS_MAJOR_VERSION 0)
-SET(NEMOSYS_MINOR_VERSION 28)
+SET(NEMOSYS_MINOR_VERSION 29)
 SET(NEMOSYS_PATCH_VERSION 0)
 SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 SET(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
 SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
+
+# Set a default build type if none was specified
+set(default_build_type "Release")
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+  set(default_build_type "Debug")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+      STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+      "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+# setting RPATH
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+SET(CMAKE_INSTALL_RPATH "$ORIGIN")
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # finding libraries ###############################################################
 IF (ENABLE_MPI)
@@ -69,34 +93,93 @@ IF (ENABLE_MPI)
   ADD_DEFINITIONS("-DMPICH_IGNORE_CXX_SEEK")
 ENDIF (ENABLE_MPI)
 
-FIND_PACKAGE(VTK REQUIRED HINTS)
+if(WIN32)
+  SET(VTK_BUILD_SHARED_LIBS OFF)
+endif()
+FIND_PACKAGE(VTK REQUIRED)
 INCLUDE(${VTK_USE_FILE})
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+get_target_property(VTK_LIB_DIR vtksys IMPORTED_LOCATION_${CMAKE_BUILD_TYPE_UPPER})
+GET_FILENAME_COMPONENT(VTK_LIB_DIR ${VTK_LIB_DIR} PATH)
+LIST(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
+MESSAGE(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
+message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
-FIND_LIBRARY(MADLIB_LIB MAdLib HINTS ${CMAKE_INSTALL_PREFIX}/madlib/lib)
-FIND_FILE(MADLIB_HDR MAdLib.h HINTS ${CMAKE_INSTALL_PREFIX}/madlib/include/MAdLib)
-GET_FILENAME_COMPONENT(MADLIB_INCPATH ${MADLIB_HDR} PATH)
-MESSAGE(STATUS "madlib include path: ${MADLIB_INCPATH}")
+add_subdirectory(contrib/madlib-1.3.0)
 
-FIND_LIBRARY(GMSH_LIB Gmsh HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/lib)
-FIND_FILE(GMSH_HDR Gmsh.h HINTS ${CMAKE_INSTALL_PREFIX}/gmsh/include/gmsh)
+FIND_LIBRARY(GMSH_LIB gmsh HINTS lib)
+FIND_FILE(GMSH_HDR gmsh.h HINTS include)
 GET_FILENAME_COMPONENT(GMSH_INCPATH ${GMSH_HDR} PATH)
+get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
+list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
 MESSAGE(STATUS "gmsh include path ${GMSH_INCPATH}")
+message(STATUS "gmsh libs ${GMSH_LIB}")
 
+find_package(OpenCASCADE REQUIRED) # Used by Gmsh
+message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
+message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
+
+if(WIN32)
+  SET(HDF5_USE_STATIC_LIBRARIES ON) # Needed on WIN32. TODO: Test on UNIX
+endif()
 FIND_PACKAGE(HDF5 REQUIRED)
+list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
+GET_FILENAME_COMPONENT(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
+LIST(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
+message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
 
-FIND_LIBRARY(CGNS_LIB cgns)
-FIND_FILE(CGNS_HDR cgnslib.h)
+FIND_LIBRARY(CGNS_LIB cgns HINTS ${CMAKE_INSTALL_PREFIX}/cgns/lib)
+FIND_FILE(CGNS_HDR cgnslib.h HINTS ${CMAKE_INSTALL_PREFIX}/cgns/include)
 GET_FILENAME_COMPONENT(CGNS_INCPATH ${CGNS_HDR} PATH)
+GET_FILENAME_COMPONENT(CGNS_LIB_PATH ${CGNS_LIB} PATH)
+LIST(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
 MESSAGE(STATUS "cgns include path ${CGNS_INCPATH}")
+MESSAGE(STATUS "cgns libs ${CGNS_LIB}")
 
-FIND_LIBRARY(METIS_LIB metis)
-FIND_FILE(METIS_HDR metis.h)
-GET_FILENAME_COMPONENT(METIS_INCPATH ${METIS_HDR} PATH)
+IF (ENABLE_METIS)
+  FIND_LIBRARY(METIS_LIB metis HINTS ${CMAKE_INSTALL_PREFIX}/metis/lib)
+  FIND_FILE(METIS_HDR metis.h HINTS ${CMAKE_INSTALL_PREFIX}/metis/include)
+  GET_FILENAME_COMPONENT(METIS_INCPATH ${METIS_HDR} PATH)
+  GET_FILENAME_COMPONENT(METIS_LIB_PATH ${METIS_LIB} PATH)
+  LIST(APPEND LIBRARY_DIRS ${METIS_LIB_PATH})
+  MESSAGE(STATUS "metis include path ${METIS_INCPATH}")
+  MESSAGE(STATUS "metis libs ${METIS_LIB}")
+  ADD_DEFINITIONS(-DHAVE_METIS)
+ENDIF (ENABLE_METIS)
 
-FIND_LIBRARY(NETGEN_LIB nglib HINTS ${CMAKE_INSTALL_PREFIX}/netgen/lib/)
-FIND_FILE(NETGEN_HDR nglib.h HINTS ${CMAKE_INSTALL_PREFIX}/netgen/include/include)
-GET_FILENAME_COMPONENT(NETGEN_INCPATH ${NETGEN_HDR} PATH)
-MESSAGE(STATUS "netgen include path ${NETGEN_INCPATH}")
+IF (ENABLE_NETGEN)
+  find_package(Netgen REQUIRED)
+  LIST(APPEND LIBRARY_DIRS ${NETGEN_LIBRARY_DIR})
+  MESSAGE(STATUS "netgen include path ${NETGEN_INCLUDE_DIRS}")
+  MESSAGE(STATUS "netgen libs ${NETGEN_LIBRARY_DIR}")
+#  FIND_LIBRARY(NETGEN_LIB nglib HINTS lib)
+#  FIND_FILE(NETGEN_HDR nglib.h HINTS /netgen/include/include)
+#  GET_FILENAME_COMPONENT(NETGEN_INCPATH ${NETGEN_HDR} PATH)
+#  GET_FILENAME_COMPONENT(NETGEN_LIB_PATH ${NETGEN_LIB} PATH)
+#  LIST(APPEND LIBRARY_DIRS ${NETGEN_LIB_PATH})
+#  MESSAGE(STATUS "netgen include path ${NETGEN_INCPATH}")
+#  MESSAGE(STATUS "netgen libs ${NETGEN_LIB}")
+  ADD_DEFINITIONS(-DHAVE_NGEN)
+  if(WIN32)
+    ADD_DEFINITIONS(-D_AFXDLL) # Needed by Netgen headers.
+    FIND_PACKAGE(ZLIB REQUIRED) # Find zlib headers since Netgen doesn't
+    include_directories(${ZLIB_INCLUDE_DIRS})
+    GET_FILENAME_COMPONENT(ZLIB_LIB_PATH ${ZLIB_LIBRARIES} PATH)
+  endif(WIN32)
+ENDIF (ENABLE_NETGEN)
+
+IF (ENABLE_EXODUS)
+  FIND_LIBRARY(EXO_LIB exoIIv2)
+  FIND_FILE(EXO_HDR exodusII.h)
+  GET_FILENAME_COMPONENT(EXO_LIB_PATH ${EXO_LIB} PATH)
+  GET_FILENAME_COMPONENT(EXO_INCPATH ${EXO_HDR} PATH)
+  LIST(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
+  MESSAGE(STATUS "exodus include path ${EXO_INCPATH}")
+  MESSAGE(STATUS "exodus libs ${EXO_LIB}")
+  SET(NEMOSYS_LNK ${EXO_LIB})
+  add_definitions(-DHAVE_EXODUSII)
+ENDIF()
 
 IF (ENABLE_DTK)
   FIND_PACKAGE(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos ${TRILINOS_PATH})
@@ -115,30 +198,34 @@ ENDIF ()
 
 # symmetrix
 IF (ENABLE_SYMMX)
-    FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-    SET(SYMMX_LIBS ${SYMADM_LIB} ${SYMEXP_LIB} ${SYMDSC_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMMDL_LIB} ${SYMLIC_LIB})
-    FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/include)
-    GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
-    GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
-    MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
-    MESSAGE(STATUS "SYMMETRIX libraries ${SYMMX_LIBS}")
-    MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
-    # boost
-    SET(Boost_USE_STATIC_LIBS OFF)
-    SET(Boost_USE_MULTITHREADED ON)
-    SET(Boost_USE_STATIC_RUNTIME OFF)
-    FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
-    IF(Boost_FOUND)
-        INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-    ENDIF()
+  FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
+  SET(SYMMX_LIBS ${SYMADM_LIB} ${SYMEXP_LIB} ${SYMDSC_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMMDL_LIB} ${SYMLIC_LIB})
+  FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/include)
+  GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
+  GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
+  MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
+  MESSAGE(STATUS "SYMMETRIX libraries ${SYMMX_LIBS}")
+  MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
+ENDIF()
+
+IF(ENABLE_SYMMX OR WIN32) # since WIN32 always needs boost
+  # boost
+  SET(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  SET(Boost_USE_MULTITHREADED ON)
+  SET(Boost_USE_STATIC_RUNTIME OFF)
+  FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
+  IF(Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+    LIST(APPEND LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
+  ENDIF()
 ENDIF()
 
 ## add include files to path
@@ -147,7 +234,8 @@ INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
-INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
+#INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(AFTER ${SYMMX_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
 
@@ -158,34 +246,32 @@ IF(EXISTS ${GMSH_INCPATH})
 ENDIF()
 
 # Setting compile and link options ############################################
-INCLUDE(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-IF(COMPILER_SUPPORTS_CXX14)
+IF(NOT WIN32) # These tests only work on GNU compilers.
+  INCLUDE(CheckCXXCompilerFlag)
+  CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+  CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+  CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+  IF(COMPILER_SUPPORTS_CXX14)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DHAVE_TIMES")
-ELSEIF(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_STANDARD 14)
+  ELSEIF(COMPILER_SUPPORTS_CXX11)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DHAVE_TIMES")
-ELSEIF(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_STANDARD 11)
+  ELSEIF(COMPILER_SUPPORTS_CXX0X)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -DHAVE_TIMES")
-ELSE()
+  ELSE()
     MESSAGE(STATUS "The compiler ${CMAKE_CXX_COMPILER} has
-                  no modern C++ support. Please use a different C++ compiler.")
-ENDIF()
+                    no modern C++ support. Please use a different C++ compiler.")
+  ENDIF()
+ENDIF(NOT WIN32)
 
 # adding flags to debug
 SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 # compiled objects output paths
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-# setting RPATH
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/netgen/lib:${CMAKE_INSTALL_PREFIX}/gmsh/lib:${CMAKE_INSTALL_PREFIX}/madlib/lib:${CMAKE_INSTALL_PREFIX}/Nemosys/lib")
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+#SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+#SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+#SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # turning off warnings
 IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -194,24 +280,16 @@ IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 ENDIF()
 
 # additional compiler flags
-IF (ENABLE_EXODUS)
-    FIND_LIBRARY(EXO_LIB exodus)
-    FIND_FILE(EXO_HDR exodusII.h)
-    GET_FILENAME_COMPONENT(EXO_INCPATH ${EXO_HDR} PATH)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EXODUSII")
-    SET(NEMOSYS_LNK ${EXO_LIB})
-ENDIF()
-
 IF (ENABLE_EPIC)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EPIC")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EPIC")
 ENDIF()
 
 
 # other flags for dependencies
 IF (ENABLE_SYMMX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SYMMX")
-    MESSAGE(STATUS "Using -DHAVE_SYMMX")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SYMMX")
+  MESSAGE(STATUS "Using -DHAVE_SYMMX")
 ENDIF()
 
 # Setting files   ###############################################################
@@ -250,16 +328,17 @@ SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/InputGeneration/inputGen.C
                  src/Drivers/InputGenDriver.C)
 
-# optinal source files
+# optional source files
 IF (ENABLE_EXODUS)
-    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/Mesh/exoMesh.C )
 ENDIF()
+
 IF (ENABLE_EPIC)
-    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
+  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
 ENDIF()
 
 SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
-                src/cgnsWriter.C src/gridTransfer.C)
+                    src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
 SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRemesh.C
               utils/xmlDump.C utils/rocStitchMesh.C utils/grid2gridTransfer.C)
@@ -273,7 +352,7 @@ IF(ENABLE_SYMMX)
 ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${SYMMX_SRCS})
-SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
+#SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} APPEND PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 
@@ -292,7 +371,7 @@ IF(NOT BUILD_STATIC)
 ELSE()
   ADD_LIBRARY(interp ${R8_SRCS})
 ENDIF()
-TARGET_LINK_LIBRARIES(interp r8)
+TARGET_LINK_LIBRARIES(interp r8 ANN)
 
 # build nemosys lib
 IF(NOT BUILD_STATIC)
@@ -301,18 +380,21 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${MADLIB_LIB} ${NETGEN_LIB} ${GMSH_LIB} ${SYMMX_LIBS}
+TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${GMSH_LIB} ${SYMMX_LIBS}
                               ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES}
                               ${NEMOSYS_LNK}
-                              interp)
+                              nglib #${NETGEN_LIB}
+                              interp MAdLib TKernel)
 
 INSTALL(TARGETS r8 interp Nemosys
-        LIBRARY DESTINATION Nemosys/lib PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+        RUNTIME DESTINATION Nemosys/bin
+        LIBRARY DESTINATION Nemosys/lib
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)  
 
 # Builiding utilities #########################################################
 
-SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
+#SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
 #SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
 # Building Nemosys Core utility ###########################################
@@ -323,7 +405,8 @@ ELSE()
   TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
 ENDIF()
 
-INSTALL(TARGETS nemosysRun RUNTIME DESTINATION Nemosys/bin
+INSTALL(TARGETS nemosysRun
+        RUNTIME DESTINATION Nemosys/bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -357,14 +440,15 @@ IF(ENABLE_BUILD_UTILS)
   TARGET_LINK_LIBRARIES(grid2gridTransfer Nemosys)
 
   # Building tutorials ###########################################################
-  SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
+  #SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE_OLD} -lhdf5_cpp")
 
   # meshTransfer tutorial
   ADD_EXECUTABLE(mshTransfer tutorials/mshTransfer.C)
   TARGET_LINK_LIBRARIES(mshTransfer Nemosys)
 
   INSTALL(TARGETS xmlDump cgns2msh rocStitchMesh rocRemesh rocSurfRemesh grid2gridTransfer mshTransfer
-          RUNTIME DESTINATION Nemosys/bin PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+          RUNTIME DESTINATION Nemosys/bin
+          PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
           GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   # DTK tutorial
@@ -373,7 +457,8 @@ IF(ENABLE_BUILD_UTILS)
     SET_TARGET_PROPERTIES(dtkTutorial PROPERTIES COMPILE_FLAGS ${dtk_headers} LINK_FLAGS ${dtk_libs})
     TARGET_LINK_LIBRARIES(dtkTutorial Nemosys
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-    INSTALL(TARGETS dtkTutorial RUNTIME DESTINATION Nemosys/bin
+    INSTALL(TARGETS dtkTutorial
+            RUNTIME DESTINATION Nemosys/bin
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   ENDIF()
@@ -382,8 +467,7 @@ ENDIF(ENABLE_BUILD_UTILS)
 
 # Building python wrapper #####################################################
 IF (ENABLE_PYTHON_BINDINGS)
-    ADD_SUBDIRECTORY(python)
-    file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/Nemosys/python/lib)
+  ADD_SUBDIRECTORY(python)
 ENDIF()
 
 # Building converters ##########################################################
@@ -412,40 +496,36 @@ IF(BUILD_DOCUMENTATION)
 ENDIF()
 
 # Perform testing ############################################################
-SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
+#SET(CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_OLD})
 IF (ENABLE_TESTING)
-    # adding gtest subdir with its own cmake file
-    ADD_SUBDIRECTORY(testing)
-    ADD_SUBDIRECTORY(testing/lib/gtest-1.6.0)
-
-    # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
-    INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
-    SET(OLD_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/testing/test_scripts)
-
-    # standard tests
-    ADD_EXECUTABLE(runCubatureInterpTest testing/test_scripts/testCubature.C)
-    ADD_EXECUTABLE(runConversionTest testing/test_scripts/testConversion.C)
-    ADD_EXECUTABLE(runOrthoPolyTest testing/test_scripts/testOrthoPoly.C)
-    ADD_EXECUTABLE(runPatchRecoveryTest testing/test_scripts/testPatchRecovery.C)
-    ADD_EXECUTABLE(runTransferTest testing/test_scripts/testTransfer.C)
-    ADD_EXECUTABLE(runMeshGenTest testing/test_scripts/testMeshGen.C)
-    ADD_EXECUTABLE(runPNTGenTest testing/test_scripts/testPNTGen.C)
-    ADD_EXECUTABLE(runAutoVerifTest testing/test_scripts/testAutoVerification.C)
-    TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runPatchRecoveryTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runTransferTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runMeshGenTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runPNTGenTest gtest gtest_main Nemosys)
-    TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
-
-    # custom built test for EPIC
-    IF (ENABLE_EPIC)
-        ADD_EXECUTABLE(runEp16Test testing/test_scripts/testEP16.C)
-        TARGET_LINK_LIBRARIES(runEp16Test gtest gtest_main Nemosys)
-    ENDIF()
-
-    SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${OLD_RUNTIME_OUTPUT_DIRECTORY})
+  ADD_SUBDIRECTORY(testing)
 ENDIF(ENABLE_TESTING)
+
+if(WIN32)
+  list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/nemosysRun.exe")
+  if(ENABLE_BUILD_UTILS)
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/xmlDump.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/cgns2msh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocStitchMesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocRemesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocSurfRemesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/grid2gridTransfer.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/mshTr.exe")
+  endif()
+  install(CODE "include(BundleUtilities)
+  fixup_bundle(\"${CMAKE_EXE_TO_BUNDLE}\" \"\" \"${LIBRARY_DIRS}\")")
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "Nemosys/bin")
+  set(CMAKE_INSTALL_UCRT_LIBRARIES "TRUE")
+  include(InstallRequiredSystemLibraries)
+endif()
+
+#set(CPACK_GENERATOR NSIS)
+#set(CPACK_PACKAGE_NAME "MyLib")
+#set(CPACK_PACKAGE_VENDOR "CMake.org")
+#set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "MyLib - CPack Component Installation Example")
+#set(CPACK_PACKAGE_VERSION "1.0.0")
+#set(CPACK_PACKAGE_VERSION_MAJOR "1")
+#set(CPACK_PACKAGE_VERSION_MINOR "0")
+#set(CPACK_PACKAGE_VERSION_PATCH "0")
+#set(CPACK_PACKAGE_INSTALL_DIRECTORY "CPack Component Example")
+#include(CPack)
