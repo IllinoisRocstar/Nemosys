@@ -7,6 +7,8 @@
 #include <gmsh/MHexahedron.h>
 #include <gmsh/MPrism.h>
 #include <gmsh/MPyramid.h>
+#include <gmsh/CreateFile.h>
+#include <gmsh/Context.h>
 
 #include "gmshMesh.H"
 
@@ -143,6 +145,13 @@ gmshMesh::gmshMesh(const std::string &fname) {
 }
 
 void gmshMesh::write(const std::string &fname) const {
+  write(fname, 4.1, false);
+}
+
+void gmshMesh::write(const std::string &fname,
+                     double mshFileVersion,
+                     bool binary) const
+{
   nemosysGModel _nemosysGModel = nemosysGModel();
 
   GModel _gmshGModel = GModel();
@@ -210,7 +219,17 @@ void gmshMesh::write(const std::string &fname) const {
   _nemosysGModel.renumberMeshElements();
 
   // Write the file.
-  _nemosysGModel.save(fname);
+//  _nemosysGModel.save(fname);
+
+//  GModel *temp = nemosysGModel::current();
+//  _nemosysGModel.setAsCurrent();
+//  CTX::instance()->mesh.
+//  CreateOutputFile(fname, FORMAT_MSH);
+//  nemosysGModel::setCurrent(temp);
+
+  _nemosysGModel.writeMSH(fname, mshFileVersion, binary //,
+//                          saveAll, saveParametric, scalingFactor
+  );
 
   std::cout << "gmshMesh saved to " << fname << std::endl;
 }

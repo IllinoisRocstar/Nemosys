@@ -49,6 +49,8 @@ class gmshMesh : public meshBase {
   public:
     // write the mesh to file named fname
     void write(const std::string &fname) const override;
+    void
+    write(const std::string &fname, double mshFileVersion, bool binary) const;
 
   //   --- Gmsh data types
   private:
