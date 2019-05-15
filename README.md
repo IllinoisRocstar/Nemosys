@@ -88,11 +88,6 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
         -DENABLE_PYTHON_BINDINGS=ON
 $ make -j$(nproc) (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
-$ export LD_LIBRARY_PATH=${NEMOSYS_INSTALL_PATH}/Nemosys/lib:\
-                         ${NEMOSYS_DEPS_INSTALL_PATH}/vtk/lib:\
-                         ${NEMOSYS_DEPS_INSTALL_PATH}/netgen/lib:\
-                         ${NEMOSYS_DEPS_INSTALL_PATH}/opencascade/lib:\
-                         ${LD_LIBRARY_PATH}
 ```
 Executing the commands above will build all libraries, executables, and
 bindings. The libraries are installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`.
