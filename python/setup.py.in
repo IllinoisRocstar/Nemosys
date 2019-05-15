@@ -1,5 +1,5 @@
 from setuptools import setup, Extension
-#from distutils.core import setup, Extension
+# from distutils.core import setup, Extension
 
 pyNemosys = Extension(
     '_pyNemosys',
@@ -15,6 +15,7 @@ pyNemosys = Extension(
                   ),
     libraries=['Nemosys'],
     library_dirs=['${CMAKE_BINARY_DIR}'],
+    runtime_library_dirs=['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/Nemosys/lib'],
     swig_opts=['-c++'],
     extra_compile_args=['-std=c++11', '-w']
 )
