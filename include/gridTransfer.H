@@ -18,7 +18,7 @@
 #include <NodalDataManager.h>
 
 // GMsh
-#include <GModel.h>
+#include <gmsh/GModel.h>
 
 
 class gridTransfer: public cgnsAnalyzer {

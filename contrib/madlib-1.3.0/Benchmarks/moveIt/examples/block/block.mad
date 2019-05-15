@@ -1,0 +1,126 @@
+//-*- C++ -*-
+Input {
+  Mesh {
+    MshFile = "block.msh"; // gmsh -3 -algo netgen -optimize -parametric -clscale 0.1 block.step
+    GeoFile = "block.step"; 
+  }
+}
+Output {
+  Prefix = "result/";
+  Frequency = 1;
+  Type = MshAndPos;
+}
+Task {
+  Type = MobileObject; // RemoveRegion SizeField RemoveSliverFaces LaplaceSmoothing GeoConstraints TopoConstraints FaceSwap UglyMesh RemoveSliverRegions DESC EdgeSwap GeoMatcher EdgeSplit EdgeCollapse EdgeSplitCollapse FaceCollapse OptimizeLength OptimizeShape None
+}
+Debug {
+  DebugLevel = 4;
+}
+Adaptation {
+  MaxNumberOfInnerIteration = 7;
+//   LowerLengthBound = 0.577;
+//   UpperLengthBound = 1.732;
+//   InfiniteEdgeLength = 1.e2;
+//   SwapMinImproveRatio = 1.;
+//   SliverQuality = 0.02;
+//   SplitCanMakeSlivers    = Yes;
+//   CollapseCanMakeSlivers = Yes;
+//   SliverLowerLengthSqBound = 0.1;
+//   SliverUpperLengthSqBound = 4.0;
+  CollapseOnBoundary = Yes;
+  BoundaryCollapses {
+    Tolerance = 1.e6;
+  }
+  SwapOnBoundary = Yes;
+  BoundarySwaps {
+    Tolerance = 1.e6;
+  }
+  TrackGeometry = Yes;
+  VertexSnapping {
+    IsMeshTheCavity = No;
+    CavityThickness = 2;
+    StiffnessAlteration = 1.;
+  }
+//   SmoothSizeField = Yes;
+//   SizeFieldSmoothing {
+//     MaximumGradient = 1.;
+//   }
+}
+MovingObjects {
+}
+SizeField {
+  Type = Analytical;
+  Analytical {
+    OrientationType = Isotropic;
+    Isotropic {
+      // original length: 2. (approx), x bound: [-15.,39.]
+      //      Length = "0.5";
+//       Length = "0.3+1.7*Abs(Cos(2.*3.14*t/2.))";
+      // Advancing sinusoidal bump (straight)
+      // V = -1     (velocity)
+      // L = 5.   (width = 2*L)
+      // H = 5.   (default edge length)
+      // h = 0.2  (edge length in the bump)
+      // X0 = 40.  (starting x)
+      Length = "5.-(5.-0.2)*Cos((x-40.-(-1.)*t)*6.28/(4*5.))*(Step(x-40.-(-1.*t-5.))-Step(x-40.-(-1.*t+5.)))";
+      // Advancing bump (circle)
+      // V = 1.     (velocity)
+      // L = 2.0    (width = 2*L)
+      // H = 5.0    (default edge length)
+      // h = 0.5    (edge length in the bump)
+      // X0 = 40.   (starting x)
+//       Length = "0.5+(5.0-0.5)*(Step(Sqrt((x-(40.))*(x-(40.))+y*y)-(1.*t+2.0))+(1.-Step(Sqrt((x-(40.))*(x-(40.))+y*y)-(1.*t-2.0))))";
+      // Advancing bump (sphere)
+      // V = 1.     (velocity)
+      // L = 2.0    (width = 2*L)
+      // H = 5.0    (default edge length)
+      // h = 0.5    (edge length in the bump)
+      // X0 = 40.   (starting x)
+      // Y0 = 0.    (starting y)
+      // Z0 = -10.  (starting z)
+//       Length = "0.5+(5.0-0.5)*(Step(Sqrt((x-(40.))*(x-(40.))+(y-0.)*(y-0.)+(z-(-10.))*(z-(-10.)))-(1.*t+2.0))+(1.-Step(Sqrt((x-(40.))*(x-(40.))+(y-0.)*(y-0.)+(z-(-10.))*(z-(-10.)))-(1.*t-2.0))))";
+      // Sphere advancing sinusoidal bump
+      // V = 1.     (velocity)
+      // L = 5.     (width = 2*L)
+      // H = 5.     (default edge length)
+      // h = 0.2    (edge length in the bump)
+      // X0 = 40.   (starting x)
+      // Y0 = 0.    (starting y)
+      // Z0 = -10.  (starting z)
+//       Length = "5.-(5.-0.2)*Cos((Sqrt((x-(40.))*(x-(40.))+(y-0.)*(y-0.)+(z-(-10.))*(z-(-10.)))-(1.*t))*6.28/(4*5.))*(Step(Sqrt((x-(40.))*(x-(40.))+(y-0.)*(y-0.)+(z-(-10.))*(z-(-10.)))-(1.*t-5.))-Step(Sqrt((x-(40.))*(x-(40.))+(y-0.)*(y-0.)+(z-(-10.))*(z-(-10.)))-(1.*t+5.)))";
+    }
+  }
+}
+SizeField = "CurvatureSF" {
+  Type = PiecewiseLinear;
+  PiecewiseLinear {
+    Source = Curvature; // InitialLength Curvature
+    Curvature {
+      Anisotropic = No;
+      Alpha = 1.;
+      MinimalLength = 0.1;
+    }
+  }
+}
+// SizeField = "CurvatureSF" {
+//   Type = PiecewiseLinear;
+//   PiecewiseLinear {
+//     Source = Curvature; // InitialLength Curvature
+//     Curvature {
+//       Anisotropic = Yes;
+//       Alpha = 20.;
+//       MinimalLength = 0.1;
+//     }
+//   }
+// }
+NodeMotion {
+  Type = None;
+}
+TimeSpecifications {
+//   MaxTimeSteps = 1;
+  TimeStep = 1.0;
+  FinalTime = 80.;
+//   TimeStep = .1;
+//   FinalTime = 1.;
+}
+
