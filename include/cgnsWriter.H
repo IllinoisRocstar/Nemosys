@@ -11,7 +11,7 @@
 #include <map>
 #include <sstream> 
 
-//MAd Lib
+// MAdLib
 #include "ModelInterface.h"
 #include "MeshDataBaseInterface.h"
 //#include "GmshEntities.h"

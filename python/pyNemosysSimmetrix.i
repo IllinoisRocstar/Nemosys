@@ -1,5 +1,5 @@
 %module pyNemosysSimmetrix
-%import "pyNemosys.i"
+%include "pyNemosys.i"
 %{
 #include "RocRestartDriver.H"
 #include "simmetrixGen.H"
