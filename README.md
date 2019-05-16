@@ -62,9 +62,9 @@ the following:
 ```
 $ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys/source
 $ NEMOSYS_DEPS_INSTALL_PATH=/full/path/to/dependency/install
-$ $NEMOSYS_PROJECT_PATH/scripts/build.sh \
-      $NEMOSYS_PROJECT_PATH/contrib/nemosys_tpls.tar.gz \
-      $NEMOSYS_DEPS_INSTALL_PATH
+$ ${NEMOSYS_PROJECT_PATH}/scripts/build.sh \
+      ${NEMOSYS_PROJECT_PATH}/contrib/nemosys_tpls.tar.gz \
+      ${NEMOSYS_DEPS_INSTALL_PATH}
 ```
 
 ### Build NEMoSys ###
@@ -72,29 +72,27 @@ Now, we can compile the NEMoSys library, create its Python bindings, and build
 other utilities: 
 ```
 $ NEMOSYS_INSTALL_PATH=/full/path/to/Nemosys/install
-$ cd $NEMOSYS_PROJECT_PATH
+$ cd ${NEMOSYS_PROJECT_PATH}
 $ mkdir build && cd build
-$ cmake -DCMAKE_PREFIX_PATH=$NEMOSYS_DEPS_INSTALL_PATH/opencascade:\
-                            $NEMOSYS_DEPS_INSTALL_PATH/gmsh:\
-                            $NEMOSYS_DEPS_INSTALL_PATH/vtk:\
-                            $NEMOSYS_DEPS_INSTALL_PATH/netgen \
-        -DCMAKE_INSTALL_PREFIX=$NEMOSYS_INSTALL_PATH \
+$ cmake .. \
+        -DCMAKE_PREFIX_PATH="\
+${NEMOSYS_DEPS_INSTALL_PATH}/opencascade;\
+${NEMOSYS_DEPS_INSTALL_PATH}/gmsh;\
+${NEMOSYS_DEPS_INSTALL_PATH}/vtk;\
+${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_INSTALL_PATH} \
         -DENABLE_BUILD_UTILS=ON \
         -DENABLE_TESTING=ON \
-        -DBUILD_SHARED_LIBS=ON ..
+        -DBUILD_SHARED_LIBS=ON \
+        -DENABLE_EXODUS=ON \
+        -DENABLE_PYTHON_BINDINGS=ON
 $ make -j$(nproc) (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
-$ export LD_LIBRARY_PATH=$NEMOSYS_INSTALL_PATH/Nemosys/lib:\
-                         $NEMOSYS_DEPS_INSTALL_PATH/vtk/lib:\
-                         $NEMOSYS_DEPS_INSTALL_PATH/netgen/lib:\
-                         $NEMOSYS_DEPS_INSTALL_PATH/opencascade/lib:\
-                         $LD_LIBRARY_PATH
 ```
 Executing the commands above will build all libraries, executables, and
 bindings. The libraries are installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`.
 Executables are installed in `$NEMOSYS_INSTALL_PATH/Nemosys/bin`. If Python
-bindings are enabled, the `pyNemosys` module files are installed in
-`$NEMOSYS_INSTALL_PATH/Nemosys/python/lib/python2.7/site-packages`. The
+bindings are enabled, the `pyNemosys` module is installed for the user. The
 `pyNemosys` module can be imported in Python as `import pyNemosys`. The build
 configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
@@ -112,7 +110,7 @@ If execution of `build.sh` fails, or you have already installed some of the
 dependencies, you can try building the remaining TPLs independently. Extract the
 whole archive as such:
 ```
-$ cd $NEMOSYS_PROJECT_PATH/
+$ cd ${NEMOSYS_PROJECT_PATH}
 $ tar zxf contrib/nemosys_tpls.tar.gz 
 $ cd nemosys_tpls
 ```
@@ -127,10 +125,11 @@ Build and install OpenCASCADE:
 ```
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
+$ cmake .. \
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
         -DBUILD_MODULE_Draw=OFF \
         -DBUILD_MODULE_Visualization=OFF \
-        -DBUILD_MODULE_ApplicationFramework=OFF ..
+        -DBUILD_MODULE_ApplicationFramework=OFF
 $ make -j$(nproc)
 $ make install
 ```
@@ -146,12 +145,29 @@ Build and install Gmsh by running the following commands:
 ```
 $ mkdir build
 $ cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/gmsh \
+$ cmake .. \
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/gmsh \
         -DCMAKE_PREFIX_PATH=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
         -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
-        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=OFF ..
+        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=OFF
 $ make lib shared -j$(nproc)
 $ make install -j$(nproc)
+```
+
+#### Building VTK ####
+Unpack VTK from the `neomsys_tpls` directory:
+```
+$ tar xzf vtk-7.1.0.tar.gz
+$ cd vtk-7.1.0
+```
+Build and install VTK by running the following commands:
+```
+$ mkdir build
+$ cd build
+$ cmake .. \
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/vtk
+$ make -j$(nproc)
+$ make install
 ```
 
 #### Building Netgen ####
@@ -163,7 +179,7 @@ $ cd netgen-mesher-git
 Build and install Netgen:
 ```
 $ mkdir build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=$NEMOSYS_PROJECT_PATH/install/netgen \
+$ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
         -DUSE_GUI=OFF ..
 $ make -j$(nproc)
 $ make install
