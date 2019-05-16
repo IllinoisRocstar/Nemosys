@@ -11,14 +11,14 @@
 #include <sys/time.h>
 #include <math.h>
 
-//vtk
+// vtk
 #include <vtkSmartPointer.h>
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
 
-//MAd Lib
+// MAdLib
 #include <ModelInterface.h>
 #include <MeshDataBaseInterface.h>
 

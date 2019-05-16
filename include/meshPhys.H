@@ -5,7 +5,7 @@
 #include <vtkAnalyzer.H>
 #include <AuxiliaryFunctions.H>
 
-//MAd Lib
+// MAdLib
 #include <MAdLib.h>
 #include <ModelInterface.h>
 #include <MeshDataBaseInterface.h>
