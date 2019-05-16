@@ -26,8 +26,8 @@ namespace nglib
   #include<nglib.h>
 }
 // simmetrix
-#ifdef HAVE_SYMMX
-  #include <symmxGen.H>
+#ifdef HAVE_SIMMETRIX
+  #include <simmetrixGen.H>
 #endif
 
 // stl

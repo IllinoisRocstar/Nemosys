@@ -1,5 +1,5 @@
-#ifndef SYMMXPARAMS_H
-#define SYMMXPARAMS_H
+#ifndef SIMMETRIXPARAMS_H
+#define SIMMETRIXPARAMS_H
 #include <meshingParams.H>
 #include <string>
 
@@ -11,12 +11,12 @@
       - meshsim_adv
       - meshsim_adapt */
 
-class symmxParams : public meshingParams
+class simmetrixParams : public meshingParams
 {
   
   public:
-    symmxParams();
-    ~symmxParams(){};
+    simmetrixParams();
+    ~simmetrixParams(){};
   
   public:
     std::string logFName;

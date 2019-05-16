@@ -1,9 +1,9 @@
 #include <MeshGenDriver.H>
 #include <netgenGen.H>
 #include <netgenParams.H>
-#ifdef HAVE_SYMMX
-  #include <symmxGen.H>
-  #include <symmxParams.H>
+#ifdef HAVE_SIMMETRIX
+  #include <simmetrixGen.H>
+  #include <simmetrixParams.H>
 #endif
 // ----------------------------- MeshGen Driver -----------------------------------//
 
@@ -116,8 +116,8 @@ MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname,
   }
   else if (!meshEngine.compare("simmetrix"))
   {
-    #ifndef HAVE_SYMMX
-      std::cerr << "Nemosys must be recompiled with simmetrix support" << std::endl;
+    #ifndef HAVE_SIMMETRIX
+      std::cerr << "Nemosys must be recompiled with Simmetrix support." << std::endl;
       exit(1);
     #else
       if (!inputjson.has_key("License File"))
@@ -126,7 +126,7 @@ MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname,
         exit(1);
       }
       
-      symmxParams* params = new symmxParams();
+      simmetrixParams* params = new simmetrixParams();
       params->licFName = inputjson["License File"].as<std::string>();
       params->features = inputjson["Features"].as<std::string>();
       params->logFName = inputjson["Log File"].as<std::string>();
@@ -139,17 +139,17 @@ MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname,
       }
       else
       {
-        json symmxparams = inputjson["Meshing Parameters"]["Simmetrix Parameters"];
-        if (symmxparams.has_key("Mesh Size"))
-          params->meshSize = symmxparams["Mesh Size"].as<double>();
-        if (symmxparams.has_key("Anisotropic Curvature Refinement"))
-          params->anisoMeshCurv = symmxparams["Anisotropic Curvature Refinement"].as<double>();
-        if (symmxparams.has_key("Global Gradation Rate"))
-          params->glbSizeGradRate = symmxparams["Global Gradation Rate"].as<double>();
-        if (symmxparams.has_key("Surface Mesh Improver Gradation Rate"))
-          params->surfMshImprovGradRate = symmxparams["Surface Mesh Improver Gradation Rate"].as<double>();
-        if (symmxparams.has_key("Surface Mesh Improver Min Size"))
-          params->surfMshImprovMinSize = symmxparams["Surface Mesh Improver Min Size"].as<double>();
+        json simmxParams = inputjson["Meshing Parameters"]["Simmetrix Parameters"];
+        if (simmxParams.has_key("Mesh Size"))
+          params->meshSize = simmxParams["Mesh Size"].as<double>();
+        if (simmxParams.has_key("Anisotropic Curvature Refinement"))
+          params->anisoMeshCurv = simmxParams["Anisotropic Curvature Refinement"].as<double>();
+        if (simmxParams.has_key("Global Gradation Rate"))
+          params->glbSizeGradRate = simmxParams["Global Gradation Rate"].as<double>();
+        if (simmxParams.has_key("Surface Mesh Improver Gradation Rate"))
+          params->surfMshImprovGradRate = simmxParams["Surface Mesh Improver Gradation Rate"].as<double>();
+        if (simmxParams.has_key("Surface Mesh Improver Min Size"))
+          params->surfMshImprovMinSize = simmxParams["Surface Mesh Improver Min Size"].as<double>();
       
         MeshGenDriver* mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
         return mshgndrvobj;

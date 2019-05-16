@@ -1,5 +1,5 @@
-#ifndef SYMMXGEN_H
-#define SYMMXGEN_H
+#ifndef SIMMETRIXGEN_H
+#define SIMMETRIXGEN_H
 
 // std
 #include <string>
@@ -18,19 +18,19 @@
 #include <meshGen.H>
 
 
-// TODO: implement vtuTosymmx in-mem convertor that takes a vtkDataSet
+// TODO: implement vtuToSimmetrix in-mem convertor that takes a vtkDataSet
 //         as input 
 
-class symmxParams;
+class simmetrixParams;
     
-class symmxGen : public meshGen
+class simmetrixGen : public meshGen
 {
 
   public:
     // initialize params with default values
-    symmxGen();
-    symmxGen(symmxParams* params); 
-    ~symmxGen();
+    simmetrixGen();
+    simmetrixGen(simmetrixParams* params); 
+    ~simmetrixGen();
 
   // symmetrix mesh creation
   public:
@@ -66,7 +66,7 @@ class symmxGen : public meshGen
     static void messageHandler(int type, const char* msg);
 
   private:
-    symmxParams* params; // meshing params
+    simmetrixParams* params; // meshing params
     bool haveLog;
     bool writeSurfAndVol;
     pProgress prog;

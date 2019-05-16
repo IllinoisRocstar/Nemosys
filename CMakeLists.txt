@@ -46,7 +46,7 @@ opt(TESTING "Enable testing" ON)
 opt(BUILD_UTILS "Build utilities" OFF)
 opt(METIS "Enable Metis interface" ON)
 opt(NETGEN "Enable Netgen interface" ON)
-opt(SYMMX "Enable SYMMETRIX Meshing engine" OFF)
+opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
 
 # set up version
 SET(NEMOSYS_MAJOR_VERSION 0)
@@ -196,29 +196,30 @@ IF (ENABLE_DTK)
   INCLUDE(dtk_stuff.txt)
 ENDIF ()
 
-# symmetrix
-IF (ENABLE_SYMMX)
-  FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMDSC_LIB SimDiscrete HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMEXP_LIB SimExport HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMLIC_LIB SimLicense HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMMSH_LIB SimMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMMTL_LIB SimMeshTools HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMPMS_LIB SimPartitionedMesh HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  FIND_LIBRARY(SYMPRP_LIB SimPartitionWrapper HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
-  SET(SYMMX_LIBS ${SYMADM_LIB} ${SYMEXP_LIB} ${SYMDSC_LIB} ${SYMPMS_LIB} ${SYMPRP_LIB} ${SYMMSH_LIB} ${SYMMTL_LIB} ${SYMMDL_LIB} ${SYMLIC_LIB})
-  FIND_FILE(SYMMX_HDR MeshSim.h HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/include)
-  GET_FILENAME_COMPONENT(SYMMX_INCPATH ${SYMMX_HDR} PATH)
-  GET_FILENAME_COMPONENT(SYMMX_LIBPATH ${SYMMDL_LIB} PATH)
-  MESSAGE(STATUS "SYMMETRIX library path ${SYMMX_LIBPATH}")
-  MESSAGE(STATUS "SYMMETRIX libraries ${SYMMX_LIBS}")
-  MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
-ENDIF()
+# Simmetrix
+if(ENABLE_SIMMETRIX)
+  find_library(SIMMDL_LIB SimModel HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMADM_LIB SimAdvMeshing HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMEXP_LIB SimExport HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMLCN_LIB SimLicense HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMMSH_LIB SimMeshing HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMMTL_LIB SimMeshTools HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMPMH_LIB SimPartitionedMesh HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMPWR_LIB SimPartitionWrapper HINTS ${SIMMETRIX_LIB_DIR})
+  set(SIMMETRIX_LIBS ${SIMMDL_LIB} ${SIMADM_LIB} ${SIMDSC_LIB} ${SIMEXP_LIB} ${SIMLCN_LIB} ${SIMMSH_LIB} ${SIMMTL_LIB} ${SIMPMH_LIB} ${SIMPWR_LIB})
+  find_file(SIMMETRIX_HDR MeshSim.h HINTS ${SIMMETRIX_LIB_DIR}/../../include)
+  get_filename_component(SIMMETRIX_INCPATH ${SIMMETRIX_HDR} PATH)
+  get_filename_component(SIMMETRIX_LIBPATH ${SIMMDL_LIB} PATH)
+  message(STATUS "Simmetrix include path ${SIMMETRIX_INCPATH}")
+  message(STATUS "Simmetrix libs ${SIMMETRIX_LIBS}")
+endif()
 
-IF(ENABLE_SYMMX OR WIN32) # since WIN32 always needs boost
+IF(ENABLE_SIMMETRIX OR WIN32) # since WIN32 always needs boost
   # boost
-  SET(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  if(WIN32)
+    set(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  endif()
   SET(Boost_USE_MULTITHREADED ON)
   SET(Boost_USE_STATIC_RUNTIME OFF)
   FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
@@ -236,7 +237,7 @@ INCLUDE_DIRECTORIES(AFTER ${CGNS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 #INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCLUDE_DIRS})
-INCLUDE_DIRECTORIES(AFTER ${SYMMX_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${SIMMETRIX_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
 
 # For some reason, older versions of cmake fail to find the local gmsh include
@@ -286,10 +287,10 @@ ENDIF()
 
 
 # other flags for dependencies
-IF (ENABLE_SYMMX)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SYMMX")
-  MESSAGE(STATUS "Using -DHAVE_SYMMX")
+IF (ENABLE_SIMMETRIX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SIMMETRIX")
+  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SIMMETRIX")
+  MESSAGE(STATUS "Using -DHAVE_SIMMETRIX")
 ENDIF()
 
 # Setting files   ###############################################################
@@ -337,6 +338,12 @@ IF (ENABLE_EPIC)
   SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
 ENDIF()
 
+if(ENABLE_SIMMETRIX)
+  set(SIMMETRIX_SRCS src/MeshGeneration/simmetrixGen.C
+                     src/MeshGeneration/simmetrixParams.C)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SIMMETRIX_SRCS})
+endif()
+
 SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                     src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
@@ -346,12 +353,8 @@ SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRe
 SET(TUTR_SRCS utils/writeStructured.C tutorials/mshTransfer.C tutorials/dtkTutorial.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C src/spheres.C)
-IF(ENABLE_SYMMX)
-  SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C src/MeshGeneration/symmxParams.C)
-  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
-ENDIF()
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
-             ${R8_SRCS} ${INTERP_SRCS} ${SYMMX_SRCS})
+             ${R8_SRCS} ${INTERP_SRCS})
 #SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} APPEND PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
@@ -380,7 +383,7 @@ ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${GMSH_LIB} ${SYMMX_LIBS}
+TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${GMSH_LIB} ${SIMMETRIX_LIBS}
                               ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES}
                               ${NEMOSYS_LNK}
                               nglib #${NETGEN_LIB}
