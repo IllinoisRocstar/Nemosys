@@ -1,13 +1,13 @@
 #include <iostream>
-#include <symmxGen.H>
-#include <symmxParams.H>
+#include <simmetrixGen.H>
+#include <simmetrixParams.H>
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
 
 
 // constructor
-symmxGen::symmxGen(symmxParams* _params)
+simmetrixGen::simmetrixGen(simmetrixParams* _params)
   : params(_params), haveLog(false),prog(NULL),model(NULL),
     dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
@@ -32,12 +32,12 @@ symmxGen::symmxGen(symmxParams* _params)
 }
 
 // default
-symmxGen::symmxGen()
+simmetrixGen::simmetrixGen()
   : haveLog(true),prog(NULL),model(NULL),
     dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
 {
-  Sim_logOn("symmxGen.log");
+  Sim_logOn("simmetrixGen.log");
   SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume","simmodsuite.lic");
   MS_init();
   Sim_setMessageHandler(messageHandler);
@@ -46,7 +46,7 @@ symmxGen::symmxGen()
 }
 
 // destructor
-symmxGen::~symmxGen()
+simmetrixGen::~simmetrixGen()
 {
   if (mesh)
     M_release(mesh);
@@ -65,13 +65,13 @@ symmxGen::~symmxGen()
   std::cout << "Simmetrix mesh generator destroyed" << std::endl;
 }
 
-void symmxGen::setProgress()
+void simmetrixGen::setProgress()
 {
   prog = Progress_new();
   Progress_setDefaultCallback(prog);    
 }
 
-int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
+int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
 {
   if (!createModelFromSTL(stlFName))
   {
@@ -181,7 +181,7 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
     return 1;
 }
 
-int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
+int simmetrixGen::createVolumeMeshFromSTL(const char* stlFName)
 {
   if (!createSurfaceMeshFromSTL(stlFName))
   {
@@ -213,7 +213,7 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
     return 1;
 }
 
-int symmxGen::createMeshFromSTL(const char* stlFName)
+int simmetrixGen::createMeshFromSTL(const char* stlFName)
 {
   if (!createVolumeMeshFromSTL(stlFName))
   {
@@ -223,7 +223,7 @@ int symmxGen::createMeshFromSTL(const char* stlFName)
   return 1;
 }
 
-int symmxGen::createModelFromSTL(const char* stlFName)
+int simmetrixGen::createModelFromSTL(const char* stlFName)
 {
   // try/catch around all SimModSuite calls
   // as errors are thrown.
@@ -297,7 +297,7 @@ int symmxGen::createModelFromSTL(const char* stlFName)
   return 0; 
 }
 
-void symmxGen::convertToVTU()
+void simmetrixGen::convertToVTU()
 {
   if (!dataSet)
   {
@@ -372,12 +372,12 @@ void symmxGen::convertToVTU()
   }
 }
 
-void symmxGen::setWriteSurfAndVol(bool b)
+void simmetrixGen::setWriteSurfAndVol(bool b)
 {
   writeSurfAndVol = b;
 }
 
-void symmxGen::saveMesh(const std::string& mFName)
+void simmetrixGen::saveMesh(const std::string& mFName)
 {
 
   size_t last = mFName.find_last_of('.');
@@ -398,7 +398,7 @@ void symmxGen::saveMesh(const std::string& mFName)
   }
 }
 
-void symmxGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+void simmetrixGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
                               const int numIds,
                               const int cellType,
                               pPList regionVerts)
@@ -414,7 +414,7 @@ void symmxGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
   dataSet->InsertNextCell(cellType,vtkCellIds);
 }
                              
-void symmxGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
   // get iterator for mesh regions (cells) and add them
   RIter regions = M_regionIter(mesh);
@@ -455,7 +455,7 @@ void symmxGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
   RIter_delete(regions);
 }
 
-void symmxGen::messageHandler(int type, const char* msg)
+void simmetrixGen::messageHandler(int type, const char* msg)
 {
   switch (type) 
   {
@@ -475,7 +475,7 @@ void symmxGen::messageHandler(int type, const char* msg)
   return;
 }
 
-void symmxGen::createMeshFromModel(const char* mFName)
+void simmetrixGen::createMeshFromModel(const char* mFName)
 {
   model = GM_load(mFName, 0, prog);
   mcase = MS_newMeshCase(model);

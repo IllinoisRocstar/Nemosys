@@ -1,4 +1,4 @@
-#ifdef ENABLE_SYMMX
+#ifdef HAVE_SIMMETRIX
 // nemosys
 #include <RemeshDriver.H>
 #include <meshStitcher.H>
@@ -513,4 +513,4 @@ void cpFileName(boost::filesystem::path const & _src_dir, boost::filesystem::pat
   }
 }
 
-#endif // ENABLE_SYMMX
+#endif // HAVE_SIMMETRIX
