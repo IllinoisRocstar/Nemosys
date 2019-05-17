@@ -44,8 +44,8 @@ bool readLegacyVTKData(std::ifstream& meshStream, std::string& line, const int n
                        const bool pointOrCell, bool& hasPointOrCell,
                        vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 // helper that casts data arrays to type specified in legacy file (not used rn)
-void addLegacyVTKData(vtkDataArray* arr, const std::string& type, bool pointOrCell, 
-                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+//void addLegacyVTKData(vtkDataArray* arr, const std::string& type, bool pointOrCell,
+//                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
 template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
 {
