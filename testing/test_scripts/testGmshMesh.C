@@ -39,9 +39,8 @@ int test_gmshMeshFilenameConstructor(const std::string &fname) {
   if (gmshMesh1->getSFBool() != false) return 1;
   if (gmshMesh1->getOrder() != 1) return 1;
 
-//  if (gmshMesh1.getNumberOfCells() != numCells) return 1;
-//  if (gmshMesh1.getNumberOfPoints() != numPoints) return 1;
-//  if (gmshMesh1.getDataSet())
+  if (gmshMesh1->getNumberOfPoints() != 177) return 1;
+  if (gmshMesh1->getNumberOfCells() != 573) return 1;
 
   delete gmshMesh1;
 
