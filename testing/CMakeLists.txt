@@ -219,7 +219,9 @@ ADD_TEST(NAME pntgentest
 )
 add_test(NAME gmshMeshTest
     COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runGmshMeshTest ${GMSHMESH_TESTDIR}/cube.msh
+        runGmshMeshTest ${GMSHMESH_TESTDIR}/cube2.msh
+                        ${GMSHMESH_TESTDIR}/cube4.msh
+                        ${GMSHMESH_TESTDIR}/cube41.msh
 )
 IF (ENABLE_EPIC)
   ADD_TEST(NAME ep16test
