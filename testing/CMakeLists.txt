@@ -17,8 +17,10 @@ ENDMACRO()
 
 
 # adding gtest subdir with its own cmake file
-set(BUILD_SHARED_LIBS ON)
-add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+if(WIN32)
+  set(BUILD_SHARED_LIBS ON)
+  add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+endif(WIN32)
 ADD_SUBDIRECTORY(lib/gtest-1.6.0)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
