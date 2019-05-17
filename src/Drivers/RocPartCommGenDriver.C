@@ -564,7 +564,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
 {
   if (vol && this->sharedNodes[me][you].size())
   {
-    std::vector<int> virtuals(receivedCells[me][you].begin(), receivedCells[me][you].end());
+    std::vector<vtkIdType> virtuals(receivedCells[me][you].begin(), receivedCells[me][you].end());
     this->virtualCellsOfPartitions[me][you] = 
       meshBase::CreateShared(meshBase::extractSelectedCells(this->mesh.get(),virtuals));
     if (this->writeAllFiles>0)  
@@ -576,7 +576,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol)
   }
   else if (!vol && this->sharedSurfNodes[me][you].size())
   {
-    std::vector<int> virtuals(receivedSurfCells[me][you].begin(), receivedSurfCells[me][you].end());
+    std::vector<vtkIdType> virtuals(receivedSurfCells[me][you].begin(), receivedSurfCells[me][you].end());
     this->virtualCellsOfSurfPartitions[me][you] 
       = meshBase::CreateShared(meshBase::extractSelectedCells(this->remeshedSurf.get(),virtuals));
     if (this->writeAllFiles>0)  
@@ -1190,7 +1190,7 @@ void RocPartCommGenDriver::extractPatches()
   this->patchesOfSurfacePartitions.resize(surfacePartitions.size());
   for (int i = 0; i < this->surfacePartitions.size(); ++i)
   {
-    std::map<int, std::vector<int>> patchPartitionCellMap;
+    std::map<int, std::vector<vtkIdType>> patchPartitionCellMap;
     vtkSmartPointer<vtkDataArray> patchNumbers
       = this->surfacePartitions[i]->getDataSet()->GetCellData()->GetArray("patchNo");
     for (int j = 0; j < patchNumbers->GetNumberOfTuples(); ++j)
@@ -1221,7 +1221,7 @@ void RocPartCommGenDriver::extractPatches()
     auto it = virtualCellsOfSurfPartitions[i].begin();
     while (it != virtualCellsOfSurfPartitions[i].end())
     {
-      std::map<int, std::vector<int>> virtualPatchPartitionCellMap;
+      std::map<int, std::vector<vtkIdType>> virtualPatchPartitionCellMap;
       vtkSmartPointer<vtkDataArray> virtualPatchNumbers
         = it->second->getDataSet()->GetCellData()->GetArray("patchNo");
       for (int j = 0; j < virtualPatchNumbers->GetNumberOfTuples(); ++j)

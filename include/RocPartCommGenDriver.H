@@ -117,17 +117,17 @@ class RocPartCommGenDriver : public NemDriver
   // --- the following are cleared and reused for vol and surf partitions 
   private: 
     // global node indices of partition
-    std::vector<std::vector<int>> globalNodeIds;             
+    std::vector<std::vector<vtkIdType>> globalNodeIds;
     // global cell indices of partition  
-    std::vector<std::vector<int>> globalCellIds;               
+    std::vector<std::vector<vtkIdType>> globalCellIds;
     // <proc, <global nodeId, local nodeId>>
-    std::vector<std::map<int,int>> globToPartNodeMap;            
+    std::vector<std::map<vtkIdType, vtkIdType>> globToPartNodeMap;
     // <proc, <global cellId, local cellId>>
-    std::vector<std::map<int,int>> globToPartCellMap; 
+    std::vector<std::map<vtkIdType, vtkIdType>> globToPartCellMap;
     // <proc, <local nodeId, global nodeId>>
-    std::vector<std::map<int,int>> partToGlobNodeMap; 
+    std::vector<std::map<vtkIdType, vtkIdType>> partToGlobNodeMap;
     // <proc, <local cellId, global cellId>>
-    std::vector<std::map<int,int>> partToGlobCellMap;
+    std::vector<std::map<vtkIdType, vtkIdType>> partToGlobCellMap;
 
   // --- volume partition ghost information   
   private:
