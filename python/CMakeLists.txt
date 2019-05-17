@@ -12,6 +12,8 @@ if (ENABLE_SYMMX)
   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup_havesymmx.py.in")
 else()
   file(COPY pyNemosys.i
+            ${CMAKE_SOURCE_DIR}/include/meshBase.H
+            ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
   set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
