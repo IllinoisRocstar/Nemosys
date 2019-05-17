@@ -49,7 +49,7 @@ int test_gmshMeshFilenameConstructor(const std::string &fname) {
 }
 
 int test_gmshMeshWriteMSH2(const std::string &fname) {
-  std::string test_fname = "test_" + fname;
+  std::string test_fname = fname + "_test";
   gmshMesh gmshMesh1 = gmshMesh(fname);
 
   gmshMesh1.write(test_fname, 2.0, false);
@@ -58,7 +58,7 @@ int test_gmshMeshWriteMSH2(const std::string &fname) {
 }
 
 int test_gmshMeshWriteMSH4(const std::string &fname) {
-  std::string test_fname = "test_" + fname;
+  std::string test_fname = fname + "_test";
   gmshMesh gmshMesh1 = gmshMesh(fname);
 
   gmshMesh1.write(test_fname, 4.0, false);
@@ -67,7 +67,7 @@ int test_gmshMeshWriteMSH4(const std::string &fname) {
 }
 
 int test_gmshMeshWriteMSH41(const std::string &fname) {
-  std::string test_fname = "test_" + fname;
+  std::string test_fname = fname + "_test";
   gmshMesh gmshMesh1 = gmshMesh(fname);
 
   gmshMesh1.write(test_fname, 4.1, false);
