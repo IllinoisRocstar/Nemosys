@@ -44,8 +44,8 @@ bool readLegacyVTKData(std::ifstream& meshStream, std::string& line, const int n
                        const bool pointOrCell, bool& hasPointOrCell,
                        vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 // helper that casts data arrays to type specified in legacy file (not used rn)
-void addLegacyVTKData(vtkDataArray* arr, const std::string& type, bool pointOrCell, 
-                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
+//void addLegacyVTKData(vtkDataArray* arr, const std::string& type, bool pointOrCell,
+//                      vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp);
 
 template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkDataSet> dataSet)
 {
@@ -64,7 +64,8 @@ class vtkMesh : public meshBase
     // limited support for conversion between formats
     vtkMesh(const char* fname1, const char* fname2);
     // put existing vtkDataSet into meshBase
-    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp, std::string fname);
+    vtkMesh(vtkSmartPointer<vtkDataSet> dataSet_tmp,
+            const std::string &fname);
     /* create from coordinates and connectivities.
        NOTE: use of this is only valid when mesh has one cell type. 
              cellType one of the vtkCellType enums. 
@@ -72,8 +73,9 @@ class vtkMesh : public meshBase
     vtkMesh(const std::vector<double>& xCrds,
             const std::vector<double>& yCrds,
             const std::vector<double>& zCrds,
-            const std::vector<int>& elemConn, const int cellType,
-            std::string newname);
+            const std::vector<int>& elemConn,
+            const int cellType,
+            const std::string &newname);
 
     ~vtkMesh()
     {
@@ -83,34 +85,32 @@ class vtkMesh : public meshBase
   // access
   public:
     // get point with id
-    std::vector<double> getPoint(int id)  const;
+    std::vector<double> getPoint(int id) const override;
     // get 3 vecs with x,y and z coords
-    std::vector<std::vector<double>> getVertCrds() const;
+    std::vector<std::vector<double>> getVertCrds() const override;
     // get cell with id : returns point indices and respective coordinates
-    std::map<int, std::vector<double>> getCell(int id) const;
-    std::vector<std::vector<double>> getCellVec(int id) const;
+    std::map<int, std::vector<double>> getCell(int id) const override;
+    std::vector<std::vector<double>> getCellVec(int id) const override;
     // get diameter of circumsphere of each cell
-    std::vector<double> getCellLengths() const;
+    std::vector<double> getCellLengths() const override;
     // get center of a cell
-    std::vector<double> getCellCenter(int cellID) const;
+    std::vector<double> getCellCenter(int cellID) const override;
     // get cell type as an integer
     // assumes all elements are the same type
-    int getCellType() const;
-    std::vector<double> getCellCenter(int cellID);
+    int getCellType() const override;
     // get edge lengths of dataSet
-    void inspectEdges(const std::string& ofname);
-    std::vector<int> getConnectivities() const;
+    void inspectEdges(const std::string& ofname) const override;
+    std::vector<int> getConnectivities() const override;
 
-  
   // processing
   public:
-    vtkSmartPointer<vtkDataSet> extractSurface();
+    vtkSmartPointer<vtkDataSet> extractSurface() override;
  
   // diagnostics
   public:
-    void report();
-    void write();
-    void write(std::string fname); 
+    void report() const override;
+    void write() const override { meshBase::write(); }
+    void write(const std::string &fname) const override;
 
   // set and get point and cell data
   public:
@@ -137,7 +137,5 @@ class vtkMesh : public meshBase
     void getCellDataArray(int arrayId, std::vector<double>& data);
 
 };
-
-
 
 #endif
