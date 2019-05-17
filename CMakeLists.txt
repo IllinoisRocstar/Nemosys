@@ -14,28 +14,6 @@ MACRO(opt OPTION HELP VALUE)
   SET(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
 ENDMACRO(opt)
 
-## writing remake scripts
-if(NOT WIN32)
-  FILE(WRITE ${CMAKE_BINARY_DIR}/makeAll
-  "#!/bin/bash
-   rm -rf build
-   mkdir build && cd build
-   CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DENABLE_PYTHON_BINDINGS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
-   make -j
-   make install")
-  FILE(WRITE ${CMAKE_BINARY_DIR}/makeNemOnly
-  "#!/bin/bash
-   rm -rf build
-   mkdir build && cd build
-   CMAKE_PREFIX_PATH=${CMAKE_INSTALL_PREFIX}/madlib:${CMAKE_INSTALL_PREFIX}/gmsh:${CMAKE_INSTALL_PREFIX}/netgen cmake -DENABLE_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} ..
-   make -j
-   make install")
-  FILE(COPY ${CMAKE_BINARY_DIR}/makeAll DESTINATION ${CMAKE_SOURCE_DIR}
-       FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-  FILE(COPY ${CMAKE_BINARY_DIR}/makeNemOnly DESTINATION ${CMAKE_SOURCE_DIR}
-       FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
-endif()
-
 # set to $DEFAULT to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
