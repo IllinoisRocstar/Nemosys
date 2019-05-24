@@ -9,17 +9,17 @@ class MeshQuality
 {
   public:
     MeshQuality(){}
-    MeshQuality(meshBase* _mesh);
+    MeshQuality(const meshBase* _mesh);
     ~MeshQuality();
 
   public:
     void checkMesh(std::ostream& outputStream);
     void checkMesh();
-    void checkMesh(std::string fname); 
+    void checkMesh(const std::string &fname);
     vtkSmartPointer<vtkDoubleArray> getStats(int n);
 
   private:
-    meshBase* mesh;
+    const meshBase* mesh;
     vtkSmartPointer<vtkMeshQuality> qualityFilter;
   
     MeshQuality(const MeshQuality& that) = delete;

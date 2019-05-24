@@ -7,6 +7,8 @@ set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 
 file(COPY pyNemosys.i
+          ${CMAKE_SOURCE_DIR}/include/meshBase.H
+          ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
 
