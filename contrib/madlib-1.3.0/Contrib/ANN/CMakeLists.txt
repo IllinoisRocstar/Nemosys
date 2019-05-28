@@ -1,4 +1,12 @@
-add_library(ANN
+# Set ANN include files
+set(ANN_INC_FILES
+    include/ANN/ANN.h
+#    include/ANN/ANNperf.h
+#    include/ANN/ANNx.h
+)
+
+# Set ANN source files
+set(ANN_SRCS
     src/ANN.cpp
     src/bd_fix_rad_search.cpp
     src/bd_pr_search.cpp
@@ -15,10 +23,24 @@ add_library(ANN
     src/perf.cpp
 )
 
-target_include_directories(ANN PUBLIC include)
+# Build ANN library
+add_library(ANN ${ANN_SRCS})
 
-install(TARGETS ANN EXPORT NEMoSys
-        RUNTIME DESTINATION Nemosys/bin
-        LIBRARY DESTINATION Nemosys/lib
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+# Set ANN include directory
+target_include_directories(ANN
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+# Install ANN headers
+install(FILES ${ANN_INC_FILES}
+    DESTINATION include/ANN)
+
+# Install ANN library
+install(TARGETS ANN
+    EXPORT Nemosys
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
