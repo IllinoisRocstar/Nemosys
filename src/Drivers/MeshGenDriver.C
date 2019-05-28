@@ -117,7 +117,7 @@ MeshGenDriver* MeshGenDriver::readJSON(const std::string& ifname,
   else if (!meshEngine.compare("simmetrix"))
   {
     #ifndef HAVE_SIMMETRIX
-      std::cerr << "Nemosys must be recompiled with Simmetrix support." << std::endl;
+      std::cerr << "NEMoSys must be recompiled with Simmetrix support." << std::endl;
       exit(1);
     #else
       if (!inputjson.has_key("License File"))

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <map>
 
-// Nemosys
+// Nemosys headers
 #include "AuxiliaryFunctions.H"
 #include "InputGenDriver.H"
 //#include "meshSrch.H"

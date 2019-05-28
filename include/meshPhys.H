@@ -1,7 +1,7 @@
 #ifndef meshPhys_H
 #define meshPhys_H
 
-// Nemosys
+// Nemosys headers
 #include <vtkAnalyzer.H>
 #include <AuxiliaryFunctions.H>
 

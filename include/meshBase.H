@@ -8,7 +8,7 @@
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdTypeArray.h>
 
-// Nemosys
+// Nemosys headers
 #include <pntMesh.H>
 #include <cobalt.H>
 #include <patran.H>

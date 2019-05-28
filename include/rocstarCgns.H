@@ -3,7 +3,7 @@
 #ifndef __ROCSTARCGNS_H
 #define __ROCSTARCGNS_H
 
-// Nemosys
+// Nemosys headers
 #include "cgnsAnalyzer.H"
 #include <string>
 

@@ -1,6 +1,3 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(Nemosys)
-
 MESSAGE(STATUS "ACCESSING TEST DIRECTORY: ${PROJECT_SOURCE_DIR}")
 
 # macro to list subdirectories of a given current

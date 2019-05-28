@@ -1,5 +1,5 @@
 #ifdef HAVE_SIMMETRIX
-// nemosys
+// Nemosys headers
 #include <RemeshDriver.H>
 #include <meshStitcher.H>
 #include <rocstarCgns.H>

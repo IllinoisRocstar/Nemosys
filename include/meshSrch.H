@@ -1,7 +1,7 @@
 #ifndef meshSrch_H
 #define meshSrch_H
 
-// Nemosys
+// Nemosys headers
 #include "AuxiliaryFunctions.H"
 #include "meshBase.H"
 

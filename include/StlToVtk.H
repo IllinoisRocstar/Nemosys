@@ -10,7 +10,7 @@
 #include <functional>
 #include <algorithm>
 
-// Nemosys
+// Nemosys headers
 #include <AuxiliaryFunctions.H>
 
 class triangle
