@@ -1,4 +1,4 @@
-// NEMoSys headers
+// Nemosys headers
 #include "inputGen.H"
 
 // other headers

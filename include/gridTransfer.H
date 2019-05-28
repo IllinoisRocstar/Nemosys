@@ -7,7 +7,7 @@
 #include <string>
 #include <fstream>
 
-// Nemosys
+// Nemosys headers
 #include <cgnsAnalyzer.H>
 #include <cgnsWriter.H>
 #include <vtkAnalyzer.H>

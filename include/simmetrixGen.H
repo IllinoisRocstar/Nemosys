@@ -13,9 +13,10 @@
 #include "SimErrorCodes.h"
 #include "SimMeshingErrorCodes.h"
 #include "SimDiscreteErrorCodes.h"
-// Nemosys + vtk
-#include <vtkUnstructuredGrid.h>
+// Nemosys headers
 #include <meshGen.H>
+// VTK
+#include <vtkUnstructuredGrid.h>
 
 
 // TODO: implement vtuToSimmetrix in-mem convertor that takes a vtkDataSet

@@ -19,7 +19,7 @@
 // third party
 #include "cgnslib.h"
 
-// Nemosys
+// Nemosys headers
 #include "cgnsAnalyzer.H"
 
 // typedefs

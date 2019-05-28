@@ -170,7 +170,7 @@ void exoMesh::write()
     fid = ex_create(_ifname.c_str(), EX_CLOBBER, &comp_ws, &io_ws);
 
     // initializing exodus database
-    _exErr = ex_put_init(fid,"Nemosys ExodusII database", 3, numNdes, numElms, 
+    _exErr = ex_put_init(fid,"NEMoSys ExodusII database", 3, numNdes, numElms,
             _elmBlock.size(), _ndeSet.size(), _sideSet.size() );
     wrnErrMsg(_exErr, "Problem during initialization of exodusII database");
 

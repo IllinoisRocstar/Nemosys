@@ -457,22 +457,22 @@ endif()
 
 # Headers
 install(FILES ${Nemosys_INC_FILES}
-    DESTINATION Nemosys/include)
+    DESTINATION include)
 
 # Libraries
 install(TARGETS r8 interp Nemosys
     EXPORT Nemosys
-    RUNTIME DESTINATION Nemosys/bin
-    LIBRARY DESTINATION Nemosys/lib
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Export Nemosys as a CMake package
 install(FILES NemosysConfig.cmake
-    DESTINATION Nemosys/lib/cmake/Nemosys)
+    DESTINATION lib/cmake/Nemosys)
 install(EXPORT Nemosys
     NAMESPACE Nemosys::
-    DESTINATION Nemosys/lib/cmake/Nemosys)
+    DESTINATION lib/cmake/Nemosys)
 
 # Setting utility files ########################################################
 
@@ -554,7 +554,7 @@ if(ENABLE_BUILD_UTILS)
     target_link_libraries(dtkTutorial Nemosys
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     install(TARGETS dtkTutorial
-        RUNTIME DESTINATION Nemosys/bin
+        RUNTIME DESTINATION bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif()
@@ -563,7 +563,7 @@ endif()
 # Install utilities ############################################################
 
 install(TARGETS nemosysRun
-    RUNTIME DESTINATION Nemosys/bin
+    RUNTIME DESTINATION bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -575,13 +575,13 @@ if(ENABLE_BUILD_UTILS)
                   rocSurfRemesh
                   grid2gridTransfer
                   mshTransfer
-      RUNTIME DESTINATION Nemosys/bin
+      RUNTIME DESTINATION bin
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
       GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
   if(ENABLE_DTK)
     install(TARGETS dtkTutorial
-        RUNTIME DESTINATION Nemosys/bin
+        RUNTIME DESTINATION bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif()
@@ -614,7 +614,7 @@ if(BUILD_DOCUMENTATION)
       DEPENDS Nemosys ${doxy_extra_files}
       COMMENT "Generating documentation")
   add_custom_target(docs DEPENDS ${documentation})
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION Nemosys/share)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION share)
 endif()
 
 # Perform testing ##############################################################
@@ -625,19 +625,19 @@ endif(ENABLE_TESTING)
 
 # Packaging ####################################################################
 if(WIN32)
-  list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/nemosysRun.exe")
+  list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/nemosysRun.exe")
   if(ENABLE_BUILD_UTILS)
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/xmlDump.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/cgns2msh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocStitchMesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocRemesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/rocSurfRemesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/grid2gridTransfer.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/Nemosys/bin/mshTr.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/xmlDump.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/cgns2msh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocStitchMesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocRemesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocSurfRemesh.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/grid2gridTransfer.exe")
+    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/mshTr.exe")
   endif()
   install(CODE "include(BundleUtilities)
   fixup_bundle(\"${CMAKE_EXE_TO_BUNDLE}\" \"\" \"${LIBRARY_DIRS}\")")
-  set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "Nemosys/bin")
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "bin")
   set(CMAKE_INSTALL_UCRT_LIBRARIES "TRUE")
   include(InstallRequiredSystemLibraries)
 endif()

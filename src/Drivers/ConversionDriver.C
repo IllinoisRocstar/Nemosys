@@ -2,7 +2,7 @@
 #include <map>
 #include <unordered_map>
 
-// Nemosys
+// Nemosys headers
 #include <ConversionDriver.H>
 #include <AuxiliaryFunctions.H>
 #include <vtkMesh.H>
@@ -87,7 +87,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
   }
   else if (!method.compare("EXODUSII"))
   {
-#ifdef HAVE_EXODUSII // NEMOSYS is compiled with exodus
+#ifdef HAVE_EXODUSII // NEMoSys is compiled with exodus
     // reading vitals
     std::cout << "Converting to EXODUS II...\n";
     json opts = inputjson["Conversion Options"];
@@ -333,7 +333,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     delete em;
     em = NULL;
 #else
-    std::cerr << "Error: Compile NEMOSYS with ENABLE_EXODUS to use this option.\n";
+    std::cerr << "Error: Compile NEMoSys with ENABLE_EXODUS to use this option.\n";
     exit(-1);
 #endif
   }

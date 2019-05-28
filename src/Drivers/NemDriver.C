@@ -42,7 +42,7 @@ NemDriver* NemDriver::readJSON(json inputjson)
     return RemeshDriver::readJSON(inputjson);
 #else
     std::cerr << "Program Type " << program_type
-              << " is not enabled. Build Nemosys with Simmetrix capabilities." << std::endl;
+              << " is not enabled. Build NEMoSys with Simmetrix capabilities." << std::endl;
     exit(1);
 #endif // HAVE_SIMMETRIX
   }
@@ -61,7 +61,7 @@ NemDriver* NemDriver::readJSON(json inputjson)
   else
   {
     std::cerr << "Program Type " << program_type
-              << " is not supported by Nemosys." << std::endl;
+              << " is not supported by NEMoSys." << std::endl;
     exit(1);
   }
 }
