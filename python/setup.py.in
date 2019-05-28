@@ -29,6 +29,12 @@ pyNemosys = Extension(
 setup(
     name='pyNemosys',
     version='${NEMOSYS_VERSION}',
+    url='${NEMOSYS_HOMEPAGE_URL}',
+    author='${NEMOSYS_AUTHOR}',
+    author_email='${NEMOSYS_AUTHOR_EMAIL}',
+    classifiers='${NEMOSYS_PYTHON_CLASSIFIERS}'.split(';'),
+    license='${NEMOSYS_SHORT_LICENSE}',
+    description='${NEMOSYS_DESCRIPTION}',
     py_modules=['pyNemosys'],
     ext_modules=[pyNemosys],
     test_suite='test_pyNemosys27'

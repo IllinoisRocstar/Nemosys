@@ -28,14 +28,41 @@ opt(METIS "Enable Metis interface" ${DEFAULT})
 opt(NETGEN "Enable Netgen interface" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
 
-# set up version
-SET(NEMOSYS_MAJOR_VERSION 0)
-SET(NEMOSYS_MINOR_VERSION 29)
-SET(NEMOSYS_PATCH_VERSION 0)
-SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
-SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
-SET(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
-SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
+# Set project metadata #########################################################
+
+set(NEMOSYS_MAJOR_VERSION 0)
+set(NEMOSYS_MINOR_VERSION 29)
+set(NEMOSYS_PATCH_VERSION 0)
+set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
+set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
+set(NEMOSYS_VERSION
+    "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
+set(NEMOSYS_SHORT_LICENSE "GNU General Public License v2 or later (GPLv2+)")
+set(NEMOSYS_HOMEPAGE_URL "http://git.illinois.rocstar/Nemosys/Nemosys")
+set(NEMOSYS_AUTHOR
+    "Masoud Safdari (lead)"
+    "Alessandro Gondolo"
+    "Sachin Natesh"
+    "Pavle Simonovic"
+    "Taiyo Wilson")
+set(NEMOSYS_AUTHOR_EMAIL "msafdari@illinoisrocstar.com")
+set(NEMOSYS_PYTHON_CLASSIFIERS
+    "Development Status :: 2 - Pre-Alpha"
+    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
+    "Natural Language :: English"
+    "Operating System :: Microsoft :: Windows :: Windows 10"
+    "Operating System :: POSIX"
+    "Programming Language :: C"
+    "Programming Language :: C++"
+    "Topic :: Scientific/Engineering")
+set(NEMOSYS_DESCRIPTION "The Nuclear Energy Modeling System is a modular, \
+extensible resource designed for use in typical application development \
+systems as well as distributed web-services environments. The project focus is \
+providing a framework for robust, automated mesh generation, mesh quality \
+analysis, adaptive mesh refinement, and data transfer between arbitrary \
+meshes.")
+
+# Set project defaults #########################################################
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
