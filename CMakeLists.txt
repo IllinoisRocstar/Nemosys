@@ -129,7 +129,6 @@ get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
 list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
 message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
-add_definitions(-D_HAVE_GMSH_)
 
 # Find OpenCascade (used by Gmsh)
 find_package(OpenCASCADE REQUIRED)
@@ -243,24 +242,12 @@ if(ENABLE_SIMMETRIX OR WIN32) # since WIN32 always needs boost
   endif()
 endif()
 
-## add include files to path
-# TODO: Move this to targets.
-include_directories(include)
-#include_directories(AFTER ${MADLIB_INCPATH})
-include_directories(AFTER ${GMSH_INCPATH})
-include_directories(AFTER ${CGNS_INCPATH})
-include_directories(AFTER ${METIS_INCPATH})
-#include_directories(AFTER ${NETGEN_INCPATH})
-include_directories(AFTER ${NETGEN_INCLUDE_DIRS})
-include_directories(AFTER ${SIMMETRIX_INCPATH})
-include_directories(AFTER ${HDF5_INCLUDE_DIRS})
-
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling MAdLib header references.
 # TODO: Is this still true in Gmsh 4.2+ and CMake 2.8+?
-if(EXISTS ${GMSH_INCPATH})
-  include_directories(AFTER ${GMSH_INCPATH}/../)
-endif()
+#if(EXISTS ${GMSH_INCPATH})
+#  include_directories(AFTER ${GMSH_INCPATH}/../)
+#endif()
 
 # Setting compile and link options #############################################
 
@@ -326,6 +313,7 @@ set(INTERP_SRCS
 )
 
 # Setting Nemosys source
+# TODO: Commented files are orphaned! Check if to delete or reinclude.
 set(NEMOSYS_SRCS
     src/Drivers/NemDriver.C
     src/Drivers/ConversionDriver.C
@@ -408,21 +396,6 @@ if(ENABLE_SIMMETRIX)
       src/MeshGeneration/simmetrixParams.C
   )
 endif()
-
-set(UTIL_SRCS
-    utils/Nemosys.C
-    utils/cgns2msh.C
-    utils/rocRemesh.C
-    utils/rocSurfRemesh.C
-    utils/xmlDump.C
-    utils/rocStitchMesh.C
-    utils/grid2gridTransfer.C
-)
-set(TUTR_SRCS
-    utils/writeStructured.C
-    tutorials/mshTransfer.C
-    tutorials/dtkTutorial.C
-)
 
 # Building libraries ###########################################################
 
@@ -548,6 +521,13 @@ if(ENABLE_BUILD_UTILS)
 
   # Setting meshTransfer tutorial source
   set(MSHTRANSFER_SRCS tutorials/mshTransfer.C)
+
+  # TODO: Orphaned files! Check if used.
+#  set(TUTR_SRCS tutorials/writeStructured.C)
+#  set(UTIL_SRCS
+#      utils/refineMesh.C
+#      utils/vol2planeTransfer.C
+#  )
 
   # Setting DTK tutorial source
   if(ENABLE_DTK)
