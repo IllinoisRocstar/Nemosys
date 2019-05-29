@@ -83,7 +83,7 @@ endif()
 # Setting RPATH. Must be done before any add_<target>() commands.
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH "$ORIGIN")
+set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Finding libraries ############################################################
@@ -428,24 +428,44 @@ set(TUTR_SRCS
 
 # Build r8 and rbf library
 add_library(r8 ${R8_SRCS})
+target_include_directories(r8
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
 
 # Build interp library
 add_library(interp ${INTERP_SRCS})
-target_link_libraries(interp
+target_link_libraries(interp PRIVATE
     r8
     ANN
+)
+target_include_directories(interp
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Build Nemosys library
 add_library(Nemosys ${NEMOSYS_SRCS})
 target_link_libraries(Nemosys
-    ${VTK_LIBRARIES}
-    ${GMSH_LIB} TKernel
-    ${CGNS_LIB}
-    ${HDF5_LIBRARIES}
-    ${Boost_LIBRARIES}
-    interp
-    MAdLib
+    PUBLIC
+        interp
+        MAdLib
+        ${VTK_LIBRARIES}
+        ${GMSH_LIB}
+        ${CGNS_LIB}
+    PRIVATE
+        TKernel
+        ${HDF5_LIBRARIES}
+        ${Boost_LIBRARIES}
+)
+target_include_directories(Nemosys
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+        ${GMSH_INCPATH}
+#    PRIVATE
 )
 
 # TODO: Appears unused.
@@ -454,11 +474,11 @@ target_link_libraries(Nemosys
 #endif()
 
 if(ENABLE_MPI)
-  target_link_libraries(Nemosys ${MPI_LIBRARIES})
+  target_link_libraries(Nemosys PRIVATE ${MPI_LIBRARIES})
 endif()
 
 if(ENABLE_EXODUS)
-  target_link_libraries(Nemosys ${EXO_LIB})
+  target_link_libraries(Nemosys PRIVATE ${EXO_LIB})
   target_compile_definitions(Nemosys PRIVATE HAVE_EXODUSII)
 endif()
 
@@ -467,17 +487,18 @@ if(ENABLE_EPIC)
 endif()
 
 if(ENABLE_SIMMETRIX)
-  target_link_libraries(Nemosys ${SIMMETRIX_LIBS})
+  target_link_libraries(Nemosys PRIVATE ${SIMMETRIX_LIBS})
 endif()
 
 if(ENABLE_METIS)
-  target_link_libraries(Nemosys ${METIS_LIB})
+  target_link_libraries(Nemosys PRIVATE ${METIS_LIB})
   target_compile_definitions(Nemosys PRIVATE HAVE_METIS)
 endif()
 
 if(ENABLE_NETGEN)
-  target_link_libraries(Nemosys nglib)
+  target_link_libraries(Nemosys PRIVATE nglib)
   target_compile_definitions(Nemosys PRIVATE HAVE_NGEN)
+  target_include_directories(Nemosys PUBLIC ${NETGEN_INCLUDE_DIRS})
 endif()
 
 # Install libraries ############################################################
