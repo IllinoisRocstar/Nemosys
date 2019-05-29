@@ -138,9 +138,9 @@ if(ENABLE_GMSH)
   message(STATUS "gmsh include path ${GMSH_INCPATH}")
   message(STATUS "gmsh libs ${GMSH_LIB}")
 
-  find_package(OpenCASCADE REQUIRED) # Used by Gmsh
+#  find_package(OpenCASCADE REQUIRED) # Used by Gmsh
 
-  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB} TKernel)
+  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB})
   target_include_directories(MAdLib PRIVATE ${GMSH_INCPATH})
   target_compile_definitions(MAdLib PUBLIC _HAVE_GMSH_)
 endif()
