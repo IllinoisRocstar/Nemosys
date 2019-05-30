@@ -52,6 +52,10 @@ template<class TWriter> void writeVTFile(std::string fname, vtkSmartPointer<vtkD
   vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
   Writer->SetFileName(&fname[0u]);
   Writer->SetInputData(dataSet);
+  // WARNING: ASCI does not work for STL and legacy VTK files
+  // WARNING: large files will be genarated
+  //Writer->SetDataModeToAscii();
+  Writer->Update();
   Writer->Write();
 }
 
@@ -84,6 +88,8 @@ class vtkMesh : public meshBase
 
   // access
   public:
+    // abstract read method reserved for derived classes
+    virtual void read(const std::string& fname) {};
     // get point with id
     std::vector<double> getPoint(int id) const override;
     // get 3 vecs with x,y and z coords
