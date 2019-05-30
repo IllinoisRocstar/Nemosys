@@ -7,6 +7,7 @@ class MeshQualityDriver : public NemDriver
 {
   public:
     
+    MeshQualityDriver():mesh(NULL) {}; 
     MeshQualityDriver(std::string _mesh, std::string ofname); 
     ~MeshQualityDriver();
 

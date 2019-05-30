@@ -1,0 +1,50 @@
+[
+		{
+		    "Program Type": "Mesh Generation",
+		    "Mesh Generation Engine": "cfmesh",
+		    "Mesh File Options": 
+            {
+		        "Input Geometry File": "socket.fms",
+		        "Output Mesh File": "socket_mesh.vtu"
+		    },
+		    "Meshing Parameters": {
+		        "CFMesh Parameters": 
+                {
+                    "Generator": "tetMesh",
+		            "MaxCellSize": 9.0,
+		            "BoundaryCellSize": 4.5,
+                    "BoundaryLayers": {
+		                "NLayers": 1,
+		                "ThicknessRatio": 1.2,
+                        "MaxFirstLayerThickness": 1.0,
+                        "AllowDiscontinuity": false,
+                        "PatchBoundaryLayers":
+                        [
+                            {
+                                "PatchName" : "patch7",
+                                "AllowDiscontinuity" :	false,
+                                "MaxFirstLayerThickness":	1.0,
+                                "NLayers" :	2,
+                                "ThicknessRatio":	1.1
+                            }
+                        ]
+                    },
+                    "LocalRefinement":
+                    [
+                        {
+                            "PatchName" : "patch15",
+                            "AdditionalRefinementLevels": 1
+                        },
+                        {
+                            "PatchName" : "subset1",
+                            "CellSize": 4.5
+                        },
+                        {
+                            "PatchName" : "subset2",
+                            "CellSize": 4.5
+                        }
+                    ]
+				}
+		    }
+		}
+]

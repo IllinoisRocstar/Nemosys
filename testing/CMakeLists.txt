@@ -18,7 +18,7 @@ ENDMACRO()
 
 # adding gtest subdir with its own cmake file
 set(BUILD_SHARED_LIBS ON)
-add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+#add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 ADD_SUBDIRECTORY(lib/gtest-1.6.0)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
@@ -35,6 +35,7 @@ ADD_EXECUTABLE(runPNTGenTest test_scripts/testPNTGen.C)
 ADD_EXECUTABLE(runAutoVerifTest test_scripts/testAutoVerification.C)
 add_executable(runRefinementTest test_scripts/testRefinement.C)
 add_executable(runGmshMeshTest test_scripts/testGmshMesh.C)
+
 TARGET_LINK_LIBRARIES(runCubatureInterpTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runConversionTest gtest gtest_main Nemosys)
 TARGET_LINK_LIBRARIES(runOrthoPolyTest gtest gtest_main Nemosys)
@@ -46,8 +47,8 @@ TARGET_LINK_LIBRARIES(runAutoVerifTest gtest gtest_main Nemosys)
 target_link_libraries(runRefinementTest gtest gtest_main Nemosys)
 target_link_libraries(runGmshMeshTest gtest gtest_main Nemosys)
 
-add_custom_target(unittests)
-add_dependencies(unittests runCubatureInterpTest
+ADD_CUSTOM_TARGET(unittests)
+ADD_DEPENDENCIES(unittests runCubatureInterpTest
                            runConversionTest
                            runOrthoPolyTest
                            runPatchRecoveryTest
@@ -59,15 +60,24 @@ add_dependencies(unittests runCubatureInterpTest
                            runGmshMeshTest
 )
 
-# custom built test for EPIC
+# custom built tests
 IF (ENABLE_EPIC)
   ADD_EXECUTABLE(runEp16Test test_scripts/testEP16.C)
   TARGET_LINK_LIBRARIES(runEp16Test gtest gtest_main Nemosys)
-  add_dependencies(unittests runEp16Test)
+  ADD_DEPENDENCIES(unittests runEp16Test)
 ENDIF()
 
-file(COPY test_data
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+IF (ENABLE_CFMSH)
+  ADD_EXECUTABLE(runCFMTest test_scripts/testCFM.C)
+  TARGET_LINK_LIBRARIES(runCFMTest gtest gtest_main Nemosys)
+  ADD_DEPENDENCIES(unittests runCFMTest)
+
+  ADD_EXECUTABLE(runCFMQualTest test_scripts/testCFMQual.C)
+  TARGET_LINK_LIBRARIES(runCFMQualTest gtest gtest_main Nemosys)
+  ADD_DEPENDENCIES(unittests runCFMQualTest)
+ENDIF()
+
+file(COPY test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 SUBDIRLIST(TEST_DIRS ${CMAKE_CURRENT_BINARY_DIR}/test_data)
 
@@ -82,7 +92,14 @@ SET(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
 SET(EP16_TESTDIR ${TEST_DATA}/Ep16Test)
 SET(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
 set(REFINEMENT_TESTDIR ${TEST_DATA}/RefinementTest)
+SET(CFM_SM_TESTDIR ${TEST_DATA}/cfm_sm)
+SET(CFM_2D_TESTDIR ${TEST_DATA}/cfm_2d)
+SET(CFM_HINGE_TESTDIR ${TEST_DATA}/cfm_hinge)
+SET(CFM_BUNNY_TESTDIR ${TEST_DATA}/cfm_bunny)
+SET(CFM_BUNNY_OCT_TESTDIR ${TEST_DATA}/cfm_bunny_oct)
+SET(CFM_QUAL_TESTDIR ${TEST_DATA}/cfm_qual)
 set(GMSHMESH_TESTDIR ${TEST_DATA}/GmshMeshTest)
+
 SET(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 SET(meshgendefault ${MESHGEN_TESTDIR}/default.json)
 SET(meshgenunif_in ${MESHGEN_TESTDIR}/unif_in.json)
@@ -98,10 +115,24 @@ SET(pntgenbench6 ${PNTGEN_TESTDIR}/bench6.json)
 SET(ep16test1_in ${EP16_TESTDIR}/gmsh2exo_in.json)
 SET(ep16test1 ${EP16_TESTDIR}/gmsh2exo.json)
 SET(ep16test2 ${EP16_TESTDIR}/ep16.json)
-set(refinementValue_in ${REFINEMENT_TESTDIR}/refine_value_in.json)
-set(refinementValue ${REFINEMENT_TESTDIR}/refine_value.json)
-set(refinementUniform_in ${REFINEMENT_TESTDIR}/refine_uniform_in.json)
-set(refinementUniform ${REFINEMENT_TESTDIR}/refine_uniform.json)
+SET(refinementValue_in ${REFINEMENT_TESTDIR}/refine_value_in.json)
+SET(refinementValue ${REFINEMENT_TESTDIR}/refine_value.json)
+SET(refinementUniform_in ${REFINEMENT_TESTDIR}/refine_uniform_in.json)
+SET(refinementUniform ${REFINEMENT_TESTDIR}/refine_uniform.json)
+SET(cfm_sm_in ${CFM_SM_TESTDIR}/cfmsh_in.json)
+SET(cfm_sm ${CFM_SM_TESTDIR}/cfmsh.json)
+SET(cfm_2d_in ${CFM_2D_TESTDIR}/cfmsh_in.json)
+SET(cfm_2d ${CFM_2D_TESTDIR}/cfmsh.json)
+SET(cfm_hinge_in ${CFM_HINGE_TESTDIR}/cfmsh_in.json)
+SET(cfm_hinge ${CFM_HINGE_TESTDIR}/cfmsh.json)
+SET(cfm_bunny_in ${CFM_BUNNY_TESTDIR}/cfmsh_in.json)
+SET(cfm_bunny ${CFM_BUNNY_TESTDIR}/cfmsh.json)
+SET(cfm_bunny_oct_in ${CFM_BUNNY_OCT_TESTDIR}/cfmsh_in.json)
+SET(cfm_bunny_oct ${CFM_BUNNY_OCT_TESTDIR}/cfmsh.json)
+SET(cfm_qual_gen_in ${CFM_QUAL_TESTDIR}/cfmsh_in.json)
+SET(cfm_qual_gen ${CFM_QUAL_TESTDIR}/cfmsh.json)
+SET(cfm_qual ${CFM_QUAL_TESTDIR}/cfmsh_qual.json)
+
 CONFIGURE_FILE( ${meshgendefault_in} ${meshgendefault} @ONLY )
 CONFIGURE_FILE( ${meshgenunif_in} ${meshgenunif} @ONLY )
 CONFIGURE_FILE( ${meshgengeom_in} ${meshgengeom} @ONLY )
@@ -109,33 +140,39 @@ CONFIGURE_FILE( ${pntgenbench1_in} ${pntgenbench1} @ONLY )
 CONFIGURE_FILE( ${pntgenbench5_in} ${pntgenbench5} @ONLY )
 CONFIGURE_FILE( ${pntgenbench6_in} ${pntgenbench6} @ONLY )
 CONFIGURE_FILE( ${ep16test1_in} ${ep16test1} @ONLY )
-configure_file(${refinementValue_in} ${refinementValue} @ONLY)
-configure_file(${refinementUniform_in} ${refinementUniform} @ONLY)
+CONFIGURE_FILE( ${refinementValue_in} ${refinementValue} @ONLY)
+CONFIGURE_FILE( ${refinementUniform_in} ${refinementUniform} @ONLY)
+CONFIGURE_FILE( ${cfm_sm_in} ${cfm_sm} @ONLY )
+CONFIGURE_FILE( ${cfm_2d_in} ${cfm_2d} @ONLY )
+CONFIGURE_FILE( ${cfm_hinge_in} ${cfm_hinge} @ONLY )
+CONFIGURE_FILE( ${cfm_bunny_in} ${cfm_bunny} @ONLY )
+CONFIGURE_FILE( ${cfm_bunny_oct_in} ${cfm_bunny_oct} @ONLY )
+CONFIGURE_FILE( ${cfm_qual_gen_in} ${cfm_qual_gen} @ONLY )
 
 if(WIN32)
   set(TEST_ENV_PATH_OPTIONS
-"PATH=${CMAKE_BINARY_DIR};\
-${gtest_BINARY_DIR};\
-${MADLIB_LIB_PATH};\
-${VTK_LIB_DIR};\
-${GMSH_LIB_PATH};\
-${NETGEN_LIB_PATH};\
-${NETGEN_LIB_PATH}/../bin;\
-${ZLIB_LIB_PATH};\
-${ZLIB_LIB_PATH}/../bin;\
-${ANN_LIB_PATH};\
-${METIS_LIB_PATH};\
-${CGNS_LIB_PATH};\
-$ENV{PATH}")
+  "PATH=${CMAKE_BINARY_DIR};\
+  ${gtest_BINARY_DIR};\
+  ${MADLIB_LIB_PATH};\
+  ${VTK_LIB_DIR};\
+  ${GMSH_LIB_PATH};\
+  ${NETGEN_LIB_PATH};\
+  ${NETGEN_LIB_PATH}/../bin;\
+  ${ZLIB_LIB_PATH};\
+  ${ZLIB_LIB_PATH}/../bin;\
+  ${ANN_LIB_PATH};\
+  ${METIS_LIB_PATH};\
+  ${CGNS_LIB_PATH};\
+  $ENV{PATH}")
 else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   set(TEST_ENV_LD_OPTIONS
-"LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
-${CMAKE_CURRENT_BINARY_DIR}/..:\
-${VTK_LIB_DIR}:\
-${NETGEN_LIB_PATH}:\
-${OpenCASCADE_LIBRARY_DIR}:\
-$ENV{LD_LIBRARY_PATH}")
+  "LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
+  ${CMAKE_CURRENT_BINARY_DIR}/..:\
+  ${VTK_LIB_DIR}:\
+  ${NETGEN_LIB_PATH}:\
+  ${OpenCASCADE_LIBRARY_DIR}:\
+  $ENV{LD_LIBRARY_PATH}")
 endif()
 
 message(STATUS "Test Env Options: ${TEST_ENV_PATH_OPTIONS} ${TEST_ENV_LD_OPTIONS}")
@@ -228,6 +265,38 @@ IF (ENABLE_EPIC)
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
           runEp16Test ${ep16test1} ${EP16_TESTDIR}/bctest_ref.g
                       ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat
+  )
+ENDIF()
+IF (ENABLE_CFMSH)
+  ADD_TEST(NAME cfm_small
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+          runCFMTest ${cfm_sm}
+          WORKING_DIRECTORY ${CFM_SM_TESTDIR}
+  )
+  ADD_TEST(NAME cfm_2d
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runCFMTest ${cfm_2d} --gtest_filter=-*FileDiff
+      WORKING_DIRECTORY ${CFM_2D_TESTDIR}
+  )
+  ADD_TEST(NAME cfm_hinge
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runCFMTest ${cfm_hinge}
+      WORKING_DIRECTORY ${CFM_HINGE_TESTDIR}
+  )
+  ADD_TEST(NAME cfm_bunny
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runCFMTest ${cfm_bunny}
+      WORKING_DIRECTORY ${CFM_BUNNY_TESTDIR}
+  )
+  ADD_TEST(NAME cfm_bunny_oct
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runCFMTest ${cfm_bunny_oct}  --gtest_filter=-*FileDiff
+      WORKING_DIRECTORY ${CFM_BUNNY_OCT_TESTDIR}
+  )
+  ADD_TEST(NAME cfm_qual
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runCFMQualTest ${cfm_qual_gen} ${cfm_qual}
+      WORKING_DIRECTORY ${CFM_QUAL_TESTDIR}
   )
 ENDIF()
 

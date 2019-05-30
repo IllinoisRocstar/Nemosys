@@ -7,6 +7,7 @@
 #include <vtkDataSet.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdTypeArray.h>
+#include <vtkIdList.h>
 
 // Nemosys
 #include <pntMesh.H>
@@ -157,6 +158,8 @@ class meshBase
 
   // --- access
   public:
+    // abstract read method reserved for derived classes
+    virtual void read(const std::string& fname) = 0;
     // get point with id
     virtual std::vector<double> getPoint(int id) const = 0;
     // get 3 vecs with x,y and z coords
