@@ -8,7 +8,7 @@
 
 // constructor
 symmxGen::symmxGen(symmxParams* _params)
-  : params(_params), haveLog(false),prog(NULL),model(NULL),
+  : params(_params),haveLog(false),prog(NULL),model(NULL),
     dModel(NULL),mcase(NULL),writeSurfAndVol(false),
     mesh(NULL)
 {

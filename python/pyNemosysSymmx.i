@@ -52,6 +52,7 @@ class meshBase
                                           vtkSmartPointer<vtkIdTypeArray> cellIds);
     static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& cellIds);
     static std::vector<std::shared_ptr<meshBase>> partition(const meshBase* mbObj, const int numPartitions);
+    virtual void read(std::string fname=std::string()) = 0;    
     virtual std::vector<double> getPoint(int id);
     virtual std::vector<std::vector<double>> getVertCrds() const;
     virtual std::map<int, std::vector<double>> getCell(int id);
@@ -106,7 +107,7 @@ class meshBase
     virtual void write();
     virtual void write(std::string fname);
     void writeMSH(std::ofstream& outputStream);
-    void writeMSH(std::string fname);
+    void writeMSH(std::string fname = std::string());
     void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID);
     void writeMSH(std::string fname, std::string pointOrCell, int arrayID);
     void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID,

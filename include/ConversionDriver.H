@@ -7,6 +7,8 @@
 #include "exoMesh.H"
 #endif
 
+#include "foamMesh.H"
+
 class ConversionDriver : public NemDriver
 {
   public:
@@ -18,9 +20,10 @@ class ConversionDriver : public NemDriver
     static ConversionDriver* readJSON(std::string ifname);
 
 #ifdef HAVE_EXODUSII
+  private:
+    void genExo(json opts, std::string fname);
     void procExo(json ppJson, std::string fname, EXOMesh::exoMesh* em);
 #endif
-
 
   private:
     meshBase* source;

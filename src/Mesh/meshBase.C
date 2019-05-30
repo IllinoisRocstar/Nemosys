@@ -164,9 +164,9 @@ meshBase *meshBase::generateMesh(const std::string &fname,
                                  meshingParams *params)
 {
 
-  if (fname.find(".stl") == -1)
+  if ((fname.find(".stl") == -1) and (fname.find(".fms") == -1))
   {
-    std::cerr << "Only CAD files in STL format are supported" << std::endl;
+    std::cerr << "Only CAD files in STL or FMS format are supported" << std::endl;
     exit(1);
   }
 
@@ -183,6 +183,11 @@ meshBase *meshBase::generateMesh(const std::string &fname,
         ret = exportVolToVtk(newname);    
       }
       else if (meshEngine == "simmetrix")
+      {
+        std::string newname = trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname); 
+      }
+      else if (meshEngine == "cfmesh")
       {
         std::string newname = trim_fname(fname, ".vtu");
         ret = Create(generator->getDataSet(), newname); 
