@@ -182,15 +182,15 @@ class MeshGenDriver : public NemDriver
 {
   public:
 
-    MeshGenDriver(std::string ifname, std::string meshEngine,
-                  meshingParams* params, std::string ofname);
+    MeshGenDriver(const std::string& ifname, const std::string& meshEngine,
+                  meshingParams* params, const std::string& ofname);
 
     static MeshGenDriver* readJSON(json inputjson);
 };
 
 %extend MeshGenDriver {
 
-    static MeshGenDriver* py_readJSON(std::string serialized_json, std::string ifname, bool serialized){
+    static MeshGenDriver* py_readJSON(const std::string& serialized_json, const std::string& ifname, bool serialized){
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
         return MeshGenDriver::readJSON(inputjson);
@@ -366,9 +366,9 @@ class meshGen
     virtual ~meshGen();
     
     // creates generator with default parameters
-    static meshGen* Create(std::string fname, std::string meshEngine);
+    static meshGen* Create(const std::string& fname, const std::string& meshEngine);
     // creates generater with specified parameters
-    static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
+    static meshGen* Create(const std::string& fname, const std::string& meshEngine, meshingParams* params);
     virtual int createMeshFromSTL(const char* fname) = 0;
     vtkSmartPointer<vtkDataSet> getDataSet(); 
 };

@@ -54,9 +54,13 @@ void vtkMesh::write(const std::string &fname) const
   else if (extension == ".vti")
     writeVTFile<vtkXMLImageDataWriter> (fname, dataSet);
   else if (extension == ".stl")
+  {
     writeVTFile<vtkSTLWriter> (fname, dataSet); // ascii stl
+  }
   else if (extension == ".vtk")
+  {
     writeVTFile<vtkUnstructuredGridWriter> (fname, dataSet); // legacy vtk writer
+  }
   else {
     std::string fname_tmp = trim_fname(fname, ".vtu");
     writeVTFile<vtkXMLUnstructuredGridWriter>(fname_tmp, dataSet);   // default is vtu
@@ -362,6 +366,7 @@ bool readLegacyVTKCells(std::istream& meshStream, std::string& line, int& numCel
                         std::vector<vtkSmartPointer<vtkIdList>>& vtkCellIds,
                         vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
+  std::cout << line << std::endl;
   if (line.find("CELLS") != -1)
   {
     std::istringstream ss(line);

@@ -1,11 +1,30 @@
+# TODO: make this hierarchical
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(Nemosys CXX C)
+
+# project details
+SET(NEMOSYS_MAJOR_VERSION 0)
+SET(NEMOSYS_MINOR_VERSION 30)
+SET(NEMOSYS_PATCH_VERSION 0)
+SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
+SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
+SET(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
+SET(NEMOSYS_SHORT_LICENSE "GNU General Public License (GPL)")
+SET(PROJECT_NAME "NEMoSys version ${NEMOSYS_VERSION}")
+PROJECT($PROJECT_NAME CXX C)
+
+# testing
 ENABLE_TESTING()
 
+# package module
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/Modules/)
+
+# TODO: move out of main
+# macro definitions
 # this variable controls the default value of the options which are normally set
 # to ON (useful if you want to configure a minimal version of Nemosys: e.g. "cmake
 # -DDEFAULT=0 -DENABLE_DTK=1")
 SET(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+
 # creating code compilation database
 SET( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
@@ -25,15 +44,7 @@ opt(BUILD_UTILS "Build utilities" OFF)
 opt(METIS "Enable Metis interface" ON)
 opt(NETGEN "Enable Netgen interface" ON)
 opt(SYMMX "Enable SYMMETRIX Meshing engine" OFF)
-
-# set up version
-SET(NEMOSYS_MAJOR_VERSION 0)
-SET(NEMOSYS_MINOR_VERSION 29)
-SET(NEMOSYS_PATCH_VERSION 0)
-SET(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
-SET(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
-SET(NEMOSYS_VERSION "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
-SET(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License (LGPL)")
+opt(CFMSH "Enable cfMesh Meshing engine" OFF)
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
@@ -60,14 +71,14 @@ SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 IF (ENABLE_MPI)
   FIND_PACKAGE(MPI REQUIRED)
   # include mpi headers
-  include_directories(${MPI_INCLUDE_PATH})
+  INCLUDE_DIRECTORIES(${MPI_INCLUDE_PATH})
   IF (MPI_LIBRARY)
     SET(MPI_LIBRARIES ${MPI_LIBRARY})
   ENDIF (MPI_LIBRARY)
   IF (MPI_EXTRA_LIBRARY)
     SET(MPI_LIBRARIES ${MPI_LIBRARIES} "${MPI_EXTRA_LIBRARY}")
   ENDIF (MPI_EXTRA_LIBRARY)
-  # Needed for mpich 2
+  # needed for mpich 2
   ADD_DEFINITIONS("-DMPICH_IGNORE_CXX_SEEK")
 ENDIF (ENABLE_MPI)
 
@@ -159,6 +170,7 @@ IF (ENABLE_EXODUS)
   add_definitions(-DHAVE_EXODUSII)
 ENDIF()
 
+# DTK
 IF (ENABLE_DTK)
   FIND_PACKAGE(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos ${TRILINOS_PATH})
   IF(NOT Trilinos_FOUND)
@@ -167,14 +179,10 @@ IF (ENABLE_DTK)
   MESSAGE (Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS})
   LINK_DIRECTORIES(${Trilinos_LIBRARY_DIRS})
   LINK_DIRECTORIES(${Trilinos_TPL_LIBRARY_DIRS})
-ENDIF()
-
-# import dtk related variables
-IF (ENABLE_DTK)
   INCLUDE(dtk_stuff.txt)
 ENDIF ()
 
-# symmetrix
+# SYMMETRIX
 IF (ENABLE_SYMMX)
   FIND_LIBRARY(SYMMDL_LIB SimModel HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
   FIND_LIBRARY(SYMADM_LIB SimAdvMeshing HINTS /home/users/snatesh/snatesh-storage/SYMMETRIX/11.0-180502/lib/x64_rhel7_gcc48)
@@ -194,9 +202,13 @@ IF (ENABLE_SYMMX)
   MESSAGE(STATUS "SYMMETRIX include path ${SYMMX_INCPATH}")
 ENDIF()
 
-IF(ENABLE_SYMMX OR WIN32) # since WIN32 always needs boost
+IF(ENABLE_SYMMX OR ENABLE_CFMSH OR WIN32) # since WIN32 always needs boost
   # boost
-  SET(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  IF(WIN32)
+    SET(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  ELSE()
+    SET(Boost_USE_STATIC_LIBS OFF) # needed ON on WIN32. TODO: test on UNIX
+  ENDIF()
   SET(Boost_USE_MULTITHREADED ON)
   SET(Boost_USE_STATIC_RUNTIME OFF)
   FIND_PACKAGE(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
@@ -206,7 +218,43 @@ IF(ENABLE_SYMMX OR WIN32) # since WIN32 always needs boost
   ENDIF()
 ENDIF()
 
-## add include files to path
+# CFMESH
+IF (ENABLE_CFMSH)
+    # requires openfoam 4.x
+    FIND_PACKAGE(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
+        edgeMesh finiteVolume foamToVTK)
+    MESSAGE(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
+    MESSAGE(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
+    LINK_DIRECTORIES(${OPNF_LIBRARY_DIRS})
+    FIND_LIBRARY(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
+    FIND_FILE(CFMSH_LOC cartesian2DMeshGenerator.h HINTS /opt/cfmsh)
+    FIND_FILE(CFMSH_MAIN LongList.C HINTS /opt/cfmesh/meshLibrary/lnInclude/)
+    GET_FILENAME_COMPONENT(CFMSH_INCPATH_MAIN ${CFMSH_MAIN} PATH)
+    MESSAGE(STATUS "CFMesh location ${CFMSH_LOC}")
+    FILE(GLOB_RECURSE CFMSH_HDR FOLLOW_SYMLINKS "${CFMSH_LOC}/*.H" )
+    #FILE(COPY ${CFMSH_HDR} DESTINATION ${OPNF_INCLUDE_DIRS} REGEX "lnInclude" EXCLUDE)
+    # openfoam variables
+    SET( CMAKE_CXX_FLAGS "-Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof -ftemplate-depth-100 -DOMPI_SKIP_MPICXX -O3 -fPIC" )
+    SET( CMAKE_MODULE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed" )
+    SET( CMAKE_SHARED_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed" )
+    SET( CMAKE_EXE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed" )
+    ADD_DEFINITIONS( -DOF_DOUBLE_PRECISION )
+    SET(LABEL_SIZE 32 )
+    ADD_DEFINITIONS( -DWM_LABEL_SIZE=${LABEL_SIZE} )
+    SET(PRECISION DP )
+    ADD_DEFINITIONS( -DWM_${PRECISION} )
+    # another option for openfoam
+    ADD_DEFINITIONS( -DNoRepository )
+    #ADD_DEFINITIONS( -Dlinux64 )
+    #ADD_DEFINITIONS( -DWM_ARCH_OPTION=64 )
+    SET(PYTHON_PPDS ${PYTHON_PPDS}
+        -DOF_DOUBLE_PRECISION
+        -DWM_LABEL_SIZE=${LABEL_SIZE}
+        -DWM_${PRECISION}
+        -DNoRepository)
+ENDIF()
+
+# setup header pathes
 INCLUDE_DIRECTORIES(include)
 INCLUDE_DIRECTORIES(AFTER ${MADLIB_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH})
@@ -216,8 +264,11 @@ INCLUDE_DIRECTORIES(AFTER ${METIS_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${NETGEN_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(AFTER ${SYMMX_INCPATH})
 INCLUDE_DIRECTORIES(AFTER ${HDF5_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(AFTER ${CFMSH_INCPATH_MAIN})
+INCLUDE_DIRECTORIES(AFTER ${CFMSH_INCPATH})
+INCLUDE_DIRECTORIES(AFTER ${OPNF_INCLUDE_DIRS})
 
-# For some reason, older versions of cmake fail to find the local gmsh include
+# for some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling madlib header references.
 IF(EXISTS ${GMSH_INCPATH})
   INCLUDE_DIRECTORIES(AFTER ${GMSH_INCPATH}/../)
@@ -253,7 +304,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 # turning off warnings
 IF(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-  # Update if necessary
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 ENDIF()
 
@@ -261,48 +311,68 @@ ENDIF()
 IF (ENABLE_EPIC)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_EPIC")
 ENDIF()
-
-
-# other flags for dependencies
 IF (ENABLE_SYMMX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SYMMX")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SYMMX")
   MESSAGE(STATUS "Using -DHAVE_SYMMX")
 ENDIF()
+IF (ENABLE_CFMSH)
+    #ADD_DEFINITIONS(-DHAVE_CFMSH)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_CFMSH")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_CFMSH")
+    # python wrapper flags
+    SET(PYTHON_PPDS ${PYTHON_PPDS} -DHAVE_CFMSH)
+    MESSAGE(STATUS "Using -DHAVE_CFMSH")
+ENDIF()
 
-# Setting files   ###############################################################
-# Install include files
+
+# setting files
+# install header files
 FILE(GLOB H_FILES include/*.H)
 FILE(GLOB h_FILES include/*.h)
 FILE(GLOB hpp_FILES include/*.hpp)
 SET(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
 INSTALL(FILES ${Nemosys_INC_FILES} DESTINATION Nemosys/include)
 
-# Setting compile and link flags
+# main modules
 SET(NEMOSYS_SRCS src/Mesh/meshBase.C src/Mesh/vtkMesh.C
                  src/Mesh/gmshMesh.C
                  src/MeshGeneration/meshGen.C
-                 src/MeshGeneration/netgenGen.C src/MeshGeneration/netgenParams.C
-                 src/Transfer/TransferBase.C  src/Transfer/FETransfer.C
+                 src/MeshGeneration/netgenGen.C
+                 src/MeshGeneration/netgenParams.C
+                 src/Transfer/TransferBase.C
+                 src/Transfer/FETransfer.C
                  src/SizeFieldGeneration/SizeFieldBase.C
                  src/SizeFieldGeneration/GradSizeField.C
                  src/SizeFieldGeneration/ValSizeField.C
                  src/SizeFieldGeneration/Z2ErrorSizeField.C
-                 src/Refinement/Refine.C src/MeshQuality/MeshQuality.C
-                 src/Drivers/NemDriver.C src/Drivers/TransferDriver.C
-                 src/Drivers/RefineDriver.C src/Drivers/RemeshDriver.C
-                 src/Drivers/MeshGenDriver.C src/Drivers/MeshQualityDriver.C
+                 src/Refinement/Refine.C
+                 src/MeshQuality/MeshQuality.C
+                 src/Drivers/NemDriver.C
+                 src/Drivers/TransferDriver.C
+                 src/Drivers/RefineDriver.C
+                 src/Drivers/RemeshDriver.C
+                 src/Drivers/MeshGenDriver.C
+                 src/Drivers/MeshQualityDriver.C
                  src/StlToVtk.C src/Integration/Cubature.C
                  src/Drivers/RocPartCommGenDriver.C
-                 src/PatchRecovery/orthoPoly1D.C src/PatchRecovery/orthoPoly3D.C
-                 src/PatchRecovery/polyApprox.C src/PatchRecovery/patchRecovery.C
-                 src/Mesh/pntMesh.C src/Drivers/ConversionDriver.C
-                 src/SolutionVerification/OrderOfAccuracy.C src/vtkAnalyzer.C
-                 src/cgnsAnalyzer.C src/rocstarCgns.C
+                 src/PatchRecovery/orthoPoly1D.C
+                 src/PatchRecovery/orthoPoly3D.C
+                 src/PatchRecovery/polyApprox.C
+                 src/PatchRecovery/patchRecovery.C
+                 src/Mesh/pntMesh.C
+                 src/Drivers/ConversionDriver.C
+                 src/SolutionVerification/OrderOfAccuracy.C
+                 src/vtkAnalyzer.C
+                 src/cgnsAnalyzer.C
+                 src/rocstarCgns.C
                  src/MeshPartitioning/meshPartitioner.C
                  src/MeshPartitioning/meshStitcher.C
-                 src/cgnsWriter.C src/gridTransfer.C
-                 src/Mesh/cobalt.C src/Mesh/patran.C
+                 src/cgnsWriter.C
+                 src/gridTransfer.C
+                 src/Mesh/cobalt.C
+                 src/Mesh/patran.C
+                 src/MeshOperation/meshSrch.C
                  src/InputGeneration/inputGen.C
                  src/Drivers/InputGenDriver.C)
 
@@ -314,7 +384,17 @@ ENDIF()
 IF (ENABLE_EPIC)
   SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} src/InputGeneration/ep16Prep.C )
 ENDIF()
+IF (ENABLE_CFMSH)
+    SET(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+        src/MeshGeneration/cfmeshParams.C
+        src/MeshGeneration/cfmeshGen.C
+        src/Mesh/foamMesh.C
+        src/MeshQuality/cfmshQualityParams.C)
+ENDIF()
 
+
+# legacy stuff
+# TODO: clean up the unnecessary modules such as R8
 SET(ALTNEMOSYS_SRCS src/vtkAnalyzer.C src/cgnsAnalyzer.C src/meshPartitioner.C
                     src/cgnsWriter.C src/gridTransfer.C)
 SET(ROCSTAR_SRCS src/rocstarCgns.C)
@@ -324,26 +404,23 @@ SET(UTIL_SRCS utils/Nemosys.C utils/cgns2msh.C utils/rocRemesh.C utils/rocSurfRe
 SET(TUTR_SRCS utils/writeStructured.C tutorials/mshTransfer.C tutorials/dtkTutorial.C)
 SET(R8_SRCS src/math/r8lib.cpp)
 SET(INTERP_SRCS src/math/rbf_interp_nd.cpp src/math/rbfInterp.C src/math/baseInterp.C src/spheres.C)
-IF(ENABLE_SYMMX)
-  SET(SYMMX_SRCS src/MeshGeneration/symmxGen.C src/MeshGeneration/symmxParams.C)
-  SET(NEMOSYS_SRCS ${NEMOSYS_SRCS} ${SYMMX_SRCS})
-ENDIF()
+
+# add global definitions and compile flags
 SET(ALL_SRCS ${NEMOSYS_SRCS} ${ALTNEMOSYS_SRCS} ${UTIL_SRCS} ${TUTR_SRCS}
              ${R8_SRCS} ${INTERP_SRCS} ${SYMMX_SRCS})
 #SET_SOURCE_FILES_PROPERTIES(${ALL_SRCS} APPEND PROPERTIES COMPILE_FLAGS "-fPIC -O3 ${MPI_CXX_COMPILE_FLAGS}" )
 ADD_DEFINITIONS(-D_HAVE_GMSH_)
 
 
-# Builiding libraries #########################################################
-
-# Build r8 and rbf library
+# builiding libraries
+# r8 and rbf library
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(r8 SHARED ${R8_SRCS})
 ELSE()
   ADD_LIBRARY(r8 ${R8_SRCS})
 ENDIF()
 
-# build interp lib
+# interp lib
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(interp SHARED ${INTERP_SRCS})
 ELSE()
@@ -351,45 +428,51 @@ ELSE()
 ENDIF()
 TARGET_LINK_LIBRARIES(interp r8 ANN)
 
-# build nemosys lib
+# nemosys lib
 IF(NOT BUILD_STATIC)
   ADD_LIBRARY(Nemosys SHARED ${NEMOSYS_SRCS})
 ELSE()
   ADD_LIBRARY(Nemosys ${NEMOSYS_SRCS})
   add_definitions( -DSTATIC_LINK )
 ENDIF()
-TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES} ${GMSH_LIB} ${SYMMX_LIBS}
-                              ${CGNS_LIB} ${HDF5_LIBRARIES} ${METIS_LIB} ${Boost_LIBRARIES}
+
+TARGET_LINK_LIBRARIES(Nemosys ${VTK_LIBRARIES}
+                              ${GMSH_LIB}
+                              ${SYMMX_LIBS}
+                              ${CGNS_LIB}
+                              ${HDF5_LIBRARIES}
+                              ${METIS_LIB}
+                              ${CFMSH_LIB}
+                              ${OPNF_LIBRARIES}
+                              ${Boost_LIBRARIES}
                               ${NEMOSYS_LNK}
-                              nglib #${NETGEN_LIB}
-                              interp MAdLib TKernel)
+                              nglib
+                              interp
+                              MAdLib
+                              TKernel
+                              ${MPI_LIBRARIES})
 
 INSTALL(TARGETS r8 interp Nemosys
         RUNTIME DESTINATION Nemosys/bin
         LIBRARY DESTINATION Nemosys/lib
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)  
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
-# Builiding utilities #########################################################
 
 #SET(CMAKE_CXX_LINK_EXECUTABLE_OLD ${CMAKE_CXX_LINK_EXECUTABLE})
 #SET(CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} -lfltk_images -lfltk -lfltk_gl -lfltk_forms -lSM -lICE -lX11 -lXext -lm -ljpeg -lz -lpng -lGLU -lGL -llapack -lgmp -lblas -lcgns -lhdf5_cpp")
 
-# Building Nemosys Core utility ###########################################
+# Nemosys CLI
 ADD_EXECUTABLE(nemosysRun utils/Nemosys.C)
-IF(ENABLE_MPI)
-  TARGET_LINK_LIBRARIES(nemosysRun Nemosys ${MPI_LIBRARIES})
-ELSE()
-  TARGET_LINK_LIBRARIES(nemosysRun Nemosys)
-ENDIF()
-
+TARGET_LINK_LIBRARIES(nemosysRun Nemosys )
 INSTALL(TARGETS nemosysRun
         RUNTIME DESTINATION Nemosys/bin
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
+# TODO: clean up old utilities
+# small utilities
 IF(ENABLE_BUILD_UTILS)
-
   # xmlDump utility
   ADD_EXECUTABLE(xmlDump MACOSX_BUNDLE utils/xmlDump.C)
   if(VTK_LIBRARIES)
@@ -440,20 +523,22 @@ IF(ENABLE_BUILD_UTILS)
             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   ENDIF()
-
 ENDIF(ENABLE_BUILD_UTILS)
 
-# Building python wrapper #####################################################
+
+# building python wrappers
 IF (ENABLE_PYTHON_BINDINGS)
   ADD_SUBDIRECTORY(python)
 ENDIF()
 
-# Building converters ##########################################################
+
+# building converters
 IF (ENABLE_EXODUS)
   ADD_SUBDIRECTORY(converter)
 ENDIF()
 
-# Builiding documentation #####################################################
+# TODO: revamp the documentation
+# builiding documentation
 OPTION(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
 IF(BUILD_DOCUMENTATION)
   FIND_PACKAGE(Doxygen)

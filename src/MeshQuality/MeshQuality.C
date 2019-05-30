@@ -5,6 +5,18 @@
 #include <vtkCellType.h>
 #include <AuxiliaryFunctions.H>
 
+#ifdef HAVE_CFMSH 
+// openfoam headers
+#include "fvCFD.H"
+#include "fvMesh.H"
+#include "fileName.H"
+
+// cfmesh headers
+#include "polyMeshGenModifier.H"
+#include "meshOptimizer.H"
+#endif
+
+
 MeshQuality::MeshQuality(const meshBase* _mesh)
   : mesh(_mesh)
 {
@@ -166,5 +178,79 @@ vtkSmartPointer<vtkDoubleArray> MeshQuality::getStats(int n)
   } 
 
   return qualityField;
+}
+
+
+
+void MeshQuality::cfmOptimize()
+{
+#ifdef HAVE_CFMSH
+
+    // initialize openfoam
+    //#include "setRootCase.H"
+    int argc = 1;
+    char** argv = new char*[2];
+    argv[0] = new char[100];
+    strcpy(argv[0], "NONE");
+    Foam::argList args(argc, argv);
+    //#include "createTime.H"
+    Foam::Info<< "Create time\n" << Foam::endl;
+    Foam::Time runTime(Foam::Time::controlDictName, args);
+    //- 2d cartesian mesher cannot be run in parallel
+    Foam::argList::noParallel();  
+
+
+    //- load the mesh from disk
+    polyMeshGen pmg(runTime);
+    pmg.read();
+
+    //- construct the smoother
+    Foam::meshOptimizer mOpt(pmg);
+
+
+    if( _cfmQPrms->_withConstraint )
+    {
+      std::string constrainedCellSet = _cfmQPrms->consCellSet;
+
+      //- lock cells in constrainedCellSet
+      mOpt.lockCellsInSubset(constrainedCellSet);
+
+      //- find boundary faces which shall be locked
+      Foam::labelLongList lockedBndFaces, selectedCells;
+
+      const label sId = pmg.cellSubsetIndex(constrainedCellSet);
+      pmg.cellsInSubset(sId, selectedCells);
+
+      Foam::boolList activeCell(pmg.cells().size(), false);
+      forAll(selectedCells, i)
+          activeCell[selectedCells[i]] = true;
+    }
+
+    //- clear geometry information before volume smoothing
+    pmg.clearAddressingData();
+
+    //- perform optimisation using the laplace smoother and
+    mOpt.optimizeMeshFV
+    (
+        _cfmQPrms->nLoops,
+        _cfmQPrms->nLoops,
+        _cfmQPrms->nIterations,
+        _cfmQPrms->nSrfItr
+    );
+
+    //- perform optimisation of worst quality faces
+    mOpt.optimizeMeshFVBestQuality(_cfmQPrms->nLoops, _cfmQPrms->qualThrsh);
+
+    //- check the mesh again and untangl bad regions if any of them exist
+    mOpt.untangleMeshFV(_cfmQPrms->nLoops, _cfmQPrms->nIterations, 
+            _cfmQPrms->nSrfItr);
+    Foam::Info << "Writing mesh" << endl;
+    pmg.write();
+
+    delete[] argv;
+    Foam::Info << "Finished mesh quality enhancement task." << endl;
+#else
+    std::cerr << "Compile with CFMSH option enabled to use this feature.\n";
+#endif
 }
 
