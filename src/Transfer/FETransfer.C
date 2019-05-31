@@ -3,7 +3,8 @@
 #include <vtkCellData.h>
 #include <AuxiliaryFunctions.H>
 
-using namespace nemAux;
+using nemAux::operator-; // for vector subtraction.
+using nemAux::operator*; // for vector multiplication.
 
 FETransfer::FETransfer(meshBase* _source, meshBase* _target)
 {
@@ -338,7 +339,7 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
             interps[k] += W*comps[k];
           }
           totW += W; 
-        } 
+        }
         interps = (1.0/totW)*interps;
         daSourceToPoint->SetTuple(i, interps.data());
       }

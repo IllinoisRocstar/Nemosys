@@ -6,7 +6,7 @@
 #include <vtkPointData.h>
 #include <AuxiliaryFunctions.H>
 
-using namespace nemAux;
+using nemAux::operator*; // for vector multiplication.
 
 SizeFieldBase* SizeFieldBase::Create(meshBase* _mesh, std::string method, int arrayID,
                                    double _dev_mult, bool _maxIsmin, double sizeFactor)
@@ -124,7 +124,7 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
   //std::vector<bool> cells2Refine = nemAux::cellsToRefineStdev(values, meanStdev[0], meanStdev[1]*dev_mult);
   std::vector<bool> cells2Refine = nemAux::cellsToRefineMaxdev(values, dev_mult);
   // normalize values by mean
-  std::vector<double> values_norm = (1./meanStdev[0])*values;  
+  std::vector<double> values_norm = (1./meanStdev[0])*values;
   // take the reciprocal of values for size definition (high value -> smaller size)
   if (!nemAux::hasZero(values)) {
     nemAux::reciprocal_vec(values);

@@ -11,8 +11,8 @@
 #include <vtkCellArray.h>
 #include <vtkXMLPolyDataWriter.h>
 
-using namespace nemAux;
-
+using nemAux::operator*; // for vector multiplication.
+using nemAux::operator+; // for vector addition.
 
 // get point with id
 std::vector<double> meshSrch::getPoint(int id) const
@@ -51,8 +51,8 @@ std::vector<std::vector<double>> meshSrch::getCellVec(int id) const
 std::vector<double> meshSrch::getCellCenter(int cellID) const
 {
   std::vector<double> center(3);
-  std::vector<std::vector<double>> cell = getCellVec(cellID); 
- 
+  std::vector<std::vector<double>> cell = getCellVec(cellID);
+
   for (int i = 0; i < cell.size(); ++i)
     center = center + cell[i];
   return (1./cell.size())*center;
