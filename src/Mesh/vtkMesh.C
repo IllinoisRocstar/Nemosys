@@ -33,7 +33,8 @@
 #include <vtkImageData.h>
 #include <AuxiliaryFunctions.H>
 
-using namespace nemAux;
+using nemAux::operator*; // for vector multiplication.
+using nemAux::operator+; // for vector addition.
 
 void vtkMesh::write(const std::string &fname) const
 {
@@ -979,8 +980,8 @@ std::vector<double> vtkMesh::getCellLengths() const
 std::vector<double> vtkMesh::getCellCenter(int cellID) const
 {
   std::vector<double> center(3,0.0);
-  std::vector<std::vector<double>> cell = getCellVec(cellID); 
- 
+  std::vector<std::vector<double>> cell = getCellVec(cellID);
+
   for (int i = 0; i < cell.size(); ++i)
   {
     center = center + cell[i];
