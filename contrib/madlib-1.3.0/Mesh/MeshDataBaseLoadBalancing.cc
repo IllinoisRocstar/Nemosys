@@ -305,7 +305,7 @@ namespace MAd {
 
   }
 
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
   // -------------------------------------------------------------------
   void checkRemotePointer(pMesh mesh, pMeshDataId tagData ) {
     int nproc,myrank;
@@ -941,7 +941,7 @@ namespace MAd {
       int tmp; 
       int isMaster = EN_getDataInt((pEntity) pv , tagMaster,&tmp);
       if(!isMaster) continue;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
       int isChanged = EN_getDataInt((pEntity) pv , tagChange,&tmp);
       assert(isChanged);
       assert(tmp==1);
@@ -957,7 +957,7 @@ namespace MAd {
       for(int i=0 ; i<sizeinterface ; i++){
         listID[i] = (*recup2)[i].first;
       }
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
       int k;
       for(k=0 ; k<sizeinterface ; k++){
         if(myrank==(*recup2)[k].first) break;
@@ -970,7 +970,7 @@ namespace MAd {
         (VectorOfCommonpVertex_type *) temp_ptr;
       assert(oldPoint);
       assert((*recup).size());
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
       unsigned int kk;
       for(kk=0 ; kk<(*recup).size() ; kk++){
         if(myrank==(*recup)[kk].first) break;
@@ -1137,7 +1137,7 @@ namespace MAd {
           void *temp_ptr; 
           int isInte = EN_getDataPtr((pEntity) pv , tagRemote, &temp_ptr);
           assert(isInte);
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
           int tmp; 
           int isMaster = EN_getDataInt((pEntity) pv , tagMaster,&tmp);
           assert(isInte && !isMaster);
@@ -1481,7 +1481,7 @@ namespace MAd {
   // -------------------------------------------------------------------
   void UpdateInterfaces(pMesh mesh, MDB_DataExchanger &de) {
 
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     pMeshDataId tagData   = MD_lookupMeshDataId("RemotePoint");
     pMeshDataId tagRemote = MD_lookupMeshDataId("RemoteStructure");
     pMeshDataId tagMaster = MD_lookupMeshDataId("isMaster");
@@ -1490,14 +1490,14 @@ namespace MAd {
 
     /*Phase 1 : send info to the smallest rank*/
     UpdateInterfaces1(mesh,de);
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     checkRemotePointerChange(mesh,tagData,tagRemote,tagMaster);
     puts("check third ok");
 #endif
 
     /*Phase 2 : send info to all proc*/
     UpdateInterfaces2(mesh,de);
-#ifdef DEBUG  
+#ifdef MADLIB_DEBUG
     checkNew(mesh,tagData,tagChange);
     puts("check forth ok");
 #endif  
@@ -1638,7 +1638,7 @@ namespace MAd {
         int isInternal = EN_getDataPtr((pEntity) precv , tagRemote, &temp_ptr);
         assert(isInternal);
         VectorOfCommonpVertex_type *recup = (VectorOfCommonpVertex_type *) temp_ptr;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
         int tmp;
         int isMaster = EN_getDataInt((pEntity) precv , tagMaster, &tmp);
         assert(!isMaster);
@@ -1749,7 +1749,7 @@ namespace MAd {
         int isInternal = EN_getDataPtr((pEntity) precv , tagRemote, &temp_ptr);
         assert(isInternal);
         VectorOfCommonpVertex_type *recup = (VectorOfCommonpVertex_type *) temp_ptr;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
         int tmp;
         int isChange = EN_getDataInt((pEntity) precv , tagChange, &tmp);
         assert(isChange);
@@ -1864,7 +1864,7 @@ namespace MAd {
         int isInternal = EN_getDataPtr((pEntity) precv , tagRemote, &temp_ptr);
         assert(isInternal);
         VectorOfCommonpVertex_type *recup = (VectorOfCommonpVertex_type *) temp_ptr;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
         int tmp;
         int isChange = EN_getDataInt((pEntity) precv , tagChange, &tmp);
         assert(isChange);
@@ -2816,7 +2816,7 @@ namespace MAd {
       if(!isChanged) continue;
       void *temp_ptr2; 
       int is2 = EN_getDataPtr((pEntity) pv , tagData, &temp_ptr2);
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
       if(tmp==10)assert(!is2);
       if(tmp==1) assert(is2);
 #endif
@@ -2965,7 +2965,7 @@ namespace MAd {
   // -------------------------------------------------------------------
   void loadBalancing(pMesh mesh, pMeshDataId tagElt, MDB_DataExchanger &de)
   {
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     pMeshDataId tagData = MD_lookupMeshDataId("RemotePoint");
     checkRemotePointer(mesh,tagData);
     puts("check first ok");
@@ -2973,7 +2973,7 @@ namespace MAd {
     // 1) Mark local and distant vertices with their new proc(s)
     MarkEltVertex(mesh,tagElt);
 
-#ifdef DEBUG  
+#ifdef MADLIB_DEBUG
     checkRemotePointer(mesh,tagData);
     puts("check second ok");
 #endif
@@ -2981,7 +2981,7 @@ namespace MAd {
     // 2) update and send new interfaces points
     UpdateInterfaces(mesh,de);
 
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     checkRemotePointer2(mesh,tagData);
     puts("check fifth ok");
 #endif
@@ -3017,7 +3017,7 @@ namespace MAd {
   
 #endif
 
-#ifdef DEBUG  
+#ifdef MADLIB_DEBUG
     checkRemotePointer(mesh,tagData);
     puts("last check ok");
 #endif  
