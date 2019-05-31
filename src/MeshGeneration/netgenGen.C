@@ -128,7 +128,7 @@ int netgenGen::createMeshFromSTL(const char* fname)
 
   cout << "Saving Mesh in VOL Format...." << endl;
   std::string newfname(fname);
-  Ng_SaveMesh(mesh,&(trim_fname(newfname,".vol"))[0u]);
+  Ng_SaveMesh(mesh, &(nemAux::trim_fname(newfname, ".vol"))[0u]);
   return 0;
 }
 

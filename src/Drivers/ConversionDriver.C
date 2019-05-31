@@ -24,7 +24,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     : source(NULL)
 {
   std::cout << "ConversionDriver created" << std::endl;
-  Timer T;
+  nemAux::Timer T;
   T.start();
   // convert to pnt mesh
   if (!method.compare("VTK->PNT"))
@@ -309,12 +309,12 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
         std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
         std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
         std::ifstream inputStream(ppFName);
-        if (!inputStream.good() || find_ext(ppFName) != ".json")
+        if (!inputStream.good() || nemAux::find_ext(ppFName) != ".json")
         {
           std::cout << "Error opening file " << ppFName << std::endl;
           exit(1);
         }
-        if (find_ext(ppFName) != ".json")
+        if (nemAux::find_ext(ppFName) != ".json")
         {
           std::cout << "Input File must be in .json format" << std::endl;
           exit(1);
@@ -763,12 +763,12 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
 {
   std::cout << "Reading JSON file\n";
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);

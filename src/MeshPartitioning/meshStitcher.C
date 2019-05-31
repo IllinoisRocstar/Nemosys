@@ -44,7 +44,7 @@ void meshStitcher::initVolCgObj()
     //partitions[iCg]->getSectionNames(secNames);
     //auto its = std::find(secNames.begin(),secNames.end(),":T4:virtual");
     //if ( its!=secNames.end() )
-    //    meshBase::Create(partitions[iCg]->getSectionMesh(*its),"_virtual_"+find_name(cgFileNames[iCg])+".vtu")->write();
+    //    meshBase::Create(partitions[iCg]->getSectionMesh(*its),"_virtual_"+nemAux::find_name(cgFileNames[iCg])+".vtu")->write();
     // End of ghost mesh
     if (iCg)
     {
@@ -57,7 +57,7 @@ void meshStitcher::initVolCgObj()
   std::string newname(cgFileNames[0]);
   std::size_t pos = newname.find_last_of("/");
   newname = newname.substr(pos+1);
-  newname = trim_fname(newname, "stitched.vtu");
+  newname = nemAux::trim_fname(newname, "stitched.vtu");
   stitchedMesh = meshBase::CreateShared(partitions[0]->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh.\n";
   // figure out what is existing on the stitched grid
@@ -108,7 +108,7 @@ void meshStitcher::initSurfCgObj()
   std::string newname(cgFileNames[0]);
   std::size_t pos = newname.find_last_of("/");
   newname = newname.substr(pos+1);
-  newname = trim_fname(newname, "stitched.vtu");
+  newname = nemAux::trim_fname(newname, "stitched.vtu");
   stitchedMesh = meshBase::CreateShared(cgObj->getVTKMesh(),newname);
   std::cout << "Transferring physical quantities to vtk mesh.\n";
   // figure out what exists on the stitched grid

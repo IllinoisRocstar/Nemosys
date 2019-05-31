@@ -105,7 +105,7 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
   // get circumsphere diameter of all cells 
   std::vector<double> lengths = mesh->getCellLengths();
   // find minmax of diameters
-  std::vector<double> lengthminmax = getMinMax(lengths);
+  std::vector<double> lengthminmax = nemAux::getMinMax(lengths);
   // redefine minmax values for appropriate size definition reference
   if (maxIsmin)
     lengthminmax[1] = lengthminmax[0];
@@ -118,21 +118,21 @@ void SizeFieldBase::mutateValues(std::vector<double>& values)
             << "\nMax Elm Lenght Scale : " << lengthminmax[1]
             << std::endl;
   // get mean and stdev of values 
-  std::vector<double> meanStdev = getMeanStdev(values);
+  std::vector<double> meanStdev = nemAux::getMeanStdev(values);
   // get bool array of which cells to refine based on multiplier of stdev
-  //std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
-  //std::vector<int> cells2Refine = cellsToRefineStdev(values, meanStdev[0], meanStdev[1]*dev_mult);
-  std::vector<int> cells2Refine = cellsToRefineMaxdev(values, dev_mult);
+  //std::vector<bool> cells2Refine = nemAux::cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+  //std::vector<bool> cells2Refine = nemAux::cellsToRefineStdev(values, meanStdev[0], meanStdev[1]*dev_mult);
+  std::vector<bool> cells2Refine = nemAux::cellsToRefineMaxdev(values, dev_mult);
   // normalize values by mean
   std::vector<double> values_norm = (1./meanStdev[0])*values;  
   // take the reciprocal of values for size definition (high value -> smaller size)
-  if (!hasZero(values)){
-    reciprocal_vec(values);
+  if (!nemAux::hasZero(values)) {
+    nemAux::reciprocal_vec(values);
   }
   // scale values to min max circumsphere diam of cells 
   // now, values represents a size field
-  std::vector<double> valuesMinMax = getMinMax(values);
-  scale_vec_to_range(values, valuesMinMax, lengthminmax);
+  std::vector<double> valuesMinMax = nemAux::getMinMax(values);
+  nemAux::scale_vec_to_range(values, valuesMinMax, lengthminmax);
 
   // setting sizes (values) to f*max element diam based on return of cellsToRefine function
   std::ofstream elmLst;

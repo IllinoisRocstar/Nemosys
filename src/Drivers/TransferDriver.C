@@ -9,7 +9,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh,
   source = meshBase::Create(srcmsh);
   target = meshBase::Create(trgmsh);
   std::cout << "TransferDriver created" << std::endl;
-  Timer T;
+  nemAux::Timer T;
   T.start();
   source->setCheckQuality(checkQuality);
   source->transfer(target, method);
@@ -26,7 +26,7 @@ TransferDriver::TransferDriver(std::string srcmsh, std::string trgmsh, std::stri
 {
   source = meshBase::Create(srcmsh);
   target = meshBase::Create(trgmsh);
-  Timer T;
+  nemAux::Timer T;
   T.start();
   source->setCheckQuality(checkQuality);
   source->transfer(target, method, arrayNames);
@@ -114,12 +114,12 @@ TransferDriver* TransferDriver::readJSON(json inputjson)
 TransferDriver* TransferDriver::readJSON(std::string ifname)
 {
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);

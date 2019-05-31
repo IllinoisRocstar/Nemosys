@@ -43,7 +43,7 @@ void vtkMesh::write(const std::string &fname) const
     exit(1);
   }
    
-  std::string extension = find_ext(fname);
+  std::string extension = nemAux::find_ext(fname);
 
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -58,7 +58,7 @@ void vtkMesh::write(const std::string &fname) const
   else if (extension == ".vtk")
     writeVTFile<vtkUnstructuredGridWriter> (fname, dataSet); // legacy vtk writer
   else {
-    std::string fname_tmp = trim_fname(fname, ".vtu");
+    std::string fname_tmp = nemAux::trim_fname(fname, ".vtu");
     writeVTFile<vtkXMLUnstructuredGridWriter>(fname_tmp, dataSet);   // default is vtu
   }
 }
@@ -731,7 +731,7 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName)
     }
   }
    
-  std::multimap<int, std::vector<double>> flipped = flip_map(point_map);
+  std::multimap<int, std::vector<double>> flipped = nemAux::flip_map(point_map);
   std::multimap<int,std::vector<double>>::iterator flip_it = flipped.begin();
 
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();

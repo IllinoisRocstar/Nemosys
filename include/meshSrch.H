@@ -2,7 +2,6 @@
 #define meshSrch_H
 
 // Nemosys headers
-#include "AuxiliaryFunctions.H"
 #include "meshBase.H"
 
 class meshSrch : public meshBase

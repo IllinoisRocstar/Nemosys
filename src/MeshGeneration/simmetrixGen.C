@@ -381,7 +381,7 @@ void simmetrixGen::saveMesh(const std::string& mFName)
 {
 
   size_t last = mFName.find_last_of('.');
-  if (last != -1)
+  if (last != std::string::npos)
   {
     std::string ext = mFName.substr(last); 
     if (ext == ".sms")

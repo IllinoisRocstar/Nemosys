@@ -21,7 +21,7 @@ void PatchRecovery::extractAxesAndData(pntDataPairVec& pntsAndData,
   for (int i = 0; i < pntsAndData.size(); ++i)
   {
     coords[pntNum] = std::move(pntsAndData[i].first);
-   // printVec(coords[pntNum]);
+    // nemAux::printVec(coords[pntNum]);
     int currcomp = 0;
     for (int j = 0; j < numComponents.size(); ++j)
     {

@@ -16,12 +16,12 @@ ep16Prep* ep16Prep::readJSON(std::string ifname)
 {
   std::cout << "Reading JSON file\n";
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);
@@ -63,7 +63,7 @@ void ep16Prep::readJSON()
     if (_jstrm.has_key("Type"))
     {
         type = _jstrm["Type"].as<std::string>();
-        type = toLower(type);
+        nemAux::toLower(type);
     }
 
     if (type.compare("short form") && 
@@ -131,7 +131,7 @@ void ep16Prep::process()
     if (_shortForm)
     {
         wrtCmnt("EPIC 2016 INPUT FILE");
-        wrtCmnt("Generated on " + getTimeStr() + " by NEMoSys");
+        wrtCmnt("Generated on " + nemAux::getTimeStr() + " by NEMoSys");
         wrtCmnt("Short Form Description Card for ExodusII/CUBIT Data");
 
         // reading mesh databse
@@ -143,17 +143,23 @@ void ep16Prep::process()
         json _matj = _jstrm["Material"];
         for (const auto& km: _matj.object_range())
         {
-            _mat[toLower(km.key())] = km.value().as<int>();
+            std::string kmkey = km.key();
+            nemAux::toLower(kmkey);
+            _mat[kmkey] = km.value().as<int>();
         }
 
         // boundary conditions information
         json _bcsj = _jstrm["Boundary Condition"];
         for (const auto& km: _bcsj.object_range())
         {
-            _bcs[toLower(km.key())] = km.value().as<std::string>();
+            std::string kmkey = km.key();
+            nemAux::toLower(kmkey);
+            _bcs[kmkey] = km.value().as<std::string>();
             // translate to EPIC language
-            if (!toLower(_bcs[toLower(km.key())]).compare("fixed"))
-                _bcs[toLower(km.key())] = "111";
+            std::string bcskmkey = _bcs[kmkey];
+            nemAux::toLower(bcskmkey);
+            if (bcskmkey == "fixed")
+                _bcs[kmkey] = "111";
         }
     }
 
@@ -161,10 +167,10 @@ void ep16Prep::process()
     std::vector<std::string> ord = getOrder();
     for (auto oi=ord.begin(); oi!=ord.end(); oi++)
     {
-        std::string tsk = findToStr(*oi, ".");
-        std::string _tsk = findFromStr(*oi, ".");
-        std::string __tsk = findFromStr(_tsk, ".");
-        _tsk = findToStr(_tsk,".");
+        std::string tsk = nemAux::findToStr(*oi, ".");
+        std::string _tsk = nemAux::findFromStr(*oi, ".");
+        std::string __tsk = nemAux::findFromStr(_tsk, ".");
+        _tsk = nemAux::findToStr(_tsk,".");
         std::cout << tsk << " -- " << _tsk << " -- " << __tsk <<std::endl;
         if (!tsk.compare("prep"))
             wrtPre(_tsk,__tsk);
@@ -245,7 +251,8 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
         _ntes = 0;
         for (auto ni=ns_names.begin(); ni!=ns_names.end(); ni++)
         {
-            std::string pre = toLower( findToStr(*ni, "_") );
+            std::string pre = nemAux::findToStr(*ni, "_");
+            nemAux::toLower(pre);
             if (!pre.compare("prj"))
                 _npns++;
             else if (!pre.compare("trg"))
@@ -253,7 +260,8 @@ void ep16Prep::wrtPre(std::string _tsk, std::string __tsk)
         }
         for (auto ei=eb_names.begin(); ei!=eb_names.end(); ei++)
         {
-            std::string pre = toLower( findToStr(*ei, "_") );
+            std::string pre = nemAux::findToStr(*ei, "_");
+            nemAux::toLower(pre);
             if (!pre.compare("prj"))
                 _npes++;
             else if (!pre.compare("trg"))
@@ -339,11 +347,13 @@ void ep16Prep::wrtMsh(std::string _tsk, std::string __tsk)
         wrtCmnt(_tcmnt.str());
         for (int ns=0; ns<_mdb->getNumberOfNodeSet(); ns++)
         {
-            std::string pre = findToStr(toLower(_mdb->getNdeSetName(ns)),"_");
+            std::string pre = nemAux::findToStr(_mdb->getNdeSetName(ns), "_");
+            nemAux::toLower(pre);
             if (!pre.compare(preStr))
             {
                 int _nset = _mdb->getNdeSetId(ns);
-                std::string nsName = toLower(_mdb->getNdeSetName(ns));
+                std::string nsName = _mdb->getNdeSetName(ns);
+                nemAux::toLower(nsName);
                 std::string nsChar;
                 auto srch =_bcs.find(nsName);
                 if (srch != _bcs.end())
@@ -385,8 +395,9 @@ void ep16Prep::wrtMsh(std::string _tsk, std::string __tsk)
         _blnk.insert(_blnk.end(),50,' ');
         for (int es=0; es<(_mdb->getNumberOfElementBlock()); es++)
         {
-            std::string es_name = toLower(_mdb->getBlockName(es));
-            std::string pre = findToStr(es_name,"_");
+            std::string es_name = _mdb->getBlockName(es);
+            nemAux::toLower(es_name);
+            std::string pre = nemAux::findToStr(es_name,"_");
             if (!pre.compare(preStr))
             {
                 _lset = _mdb->getElmBlkId(es);

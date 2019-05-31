@@ -1,5 +1,6 @@
 // Nemosys headers
 #include "meshSrch.H"
+#include "AuxiliaryFunctions.H"
 
 // VTK
 #include <vtkCellLocator.h>
@@ -85,7 +86,7 @@ void meshSrch::FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& 
     {
         for (auto it=aids.begin(); it!=aids.end(); it++)
         {
-            if ( !isInBBox( getCellCenter(*it), bb) )
+            if (!nemAux::isInBBox(getCellCenter(*it), bb))
             {
                 nr++;
                 continue;
