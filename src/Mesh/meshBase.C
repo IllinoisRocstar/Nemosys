@@ -25,10 +25,10 @@ namespace nglib {
   #include <nglib.h>
 }
 
-// simmetrix
-#ifdef HAVE_SIMMETRIX
-  #include <simmetrixGen.H>
-#endif
+// Simmetrix
+//#ifdef HAVE_SIMMETRIX
+//  #include <simmetrixGen.H>
+//#endif
 
 // stl
 #include <algorithm>

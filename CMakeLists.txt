@@ -109,17 +109,15 @@ if(WIN32)
 endif()
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
-string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
-get_target_property(VTK_LIB_DIR vtksys
-    IMPORTED_LOCATION_${CMAKE_BUILD_TYPE_UPPER})
-get_filename_component(VTK_LIB_DIR ${VTK_LIB_DIR} PATH)
+set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
 list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
-# Find MAdLib
+# Find MAdLib and ANN
 add_subdirectory(contrib/madlib-1.3.0)
 get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
 
 # Find Gmsh
 find_library(GMSH_LIB gmsh HINTS lib)
@@ -210,20 +208,20 @@ endif()
 
 # Find Simmetrix
 if(ENABLE_SIMMETRIX)
-  find_library(SIMMDL_LIB SimModel HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMADM_LIB SimAdvMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMEXP_LIB SimExport HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMLCN_LIB SimLicense HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMSH_LIB SimMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMTL_LIB SimMeshTools HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMPMH_LIB SimPartitionedMesh HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMPWR_LIB SimPartitionWrapper HINTS ${SIMMETRIX_LIB_DIR})
-  set(SIMMETRIX_LIBS ${SIMMDL_LIB} ${SIMADM_LIB} ${SIMDSC_LIB} ${SIMEXP_LIB}
-      ${SIMLCN_LIB} ${SIMMSH_LIB} ${SIMMTL_LIB} ${SIMPMH_LIB} ${SIMPWR_LIB})
+  find_library(SIMMSH_LIB SimMeshing HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMMTL_LIB SimMeshTools HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMMDL_LIB SimModel HINTS ${SIMMETRIX_LIB_DIR})
+  find_library(SIMLCN_LIB SimLicense HINTS ${SIMMETRIX_LIB_DIR})
+  set(SIMMETRIX_LIBS ${SIMADM_LIB} ${SIMEXP_LIB} ${SIMDSC_LIB} ${SIMPMH_LIB}
+      ${SIMPWR_LIB} ${SIMMSH_LIB} ${SIMMTL_LIB} ${SIMMDL_LIB} ${SIMLCN_LIB})
   find_file(SIMMETRIX_HDR MeshSim.h HINTS ${SIMMETRIX_LIB_DIR}/../../include)
   get_filename_component(SIMMETRIX_INCPATH ${SIMMETRIX_HDR} PATH)
-  get_filename_component(SIMMETRIX_LIBPATH ${SIMMDL_LIB} PATH)
+  get_filename_component(SIMMETRIX_LIB_PATH ${SIMMDL_LIB} PATH)
   message(STATUS "Simmetrix include path ${SIMMETRIX_INCPATH}")
   message(STATUS "Simmetrix libs ${SIMMETRIX_LIBS}")
 endif()
@@ -271,7 +269,7 @@ if(NOT WIN32) # These tests only work on GNU compilers.
 endif(NOT WIN32)
 
 # Adding flags to Debug
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 # Compiled objects output paths
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -282,13 +280,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-endif()
-
-# Other flags for dependencies
-if(ENABLE_SIMMETRIX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_SIMMETRIX")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DHAVE_SIMMETRIX")
-  message(STATUS "Using -DHAVE_SIMMETRIX")
 endif()
 
 # Setting library files ########################################################
@@ -447,31 +438,33 @@ target_include_directories(Nemosys
 #endif()
 
 if(ENABLE_MPI)
-  target_link_libraries(Nemosys PRIVATE ${MPI_LIBRARIES})
+  target_link_libraries(Nemosys PUBLIC ${MPI_LIBRARIES})
 endif()
 
 if(ENABLE_EXODUS)
-  target_link_libraries(Nemosys PRIVATE ${EXO_LIB})
-  target_compile_definitions(Nemosys PRIVATE HAVE_EXODUSII)
+  target_link_libraries(Nemosys PUBLIC ${EXO_LIB})
+  target_compile_definitions(Nemosys PUBLIC HAVE_EXODUSII)
 endif()
 
 if(ENABLE_EPIC)
-  target_compile_definitions(Nemosys PRIVATE HAVE_EPIC)
-endif()
-
-if(ENABLE_SIMMETRIX)
-  target_link_libraries(Nemosys PRIVATE ${SIMMETRIX_LIBS})
+  target_compile_definitions(Nemosys PUBLIC HAVE_EPIC)
 endif()
 
 if(ENABLE_METIS)
-  target_link_libraries(Nemosys PRIVATE ${METIS_LIB})
-  target_compile_definitions(Nemosys PRIVATE HAVE_METIS)
+  target_link_libraries(Nemosys PUBLIC ${METIS_LIB})
+  target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
 endif()
 
 if(ENABLE_NETGEN)
-  target_link_libraries(Nemosys PRIVATE nglib)
-  target_compile_definitions(Nemosys PRIVATE HAVE_NGEN)
+  target_link_libraries(Nemosys PUBLIC nglib)
+  target_compile_definitions(Nemosys PUBLIC HAVE_NGEN)
   target_include_directories(Nemosys PUBLIC ${NETGEN_INCLUDE_DIRS})
+endif()
+
+if(ENABLE_SIMMETRIX)
+  target_link_libraries(Nemosys PUBLIC ${SIMMETRIX_LIBS})
+  target_include_directories(Nemosys PUBLIC ${SIMMETRIX_INCPATH})
+  target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
 endif()
 
 # Install libraries ############################################################

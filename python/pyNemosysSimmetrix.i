@@ -1,4 +1,4 @@
-%module pyNemosysSimmetrix
+%module pyNemosys
 %include "pyNemosys.i"
 %{
 #include "RocRestartDriver.H"
