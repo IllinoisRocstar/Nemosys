@@ -89,12 +89,12 @@ RefineDriver* RefineDriver::readJSON(json inputjson)
 RefineDriver* RefineDriver::readJSON(std::string ifname)
 {
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);

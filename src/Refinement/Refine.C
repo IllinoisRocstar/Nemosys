@@ -76,7 +76,7 @@ void Refine::initUniform(double edge_scale)
   pwlSF->setCurrentSize();
   pwlSF->scale(edge_scale);
   // timing adapter construction
-  Timer T;
+  nemAux::Timer T;
   T.start();    
   // instantiating adapter with linear sf
   adapter = new MAd::MeshAdapter(MadMesh, pwlSF);
@@ -128,7 +128,7 @@ void Refine::initAdaptive(int arrayID, const std::string& method)
   
   std::cout << "\n \n Beginning Adapter Construction" << std::endl;
   // timing adapter construction
-  Timer T;
+  nemAux::Timer T;
   T.start();
   // instantiating adapter with background sizefield
   adapter = new MAd::MeshAdapter(MadMesh, bSF);

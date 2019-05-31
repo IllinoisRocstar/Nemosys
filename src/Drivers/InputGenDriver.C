@@ -17,10 +17,10 @@
 InputGenDriver::InputGenDriver(std::string srvName, json inputjson)
 {
   std::cout << "InputGenDriver created" << std::endl;
-  srvName = toLower(srvName);
-  Timer T;
+  nemAux::toLower(srvName);
+  nemAux::Timer T;
   T.start();
-  if (!srvName.compare("epic_2016"))
+  if (srvName == "epic_2016")
   {
 #ifdef HAVE_EPIC
     ep16Prep::readJSON(inputjson);
@@ -49,12 +49,12 @@ InputGenDriver* InputGenDriver::readJSON(std::string ifname)
 {
   std::cout << "Reading JSON file\n";
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);

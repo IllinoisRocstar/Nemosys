@@ -3,7 +3,6 @@
 
 // Nemosys headers
 #include <vtkAnalyzer.H>
-#include <AuxiliaryFunctions.H>
 
 // MAdLib
 #include <MAdLib.h>
@@ -16,8 +15,6 @@
 
 // stl
 #include <functional>
-
-using namespace nemAux;
 
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray

@@ -1,6 +1,10 @@
 #include <orthoPoly1D.H>
 #include <orthoPoly3D.H>
 
+#ifdef DEBUG
+  #include <AuxiliaryFunctions.H>
+#endif
+
 // remove given column from matrix in place (VERY SLOW)
 void removeColumn(MatrixXd& matrix, unsigned int colToRemove)
 {
@@ -136,7 +140,7 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& co
   }
   std::cout << "non-unique coords\n";
   #ifdef DEBUG
-    printVec(x); //printVec(y); printVec(z);
+    nemAux::printVec(x); //nemAux::printVec(y); nemAux::printVec(z);
   #endif
   //std::vector<double> x_unique;
   //for (int i = 0; i < x.size(); ++i)
@@ -151,7 +155,7 @@ orthoPoly3D::orthoPoly3D(int _order, const std::vector<std::vector<double>>&& co
 //  std::sort(x.begin(),x.end());
 //  x.erase(std::unique(x.begin(),x.end(),Pred),x.end());
 //  std::cout << "unique coords\n";
-//  printVec(x); //printVec(y); printVec(z);
+//  nemAux::printVec(x); //nemAux::printVec(y); nemAux::printVec(z);
 
   opx = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,x));
   opy = std::unique_ptr<orthoPoly1D>(new orthoPoly1D(order,y));
@@ -211,14 +215,14 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
   if (!finished)
   {
     #ifdef DEBUG
-      Timer T;
+      nemAux::Timer T;
     #endif
 
     MatrixXd tmp1 = opx->phi*opx->phiTphiInv; 
     MatrixXd tmp2 = opy->phi*opy->phiTphiInv;
     MatrixXd tmp3 = opz->phi*opz->phiTphiInv;
     #ifdef DEBUG
-      Timer T1;
+      nemAux::Timer T1;
       T1.start();
     #endif
     MatrixXd kronProd_full = kroneckerProduct(tmp1,tmp2); 
@@ -227,7 +231,7 @@ void orthoPoly3D::computeA(const VectorXd& sigma)
       T1.stop();
       std::cout << "Time for building kronprod in constructor: " << T1.elapsed() << std::endl;
       std::cout << "kronProd_full: " << kronProd_full.rows() << " " << kronProd_full.cols() << std::endl;
-      std::cout << "Removing rows: "; printVec(toRemove);
+      std::cout << "Removing rows: "; nemAux::printVec(toRemove);
     #endif
     MatrixXdRM kronProd_red(kronProd_full.cols()-toRemove.size(),kronProd_full.rows());
     #ifdef DEBUG
@@ -303,7 +307,7 @@ void orthoPoly3D::run1(const VectorXd& sigma)
   NewPhi = kroneckerProduct(opx->phi,opy->phi);
   NewPhi = kroneckerProduct(NewPhi, opz->phi).eval();
 
-  Timer T;
+  nemAux::Timer T;
   std::cout << "Removing stuff" << std::endl;
   T.start();  
 

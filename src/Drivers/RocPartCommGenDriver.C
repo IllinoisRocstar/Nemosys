@@ -276,8 +276,8 @@ void RocPartCommGenDriver::getGlobalIdsAndMaps(int numPartitions, bool vol)
       this->globToPartCellMap[i] = partitions[i]->getGlobToPartCellMap();
       this->partToGlobNodeMap[i] = partitions[i]->getPartToGlobNodeMap();
       this->partToGlobCellMap[i] = partitions[i]->getPartToGlobCellMap();
-      this->globalNodeIds[i] = getSortedKeys(this->globToPartNodeMap[i]);
-      this->globalCellIds[i] = getSortedKeys(this->globToPartCellMap[i]);
+      this->globalNodeIds[i] = nemAux::getSortedKeys(this->globToPartNodeMap[i]);
+      this->globalCellIds[i] = nemAux::getSortedKeys(this->globToPartCellMap[i]);
     }
   }
 
@@ -302,8 +302,8 @@ void RocPartCommGenDriver::getGlobalIdsAndMaps(int numPartitions, bool vol)
         this->globToPartCellMap[i][globCellId] = j;
         this->partToGlobCellMap[i][j] = globCellId;
       }
-      this->globalNodeIds[i] = getSortedKeys(this->globToPartNodeMap[i]);
-      this->globalCellIds[i] = getSortedKeys(this->globToPartCellMap[i]);
+      this->globalNodeIds[i] = nemAux::getSortedKeys(this->globToPartNodeMap[i]);
+      this->globalCellIds[i] = nemAux::getSortedKeys(this->globToPartCellMap[i]);
     }
   }  
 }
@@ -1056,7 +1056,7 @@ void RocPartCommGenDriver::getSharedPatchInformation()
       }
       patchProcGlobToPartNodeMaps[it->first][i] = patchGlobToPartNodeMap;
       patchProcPartToGlobNodeMaps[it->first][i] = patchPartToGlobNodeMap;
-      patchProcGlobNodeIdsMaps[it->first][i] = getSortedKeys(patchGlobToPartNodeMap);
+      patchProcGlobNodeIdsMaps[it->first][i] = nemAux::getSortedKeys(patchGlobToPartNodeMap);
       ++it;
     }
   }
