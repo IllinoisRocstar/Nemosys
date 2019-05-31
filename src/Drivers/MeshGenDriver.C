@@ -2,7 +2,6 @@
 #include <netgenGen.H>
 #include <netgenParams.H>
 #ifdef HAVE_SIMMETRIX
-  #include <simmetrixGen.H>
   #include <simmetrixParams.H>
 #endif
 // ----------------------------- MeshGen Driver -----------------------------------//

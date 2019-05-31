@@ -8,9 +8,8 @@
 
 // constructor
 simmetrixGen::simmetrixGen(simmetrixParams* _params)
-  : params(_params), haveLog(false),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
-    mesh(NULL)
+    : params(_params), haveLog(false), writeSurfAndVol(false),
+      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
 {
 
   if (params->logFName != "NONE")
@@ -33,9 +32,8 @@ simmetrixGen::simmetrixGen(simmetrixParams* _params)
 
 // default
 simmetrixGen::simmetrixGen()
-  : haveLog(true),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
-    mesh(NULL)
+    : params(NULL), haveLog(true), writeSurfAndVol(false),
+      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
 {
   Sim_logOn("simmetrixGen.log");
   SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume","simmodsuite.lic");
@@ -315,12 +313,14 @@ void simmetrixGen::convertToVTU()
     points->SetNumberOfPoints(M_numVertices(mesh));
     int i = 0;
     // copy points into vtk point container
-    while (vertex = VIter_next(vertices))
+    vertex = VIter_next(vertices);
+    while (vertex)
     {
       EN_setID( (pEntity) vertex, i); 
       V_coord(vertex, coord);
       points->SetPoint(i,coord);
       ++i;
+      vertex = VIter_next(vertices);
     }
     VIter_delete(vertices);
     dataSet_tmp->SetPoints(points);
@@ -333,11 +333,13 @@ void simmetrixGen::convertToVTU()
       FIter faces = M_faceIter(mesh);
       pFace face;
       pPList faceVerts;
-      while (face = FIter_next(faces))
+      face = FIter_next(faces);
+      while (face)
       {
         faceVerts = F_vertices(face,1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
+        face = FIter_next(faces);
       }
       FIter_delete(faces);
       dataSet = dataSet_tmp;
@@ -351,11 +353,13 @@ void simmetrixGen::convertToVTU()
       FIter faces = M_faceIter(mesh);
       pFace face;
       pPList faceVerts;
-      while (face = FIter_next(faces))
+      face = FIter_next(faces);
+      while (face)
       {
         faceVerts = F_vertices(face,1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
+        face = FIter_next(faces);
       }
       FIter_delete(faces);
       // add vol cells
@@ -420,7 +424,8 @@ void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_t
   RIter regions = M_regionIter(mesh);
   pRegion region;  
   pPList regionVerts;
-  while (region = RIter_next(regions))
+  region = RIter_next(regions);
+  while (region)
   {
     regionVerts = R_vertices(region,0);
     rType celltype = R_topoType(region);
@@ -446,11 +451,14 @@ void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_t
         createVtkCell(dataSet_tmp, 6, VTK_HEXAHEDRON, regionVerts);
         break;
       }
+      case Rdwedge:
+      case Rdhex:
       case Runknown:
         std::cerr << "Encountered unknown cell type: " << celltype << std::endl;
         exit(1);
     }
-    PList_delete(regionVerts); 
+    PList_delete(regionVerts);
+    region = RIter_next(regions);
   }
   RIter_delete(regions);
 }
@@ -472,7 +480,6 @@ void simmetrixGen::messageHandler(int type, const char* msg)
       std::cout << "Error: " << msg<< std::endl;
       break;
   }
-  return;
 }
 
 void simmetrixGen::createMeshFromModel(const char* mFName)

@@ -5,12 +5,12 @@ find_package(SWIG REQUIRED)
 set(WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIRS})
 set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
 
 file(COPY pyNemosys.i
           ${CMAKE_SOURCE_DIR}/include/meshBase.H
           ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
 
 if(ENABLE_SIMMETRIX)
   list(APPEND EXTRA_INCLUDE_DIRS "${SIMMETRIX_INCPATH}")
@@ -18,10 +18,16 @@ if(ENABLE_SIMMETRIX)
 
   file(COPY pyNemosysSimmetrix.i
        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  list(APPEND WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
+  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
+else()
+  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
 endif()
 
-configure_file(${SETUP_PY_IN} ${SETUP_PY})
+configure_file(${SETUP_PY_IN} ${SETUP_PY_IN_T})
+file(GENERATE OUTPUT ${SETUP_PY}
+    INPUT ${SETUP_PY_IN_T})
+
+#configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
 
 add_custom_target(pyNemosys ALL
