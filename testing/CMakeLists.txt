@@ -275,7 +275,7 @@ IF (ENABLE_CFMSH)
   )
   ADD_TEST(NAME cfm_2d
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_2d} --gtest_filter=-*FileDiff
+      runCFMTest ${cfm_2d}
       WORKING_DIRECTORY ${CFM_2D_TESTDIR}
   )
   ADD_TEST(NAME cfm_hinge
@@ -290,7 +290,7 @@ IF (ENABLE_CFMSH)
   )
   ADD_TEST(NAME cfm_bunny_oct
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_bunny_oct}  --gtest_filter=-*FileDiff
+      runCFMTest ${cfm_bunny_oct}
       WORKING_DIRECTORY ${CFM_BUNNY_OCT_TESTDIR}
   )
   ADD_TEST(NAME cfm_qual
