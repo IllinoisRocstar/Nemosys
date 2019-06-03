@@ -39,17 +39,40 @@ gmshMesh::gmshMesh() {
   std::cout << "gmshMesh constructed" << std::endl;
 }
 
+gmshMesh::gmshMesh(meshBase* mb)
+{
+  // this constructor tries a brute-force
+  // method. Use with care.
+  gmsh::initialize();
+  // dataSet uses smart pointers so deep
+  // copy is not needed
+  dataSet = mb->getDataSet();
+  numPoints = dataSet->GetNumberOfPoints();
+  numCells = dataSet->GetNumberOfCells();
+  hasSizeField = false;
+  order = 1;
+  std::cout << "Number of points: " << numPoints << std::endl;
+  std::cout << "Number of cells: " << numCells << std::endl;
+  std::cout << "gmshMesh constructed" << std::endl;
+}
+
+
 gmshMesh::~gmshMesh() {
 //  _gmshGModel.destroy();
   gmsh::finalize();
   std::cout << "gmshMesh destroyed" << std::endl;
 }
 
-gmshMesh::gmshMesh(const std::string &fname) {
+gmshMesh::gmshMesh(const std::string &fname) 
+{
   gmsh::initialize();
-
   filename = fname;
+  read(filename);
+  std::cout << "gmshMesh constructed" << std::endl;
+}
 
+void gmshMesh::read(const std::string &fname)
+{
   // Read the file.
   GModel _gmshGModel = GModel();
   _gmshGModel.load(fname);
@@ -141,9 +164,7 @@ gmshMesh::gmshMesh(const std::string &fname) {
   std::cout << "Number of points: " << numPoints << std::endl;
   std::cout << "Number of cells: " << numCells << std::endl;
 
-  std::cout << "gmshMesh constructed" << std::endl;
 }
-
 void gmshMesh::write(const std::string &fname) const {
   write(fname, 4.1, false);
 }

@@ -97,6 +97,14 @@ bindings are enabled, the `pyNemosys` module is installed for the user. The
 configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
 
+### Enabling cfMesh ###
+**cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**. NEMoSys comes with a fully integrated cfMesh-based meshing module. 
+To enable the capability, the NEMOSys should be compiled with `ENABLE_CFMSH=ON` and also pointed to the location of the installation of the cfMesh's meshLibrary headers (`${PATH_TO_CFMSH_INCPATH}`). Following OpenFOAM conventions, headers are usually kept in `meshLibrary\lnInclude` folder.
+Note that cfMesh dependens on the OpenFOAM, so before starting the compile process make sure to load OpenFOAM environment variables. Depending on the version, OpenFOAM can be loaded by sourcing the bashrc, or cshrc scripts provided in the `OpenFoam-x.y/etc/`. Refer to the OpenFOAM documentation for furhter instructions. After OpenFOAM environment is loaded, enable cfMesh build by adding these lines to the cmake command:
+```
+-DENABLE_CFMSH=ON -DCFMSH_INCPATH=${PATH_TO_CFMSH_INCPATH}
+```
+
 ## Testing NEMoSys ##
 From the build directory, execute the following command to test the
 installation:

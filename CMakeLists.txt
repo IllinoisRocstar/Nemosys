@@ -1,37 +1,10 @@
+# TODO: Make this hierarchical
 cmake_minimum_required(VERSION 2.8)
-project(Nemosys CXX C)
-
-# This variable controls the default value of the options which are normally set
-# to ON (useful if you want to configure a minimal version of NEMoSys: e.g.,
-#  "cmake -DDEFAULT=0 -DENABLE_DTK=1")
-set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
-# creating code compilation database
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Setting options ##############################################################
-
-macro(opt OPTION HELP VALUE)
-  option(ENABLE_${OPTION} ${HELP} ${VALUE})
-  set(OPT_TEXI
-      "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
-endmacro(opt)
-
-# set to ${DEFAULT} to use by DEFAULT
-opt(MPI "Enable MPI support" OFF)
-opt(DTK "Enable DTK extensions" OFF)
-opt(EXODUS "Enable EXODUS II extensions" OFF)
-opt(EPIC "Enable EPIC preprocessor" OFF)
-opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
-opt(TESTING "Enable testing" ${DEFAULT})
-opt(BUILD_UTILS "Build utilities" OFF)
-opt(METIS "Enable Metis interface" ${DEFAULT})
-opt(NETGEN "Enable Netgen interface" ${DEFAULT})
-opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
 
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 29)
+set(NEMOSYS_MINOR_VERSION 30)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -61,6 +34,8 @@ systems as well as distributed web-services environments. The project focus is \
 providing a framework for robust, automated mesh generation, mesh quality \
 analysis, adaptive mesh refinement, and data transfer between arbitrary \
 meshes.")
+set(PROJECT_NAME "NEMoSys version ${NEMOSYS_VERSION}")
+project(${PROJECT_NAME} CXX C)
 
 # Set project defaults #########################################################
 
@@ -85,6 +60,40 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# Setting options ##############################################################
+
+# package module
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/Modules/)
+
+# TODO: move out of main
+# macro definitions
+
+# This variable controls the default value of the options which are normally set
+# to ON (useful if you want to configure a minimal version of NEMoSys: e.g.,
+#  "cmake -DDEFAULT=0 -DENABLE_DTK=1")
+set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+# creating code compilation database
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+macro(opt OPTION HELP VALUE)
+  option(ENABLE_${OPTION} ${HELP} ${VALUE})
+  set(OPT_TEXI
+      "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
+endmacro(opt)
+
+# set to ${DEFAULT} to use by DEFAULT
+opt(MPI "Enable MPI support" OFF)
+opt(DTK "Enable DTK extensions" OFF)
+opt(EXODUS "Enable EXODUS II extensions" OFF)
+opt(EPIC "Enable EPIC preprocessor" OFF)
+opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
+opt(TESTING "Enable testing" ${DEFAULT})
+opt(BUILD_UTILS "Build utilities" OFF)
+opt(METIS "Enable Metis interface" ${DEFAULT})
+opt(NETGEN "Enable Netgen interface" ${DEFAULT})
+opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
+opt(CFMSH "Enable cfMesh Meshing engine" OFF)
 
 # Finding libraries ############################################################
 
@@ -227,9 +236,11 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 # Find boost
-if(ENABLE_SIMMETRIX OR WIN32) # since WIN32 always needs boost
+if(ENABLE_SIMMETRIX OR ENABLE_CFMSH OR WIN32) # since WIN32 always needs boost
   if(WIN32)
     set(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
+  else()
+    set(Boost_USE_STATIC_LIBS OFF)
   endif()
   set(Boost_USE_MULTITHREADED ON)
   set(Boost_USE_STATIC_RUNTIME OFF)
@@ -238,6 +249,20 @@ if(ENABLE_SIMMETRIX OR WIN32) # since WIN32 always needs boost
     include_directories(${Boost_INCLUDE_DIRS})
     list(APPEND LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
   endif()
+endif()
+
+# Find cfMesh and OpenFOAM
+if(ENABLE_CFMSH)
+  # Requires OpenFOAM 4.x
+  find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
+      edgeMesh finiteVolume foamToVTK)
+  message(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
+  message(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
+
+  # Requires cfMesh
+  find_library(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
+  set(CFMSH_INCPATH "/opt/cfMesh/meshLibrary/lnInclude"
+      CACHE STRING "cfMesh lnInclude directory path.")
 endif()
 
 # For some reason, older versions of cmake fail to find the local gmsh include
@@ -280,9 +305,12 @@ endif(NOT WIN32)
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast
+#      -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
 endif()
 
 # Setting library files ########################################################
+# TODO: clean up the unnecessary modules such as R8
 
 # Setting include files
 file(GLOB H_FILES include/*.H)
@@ -388,6 +416,15 @@ if(ENABLE_SIMMETRIX)
   )
 endif()
 
+if(ENABLE_CFMSH)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Mesh/foamMesh.C
+      src/MeshGeneration/cfmeshParams.C
+      src/MeshGeneration/cfmeshGen.C
+      src/MeshQuality/cfmshQualityParams.C
+  )
+endif()
+
 # Building libraries ###########################################################
 
 # Build r8 and rbf library
@@ -467,6 +504,44 @@ if(ENABLE_SIMMETRIX)
   target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
 endif()
 
+if(ENABLE_CFMSH)
+  target_link_libraries(Nemosys PUBLIC ${CFMSH_LIB} ${OPNF_LIBRARIES})
+  target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
+  target_include_directories(Nemosys PUBLIC ${CFMSH_INCPATH}
+                                            ${OPNF_INCLUDE_DIRS})
+  target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
+
+  # openfoam variables
+  set(LABEL_SIZE 32)
+  set(PRECISION DP)
+  target_compile_definitions(Nemosys PUBLIC
+      OF_DOUBLE_PRECISION
+      WM_LABEL_SIZE=${LABEL_SIZE}
+      WM_${PRECISION}
+      NoRepository
+#      linux64
+#      WM_ARCH_OPTION=64
+  )
+  target_compile_options(Nemosys PUBLIC
+      -ftemplate-depth-100
+  )
+  target_link_options(Nemosys PUBLIC
+      LINKER:--copy-dt-needed-entries
+      LINKER:--no-as-needed
+  )
+
+  # python wrapper flags
+  set(PYTHON_PPDS ${PYTHON_PPDS}
+      -DOF_DOUBLE_PRECISION
+      -DWM_LABEL_SIZE=${LABEL_SIZE}
+      -DWM_${PRECISION}
+      -DNoRepository
+#      linux64
+#      WM_ARCH_OPTION=64
+  )
+  set(PYTHON_PPDS ${PYTHON_PPDS} -DHAVE_CFMSH)
+endif()
+
 # Install libraries ############################################################
 
 # Headers
@@ -493,6 +568,7 @@ install(EXPORT Nemosys
 # Setting nemosysRun source
 set(NEMOSYSRUN_SRCS utils/Nemosys.C)
 
+# TODO: clean up old utilities
 if(ENABLE_BUILD_UTILS)
   # Setting xmlDump utility source
   set(XMLDUMP_SRCS utils/xmlDump.C)
@@ -609,16 +685,20 @@ if(ENABLE_BUILD_UTILS)
 endif()
 
 # Building Python wrapper ######################################################
+
 if(ENABLE_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()
 
 # Building converters ##########################################################
+
 if(ENABLE_EXODUS)
   add_subdirectory(converter)
 endif()
 
 # Building documentation #######################################################
+# TODO: revamp the documentation
+
 option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
 if(BUILD_DOCUMENTATION)
   find_package(Doxygen)
@@ -639,12 +719,14 @@ if(BUILD_DOCUMENTATION)
 endif()
 
 # Perform testing ##############################################################
+
 if(ENABLE_TESTING)
   enable_testing()
   add_subdirectory(testing)
 endif(ENABLE_TESTING)
 
 # Packaging ####################################################################
+
 if(WIN32)
   list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/nemosysRun.exe")
   if(ENABLE_BUILD_UTILS)

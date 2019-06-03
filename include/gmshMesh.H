@@ -8,7 +8,11 @@
 class gmshMesh : public meshBase {
   // --- constructors and destructors
   public:
+    // default constructor
     gmshMesh();
+
+    // construct from dataset
+    gmshMesh(meshBase* mb);
 
     // initialize from a file name
     explicit gmshMesh(const std::string &fname);
@@ -45,8 +49,10 @@ class gmshMesh : public meshBase {
     // which they appear (for look up in resulting vector)
     std::vector<int> getConnectivities() const override;
 
-  // --- write and conversion
+  // --- read, write and conversion
   public:
+    // intended to be used only for reading gmsh mesh files
+    void read(const std::string &fname);    
     // write the mesh to file named fname
     void write(const std::string &fname) const override;
     void

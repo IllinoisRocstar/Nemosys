@@ -6,6 +6,10 @@
   #include <simmetrixGen.H>
   #include <simmetrixParams.H>
 #endif
+#ifdef HAVE_CFMSH
+  #include <cfmeshGen.H>
+  #include <cfmeshParams.H>
+#endif
 
 meshGen* meshGen::Create(std::string fname, std::string meshEngine)
 {
@@ -19,6 +23,13 @@ meshGen* meshGen::Create(std::string fname, std::string meshEngine)
   {
     simmetrixGen* generator = new simmetrixGen();
     return generator;  
+  }
+  #endif
+  #ifdef HAVE_CFMSH 
+  else if (!meshEngine.compare("cfmesh"))
+  {
+    cfmeshGen* generator = new cfmeshGen();
+    return generator;
   }
   #endif
   else
@@ -39,6 +50,13 @@ meshGen* meshGen::Create(std::string fname, std::string meshEngine, meshingParam
   else if (!meshEngine.compare("simmetrix"))
   {
     simmetrixGen* generator = new simmetrixGen(dynamic_cast<simmetrixParams*>(params));
+    return generator;
+  }
+  #endif
+  #ifdef HAVE_CFMSH
+  else if (!meshEngine.compare("cfmesh"))
+  {
+    cfmeshGen* generator = new cfmeshGen(dynamic_cast<cfmeshParams*>(params));
     return generator;
   }
   #endif
