@@ -164,9 +164,9 @@ meshBase *meshBase::generateMesh(const std::string &fname,
                                  meshingParams *params)
 {
 
-  if (fname.find(".stl") == -1)
+  if ((fname.find(".stl") == -1) and (fname.find(".fms") == -1))
   {
-    std::cerr << "Only CAD files in STL format are supported" << std::endl;
+    std::cerr << "Only CAD files in STL or FMS format are supported" << std::endl;
     exit(1);
   }
 
@@ -183,6 +183,11 @@ meshBase *meshBase::generateMesh(const std::string &fname,
         ret = exportVolToVtk(newname);    
       }
       else if (meshEngine == "simmetrix")
+      {
+        std::string newname = nemAux::trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname); 
+      }
+      else if (meshEngine == "cfmesh")
       {
         std::string newname = nemAux::trim_fname(fname, ".vtu");
         ret = Create(generator->getDataSet(), newname); 
@@ -1712,7 +1717,6 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j)
     {
-      std::cout << coord1[j] << std::endl;
       if (std::fabs(coord1[j]-coord2[j]) > tol)
       {
         std::cerr << "Meshes differ in point coordinates" << std::endl;

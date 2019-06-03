@@ -35,6 +35,7 @@ class meshSrch : public meshBase
 
   // general access
   public:
+    virtual void read(std::string fname = std::string()) {};
     std::vector<double> getCellCenter(int cellID) const;
 
   // check for special conditions
@@ -43,18 +44,24 @@ class meshSrch : public meshBase
 
   // cell search methods
   public:
-    void FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& ids, bool fulImrsd=true);
+    void FindCellsWithinBounds(
+            std::vector<double>& bb, 
+            std::vector<int>& ids, bool fulImrsd=true);
     // get coordinates and connectivities of the surface triangulation
     // and returns ids for the nodes that reside on the triangulation with
     // given tolerance
-    void FindPntsOnTriSrf(std::vector<double>& crds, std::vector<int>& conn, std::set<int>& ids, double tol=0.1e-15);
+    void FindPntsOnTriSrf(std::vector<double>& crds, 
+            std::vector<int>& conn, std::set<int>& ids, 
+            double tol=0.1e-15);
     // get coordinates of the start and end points of an edge 
     // and returns ids for the nodes that reside on the edge with
     // given tolerance
-    void FindPntsOnEdge(std::vector<double>& crds, std::set<int>& ids, double tol=0.1e-15);
+    void FindPntsOnEdge(std::vector<double>& crds, 
+            std::set<int>& ids, double tol=0.1e-15);
 
   // misc
   public:
+    void read(const std::string& fname) {};    
     std::vector<std::vector<double>> getCellVec(int id) const override;
     std::vector<double> getPoint(int id) const override;
     int getCellType() const override {};
