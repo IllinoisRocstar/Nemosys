@@ -220,9 +220,17 @@ ENDIF()
 
 # CFMESH
 IF (ENABLE_CFMSH)
-    # requires openfoam 4.x
-    FIND_PACKAGE(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
-        edgeMesh finiteVolume foamToVTK)
+    # checking openfoam version
+    STRING(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
+    IF (OF4 GREATER -1)
+        # requires openfoam 4.x
+        FIND_PACKAGE(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
+            edgeMesh finiteVolume foamToVTK)
+    ELSE()
+        # 5.x and 6.x series
+        FIND_PACKAGE(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
+            meshTools finiteVolume foamToVTK)
+    ENDIF()
     MESSAGE(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
     MESSAGE(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
     LINK_DIRECTORIES(${OPNF_LIBRARY_DIRS})
