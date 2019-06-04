@@ -187,7 +187,7 @@ cgVtPair RocRestartDriver::loadCGNS(const std::vector<std::string>& fnames, bool
     cgObjs.push_back(cgObj);
     std::size_t pos = fnames[i].find_last_of("/");
     std::string vtkname = fnames[i].substr(pos+1);
-    vtkname = trim_fname(vtkname, ".vtu");
+    vtkname = nemAux::trim_fname(vtkname, ".vtu");
     mbobjs[i] = meshBase::CreateShared(cgObj->getVTKMesh(),vtkname);      
   }
   return std::make_pair(cgObjs, mbobjs);

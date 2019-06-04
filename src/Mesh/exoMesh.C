@@ -47,7 +47,7 @@ elementType EXOMesh::v2eEMap (VTKCellType vt)
 
 surfaceBCTag EXOMesh::bcTagNum(std::string& tag)
 {
-  std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+  nemAux::toLower(tag);
   if (tag == "fixed") return surfaceBCTag::FIXED;
   if (tag == "symmx") return surfaceBCTag::SYMMX;
   if (tag == "symmy") return surfaceBCTag::SYMMY;
@@ -68,7 +68,7 @@ std::string EXOMesh::bcTagStr(int tag)
 
 elementType EXOMesh::elmTypeNum (std::string tag) 
 {
-  std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+  nemAux::toLower(tag);
   if (tag == "quadrilateral") return elementType::QUAD;
   if (tag == "quad") return elementType::QUAD;
   if (tag == "triangle") return elementType::TRIANGLE;
@@ -170,7 +170,7 @@ void exoMesh::write()
     fid = ex_create(_ifname.c_str(), EX_CLOBBER, &comp_ws, &io_ws);
 
     // initializing exodus database
-    _exErr = ex_put_init(fid,"Nemosys ExodusII database", 3, numNdes, numElms, 
+    _exErr = ex_put_init(fid,"NEMoSys ExodusII database", 3, numNdes, numElms,
             _elmBlock.size(), _ndeSet.size(), _sideSet.size() );
     wrnErrMsg(_exErr, "Problem during initialization of exodusII database");
 

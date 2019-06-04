@@ -1,5 +1,7 @@
 #include <StlToVtk.H>
 
+#include "AuxiliaryFunctions.H"
+
 void exportStlToVtk(std::string ifname)
 {
   std::ifstream stl(ifname.c_str());
@@ -69,13 +71,13 @@ void exportStlToVtk(std::string ifname)
       i = 1;
     }
   }
-    
-  std::multimap<int, std::vector<double>> flipped = flip_map(point_map);
-  
-  std::ofstream vtk(trim_fname(ifname,".vtk"));
-  if (!vtk.good())
-  {
-    std::cout << "Error opening file " << trim_fname(ifname,".vtk") << std::endl;
+
+  std::multimap<int, std::vector<double>> flipped = nemAux::flip_map(point_map);
+
+  std::ofstream vtk(nemAux::trim_fname(ifname, ".vtk"));
+  if (!vtk.good()) {
+    std::cout << "Error opening file " << nemAux::trim_fname(ifname, ".vtk")
+              << std::endl;
     exit(1);
   }
 

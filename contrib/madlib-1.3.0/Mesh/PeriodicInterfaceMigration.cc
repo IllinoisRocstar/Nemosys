@@ -643,7 +643,7 @@ namespace MAd {
             assert(is);
             //#warning: calcule la bonne transformation	  
             std::vector<std::pair<std::vector<int> , pVertex> > *recup2 = (std::vector<std::pair<std::vector<int> , pVertex> > *) temp_ptr2;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
             unsigned int k=0;
             for(k=0 ; k<(*recup2).size() ; k++) {
               std::vector<int> transfo2 = (*recup2)[k].first; 

@@ -64,7 +64,7 @@ std::vector<double> GradSizeField::computeL2GradAtAllCells(int array)
   std::vector<double> result(mesh->getNumberOfCells()); 
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
   { 
-    result[i] = l2_Norm(computeGradAtCell(i, array));
+    result[i] = nemAux::l2_Norm(computeGradAtCell(i, array));
   }
   return result;
 }

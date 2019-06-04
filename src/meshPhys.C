@@ -4,11 +4,11 @@
 PointDataArray::PointDataArray( std::string _name, int _numComponent, int _numTuple, 
                     const std::vector<std::vector<double>>& _pntData):
                     name(_name), numComponent(_numComponent), numTuple(_numTuple)
-                    { pntData = flatten (_pntData) ; }
+{ pntData = nemAux::flatten(_pntData); }
 
 std::vector<std::vector<double>> PointDataArray::getFoldData() 
-{ 
-  return fold(pntData, numComponent); 
+{
+  return nemAux::fold(pntData, numComponent);
 }
   
 // computes the gradient of point data at a cell using 
@@ -111,7 +111,7 @@ std::vector<double> meshPhys::ComputeL2GradAtAllCells(int array)
   result.resize(numberOfCells);
   for (int i = 0; i < numberOfCells; ++i)
   {
-    result[i] = l2_Norm(ComputeGradAtCell(i, array)); 
+    result[i] = nemAux::l2_Norm(ComputeGradAtCell(i, array));
   }
 
   return result;
@@ -136,7 +136,7 @@ std::vector<double> meshPhys::ComputeL2ValAtAllCells(int array)
 {
   std::vector<double> result(numberOfCells); 
   for (int i = 0; i < numberOfCells; ++i)
-    result[i] = l2_Norm(ComputeValAtCell(i, array));
+    result[i] = nemAux::l2_Norm(ComputeValAtCell(i, array));
   return result;
 }
 
@@ -164,7 +164,7 @@ void meshPhys::createSizeField(int array_id, std::string method,
   // get circumsphere diameter of all cells 
   std::vector<double> lengths = GetCellLengths();
   // find minmax of diameters
-  std::vector<double> lengthminmax = getMinMax(lengths);
+  std::vector<double> lengthminmax = nemAux::getMinMax(lengths);
   // redefine minmax values for appropriate size definition reference
   if (maxIsmin)
     lengthminmax[1] = lengthminmax[0];
@@ -193,17 +193,18 @@ void meshPhys::createSizeField(int array_id, std::string method,
   }
 
   // get mean and stdev of values 
-  std::vector<double> meanStdev = getMeanStdev(values);
+  std::vector<double> meanStdev = nemAux::getMeanStdev(values);
   // get bool array of which cells to refine based on multiplier of stdev
-  std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+  std::vector<bool> cells2Refine = nemAux::cellsToRefine(
+      values, meanStdev[0] + meanStdev[1] * dev_mult);
   // normalize values by mean
-  std::vector<double> values_norm = (1./meanStdev[0])*values;  
+  std::vector<double> values_norm = (1. / meanStdev[0]) * values;
   // take the reciprocal of values for size definition (high value -> smaller size)
-  reciprocal_vec(values);
+  nemAux::reciprocal_vec(values);
   // scale values to min max circumsphere diam of cells 
   // now, values represents a size field
-  std::vector<double> valuesMinMax = getMinMax(values);
-  scale_vec_to_range(values, valuesMinMax, lengthminmax);
+  std::vector<double> valuesMinMax = nemAux::getMinMax(values);
+  nemAux::scale_vec_to_range(values, valuesMinMax, lengthminmax);
   // setting sizes (values) to f*max element diam based on return of cellsToRefine function
   for (int i = 0; i < values.size(); ++i)
   {
@@ -260,9 +261,10 @@ void meshPhys::writeCellsToRefine(int array_id, std::string method, double dev_m
   }
 
   // get mean and stdev of values 
-  std::vector<double> meanStdev = getMeanStdev(values);
+  std::vector<double> meanStdev = nemAux::getMeanStdev(values);
   // get bool array of which cells to refine based on multiplier of stdev
-  std::vector<int> cells2Refine = cellsToRefine(values, meanStdev[0]+meanStdev[1]*dev_mult);
+  std::vector<bool> cells2Refine = nemAux::cellsToRefine(
+      values, meanStdev[0] + meanStdev[1] * dev_mult);
 
   // write cells2Refine to file
   std::ofstream outputstream("cells2Refine.txt");
@@ -422,7 +424,7 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
   std::string array_name =  pntData[array_id].getName(); 
   if (dim > 1)
   {
-    adapter->registerVData(array_name, fold(pntData[array_id].getData(), dim));
+    adapter->registerVData(array_name, nemAux::fold(pntData[array_id].getData(), dim));
     // check if data is correctly attached
     std::vector<std::vector<double>> preAMRData;
     adapter->getMeshVData(array_name, &preAMRData);
@@ -486,20 +488,20 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
 
 
 
-    trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
+    trgGModel->writeVTK(nemAux::trim_fname(outMeshFile, ".vtk"), false, true); // binary=false, saveall=true
 
 
     // write physical quantities to vtk file
     vtkAnalyzer* trgVTK;
     // TODO: Seg fault if name is like refined_smooth.vtk
-    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk"))[0u]);
+    trgVTK = new vtkAnalyzer((char*) &(nemAux::trim_fname(outMeshFile, ".vtk"))[0u]);
 
     trgVTK->read();
-    std::vector<double> postAMRDatas = flatten(postAMRData);
+    std::vector<double> postAMRDatas = nemAux::flatten(postAMRData);
     trgVTK->setPointDataArray(&array_name[0u], dim, postAMRDatas);
     trgVTK->report();
-    trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
-    trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
+    trgVTK->write((char*) &(nemAux::trim_fname(outMeshFile, "_solution.vtu"))[0u]);
+    trgVTK->writeMSH(nemAux::trim_fname(outMeshFile, "_solution.msh"));
     delete trgGModel;
     delete trgVTK;
   }
@@ -541,17 +543,17 @@ void meshPhys::Refine(MAd::MeshAdapter* adapter, MAd::pMesh& mesh,
     GModel* trgGModel;
     trgGModel = new GModel("refined"); 
     trgGModel->readMSH((char*) &outMeshFile[0u]);
-    trgGModel->writeVTK(trim_fname(outMeshFile,".vtk"), false, true); // binary=false, saveall=true
+    trgGModel->writeVTK(nemAux::trim_fname(outMeshFile, ".vtk"), false, true); // binary=false, saveall=true
 
 
     // write physical quantities to vtk file
     vtkAnalyzer* trgVTK;
-    trgVTK = new vtkAnalyzer((char*) &(trim_fname(outMeshFile,".vtk"))[0u]);
+    trgVTK = new vtkAnalyzer((char*) &(nemAux::trim_fname(outMeshFile, ".vtk"))[0u]);
     trgVTK->read();
     trgVTK->setPointDataArray(&array_name[0u], 1, postAMRData);
     trgVTK->report();
-    trgVTK->write((char*) &(trim_fname(outMeshFile, "_solution.vtu"))[0u]);
-    trgVTK->writeMSH(trim_fname(outMeshFile, "_solution.msh"));
+    trgVTK->write((char*) &(nemAux::trim_fname(outMeshFile, "_solution.vtu"))[0u]);
+    trgVTK->writeMSH(nemAux::trim_fname(outMeshFile, "_solution.msh"));
     delete trgGModel;
     delete trgVTK;
   }

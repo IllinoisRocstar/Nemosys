@@ -10,9 +10,6 @@
 #include <functional>
 #include <algorithm>
 
-// Nemosys
-#include <AuxiliaryFunctions.H>
-
 class triangle
 {
   public:

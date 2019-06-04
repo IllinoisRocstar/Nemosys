@@ -1,16 +1,15 @@
 #include <iostream>
-#include <symmxGen.H>
-#include <symmxParams.H>
+#include <simmetrixGen.H>
+#include <simmetrixParams.H>
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
 
 
 // constructor
-symmxGen::symmxGen(symmxParams* _params)
-  : params(_params),haveLog(false),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
-    mesh(NULL)
+simmetrixGen::simmetrixGen(simmetrixParams* _params)
+    : params(_params), haveLog(false), writeSurfAndVol(false),
+      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
 {
 
   if (params->logFName != "NONE")
@@ -32,12 +31,11 @@ symmxGen::symmxGen(symmxParams* _params)
 }
 
 // default
-symmxGen::symmxGen()
-  : haveLog(true),prog(NULL),model(NULL),
-    dModel(NULL),mcase(NULL),writeSurfAndVol(false),
-    mesh(NULL)
+simmetrixGen::simmetrixGen()
+    : params(NULL), haveLog(true), writeSurfAndVol(false),
+      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
 {
-  Sim_logOn("symmxGen.log");
+  Sim_logOn("simmetrixGen.log");
   SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume","simmodsuite.lic");
   MS_init();
   Sim_setMessageHandler(messageHandler);
@@ -46,7 +44,7 @@ symmxGen::symmxGen()
 }
 
 // destructor
-symmxGen::~symmxGen()
+simmetrixGen::~simmetrixGen()
 {
   if (mesh)
     M_release(mesh);
@@ -65,13 +63,13 @@ symmxGen::~symmxGen()
   std::cout << "Simmetrix mesh generator destroyed" << std::endl;
 }
 
-void symmxGen::setProgress()
+void simmetrixGen::setProgress()
 {
   prog = Progress_new();
   Progress_setDefaultCallback(prog);    
 }
 
-int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
+int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
 {
   if (!createModelFromSTL(stlFName))
   {
@@ -181,7 +179,7 @@ int symmxGen::createSurfaceMeshFromSTL(const char* stlFName)
     return 1;
 }
 
-int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
+int simmetrixGen::createVolumeMeshFromSTL(const char* stlFName)
 {
   if (!createSurfaceMeshFromSTL(stlFName))
   {
@@ -213,7 +211,7 @@ int symmxGen::createVolumeMeshFromSTL(const char* stlFName)
     return 1;
 }
 
-int symmxGen::createMeshFromSTL(const char* stlFName)
+int simmetrixGen::createMeshFromSTL(const char* stlFName)
 {
   if (!createVolumeMeshFromSTL(stlFName))
   {
@@ -223,7 +221,7 @@ int symmxGen::createMeshFromSTL(const char* stlFName)
   return 1;
 }
 
-int symmxGen::createModelFromSTL(const char* stlFName)
+int simmetrixGen::createModelFromSTL(const char* stlFName)
 {
   // try/catch around all SimModSuite calls
   // as errors are thrown.
@@ -297,7 +295,7 @@ int symmxGen::createModelFromSTL(const char* stlFName)
   return 0; 
 }
 
-void symmxGen::convertToVTU()
+void simmetrixGen::convertToVTU()
 {
   if (!dataSet)
   {
@@ -315,12 +313,14 @@ void symmxGen::convertToVTU()
     points->SetNumberOfPoints(M_numVertices(mesh));
     int i = 0;
     // copy points into vtk point container
-    while (vertex = VIter_next(vertices))
+    vertex = VIter_next(vertices);
+    while (vertex)
     {
       EN_setID( (pEntity) vertex, i); 
       V_coord(vertex, coord);
       points->SetPoint(i,coord);
       ++i;
+      vertex = VIter_next(vertices);
     }
     VIter_delete(vertices);
     dataSet_tmp->SetPoints(points);
@@ -333,11 +333,13 @@ void symmxGen::convertToVTU()
       FIter faces = M_faceIter(mesh);
       pFace face;
       pPList faceVerts;
-      while (face = FIter_next(faces))
+      face = FIter_next(faces);
+      while (face)
       {
         faceVerts = F_vertices(face,1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
+        face = FIter_next(faces);
       }
       FIter_delete(faces);
       dataSet = dataSet_tmp;
@@ -351,11 +353,13 @@ void symmxGen::convertToVTU()
       FIter faces = M_faceIter(mesh);
       pFace face;
       pPList faceVerts;
-      while (face = FIter_next(faces))
+      face = FIter_next(faces);
+      while (face)
       {
         faceVerts = F_vertices(face,1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
+        face = FIter_next(faces);
       }
       FIter_delete(faces);
       // add vol cells
@@ -372,16 +376,16 @@ void symmxGen::convertToVTU()
   }
 }
 
-void symmxGen::setWriteSurfAndVol(bool b)
+void simmetrixGen::setWriteSurfAndVol(bool b)
 {
   writeSurfAndVol = b;
 }
 
-void symmxGen::saveMesh(const std::string& mFName)
+void simmetrixGen::saveMesh(const std::string& mFName)
 {
 
   size_t last = mFName.find_last_of('.');
-  if (last != -1)
+  if (last != std::string::npos)
   {
     std::string ext = mFName.substr(last); 
     if (ext == ".sms")
@@ -398,7 +402,7 @@ void symmxGen::saveMesh(const std::string& mFName)
   }
 }
 
-void symmxGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+void simmetrixGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
                               const int numIds,
                               const int cellType,
                               pPList regionVerts)
@@ -414,13 +418,14 @@ void symmxGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
   dataSet->InsertNextCell(cellType,vtkCellIds);
 }
                              
-void symmxGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
   // get iterator for mesh regions (cells) and add them
   RIter regions = M_regionIter(mesh);
   pRegion region;  
   pPList regionVerts;
-  while (region = RIter_next(regions))
+  region = RIter_next(regions);
+  while (region)
   {
     regionVerts = R_vertices(region,0);
     rType celltype = R_topoType(region);
@@ -446,16 +451,19 @@ void symmxGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
         createVtkCell(dataSet_tmp, 6, VTK_HEXAHEDRON, regionVerts);
         break;
       }
+      case Rdwedge:
+      case Rdhex:
       case Runknown:
         std::cerr << "Encountered unknown cell type: " << celltype << std::endl;
         exit(1);
     }
-    PList_delete(regionVerts); 
+    PList_delete(regionVerts);
+    region = RIter_next(regions);
   }
   RIter_delete(regions);
 }
 
-void symmxGen::messageHandler(int type, const char* msg)
+void simmetrixGen::messageHandler(int type, const char* msg)
 {
   switch (type) 
   {
@@ -472,10 +480,9 @@ void symmxGen::messageHandler(int type, const char* msg)
       std::cout << "Error: " << msg<< std::endl;
       break;
   }
-  return;
 }
 
-void symmxGen::createMeshFromModel(const char* mFName)
+void simmetrixGen::createMeshFromModel(const char* mFName)
 {
   model = GM_load(mFName, 0, prog);
   mcase = MS_newMeshCase(model);

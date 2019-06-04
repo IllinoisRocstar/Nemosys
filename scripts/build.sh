@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script will build Nemosys and all of the necessary dependencies
+# This script will build NEMoSys and all of the necessary dependencies
 # given a tarball of projects with gmsh, occt, hdf5, cgns, netgen and vtk.
 # Usage:
 #    ./build.sh PATH_TO_NEMOSYS_TPLS_TARBALL PATH_TO_INSTALL_DIR
@@ -43,6 +43,7 @@ cd opencascade-7.3.0
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
+      -DBUILD_DOC_Overview=OFF \
       -DBUILD_MODULE_Draw=OFF \
       -DBUILD_MODULE_Visualization=OFF \
       -DBUILD_MODULE_ApplicationFramework=OFF ..

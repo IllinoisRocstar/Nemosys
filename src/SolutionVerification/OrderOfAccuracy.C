@@ -177,7 +177,7 @@ void OrderOfAccuracy::computeMeshWithResolution(double gciStar, const std::strin
     }
   }
 
-  std::vector<double> resolution = flatten(computeResolution(gciStar));
+  std::vector<double> resolution = nemAux::flatten(computeResolution(gciStar));
   auto minmax = std::minmax_element(resolution.begin(),resolution.end());
   double ave = (*minmax.first + *minmax.second)/2;
   f3->refineMesh("uniform", ave, ofname, 0);

@@ -2,23 +2,32 @@ find_package(PythonInterp 2.7 REQUIRED) # Needed for PYTHON_EXECUTABLE
 find_package(PythonLibs REQUIRED) # Needed for PYTHON_INCLUDE_DIRS
 find_package(SWIG REQUIRED)
 
-
 set(WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIRS})
 set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
-if (ENABLE_SYMMX)
-  file(COPY pyNemosysSymmx.i
+set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
+
+file(COPY pyNemosys.i
+          ${CMAKE_SOURCE_DIR}/include/meshBase.H
+          ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+if(ENABLE_SIMMETRIX)
+  list(APPEND EXTRA_INCLUDE_DIRS "${SIMMETRIX_INCPATH}")
+  list(APPEND EXTRA_COMPILE_ARGS "-DHAVE_SIMMETRIX")
+
+  file(COPY pyNemosysSimmetrix.i
        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSymmx.i)
-  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup_havesymmx.py.in")
+  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
 else()
-  file(COPY pyNemosys.i
-            ${CMAKE_SOURCE_DIR}/include/meshBase.H
-            ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
-       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
-  set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 endif()
-configure_file(${SETUP_PY_IN} ${SETUP_PY})
+
+configure_file(${SETUP_PY_IN} ${SETUP_PY_IN_T})
+file(GENERATE OUTPUT ${SETUP_PY}
+    INPUT ${SETUP_PY_IN_T})
+
+#configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
 
 add_custom_target(pyNemosys ALL

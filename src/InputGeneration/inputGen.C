@@ -1,10 +1,12 @@
-// NEMoSys headers
+// Nemosys headers
 #include "inputGen.H"
 
 // other headers
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+
+#include "AuxiliaryFunctions.H"
 
 void inputGen::setNameType(std::string fname, inpFileType ftyp, std::string key) 
 { 
@@ -19,7 +21,7 @@ void inputGen::setOrder(std::vector<std::string>& ord, std::string key)
     if (!key.empty())
         _key = key;
     for (auto it=ord.begin(); it!=ord.end(); it++)
-        std::transform(it->begin(), it->end(), it->begin(), ::tolower);
+        nemAux::toLower(*it);
     _ord[_key].insert(_ord[_key].end(), ord.begin(), ord.end());
 }
 
@@ -35,7 +37,7 @@ void inputGen::pushOrder(std::string ord, std::string key)
 {
     if (!key.empty())
         _key = key;
-    std::transform(ord.begin(), ord.end(), ord.begin(), ::tolower);
+    nemAux::toLower(ord);
     _ord[_key].push_back(ord);
 }
 

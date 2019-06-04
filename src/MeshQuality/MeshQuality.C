@@ -77,7 +77,7 @@ void MeshQuality::checkMesh(std::ostream& outputStream)
     vtkDoubleArray::SafeDownCast(qualityFilter->GetOutput()->GetCellData()->GetArray("Quality"));
 
   mesh->getDataSet()->GetCellData()->AddArray(qualityArray);
-  std::string qfn = trim_fname(mesh->getFileName(),"") + "-qal.vtu";
+  std::string qfn = nemAux::trim_fname(mesh->getFileName(), "") + "-qal.vtu";
   mesh->write(qfn);
 
 

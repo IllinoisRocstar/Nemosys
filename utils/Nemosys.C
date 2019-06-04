@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
   
   std::string fname = argv[1];
   std::ifstream inputStream(fname);
-  if (!inputStream.good() || find_ext(fname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(fname) != ".json")
   {
     std::cout << "Error opening file " << fname << std::endl;
     exit(1);

@@ -66,7 +66,7 @@ std::vector<double> ValSizeField::computeL2ValAtAllCells(int array)
 {
   std::vector<double> result(mesh->getNumberOfCells()); 
   for (int i = 0; i < mesh->getNumberOfCells(); ++i)
-    result[i] = l2_Norm(computeValAtCell(i, array));
+    result[i] = nemAux::l2_Norm(computeValAtCell(i, array));
   return result;
 }
 

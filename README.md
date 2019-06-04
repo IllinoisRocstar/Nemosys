@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.29.0
+Version 0.31.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -135,6 +135,7 @@ $ mkdir build
 $ cd build
 $ cmake .. \
         -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
+        -DBUILD_DOC_Overview=OFF \
         -DBUILD_MODULE_Draw=OFF \
         -DBUILD_MODULE_Visualization=OFF \
         -DBUILD_MODULE_ApplicationFramework=OFF

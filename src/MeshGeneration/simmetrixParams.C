@@ -1,7 +1,7 @@
-#include <symmxParams.H>
+#include <simmetrixParams.H>
 
-// constructor for symmxParams
-symmxParams::symmxParams()
+// constructor for simmetrixParams
+simmetrixParams::simmetrixParams()
 {
   meshSize = 0.05;
   anisoMeshCurv = 0.02;

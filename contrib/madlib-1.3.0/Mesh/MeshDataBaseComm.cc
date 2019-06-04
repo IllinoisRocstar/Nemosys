@@ -111,7 +111,7 @@ namespace MAd {
             message++;
             char * tmp = (char *) msg;
             pEntity * pv = (pEntity *) &tmp[0];
-#ifdef DEBUG	  
+#ifdef MADLIB_DEBUG
             assert(*pv);
 #endif
             de.receiveData (*pv,from, &tmp[sizeof(pEntity*)]);

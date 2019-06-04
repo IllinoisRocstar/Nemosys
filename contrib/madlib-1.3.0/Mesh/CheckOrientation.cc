@@ -33,7 +33,7 @@ namespace MAd {
   };  
 
   int CheckEdgesOrientation(pMesh mesh){
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     int norient = 0;
 #endif
     int nproc,myrank;
@@ -125,7 +125,7 @@ namespace MAd {
         if(pe) {
           //check orientation
           if(E_vertex(pe,0) != p1recv) {
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
             norient++;
 #endif
             pe->p1 = p1recv;
@@ -139,7 +139,7 @@ namespace MAd {
     AP_check_sends(AP_WAITALL); 
     MPI_Barrier(MPI_COMM_WORLD);
     delete [] sendcounts;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     return norient;
 #else    
     return 0;
@@ -148,7 +148,7 @@ namespace MAd {
 
 
   int CheckFacesOrientation(pMesh mesh){
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     int norient = 0;
 #endif
     int mysize,myrank;
@@ -267,7 +267,7 @@ namespace MAd {
             ((MDB_Triangle*)pface)->e1 = pe[0];
             ((MDB_Triangle*)pface)->e2 = pe[1];
             ((MDB_Triangle*)pface)->e3 = pe[2];
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
             norient++;
 #endif	  	
           }        
@@ -278,7 +278,7 @@ namespace MAd {
     AP_check_sends(AP_WAITALL);
     MPI_Barrier(MPI_COMM_WORLD);
     delete [] sendcounts;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
     return norient;
 #else  
     return 0;
@@ -288,7 +288,7 @@ namespace MAd {
 /*
 // version with sets for the parallel nodes
 int CheckEdgesOrientation(pMesh mesh){
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
 int norient = 0;
 #endif
 int nproc,myrank;
@@ -383,7 +383,7 @@ pEdge pe = E_exist(p1recv,p2recv);
 if(pe) {
 //check orientation
 if(E_vertex(pe,0) != p1recv) {
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
 norient++;
 #endif
 pe->p1 = p1recv;
@@ -397,7 +397,7 @@ AP_free(msg);
 AP_check_sends(AP_WAITALL); 
 MPI_Barrier(MPI_COMM_WORLD);
 delete [] sendcounts;
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
 return norient;
 #else    
 return 0;
