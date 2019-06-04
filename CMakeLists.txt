@@ -263,6 +263,17 @@ if(ENABLE_CFMSH)
   find_library(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
   set(CFMSH_INCPATH "/opt/cfMesh/meshLibrary/lnInclude"
       CACHE STRING "cfMesh lnInclude directory path.")
+
+  # CMake 3.13 required for target_link_directories
+  link_directories(${OPNF_LIBRARY_DIRS})
+  # /CMake 3.13
+
+  # CMake 3.13 required for target_link_options
+  set(CMAKE_EXE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_MODULE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_SHARED_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_STATIC_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  # /CMake 3.13
 endif()
 
 # For some reason, older versions of cmake fail to find the local gmsh include
@@ -506,7 +517,9 @@ endif()
 
 if(ENABLE_CFMSH)
   target_link_libraries(Nemosys PUBLIC ${CFMSH_LIB} ${OPNF_LIBRARIES})
-  target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
+  # CMake 3.13 required for target_link_directories
+  #target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
+  # /CMake 3.13
   target_include_directories(Nemosys PUBLIC ${CFMSH_INCPATH}
                                             ${OPNF_INCLUDE_DIRS})
   target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
@@ -525,10 +538,12 @@ if(ENABLE_CFMSH)
   target_compile_options(Nemosys PUBLIC
       -ftemplate-depth-100
   )
-  target_link_options(Nemosys PUBLIC
-      LINKER:--copy-dt-needed-entries
-      LINKER:--no-as-needed
-  )
+  # CMake 3.13 required for target_link_options
+  #target_link_options(Nemosys PUBLIC
+  #    LINKER:--copy-dt-needed-entries
+  #    LINKER:--no-as-needed
+  #)
+  # /CMake 3.13
 
   # python wrapper flags
   set(PYTHON_PPDS ${PYTHON_PPDS}
