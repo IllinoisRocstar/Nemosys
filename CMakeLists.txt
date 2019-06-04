@@ -217,6 +217,7 @@ endif()
 
 # Find Simmetrix
 if(ENABLE_SIMMETRIX)
+  set(SIMMETRIX_LIB_DIR CACHE PATH "Simmetrix library directory path.")
   find_library(SIMADM_LIB SimAdvMeshing HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMEXP_LIB SimExport HINTS ${SIMMETRIX_LIB_DIR})
   find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
@@ -271,7 +272,7 @@ if(ENABLE_CFMSH)
   # Requires cfMesh
   find_library(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
   set(CFMSH_INCPATH "/opt/cfMesh/meshLibrary/lnInclude"
-      CACHE STRING "cfMesh lnInclude directory path.")
+      CACHE PATH "cfMesh lnInclude directory path.")
 
   # CMake 3.13 required for target_link_directories
   link_directories(${OPNF_LIBRARY_DIRS})
@@ -781,5 +782,6 @@ set(CPACK_PACKAGE_VERSION "${NEMOSYS_VERSION}")
 set(CPACK_PACKAGE_VERSION_MAJOR "${NEMOSYS_MAJOR_VERSION}")
 set(CPACK_PACKAGE_VERSION_MINOR "${NEMOSYS_MINOR_VERSION}")
 set(CPACK_PACKAGE_VERSION_PATCH "${NEMOSYS_PATCH_VERSION}")
+set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
 #set(CPACK_PACKAGE_INSTALL_DIRECTORY "")
 include(CPack)
