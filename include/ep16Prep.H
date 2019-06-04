@@ -3,7 +3,7 @@
 
 #ifdef HAVE_EPIC
 
-// Nemosys
+// Nemosys headers
 #include "inputGen.H"
 #include "exoMesh.H"
 

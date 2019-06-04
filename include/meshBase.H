@@ -9,7 +9,7 @@
 #include <vtkIdTypeArray.h>
 #include <vtkIdList.h>
 
-// Nemosys
+// Nemosys headers
 #include <pntMesh.H>
 #include <cobalt.H>
 #include <patran.H>
@@ -44,6 +44,11 @@ class meshBase
     {
       std::cout << "meshBase constructed" << std::endl;
     }
+
+//    meshBase(const meshBase &mb) = delete;
+//    meshBase& operator=(const meshBase &mb) = delete;
+//    meshBase(meshBase &&mb) = delete;
+//    meshBase& operator=(meshBase &&mb) = delete;
 
     // Dropping support for copy constructor
     //meshBase(const meshBase& mb)
@@ -159,7 +164,7 @@ class meshBase
   // --- access
   public:
     // abstract read method reserved for derived classes
-    virtual void read(const std::string& fname) = 0;
+    virtual void read(const std::string &fname) = 0;
     // get point with id
     virtual std::vector<double> getPoint(int id) const = 0;
     // get 3 vecs with x,y and z coords

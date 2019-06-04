@@ -3,7 +3,8 @@
 #include <vtkCellData.h>
 #include <AuxiliaryFunctions.H>
 
-using namespace nemAux;
+using nemAux::operator-; // for vector subtraction.
+using nemAux::operator*; // for vector multiplication.
 
 FETransfer::FETransfer(meshBase* _source, meshBase* _target)
 {
@@ -330,15 +331,15 @@ int FETransfer::transferCellData(const std::vector<int>& arrayIDs,
           double comps[numComponent];
           daSource->GetTuple(cellId, comps);
           // compute distance from point to cell center
-          W = 1./l2_Norm(source->getCellCenter(cellId)
-                         - source->getPoint(i));
+          W = 1. / nemAux::l2_Norm(source->getCellCenter(cellId)
+                                   - source->getPoint(i));
           // average over shared cells, weighted by inverse distance to center
           for (int k = 0; k < numComponent; ++k)
           {
             interps[k] += W*comps[k];
           }
           totW += W; 
-        } 
+        }
         interps = (1.0/totW)*interps;
         daSourceToPoint->SetTuple(i, interps.data());
       }

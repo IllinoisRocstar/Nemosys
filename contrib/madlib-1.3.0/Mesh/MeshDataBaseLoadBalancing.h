@@ -18,7 +18,7 @@
 
 namespace MAd {
 
-#ifdef DEBUG
+#ifdef MADLIB_DEBUG
   void checkRemotePointer(pMesh mesh, pMeshDataId tagData );
   void checkRemotePointer2(pMesh mesh, pMeshDataId tagData );
   void checkRemotePointerChange(pMesh mesh, pMeshDataId tagData,pMeshDataId tagNew, pMeshDataId tagChange );

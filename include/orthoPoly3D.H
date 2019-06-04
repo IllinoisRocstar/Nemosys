@@ -4,9 +4,6 @@
 #include <iostream>
 #include <memory>
 #include <orthoPoly1D.H>
-#ifdef DEBUG
-  #include <AuxiliaryFunctions.H>
-#endif
 using Eigen::Matrix;
 using Eigen::ArrayXd;
 using Eigen::KroneckerProduct;

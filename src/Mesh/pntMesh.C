@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <sstream>
 
+#include "AuxiliaryFunctions.H"
+
 using namespace PNTMesh;
 
 VTKCellType PNTMesh::p2vEMap ( elementType et)
@@ -50,7 +52,7 @@ elementType PNTMesh::v2pEMap (VTKCellType vt)
 
 surfaceBCTag PNTMesh::bcTagNum(std::string& tag)
 {
-  std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+  nemAux::toLower(tag);
   if (tag == "reflective") return surfaceBCTag::REFLECTIVE;
   if (tag == "void") return surfaceBCTag::VOID;
   std::cerr << "Unknown surface tag " << tag << std::endl;
@@ -67,7 +69,7 @@ std::string PNTMesh::bcTagStr(int tag)
 
 elementType PNTMesh::elmTypeNum (std::string tag) 
 {
-  std::transform(tag.begin(), tag.end(), tag.begin(), ::tolower);
+  nemAux::toLower(tag);
   if (tag == "bar") return elementType::BAR;
   if (tag == "quadrilateral") return elementType::QUADRILATERAL;
   if (tag == "triangle") return elementType::TRIANGLE;

@@ -25,10 +25,10 @@ namespace nglib {
   #include <nglib.h>
 }
 
-// simmetrix
-#ifdef HAVE_SYMMX
-  #include <symmxGen.H>
-#endif
+// Simmetrix
+//#ifdef HAVE_SIMMETRIX
+//  #include <simmetrixGen.H>
+//#endif
 
 // stl
 #include <algorithm>
@@ -179,17 +179,17 @@ meshBase *meshBase::generateMesh(const std::string &fname,
     {
       if (meshEngine == "netgen") 
       {
-        std::string newname = trim_fname(fname,".vol");
+        std::string newname = nemAux::trim_fname(fname, ".vol");
         ret = exportVolToVtk(newname);    
       }
       else if (meshEngine == "simmetrix")
       {
-        std::string newname = trim_fname(fname, ".vtu");
+        std::string newname = nemAux::trim_fname(fname, ".vtu");
         ret = Create(generator->getDataSet(), newname); 
       }
       else if (meshEngine == "cfmesh")
       {
-        std::string newname = trim_fname(fname, ".vtu");
+        std::string newname = nemAux::trim_fname(fname, ".vtu");
         ret = Create(generator->getDataSet(), newname); 
       }
     }
@@ -362,7 +362,7 @@ meshBase::partition(const meshBase *mbObj, const int numPartitions)
     for (int &it : vtkConn) {
       it -= 1;
     }
-    std::string basename(trim_fname(mbObj->getFileName(), ""));
+    std::string basename(nemAux::trim_fname(mbObj->getFileName(), ""));
     basename += std::to_string(i);
     basename += ".vtu";
     // construct meshBase partition from coordinates and connectivities
@@ -807,7 +807,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
  
-  vtkmesh->setFileName(trim_fname(fname,".vtu"));
+  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
@@ -890,7 +890,7 @@ meshBase *meshBase::exportVolToVtk(const std::string &fname)
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
-  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   std::cout << "vtkMesh constructed" << std::endl;
 
   if(Ngmesh) nglib::Ng_DeleteMesh(Ngmesh);
@@ -963,8 +963,8 @@ meshBase *meshBase::exportPntToVtk(const std::string &fname)
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
   std::cout << "Trimmed name = "
-      << trim_fname(fname, ".vtu") << std::endl;
-  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+            << nemAux::trim_fname(fname, ".vtu") << std::endl;
+  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
@@ -1100,8 +1100,8 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
 
   std::cout << "Trimmed name = "
-      << trim_fname(fname, ".vtu") << std::endl;
-  vtkmesh->setFileName(trim_fname(fname, ".vtu"));
+            << nemAux::trim_fname(fname, ".vtu") << std::endl;
+  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
@@ -1717,7 +1717,6 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j)
     {
-      std::cout << coord1[j] << std::endl;
       if (std::fabs(coord1[j]-coord2[j]) > tol)
       {
         std::cerr << "Meshes differ in point coordinates" << std::endl;

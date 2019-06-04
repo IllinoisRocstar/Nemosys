@@ -3,7 +3,7 @@
 
 #include <meshBase.H>
 
-//MAd Lib
+// MAdLib
 #include <MAdLib.h>
 
 class Refine

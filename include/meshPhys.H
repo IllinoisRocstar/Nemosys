@@ -1,11 +1,10 @@
 #ifndef meshPhys_H
 #define meshPhys_H
 
-// Nemosys
+// Nemosys headers
 #include <vtkAnalyzer.H>
-#include <AuxiliaryFunctions.H>
 
-//MAd Lib
+// MAdLib
 #include <MAdLib.h>
 #include <ModelInterface.h>
 #include <MeshDataBaseInterface.h>
@@ -16,8 +15,6 @@
 
 // stl
 #include <functional>
-
-using namespace nemAux;
 
 /* holds relevant info for point data and provides access interface*/
 class PointDataArray

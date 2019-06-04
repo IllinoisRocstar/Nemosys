@@ -259,7 +259,7 @@ int netgenInterface::exportToVTK(char* fname)
 
   // testing mesh import
   std::string old_fname(fname);
-  std::string new_fname = trim_fname(old_fname,".vol");
+  std::string new_fname = nemAux::trim_fname(old_fname, ".vol");
   Ng_SaveMesh(mesh, &new_fname[0u]);
   numPoints = Ng_GetNP(mesh);
   numCells = Ng_GetNE(mesh);

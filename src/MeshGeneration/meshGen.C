@@ -2,9 +2,9 @@
 #include <meshingParams.H>
 #include <netgenGen.H>
 #include <netgenParams.H>
-#ifdef HAVE_SYMMX
-  #include <symmxGen.H>
-  #include <symmxParams.H>
+#ifdef HAVE_SIMMETRIX
+  #include <simmetrixGen.H>
+  #include <simmetrixParams.H>
 #endif
 #ifdef HAVE_CFMSH
   #include <cfmeshGen.H>
@@ -18,10 +18,10 @@ meshGen* meshGen::Create(std::string fname, std::string meshEngine)
     netgenGen* generator = new netgenGen();
     return generator;
   }
-  #ifdef HAVE_SYMMX 
+  #ifdef HAVE_SIMMETRIX 
   else if (!meshEngine.compare("simmetrix"))
   {
-    symmxGen* generator = new symmxGen();
+    simmetrixGen* generator = new simmetrixGen();
     return generator;  
   }
   #endif
@@ -46,10 +46,10 @@ meshGen* meshGen::Create(std::string fname, std::string meshEngine, meshingParam
     netgenGen* generator = new netgenGen(dynamic_cast<netgenParams*>(params));
     return generator;
   }
-  #ifdef HAVE_SYMMX
+  #ifdef HAVE_SIMMETRIX
   else if (!meshEngine.compare("simmetrix"))
   {
-    symmxGen* generator = new symmxGen(dynamic_cast<symmxParams*>(params));
+    simmetrixGen* generator = new simmetrixGen(dynamic_cast<simmetrixParams*>(params));
     return generator;
   }
   #endif

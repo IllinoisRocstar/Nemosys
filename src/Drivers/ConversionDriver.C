@@ -2,7 +2,7 @@
 #include <map>
 #include <unordered_map>
 
-// Nemosys
+// Nemosys headers
 #include <ConversionDriver.H>
 #include <AuxiliaryFunctions.H>
 #include <vtkMesh.H>
@@ -25,7 +25,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     : source(NULL)
 {
   std::cout << "ConversionDriver created" << std::endl;
-  Timer T;
+  nemAux::Timer T;
   T.start();
   // convert to pnt mesh
   if (!method.compare("VTK->PNT"))
@@ -88,13 +88,14 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
   }
   else if (!method.compare("GMSH->EXO"))
   {
-#ifdef HAVE_EXODUSII // NEMOSYS is compiled with exodus
+#ifdef HAVE_EXODUSII // NEMoSys is compiled with exodus
     // reading vitals
-    std::cout << "Converting to EXODUS II...\n";
+    std::cout << "Converting to EXODUS II..." << std::endl;
     json opts = inputjson["Conversion Options"];
     genExo(opts, ofname);
 #else
-    std::cerr << "Error: Compile NEMOSYS with ENABLE_EXODUS to use this option.\n";
+    std::cerr << "Error: Compile NEMoSys with ENABLE_EXODUS to use this option."
+              << std::endl;
     exit(-1);
 #endif
   }
@@ -111,14 +112,15 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     gm->write(ofname);
     delete fm;
 #else
-    std::cerr << "Error: Compile NEMOSYS with ENABLE_CFMSH to use this option.\n";
+    std::cerr << "Error: Compile NEMoSys with ENABLE_CFMSH to use this option."
+              << std::endl;
     exit(-1);
 #endif
   }
   else if (!method.compare("FOAM->VTK"))
   {
 #ifdef HAVE_CFMSH
-    // supports: vtu, vtk  
+    // supports: vtu, vtk
     meshBase* fm = new FOAM::foamMesh();
     fm->read(NULL);
     // TODO: Fix report and write methods for the foamMesh class
@@ -128,7 +130,8 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
     delete vm;
     delete fm;
 #else
-    std::cerr << "Error: Compile NEMOSYS with ENABLE_CFMSH to use this option.\n";
+    std::cerr << "Error: Compile NEMoSys with ENABLE_CFMSH to use this option."
+              << std::endl;
     exit(-1);
 #endif
   }
@@ -477,7 +480,7 @@ ConversionDriver::ConversionDriver(std::string srcmsh, std::string trgmsh,
       }
     }
     
-    // Accumulate node patch preference 
+    // Accumulate node patch preference
     // (determines which patch a node belongs to if it borders two or more patches)
     std::vector<int> nppVec;
     for (auto nppItr = inputjson["Conversion Options"]["Node Patch Preference"].array_range().begin();
@@ -561,12 +564,12 @@ ConversionDriver* ConversionDriver::readJSON(std::string ifname)
 {
   std::cout << "Reading JSON file\n";
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || find_ext(ifname) != ".json")
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (find_ext(ifname) != ".json")
+  if (nemAux::find_ext(ifname) != ".json")
   {
     std::cout << "Input File must be in .json format" << std::endl;
     exit(1);
@@ -593,7 +596,7 @@ void ConversionDriver::genExo(json opts, std::string fname)
 {
   int nMsh = opts.get_with_default("Number of Mesh", 0);
   bool needsPP = opts.get_with_default("Post Processing", false);
-  
+
   // sanity check
   if (nMsh == 0)
   {
@@ -603,7 +606,7 @@ void ConversionDriver::genExo(json opts, std::string fname)
 
   // starting conversion operation
   EXOMesh::exoMesh* em = new EXOMesh::exoMesh(fname);
-  
+
   // reading meshes
   int ndeIdOffset = 0;
   int ins = 0;
@@ -638,8 +641,8 @@ void ConversionDriver::genExo(json opts, std::string fname)
           eb.id = ++ieb;
           eb.name = mshName;
           eb.ndeIdOffset = ndeIdOffset;
-          int iTet = 0; 
-          int iHex = 0; 
+          int iTet = 0;
+          int iHex = 0;
           for (int iElm=0; iElm<mb->getNumberOfCells(); iElm++)
           {
               EXOMesh::elementType eTpe = EXOMesh::v2eEMap((VTKCellType) (mb->getDataSet()->GetCellType(iElm)));
@@ -676,8 +679,8 @@ void ConversionDriver::genExo(json opts, std::string fname)
               eb.nElm = iTet;
               eb.eTpe = EXOMesh::elementType::TETRA;
               eb.ndePerElm = 4;
-          } 
-          else 
+          }
+          else
           {
               eb.nElm = iHex;
               eb.eTpe = EXOMesh::elementType::HEX;
@@ -702,7 +705,7 @@ void ConversionDriver::genExo(json opts, std::string fname)
           }
           vtkCellData *cd = mb->getDataSet()->GetCellData();
           vtkDataArray* physGrpIds = cd->GetArray(physGrpArrIdx);
-          
+
           // loop through elements and obtain physical group ids
           std::vector<int> elmIds;
           std::vector<int> elmPhysGrp;
@@ -734,7 +737,7 @@ void ConversionDriver::genExo(json opts, std::string fname)
           for (int iNde=0; iNde<ns.nNde; iNde++)
               ns.crds.push_back(mb->getPoint(iNde));
           em->addNdeSet(ns);
-          
+
           // for each physical group one element block
           for (auto it1=unqPhysGrpIds.begin(); it1!=unqPhysGrpIds.end(); it1++)
           {
@@ -743,7 +746,7 @@ void ConversionDriver::genExo(json opts, std::string fname)
               eb.id = ++ieb;
               eb.name = mshName+"_PhysGrp_"+std::to_string(ieb);
               eb.ndeIdOffset = ndeIdOffset;
-              int iTet = 0; 
+              int iTet = 0;
               int iHex = 0;
               for (auto it2=elmIds.begin(); it2!=elmIds.end(); it2++)
               {
@@ -801,38 +804,37 @@ void ConversionDriver::genExo(json opts, std::string fname)
 
   // performing post-processing tasks
   if (needsPP)
-  {   
-      int nTsk = opts.get_with_default("Number of Tasks", 0);
-      json ppTsk = opts["Tasks"];
-      for (int iTsk=0; iTsk<nTsk; iTsk++)
+  {
+    int nTsk = opts.get_with_default("Number of Tasks", 0);
+    json ppTsk = opts["Tasks"];
+    for (int iTsk=0; iTsk<nTsk; iTsk++)
+    {
+      std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
+      std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
+      std::ifstream inputStream(ppFName);
+      if (!inputStream.good() || nemAux::find_ext(ppFName) != ".json")
       {
-          std::string ppFName= ppTsk[iTsk].get_with_default("File", "");
-          std::cout << "Reading Post Processing JSON file "<< iTsk << std::endl;
-          std::ifstream inputStream(ppFName);
-          if (!inputStream.good() || find_ext(ppFName) != ".json")
-          {
-            std::cout << "Error opening file " << ppFName << std::endl;
-            exit(1);
-          }
-          if (find_ext(ppFName) != ".json")
-          {
-            std::cout << "Input File must be in .json format" << std::endl;
-            exit(1);
-          }
-          json ppJson;
-          inputStream >> ppJson;
-          procExo(ppJson, fname, em);
+        std::cout << "Error opening file " << ppFName << std::endl;
+        exit(1);
       }
+      if (nemAux::find_ext(ppFName) != ".json")
+      {
+        std::cout << "Input File must be in .json format" << std::endl;
+        exit(1);
+      }
+      json ppJson;
+      inputStream >> ppJson;
+      procExo(ppJson, fname, em);
+    }
 
-      // writing augmented exo file
-      em->write();
-      em->report();
+    // writing augmented exo file
+    em->write();
+    em->report();
   }
-  
+
   // clean up
   delete em;
   em = NULL;
-
 }
 
 

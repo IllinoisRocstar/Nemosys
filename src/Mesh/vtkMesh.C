@@ -33,7 +33,8 @@
 #include <vtkImageData.h>
 #include <AuxiliaryFunctions.H>
 
-using namespace nemAux;
+using nemAux::operator*; // for vector multiplication.
+using nemAux::operator+; // for vector addition.
 
 void vtkMesh::write(const std::string &fname) const
 {
@@ -43,7 +44,7 @@ void vtkMesh::write(const std::string &fname) const
     exit(1);
   }
    
-  std::string extension = find_ext(fname);
+  std::string extension = nemAux::find_ext(fname);
 
   if (extension == ".vtp")
     writeVTFile<vtkXMLPolyDataWriter> (fname,dataSet);
@@ -62,7 +63,7 @@ void vtkMesh::write(const std::string &fname) const
     writeVTFile<vtkUnstructuredGridWriter> (fname, dataSet); // legacy vtk writer
   }
   else {
-    std::string fname_tmp = trim_fname(fname, ".vtu");
+    std::string fname_tmp = nemAux::trim_fname(fname, ".vtu");
     writeVTFile<vtkXMLUnstructuredGridWriter>(fname_tmp, dataSet);   // default is vtu
   }
 }
@@ -736,7 +737,7 @@ vtkSmartPointer<vtkUnstructuredGrid> ReadDegenerateVTKFile(const char* fileName)
     }
   }
    
-  std::multimap<int, std::vector<double>> flipped = flip_map(point_map);
+  std::multimap<int, std::vector<double>> flipped = nemAux::flip_map(point_map);
   std::multimap<int,std::vector<double>>::iterator flip_it = flipped.begin();
 
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -984,8 +985,8 @@ std::vector<double> vtkMesh::getCellLengths() const
 std::vector<double> vtkMesh::getCellCenter(int cellID) const
 {
   std::vector<double> center(3,0.0);
-  std::vector<std::vector<double>> cell = getCellVec(cellID); 
- 
+  std::vector<std::vector<double>> cell = getCellVec(cellID);
+
   for (int i = 0; i < cell.size(); ++i)
   {
     center = center + cell[i];

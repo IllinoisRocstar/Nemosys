@@ -11,7 +11,7 @@
 #include <map>
 #include <sstream> 
 
-//MAd Lib
+// MAdLib
 #include "ModelInterface.h"
 #include "MeshDataBaseInterface.h"
 //#include "GmshEntities.h"
@@ -19,7 +19,7 @@
 // third party
 #include "cgnslib.h"
 
-// Nemosys
+// Nemosys headers
 #include "cgnsAnalyzer.H"
 
 // typedefs

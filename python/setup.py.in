@@ -4,25 +4,37 @@ from setuptools import setup, Extension
 pyNemosys = Extension(
     '_pyNemosys',
     sources='${WRAPPER_SOURCE_FILES}'.split(';'),
-    include_dirs=('${WRAPPER_INCLUDE_DIRS}'.split(';')
-                  + '${VTK_INCLUDE_DIRS}'.split(';')
-                  + '${GMSH_INCPATH}'.split(';')
-                  + '${OpenCASCADE_INCLUDE_DIR}'.split(';')
-                  + '${CGNS_INCPATH}'.split(';')
-                  + '${ANN_INCPATH}'.split(';')
-                  + '${METIS_INCPATH}'.split(';')
-                  + '${NETGEN_INCLUDE_DIRS}'.split(';')
-                  ),
+    include_dirs=filter(None, (
+            '${WRAPPER_INCLUDE_DIRS}'.split(';')
+            + '${VTK_INCLUDE_DIRS}'.split(';')
+            + '${GMSH_INCPATH}'.split(';')
+            + '${OpenCASCADE_INCLUDE_DIR}'.split(';')
+            + '${CGNS_INCPATH}'.split(';')
+            + '${MADLIB_INCPATH}'.split(';')
+            + '${ANN_INCPATH}'.split(';')
+            + '${METIS_INCPATH}'.split(';')
+            + '${NETGEN_INCLUDE_DIRS}'.split(';')
+            + '${EXTRA_INCLUDE_DIRS}'.split(';')
+    )),
     libraries=['Nemosys'],
     library_dirs=['${CMAKE_BINARY_DIR}'],
-    runtime_library_dirs=['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/Nemosys/lib'],
+    runtime_library_dirs=['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/lib'],
     swig_opts=['-c++'],
-    extra_compile_args=['-std=c++11', '-w']
+    extra_compile_args=filter(None, (
+            ['-std=c++11', '-w']
+            + '${EXTRA_COMPILE_ARGS}'.split(';')
+    ))
 )
 
 setup(
     name='pyNemosys',
     version='${NEMOSYS_VERSION}',
+    url='${NEMOSYS_HOMEPAGE_URL}',
+    author='${NEMOSYS_AUTHOR}',
+    author_email='${NEMOSYS_AUTHOR_EMAIL}',
+    classifiers='${NEMOSYS_PYTHON_CLASSIFIERS}'.split(';'),
+    license='${NEMOSYS_SHORT_LICENSE}',
+    description='${NEMOSYS_DESCRIPTION}',
     py_modules=['pyNemosys'],
     ext_modules=[pyNemosys],
     test_suite='test_pyNemosys27'
