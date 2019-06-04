@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.1)
+
 message(STATUS "ACCESSING TEST DIRECTORY: ${PROJECT_SOURCE_DIR}")
 
 # macro to list subdirectories of a given current
