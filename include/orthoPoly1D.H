@@ -5,6 +5,7 @@
 #include <ostream>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/KroneckerProduct>
+#include <vector>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;

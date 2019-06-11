@@ -487,6 +487,7 @@ target_include_directories(Nemosys
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
         ${GMSH_INCPATH}
+        ${CGNS_INCPATH}
 #    PRIVATE
 )
 
