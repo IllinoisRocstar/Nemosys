@@ -191,7 +191,7 @@ endif()
 
 # Find ExodusII
 if(ENABLE_EXODUS)
-  find_library(EXO_LIB exoIIv2)
+    find_library(EXO_LIB NAMES exoIIv2 exoIIv2c)
   find_file(EXO_HDR exodusII.h)
   get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
   get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
@@ -579,6 +579,7 @@ install(TARGETS r8 interp Nemosys
     EXPORT Nemosys
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
