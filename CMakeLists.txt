@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 31)
+set(NEMOSYS_MINOR_VERSION 32)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -41,7 +41,8 @@ project(${PROJECT_NAME} CXX C)
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
-if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+# TODO: Debug build fails on Windows. Figure out why and fix.
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git" AND NOT WIN32)
   set(default_build_type "Debug")
 endif()
 
@@ -82,6 +83,25 @@ macro(opt OPTION HELP VALUE)
       "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
 endmacro(opt)
 
+list(APPEND CMAKE_BUILD_TYPE_OPTIONS
+    "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+
+macro(NEM_get_imported_location OUT_VAR LIB_NAME OUT_VAR_PATH)
+  foreach(buildtype IN LISTS CMAKE_BUILD_TYPE_OPTIONS)
+    string(TOUPPER ${buildtype} BUILD_TYPE)
+    if(WIN32)
+      get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
+    else()
+      get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
+    endif()
+    if(OUT_LIB)
+      list(APPEND ${OUT_VAR} ${OUT_LIB})
+      get_filename_component(LIBRARY_PATH ${OUT_LIB} PATH)
+      list(APPEND ${OUT_VAR_PATH} ${LIBRARY_PATH})
+    endif()
+  endforeach()
+endmacro()
+
 # set to ${DEFAULT} to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
 opt(DTK "Enable DTK extensions" OFF)
@@ -94,6 +114,20 @@ opt(METIS "Enable Metis interface" ${DEFAULT})
 opt(NETGEN "Enable Netgen interface" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
 opt(CFMSH "Enable cfMesh Meshing engine" OFF)
+
+# Check for option interdependencies ###########################################
+
+# Epic modules require exodus
+if(ENABLE_EPIC AND NOT ENABLE_EXODUS)
+  message(FATAL_ERROR "Epic preprocessor requires EXODUS II extensions.\
+ Set ENABLE_EXODUS to ON.")
+endif()
+
+# Check system configuration ###################################################
+
+# Check for system-depended headers
+include(CheckIncludeFile)
+check_include_file(glob.h HAVE_GLOB_H)
 
 # Finding libraries ############################################################
 
@@ -113,9 +147,6 @@ if(ENABLE_MPI)
 endif()
 
 # Find VTK
-if(WIN32)
-  set(VTK_BUILD_SHARED_LIBS OFF)
-endif()
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
@@ -123,8 +154,28 @@ list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
+# Finding vtkCommonCore library to pass to Python for linking
+get_target_property(VTK_COMMON_CORE_ILL vtkCommonCore INTERFACE_LINK_LIBRARIES)
+if(VTK_COMMON_CORE_ILL)
+  # For VTK 7
+  NEM_get_imported_location(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_ILL} VTK_COMMON_CORE_LIB_PATH)
+else()
+  # For VTK 6 and 8
+  NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommonCore VTK_COMMON_CORE_LIB_PATH)
+endif()
+get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
+if(WIN32) # Remove the .lib suffix
+  string(REGEX REPLACE "\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+endif()
+if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
+  set(VTK_COMMON_CORE_LIB ":${VTK_COMMON_CORE_LIB}")
+endif()
+message(STATUS "vtkCommonCore library ${VTK_COMMON_CORE_LIB}")
+
 # Find MAdLib and ANN
 add_subdirectory(contrib/madlib-1.3.0)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
 get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -138,24 +189,42 @@ message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
 
 # Find OpenCascade (used by Gmsh)
-find_package(OpenCASCADE REQUIRED)
-message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
-message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
+if(NOT WIN32)
+  find_package(OpenCASCADE REQUIRED)
+  message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
+  message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
+
+  # CMake 3.13 required for target_link_directories
+  link_directories(${OpenCASCADE_LIBRARY_DIR})
+  # /CMake 3.13
+
+  set(HAVE_OPENCASCADE)
+endif()
 
 # Find HDF5
-if(WIN32)
-  set(HDF5_USE_STATIC_LIBRARIES ON) # Needed on WIN32. TODO: Test on UNIX
+if(WIN32) # Test new HDF5 logic on UNIX
+  find_package(hdf5 REQUIRED COMPONENTS CXX CXX_HL CONFIG)
+  NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
+  list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+  message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
+  message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
+  set(HAVE_HDF5_CONFIG)
+else()
+  find_package(HDF5 REQUIRED COMPONENTS CXX)
+  list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
+  get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
+  list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+  message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
+  message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
 endif()
-find_package(HDF5 REQUIRED)
-list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
-get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
-list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
-message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
-message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
 
 # Find CGNS
-find_library(CGNS_LIB cgns HINTS ${CMAKE_INSTALL_PREFIX}/cgns/lib)
-find_file(CGNS_HDR cgnslib.h HINTS ${CMAKE_INSTALL_PREFIX}/cgns/include)
+if(WIN32 AND BUILD_SHARED_LIBS)
+  find_library(CGNS_LIB cgnsdll)
+else()
+  find_library(CGNS_LIB cgns)
+endif()
+find_file(CGNS_HDR cgnslib.h)
 get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
 get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
 list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
@@ -164,8 +233,8 @@ message(STATUS "cgns libs ${CGNS_LIB}")
 
 # Find METIS
 if(ENABLE_METIS)
-  find_library(METIS_LIB metis HINTS ${CMAKE_INSTALL_PREFIX}/metis/lib)
-  find_file(METIS_HDR metis.h HINTS ${CMAKE_INSTALL_PREFIX}/metis/include)
+  find_library(METIS_LIB metis)
+  find_file(METIS_HDR metis.h)
   get_filename_component(METIS_INCPATH ${METIS_HDR} PATH)
   get_filename_component(METIS_LIB_PATH ${METIS_LIB} PATH)
   list(APPEND LIBRARY_DIRS ${METIS_LIB_PATH})
@@ -176,7 +245,7 @@ endif()
 # Find Netgen
 if(ENABLE_NETGEN)
   find_package(Netgen REQUIRED)
-  list(APPEND LIBRARY_DIRS ${NETGEN_LIBRARY_DIR})
+  list(APPEND LIBRARY_DIRS ${NETGEN_LIBRARY_DIR} ${NETGEN_LIBRARY_DIR}/../bin)
   message(STATUS "netgen include path ${NETGEN_INCLUDE_DIRS}")
   message(STATUS "netgen libs ${NETGEN_LIBRARY_DIR}")
 
@@ -186,18 +255,29 @@ if(ENABLE_NETGEN)
     find_package(ZLIB REQUIRED) # Find zlib headers since Netgen doesn't
     include_directories(${ZLIB_INCLUDE_DIRS})
     get_filename_component(ZLIB_LIB_PATH ${ZLIB_LIBRARIES} PATH)
+    list(APPEND LIBRARY_DIRS ${ZLIB_LIB_PATH})
+    message(STATUS "zlib include path ${ZLIB_INCLUDE_DIRS}")
+    message(STATUS "zlib libs ${ZLIB_LIBRARIES}")
   endif()
 endif()
 
 # Find ExodusII
 if(ENABLE_EXODUS)
-    find_library(EXO_LIB NAMES exoIIv2 exoIIv2c)
+  find_library(EXO_LIB NAMES exoIIv2 exodus exodIIv2c)
   find_file(EXO_HDR exodusII.h)
   get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
   get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
   list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
   message(STATUS "exodus include path ${EXO_INCPATH}")
   message(STATUS "exodus libs ${EXO_LIB}")
+
+  # Find NetCDF
+  if(WIN32)
+    find_package(netCDF REQUIRED)
+    list(APPEND LIBRARY_DIRS ${netCDF_LIB_DIR} ${netCDF_LIB_DIR}/../bin)
+    message(STATUS "netcdf include path ${netCDF_INCLUDE_DIR}")
+    message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
+  endif()
 endif()
 
 # Find Trilinos
@@ -237,14 +317,12 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 # Find boost
-if(ENABLE_SIMMETRIX OR ENABLE_CFMSH OR WIN32) # since WIN32 always needs boost
+# Needed if there is no glob.h on the system
+if(ENABLE_SIMMETRIX OR ENABLE_CFMSH OR NOT HAVE_GLOB_H)
   if(WIN32)
-    set(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32. TODO: test on UNIX
-  else()
-    set(Boost_USE_STATIC_LIBS OFF)
+    set(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32.
   endif()
   set(Boost_USE_MULTITHREADED ON)
-  set(Boost_USE_STATIC_RUNTIME OFF)
   find_package(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
   if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
@@ -279,10 +357,14 @@ if(ENABLE_CFMSH)
   # /CMake 3.13
 
   # CMake 3.13 required for target_link_options
-  set(CMAKE_EXE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_MODULE_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_SHARED_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_STATIC_LINKER_FLAGS "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_EXE_LINKER_FLAGS
+      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_MODULE_LINKER_FLAGS
+      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_SHARED_LINKER_FLAGS
+      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_STATIC_LINKER_FLAGS
+      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
   # /CMake 3.13
 endif()
 
@@ -326,8 +408,8 @@ endif(NOT WIN32)
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast
-#      -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast \
+#-Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
 endif()
 
 # Setting library files ########################################################
@@ -394,7 +476,7 @@ set(NEMOSYS_SRCS
 
     src/Refinement/Refine.C
 
-    src/SizeFieldGeneration/SizeFieldBase.C
+    src/SizeFieldGeneration/SizeFieldGen.C
     src/SizeFieldGeneration/GradSizeField.C
     src/SizeFieldGeneration/ValSizeField.C
     src/SizeFieldGeneration/Z2ErrorSizeField.C
@@ -477,9 +559,6 @@ target_link_libraries(Nemosys
         ${VTK_LIBRARIES}
         ${GMSH_LIB}
         ${CGNS_LIB}
-    PRIVATE
-        TKernel
-        ${HDF5_LIBRARIES}
         ${Boost_LIBRARIES}
 )
 target_include_directories(Nemosys
@@ -488,8 +567,33 @@ target_include_directories(Nemosys
         $<INSTALL_INTERFACE:include>
         ${GMSH_INCPATH}
         ${CGNS_INCPATH}
-#    PRIVATE
 )
+
+if(HAVE_HDF5_CONFIG)
+  if(BUILD_SHARED_LIBS)
+    target_link_libraries(Nemosys
+        PUBLIC
+            hdf5::hdf5_cpp-shared
+            hdf5::hdf5-shared
+    )
+  else()
+    target_link_libraries(Nemosys
+        PUBLIC
+            hdf5::hdf5_cpp-static
+            hdf5::hdf5-static
+    )
+  endif()
+else()
+  target_link_libraries(Nemosys PUBLIC ${HDF5_LIBRARIES})
+endif()
+
+if(HAVE_OPENCASCADE)
+  target_link_libraries(Nemosys PUBLIC TKernel)
+endif()
+
+if(HAVE_GLOB_H)
+  target_compile_definitions(Nemosys PUBLIC HAVE_GLOB_H)
+endif()
 
 # TODO: Appears unused.
 #if(NOT ${BUILD_SHARED_LIBS})
@@ -503,6 +607,11 @@ endif()
 if(ENABLE_EXODUS)
   target_link_libraries(Nemosys PUBLIC ${EXO_LIB})
   target_compile_definitions(Nemosys PUBLIC HAVE_EXODUSII)
+  target_include_directories(Nemosys PUBLIC ${EXO_INCPATH})
+
+  if(WIN32)
+    target_link_libraries(Nemosys PUBLIC netcdf)
+  endif()
 endif()
 
 if(ENABLE_EPIC)
@@ -512,6 +621,7 @@ endif()
 if(ENABLE_METIS)
   target_link_libraries(Nemosys PUBLIC ${METIS_LIB})
   target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
+  target_include_directories(Nemosys PUBLIC ${METIS_INCPATH})
 endif()
 
 if(ENABLE_NETGEN)
@@ -568,6 +678,19 @@ if(ENABLE_CFMSH)
   set(PYTHON_PPDS ${PYTHON_PPDS} -DHAVE_CFMSH)
 endif()
 
+# Generate export header #######################################################
+include(GenerateExportHeader)
+generate_export_header(Nemosys)
+generate_export_header(interp)
+generate_export_header(r8)
+list(APPEND ${Nemosys_INC_FILES} Nemosys_export.h)
+list(APPEND ${interp_INC_FILES} interp_export.h)
+list(APPEND ${r8_INC_FILES} r8_export.h)
+file(COPY ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h
+          ${CMAKE_CURRENT_BINARY_DIR}/interp_export.h
+          ${CMAKE_CURRENT_BINARY_DIR}/r8_export.h
+    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 # Install libraries ############################################################
 
 # Headers
@@ -578,8 +701,8 @@ install(FILES ${Nemosys_INC_FILES}
 install(TARGETS r8 interp Nemosys
     EXPORT Nemosys
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -717,12 +840,6 @@ if(ENABLE_PYTHON_BINDINGS)
   add_subdirectory(python)
 endif()
 
-# Building converters ##########################################################
-
-if(ENABLE_EXODUS)
-  add_subdirectory(converter)
-endif()
-
 # Building documentation #######################################################
 # TODO: revamp the documentation
 
@@ -755,35 +872,39 @@ endif(ENABLE_TESTING)
 # Packaging ####################################################################
 
 if(WIN32)
-  list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/nemosysRun.exe")
-  if(ENABLE_BUILD_UTILS)
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/xmlDump.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/cgns2msh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocStitchMesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocRemesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/rocSurfRemesh.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/grid2gridTransfer.exe")
-    list(APPEND CMAKE_EXE_TO_BUNDLE "${CMAKE_INSTALL_PREFIX}/bin/mshTr.exe")
-  endif()
   install(CODE "include(BundleUtilities)
-  fixup_bundle(\"${CMAKE_EXE_TO_BUNDLE}\" \"\" \"${LIBRARY_DIRS}\")")
+  fixup_bundle(\"\${CMAKE_INSTALL_PREFIX}/bin/nemosysRun.exe\" \"\" \"${LIBRARY_DIRS}\")")
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION "bin")
   set(CMAKE_INSTALL_UCRT_LIBRARIES "TRUE")
   include(InstallRequiredSystemLibraries)
 endif()
 
+set(CPACK_PACKAGE_NAME "NEMoSys")
+set(CPACK_PACKAGE_VENDOR "${NEMOSYS_AUTHOR}")
+set(CPACK_PACKAGE_VERSION "${NEMOSYS_VERSION}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${NEMOSYS_MAJOR_VERSION}")
+set(CPACK_PACKAGE_VERSION_MINOR "${NEMOSYS_MINOR_VERSION}")
+set(CPACK_PACKAGE_VERSION_PATCH "${NEMOSYS_PATCH_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION "${NEMOSYS_DESCRIPTION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${NEMOSYS_DESCRIPTION}")
+set(CPACK_PACKAGE_HOMEPAGE_URL "")
+set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
+#set(CPACK_PACKAGE_INSTALL_DIRECTORY "") # Use default location.
+#set(CPACK_PACKAGE_ICON "") # image used by GUI installers
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 if(WIN32)
   set(CPACK_GENERATOR NSIS)
 #else()
 #  set(CPACK_GENERATOR)
 endif()
-set(CPACK_PACKAGE_NAME "NEMoSys")
-set(CPACK_PACKAGE_VENDOR "${NEMOSYS_AUTHOR}")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${NEMOSYS_DESCRIPTION}")
-set(CPACK_PACKAGE_VERSION "${NEMOSYS_VERSION}")
-set(CPACK_PACKAGE_VERSION_MAJOR "${NEMOSYS_MAJOR_VERSION}")
-set(CPACK_PACKAGE_VERSION_MINOR "${NEMOSYS_MINOR_VERSION}")
-set(CPACK_PACKAGE_VERSION_PATCH "${NEMOSYS_PATCH_VERSION}")
-set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
-#set(CPACK_PACKAGE_INSTALL_DIRECTORY "")
+# Lists exe and text label used for Start Menu shortcuts
+#set(CPACK_PACKAGE_EXECUTABLES "")
+# Must have matching Start Menu shortcut to create Desktop link
+#set(CPACK_CREATE_DESKTOP_LINKS "")
+
+# WIN32 NOTE: - Run CPack from a MSVC environment as dumpbin is required
+#               for the fixup_bundle search of DLL dependecies.
+#             - The system libraries pulled in are release DLLs.
+#               Do NOT package in Debug! THAT APPLIES TO DEPENDENCIES TOO!!
 include(CPack)

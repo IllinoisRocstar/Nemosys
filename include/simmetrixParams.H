@@ -1,23 +1,27 @@
 #ifndef SIMMETRIXPARAMS_H
 #define SIMMETRIXPARAMS_H
-#include <meshingParams.H>
+
+#include "nemosys_export.h"
+
+#include "meshingParams.H"
+
 #include <string>
 
-  /*    possible feature options are :
-      - geomsim_core
-      - meshsim_surface
-      - meshsim_volume
-      - geomsim_discrete
-      - meshsim_adv
-      - meshsim_adapt */
+/* possible feature options are :
+    - geomsim_core
+    - meshsim_surface
+    - meshsim_volume
+    - geomsim_discrete
+    - meshsim_adv
+    - meshsim_adapt */
 
-class simmetrixParams : public meshingParams
+class NEMOSYS_EXPORT simmetrixParams : public meshingParams
 {
-  
   public:
     simmetrixParams();
-    ~simmetrixParams(){};
-  
+
+    ~simmetrixParams() override = default;
+
   public:
     std::string logFName;
     std::string features;
@@ -26,8 +30,8 @@ class simmetrixParams : public meshingParams
     double anisoMeshCurv;
     double minCurvSize;
     double glbSizeGradRate;
-    double surfMshImprovGradRate;  
-    double surfMshImprovMinSize; 
+    double surfMshImprovGradRate;
+    double surfMshImprovMinSize;
 };
 
 #endif

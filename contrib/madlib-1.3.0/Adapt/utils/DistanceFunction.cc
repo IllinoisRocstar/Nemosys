@@ -925,11 +925,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   void distanceFunction::computeCurvature(const std::set<pRegion>& regs)
   {
-    int nR = regs.size();      // number of regions involved
-    int r2v[nR*4];             // regions vertices
+    int nR = regs.size();        // number of regions involved
+    std::vector<int> r2v(nR*4);  // regions vertices
     std::map<pFace,pRegion> bFaces;  // boundary faces (to 'regs') and 
     //                                  the corresponding region
-    std::map<pVertex,int> v2i; // vertex pointers to local ids
+    std::map<pVertex,int> v2i;   // vertex pointers to local ids
 
     // --- fill v2i and r2v ---
 
@@ -966,8 +966,8 @@ namespace MAd {
 
     // --- make the reverse mapping of v2i: i2v ---
 
-    int nV = v2i.size();   // number of vertices involved
-    pVertex i2v[nV];       // local ids to vertex pointers
+    int nV = v2i.size();           // number of vertices involved
+    std::vector<pVertex> i2v(nV);  // local ids to vertex pointers
 
     std::map<pVertex,int>::const_iterator v2iIter = v2i.begin();
     for(; v2iIter != v2i.end(); v2iIter++) i2v[v2iIter->second] = v2iIter->first;
@@ -981,7 +981,7 @@ namespace MAd {
     double over12 = 1./12.;
     double over24 = 1./24.;
 
-    double rhs[nV], MLump[nV];
+    std::vector<double> rhs(nV), MLump(nV);
     for (int i=0; i<nV; i++) {
       rhs[i] = 0.;
       MLump[i] = 0.;
@@ -1079,11 +1079,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   void distanceFunction::computeGradientAndCurvature(const std::set<pRegion>& regs)
   {
-    int nR = regs.size();      // number of regions involved
-    int r2v[nR*4];             // regions vertices
+    int nR = regs.size();        // number of regions involved
+    std::vector<int> r2v(nR*4);  // regions vertices
     std::map<pFace,pRegion> bFaces;  // boundary faces (to 'regs') and 
     //                                  the corresponding region
-    std::map<pVertex,int> v2i; // vertex pointers to local ids
+    std::map<pVertex,int> v2i;   // vertex pointers to local ids
 
     // --- fill v2i and r2v ---
 
@@ -1120,8 +1120,8 @@ namespace MAd {
 
     // --- make the reverse mapping of v2i: i2v ---
 
-    int nV = v2i.size();   // number of vertices involved
-    pVertex i2v[nV];       // local ids to vertex pointers
+    int nV = v2i.size();           // number of vertices involved
+    std::vector<pVertex> i2v(nV);  // local ids to vertex pointers
 
     std::map<pVertex,int>::const_iterator v2iIter = v2i.begin();
     for(; v2iIter != v2i.end(); v2iIter++) i2v[v2iIter->second] = v2iIter->first;
@@ -1136,8 +1136,8 @@ namespace MAd {
     double oneOver60  = 1./60.;
     double oneOver120 = 1./120.;
 
-    double rhs[nV], MLump[nV];
-    double vGrad[nV*3];  // distance gradients computed on the vertices
+    std::vector<double> rhs(nV), MLump(nV);
+    std::vector<double> vGrad(nV*3);  // distance gradients computed on the vertices
 //     int v_nR[nV];        // number of involved regions around vertices
     for (int i=0; i<nV; i++) {
       rhs[i] = 0.;
@@ -1312,11 +1312,11 @@ namespace MAd {
   void distanceFunction::computeGradientAndCurvature2D(const std::set<pFace>& faces)
   {
 
-    int nF = faces.size();      // number of faces involved
-    int f2v[nF*3];             // face vertices
+    int nF = faces.size();       // number of faces involved
+    std::vector<int> f2v(nF*3);  // face vertices
     std::map<pEdge,pFace> bEdges;  // boundary edges (to 'faces') and 
     //                                  the corresponding face
-    std::map<pVertex,int> v2i; // vertex pointers to local ids
+    std::map<pVertex,int> v2i;   // vertex pointers to local ids
 
     // --- fill v2i and r2v ---
 
@@ -1353,8 +1353,8 @@ namespace MAd {
 
     // --- make the reverse mapping of v2i: i2v ---
 
-    int nV = v2i.size();   // number of vertices involved
-    pVertex i2v[nV];       // local ids to vertex pointers
+    int nV = v2i.size();           // number of vertices involved
+    std::vector<pVertex> i2v(nV);  // local ids to vertex pointers
 
     std::map<pVertex,int>::const_iterator v2iIter = v2i.begin();
     for(; v2iIter != v2i.end(); v2iIter++) i2v[v2iIter->second] = v2iIter->first;
@@ -1372,9 +1372,9 @@ namespace MAd {
     double oneOver60  = 1./60.;
     double oneOver120 = 1./120.;
 
-    double rhs[nV], MLump[nV];
-    double vGrad[nV*3];  // distance gradients computed on the vertices
-    int v_nF[nV];        // number of involved regions around vertices
+    std::vector<double> rhs(nV), MLump(nV);
+    std::vector<double> vGrad(nV*3);  // distance gradients computed on the vertices
+    std::vector<int> v_nF(nV);        // number of involved regions around vertices
     for (int i=0; i<nV; i++) {
       rhs[i] = 0.;
       MLump[i] = 0.;
@@ -1384,14 +1384,15 @@ namespace MAd {
 
 
     int nbNodes = 3;
-    double xyz[nbNodes][3];
-    double dist[nbNodes], invjac[3][3], jac [3][3], detJ;
+    std::vector<double[3]> xyz(nbNodes);
+    std::vector<double> dist(nbNodes);
+    double invjac[3][3], jac [3][3], detJ;
     double fGrad[3];
     double Grads[4][3];
     int iF = 0;
     for ( fIt = faces.begin(); fIt != faces.end(); fIt++ )
       {
-        F_coordP1(*fIt,xyz);
+        F_coordP1(*fIt,xyz.data());
 
         // get distances
         for (int iV = 0; iV<3; iV++) dist[iV] = getDistance(F_vertex(*fIt,iV));

@@ -3,6 +3,7 @@
 %include "std_vector.i"
 %include "std_map.i"
 %{
+#include "nemosys_export.h"
 #include "meshBase.H"
 #include "vtkMesh.H"
 #include "TransferDriver.H"
@@ -87,7 +88,7 @@ class NemDriver {
   public:
     NemDriver();
     virtual ~NemDriver();
-    static NemDriver *readJSON(json inputjson);
+    static NemDriver *readJSON(jsoncons::json inputjson);
 };
 
 %extend NemDriver {
@@ -180,7 +181,7 @@ class MeshGenDriver : public NemDriver {
     MeshGenDriver(const std::string &ifname, const std::string &meshEngine,
                   meshingParams *params, const std::string &ofname);
 
-    static MeshGenDriver *readJSON(json inputjson);
+    static MeshGenDriver *readJSON(jsoncons::json inputjson);
 };
 
 %extend MeshGenDriver {
@@ -223,7 +224,7 @@ class MeshQualityDriver : public NemDriver {
     MeshQualityDriver(std::string _mesh, std::string ofname);
     ~MeshQualityDriver();
 
-    static MeshQualityDriver *readJSON(json inputjson);
+    static MeshQualityDriver *readJSON(jsoncons::json inputjson);
 };
 
 
@@ -265,7 +266,7 @@ class MeshQualityDriver : public NemDriver {
 class ConversionDriver : public NemDriver {
   public:
     ConversionDriver(std::string srcmsh, std::string trgmsh, std::string method,
-                     std::string ofname, json inputjson);
+                     std::string ofname, jsoncons::json inputjson);
 
     ~ConversionDriver();
 };

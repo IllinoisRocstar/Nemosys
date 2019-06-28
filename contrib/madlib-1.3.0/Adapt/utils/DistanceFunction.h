@@ -14,6 +14,8 @@
 #ifndef _H_DISTANCEFUNCTION
 #define _H_DISTANCEFUNCTION
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 #include "DistanceToPoints.h"
 #include <set>
@@ -33,7 +35,7 @@ namespace MAd {
   //   - to a set of edges(2D)/faces(3D) (more accurate, more expensive)
   // The choice is governed by the variable 'distToEntities'
   // -------------------------------------------------------------------
-  class distanceFunction {
+  class MADLIB_EXPORT distanceFunction {
 
   public:
 

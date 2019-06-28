@@ -3,9 +3,7 @@
 #include "AuxiliaryFunctions.H"
 
 // VTK
-#include <vtkCellLocator.h>
 #include <vtkCell.h>
-#include <vtkIdList.h>
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkCellArray.h>
@@ -15,47 +13,47 @@ using nemAux::operator*; // for vector multiplication.
 using nemAux::operator+; // for vector addition.
 
 // get point with id
-std::vector<double> meshSrch::getPoint(int id) const
+std::vector<double> meshSrch::getPoint(nemId_t id) const
 {
   double coords[3];
   dataSet->GetPoint(id, coords);
-  std::vector<double> result(coords, coords+3);
+  std::vector<double> result(coords, coords + 3);
   return result;
 }
 
 // returns coordinates of the cell vertices in a vector
-std::vector<std::vector<double>> meshSrch::getCellVec(int id) const
+std::vector<std::vector<double>> meshSrch::getCellVec(nemId_t id) const
 {
-  if (id < numCells) 
+  if (id < numCells)
   {
     std::vector<std::vector<double>> cell;
     vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New();
     point_ids = dataSet->GetCell(id)->GetPointIds();
-    int num_ids = point_ids->GetNumberOfIds();
+    vtkIdType num_ids = point_ids->GetNumberOfIds();
     cell.resize(num_ids);
-    for (int i = 0; i < num_ids; ++i) 
+    for (vtkIdType i = 0; i < num_ids; ++i)
     {
-      int pntId = point_ids->GetId(i);
+      nemId_t pntId = point_ids->GetId(i);
       cell[i] = getPoint(pntId);
     }
     return cell;
   }
-  else {
+  else
+  {
     std::cerr << "Cell ID is out of range!" << std::endl;
     exit(1);
   }
-
 }
 
 // get center of a cell
-std::vector<double> meshSrch::getCellCenter(int cellID) const
+std::vector<double> meshSrch::getCellCenter(nemId_t cellID) const
 {
   std::vector<double> center(3);
   std::vector<std::vector<double>> cell = getCellVec(cellID);
 
-  for (int i = 0; i < cell.size(); ++i)
-    center = center + cell[i];
-  return (1./cell.size())*center;
+  for (const auto &i : cell)
+    center = center + i;
+  return 1. / cell.size() * center;
 }
 
 void meshSrch::buildCellLocator()
@@ -63,159 +61,165 @@ void meshSrch::buildCellLocator()
   if (upd_vcl)
   {
     // Create the tree
-    vcl=vtkSmartPointer<vtkCellLocator>::New();
+    vcl = vtkSmartPointer<vtkCellLocator>::New();
     vcl->SetDataSet(dataSet);
     vcl->BuildLocator();
     upd_vcl = false;
   }
 }
 
-void meshSrch::FindCellsWithinBounds(std::vector<double>& bb, std::vector<int>& ids, bool fulImrsd)
+void meshSrch::FindCellsWithinBounds(std::vector<double> &bb,
+                                     std::vector<nemId_t> &ids,
+                                     bool fulImrsd)
 {
-    // finding all intersecting cells
-    buildCellLocator();
-    vtkSmartPointer<vtkIdList> idl = vtkSmartPointer<vtkIdList>::New();
-    vcl->FindCellsWithinBounds(&bb[0], idl);
-    std::cout << "Found " << idl->GetNumberOfIds() << " cells.\n";
-    std::vector<int> aids;
-    for (int idx=0; idx<idl->GetNumberOfIds(); idx++)
-        aids.push_back(idl->GetId(idx));
-    // removing cells centered out of the bounding box
-    int nr = 0;
-    if (fulImrsd)
+  // finding all intersecting cells
+  buildCellLocator();
+  vtkSmartPointer<vtkIdList> idl = vtkSmartPointer<vtkIdList>::New();
+  vcl->FindCellsWithinBounds(bb.data(), idl);
+  std::cout << "Found " << idl->GetNumberOfIds() << " cells." << std::endl;
+  std::vector<nemId_t> aids;
+  for (vtkIdType idx = 0; idx < idl->GetNumberOfIds(); idx++)
+    aids.push_back(idl->GetId(idx));
+  // removing cells centered out of the bounding box
+  int nr = 0;
+  if (fulImrsd)
+  {
+    for (const auto &aid : aids)
     {
-        for (auto it=aids.begin(); it!=aids.end(); it++)
-        {
-            if (!nemAux::isInBBox(getCellCenter(*it), bb))
-            {
-                nr++;
-                continue;
-            }
-            else
-                ids.push_back(*it);
-        }
-        std::cout << "Remove " << nr << " cells from the list.\n";
+      if (!nemAux::isInBBox(getCellCenter(aid), bb))
+      {
+        nr++;
+        continue;
+      }
+      else
+        ids.push_back(aid);
     }
-    else
-        ids = aids;
+    std::cout << "Remove " << nr << " cells from the list." << std::endl;
+  }
+  else
+    ids = aids;
 }
 
-void meshSrch::FindPntsOnTriSrf(std::vector<double>& crds, std::vector<int>& conn, std::set<int>& ids, double tol)
+void
+meshSrch::FindPntsOnTriSrf(const std::vector<double> &crds,
+                           const std::vector<nemId_t> &conn,
+                           std::set<nemId_t> &ids, double tol) const
 {
-    // create polydata
-    vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
-    for (int iPnt=0; iPnt< (crds.size() / 3); iPnt++)
-      pnts->InsertNextPoint(crds[iPnt*3], crds[iPnt*3+1], crds[iPnt*3+2]);
-    vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
-    for (int iCel=0; iCel< (conn.size() / 3); iCel++)
-    {
-        polys->InsertNextCell(3);
-        polys->InsertCellPoint(conn[iCel*3]);
-        polys->InsertCellPoint(conn[iCel*3+1]);
-        polys->InsertCellPoint(conn[iCel*3+2]);
-    }
-    vtkSmartPointer<vtkPolyData> polyData = 
-        vtkSmartPointer<vtkPolyData>::New();
-    polyData->SetPoints(pnts);
-    polyData->SetPolys(polys);
+  // create polyData
+  vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
+  for (std::size_t iPnt = 0; iPnt < (crds.size() / 3); iPnt++)
+    pnts->InsertNextPoint(crds[iPnt * 3],
+                          crds[iPnt * 3 + 1],
+                          crds[iPnt * 3 + 2]);
+  vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
+  for (std::size_t iCel = 0; iCel < (conn.size() / 3); iCel++)
+  {
+    polys->InsertNextCell(3);
+    polys->InsertCellPoint(conn[iCel * 3]);
+    polys->InsertCellPoint(conn[iCel * 3 + 1]);
+    polys->InsertCellPoint(conn[iCel * 3 + 2]);
+  }
+  vtkSmartPointer<vtkPolyData> polyData
+      = vtkSmartPointer<vtkPolyData>::New();
+  polyData->SetPoints(pnts);
+  polyData->SetPolys(polys);
 
-    // Write the file
-    //vtkSmartPointer<vtkXMLPolyDataWriter> writer =  
-    // vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    //writer->SetFileName("test.vtp");
-    //writer->SetInputData(polyData);
-    //// Optional - set the mode. The default is binary.
-    ////writer->SetDataModeToBinary();
-    //writer->SetDataModeToAscii();
-    //writer->Write();
+  // Write the file
+  //vtkSmartPointer<vtkXMLPolyDataWriter> writer
+  //    = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  //writer->SetFileName("test.vtp");
+  //writer->SetInputData(polyData);
+  // Optional - set the mode. The default is binary.
+  ////writer->SetDataModeToBinary();
+  //writer->SetDataModeToAscii();
+  //writer->Write();
 
-    // find nodes residing on the trisurf
-    // create cell locator
-    vtkSmartPointer<vtkCellLocator> cellLocator = 
-        vtkSmartPointer<vtkCellLocator>::New();
-    cellLocator->SetDataSet(polyData);
-    cellLocator->BuildLocator();
-    
-    double testPoint[3];
-    double closestPoint[3];
-    double closestPointDist2; 
-    vtkIdType cellId;
-    int subId;
-    for (int iPt=0; iPt<getNumberOfPoints(); iPt++)
-    {
-      std::vector<double> pnt = getPoint(iPt);
-      cellLocator->FindClosestPoint(&pnt[0], closestPoint, cellId, subId, closestPointDist2);
-      if (closestPointDist2 < tol)
-        ids.insert(iPt+1);
-    }
+  // find nodes residing on the trisurf
+  // create cell locator
+  vtkSmartPointer<vtkCellLocator> cellLocator
+      = vtkSmartPointer<vtkCellLocator>::New();
+  cellLocator->SetDataSet(polyData);
+  cellLocator->BuildLocator();
+
+  double closestPoint[3];
+  double closestPointDist2;
+  vtkIdType cellId;
+  int subId;
+  for (nemId_t iPt = 0; iPt < getNumberOfPoints(); iPt++)
+  {
+    std::vector<double> pnt = getPoint(iPt);
+    cellLocator->FindClosestPoint(pnt.data(), closestPoint, cellId, subId,
+                                  closestPointDist2);
+    if (closestPointDist2 < tol)
+      ids.insert(iPt + 1);
+  }
 }
 
-void meshSrch::FindPntsOnEdge(std::vector<double>& crds, std::set<int>& ids, double tol)
+void meshSrch::FindPntsOnEdge(std::vector<double> &crds,
+                              std::set<nemId_t> &ids,
+                              double tol) const
 {
-    // create polydata
-    vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
-    for (int iPnt=0; iPnt< (crds.size() / 3); iPnt++)
-      pnts->InsertNextPoint(crds[iPnt*3], crds[iPnt*3+1], crds[iPnt*3+2]);
-    vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
-    polys->InsertNextCell(2);
-    polys->InsertCellPoint(0);
-    polys->InsertCellPoint(1);    
-    vtkSmartPointer<vtkPolyData> polyData = 
-        vtkSmartPointer<vtkPolyData>::New();
-    polyData->SetPoints(pnts);
-    polyData->SetPolys(polys);
+  // create polyData
+  vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
+  for (std::size_t iPnt = 0; iPnt < (crds.size() / 3); iPnt++)
+    pnts->InsertNextPoint(crds[iPnt * 3],
+                          crds[iPnt * 3 + 1],
+                          crds[iPnt * 3 + 2]);
+  vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
+  polys->InsertNextCell(2);
+  polys->InsertCellPoint(0);
+  polys->InsertCellPoint(1);
+  vtkSmartPointer<vtkPolyData> polyData
+      = vtkSmartPointer<vtkPolyData>::New();
+  polyData->SetPoints(pnts);
+  polyData->SetPolys(polys);
 
-    //// Write the file
-    //vtkSmartPointer<vtkXMLPolyDataWriter> writer =  
-    // vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-    //writer->SetFileName("edge.vtp");
-    //writer->SetInputData(polyData);
-    //// Optional - set the mode. The default is binary.
-    ////writer->SetDataModeToBinary();
-    //writer->SetDataModeToAscii();
-    //writer->Write();
+  // Write the file
+  //vtkSmartPointer<vtkXMLPolyDataWriter> writer
+  //    = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  //writer->SetFileName("edge.vtp");
+  //writer->SetInputData(polyData);
+  // Optional - set the mode. The default is binary.
+  ////writer->SetDataModeToBinary();
+  //writer->SetDataModeToAscii();
+  //writer->Write();
 
-    // find nodes residing on the edge
-    // create cell locator
-    vtkSmartPointer<vtkCellLocator> cellLocator = 
-        vtkSmartPointer<vtkCellLocator>::New();
-    cellLocator->SetDataSet(polyData);
-    cellLocator->BuildLocator();
-    
-    double testPoint[3];
-    double closestPoint[3];
-    double closestPointDist2; 
-    vtkIdType cellId;
-    int subId;
-    for (int iPt=0; iPt<getNumberOfPoints(); iPt++)
-    {
-      std::vector<double> pnt = getPoint(iPt);
-      cellLocator->FindClosestPoint(&pnt[0], closestPoint, cellId, subId, closestPointDist2);
-      if (closestPointDist2 < tol)
-        ids.insert(iPt+1);
-    }
+  // find nodes residing on the edge
+  // create cell locator
+  vtkSmartPointer<vtkCellLocator> cellLocator =
+      vtkSmartPointer<vtkCellLocator>::New();
+  cellLocator->SetDataSet(polyData);
+  cellLocator->BuildLocator();
 
+  double closestPoint[3];
+  double closestPointDist2;
+  vtkIdType cellId;
+  int subId;
+  for (nemId_t iPt = 0; iPt < getNumberOfPoints(); iPt++)
+  {
+    std::vector<double> pnt = getPoint(iPt);
+    cellLocator->FindClosestPoint(pnt.data(), closestPoint, cellId, subId,
+                                  closestPointDist2);
+    if (closestPointDist2 < tol)
+      ids.insert(iPt + 1);
+  }
 }
-
 
 // checks for duplicate elements
 bool meshSrch::chkDuplElm() const
 {
-    std::set<std::vector<int>> ids;
-    for (int ic=0; ic<getNumberOfCells(); ic++)
-    {
-        std::vector<int> cid;
-        vtkIdList* idl = vtkIdList::New(); 
-        idl = dataSet->GetCell(ic)->GetPointIds();
-        for (int id=0; id<idl->GetNumberOfIds(); id++)
-            cid.push_back(idl->GetId(id));
-        std::pair<std::set<std::vector<int>>::iterator, bool> ret;
-        ret = ids.insert(cid);
-        if (!ret.second)
-        {
-            return(true);
-        }
-    }
-    return(false);
+  std::set<std::vector<nemId_t>> ids;
+  for (nemId_t ic = 0; ic < getNumberOfCells(); ic++)
+  {
+    std::vector<nemId_t> cid;
+    vtkSmartPointer<vtkIdList> idl = vtkSmartPointer<vtkIdList>::New();
+    idl = dataSet->GetCell(ic)->GetPointIds();
+    for (vtkIdType id = 0; id < idl->GetNumberOfIds(); id++)
+      cid.push_back(idl->GetId(id));
+    std::pair<std::set<std::vector<nemId_t>>::iterator, bool> ret;
+    ret = ids.insert(cid);
+    if (!ret.second)
+      return true;
+  }
+  return false;
 }
-

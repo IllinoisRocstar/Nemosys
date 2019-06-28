@@ -13,6 +13,8 @@
 
 #include "MAdMetric.h"
 
+#include <algorithm>
+
 namespace MAd {
 
   MAdMetric::MAdMetric(const double l1, // (h_1)^-2

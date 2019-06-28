@@ -14,6 +14,8 @@
 #ifndef _H_SIZEFIELDBASE
 #define _H_SIZEFIELDBASE
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 
 #include <string>
@@ -35,7 +37,7 @@ namespace MAd {
   typedef class MeshSizeBase  * pMSize;
 
   // -------------------------------------------------------------------
-  class SizeFieldBase 
+  class MADLIB_EXPORT SizeFieldBase
   {
   public:
   

@@ -16,6 +16,7 @@
 #include "MAdDefines.h"
 
 #include <stdio.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 
 #ifdef _HAVE_GSL_

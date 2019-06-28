@@ -4,8 +4,8 @@
 class meshQualityParams
 {
   public:
-    meshQualityParams(){};
-    virtual ~meshQualityParams(){};
+    meshQualityParams() = default;
+    virtual ~meshQualityParams() = default;
 };
 
 #endif

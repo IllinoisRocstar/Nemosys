@@ -1,9 +1,10 @@
 #ifndef CFMESHPARAMS_H
 #define CFMESHPARAMS_H
 
-#ifdef HAVE_CFMSH 
+#ifdef HAVE_CFMSH
 
-#include <meshingParams.H>
+#include "meshingParams.H"
+
 #include <string>
 #include <vector>
 #include <map>
@@ -11,32 +12,32 @@
 
 struct cfmObjRef
 {
-    std::string name;
-    std::map<std::string,std::string> params; // all other parameters
+  std::string name;
+  std::map<std::string, std::string> params; // all other parameters
 };
 
 struct cfmLclRefPatch
 {
-    std::string patchName;    // patch name
-    double cellSize;          // patch cell size
-    int aditRefLvls;          // additional refinement levels
+  std::string patchName;    // patch name
+  double cellSize;          // patch cell size
+  int aditRefLvls;          // additional refinement levels
 };
 
 struct cfmPtchBndLyr
 {
-    std::string patchName;    // patch name
-    int blNLyr;               // number of boundary layers
-    double blThkRto;          // thickness ratio
-    double maxFrstLyrThk;     // thickness of first boundary layer
-    bool alwDiscont;          // allowing for discontinuity can be used for patches
+  std::string patchName;    // patch name
+  int blNLyr;               // number of boundary layers
+  double blThkRto;          // thickness ratio
+  double maxFrstLyrThk;     // thickness of first boundary layer
+  bool alwDiscont;          // allowing for discontinuity can be used for patches
 };
 
 typedef std::tuple<std::string, std::string, std::string> cfmNewPatch;
 struct cfmRenBndry
 {
-    std::string defName;
-    std::string defType;
-    std::vector<cfmNewPatch> newPatches;
+  std::string defName;
+  std::string defType;
+  std::vector<cfmNewPatch> newPatches;
 };
 
 class cfmeshParams : public meshingParams
@@ -44,8 +45,9 @@ class cfmeshParams : public meshingParams
   public:
     // initializing params with defaults
     cfmeshParams();
-    ~cfmeshParams(){};
-  
+
+    ~cfmeshParams() override = default;
+
     // general
     std::string geomFilePath;   // name of geometry file and full path
     std::string generator;      // mesh generation method to be used
@@ -78,11 +80,11 @@ class cfmeshParams : public meshingParams
 
     // mesh quality improvement
     bool _withMshQlt;
-    int qltNItr;               // number of iterations
-    int qltNLop;               // number of loops
-    double qltQltThr;          // quality threshold
-    int qltNSrfItr;            // number of surface iteraations
-    std::string qltConCelSet;  // name of constrained cellset
+    int qltNItr;                // number of iterations
+    int qltNLop;                // number of loops
+    double qltQltThr;           // quality threshold
+    int qltNSrfItr;             // number of surface iterations
+    std::string qltConCelSet;   // name of constrained cellSet
 
     // local refinement 
     bool _withLclRef;
@@ -95,8 +97,6 @@ class cfmeshParams : public meshingParams
     bool _withRenBndry;
     cfmRenBndry renBndry;                     // rename boundaries
 };
-
-
 
 #endif
 

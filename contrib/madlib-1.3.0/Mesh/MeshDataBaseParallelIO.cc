@@ -14,7 +14,7 @@
 #include "MeshDataBaseInterface.h"
 #include "MeshDataBaseIO.h"
 #include "MeshDataBaseGEntity2Physical.h"
-#ifndef _WIN_
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include "MshTags.h"

@@ -13,9 +13,13 @@
 
 #ifndef H_MESHDATABASE
 #define H_MESHDATABASE
+
+#include "madlib_export.h"
+
 #include <set>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include <list>
 #include <map>
 #include <cmath>
@@ -61,7 +65,7 @@ namespace MAd {
   typedef std::vector<MDB_Hex *>      MDB_VectorH ;
   typedef std::vector<MDB_Prism *>    MDB_VectorPr;
 
-  class MDB_MeshEntity : public mAttachableDataContainer  
+  class MADLIB_EXPORT MDB_MeshEntity : public mAttachableDataContainer
   {
   public :
     int iD;
@@ -76,7 +80,7 @@ namespace MAd {
 
   /*! \brief Vertex */ 
 
-  class MDB_Point : public MDB_MeshEntity
+  class MADLIB_EXPORT MDB_Point : public MDB_MeshEntity
   {
   public:
     // SHOULD BE PRIVATE, 2B DONE
@@ -121,7 +125,7 @@ namespace MAd {
 
   /*! \brief Parametric vertex */ 
 
-  class MDB_PointParam : public MDB_Point
+  class MADLIB_EXPORT MDB_PointParam : public MDB_Point
   {
   public:
 
@@ -140,7 +144,7 @@ namespace MAd {
 
   /*! \brief Straight edge or base class for higher order edges */ 
 
-  class MDB_Edge: public MDB_MeshEntity
+  class MADLIB_EXPORT MDB_Edge: public MDB_MeshEntity
   {
     MDB_VectorFace _faces;
   public:
@@ -198,8 +202,18 @@ namespace MAd {
 
     inline void del( MDB_Face *t )
     {
-      _faces.erase(std::remove_if(_faces.begin(),_faces.end() , std::bind2nd(std::equal_to<MDB_Face*>(), t)) , 
-                   _faces.end());
+      _faces.erase(
+          std::remove_if(
+              _faces.begin(),
+              _faces.end(),
+              std::bind(
+                  std::equal_to<MDB_Face *>(),
+                  std::placeholders::_1,
+                  t
+              )
+          ),
+          _faces.end()
+      );
     }
   
     inline void oppositeof(MDB_Point * oface[2]) const; 
@@ -223,7 +237,7 @@ namespace MAd {
 
   /*! \brief 2nd order equidistant Lagrange edge */
 
-  class MDB_EdgeP2: public MDB_Edge
+  class MADLIB_EXPORT MDB_EdgeP2: public MDB_Edge
   {
     MDB_Point *secondOrderPt;
   public :
@@ -240,7 +254,7 @@ namespace MAd {
 
   /*! \brief 3rd order equidistant Lagrange edge */
 
-  class MDB_EdgeP3: public MDB_Edge
+  class MADLIB_EXPORT MDB_EdgeP3: public MDB_Edge
   {
     MDB_Point *Pt1,*Pt2;//third order points
   public :
@@ -273,7 +287,7 @@ namespace MAd {
 
   /*! \brief 4th order equidistant Lagrange edge */
 
-  class MDB_EdgeP4: public MDB_Edge
+  class MADLIB_EXPORT MDB_EdgeP4: public MDB_Edge
   {
     MDB_Point *Pt1,*Pt2,*Pt3;//fourth order points
   public :
@@ -310,7 +324,7 @@ namespace MAd {
 
   /*! \brief 5th order equidistant Lagrange edge */
 
-  class MDB_EdgeP5: public MDB_Edge
+  class MADLIB_EXPORT MDB_EdgeP5: public MDB_Edge
   {
     MDB_Point *Pt1,*Pt2,*Pt3, *Pt4;//fifth order points
   public :
@@ -350,7 +364,7 @@ namespace MAd {
     }  
   };
 
-  class MDB_Face: public MDB_MeshEntity
+  class MADLIB_EXPORT MDB_Face: public MDB_MeshEntity
   {
   protected:
     std::vector<MDB_Region *> _regions;
@@ -387,8 +401,18 @@ namespace MAd {
 
     inline void del( MDB_Region *t )
     {
-      _regions.erase(std::remove_if(_regions.begin(),_regions.end() , std::bind2nd(std::equal_to<MDB_Region*>(), t)) , 
-                     _regions.end());
+      _regions.erase(
+          std::remove_if(
+              _regions.begin(),
+              _regions.end(),
+              std::bind(
+                  std::equal_to<MDB_Region *>(),
+                  std::placeholders::_1,
+                  t
+              )
+          ),
+          _regions.end()
+      );
     }
 
     inline MDB_Edge * commonedge(const MDB_Face *other) const
@@ -432,7 +456,7 @@ namespace MAd {
 
   /*! \brief Straight edged triangle and base class for higher order versions */ 
 
-  class MDB_Triangle: public MDB_Face
+  class MADLIB_EXPORT MDB_Triangle: public MDB_Face
   {
   public:
     MDB_Edge *e1,*e2,*e3;
@@ -471,7 +495,7 @@ namespace MAd {
 
   /*! \brief Generic order equidistant Lagrange triangle with complete interpolation */ 
   template <int order>
-  class MDB_CompleteTriangle : public MDB_Triangle {
+  class MADLIB_EXPORT MDB_CompleteTriangle : public MDB_Triangle {
 
   public:
   
@@ -580,7 +604,7 @@ namespace MAd {
    
   };
 
-  class MDB_Quad : public MDB_Face
+  class MADLIB_EXPORT MDB_Quad : public MDB_Face
   {
   public:
     MDB_Edge *e1,*e2,*e3,*e4;
@@ -616,7 +640,7 @@ namespace MAd {
 
   /*! \brief Generic order equidistant Lagrange quad with complete interpolation */ 
   template <int order>
-  class MDB_CompleteQuad : public MDB_Quad {
+  class MADLIB_EXPORT MDB_CompleteQuad : public MDB_Quad {
 
   public:
   
@@ -640,7 +664,7 @@ namespace MAd {
   };
 
 
-  class MDB_Region: public MDB_MeshEntity
+  class MADLIB_EXPORT MDB_Region: public MDB_MeshEntity
   {
   public:
     virtual MDB_Face *getFace (int i) const = 0;
@@ -657,7 +681,7 @@ namespace MAd {
   
   };
 
-  class MDB_Hex: public MDB_Region
+  class MADLIB_EXPORT MDB_Hex: public MDB_Region
   {
   public:
     MDB_Quad  *f1,*f2,*f3,*f4,*f5,*f6;
@@ -743,7 +767,7 @@ namespace MAd {
 
   };
 
-  class MDB_Tet: public MDB_Region
+  class MADLIB_EXPORT MDB_Tet: public MDB_Region
   {
   public:
     MDB_Triangle  *f1,*f2,*f3,*f4;
@@ -829,7 +853,7 @@ namespace MAd {
   };
 
   // 2 be done
-  class MDB_Prism: public MDB_Region
+  class MADLIB_EXPORT MDB_Prism: public MDB_Region
   {
   public:
     MDB_Triangle  *f1,*f2;
@@ -917,7 +941,7 @@ namespace MAd {
   /*! \brief Generic order equidistant Lagrange tetrahedron */ 
 
   template <int order>
-  class MDB_CompleteTet : public MDB_Tet {
+  class MADLIB_EXPORT MDB_CompleteTet : public MDB_Tet {
 
   public:
 
@@ -951,7 +975,7 @@ namespace MAd {
     MDB_Point** point;
   };
 
-  class PointLessThan
+  class MADLIB_EXPORT PointLessThan
   {
   public:
     bool operator()(const MDB_Point* ent1, const MDB_Point* ent2) const
@@ -961,7 +985,7 @@ namespace MAd {
   };
 
 
-  class MDB_Mesh : public MDB_MiniMesh
+  class MADLIB_EXPORT MDB_Mesh : public MDB_MiniMesh
   {        
     // no copies allowed
     MDB_Mesh(const MDB_Mesh &other);
@@ -1124,56 +1148,56 @@ namespace MAd {
 
   typedef std::set<MDB_Point*,PointLessThan> MDB_SetV;
 
-  class MDB_RIter : public MDB_Iter < MDB_ListR , MDB_Region , pGEntity>
+  class MADLIB_EXPORT MDB_RIter : public MDB_Iter < MDB_ListR , MDB_Region , pGEntity>
   {
   public:
     MDB_RIter (MDB_ListR*_l): MDB_Iter< MDB_ListR , MDB_Region , pGEntity > (_l){}
     MDB_RIter (MDB_ListR*_l,pGEntity _g): MDB_Iter< MDB_ListR , MDB_Region , pGEntity > (_l,_g){}
   };
-  class MDB_TIter : public MDB_Iter < MDB_ListT , MDB_Tet , pGEntity>
+  class MADLIB_EXPORT MDB_TIter : public MDB_Iter < MDB_ListT , MDB_Tet , pGEntity>
   {
   public:
     MDB_TIter (MDB_ListT*_l): MDB_Iter< MDB_ListT , MDB_Tet , pGEntity > (_l){}
     MDB_TIter (MDB_ListT*_l,pGEntity _g): MDB_Iter< MDB_ListT , MDB_Tet , pGEntity > (_l,_g){}
   };
-  class MDB_HIter : public MDB_Iter < MDB_ListH , MDB_Hex , pGEntity>
+  class MADLIB_EXPORT MDB_HIter : public MDB_Iter < MDB_ListH , MDB_Hex , pGEntity>
   {
   public:
     MDB_HIter (MDB_ListH*_l): MDB_Iter< MDB_ListH , MDB_Hex , pGEntity > (_l){}
     MDB_HIter (MDB_ListH*_l,pGEntity _g): MDB_Iter< MDB_ListH , MDB_Hex , pGEntity > (_l,_g){}
   };
-  class MDB_PIter : public MDB_Iter < MDB_ListPr , MDB_Prism , pGEntity>
+  class MADLIB_EXPORT MDB_PIter : public MDB_Iter < MDB_ListPr , MDB_Prism , pGEntity>
   {
   public:
     MDB_PIter (MDB_ListPr*_l): MDB_Iter< MDB_ListPr , MDB_Prism , pGEntity > (_l){}
     MDB_PIter (MDB_ListPr*_l,pGEntity _g): MDB_Iter< MDB_ListPr , MDB_Prism , pGEntity > (_l,_g){}
   };
-  class MDB_EIter : public MDB_Iter < MDB_ListE , MDB_Edge , pGEntity >
+  class MADLIB_EXPORT MDB_EIter : public MDB_Iter < MDB_ListE , MDB_Edge , pGEntity >
   {
   public:
     MDB_EIter (MDB_ListE*_l): MDB_Iter< MDB_ListE , MDB_Edge, pGEntity > (_l){}
     MDB_EIter (MDB_ListE*_l,pGEntity _g,int _c): MDB_Iter< MDB_ListE , MDB_Edge, pGEntity > (_l,_g,_c){}
   };
-  class MDB_FIter : public MDB_Iter < MDB_ListF , MDB_Triangle , pGEntity >
+  class MADLIB_EXPORT MDB_FIter : public MDB_Iter < MDB_ListF , MDB_Triangle , pGEntity >
   {
   public:
     MDB_FIter (MDB_ListF*_l): MDB_Iter <MDB_ListF , MDB_Triangle ,pGEntity> (_l){}
     MDB_FIter (MDB_ListF*_l,pGEntity _g,int _c): MDB_Iter <MDB_ListF , MDB_Triangle ,pGEntity> (_l,_g,_c){}
   };
-  class MDB_QIter : public MDB_Iter < MDB_ListQ , MDB_Quad , pGEntity>
+  class MADLIB_EXPORT MDB_QIter : public MDB_Iter < MDB_ListQ , MDB_Quad , pGEntity>
   {
   public:
     MDB_QIter (MDB_ListQ*_l): MDB_Iter <MDB_ListQ , MDB_Quad , pGEntity> (_l){}
     MDB_QIter (MDB_ListQ*_l,pGEntity _g,int _c): MDB_Iter <MDB_ListQ , MDB_Quad ,pGEntity> (_l,_g,_c){}
   };
-  class MDB_VIter : public MDB_Iter < MDB_SetV , MDB_Point ,pGEntity >
+  class MADLIB_EXPORT MDB_VIter : public MDB_Iter < MDB_SetV , MDB_Point ,pGEntity >
   {
   public:
     MDB_VIter (MDB_SetV *_l): MDB_Iter < MDB_SetV , MDB_Point , pGEntity > (_l){}
     MDB_VIter (MDB_SetV *_l,pGEntity _g,int _c): MDB_Iter < MDB_SetV , MDB_Point , pGEntity > (_l,_g,_c){}
   };
 
-  class MDB_FaceIter
+  class MADLIB_EXPORT MDB_FaceIter
   {
   public:
     MDB_FIter itf;
@@ -1204,7 +1228,7 @@ namespace MAd {
 
   };
 
-  class MDB_RegionIter
+  class MADLIB_EXPORT MDB_RegionIter
   {
   public:
     MDB_TIter itt;
@@ -1244,9 +1268,3 @@ namespace MAd {
 } // End of namespace MAd
 
 #endif
-
-
-
-
-
-

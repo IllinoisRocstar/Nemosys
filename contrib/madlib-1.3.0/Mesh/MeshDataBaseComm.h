@@ -14,6 +14,8 @@
 #ifndef _MeshDataBaseCOMM_H
 #define _MeshDataBaseCOMM_H
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 
 /*
@@ -29,7 +31,7 @@
 
 namespace MAd {
 
-  class MDB_DataExchanger
+  class MADLIB_EXPORT MDB_DataExchanger
   {
   private:
     int tagComm;
@@ -50,11 +52,11 @@ namespace MAd {
     MDB_DataExchanger(int _tag): tagComm(_tag) {}
     virtual ~MDB_DataExchanger() {}
   };
-  void exchangeDataOnVertices (pMesh m, MDB_DataExchanger &de );
-  void exchangeDataOnEdges    (pMesh m, MDB_DataExchanger &de );
-  void exchangeDataOnFaces    (pMesh m, MDB_DataExchanger &de );
-  void exchangeDataOnTriangles(pMesh m, MDB_DataExchanger &de );
-  void exchangeDataOnQuads    (pMesh m, MDB_DataExchanger &de );
+  void MADLIB_EXPORT exchangeDataOnVertices (pMesh m, MDB_DataExchanger &de );
+  void MADLIB_EXPORT exchangeDataOnEdges    (pMesh m, MDB_DataExchanger &de );
+  void MADLIB_EXPORT exchangeDataOnFaces    (pMesh m, MDB_DataExchanger &de );
+  void MADLIB_EXPORT exchangeDataOnTriangles(pMesh m, MDB_DataExchanger &de );
+  void MADLIB_EXPORT exchangeDataOnQuads    (pMesh m, MDB_DataExchanger &de );
 
 }
 

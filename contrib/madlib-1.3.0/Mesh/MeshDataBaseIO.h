@@ -14,6 +14,8 @@
 #ifndef _LOADGMSHMESH_H_
 #define _LOADGMSHMESH_H_
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 #include "MeshDataBaseCommPeriodic.h"
 
@@ -25,17 +27,17 @@ namespace MAd {
   //   - msh1 or msh2
   //   - serial or parallel (format msh2 for parallel)
   //   - periodic or non-periodic
-  void LoadGmshMesh (MAd::pMesh, const char *);
+  void MADLIB_EXPORT LoadGmshMesh (MAd::pMesh, const char *);
 
   // Save a mesh
   //   - msh1 or msh2
   //   - serial only
   //   - If a partitioning table is submitted, 
   //     write the right partition numbers in the file
-  void SaveGmshMesh (const MAd::pMesh, const char *, int version=2, 
+  void MADLIB_EXPORT SaveGmshMesh (const MAd::pMesh, const char *, int version=2,
                      bool saveAll=true, const int * partitionTable=NULL);
 
-  void SaveGmshMeshPer (const MAd::pMesh, const char *,  MDB_DataExchangerPeriodic &deperiodic,int version=1);
+  void MADLIB_EXPORT SaveGmshMeshPer (const MAd::pMesh, const char *,  MDB_DataExchangerPeriodic &deperiodic,int version=1);
 
   // -------------------------------------------------------------------
 

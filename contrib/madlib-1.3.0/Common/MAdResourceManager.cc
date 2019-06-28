@@ -18,7 +18,7 @@
 #ifdef PARALLEL
  #include <mpi.h>
 #else
- #ifndef _WIN_
+ #ifdef HAVE_UNISTD_H
   #include <sys/time.h>
   #include <unistd.h>
  #else
@@ -135,10 +135,10 @@ namespace MAd {
 #else
     struct timeval tp;
     struct timezone tz;
-#ifdef _WIN_
-    get_time_of_day(&tp,&tz);
+#ifdef HAVE_UNISTD_H
+    gettimeofday(&tp, &tz);
 #else
-    gettimeofday(&tp,&tz);
+    get_time_of_day(&tp, &tz);
 #endif
 
     return ((double) tp.tv_sec +
