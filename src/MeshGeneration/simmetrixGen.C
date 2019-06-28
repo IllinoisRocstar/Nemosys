@@ -1,29 +1,38 @@
-#include <iostream>
-#include <simmetrixGen.H>
-#include <simmetrixParams.H>
+#include "simmetrixGen.H"
+
+#include "simmetrixParams.H"
+#include "vtkMesh.H"  // for writeVTFile
+
+// simmetrix
+#include <SimDiscrete.h>
+#include <SimLicense.h>
+#include <SimError.h>
+#include <SimMeshingErrorCodes.h>
+
+// VTK
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkIdList.h>
 #include <vtkCellTypes.h>
 
 
 // constructor
-simmetrixGen::simmetrixGen(simmetrixParams* _params)
+simmetrixGen::simmetrixGen(simmetrixParams *_params)
     : params(_params), haveLog(false), writeSurfAndVol(false),
-      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
+      prog(nullptr), model(nullptr), dModel(nullptr), mcase(nullptr),
+      mesh(nullptr)
 {
-
   if (params->logFName != "NONE")
   {
-      haveLog = true;
-      Sim_logOn(&(params->logFName)[0u]);
+    haveLog = true;
+    Sim_logOn(params->logFName.c_str());
   }
 
-  std::cout << "Log File: " << params->logFName << std::endl;  
-  std::cout << "License File: " << params->licFName << std::endl;  
-  std::cout << "Feature List: " << params->features << std::endl;  
+  std::cout << "Log File: " << params->logFName << std::endl;
+  std::cout << "License File: " << params->licFName << std::endl;
+  std::cout << "Feature List: " << params->features << std::endl;
 
   // initialization
-  SimLicense_start(&(params->features)[0u], &(params->licFName)[0u]);
+  SimLicense_start(params->features.c_str(), params->licFName.c_str());
   MS_init();
   Sim_setMessageHandler(messageHandler);
   setProgress();
@@ -32,14 +41,16 @@ simmetrixGen::simmetrixGen(simmetrixParams* _params)
 
 // default
 simmetrixGen::simmetrixGen()
-    : params(NULL), haveLog(true), writeSurfAndVol(false),
-      prog(NULL), model(NULL), dModel(NULL), mcase(NULL), mesh(NULL)
+    : params(nullptr), haveLog(true), writeSurfAndVol(false),
+      prog(nullptr), model(nullptr), dModel(nullptr), mcase(nullptr),
+      mesh(nullptr)
 {
   Sim_logOn("simmetrixGen.log");
-  SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume","simmodsuite.lic");
+  SimLicense_start("geomsim_core,meshsim_surface,meshsim_volume",
+                   "simmodsuite.lic");
   MS_init();
   Sim_setMessageHandler(messageHandler);
-  setProgress(); 
+  setProgress();
   std::cout << "Simmetrix mesh generator created" << std::endl;
 }
 
@@ -55,7 +66,7 @@ simmetrixGen::~simmetrixGen()
   if (dModel)
     GM_release(dModel);
   if (prog)
-    Progress_delete(prog);    
+    Progress_delete(prog);
   SimLicense_stop();
   MS_exit();
   if (haveLog)
@@ -66,10 +77,10 @@ simmetrixGen::~simmetrixGen()
 void simmetrixGen::setProgress()
 {
   prog = Progress_new();
-  Progress_setDefaultCallback(prog);    
+  Progress_setDefaultCallback(prog);
 }
 
-int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
+int simmetrixGen::createSurfaceMeshFromSTL(const char *stlFName)
 {
   if (!createModelFromSTL(stlFName))
   {
@@ -78,11 +89,13 @@ int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
       SimDiscrete_start(0);
       pModelItem modelDomain = GM_domain(dModel);
       mcase = MS_newMeshCase(dModel);
-      std::cout << "Number of initial mesh faces: " << M_numFaces(mesh) << std::endl;
+      std::cout << "Number of initial mesh faces: " << M_numFaces(mesh)
+                << std::endl;
 
-      if (MS_checkMeshIntersections(mesh,0,prog))
+      if (MS_checkMeshIntersections(mesh, nullptr, prog))
       {
-        std::cerr << "There are intersections in the input surface mesh" << std::endl;
+        std::cerr << "There are intersections in the input surface mesh"
+                  << std::endl;
         MS_deleteMeshCase(mcase);
         M_release(mesh);
         GM_release(dModel);
@@ -94,7 +107,7 @@ int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
       // set the mesh size
       // params->meshSize is multiplied by the largest edge of the coordinate-aligned bonding box
       // to give a typical size of the cell edges
-      MS_setMeshSize(mcase, modelDomain, 2, params->meshSize, 0);
+      MS_setMeshSize(mcase, modelDomain, 2, params->meshSize, nullptr);
 
       // Anisotropic Curvature Refinement
       //--------------------------------------------
@@ -127,11 +140,13 @@ int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
       //SurfaceMesher_setSnapForDiscrete(surfaceMesher, 1);
       SurfaceMesher_setEnforceSpatialGradation(surfaceMesher, 1);
       SurfaceMesher_execute(surfaceMesher, prog);
-      std::cout << "Number of mesh faces on the surface: " << M_numFaces(mesh) << std::endl;
+      std::cout << "Number of mesh faces on the surface: " << M_numFaces(mesh)
+                << std::endl;
       SurfaceMesher_delete(surfaceMesher);
       // improving the surface mesh
       pSurfaceMeshImprover surfaceMeshImprover = SurfaceMeshImprover_new(mesh);
-      SurfaceMeshImprover_setShapeMetric(surfaceMeshImprover, ShapeMetricType_MaxAngle,145.);
+      SurfaceMeshImprover_setShapeMetric(surfaceMeshImprover,
+                                         ShapeMetricType_MaxAngle, 145.);
       // set smoothing type to move vertices down gradient of shape metric
       SurfaceMeshImprover_setSmoothType(surfaceMeshImprover, 1);
 
@@ -141,8 +156,8 @@ int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
       // In order to meet the shape metric criteria, the surface mesh improver may locally refine the mesh.
       // This control sets the gradation rate from the refined entities. Similar to setGlobalSizeGradationRate.
       // Default value is 2/3.
-      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover, params->surfMshImprovGradRate);
-
+      SurfaceMeshImprover_setGradationRate(surfaceMeshImprover,
+                                           params->surfMshImprovGradRate);
 
       // Surface Mesh Improver Min Size
       //--------------------------------------------
@@ -151,35 +166,37 @@ int simmetrixGen::createSurfaceMeshFromSTL(const char* stlFName)
       // required to meet the specified criteria. The size passed in is the minimum size to which the mesh
       // will be refined.
       SurfaceMeshImprover_setMinRefinementSize
-        (surfaceMeshImprover, 2, params->surfMshImprovMinSize);
+          (surfaceMeshImprover, 2, params->surfMshImprovMinSize);
 
       // fix intersections after improvement
-      SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2); 
+      SurfaceMeshImprover_setFixIntersections(surfaceMeshImprover, 2);
       SurfaceMeshImprover_execute(surfaceMeshImprover, prog);
       SurfaceMeshImprover_delete(surfaceMeshImprover);
-      std::cout << "Num regions in surf mesh: " << M_numRegions(mesh) << std::endl;
+      std::cout << "Num regions in surf mesh: " << M_numRegions(mesh)
+                << std::endl;
       SimDiscrete_stop(0);
     }
-    catch (pSimError err) 
+    catch (pSimError err)
     {
       std::cerr << "SimModSuite error caught:" << std::endl;
       std::cerr << "  Error code: " << SimError_code(err) << std::endl;
       std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
       SimError_delete(err);
       return 1;
-    } 
-    catch (...) 
+    }
+    catch (...)
     {
-      std::cerr << "Unhandled exception caught during surface mesh generation" << std::endl;
+      std::cerr << "Unhandled exception caught during surface mesh generation"
+                << std::endl;
       return 1;
     }
-    return 0; 
+    return 0;
   }
   else
     return 1;
 }
 
-int simmetrixGen::createVolumeMeshFromSTL(const char* stlFName)
+int simmetrixGen::createVolumeMeshFromSTL(const char *stlFName)
 {
   if (!createSurfaceMeshFromSTL(stlFName))
   {
@@ -192,26 +209,27 @@ int simmetrixGen::createVolumeMeshFromSTL(const char* stlFName)
       VolumeMesher_delete(volumeMesher);
       SimDiscrete_stop(0);
     }
-    catch (pSimError err) 
+    catch (pSimError err)
     {
       std::cerr << "SimModSuite error caught:" << std::endl;
       std::cerr << "  Error code: " << SimError_code(err) << std::endl;
       std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
       SimError_delete(err);
       return 1;
-    } 
-    catch (...) 
+    }
+    catch (...)
     {
-      std::cerr << "Unhandled exception caught during volume mesh generation" << std::endl;
+      std::cerr << "Unhandled exception caught during volume mesh generation"
+                << std::endl;
       return 1;
     }
-    return 0; 
+    return 0;
   }
   else
     return 1;
 }
 
-int simmetrixGen::createMeshFromSTL(const char* stlFName)
+int simmetrixGen::createMeshFromSTL(const char *stlFName)
 {
   if (!createVolumeMeshFromSTL(stlFName))
   {
@@ -221,78 +239,81 @@ int simmetrixGen::createMeshFromSTL(const char* stlFName)
   return 1;
 }
 
-int simmetrixGen::createModelFromSTL(const char* stlFName)
+int simmetrixGen::createModelFromSTL(const char *stlFName)
 {
   // try/catch around all SimModSuite calls
   // as errors are thrown.
-  try 
-  { 
-
-    SimDiscrete_start(0); 
-    mesh = M_new(0,0);
+  try
+  {
+    SimDiscrete_start(0);
+    mesh = M_new(0, nullptr);
     //pDiscreteModel model = 0;
     // load and return if error encountered
-    if(M_importFromSTLFile(mesh, stlFName, prog)) 
-    { 
+    if (M_importFromSTLFile(mesh, stlFName, prog))
+    {
       std::cerr << "Error importing file" << std::endl;
       M_release(mesh);
       return 1;
     }
-  
+
     // check the input mesh for intersections
     // this call must occur before the discrete model is created
-    if(MS_checkMeshIntersections(mesh,0,prog)) 
+    if (MS_checkMeshIntersections(mesh, nullptr, prog))
     {
       std::cerr << "There are intersections in the input mesh" << std::endl;
       M_release(mesh);
       return 1;
     }
-    
+
     // create the Discrete model
     dModel = DM_createFromMesh(mesh, 1, prog);
     // return if error in model creation
-    if(!dModel) 
-    { 
+    if (!dModel)
+    {
       std::cerr << "Error creating Discrete model from mesh" << std::endl;
       M_release(mesh);
       return 1;
     }
-    
+
     // define the Discrete model
     DM_findEdgesByFaceNormals(dModel, 5., prog);
     DM_eliminateDanglingEdges(dModel, prog);
-    // complete the topology and return if erro encountered
-    if(DM_completeTopology(dModel, prog)) 
-    { 
+    // complete the topology and return if error encountered
+    if (DM_completeTopology(dModel, prog))
+    {
       std::cerr << "Error completing Discrete model topology" << std::endl;
       M_release(mesh);
       GM_release(dModel);
       return 1;
     }
-    
+
     // Print out information about the model
-    std::cout << "Number of model vertices: " << GM_numVertices(dModel) << std::endl;
+    std::cout << "Number of model vertices: " << GM_numVertices(dModel)
+              << std::endl;
     std::cout << "Number of model edges: " << GM_numEdges(dModel) << std::endl;
     std::cout << "Number of model faces: " << GM_numFaces(dModel) << std::endl;
-    std::cout << "Number of model regions: " << GM_numRegions(dModel) << std::endl;
-    
-    GM_write(dModel,"discreteModel.smd",0,prog); // save the discrete model
+    std::cout << "Number of model regions: " << GM_numRegions(dModel)
+              << std::endl;
+
+    GM_write(dModel, "discreteModel.smd", 0, prog); // save the discrete model
     SimDiscrete_stop(0);
-  } 
-  catch (pSimError err) 
+  }
+  catch (pSimError err)
   {
     std::cerr << "SimModSuite error caught:" << std::endl;
     std::cerr << "  Error code: " << SimError_code(err) << std::endl;
     std::cerr << "  Error string: " << SimError_toString(err) << std::endl;
     SimError_delete(err);
     return 1;
-  } 
-  catch (...) 
+  }
+  catch (...)
   {
-    std::cerr << "Unhandled exception caught during discrete model generation step" << std::endl;
+    std::cerr
+        << "Unhandled exception caught during discrete model generation step"
+        << std::endl;
     return 1;
   }
-  return 0; 
+  return 0;
 }
 
 void simmetrixGen::convertToVTU()
@@ -302,9 +323,9 @@ void simmetrixGen::convertToVTU()
     // points to be pushed into dataSet
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
     // declare vtk dataset
-    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp 
-      = vtkSmartPointer<vtkUnstructuredGrid>::New();
-    
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp
+        = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
     // get the iterator for mesh vertices 
     VIter vertices = M_vertexIter(mesh);
     pVertex vertex;
@@ -316,9 +337,9 @@ void simmetrixGen::convertToVTU()
     vertex = VIter_next(vertices);
     while (vertex)
     {
-      EN_setID( (pEntity) vertex, i); 
+      EN_setID((pEntity) vertex, i);
       V_coord(vertex, coord);
-      points->SetPoint(i,coord);
+      points->SetPoint(i, coord);
       ++i;
       vertex = VIter_next(vertices);
     }
@@ -336,7 +357,7 @@ void simmetrixGen::convertToVTU()
       face = FIter_next(faces);
       while (face)
       {
-        faceVerts = F_vertices(face,1);
+        faceVerts = F_vertices(face, 1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
         face = FIter_next(faces);
@@ -356,7 +377,7 @@ void simmetrixGen::convertToVTU()
       face = FIter_next(faces);
       while (face)
       {
-        faceVerts = F_vertices(face,1);
+        faceVerts = F_vertices(face, 1);
         createVtkCell(dataSet_tmp, 3, VTK_TRIANGLE, faceVerts);
         PList_delete(faceVerts);
         face = FIter_next(faces);
@@ -369,7 +390,7 @@ void simmetrixGen::convertToVTU()
     // write only vol cells
     else
     {
-      dataSet_tmp->Allocate(M_numRegions(mesh)); 
+      dataSet_tmp->Allocate(M_numRegions(mesh));
       addVtkVolCells(dataSet_tmp);
       dataSet = dataSet_tmp;
     }
@@ -381,55 +402,55 @@ void simmetrixGen::setWriteSurfAndVol(bool b)
   writeSurfAndVol = b;
 }
 
-void simmetrixGen::saveMesh(const std::string& mFName)
+void simmetrixGen::saveMesh(const std::string &mFName)
 {
-
   size_t last = mFName.find_last_of('.');
   if (last != std::string::npos)
   {
-    std::string ext = mFName.substr(last); 
+    std::string ext = mFName.substr(last);
     if (ext == ".sms")
     {
       std::cout << "writing .sms mesh" << std::endl;
-      M_write(mesh, &mFName[0u],0,prog);
-    } 
+      M_write(mesh, mFName.c_str(), 0, prog);
+    }
     else if (ext == ".vtu")
     {
       std::cout << "writing .vtu mesh" << std::endl;
       convertToVTU();
-      writeVTFile<vtkXMLUnstructuredGridWriter>(mFName,dataSet);  
-    } 
+      writeVTFile<vtkXMLUnstructuredGridWriter>(mFName, dataSet);
+    }
   }
 }
 
 void simmetrixGen::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
-                              const int numIds,
-                              const int cellType,
-                              pPList regionVerts)
+                                 const int numIds,
+                                 const int cellType,
+                                 pPList regionVerts)
 {
   pVertex vertex;
   vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
   vtkCellIds->SetNumberOfIds(numIds);
   for (int i = 0; i < numIds; ++i)
   {
-    vertex = (pVertex) PList_item(regionVerts,i);
-    vtkCellIds->SetId(i,EN_id( (pEntity) vertex));
+    vertex = (pVertex) PList_item(regionVerts, i);
+    vtkCellIds->SetId(i, EN_id((pEntity) vertex));
   }
-  dataSet->InsertNextCell(cellType,vtkCellIds);
+  dataSet->InsertNextCell(cellType, vtkCellIds);
 }
-                             
-void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
+
+void
+simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp)
 {
   // get iterator for mesh regions (cells) and add them
   RIter regions = M_regionIter(mesh);
-  pRegion region;  
+  pRegion region;
   pPList regionVerts;
   region = RIter_next(regions);
   while (region)
   {
-    regionVerts = R_vertices(region,0);
+    regionVerts = R_vertices(region, 0);
     rType celltype = R_topoType(region);
-    switch(celltype)
+    switch (celltype)
     {
       case Rtet:
       {
@@ -463,30 +484,30 @@ void simmetrixGen::addVtkVolCells(vtkSmartPointer<vtkUnstructuredGrid> dataSet_t
   RIter_delete(regions);
 }
 
-void simmetrixGen::messageHandler(int type, const char* msg)
+void simmetrixGen::messageHandler(int type, const char *msg)
 {
-  switch (type) 
+  switch (type)
   {
     case Sim_InfoMsg:
-      std::cout << "Info: " << msg <<std::endl;
+      std::cout << "Info: " << msg << std::endl;
       break;
     case Sim_DebugMsg:
-      std::cout << "Debug: " << msg <<std::endl;
+      std::cout << "Debug: " << msg << std::endl;
       break;
     case Sim_WarningMsg:
       std::cout << "Warning: " << msg << std::endl;
       break;
     case Sim_ErrorMsg:
-      std::cout << "Error: " << msg<< std::endl;
+      std::cout << "Error: " << msg << std::endl;
       break;
   }
 }
 
-void simmetrixGen::createMeshFromModel(const char* mFName)
+void simmetrixGen::createMeshFromModel(const char *mFName)
 {
-  model = GM_load(mFName, 0, prog);
+  model = GM_load(mFName, nullptr, prog);
   mcase = MS_newMeshCase(model);
-  MS_setMeshSize(mcase, GM_domain(model), 2, 0.5, 0);
+  MS_setMeshSize(mcase, GM_domain(model), 2, 0.5, nullptr);
   mesh = M_new(0, model);
   pSurfaceMesher surfaceMesher = SurfaceMesher_new(mcase, mesh);
   SurfaceMesher_execute(surfaceMesher, prog);

@@ -19,8 +19,8 @@ const char* inp_json_2;
 meshBase* mesh;
 FOAM::foamMesh* fmesh;
 meshBase* ref;
-json inputjson;
-json inputjson_2;
+jsoncons::json inputjson;
+jsoncons::json inputjson_2;
 
 // Aux functions
 bool compareFiles(const std::string& p1, const std::string& p2) {
@@ -53,8 +53,8 @@ int generate(const char* jsonF)
     std::cerr << "Error opening file " << jsonF << std::endl;
     exit(1);
   }
-  
-  json inputjson_tmp;
+
+  jsoncons::json inputjson_tmp;
   inputStream >> inputjson_tmp;
   inputjson = inputjson_tmp[0];  
 
@@ -62,8 +62,8 @@ int generate(const char* jsonF)
   std::string ifname = inputjson["Mesh File Options"]
                                 ["Input Geometry File"].as<std::string>();  
   std::string ofname = inputjson["Mesh File Options"]
-                                ["Output Mesh File"].as<std::string>();  
-  json cfmparams = inputjson["Meshing Parameters"]["CFMesh Parameters"];
+                                ["Output Mesh File"].as<std::string>();
+  jsoncons::json cfmparams = inputjson["Meshing Parameters"]["CFMesh Parameters"];
 
   // required params here
   // cad file
@@ -248,8 +248,8 @@ int optimize(const char* jsonF)
     std::cerr << "Error opening file " << jsonF << std::endl;
     exit(1);
   }
-  
-  json inputjson_tmp;
+
+  jsoncons::json inputjson_tmp;
   inputStream >> inputjson_tmp;
   inputjson_2 = inputjson_tmp[0];
   

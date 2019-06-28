@@ -14,6 +14,8 @@
 #ifndef _H_DISTANCETOPOINTS
 #define _H_DISTANCETOPOINTS
 
+#include "madlib_export.h"
+
 #include <stdio.h>
 
 #ifdef _HAVE_ANN_
@@ -23,7 +25,7 @@
 namespace MAd {
 
   // -------------------------------------------------------------------
-  class MAd_searchTool {
+  class MADLIB_EXPORT MAd_searchTool {
 
   public:
     MAd_searchTool() {
@@ -39,7 +41,7 @@ namespace MAd {
 
   // -------------------------------------------------------------------
 #ifdef _HAVE_ANN_
-  class ANN_searchTool {
+  class MADLIB_EXPORT ANN_searchTool {
 
   public:
 

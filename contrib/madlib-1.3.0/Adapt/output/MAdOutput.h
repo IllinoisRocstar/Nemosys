@@ -14,6 +14,8 @@
 #ifndef _H_MADOUTPUT
 #define _H_MADOUTPUT
 
+#include "madlib_export.h"
+
 #include "SizeFieldBase.h"
 #include "MeshDataBaseInterface.h"
 
@@ -45,23 +47,29 @@ namespace MAd {
 
   // -------------------------------------------------------------------
 
-  void MAdGmshOutput(const pMesh m, const pSField sf, 
-                     const char *fn, MAdOutputData type);
+  void MADLIB_EXPORT MAdGmshOutput(const pMesh m, const pSField sf,
+                                   const char *fn, MAdOutputData type);
 
-  void MAdAttachedNodalDataOutput   (const pMesh m, const char *fn, 
-                                     pMeshDataId id);
-  void MAdAttachedNodalDataVecOutput(const pMesh m, const char *fn, 
-                                     pMeshDataId id);
+  void MADLIB_EXPORT MAdAttachedNodalDataOutput(const pMesh m,
+                                                const char *fn,
+                                                pMeshDataId id);
+  void MADLIB_EXPORT MAdAttachedNodalDataVecOutput(const pMesh m,
+                                                   const char *fn,
+                                                   pMeshDataId id);
   // MS
-  void MAdAttachedNodalDataCSVOutput(const pMesh m, const char *fn,
-                                     pMeshDataId id, std::string dataName = "DATA");
+  void MADLIB_EXPORT
+  MAdAttachedNodalDataCSVOutput(const pMesh m, const char *fn,
+                                pMeshDataId id,
+                                std::string dataName = "DATA");
   // MS
 
-  void printPosEntities(const pPList ents, std::string fn, MAdOutputData type, 
-                        const pSField sf=NULL, int id=0);
+  void MADLIB_EXPORT printPosEntities(const pPList ents, std::string fn,
+                                      MAdOutputData type,
+                                      const pSField sf=NULL, int id=0);
 
-  void printPosRegions(const std::set<pRegion>, std::string fn, MAdOutputData type, 
-                       const pSField sf=NULL, int id=0);
+  void MADLIB_EXPORT printPosRegions(const std::set<pRegion>,
+                                     std::string fn, MAdOutputData type,
+                                     const pSField sf=NULL, int id=0);
 
   // -------------------------------------------------------------------
 

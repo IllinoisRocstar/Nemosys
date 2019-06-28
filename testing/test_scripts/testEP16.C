@@ -48,7 +48,7 @@ int exoTestConv(const char* jsonF, const char* ofname, const char* refname)
     exit(1);
   }
   
-  json inputjson;
+  jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto& prog : inputjson.array_range())
   {
@@ -113,7 +113,7 @@ int epTestInputGen(const char* jsonF, const char* ofname, const char* refname)
     exit(1);
   }
   
-  json inputjson;
+  jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto& prog : inputjson.array_range())
   {

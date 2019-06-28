@@ -1,43 +1,45 @@
-#include <meshBase.H>
-#include <vtkMesh.H>
-#include <meshGen.H>
-#include <TransferBase.H>
-#include <SizeFieldBase.H>
-#include <Refine.H>
-#include <MeshQuality.H>
-#include <Cubature.H>
-#include <meshPartitioner.H>
-#include <vtkCellData.h>
-#include <vtkPointData.h>
-#include <vtkDataArray.h>
-#include <vtkIdList.h>
-#include <vtkIdTypeArray.h>
-#include <vtkCellTypes.h>
-#include <vtkPoints.h>
-#include <vtkCell.h>
+// Nemosys headers
+#include "meshBase.H"
+#include "AuxiliaryFunctions.H"
+
+#include "vtkMesh.H"
+#include "meshGen.H"
+#include "TransferBase.H"
+#include "meshPartitioner.H"
+#include "Cubature.H"
+#include "SizeFieldGen.H"
+#include "Refine.H"
+#include "MeshQuality.H"
+
+#include "pntMesh.H"
+//#include <cobalt.H>
+//#include <patran.H>
+
+// VTK
 #include <vtkAppendFilter.h>
+#include <vtkCell.h>
+#include <vtkCellData.h>
+#include <vtkCellTypes.h>
+#include <vtkDataArray.h>
+#include <vtkExtractSelection.h>
+#include <vtkGenericCell.h>
+#include <vtkIdList.h>
+#include <vtkIntArray.h>
+#include <vtkPoints.h>
+#include <vtkPointData.h>
 #include <vtkSelection.h>
 #include <vtkSelectionNode.h>
-#include <vtkExtractSelection.h>
+#include <vtkUnstructuredGrid.h>
 
 // netgen
+#ifdef HAVE_NGEN
 namespace nglib {
   #include <nglib.h>
 }
-
-// Simmetrix
-//#ifdef HAVE_SIMMETRIX
-//  #include <simmetrixGen.H>
-//#endif
-
-// stl
-#include <algorithm>
-
-// aux
-#include <AuxiliaryFunctions.H>
+#endif
 
 #ifdef HAVE_EXODUSII
-  #include "exodusII.h"
+  #include <exodusII.h>
   #include "exoMesh.H"
 #endif
 
@@ -48,7 +50,7 @@ meshBase *meshBase::Create(const std::string &fname)
 {
   if (fname.find(".vt") != std::string::npos
       || fname.find(".stl") != std::string::npos) {
-    auto *vtkmesh = new vtkMesh(&fname[0u]);
+    auto *vtkmesh = new vtkMesh(fname);
     vtkmesh->setFileName(fname);
     return vtkmesh;
   } else if (fname.find(".msh") != std::string::npos) {
@@ -85,7 +87,7 @@ meshBase *meshBase::Create(vtkSmartPointer<vtkDataSet> other,
 meshBase *meshBase::Create(const std::vector<double> &xCrds,
                            const std::vector<double> &yCrds,
                            const std::vector<double> &zCrds,
-                           const std::vector<int> &elmConn,
+                           const std::vector<nemId_t> &elmConn,
                            const int cellType,
                            const std::string &newname)
 {
@@ -96,7 +98,7 @@ std::unique_ptr<meshBase>
 meshBase::CreateUnique(const std::vector<double> &xCrds,
                        const std::vector<double> &yCrds,
                        const std::vector<double> &zCrds,
-                       const std::vector<int> &elmConn,
+                       const std::vector<nemId_t> &elmConn,
                        const int cellType,
                        const std::string &newname)
 {
@@ -145,7 +147,7 @@ std::shared_ptr<meshBase>
 meshBase::CreateShared(const std::vector<double> &xCrds,
                        const std::vector<double> &yCrds,
                        const std::vector<double> &zCrds,
-                       const std::vector<int> &elmConn,
+                       const std::vector<nemId_t> &elmConn,
                        const int cellType,
                        const std::string &newname)
 {
@@ -164,7 +166,7 @@ meshBase *meshBase::generateMesh(const std::string &fname,
                                  meshingParams *params)
 {
 
-  if ((fname.find(".stl") == -1) and (fname.find(".fms") == -1))
+  if ((fname.find(".stl") == -1) && (fname.find(".fms") == -1))
   {
     std::cerr << "Only CAD files in STL or FMS format are supported" << std::endl;
     exit(1);
@@ -185,7 +187,7 @@ meshBase *meshBase::generateMesh(const std::string &fname,
       else if (meshEngine == "simmetrix")
       {
         std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname); 
+        ret = Create(generator->getDataSet(), newname);
       }
       else if (meshEngine == "cfmesh")
       {
@@ -237,7 +239,7 @@ meshBase::stitchMB(const std::vector<std::shared_ptr<meshBase>> &_mbObjs)
 
 meshBase *
 meshBase::extractSelectedCells(meshBase *mesh,
-                               const std::vector<vtkIdType> &cellIds)
+                               const std::vector<nemId_t> &cellIds)
 {
   vtkSmartPointer<vtkIdTypeArray> selectionIds
       = vtkSmartPointer<vtkIdTypeArray>::New();
@@ -313,6 +315,7 @@ int meshBase::transfer(meshBase *target, const std::string &method,
   } else {
     return transobj->transferCellData(arrayIDs, newArrayNames);
   }
+  return 0;
 }
 
 int meshBase::transfer(meshBase *target, const std::string &method,
@@ -358,10 +361,11 @@ meshBase::partition(const meshBase *mbObj, const int numPartitions)
     // define coordinates
     std::vector<std::vector<double>> comp_crds(mbObj->getVertCrds()); 
     // get partition connectivity and zero index it
-    std::vector<int> vtkConn(mPart->getConns(i));
-    for (int &it : vtkConn) {
+    std::vector<int> vtkConn_int(mPart->getConns(i));
+    std::vector<nemId_t> vtkConn(vtkConn_int.begin(), vtkConn_int.end());
+    for (auto &&it : vtkConn)
       it -= 1;
-    }
+
     std::string basename(nemAux::trim_fname(mbObj->getFileName(), ""));
     basename += std::to_string(i);
     basename += ".vtu";
@@ -493,18 +497,18 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
       std::stringstream ss(line); 
       ss >> numPhysGrps;
       std::cout << "Found " << numPhysGrps << " physical groups!\n";
-      int grpDim, grpId;
-      std::string grpName;
       for (int i = 0; i < numPhysGrps; ++i)
       {
+        int grpDim, grpId;
+        std::string grpName;
         getline(meshStream,line);
         std::stringstream ss(line);
         ss >> grpDim >> grpId >> grpName;
         grpName.erase(std::remove(grpName.begin(),grpName.end(),'\"'),grpName.end());
-        //std::cout << "Group Dim = " << grpDim
-        //    << "\nGroup Id = " << grpId
-        //    << "\nGroup Name = " << grpName 
-        //    << std::endl;
+        /*std::cout << "Group Dim = " << grpDim
+                    << "\nGroup Id = " << grpId
+                    << "\nGroup Name = " << grpName
+                    << std::endl;*/
         physGrpDims.push_back(grpDim);
         physGrpIdName[grpId] = grpName;
       }
@@ -562,10 +566,10 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
           else 
           {
             std::vector<double> physGrpId(1);
-            ss >> physGrpId[0];
-            cellPhysGrpIds.push_back(physGrpId);
             for (int j = 0; j < numTags-1; ++j)
                 ss >> tmp;
+          ss >> physGrpId[0];
+          cellPhysGrpIds.push_back(physGrpId);
           }
           for (int j = 0; j < 3; ++j)
           {
@@ -587,10 +591,10 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
           else 
           {
             std::vector<double> physGrpId(1);
+            for (int j = 0; j < numTags - 1; ++j)
+              ss >> tmp;
             ss >> physGrpId[0];
             cellPhysGrpIds.push_back(physGrpId);
-            for (int j = 0; j < numTags-1; ++j)
-                ss >> tmp;
           }
           for (int j = 0; j < 4; ++j)
           {
@@ -805,8 +809,8 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
   for (int i = 0; i < pointData.size(); ++i)
     vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
   for (int i = 0; i < cellData.size(); ++i)
-    vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]); 
- 
+    vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
+
   vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
@@ -817,6 +821,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
 
 meshBase *meshBase::exportVolToVtk(const std::string &fname)
 {
+#ifdef HAVE_NGEN
   nglib::Ng_Mesh* Ngmesh;
   nglib::Ng_Init();
   Ngmesh = nglib::Ng_NewMesh();
@@ -896,7 +901,12 @@ meshBase *meshBase::exportVolToVtk(const std::string &fname)
   if(Ngmesh) nglib::Ng_DeleteMesh(Ngmesh);
   nglib::Ng_Exit();
   return vtkmesh;
-  
+#else
+	std::cerr << "ENABLE_NETGEN is not used during build."
+            << " Build with ENABLE_NETGEN to use this function."
+            << std::endl;
+	exit(1);
+#endif
 }
 
 // exports pntMesh to vtk format
@@ -982,13 +992,11 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   float version;
   CPU_word_size = sizeof(float);
   IO_word_size = 0;
+  _exErr = 0;
 
   /* open EXODUS II files */
   fid = ex_open(fname.c_str(),EX_READ,&CPU_word_size,&IO_word_size,&version);
   EXOMesh::wrnErrMsg(_exErr, "Problem opening file "+fname+"\n");
-
-  // building mesh database
-  vtkMesh* vtkmesh = new vtkMesh();
 
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -1006,35 +1014,42 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   // parameter inquiry from Exodus file
   int num_props;
   float fdum;
-  char *cdum;
-  _exErr = ex_inquire(fid, EX_INQ_API_VERS, &num_props, &fdum, cdum);
+  char cdum;
+  _exErr = ex_inquire(fid, EX_INQ_API_VERS, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Exodus II API version is "<< fdum << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_DB_VERS, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_DB_VERS, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Exodus II Database version is "<< fdum << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_DIM, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_DIM, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of coordinate dimensions is "<< num_props << std::endl;
   if (num_props != 3)
     EXOMesh::wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
-  _exErr = ex_inquire(fid, EX_INQ_NODES, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_NODES, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numPoints = num_props;
   std::cout << "Number of points "<< numPoints << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_ELEM, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_ELEM, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
-  numVolCells =  num_props;
+  numVolCells = num_props;
   std::cout << "Number of elements "<< numVolCells << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_ELEM_BLK, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_ELEM_BLK, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numElmBlk = num_props;
   std::cout << "Number of element blocks "<< numElmBlk << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_NODE_SETS, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_NODE_SETS, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numNdeSet = num_props;
   std::cout << "Number of node sets "<< numNdeSet << std::endl;
-  _exErr = ex_inquire(fid, EX_INQ_SIDE_SETS, &num_props, &fdum, cdum);
+
+  _exErr = ex_inquire(fid, EX_INQ_SIDE_SETS, &num_props, &fdum, &cdum);
   EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numSideSet = num_props;
   std::cout << "Number of side sets "<< numSideSet << std::endl;
@@ -1091,16 +1106,17 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
         vtkcellIds->InsertNextId(conn[jc]-1);
       }
       // insert connectivies
-      dataSet_tmp->InsertNextCell(vct, vtkcellIds); 
+      dataSet_tmp->InsertNextCell(vct, vtkcellIds);
     }
   }
 
-  vtkmesh->dataSet = dataSet_tmp;
+  std::cout << "Trimmed name = "
+    << nemAux::trim_fname(fname, ".vtu") << std::endl;
+
+  vtkMesh* vtkmesh = new vtkMesh();
+  vtkmesh->dataSet =  dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
-
-  std::cout << "Trimmed name = "
-            << nemAux::trim_fname(fname, ".vtu") << std::endl;
   vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
@@ -1111,7 +1127,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   
   return vtkmesh;
 #else
-  std::cerr << "Error: Compile with Exodus II to use this.\n";
+  std::cerr << "Error: Compile with Exodus II to use this." << std::endl;
   exit(-1);
 #endif
 }
@@ -1485,8 +1501,10 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
   vtkSmartPointer<vtkIdList> facePtIds;
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
-  vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New(); 
-  std::map<std::vector<int>, std::pair<int,int>, sortIntVec_compare> faceMap;
+  vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New();
+  std::map<std::vector<nemId_t>,
+           std::pair<nemId_t, nemId_t>,
+           sortNemId_tVec_compare> faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkCellLocator> surfCellLocator = surfWithPatches->buildLocator(); 
   // maximum number of vertices per face (to be found in proceeding loop)
@@ -1494,32 +1512,43 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
   // maximum number of faces per cell (to be found in proceeding loop)
   int nFacesPerCellMax = 0; 
 
-  for (int i = 0; i < this->getNumberOfCells(); ++i)
+  for (nemId_t i = 0; i < this->getNumberOfCells(); ++i)
   {
     // get cell i 
     dataSet->GetCell(i, genCell1);
     // get faces, find cells sharing it. if no cell shares it, 
     // use the locator of the surfWithPatches to find the patch number
     int numFaces = genCell1->GetNumberOfFaces();
-    nFacesPerCellMax = (nFacesPerCellMax < numFaces ? numFaces : nFacesPerCellMax);
+    nFacesPerCellMax = (nFacesPerCellMax < numFaces
+                        ? numFaces
+                        : nFacesPerCellMax);
     for (int j = 0; j < numFaces; ++j)
     {
       vtkCell* face = genCell1->GetFace(j);
-      bool shared = 0;
-      int numVerts = face->GetNumberOfPoints();
-      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
+      bool shared = false;
+      vtkIdType numVerts = face->GetNumberOfPoints();
+      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts
+                             ? numVerts
+                             : nVerticesPerFaceMax);
       facePtIds = face->GetPointIds(); 
       dataSet->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
-      std::vector<int> facePntIds(numVerts);
-      for (int k = 0; k < numVerts; ++k)
+      std::vector<nemId_t> facePntIds(numVerts);
+      for (vtkIdType k = 0; k < numVerts; ++k)
       {
         facePntIds[k] = face->GetPointId(k)+1;
       }
       //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
-                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1))); 
+        faceMap.insert(
+            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
+                facePntIds,
+                std::make_pair(
+                    i + 1,
+                    sharedCellPtIds->GetId(0) + 1
+                )
+            )
+        );
       }
       else
       {
@@ -1528,7 +1557,7 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
         face->GetPoints()->GetPoint(1,p2);
         face->GetPoints()->GetPoint(2,p3);
         double faceCenter[3];
-        for (int k = 0; k < numVerts; ++k)
+        for (vtkIdType k = 0; k < numVerts; ++k)
         {
           faceCenter[k] = (p1[k] + p2[k] + p3[k])/3.0;
         } 
@@ -1542,8 +1571,15 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
         double patchNo[1];
         surfWithPatches->getDataSet()->GetCellData()->GetArray("patchNo")
                                                   ->GetTuple(closestCellId, patchNo);
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>      
-                  (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
+        faceMap.insert(
+            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
+                facePntIds,
+                std::make_pair(
+                    i + 1,
+                    -1 * patchNo[0]
+                )
+            )
+        );
       }
     }
   }
@@ -1767,8 +1803,8 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
     int numComponent = da1->GetNumberOfComponents();
     for (int j = 0; j < mesh1->getNumberOfPoints(); ++j)
     {
-      double comps1[numComponent];
-      double comps2[numComponent];
+      double *comps1 = new double[numComponent];
+      double *comps2 = new double[numComponent];
       da1->GetTuple(j, comps1);
       da2->GetTuple(j, comps2);
       for (int k = 0; k < numComponent; ++k)
@@ -1780,14 +1816,16 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
           return 1;
         }
       }
+      delete[] comps1;
+      delete[] comps2;
     }
   }
   std::cerr << "Meshes are the same" << std::endl;
   return 0;
 }
 
-bool sortIntVec_compare::operator()(std::vector<int> lhs,
-                                    std::vector<int> rhs) const
+bool sortNemId_tVec_compare::operator()(std::vector<nemId_t> lhs,
+                                        std::vector<nemId_t> rhs) const
 {
   std::sort(lhs.begin(), lhs.end());
   std::sort(rhs.begin(), rhs.end());

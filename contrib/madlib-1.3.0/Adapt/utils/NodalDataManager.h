@@ -14,6 +14,8 @@
 #ifndef _H_NODALDATAMANAGER
 #define _H_NODALDATAMANAGER
 
+#include "madlib_export.h"
+
 #include "MAdSingleton.h"
 #include "MeshDataBaseInterface.h"
 
@@ -26,7 +28,7 @@ namespace MAd {
 
   // -------------------------------------------------------------------
 
-  class NodalDataManager {
+  class MADLIB_EXPORT NodalDataManager {
 
   public:
   

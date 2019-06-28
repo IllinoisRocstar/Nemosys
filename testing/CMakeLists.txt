@@ -18,7 +18,7 @@ endmacro()
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
   add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
-endif(WIN32)
+endif()
 add_subdirectory(lib/gtest-1.6.0)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
@@ -152,27 +152,32 @@ configure_file(${cfm_qual_gen_in} ${cfm_qual_gen} @ONLY)
 if(WIN32)
   # Note: Do not indent. The indentation whitespace is added to the variable!
   set(TEST_ENV_PATH_OPTIONS
-"PATH=${CMAKE_BINARY_DIR};\
+"PATH=${CMAKE_CURRENT_BINARY_DIR};\
+${CMAKE_BINARY_DIR};\
+${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0;\
+${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN;\
 ${gtest_BINARY_DIR};\
-${MADLIB_LIB_PATH};\
 ${VTK_LIB_DIR};\
 ${GMSH_LIB_PATH};\
-${NETGEN_LIB_PATH};\
-${NETGEN_LIB_PATH}/../bin;\
-${ZLIB_LIB_PATH};\
-${ZLIB_LIB_PATH}/../bin;\
-${ANN_LIB_PATH};\
+${NETGEN_LIBRARY_DIR};${NETGEN_LIBRARY_DIR}/../bin;\
+${ZLIB_LIB_PATH};${ZLIB_LIB_PATH}/../bin;\
 ${METIS_LIB_PATH};\
 ${CGNS_LIB_PATH};\
+${HDF5_LIB_PATH};\
+${EXO_LIB_PATH};${EXO_LIB_PATH}/../bin;\
+${netCDF_LIB_DIR};${netCDF_LIB_DIR}/../bin;\
+${SIMMETRIX_LIB_DIR};\
 $ENV{PATH}")
+  set(TEST_ENV_LD_OPTIONS
+"LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
 else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   # Note: Do not indent. The indentation whitespace is added to the variable!
   set(TEST_ENV_LD_OPTIONS
 "LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
-${CMAKE_CURRENT_BINARY_DIR}/..:\
+${CMAKE_BINARY_DIR}:\
 ${VTK_LIB_DIR}:\
-${NETGEN_LIB_PATH}:\
+${NETGEN_LIBRARY_DIR}:\
 ${OpenCASCADE_LIBRARY_DIR}:\
 $ENV{LD_LIBRARY_PATH}")
 endif()
@@ -262,6 +267,7 @@ add_test(NAME gmshMeshTest
                         ${GMSHMESH_TESTDIR}/cube4.msh
                         ${GMSHMESH_TESTDIR}/cube41.msh
 )
+
 if(ENABLE_EPIC)
   add_test(NAME ep16test
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
@@ -269,6 +275,7 @@ if(ENABLE_EPIC)
                       ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat
   )
 endif()
+
 if(ENABLE_CFMSH)
   add_test(NAME cfm_small
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"

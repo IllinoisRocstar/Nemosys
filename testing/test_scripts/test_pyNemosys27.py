@@ -244,7 +244,27 @@ class TestPyNemosys(unittest.TestCase):
 
         mshgndrvobj = MeshGenDriver.readJSON(inputjson)
 
-        self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
+        refMesh = meshBase.Create(gold_output_file)
+        newMesh = meshBase.Create(output_file)
+
+        # self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
+
+        # Due to Netgen algorithm changing slightly between different versions,
+        # we are not going to compare the meshes point-by-point, cell-by-cell.
+        # The test will check the number of cells and points and ensure they
+        # are within a 0.5% tolerance.
+
+        divisor = 200  # 0.5% = 1 / 200
+
+        refpoints = refMesh.getNumberOfPoints()
+        refcells = refMesh.getNumberOfCells()
+        newpoints = newMesh.getNumberOfPoints()
+        newcells = newMesh.getNumberOfCells()
+
+        self.assertEqual(
+            refpoints - refpoints / divisor <= newpoints <= refpoints + refpoints / divisor
+            and refcells - refcells / divisor <= newcells <= refcells + refcells / divisor,
+            True)
 
     def testMeshGenDriver_readJSON_filename(self):
         frameinfo = getframeinfo(currentframe())
@@ -264,7 +284,27 @@ class TestPyNemosys(unittest.TestCase):
 
         mshgndrvobj = MeshGenDriver.readJSON('meshGen.json')
 
-        self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
+        refMesh = meshBase.Create(gold_output_file)
+        newMesh = meshBase.Create(output_file)
+
+        # self.assertEqual(diffMesh(meshBase.Create(gold_output_file), meshBase.Create(output_file)), 0)
+
+        # Due to Netgen algorithm changing slightly between different versions,
+        # we are not going to compare the meshes point-by-point, cell-by-cell.
+        # The test will check the number of cells and points and ensure they
+        # are within a 0.5% tolerance.
+
+        divisor = 200  # 0.5% = 1 / 200
+
+        refpoints = refMesh.getNumberOfPoints()
+        refcells = refMesh.getNumberOfCells()
+        newpoints = newMesh.getNumberOfPoints()
+        newcells = newMesh.getNumberOfCells()
+
+        self.assertEqual(
+            refpoints - refpoints / divisor <= newpoints <= refpoints + refpoints / divisor
+            and refcells - refcells / divisor <= newcells <= refcells + refcells / divisor,
+            True)
 
     def testMeshQualityDriver(self):
         frameinfo = getframeinfo(currentframe())

@@ -14,12 +14,14 @@
 #ifndef _H_BACKGROUNDSF
 #define _H_BACKGROUNDSF
 
+#include "madlib_export.h"
+
 #include "SizeFieldBase.h"
 
 namespace MAd {
 
   // -------------------------------------------------------------------
-  class BackgroundSF: public SizeFieldBase
+  class MADLIB_EXPORT BackgroundSF: public SizeFieldBase
   {
   public:
 

@@ -1,36 +1,40 @@
 #ifndef NETGENGEN_H
 #define NETGENGEN_H
-#include <meshGen.H>
+
+#include "nemosys_export.h"
+#include "meshGen.H"
+
+#ifdef HAVE_NGEN
 namespace nglib
 {
-  #include<nglib.h>
+  #include <nglib.h>
 }
+#endif
 
-// TODO: add in-mem conversion to vtkdataSet and get method.
-//       in that way, we can use the 'copy' constructor from meshbase 
+// TODO: add in-mem conversion to vtkDataSet and get method.
+//       in that way, we can use the 'copy' constructor from meshBase
 //       and don't need to use the file-based export method
 
 class netgenParams;
 
-class netgenGen : public meshGen
+class NEMOSYS_EXPORT netgenGen : public meshGen
 {
-
   public:
     netgenGen();
+    explicit netgenGen(netgenParams *params);
 
-    netgenGen(netgenParams* params);
-    
-    ~netgenGen();
+    ~netgenGen() override;
 
-    void set_mp(netgenParams* params);
-      
+    void set_mp(netgenParams *params);
 
   // netgen mesh creation
   public:
-    int createMeshFromSTL(const char* fname);
+    int createMeshFromSTL(const char *fname) override;
   private:
+#ifdef HAVE_NGEN
     nglib::Ng_Meshing_Parameters mp; // params for netgen meshing  
     nglib::Ng_Mesh* mesh; // netgen mesh object
+#endif
     bool refine_with_geom; // if refinement enabled, adapt to geom
     bool refine_without_geom; // if refinement enabled, just do uniform
 };

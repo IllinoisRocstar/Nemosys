@@ -14,6 +14,8 @@
 #ifndef _H_MOBILEOBJECT
 #define _H_MOBILEOBJECT
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 #include "AdaptInterface.h"
 #include "LocalSizeField.h"
@@ -31,7 +33,7 @@ namespace MAd {
 
   // -------------------------------------------------------------------
   // GCTODO: rewrite it simpler
-  struct vDisplacement
+  struct MADLIB_EXPORT vDisplacement
   {
     vDisplacement(const vDisplacement&);
     vDisplacement(pVertex, double[3]);
@@ -40,7 +42,7 @@ namespace MAd {
     double dxyz[3];    // displacement
   };
 
-  struct vDisplacementLess
+  struct MADLIB_EXPORT vDisplacementLess
   {
     bool operator() (const vDisplacement&, const vDisplacement&) const;
   };
@@ -62,7 +64,7 @@ namespace MAd {
   };
 
   // ----------------------------------------------------------------------
-  class mobileObject {
+  class MADLIB_EXPORT mobileObject {
 
   public:
 
@@ -116,7 +118,7 @@ namespace MAd {
   };
 
   // ----------------------------------------------------------------------
-  class mobileObjectSet {
+  class MADLIB_EXPORT mobileObjectSet {
 
   public:
 

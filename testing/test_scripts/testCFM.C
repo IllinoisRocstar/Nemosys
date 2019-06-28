@@ -11,7 +11,7 @@
 const char* inp_json;
 meshBase* mesh;
 meshBase* ref;
-json inputjson;
+jsoncons::json inputjson;
 
 // Aux functions
 bool compareFiles(const std::string& p1, const std::string& p2) {
@@ -45,7 +45,7 @@ int generate(const char* jsonF)
     exit(1);
   }
   
-  json inputjson_tmp;
+  jsoncons::json inputjson_tmp;
   inputStream >> inputjson_tmp;
   inputjson = inputjson_tmp[0];  
 
@@ -53,8 +53,8 @@ int generate(const char* jsonF)
   std::string ifname = inputjson["Mesh File Options"]
                                 ["Input Geometry File"].as<std::string>();  
   std::string ofname = inputjson["Mesh File Options"]
-                                ["Output Mesh File"].as<std::string>();  
-  json cfmparams = inputjson["Meshing Parameters"]["CFMesh Parameters"];
+                                ["Output Mesh File"].as<std::string>();
+  jsoncons::json cfmparams = inputjson["Meshing Parameters"]["CFMesh Parameters"];
 
   // required params here
   // cad file

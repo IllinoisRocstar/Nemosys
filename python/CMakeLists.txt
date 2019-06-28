@@ -17,6 +17,10 @@ if(ENABLE_SIMMETRIX)
   list(APPEND EXTRA_COMPILE_ARGS "-DHAVE_SIMMETRIX")
 
   file(COPY pyNemosysSimmetrix.i
+            ${CMAKE_SOURCE_DIR}/include/simmetrixParams.H
+            ${CMAKE_SOURCE_DIR}/include/simmetrixGen.H
+            ${CMAKE_SOURCE_DIR}/include/meshStitcher.H
+            ${CMAKE_SOURCE_DIR}/include/meshPartitioner.H
        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
 else()
@@ -31,9 +35,9 @@ file(GENERATE OUTPUT ${SETUP_PY}
 
 
 add_custom_target(pyNemosys ALL
-                  COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} build)
+                  COMMAND "${PYTHON_EXECUTABLE}" ${SETUP_PY} build)
 add_dependencies(pyNemosys Nemosys)
 
 
-install(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pip install . --user -f -O2
-                              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})")
+install(CODE "execute_process(COMMAND \"${PYTHON_EXECUTABLE}\" -m pip install . --user -f -O2
+                              WORKING_DIRECTORY \"${CMAKE_CURRENT_BINARY_DIR}\")")

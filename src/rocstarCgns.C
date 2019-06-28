@@ -1,6 +1,5 @@
 /* Special purpose class for Rocstar CGNS files */
 
-
 #include "rocstarCgns.H"
 
 ///////////////////////////////////////////////////
@@ -603,7 +602,7 @@ int rocstarCgns::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-    CG_DataType_t dt;
+	CG_DataType_t dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
