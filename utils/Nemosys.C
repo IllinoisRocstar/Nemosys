@@ -1,42 +1,34 @@
-#include <NemDriver.H>
-#include <AuxiliaryFunctions.H>
+#include "NemDriver.H"
+#include "AuxiliaryFunctions.H"
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   if (argc != 2)
   {
     std::cout << "Usage: " << argv[0] << " input.json" << std::endl;
     exit(1);
   }
-  
+
   std::string fname = argv[1];
   std::ifstream inputStream(fname);
   if (!inputStream.good() || nemAux::find_ext(fname) != ".json")
   {
-    std::cout << "Error opening file " << fname << std::endl;
+    std::cerr << "Error opening file " << fname << std::endl;
     exit(1);
   }
 
-  json inputjson;
+  jsoncons::json inputjson;
   inputStream >> inputjson;
   if (inputjson.is_array())
-      for(const auto& prog : inputjson.array_range())
-      {
-        NemDriver* nemdrvobj = NemDriver::readJSON(prog);
-        if (nemdrvobj) 
-        { 
-          delete nemdrvobj;
-          nemdrvobj = 0;
-        }
-      }
+    for (const auto &prog : inputjson.array_range())
+    {
+      NemDriver *nemdrvobj = NemDriver::readJSON(prog);
+      delete nemdrvobj;
+    }
   else
   {
-      NemDriver* nemdrvobj = NemDriver::readJSON(inputjson);
-      if (nemdrvobj) 
-      { 
-        delete nemdrvobj;
-        nemdrvobj = 0;
-      }
+    NemDriver *nemdrvobj = NemDriver::readJSON(inputjson);
+    delete nemdrvobj;
   }
 
   return 0;

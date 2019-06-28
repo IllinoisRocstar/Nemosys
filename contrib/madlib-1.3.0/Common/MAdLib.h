@@ -14,6 +14,8 @@
 #ifndef _H_MAD_MADLIB
 #define _H_MAD_MADLIB
 
+#include "madlib_export.h"
+
 // interface to the geometrical model
 #include "ModelInterface.h"
 
@@ -31,8 +33,7 @@
 #include "MobileObject.h"
 
 //! Needed with the Gmsh geometrical model
-void MAdLibInitialize(int * argc, char** argv[]);
-void MAdLibFinalize();
+void MADLIB_EXPORT MAdLibInitialize(int *argc, char **argv[]);
+void MADLIB_EXPORT MAdLibFinalize();
 
 #endif
-

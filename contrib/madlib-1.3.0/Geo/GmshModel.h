@@ -37,7 +37,8 @@ namespace MAd {
       MAdModel(name)
     { 
       model = new GModel(_name);
-      GModel::current(GModel::list.size() - 1);
+      // AEG: GModel::list is not dll exported. Cannot use it on WIN.
+      //GModel::current(GModel::list.size() - 1);
     }
     ~GmshModel();
 

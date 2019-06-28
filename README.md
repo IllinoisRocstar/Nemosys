@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.31.0
+Version 0.32.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -26,7 +26,56 @@ it with the following command:
 $ git clone git@git.illinois.rocstar:Nemosys/Nemosys.git
 ```
 
-## Build Instructions ##
+## Build Options ##
+The following table contains all available CMake options to
+configure NEMoSys functionality. The necessary third-party library is listed
+in the notes section.
+
+| Option name            | Option description              | Default | Notes                        |
+|------------------------|---------------------------------|---------|------------------------------|
+| ENABLE_TESTING         | Enable testing                  | ON      |                              |
+| ENABLE_METIS           | Enable Metis interface          | ON      | Requires METIS               |
+| ENABLE_NETGEN          | Enable Netgen interface         | ON      | Requires Netgen              |
+| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                              |
+| ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler        |
+| ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II           |
+| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS       |
+| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG     |
+| ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix           |
+| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires cfMesh and OpenFOAM |
+| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                  |
+
+### Enabling cfMesh ###
+**cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
+NEMoSys comes with a fully integrated cfMesh-based meshing module. To enable
+the capability, the NEMoSys should be compiled with `ENABLE_CFMSH=ON` and also
+pointed to the location of the installation of the cfMesh's meshLibrary headers
+(`${PATH_TO_CFMSH_INCPATH}`). Following OpenFOAM conventions, headers are
+usually kept in `meshLibrary\lnInclude` folder.
+
+**Note:** cfMesh depends on
+OpenFOAM, so before starting the compile process make sure to load OpenFOAM
+environment variables. Depending on the version, OpenFOAM can be loaded by
+sourcing the bashrc, or cshrc scripts provided in the `OpenFoam-x.y/etc/`.
+Refer to the OpenFOAM documentation for further instructions. After OpenFOAM
+environment is loaded, enable cfMesh build by adding these lines to the cmake
+command:
+```
+-DENABLE_CFMSH=ON -DCFMSH_INCPATH=${PATH_TO_CFMSH_INCPATH}
+```
+
+### Enabling Simmetrix ###
+**Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
+(http://www.simmetrix.com/). To enable NEMoSys interface to the Simmetrix,
+compile with `ENABLE_SIMMETRIX=ON` and set the location of the Simmetrix
+libraries (`${PATH_TO_SIMMETRIX_LIBS}`). Ensure the folder structure set
+by Simmetrix Inc. is maintained as it is used to find the headers
+automatically. On the command line, the additional CMake options are:
+```
+-DENABLE_SIMMETRIX=ON -DSIMMETRIX_LIB_DIR=${PATH_TO_SIMMETRIX_LIBS}
+```
+
+## Unix Building Instructions ##
 ### Build Dependencies ###
 You will need to `apt install` at least the following dependencies:
 
@@ -90,28 +139,12 @@ $ make -j$(nproc) (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
 ```
 Executing the commands above will build all libraries, executables, and
-bindings. The libraries are installed in `$NEMOSYS_INSTALL_PATH/Nemosys/lib`.
-Executables are installed in `$NEMOSYS_INSTALL_PATH/Nemosys/bin`. If Python
+bindings. The libraries are installed in `$NEMOSYS_INSTALL_PATH/lib`.
+Executables are installed in `$NEMOSYS_INSTALL_PATH/bin`. If Python
 bindings are enabled, the `pyNemosys` module is installed for the user. The
 `pyNemosys` module can be imported in Python as `import pyNemosys`. The build
 configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
-
-### Enabling cfMesh ###
-**cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**. NEMoSys comes with a fully integrated cfMesh-based meshing module. 
-To enable the capability, the NEMOSys should be compiled with `ENABLE_CFMSH=ON` and also pointed to the location of the installation of the cfMesh's meshLibrary headers (`${PATH_TO_CFMSH_INCPATH}`). Following OpenFOAM conventions, headers are usually kept in `meshLibrary\lnInclude` folder.
-Note that cfMesh dependens on the OpenFOAM, so before starting the compile process make sure to load OpenFOAM environment variables. Depending on the version, OpenFOAM can be loaded by sourcing the bashrc, or cshrc scripts provided in the `OpenFoam-x.y/etc/`. Refer to the OpenFOAM documentation for furhter instructions. After OpenFOAM environment is loaded, enable cfMesh build by adding these lines to the cmake command:
-```
--DENABLE_CFMSH=ON -DCFMSH_INCPATH=${PATH_TO_CFMSH_INCPATH}
-```
-
-## Testing NEMoSys ##
-From the build directory, execute the following command to test the
-installation:
-```
-$ make test
-```
-This will execute several tests found in `$NEMOSYS_PROJECT_PATH/testing`.
 
 ### Manually Build Third Party Libraries ###
 If execution of `build.sh` fails, or you have already installed some of the
@@ -196,3 +229,91 @@ $ make install
 
 See the building NEMoSys section to proceed from this point and to complete the
 build.
+
+## Windows Build Instructions ##
+The dependencies are similar to a UNIX build of NEMoSys with the addition of 
+boost. An archive of pre-built Windows dependencies is available with some
+exceptions:
+
+Note: When downloading pre-built libraries, ensure to select the version
+matching the bitness (32 or 64) and the MSVC compiler version
+(14.1, 14.0, etc.) used.
+
+**boost**: https://sourceforge.net/projects/boost/files/boost-binaries/
+
+**netCDF** (only if Exodus/Epic support is enabled): https://www.unidata.ucar.edu/downloads/netcdf/index.jsp
+
+**SWIG** (only if Python bindings are enabled): http://swig.org/download.html
+
+### boost Dependency ###
+boost will install by default to `C:\local\boost_#_##_#` where the `#` are
+the boost version. The boost location must be specified to CMake with the
+`BOOST_ROOT` variable.
+
+### netCDF Dependency ###
+The netCDF installation is not detected automatically. Pass the location to the
+build system through the `CMAKE_PREFIX_PATH` variable.
+
+### Archived Dependencies ###
+Extract the archive to a custom location (`%TPL_DIR%). The dependencies must
+be given to CMake through the `CMAKE_PREFIX_PATH` variable.
+```
+-DCMAKE_PREFIX_PATH="%TPL_DIR%\cgns;%TPL_DIR%\exodusii;%TPL_DIR%\gmsh;%TPL_DIR%\hdf5\cmake\hdf5;%TPL_DIR%\metis;%TPL_DIR%\netgen;%TPL_DIR%\vtk;%TPL_DIR%\zlib"
+```
+Exclude any you wish to use a custom installation.
+
+### Python on Windows ###
+Python bindings are generated using SWIG. A SWIG installer is needed on the
+system and must be available to CMake and available to the Python environment.
+
+This is accomplished in two parts: (1) add the `SWIG_EXECUTABLE` variable
+pointing to the SWIG executable (`swig.exe`) for CMake and (2) add the folder
+containing the SWIG executable to the system `PATH` for Python.
+A pre-built Windows executable can be downloaded from the
+SWIG website: http://swig.org/download.html
+
+Note: On a system with multiple Python installations, the Cmake variable
+`PYTHON_EXECUTABLE` can be set to the `python.exe` executable to force the
+specific environment.
+
+
+### Build NEMoSys ###
+With the dependencies specified above installed, we can compile NEMoSys with
+Python bindings and build tools with the following command from a MSVC command
+prompt:
+
+```
+> set NETCDF_LOCATION=C:\full\path\to\netCDF\install
+> set BOOST_LOCATION=C:\full\path\to\boost\install
+> set SWIG_EXE=C:\full\path\to\SWIG\executable\swig.exe
+> set NEMOSYS_INSTALL_PATH=C:\full\path\to\Nemosys\install
+> cd %NEMOSYS_PROJECT_PATH%
+> md build && cd build
+> cmake .. ^
+        -G "Ninja" ^
+        -DBOOST_ROOT="%BOOST_LOCATION%" ^
+        -DSWIG_EXECUTABLE="%SWIG_EXE_LOCATION%" ^
+        -DCMAKE_INSTALL_PREFIX="%NEMOSYS_INSTALL_PATH%" ^
+        -DBUILD_SHARED_LIBS=ON ^
+        -DENABLE_TESTING=ON ^
+        -DENABLE_BUILD_UTILS=ON ^
+        -DENABLE_PYTHON_BINDINGS=ON ^
+        -DCMAKE_PREFIX_PATH="%TPL_DIR%\cgns;%TPL_DIR%\exodusii;%TPL_DIR%\gmsh;%TPL_DIR%\hdf5\cmake\hdf5;%TPL_DIR%\metis;%TPL_DIR%\netgen;%TPL_DIR%\vtk;%TPL_DIR%\zlib;%NETCDF_LOCATION%"
+> ninja -j %NUMBER_OF_PROCESSORS% (or however many threads you'd like to use)
+> ninja install
+```
+Executing the commands above will build all libraries, executables, and
+bindings. The libraries are installed in `%NEMOSYS_INSTALL_PATH%\lib`.
+Executables are installed in `%NEMOSYS_INSTALL_PATH%\bin`.
+
+## Testing NEMoSys ##
+From the build directory, execute the following command to test the
+installation:
+```
+UNIX:
+$ make test
+WINDOWS:
+> ninja test
+```
+
+This will execute several tests found in `$NEMOSYS_PROJECT_PATH/testing`.

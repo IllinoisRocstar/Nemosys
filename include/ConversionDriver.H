@@ -1,33 +1,38 @@
 #ifndef CONVERSIONDRIVER_H
 #define CONVERSIONDRIVER_H
 
-#include <NemDriver.H>
+#include "nemosys_export.h"
+#include "NemDriver.H"
 
 #ifdef HAVE_EXODUSII
-#include "exoMesh.H"
+  #include "exoMesh.H"
 #endif
 
-#include "foamMesh.H"
+#include <string>
 
-class ConversionDriver : public NemDriver
-{
+class NEMOSYS_EXPORT ConversionDriver : public NemDriver {
   public:
-    
-    ConversionDriver(std::string srcmsh, std::string trgmsh, std::string method, std::string ofname, json inputjson);
-    ~ConversionDriver();
+    ConversionDriver(const std::string &srcmsh,
+                     const std::string &trgmsh,
+                     const std::string &method,
+                     const std::string &ofname,
+                     const jsoncons::json &inputjson);
+    ~ConversionDriver() override;
 
-    static ConversionDriver* readJSON(json inputjson);
-    static ConversionDriver* readJSON(std::string ifname);
+    static ConversionDriver *readJSON(const jsoncons::json &inputjson);
+    static ConversionDriver *readJSON(const std::string &ifname);
 
 #ifdef HAVE_EXODUSII
   private:
-    void genExo(json opts, std::string fname);
-    void procExo(json ppJson, std::string fname, EXOMesh::exoMesh* em);
+    void genExo(const jsoncons::json &opts,
+                const std::string &fname);
+    void procExo(const jsoncons::json &ppJson,
+                 const std::string &fname,
+                 EXOMesh::exoMesh *em);
 #endif
 
   private:
-    meshBase* source;
+    meshBase *source;
 };
-
 
 #endif

@@ -1,42 +1,37 @@
 #ifndef MESHGEN_H
 #define MESHGEN_H
 
-#include <string>
+#include "nemosys_export.h"
+
 #include <vtkSmartPointer.h>
 #include <vtkDataSet.h>
 
+#include <string>
+#include <iostream>
+
+
 class meshingParams;
 
-// method to write vtk grids
-template<class TWriter> void writeVTFile(const std::string& fname, 
-                                         vtkSmartPointer<vtkDataSet> dataSet)
-{
-  vtkSmartPointer<TWriter> Writer = vtkSmartPointer<TWriter>::New();
-  Writer->SetFileName(&fname[0u]);
-  Writer->SetInputData(dataSet);
-  Writer->Write();
-}
-
-class meshGen 
-{
+class NEMOSYS_EXPORT meshGen {
   public:
-    meshGen() : dataSet(0)
+    meshGen() : dataSet(nullptr)
     { std::cout << "Base mesh generator created" << std::endl; }
 
     virtual ~meshGen()
     { std::cout << "Base mesh generator destroyed" << std::endl; }
-    
+
     // creates generator with default parameters
-    static meshGen* Create(std::string fname, std::string meshEngine);
+    static meshGen *Create(const std::string &fname,
+                           const std::string &meshEngine);
     // creates generater with specified parameters
-    static meshGen* Create(std::string fname, std::string meshEngine, meshingParams* params);
-    virtual int createMeshFromSTL(const char* fname) = 0;
-    vtkSmartPointer<vtkDataSet> getDataSet(); 
- 
+    static meshGen *Create(const std::string &fname,
+                           const std::string &meshEngine,
+                           meshingParams *params);
+    virtual int createMeshFromSTL(const char *fname) = 0;
+    vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
+
   protected:
-    vtkSmartPointer<vtkDataSet> dataSet;    
-
+    vtkSmartPointer<vtkDataSet> dataSet;
 };
-
 
 #endif

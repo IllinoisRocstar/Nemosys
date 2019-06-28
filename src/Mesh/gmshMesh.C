@@ -12,6 +12,8 @@
 
 #include "gmshMesh.H"
 
+#include <vtkUnstructuredGrid.h>
+
 class nemosysGModel : public GModel {
   public:
     void storeElementsInEntities(std::map<int, std::vector<MElement *> > &map) {
@@ -175,14 +177,11 @@ void gmshMesh::write(const std::string &fname,
 {
   nemosysGModel _nemosysGModel = nemosysGModel();
 
-  GModel _gmshGModel = GModel();
-  _gmshGModel.readVTK("cube.vtk");
-
   // Add mesh vertices
   std::vector<MVertex *> vertices(numPoints);
   double xyz[3];  // Reused in mesh element loop.
 
-  for (vtkIdType i = 0; i != numPoints; ++i) {
+  for (nemId_t i = 0; i != numPoints; ++i) {
     dataSet->GetPoint(i, xyz);
     vertices[i] = new MVertex(xyz[0], xyz[1], xyz[2]);
   }
@@ -190,7 +189,7 @@ void gmshMesh::write(const std::string &fname,
   // Add mesh elements
   std::map<int, std::vector<MElement *> > elements[8];
 
-  for (vtkIdType i = 0; i != numCells; ++i) {
+  for (nemId_t i = 0; i != numCells; ++i) {
     vtkSmartPointer<vtkIdList> idList = vtkSmartPointer<vtkIdList>::New();
     // Assign type
     int type = dataSet->GetCellType(i);
@@ -255,16 +254,16 @@ void gmshMesh::write(const std::string &fname,
   std::cout << "gmshMesh saved to " << fname << std::endl;
 }
 
-std::vector<double> gmshMesh::getPoint(int id) const {
+std::vector<double> gmshMesh::getPoint(nemId_t id) const {
   return std::vector<double>();
 }
 std::vector<std::vector<double>> gmshMesh::getVertCrds() const {
   return std::vector<std::vector<double>>();
 }
-std::map<int, std::vector<double>> gmshMesh::getCell(int id) const {
-  return std::map<int, std::vector<double>>();
+std::map<nemId_t, std::vector<double>> gmshMesh::getCell(nemId_t id) const {
+  return std::map<nemId_t, std::vector<double>>();
 }
-std::vector<std::vector<double>> gmshMesh::getCellVec(int id) const {
+std::vector<std::vector<double>> gmshMesh::getCellVec(nemId_t id) const {
   return std::vector<std::vector<double>>();
 }
 void gmshMesh::inspectEdges(const std::string &ofname) const {
@@ -276,14 +275,14 @@ vtkSmartPointer<vtkDataSet> gmshMesh::extractSurface() {
 std::vector<double> gmshMesh::getCellLengths() const {
   return std::vector<double>();
 }
-std::vector<double> gmshMesh::getCellCenter(int cellID) const {
+std::vector<double> gmshMesh::getCellCenter(nemId_t cellID) const {
   return std::vector<double>();
 }
 int gmshMesh::getCellType() const {
   return 0;
 }
-std::vector<int> gmshMesh::getConnectivities() const {
-  return std::vector<int>();
+std::vector<nemId_t> gmshMesh::getConnectivities() const {
+  return std::vector<nemId_t>();
 }
 
 void gmshMesh::report() const {

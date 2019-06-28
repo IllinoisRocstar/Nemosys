@@ -1,6 +1,8 @@
 #include <gmshMesh.H>
 #include <gtest.h>
 
+#include <sstream>
+
 std::string arg_fnameMSH2;
 std::string arg_fnameMSH4;
 std::string arg_fnameMSH41;
@@ -8,7 +10,7 @@ std::string arg_fnameMSH41;
 // Aux functions
 bool filesEqual(const std::string &fn1, const std::string &fn2)
 {
-  fstream f1, f2;
+  std::fstream f1, f2;
   f1.open(fn1, fstream::in);
   f2.open(fn2, fstream::in);
   char string1[256], string2[256];
@@ -17,10 +19,26 @@ bool filesEqual(const std::string &fn1, const std::string &fn2)
     f1.getline(string1, 256);
     f2.getline(string2, 256);
     j++;
+    if (j == 2) {
+      std::stringstream ss1(string1);
+      std::stringstream ss2(string2);
+      float ver1, ver2;
+      int bin1, bin2, bit1, bit2;
+      ss1 >> ver1 >> bin1 >> bit1;
+      ss2 >> ver2 >> bin2 >> bit2;
+      if ((bit1 == 8 && bit2 == 4)
+          || (bit1 == 4 && bit2 == 8))
+      {
+        std::cout << "ERROR: Underlying Gmsh is built with floats."
+                  << " NEMoSys requires support for doubles."
+                  << "\n";
+          return false;
+      }
+    }
     if (strcmp(string1, string2) != 0) {
-      cout << j << "-the strings are not equal" << "\n";
-      cout << "   " << string1 << "\n";
-      cout << "   " << string2 << "\n";
+      std::cout << j << "-the strings are not equal" << "\n";
+      std::cout << "   " << string1 << "\n";
+      std::cout << "   " << string2 << "\n";
       return false;
     }
   }

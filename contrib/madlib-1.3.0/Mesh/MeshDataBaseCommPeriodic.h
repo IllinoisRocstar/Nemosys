@@ -14,6 +14,8 @@
 #ifndef _MeshDataBaseCommPerio_H
 #define _MeshDataBaseCommPerio_H
 
+#include "madlib_export.h"
+
 /*
   MDB_DataExchangerPeriodic is a class that allow user to define function for
   periodic boundaries.
@@ -21,7 +23,7 @@
 
 namespace MAd {
 
-  class MDB_DataExchangerPeriodic
+  class MADLIB_EXPORT MDB_DataExchangerPeriodic
   {
   public :
     virtual int nbRefPeriodic() const = 0;

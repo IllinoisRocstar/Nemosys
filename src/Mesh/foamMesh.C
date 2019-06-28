@@ -165,7 +165,7 @@ void foamMesh::createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
 
 
 // get point with id
-std::vector<double> foamMesh::getPoint(int id) const
+std::vector<double> foamMesh::getPoint(nemId_t id) const
 {
   double coords[3];
   dataSet->GetPoint(id, coords);
@@ -193,19 +193,19 @@ std::vector<std::vector<double>> foamMesh::getVertCrds() const
 }
 
 // get cell with id : returns point indices and respective coordinates
-std::map<int, std::vector<double>> foamMesh::getCell(int id) const
+std::map<nemId_t, std::vector<double>> foamMesh::getCell(nemId_t id) const
 {
   if (id < numCells) 
   {
-    std::map<int,std::vector<double>> cell;
+    std::map<nemId_t,std::vector<double>> cell;
     vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New();
     point_ids = dataSet->GetCell(id)->GetPointIds();
-    int num_ids = point_ids->GetNumberOfIds();
-    for (int i = 0; i < num_ids; ++i) 
+    vtkIdType num_ids = point_ids->GetNumberOfIds();
+    for (vtkIdType i = 0; i < num_ids; ++i)
     {
-      int pntId = point_ids->GetId(i);
+      nemId_t pntId = point_ids->GetId(i);
       std::vector<double> coord = getPoint(pntId);
-      cell.insert(std::pair<int,std::vector<double>> (pntId,coord)); 
+      cell.insert(std::pair<nemId_t,std::vector<double>> (pntId,coord));
     }
 
     return cell;
@@ -216,18 +216,18 @@ std::map<int, std::vector<double>> foamMesh::getCell(int id) const
   }
 }
 
-std::vector<std::vector<double>> foamMesh::getCellVec(int id) const
+std::vector<std::vector<double>> foamMesh::getCellVec(nemId_t id) const
 {
   if (id < numCells) 
   {
     std::vector<std::vector<double>> cell;
     vtkSmartPointer<vtkIdList> point_ids = vtkSmartPointer<vtkIdList>::New();
     point_ids = dataSet->GetCell(id)->GetPointIds();
-    int num_ids = point_ids->GetNumberOfIds();
+    vtkIdType num_ids = point_ids->GetNumberOfIds();
     cell.resize(num_ids);
-    for (int i = 0; i < num_ids; ++i) 
+    for (vtkIdType i = 0; i < num_ids; ++i)
     {
-      int pntId = point_ids->GetId(i);
+      nemId_t pntId = point_ids->GetId(i);
       cell[i] = getPoint(pntId);
     }
     return cell;
@@ -266,15 +266,15 @@ void foamMesh::inspectEdges(const std::string& ofname) const
   } 
 }
 
-std::vector<int> foamMesh::getConnectivities() const
+std::vector<nemId_t> foamMesh::getConnectivities() const
 {
-  std::vector<int> connectivities;
+  std::vector<nemId_t> connectivities;
   vtkSmartPointer<vtkCellIterator> it 
     = vtkSmartPointer<vtkCellIterator>::Take(dataSet->NewCellIterator()); 
   for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell())
   {
     vtkSmartPointer<vtkIdList> pointIds = it->GetPointIds();
-    for (int i = 0; i < pointIds->GetNumberOfIds(); ++i)
+    for (vtkIdType i = 0; i < pointIds->GetNumberOfIds(); ++i)
     {
       connectivities.push_back(pointIds->GetId(i));
     } 
@@ -282,7 +282,7 @@ std::vector<int> foamMesh::getConnectivities() const
   return connectivities;
 }
 
-void foamMesh::report()
+void foamMesh::report() const
 {
   if (!dataSet)
   {
@@ -366,7 +366,7 @@ std::vector<double> foamMesh::getCellLengths() const
 {
   std::vector<double> result;
   result.resize(getNumberOfCells());
-  for (int i = 0; i < getNumberOfCells(); ++i)
+  for (nemId_t i = 0; i < getNumberOfCells(); ++i)
   {
     result[i] = std::sqrt(dataSet->GetCell(i)->GetLength2());
   } 
@@ -374,7 +374,7 @@ std::vector<double> foamMesh::getCellLengths() const
 }
 
 // get center of a cell
-std::vector<double> foamMesh::getCellCenter(int cellID) const
+std::vector<double> foamMesh::getCellCenter(nemId_t cellID) const
 {
   std::vector<double> center(3,0.0);
   std::vector<std::vector<double>> cell = getCellVec(cellID); 

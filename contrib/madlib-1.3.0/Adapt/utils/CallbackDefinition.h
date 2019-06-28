@@ -14,6 +14,8 @@
 #ifndef _H_CALLBACKDEFINITION
 #define _H_CALLBACKDEFINITION
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 #include "MAdOperations.h"
 
@@ -26,7 +28,7 @@ namespace MAd {
   typedef void (*CBFunc_move)(pVertex, double *, void *);
 
   // -------------------------------------------------------------------
-  struct CBStructure {
+  struct MADLIB_EXPORT CBStructure {
 
     CBFunction function;
     void* data;
@@ -38,7 +40,7 @@ namespace MAd {
   };
 
   // -------------------------------------------------------------------
-  struct CBStructureMove {
+  struct MADLIB_EXPORT CBStructureMove {
     CBFunc_move function;
     void* data;
 

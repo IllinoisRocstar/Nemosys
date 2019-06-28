@@ -14,6 +14,8 @@
 #ifndef _H_ADAPTINTERFACE
 #define _H_ADAPTINTERFACE
 
+#include "madlib_export.h"
+
 // from Geo
 #include "ModelInterface.h"
 
@@ -66,7 +68,7 @@ namespace MAd {
 #endif
   // -------------------------------------------------------------------
   // -------------------------------------------------------------------
-  class MeshAdapter {
+  class MADLIB_EXPORT MeshAdapter {
 
   public:
   

@@ -11,8 +11,15 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>
+#include <iterator>
 #include <string.h>
-#include <glob.h>
+
+#ifdef HAVE_GLOB_H
+  #include <glob.h>
+#else
+  #include <boost/filesystem.hpp>
+  #include <boost/regex.hpp>
+#endif
 
 //--------------------------Start nemAux namespace----------------------------//
 namespace nemAux {
@@ -91,8 +98,17 @@ template<typename T>
 std::vector<T> hadamard(const std::vector<T> &x,
                         const std::vector<T> &y);
 
+// check if _exp is in the _name string
+inline bool expCont(const std::string &_name, const std::string &_exp);
+
 // search for pattern and return vector of matches (wrapper around posix glob)
+#ifdef HAVE_GLOB_H
 inline std::vector<std::string> glob(const std::string &pattern);
+#else
+inline std::vector<std::string> glob(const std::string &_src_dir,
+                                     const std::string &_fn,
+                                     const std::string &_starts);
+#endif
 
 // compute 2 norm of vec
 template<typename T>
@@ -194,7 +210,7 @@ std::vector<std::vector<T>> fold(const std::vector<T> &v, int dim)
 {
   std::size_t size = v.size();
   if (size % dim != 0) {
-    std::cout << "Size must be divisible by dim for folding" << std::endl;
+    std::cerr << "Size must be divisible by dim for folding" << std::endl;
     exit(1);
   }
 
@@ -225,7 +241,7 @@ std::vector<T> operator+(const std::vector<T> &x,
                          const std::vector<T> &y)
 {
   if (x.size() != y.size()) {
-    std::cout << "Vectors must be same length for addition" << std::endl;
+    std::cerr << "Vectors must be same length for addition" << std::endl;
     exit(1);
   }
 
@@ -246,7 +262,7 @@ std::vector<T> operator-(const std::vector<T> &x,
                          const std::vector<T> &y)
 {
   if (x.size() != y.size()) {
-    std::cout << "Vectors must be same length for subtraction" << std::endl;
+    std::cerr << "Vectors must be same length for subtraction" << std::endl;
     exit(1);
   }
 
@@ -282,7 +298,8 @@ std::vector<T> hadamard(const std::vector<T> &x,
                         const std::vector<T> &y)
 {
   if (x.size() != y.size()) {
-    std::cout << "Vectors must be same length for Hadamard product" << std::endl;
+    std::cerr << "Vectors must be same length for Hadamard product"
+              << std::endl;
     exit(1);
   }
 
@@ -430,7 +447,7 @@ std::string trim_fname(const std::string &fname, const std::string &ext)
     std::string name = fname.substr(0, end);
     return name.append(ext);
   } else {
-    std::cout << "Error finding file extension for " << fname << std::endl;
+    std::cerr << "Error finding file extension for " << fname << std::endl;
     exit(1);
   }
 }
@@ -442,7 +459,7 @@ inline std::string find_ext(const std::string &fname)
   if (last != std::string::npos) {
     return fname.substr(last);
   } else {
-    std::cout << "Error finding file extension for " << fname << std::endl;
+    std::cerr << "Error finding file extension for " << fname << std::endl;
     exit(1);
   }
 }
@@ -497,7 +514,7 @@ inline std::string find_name(const std::string &fname)
   if (first != std::string::npos && last != std::string::npos) {
     return fname.substr(first + 1, last);
   } else {
-    std::cout << "error finding file extension for " << fname << std::endl;
+    std::cerr << "error finding file extension for " << fname << std::endl;
     exit(1);
   }
 }
@@ -569,7 +586,15 @@ std::vector<A> getSortedKeys(const std::map<A, B> &mapObj)
   }
 }
 
+// check if name conatins _exp
+bool expCont(const std::string &_name, const std::string &_exp)
+{
+  return (_name.find(_exp) != std::string::npos);
+}
+
+
 // search for pattern and return vector of matches
+#ifdef HAVE_GLOB_H
 std::vector<std::string> glob(const std::string &pattern)
 {
   glob_t glob_result;
@@ -591,6 +616,41 @@ std::vector<std::string> glob(const std::string &pattern)
   globfree(&glob_result);
   return fnames;
 }
+#else
+std::vector<std::string> glob(const std::string &_src_dir,
+                              const std::string &_prefix,
+                              const std::string &_timestamp)
+{
+  std::vector<std::string> fnames;
+  std::cout << _src_dir << " " << _prefix << " " << _timestamp << std::endl;
+
+  // recursive copy all content that contain given name
+  // iterate and delete matches
+  for (boost::filesystem::directory_iterator end_dir_it, it(_src_dir);
+       it != end_dir_it; ++it) {
+    bool overide = false;
+    if (expCont(_timestamp, "*"))
+      overide = true;
+
+    std::string fext(it->path().filename().string());
+    if (!expCont(fext, _prefix))
+      continue;
+    {
+      if (fext[0] != _prefix[0])
+        continue;
+
+      if (!overide)
+        if (!expCont(fext, _timestamp))
+          continue;
+
+      std::cout << "Identified " << it->path() << std::endl;
+      fnames.push_back(it->path().filename().string());
+      //boost::filesystem::copy_file(it->path(), des_path, boost::filesystem::copy_option::overwrite_if_exists);
+    }
+  }
+  return fnames;
+}
+#endif
 
 //---------------------------End nemAux namespace-----------------------------//
 } // namespace nemAux

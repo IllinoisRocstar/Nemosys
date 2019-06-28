@@ -1,32 +1,46 @@
 #ifndef REFINEDRIVER_H
 #define REFINEDRIVER_H
 
-#include <NemDriver.H>
+#include "nemosys_export.h"
+#include "NemDriver.H"
 
-class RefineDriver : public NemDriver
+#include <string>
+
+class NEMOSYS_EXPORT RefineDriver : public NemDriver
 {
   public:
-    RefineDriver(std::string _mesh, std::string method, std::string arrayName,
-                 double dev_mult, bool maxIsmin, double edgescale, 
-                 std::string ofname, bool transferData, double sizeFactor = 1.);
+    RefineDriver(const std::string &_mesh,
+                 const std::string &method,
+                 const std::string &arrayName,
+                 double dev_mult,
+                 bool maxIsmin,
+                 double edgescale,
+                 const std::string &ofname,
+                 bool transferData,
+                 double sizeFactor = 1.);
 
-    RefineDriver(std::string _mesh, std::string method, 
-                 double edgescale, std::string ofname, bool transferData);
-  
-    RefineDriver(std::string _mesh, std::string method, std::string arrayName, int order,
-                 std::string ofname, bool transferData);
-    
+    RefineDriver(const std::string &_mesh,
+                 const std::string &method,
+                 double edgescale,
+                 const std::string &ofname,
+                 bool transferData);
 
-    static RefineDriver* readJSON(json inputjson);
-    static RefineDriver* readJSON(std::string ifname);
+    RefineDriver(const std::string &_mesh,
+                 const std::string &method,
+                 const std::string &arrayName,
+                 int order,
+                 const std::string &ofname,
+                 bool transferData);
 
-    ~RefineDriver();
+    static RefineDriver *readJSON(const jsoncons::json &inputjson);
+    static RefineDriver *readJSON(const std::string &ifname);
 
-    meshBase* getMesh() { return mesh; }
+    ~RefineDriver() override;
+
+    meshBase *getMesh() const { return mesh; }
 
   private:
-    meshBase* mesh;
-
+    meshBase *mesh;
 };
 
 #endif

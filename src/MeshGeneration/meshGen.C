@@ -1,73 +1,92 @@
-#include <meshGen.H>
-#include <meshingParams.H>
-#include <netgenGen.H>
-#include <netgenParams.H>
+#include "meshGen.H"
+
+#include "meshingParams.H"
+#ifdef HAVE_NGEN
+  #include "netgenGen.H"
+  #include "netgenParams.H"
+#endif
 #ifdef HAVE_SIMMETRIX
-  #include <simmetrixGen.H>
-  #include <simmetrixParams.H>
+  #include "simmetrixGen.H"
+  #include "simmetrixParams.H"
 #endif
 #ifdef HAVE_CFMSH
-  #include <cfmeshGen.H>
-  #include <cfmeshParams.H>
+  #include "cfmeshGen.H"
+  #include "cfmeshParams.H"
 #endif
 
-meshGen* meshGen::Create(std::string fname, std::string meshEngine)
+
+meshGen *meshGen::Create(const std::string &fname,
+                         const std::string &meshEngine)
 {
-  if (!meshEngine.compare("netgen"))
+  if (meshEngine == "netgen")
   {
-    netgenGen* generator = new netgenGen();
+#ifdef HAVE_NGEN
+    auto *generator = new netgenGen();
+    return generator;
+#else
+    std::cerr << "NETGEN is not enabled during build."
+              << " Build NEMoSys with ENABLE_NETGEN to use this method."
+              << std::endl;
+    exit(1);
+#endif
+  }
+#ifdef HAVE_SIMMETRIX
+  else if (meshEngine == "simmetrix")
+  {
+    auto *generator = new simmetrixGen();
     return generator;
   }
-  #ifdef HAVE_SIMMETRIX 
-  else if (!meshEngine.compare("simmetrix"))
+#endif
+#ifdef HAVE_CFMSH
+  else if (meshEngine == "cfmesh")
   {
-    simmetrixGen* generator = new simmetrixGen();
-    return generator;  
-  }
-  #endif
-  #ifdef HAVE_CFMSH 
-  else if (!meshEngine.compare("cfmesh"))
-  {
-    cfmeshGen* generator = new cfmeshGen();
+    auto *generator = new cfmeshGen();
     return generator;
   }
-  #endif
+#endif
   else
   {
-    std::cout << meshEngine << " is not a supported meshing engine" << std::endl;
+    std::cerr << meshEngine << " is not a supported meshing engine"
+              << std::endl;
     exit(1);
   }
 }
 
-meshGen* meshGen::Create(std::string fname, std::string meshEngine, meshingParams* params)
+meshGen *meshGen::Create(const std::string &fname,
+                         const std::string &meshEngine,
+                         meshingParams *params)
 {
-  if (!meshEngine.compare("netgen"))
+  if (meshEngine == "netgen")
   {
-    netgenGen* generator = new netgenGen(dynamic_cast<netgenParams*>(params));
+#ifdef HAVE_NGEN
+    auto *generator = new netgenGen(dynamic_cast<netgenParams *>(params));
+    return generator;
+#else
+    std::cerr << "NETGEN is not enabled during build."
+              << " Build NEMoSys with ENABLE_NETGEN to use this method."
+              << std::endl;
+    exit(1);
+#endif
+  }
+#ifdef HAVE_SIMMETRIX
+  else if (meshEngine == "simmetrix")
+  {
+    auto *generator = new simmetrixGen(
+        dynamic_cast<simmetrixParams *>(params));
     return generator;
   }
-  #ifdef HAVE_SIMMETRIX
-  else if (!meshEngine.compare("simmetrix"))
+#endif
+#ifdef HAVE_CFMSH
+  else if (meshEngine == "cfmesh")
   {
-    simmetrixGen* generator = new simmetrixGen(dynamic_cast<simmetrixParams*>(params));
+    auto *generator = new cfmeshGen(dynamic_cast<cfmeshParams *>(params));
     return generator;
   }
-  #endif
-  #ifdef HAVE_CFMSH
-  else if (!meshEngine.compare("cfmesh"))
-  {
-    cfmeshGen* generator = new cfmeshGen(dynamic_cast<cfmeshParams*>(params));
-    return generator;
-  }
-  #endif
+#endif
   else
   {
-    std::cout << meshEngine << " is not a supported meshing engine" << std::endl;
+    std::cerr << meshEngine << " is not a supported meshing engine"
+              << std::endl;
     exit(1);
   }
 }
-
-vtkSmartPointer<vtkDataSet> meshGen::getDataSet()
-{
-  return dataSet;
-} 

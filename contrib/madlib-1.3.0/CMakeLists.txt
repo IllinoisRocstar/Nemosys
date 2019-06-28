@@ -11,6 +11,10 @@ opt(ANN "Enable ANN library" ON)
 opt(GMSH "Enable Gmsh geometric model" ON)
 opt(BENCHMARKS "Enable Benchmark executables" OFF)
 
+# Check for <unistd.h> header
+include(CheckIncludeFile)
+check_include_file(unistd.h HAVE_UNISTD_H)
+
 # Set MAdLib include files
 file(GLOB_RECURSE Adapt_FILES Adapt/*.h)
 file(GLOB Common_FILES Common/*.h)
@@ -119,9 +123,21 @@ target_include_directories(MAdLib
         $<INSTALL_INTERFACE:include>
 )
 
+# Set MAdLib compiler definitions
+if(HAVE_UNISTD_H)
+  target_compile_definitions(MAdLib PUBLIC HAVE_UNISTD_H)
+endif()
+
 # Link mathex library
 target_sources(MAdLib PRIVATE Contrib/mathex/mathex.cpp)
 target_include_directories(MAdLib PRIVATE Contrib/mathex)
+
+# Generate export header #######################################################
+include(GenerateExportHeader)
+generate_export_header(MAdLib)
+list(APPEND ${Nemosys_INC_FILES} madlib_export.h)
+file(COPY ${CMAKE_CURRENT_BINARY_DIR}/madlib_export.h
+    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Common)
 
 # Link ANN library
 if(ENABLE_ANN)
@@ -161,7 +177,7 @@ install(FILES ${MADLIB_INC_FILES}
 install(TARGETS MAdLib
     EXPORT Nemosys
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

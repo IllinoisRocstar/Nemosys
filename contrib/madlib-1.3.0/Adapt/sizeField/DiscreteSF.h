@@ -14,6 +14,8 @@
 #ifndef _H_DISCRETESF
 #define _H_DISCRETESF
 
+#include "madlib_export.h"
+
 #include "SizeFieldBase.h"
 
 #include <string>
@@ -27,7 +29,7 @@ namespace MAd {
   };
 
   // -------------------------------------------------------------------
-  class DiscreteSF : public SizeFieldBase
+  class MADLIB_EXPORT DiscreteSF : public SizeFieldBase
   {
   public:
 

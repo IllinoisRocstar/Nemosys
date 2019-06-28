@@ -1,6 +1,12 @@
-#include <StlToVtk.H>
+#include "StlToVtk.H"
 
 #include "AuxiliaryFunctions.H"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <map>
+
 
 void exportStlToVtk(std::string ifname)
 {
@@ -109,8 +115,3 @@ void exportStlToVtk(std::string ifname)
   for (int i = 0; i < triangles.size(); ++i)
     vtk << 5 << std::endl; 
 }
-
-
-
-
-
