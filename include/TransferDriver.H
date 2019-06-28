@@ -1,28 +1,32 @@
 #ifndef TRANSFERDRIVER_H
 #define TRANSFERDRIVER_H
 
-#include <NemDriver.H>
+#include "nemosys_export.h"
+#include "NemDriver.H"
 
-class TransferDriver : public NemDriver
-{
+class NEMOSYS_EXPORT TransferDriver : public NemDriver {
   public:
-    
-    TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
-                   std::string ofname, bool checkQuality);
-
-    TransferDriver(std::string srcmsh, std::string trgmsh, std::string method,
-                   std::vector<std::string> arrayNames, std::string ofname,
+    TransferDriver(const std::string &srcmsh,
+                   const std::string &trgmsh,
+                   const std::string &method,
+                   const std::string &ofname,
                    bool checkQuality);
 
-    static TransferDriver* readJSON(json inputjson);
-    static TransferDriver* readJSON(std::string ifname);
+    TransferDriver(const std::string &srcmsh,
+                   const std::string &trgmsh,
+                   const std::string &method,
+                   const std::vector<std::string> &arrayNames,
+                   const std::string &ofname,
+                   bool checkQuality);
 
-    ~TransferDriver();
+    static TransferDriver *readJSON(const jsoncons::json &inputjson);
+    static TransferDriver *readJSON(const std::string &ifname);
+
+    ~TransferDriver() override;
 
   private:
-    meshBase* source;
-    meshBase* target; 
+    meshBase *source;
+    meshBase *target;
 };
-
 
 #endif

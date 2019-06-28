@@ -14,6 +14,8 @@
 #ifndef _H_ANALYTICALSFIELD
 #define _H_ANALYTICALSFIELD
 
+#include "madlib_export.h"
+
 #include "SizeFieldBase.h"
 
 #include <vector>
@@ -26,7 +28,7 @@ namespace MAd {
   typedef pMSize (*sizeFunction)(const double[3],double);
 
   // -------------------------------------------------------------------
-  class AnalyticalSField: public SizeFieldBase
+  class MADLIB_EXPORT AnalyticalSField: public SizeFieldBase
   {
   public:
 

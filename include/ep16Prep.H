@@ -4,70 +4,68 @@
 #ifdef HAVE_EPIC
 
 // Nemosys headers
+#include "nemosys_export.h"
 #include "inputGen.H"
 #include "exoMesh.H"
 
 // other
 #include <iostream>
-#include "jsoncons/json.hpp"
-
-using jsoncons::json;
+#include <jsoncons/json.hpp>
 
 
 // A preprocessor class derived from generic
 // high-fidelity input generation class inputGen
 // This derived class will implement methods to generate
 // input files specific to EPIC 2016 code.
-class ep16Prep : public inputGen
-{
-public:
-    ep16Prep(json inputjson):_shortForm(false),_mdb(NULL),inputGen(inputjson) {};
-    ~ep16Prep();
+class NEMOSYS_EXPORT ep16Prep : public inputGen {
+  public:
+    explicit ep16Prep(const jsoncons::json &inputjson)
+        : _shortForm(false), _mdb(nullptr), inputGen(inputjson) {};
 
-    static ep16Prep* readJSON(std::string jsonFName);
-    static ep16Prep* readJSON(json inputjson);
-    
-    // basic methods
-public:
+    ~ep16Prep() override;
+
+    static ep16Prep *readJSON(const std::string &jsonFName);
+    static ep16Prep *readJSON(const jsoncons::json &inputjson);
+
+  // basic methods
+  public:
     void readJSON();
-    void process();
-    void read(std::string fname);
-    void close(std::string fname);
+    void process() override;
+    void read(const std::string &fname) override;
+    void close(const std::string &fname) override;
 
-    // feature specifications
-public:
-    void addNdeSet() {};
-    void addElmSet() {};
+  // feature specifications
+  public:
+    void addNdeSet() override {};
+    void addElmSet() override {};
 
-    // attribute assignement
-public:
-    void addMat() {};
-    void addBC() {};
-    void addIC() {};
-    bool addMisc() {};
+  // attribute assignment
+  public:
+    void addMat() override {};
+    void addBC() override {};
+    void addIC() override {};
+    bool addMisc() override { return false; };
 
-    // internal processing
-public:
-    void wrtPre(std::string _tsk, std::string __tsk);
-    void wrtCmnt(std::string cmnt);
-    void wrtMsh(std::string _tsk, std::string __tsk);
-    void wrtNdeCrds() {};
-    void wrtElmCon() {};
-    void wrtPost() {};
-    void wrtNdeSet() {};
-    void wrtElmSet() {};
-    void wrtMisc(std::string _tsk, std::string __tsk);
-    void edit(std::string _tsk, std::string __tsk);
+  // internal processing
+  public:
+    void wrtPre(const std::string &_tsk, const std::string &__tsk) override;
+    void wrtCmnt(const std::string &cmnt) override;
+    void wrtMsh(const std::string &_tsk, const std::string &__tsk) override;
+    void wrtNdeCrds() override {};
+    void wrtElmCon() override {};
+    void wrtPost() override {};
+    void wrtNdeSet() override {};
+    void wrtElmSet() override {};
+    void wrtMisc(const std::string &_tsk, const std::string &__tsk) override;
+    void edit(const std::string &_tsk, const std::string &__tsk) override;
 
-
-private:
-    std::string _fname;    
+  private:
+    std::string _fname;
     bool _shortForm;
-    EXOMesh::exoMesh* _mdb;
-    std::map<std::string,int> _mat;
-    std::map<std::string,std::string> _bcs;
+    EXOMesh::exoMesh *_mdb;
+    std::map<std::string, int> _mat;
+    std::map<std::string, std::string> _bcs;
     std::stringstream _buffer;
-
 };
 
 #endif

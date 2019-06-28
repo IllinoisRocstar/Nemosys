@@ -1,20 +1,21 @@
-#include <TransferBase.H>
-#include <FETransfer.H>
+#include "TransferBase.H"
 
-TransferBase* TransferBase::Create(std::string method, meshBase* _source, meshBase* _target)
+#include "FETransfer.H"
+
+TransferBase *TransferBase::Create(const std::string &method,
+                                   meshBase *_source,
+                                   meshBase *_target)
 {
-  if (!method.compare("Consistent Interpolation"))
+  if (method == "Consistent Interpolation")
   {
-    FETransfer* transobj = new FETransfer( _source , _target);
-    return transobj; 
+    auto *transobj = new FETransfer(_source, _target);
+    return transobj;
   }
   else
   {
-    std::cout << "Method " << method << " is not supported" << std::endl;
-    std::cout << "Supported methods are: " << std::endl
+    std::cerr << "Method " << method << " is not supported\n";
+    std::cerr << "Supported methods are: \n"
               << "1) Consistent Interpolation" << std::endl;
     exit(1);
-  }  
+  }
 }
-
-

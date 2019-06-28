@@ -1,18 +1,18 @@
 #ifndef pntMesh_H
 #define pntMesh_H
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <set>
-#include <map>
-#include <algorithm>
+// Nemosys headers
+#include "nemosys_export.h"
+#include "meshBase.H"
+
+// VTK
 #include <vtkCellTypes.h>
 
-class meshBase;
+// others
+#include <set>
+#include <map>
 
-namespace PNTMesh
-{
+namespace PNTMesh {
 
 typedef int idTyp;
 
@@ -52,82 +52,86 @@ struct blockType {
   std::vector<int> adjBlkId;
   std::vector<int> adjElmId;
   std::vector<int> adjRefId;
-  std::vector<std::vector<int> > eConn;
+  std::vector<std::vector<int>> eConn;
 };
 
 typedef std::vector<blockType> BlockMap;
 
-VTKCellType p2vEMap (elementType et);
-elementType v2pEMap (VTKCellType vt);
-surfaceBCTag bcTagNum(std::string& tag);
+VTKCellType p2vEMap(elementType et);
+elementType v2pEMap(VTKCellType vt);
+surfaceBCTag bcTagNum(const std::string &tag);
 std::string bcTagStr(int tag);
-elementType elmTypeNum (std::string tag);
-std::string elmTypeStr (elementType tag);
-int elmNumNde (elementType et, int order);
-int elmNumSrf (elementType et);
+elementType elmTypeNum(const std::string &tag);
+std::string elmTypeStr(elementType tag);
+int elmNumNde(elementType et, int order);
+int elmNumSrf(elementType et);
 
-class pntMesh
+
+class NEMOSYS_EXPORT pntMesh
 {
+  public:
+    pntMesh();
+    explicit pntMesh(const std::string &ifname);
+    pntMesh(const meshBase *imb, int dim, int nBlk, const BlockMap &elmBlkMap);
 
-    public:
-      pntMesh();
-      pntMesh(std::string ifname);
-      pntMesh(const meshBase* imb, int dim, int nBlk, BlockMap& elmBlkMap);
-      ~pntMesh() {};
+    ~pntMesh() = default;
 
-    public:
-      bool isCompatible() const {return isSupported;}
-      int getNumberOfPoints() const;
-      int getNumberOfCells() const;
-      int getNumberOfBlocks() const {return numBlocks;}
+  public:
+    bool isCompatible() const { return isSupported; }
+    int getNumberOfPoints() const { return numVertices; }
+    int getNumberOfCells() const { return numElements; }
+    int getNumberOfBlocks() const { return numBlocks; }
 
-      std::vector<double> getPointCrd(int id) const;
-      std::vector<int> getElmConn(int id) const;
-      std::vector<int> getElmConn(int id, VTKCellType vct) const;
-      std::vector<int> getPntConn(std::vector<int>& ci, elementType et, int eo) const;
-      std::string getBlockName(int id) const;
-      elementType getBlockElmType(int id) const;
+    std::vector<double> getPointCrd(int id) const { return pntCrds[id]; }
+    std::vector<int> getElmConn(int id) const { return elmConn[id]; }
 
-      elementType getElmType(int id) const;
-      int getElmOrder(int id) const;
-      VTKCellType getVtkCellTag(elementType et, int order) const;
+    std::vector<int> getElmConn(int id, VTKCellType vct) const;
+    std::vector<int>
+    getPntConn(std::vector<int> &ci, elementType et, int eo) const;
+    std::string getBlockName(int id) const;
+    elementType getBlockElmType(int id) const;
 
-      void write(std::string fname) const;
+    elementType getElmType(int id) const;
+    int getElmOrder(int id) const;
+    VTKCellType getVtkCellTag(elementType et, int order) const;
 
-   private:
-      // populate quanitites needed to write
-      // pntmesh file
-      void pntPopulate(const meshBase* imb);
-      void updElmBlk(int blkId);
+    void write(const std::string &fname) const;
 
-    private:
-      std::string ifname;
-      int numVertices; 
-      int numElements; 
-      int numDimensions;
-      int numBlocks; 
-      int numSurfaces; 
-      int numSurfInternal; 
-      int numSurfBoundary;
-      std::vector<std::vector<double> > pntCrds;
-      std::vector<std::vector<int> > elmConn;    // connvectivity
-      std::vector<elementType> elmTyp;           // type
-      std::vector<int> elmOrd;                   // order
-      std::vector<int> elmBlkId;                 // element block number
-      std::vector<int> elmLocalId;               // elements local id indexed by global ids
-      std::vector<std::vector<int> > elmSrfId;   // element surface/edge Ids
-      std::vector<blockType> elmBlks;
+  private:
+    // populate quantities needed to write
+    // pntmesh file
+    void pntPopulate(const meshBase *imb);
+    void updElmBlk(int blkId);
 
-      bool isSupported; // false is non Tri/Tet elements were found
+  private:
+    std::string ifname;
+    int numVertices;
+    int numElements;
+    int numDimensions;
+    int numBlocks;
+    int numSurfaces;
+    int numSurfInternal;
+    int numSurfBoundary;
+    std::vector<std::vector<double>> pntCrds;
+    std::vector<std::vector<int>> elmConn;     // connectivities
+    std::vector<elementType> elmTyp;           // type
+    std::vector<int> elmOrd;                   // order
+    std::vector<int> elmBlkId;                 // element block number
+    std::vector<int> elmLocalId;               // elements local id indexed by global ids
+    std::vector<std::vector<int>> elmSrfId;    // element surface/edge Ids
+    std::vector<blockType> elmBlks;
 
-      // pnt topological information
-      std::set<std::set<int> > connSet;
-      std::map<std::set<int>,int > surfConnToId;
-      std::map<int,std::set<int> > surfIdToConn;
-      std::vector<bool> surfOnBndr;
-      std::map<int,std::vector<std::pair<int,int> > > surfAdjRefNum;
-      std::map<int,std::vector<int> > surfAdjElmNum;
+    bool isSupported; // false is non Tri/Tet elements were found
+
+    // pnt topological information
+    std::set<std::set<int>> connSet;
+    std::map<std::set<int>, int> surfConnToId;
+    std::map<int, std::set<int>> surfIdToConn;
+    std::vector<bool> surfOnBndr;
+    std::map<int, std::vector<std::pair<int, int>>> surfAdjRefNum;
+    std::map<int, std::vector<int> > surfAdjElmNum;
 };
 
-} // end namespace pntMesh
+} // namespace PNTMesh
+
 #endif

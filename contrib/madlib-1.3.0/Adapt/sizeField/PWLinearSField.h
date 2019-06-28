@@ -14,6 +14,8 @@
 #ifndef _H_PWLINEARSFIELD
 #define _H_PWLINEARSFIELD
 
+#include "madlib_export.h"
+
 #include "DiscreteSF.h"
 #ifdef PARALLEL
 #include "MeshDataBaseComm.h"
@@ -24,7 +26,7 @@
 namespace MAd {
 
   // -------------------------------------------------------------------
-  class PWLSField : public DiscreteSF
+  class MADLIB_EXPORT PWLSField : public DiscreteSF
   {
   public:
 
@@ -93,7 +95,7 @@ namespace MAd {
 
   // -------------------------------------------------------------------
 #ifdef PARALLEL
-  class PWLSFieldDE : public MDB_DataExchanger
+  class MADLIB_EXPORT PWLSFieldDE : public MDB_DataExchanger
   {
   public :
     

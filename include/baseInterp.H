@@ -4,6 +4,8 @@
 #ifndef _BASEINTERP_H_
 #define _BASEINTERP_H_
 
+#include "interp_export.h"
+
 // standard
 #include <vector>
 
@@ -13,7 +15,7 @@
 
 class sphere;
 
-class basicInterpolant {
+class INTERP_EXPORT basicInterpolant {
 
 // public members
 public:

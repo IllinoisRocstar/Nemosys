@@ -33,6 +33,13 @@ target_include_directories(ANN
         $<INSTALL_INTERFACE:include>
 )
 
+# Generate export header #######################################################
+include(GenerateExportHeader)
+generate_export_header(ANN)
+list(APPEND ${ANN_INC_FILES} ann_export.h)
+file(COPY ${CMAKE_CURRENT_BINARY_DIR}/ann_export.h
+    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include/ANN)
+
 # Install ANN headers
 install(FILES ${ANN_INC_FILES}
     DESTINATION include/ANN)
@@ -41,7 +48,7 @@ install(FILES ${ANN_INC_FILES}
 install(TARGETS ANN
     EXPORT Nemosys
     RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

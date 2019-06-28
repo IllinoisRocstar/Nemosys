@@ -1,9 +1,11 @@
+# Build and install files
 Build.dat
-build*/
-install*/
+*build*/
+*install*/
 *.swp
 *.swo
 lnInclude/
+*_export.h
 
 # Prerequisites
 *.d
@@ -14,7 +16,6 @@ lnInclude/
 *.o
 *.obj
 compile_commands.json
-
 
 # Precompiled Headers
 *.gch
@@ -39,3 +40,12 @@ compile_commands.json
 *.exe
 *.out
 *.app
+
+### Win32 build stuff
+# Debugging
+*.pdb
+*.ilk
+# Visual Studio directory
+.vs
+# Code Analysis
+*.tmp

@@ -16,7 +16,7 @@ int genTest(const char *jsonF, const char *newName, const char *goldName) {
     exit(1);
   }
 
-  json inputjson;
+  jsoncons::json inputjson;
   inputStream >> inputjson;
   std::unique_ptr<RefineDriver> refineDriver
     = std::unique_ptr<RefineDriver>(RefineDriver::readJSON(inputjson));

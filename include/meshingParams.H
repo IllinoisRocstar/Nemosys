@@ -4,9 +4,8 @@
 class meshingParams
 {
   public:
-    meshingParams(){};
-    virtual ~meshingParams(){};    
-    
+    meshingParams() = default;
+    virtual ~meshingParams() = default;
 };
 
 #endif

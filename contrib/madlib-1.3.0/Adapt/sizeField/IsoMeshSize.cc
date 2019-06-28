@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <algorithm>
 #include <stdlib.h>
 using std::string;
 

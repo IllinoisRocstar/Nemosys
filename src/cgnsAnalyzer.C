@@ -1,16 +1,13 @@
-#include <cgnsAnalyzer.H>
-#include <GmshEntities.h>
-#include <string.h>
-#include <iostream>
-#include <meshBase.H>
-#include <algorithm>
+#include "cgnsAnalyzer.H"
 
+#include <vtkCellTypes.h>
+#include <vtkUnstructuredGrid.h>
 
 /********************************************
     solutionData class implementation
 *********************************************/
 
-void solutionData::appendData(const vecSlnType& inBuff, int inNData, int inNDim)
+void solutionData::appendData(const vecSlnType &inBuff, int inNData, int inNDim)
 {
   // sanity check
   if (!slnData.empty())
@@ -33,7 +30,8 @@ void solutionData::appendData(const vecSlnType& inBuff, int inNData, int inNDim)
   nData += inNData;
 }
 
-void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim)
+void
+solutionData::getData(vecSlnType &outBuff, int &outNData, int &outNDim) const
 {
   // deep copy data
   outBuff.insert(outBuff.begin(), slnData.begin(), slnData.end());
@@ -42,13 +40,14 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim)
 }
 
 // only copies data that are defined in the given mask
-void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
-                           std::vector<bool> mask)
+void solutionData::getData(vecSlnType &outBuff,
+                           int &outNData, int &outNDim,
+                           const std::vector<bool> &mask) const
 {
   // deep copy data
   int cntr1 = 0;
   int cntr2 = 0;
-  for (auto &&id : mask)
+  for (const auto &id : mask)
   {
     if (id)
     {
@@ -61,11 +60,11 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
   outNDim = nDim;
 }
 
-void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
+void solutionData::rmvDataIdx(const std::vector<int> &rmvIdx)
 {
   vecSlnType nsdv;
   int nnd = 0;
-  for (int id=0; id<nData; id++)
+  for (int id = 0; id < nData; id++)
   {
     auto it = std::find(rmvIdx.begin(), rmvIdx.end(), id);
     if (it != rmvIdx.end())
@@ -73,12 +72,12 @@ void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
     else
     {
       nnd++;
-      for (int iDim=0; iDim<nDim; iDim++)
-        nsdv.push_back(slnData[id*nDim + iDim]); 
+      for (int iDim = 0; iDim < nDim; iDim++)
+        nsdv.push_back(slnData[id * nDim + iDim]);
     }
   }
   slnData = nsdv;
-  nData = nnd; 
+  nData = nnd;
 }
 
 

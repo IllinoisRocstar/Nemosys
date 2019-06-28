@@ -1,10 +1,16 @@
 from setuptools import setup, Extension
 # from distutils.core import setup, Extension
+import sys
+
+if sys.platform == 'win32':
+    runtime_lib_dirs = []
+else:
+    runtime_lib_dirs = ['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/lib']
 
 pyNemosys = Extension(
     '_pyNemosys',
     sources='${WRAPPER_SOURCE_FILES}'.split(';'),
-    include_dirs=filter(None, (
+    include_dirs=list(filter(None, (
             '${WRAPPER_INCLUDE_DIRS}'.split(';')
             + '${VTK_INCLUDE_DIRS}'.split(';')
             + '${GMSH_INCPATH}'.split(';')
@@ -15,15 +21,27 @@ pyNemosys = Extension(
             + '${METIS_INCPATH}'.split(';')
             + '${NETGEN_INCLUDE_DIRS}'.split(';')
             + '${EXTRA_INCLUDE_DIRS}'.split(';')
-    )),
-    libraries=['Nemosys'],
-    library_dirs=['${CMAKE_BINARY_DIR}'],
-    runtime_library_dirs=['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/lib'],
-    swig_opts=['-c++'],
-    extra_compile_args=filter(None, (
+    ))),
+    libraries=(
+            ['Nemosys',
+             '${VTK_COMMON_CORE_LIB}'
+             ]
+    ),
+    library_dirs=(
+            ['${CMAKE_BINARY_DIR}',
+             '${VTK_LIB_DIR}',
+             '${VTK_LIB_DIR}/../lib'
+             ]
+    ),
+    runtime_library_dirs=runtime_lib_dirs,
+    swig_opts=list(filter(None, (
+            ['-c++', '-DNEMOSYS_EXPORT=']
+            + '${EXTRA_COMPILE_ARGS}'.split(';')
+    ))),
+    extra_compile_args=list(filter(None, (
             ['-std=c++11', '-w']
             + '${EXTRA_COMPILE_ARGS}'.split(';')
-    ))
+    )))
 )
 
 setup(

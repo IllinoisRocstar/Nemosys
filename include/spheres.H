@@ -1,57 +1,48 @@
 #ifndef spheres_H
 #define spheres_H
 
-#include <iostream>
-#include <fstream>
-#include <ostream>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <cstring>
-#include <sstream>
 #include <vector>
-#include<string>
+#include <string>
+#include <istream>
+#include <ostream>
 
-using std::cout; using std::endl;
-using std::ofstream; using std::string;
-using std::istream; using std::ostream;
-using std::ifstream; using std::vector;
-using std::size_t; using std::stringstream;
+#include "interp_export.h"
 
-class sphere {
-public:
-  // constructors
-  sphere(){}  
-  sphere(double x_, double y_, double z_, double r_)
-  : x(x_), y(y_), z(z_), r(r_) {}
-  ~sphere(){}
-  // access   
-  double X() const { return x; }
-  double Y() const { return y; }
-  double Z() const { return z; }
-  double R() const { return r; }
+class INTERP_EXPORT sphere {
+  public:
+    // constructors
+    sphere() = default;
+    sphere(double x_, double y_, double z_, double r_)
+        : x(x_), y(y_), z(z_), r(r_) {}
+    ~sphere() = default;
+    // access
+    double X() const { return x; }
+    double Y() const { return y; }
+    double Z() const { return z; }
+    double R() const { return r; }
 
-  // member
-  bool in_sphere(std::vector<double> point);    
+    // member
+    bool in_sphere(const std::vector<double> &point) const;
 
-private:
-  double x;
-  double y;
-  double z;
-  double r;
+  private:
+    double x;
+    double y;
+    double z;
+    double r;
 };
 
 typedef struct sphere_string sphere_string;
-struct sphere_string 
-{
-  vector<sphere> spheres;
-  vector<std::string> strings;
+struct INTERP_EXPORT sphere_string {
+  std::vector<sphere> spheres;
+  std::vector<std::string> strings;
 };
 
 // read spheres from istream
-sphere_string readSpheres(std::istream& inputStream);
+INTERP_EXPORT sphere_string readSpheres(const std::istream &inputStream);
 // read spheres from file
-sphere_string readSpheres(std::string filename);
-// write spheres to outupt stream
-void writeSpheres(const std::vector<sphere> s, ostream& outputStream);
-#endif
+INTERP_EXPORT sphere_string readSpheres(const std::string &filename);
+// write spheres to output stream
+INTERP_EXPORT void writeSpheres(const std::vector<sphere> &s,
+                                 std::ostream &outputStream);
+
+#endif // spheres_H

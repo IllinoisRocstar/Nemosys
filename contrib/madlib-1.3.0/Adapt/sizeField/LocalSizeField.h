@@ -14,6 +14,8 @@
 #ifndef _H_LOCALSIZEFIELD
 #define _H_LOCALSIZEFIELD
 
+#include "madlib_export.h"
+
 #include "SizeFieldBase.h"
 #include "DistanceFunction.h"
 
@@ -44,7 +46,7 @@ namespace MAd {
   class MAdStringFieldEvaluator;
 
   // -------------------------------------------------------------------
-  class LocalSizeField : public SizeFieldBase {
+  class MADLIB_EXPORT LocalSizeField : public SizeFieldBase {
 
   public:
 

@@ -14,6 +14,8 @@
 #ifndef _CHECKMESH_H_
 #define _CHECKMESH_H_
 
+#include "madlib_export.h"
+
 #include "MeshDataBaseInterface.h"
 
 namespace MAd {
@@ -48,8 +50,11 @@ namespace MAd {
 
   // -------------------------------------------------------------------
   // return 1 if the mesh passes the test successfully, 0 otherwise
-  bool checkMesh(MDB_Mesh * mesh, checkType type=CHECK_ALL, int verbose=1, 
-                 std::ostream& out=std::cout, MeshStatus * status=NULL);
+  bool MADLIB_EXPORT checkMesh(MDB_Mesh *mesh,
+                               checkType type=CHECK_ALL,
+                               int verbose=1,
+                               std::ostream &out=std::cout,
+                               MeshStatus *status=NULL);
 
   // -------------------------------------------------------------------
 

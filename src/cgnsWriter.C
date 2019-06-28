@@ -1,6 +1,10 @@
 /* Implementation of CGNSWriter class */
 #include "cgnsWriter.H"
-#include "GmshEntities.h"
+
+#include <iostream>
+#include <cstring>
+#include <sstream>
+#include <algorithm>
 
 // delete file
 void cgnsWriter::deleteFile()
@@ -792,11 +796,13 @@ void cgnsWriter::writeVolCellFacesNumber()
   // only for volume
   cgsize_t tmpDim[1];
   tmpDim[0] = nVolCellFaces;
-  double gsArray[nVolCellFaces];
-  memset(gsArray, 0.0, nVolCellFaces*sizeof(double));
+  //double gsArray[nVolCellFaces];
+  std::vector<double> gsArray;
+  gsArray.resize(nVolCellFaces, 0.);
+  memset(&gsArray[0], 0.0, nVolCellFaces*sizeof(double));
   indexBase = 1;
   if (cg_goto(indexFile, indexBase, "Zone_t", 1, paneName.c_str(),0,"end")) cg_error_exit();
-  if (cg_array_write("gs", CG_RealDouble, 1, tmpDim, gsArray)) cg_error_exit();  
+  if (cg_array_write("gs", CG_RealDouble, 1, tmpDim, &gsArray[0])) cg_error_exit();  
   if (cg_goto(indexFile, indexBase, "Zone_t", 1, paneName.c_str(),0,"gs",0,"end")) 
     cg_error_exit();
   if (cg_descriptor_write("Range", "0, 0")) cg_error_exit(); 
@@ -1028,7 +1034,7 @@ void cgnsWriter::writeZoneToFile()
   if (!pConnVec.empty())
   {
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
-    tmpDim[0] = {pConnVec.size()};
+    tmpDim[0] = {(cgsize_t) pConnVec.size()};
     if (cg_array_write("pconn",CG_Integer,1, tmpDim, &pConnVec[0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, "pconn",0,"end")) 
       cg_error_exit();
@@ -1194,7 +1200,7 @@ void cgnsWriter::writeZoneToFile()
     }
 
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
-    tmpDim[0] = {gelmConns[igSec].size()};
+    tmpDim[0] = {(cgsize_t) gelmConns[igSec].size()};
     if (cg_array_write((gsectionNames[igSec]).c_str(),CG_Integer,1, tmpDim, &gelmConns[igSec][0])) cg_error_exit();
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0, (gsectionNames[igSec]).c_str(),0,"end")) 
       cg_error_exit();
