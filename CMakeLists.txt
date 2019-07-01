@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 32)
+set(NEMOSYS_MINOR_VERSION 33)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -17,7 +17,8 @@ set(NEMOSYS_AUTHOR
     "Alessandro Gondolo"
     "Sachin Natesh"
     "Pavle Simonovic"
-    "Taiyo Wilson")
+    "Taiyo Wilson"
+    "Akash Patel")
 set(NEMOSYS_AUTHOR_EMAIL "msafdari@illinoisrocstar.com")
 set(NEMOSYS_PYTHON_CLASSIFIERS
     "Development Status :: 2 - Pre-Alpha"
@@ -337,11 +338,16 @@ if(ENABLE_CFMSH)
   if(OF4 GREATER -1)
     # OpenFOAM 4.x
     find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
-        edgeMesh finiteVolume foamToVTK)
+        meshTools finiteVolume foamToVTK dynamicMesh lagrangian
+        fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
+        genericPatchFields
+        edgeMesh)
   else()
     # 5.x and 6.x series
     find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
-        meshTools finiteVolume foamToVTK)
+        meshTools finiteVolume foamToVTK dynamicMesh lagrangian
+        fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
+        genericPatchFields)
   endif()
 
   message(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
@@ -525,6 +531,14 @@ if(ENABLE_CFMSH)
       src/MeshGeneration/cfmeshParams.C
       src/MeshGeneration/cfmeshGen.C
       src/MeshQuality/cfmshQualityParams.C
+      src/MeshGeneration/snappymeshParams.C
+      src/MeshGeneration/snappymeshGen.C
+      src/MeshGeneration/blockMeshGen.C
+      src/MeshGeneration/blockMeshParams.C
+      src/MeshManipulationFoam/MeshManipulationFoam.C
+      src/MeshManipulationFoam/MeshManipulationFoamParams.C
+      src/MeshManipulationFoam/mergePolyMesh.C
+      src/Drivers/PackMeshDriver.C
   )
 endif()
 
@@ -644,6 +658,21 @@ if(ENABLE_CFMSH)
   target_include_directories(Nemosys PUBLIC ${CFMSH_INCPATH}
                                             ${OPNF_INCLUDE_DIRS})
   target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
+
+  string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
+  if(OF4 GREATER -1)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF4)
+  endif()
+
+  string(FIND $ENV{WM_PROJECT_VERSION} "5" OF5)
+  if(OF5 GREATER -1)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF5)
+  endif()
+
+  string(FIND $ENV{WM_PROJECT_VERSION} "6" OF6)
+  if(OF6 GREATER -1)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF6)
+  endif()
 
   # openfoam variables
   set(LABEL_SIZE 32)

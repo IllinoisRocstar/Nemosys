@@ -74,6 +74,18 @@ if(ENABLE_CFMSH)
   add_executable(runCFMQualTest test_scripts/testCFMQual.C)
   target_link_libraries(runCFMQualTest gtest gtest_main Nemosys)
   add_dependencies(unittests runCFMQualTest)
+
+  add_executable(runSHMTest test_scripts/testSHM.C)
+  target_link_libraries(runSHMTest gtest gtest_main Nemosys)
+  add_dependencies(unittests runSHMTest)
+
+  add_executable(runBlockMTest test_scripts/testBlockMSH.C)
+  target_link_libraries(runBlockMTest gtest gtest_main Nemosys)
+  add_dependencies(unittests runBlockMTest)
+
+  add_executable(runPackMeshTest test_scripts/testPackMesh.C)
+  target_link_libraries(runPackMeshTest gtest gtest_main Nemosys)
+  add_dependencies(unittests runPackMeshTest)
 endif()
 
 file(COPY test_data
@@ -99,6 +111,14 @@ set(CFM_BUNNY_TESTDIR ${TEST_DATA}/cfm_bunny)
 set(CFM_BUNNY_OCT_TESTDIR ${TEST_DATA}/cfm_bunny_oct)
 set(CFM_QUAL_TESTDIR ${TEST_DATA}/cfm_qual)
 set(GMSHMESH_TESTDIR ${TEST_DATA}/GmshMeshTest)
+set(PACKMESH_TESTDIR ${TEST_DATA}/packmesh)
+set(SHM_BOXPACK_TESTDIR ${TEST_DATA}/snappy_BoxPack)
+set(SHM_BULLET_TESTDIR ${TEST_DATA}/snappy_Bullet)
+set(SHM_FLANGE_TESTDIR ${TEST_DATA}/snappy_Flange)
+set(BMSH_BOX_TESTDIR ${TEST_DATA}/blockMsh_Box)
+set(BMSH_SPHERE_TESTDIR ${TEST_DATA}/blockMsh_Sphere)
+set(BMSH_TCONE_TESTDIR ${TEST_DATA}/blockMsh_TCone)
+set(PACKMESH_TESTDIR ${TEST_DATA}/packmesh)
 
 set(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
 set(meshgendefault ${MESHGEN_TESTDIR}/default.json)
@@ -132,6 +152,13 @@ set(cfm_bunny_oct ${CFM_BUNNY_OCT_TESTDIR}/cfmsh.json)
 set(cfm_qual_gen_in ${CFM_QUAL_TESTDIR}/cfmsh_in.json)
 set(cfm_qual_gen ${CFM_QUAL_TESTDIR}/cfmsh.json)
 set(cfm_qual ${CFM_QUAL_TESTDIR}/cfmsh_qual.json)
+set(packmesh ${PACKMESH_TESTDIR}/PackMsh_Master.json)
+set(snappy_BoxPack ${SHM_BOXPACK_TESTDIR}/shmsh.json)
+set(snappy_Bullet ${SHM_BULLET_TESTDIR}/shmsh.json)
+set(snappy_Flange ${SHM_FLANGE_TESTDIR}/shmsh.json)
+set(blockMsh_Box ${BMSH_BOX_TESTDIR}/blockMsh_Box.json)
+set(blockMsh_Sphere ${BMSH_SPHERE_TESTDIR}/blockMsh_Sphere.json)
+set(blockMsh_TCone ${BMSH_TCONE_TESTDIR}/blockMsh_TCone.json)
 
 configure_file(${meshgendefault_in} ${meshgendefault} @ONLY)
 configure_file(${meshgenunif_in} ${meshgenunif} @ONLY)
@@ -148,6 +175,14 @@ configure_file(${cfm_hinge_in} ${cfm_hinge} @ONLY)
 configure_file(${cfm_bunny_in} ${cfm_bunny} @ONLY)
 configure_file(${cfm_bunny_oct_in} ${cfm_bunny_oct} @ONLY)
 configure_file(${cfm_qual_gen_in} ${cfm_qual_gen} @ONLY)
+configure_file(${packmesh_in} ${packmesh} @ONLY)
+configure_file(${snappy_BoxPack_in} ${snappy_BoxPack} @ONLY)
+configure_file(${snappy_Bullet_in} ${snappy_Bullet} @ONLY)
+configure_file(${snappy_Flange_in} ${snappy_Flange} @ONLY)
+configure_file(${blockMsh_Box_in} ${blockMsh_Box} @ONLY)
+configure_file(${blockMsh_Sphere_in} ${blockMsh_Sphere} @ONLY)
+configure_file(${blockMsh_TCone_in} ${blockMsh_TCone} @ONLY)
+configure_file(${packmesh_in} ${packmesh} @ONLY)
 
 if(WIN32)
   # Note: Do not indent. The indentation whitespace is added to the variable!
@@ -306,6 +341,41 @@ if(ENABLE_CFMSH)
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
       runCFMQualTest ${cfm_qual_gen} ${cfm_qual}
       WORKING_DIRECTORY ${CFM_QUAL_TESTDIR}
+  )
+  add_test(NAME packmesh
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runPackMeshTest ${packmesh}
+      WORKING_DIRECTORY ${PACKMESH_TESTDIR}
+  )
+  add_test(NAME snappy_BoxPack
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runSHMTest ${snappy_BoxPack}
+      WORKING_DIRECTORY ${SHM_BOXPACK_TESTDIR}
+  )
+  add_test(NAME snappy_Bullet
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runSHMTest ${snappy_Bullet}
+      WORKING_DIRECTORY ${SHM_BULLET_TESTDIR}
+  )
+  add_test(NAME snappy_Flange
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runSHMTest ${snappy_Flange}
+      WORKING_DIRECTORY ${SHM_FLANGE_TESTDIR}
+  )
+  add_test(NAME blockMsh_Box
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runBlockMTest ${blockMsh_Box}
+      WORKING_DIRECTORY ${BMSH_BOX_TESTDIR}
+  )
+  add_test(NAME blockMsh_Sphere
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runBlockMTest ${blockMsh_Sphere}
+      WORKING_DIRECTORY ${BMSH_SPHERE_TESTDIR}
+  )
+  add_test(NAME blockMsh_TCone
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      runBlockMTest ${blockMsh_TCone}
+      WORKING_DIRECTORY ${BMSH_TCONE_TESTDIR}
   )
 endif()
 

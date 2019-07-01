@@ -37,6 +37,7 @@ cfmeshGen::cfmeshGen()
   _params->minCellSize = -1.;
   _params->bndryCellSize = -1.;
   _params->maxFrstLyrThk = -1.;
+  _params->_alwDiscDomains = false;
   _params->alwDiscont = false;
   _params->keepCellIB = -1;
   _params->chkGluMsh = -1;
@@ -308,6 +309,9 @@ FoamFile\n\
     if ((_params->chkGluMsh)>0)
         contText = contText + "\ncheckForGluedMesh " 
         + std::to_string(_params->chkGluMsh) + ";\n";
+
+    if ((_params->_alwDiscDomains))
+        contText = contText + "\nallowDisconnectedDomains 1;\n";
 
     contText = contText +"\n\nsurfaceFile	\"" + (_params->geomFilePath) +"\";\n";
 

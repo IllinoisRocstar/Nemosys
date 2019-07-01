@@ -49,6 +49,7 @@ class cfmeshParams : public meshingParams
     ~cfmeshParams() override = default;
 
     // general
+    bool _alwDiscDomains;       // Multi-region meshing
     std::string geomFilePath;   // name of geometry file and full path
     std::string generator;      // mesh generation method to be used
     double maxCellSize;         // maximum cell size
