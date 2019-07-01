@@ -8,6 +8,7 @@
 #include "InputGenDriver.H"
 #include "RemeshDriver.H"
 #include "RocPartCommGenDriver.H"
+#include "PackMeshDriver.H"
 
 #include <string>
 #include <iostream>
@@ -39,6 +40,15 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson)
   else if (program_type == "Input Generation")
   {
     return InputGenDriver::readJSON(inputjson);
+  }
+  else if (program_type == "Pack Mesh Generation")
+  {
+    #ifdef HAVE_CFMSH
+    return PackMeshDriver::readJSON(inputjson);
+    #else
+    std::cerr << "Build NEMoSys with CfMesh" << std::endl;
+    exit(1);
+    #endif
   }
   else if (program_type == "Rocstar Remeshing")
   {

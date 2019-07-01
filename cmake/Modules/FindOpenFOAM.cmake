@@ -38,147 +38,145 @@ include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
 
 # List of minimum required OpenFOAM library components
 set(OPNF_COMPONENT_BINDINGS)
-set( OPNF_VALID_COMPONENTS
-   barotropicCompressibilityModel
-   blockMesh
-   chemistryModel
-   coalCombustion
-   combustionModels
-   compressibleEulerianInterfacialModels
-   compressibleMultiphaseEulerianInterfacialModels
-   compressibleTransportModels
-   compressibleTurbulenceModels
-   compressibleTwoPhaseSystem
-   conversion
-   decompose
-   decompositionMethods
-   distributed
-   distributionModels
-   DPMTurbulenceModels
-   driftFluxRelativeVelocityModels
-   driftFluxTransportModels
-   DSMC
-   dynamicFvMesh
-   dynamicMesh
-   edgeMesh
-   engine
-   extrude2DMesh
-   extrudeModel
-   fieldFunctionObjects
-   fileFormats
-   finiteVolume
-   fluidThermophysicalModels
-   foamToVTK
-   forces
-   fvMotionSolvers
-   fvOptions
-   genericPatchFields
-   helpTypes
-   immiscibleIncompressibleTwoPhaseMixture
-   incompressibleTransportModels
-   incompressibleTurbulenceModels
-   interfaceProperties
-   lagrangianFunctionObjects
-   lagrangianIntermediate
-   lagrangian
-   lagrangianSpray
-   lagrangianTurbulence
-   laminarFlameSpeedModels
-   liquidMixtureProperties
-   liquidProperties
-   meshTools
-   molecularMeasurements
-   molecule
-   multiphaseInterFoam
-   multiphaseMixtureThermo
-   multiphaseReactingTurbulenceModels
-   multiphaseSystem
-   ODE
-   OpenFOAM
-   pairPatchAgglomeration
-   phaseChangeTwoPhaseMixtures
-   phaseCompressibleTurbulenceModels
-   potential
-   pyrolysisModels
-   radiationModels
-   randomProcesses
-   reactingEulerianInterfacialCompositionModels
-   reactingEulerianInterfacialModels
-   reactingMultiphaseSystem
-   reactingPhaseSystem
-   reactingTwoPhaseSystem
-   reactionThermophysicalModels
-   reconstruct
-   regionCoupled
-   regionCoupling
-   regionModels
-   renumberMethods
-   rhoCentralFoam
-   rigidBodyDynamics
-   rigidBodyMeshMotion
-   sampling
-   scotchDecomp
-   sixDoFRigidBodyMotion
-   SLGThermo
-   SloanRenumber
-   snappyHexMesh
-   solidChemistryModel
-   solidMixtureProperties
-   solidParticle
-   solidProperties
-   solidSpecie
-   solidThermo
-   solverFunctionObjects
-   specie
-   surfaceFilmDerivedFvPatchFields
-   surfaceFilmModels
-   surfMesh
-   tabulatedWallFunctions
-   thermalBaffleModels
-   thermophysicalFunctions
-   topoChangerFvMesh
-   triSurface
-   turbulenceModels
-   twoPhaseMixture
-   twoPhaseMixtureThermo
-   twoPhaseProperties
-   twoPhaseReactingTurbulenceModels
-   userd-foam
-   utilityFunctionObjects
+set(OPNF_VALID_COMPONENTS
+    barotropicCompressibilityModel
+    blockMesh
+    chemistryModel
+    coalCombustion
+    combustionModels
+    compressibleEulerianInterfacialModels
+    compressibleMultiphaseEulerianInterfacialModels
+    compressibleTransportModels
+    compressibleTurbulenceModels
+    compressibleTwoPhaseSystem
+    conversion
+    decompose
+    decompositionMethods
+    distributed
+    distributionModels
+    DPMTurbulenceModels
+    driftFluxRelativeVelocityModels
+    driftFluxTransportModels
+    DSMC
+    dynamicFvMesh
+    dynamicMesh
+    edgeMesh
+    engine
+    extrude2DMesh
+    extrudeModel
+    fieldFunctionObjects
+    fileFormats
+    finiteVolume
+    fluidThermophysicalModels
+    foamToVTK
+    forces
+    fvMotionSolvers
+    fvOptions
+    genericPatchFields
+    helpTypes
+    immiscibleIncompressibleTwoPhaseMixture
+    incompressibleTransportModels
+    incompressibleTurbulenceModels
+    interfaceProperties
+    lagrangianFunctionObjects
+    lagrangianIntermediate
+    lagrangian
+    lagrangianSpray
+    lagrangianTurbulence
+    laminarFlameSpeedModels
+    liquidMixtureProperties
+    liquidProperties
+    meshTools
+    molecularMeasurements
+    molecule
+    multiphaseInterFoam
+    multiphaseMixtureThermo
+    multiphaseReactingTurbulenceModels
+    multiphaseSystem
+    ODE
+    OpenFOAM
+    pairPatchAgglomeration
+    phaseChangeTwoPhaseMixtures
+    phaseCompressibleTurbulenceModels
+    potential
+    pyrolysisModels
+    radiationModels
+    randomProcesses
+    reactingEulerianInterfacialCompositionModels
+    reactingEulerianInterfacialModels
+    reactingMultiphaseSystem
+    reactingPhaseSystem
+    reactingTwoPhaseSystem
+    reactionThermophysicalModels
+    reconstruct
+    regionCoupled
+    regionCoupling
+    regionModels
+    renumberMethods
+    rhoCentralFoam
+    rigidBodyDynamics
+    rigidBodyMeshMotion
+    sampling
+    scotchDecomp
+    sixDoFRigidBodyMotion
+    SLGThermo
+    SloanRenumber
+    snappyHexMesh
+    solidChemistryModel
+    solidMixtureProperties
+    solidParticle
+    solidProperties
+    solidSpecie
+    solidThermo
+    solverFunctionObjects
+    specie
+    surfaceFilmDerivedFvPatchFields
+    surfaceFilmModels
+    surfMesh
+    tabulatedWallFunctions
+    thermalBaffleModels
+    thermophysicalFunctions
+    topoChangerFvMesh
+    triSurface
+    turbulenceModels
+    twoPhaseMixture
+    twoPhaseMixtureThermo
+    twoPhaseProperties
+    twoPhaseReactingTurbulenceModels
+    userd-foam
+    utilityFunctionObjects
 )
 
 # if no component is defined all OpenFOAM components will
 # be added to the list otherwise, validate the list of find components
-if( NOT OpenFOAM_FIND_COMPONENTS )
-    set (OPNF_COMPONENT_BINDINGS ${OPNF_VALID_COMPONENTS})
+if(NOT OpenFOAM_FIND_COMPONENTS)
+  set(OPNF_COMPONENT_BINDINGS ${OPNF_VALID_COMPONENTS})
 else()
-    # add the extra specified components, ensuring that they are valid.
-    foreach( component ${OpenFOAM_FIND_COMPONENTS} )
-        list( FIND OPNF_VALID_COMPONENTS ${component} component_location )
-        if( ${component_location} EQUAL -1 )
-            message( FATAL_ERROR
-                "\"${component}\" is not a valid OpenFOAM component." )
-        else()
-            list( APPEND OPNF_COMPONENT_BINDINGS ${component} )
-        endif()
-    endforeach()
+  # add the extra specified components, ensuring that they are valid.
+  foreach(component ${OpenFOAM_FIND_COMPONENTS})
+    list(FIND OPNF_VALID_COMPONENTS ${component} component_location)
+    if(${component_location} EQUAL -1)
+      message(FATAL_ERROR "\"${component}\" is not a valid OpenFOAM component.")
+    else()
+      list(APPEND OPNF_COMPONENT_BINDINGS ${component})
+    endif()
+  endforeach()
 endif()
 
 # set initial parameters from OpenFOAM environment variables
 # check existance and read variables, preps for search step
 if(EXISTS $ENV{FOAM_SRC})
-    # search standard environment variables
-    set(OPNF_VERSION $ENV{WM_PROJECT_VERSION})
-    set(OPNF_INST_DIR $ENV{WM_PROJECT_DIR})
-    set(OPNF_SRC_DIR $ENV{FOAM_SRC})
-    set(OPNF_LIB_DIR $ENV{FOAM_LIBBIN})
-    set(OPNF_APP_DIR $ENV{FOAM_APPBIN})
-    set(OPNF_SITE_APP_DIR $ENV{FOAM_SITE_APPBIN})
-    set(OPNF_SITE_LIB_DIR $ENV{FOAM_SITE_LIBBIN})
+  # search standard environment variables
+  set(OPNF_VERSION $ENV{WM_PROJECT_VERSION})
+  set(OPNF_INST_DIR $ENV{WM_PROJECT_DIR})
+  set(OPNF_SRC_DIR $ENV{FOAM_SRC})
+  set(OPNF_LIB_DIR $ENV{FOAM_LIBBIN})
+  set(OPNF_APP_DIR $ENV{FOAM_APPBIN})
+  set(OPNF_SITE_APP_DIR $ENV{FOAM_SITE_APPBIN})
+  set(OPNF_SITE_LIB_DIR $ENV{FOAM_SITE_LIBBIN})
 else()
-    # search if root directory is set
-    message( FATAL_ERROR
-                "Unable to determine openfoam installation location." )
+  # search if root directory is set
+  message(FATAL_ERROR "Unable to determine openfoam installation location.")
 endif()
 
 # OpenFOAM header files are distributed in several folders, making it hard to add 
@@ -187,18 +185,26 @@ endif()
 # the current project's openFoam dependent modules. If used for outside this project
 # these lines should be changed to include the dependenices needed.
 set(OPNF_INC_DIR
-   ${OPNF_INST_DIR}/src/OSspecific/POSIX/lnInclude
-   ${OPNF_INST_DIR}/src/OpenFOAM/lnInclude
-   ${OPNF_INST_DIR}/src/finiteVolume/lnInclude
-   ${OPNF_INST_DIR}/src/meshTools/lnInclude 
-   ${OPNF_INST_DIR}/src/triSurface/lnInclude 
-   ${OPNF_INST_DIR}/applications/utilities/postProcessing/dataConversion/foamToVTK/foamToVTK/lnInclude
-   )
+    ${OPNF_INST_DIR}/src/OSspecific/POSIX/lnInclude
+    ${OPNF_INST_DIR}/src/OpenFOAM/lnInclude
+    ${OPNF_INST_DIR}/src/finiteVolume/lnInclude
+    ${OPNF_INST_DIR}/src/meshTools/lnInclude
+    ${OPNF_INST_DIR}/src/triSurface/lnInclude
+    ${OPNF_INST_DIR}/src/parallel/decompose/decompositionMethods/lnInclude
+    ${OPNF_INST_DIR}/src/mesh/snappyHexMesh/lnInclude
+    ${OPNF_INST_DIR}/src/fileFormats/lnInclude
+    ${OPNF_INST_DIR}/src/surfMesh/lnInclude
+    ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
+    ${OPNF_INST_DIR}/src/lagrangian/basics/lnInclude
+    ${OPNF_INST_DIR}/applications/utilities/postProcessing/dataConversion/foamToVTK/foamToVTK/lnInclude
+    ${OPNF_INST_DIR}/src/edgeMesh/lnInclude
+    ${OPNF_INST_DIR}/src/mesh/blockMesh/lnInclude
+)
 
 # setting the output variables
-set( OPNF_INCLUDE_DIRS ${OPNF_INC_DIR} )
-set( OPNF_LIBRARIES ${OPNF_COMPONENT_BINDINGS})
-set( OPNF_LIBRARY_DIRS ${OPNF_LIB_DIR})
+set(OPNF_INCLUDE_DIRS ${OPNF_INC_DIR})
+set(OPNF_LIBRARIES ${OPNF_COMPONENT_BINDINGS})
+set(OPNF_LIBRARY_DIRS ${OPNF_LIB_DIR})
 
 # We may have picked up some duplicates in various lists during the above
 # process for the language bindings (both the C and C++ bindings depend on
@@ -208,21 +214,21 @@ set( OPNF_LIBRARY_DIRS ${OPNF_LIB_DIR})
 # for down the link line. Therefore, we reverse the list, remove the
 # duplicates, and then reverse it again to get the duplicates removed from
 # the beginning.
-macro( _remove_duplicates_from_beginning _list_name )
-    list( REVERSE ${_list_name} )
-    list( REMOVE_DUPLICATES ${_list_name} )
-    list( REVERSE ${_list_name} )
+macro(_remove_duplicates_from_beginning _list_name)
+  list(REVERSE ${_list_name})
+  list(REMOVE_DUPLICATES ${_list_name})
+  list(REVERSE ${_list_name})
 endmacro()
 
-if( OPNF_INCLUDE_DIRS )
-    _remove_duplicates_from_beginning( OPNF_INCLUDE_DIRS )
+if(OPNF_INCLUDE_DIRS)
+  _remove_duplicates_from_beginning(OPNF_INCLUDE_DIRS)
 endif()
-if( OPNF_LIBRARY_DIRS )
-    _remove_duplicates_from_beginning( OPNF_LIBRARY_DIRS )
+if(OPNF_LIBRARY_DIRS)
+  _remove_duplicates_from_beginning(OPNF_LIBRARY_DIRS)
 endif()
 
 # final processing
 message(STATUS "OpenFOAM library location ${OPNF_LIBRARY_DIRS}")
-find_package_handle_standard_args( OpenFOAM
+find_package_handle_standard_args(OpenFOAM
     REQUIRED_VARS OPNF_LIBRARIES OPNF_INCLUDE_DIRS
-    VERSION_VAR   OPNF_VERSION )
+    VERSION_VAR OPNF_VERSION)
