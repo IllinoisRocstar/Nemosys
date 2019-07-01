@@ -194,6 +194,16 @@ meshBase *meshBase::generateMesh(const std::string &fname,
         std::string newname = nemAux::trim_fname(fname, ".vtu");
         ret = Create(generator->getDataSet(), newname); 
       }
+      else if (meshEngine == "snappyHexMesh")
+      {
+        std::string newname = nemAux::trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname);
+      }
+      else if (meshEngine == "blockMesh")
+      {
+        std::string newname = nemAux::trim_fname(fname, ".vtu");
+        ret = Create(generator->getDataSet(), newname);
+      }
     }
     delete generator;
     generator=nullptr;

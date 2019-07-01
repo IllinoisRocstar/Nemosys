@@ -1,0 +1,163 @@
+[
+        {
+            "Pack Reference File": "geom_pack_mesh_ref6.vtu",
+            "Surrounding Reference File": "geom_surrounding_mesh_ref6.vtu",
+            "Program Type": "Pack Mesh Generation",
+            "Mesh Generation Engine": "packmesh",
+            "Mesh File Options": 
+            {
+                "Input Geometry File": "packs.stl",
+                "Output Pack Mesh File": "geom_pack_mesh.vtu",
+                "Output Surrounding Mesh File": "geom_surrounding_mesh.vtu"
+            },
+            "Meshing Modules Options":
+            {
+                
+            },
+            "Meshing Parameters": 
+            {
+                "CFMesh Parameters":
+                {
+                    "Generator": "cartesian3D",
+                    "MaxCellSize": 0.01,
+                    "MinCellSize": -1,
+                    "BoundaryCellSize": -1,
+                    "KeepCellsIntersectingBoundary": -1,
+                    "CheckForGluedMesh": -1,
+                    "AllowDisconnectedDomains": 1
+                },
+                "snappyHexMesh Parameters": 
+                {
+                    "Castellated Mesh": 1,
+                    "Snapping": 1,
+                    "Layer Addition": 0,
+                    "CellZones": 1,                 //Keep 1 for pack meshing
+                    "RegionRefine": 0,
+                    "SurfaceRefine": 0,
+                    "InputPatchName": "domain100",  //do not change
+                    "SurfPatchName" : "domain100",  //do not change
+                    "maxLocalCells": 2000000,
+                    "maxGlobalCells": 4000000,
+                    "minRefCells": 0,
+                    "nCellsBetweenLevels": 3,
+                    "surfaceRefinementLvlMin": 0,
+                    "surfaceRefinementLvlMax": 0,
+                    "resolveFeatureAngle": 60,
+                    "locationInMeshX": 0,           //should be in surrounding only
+                    "locationInMeshY": 0,           //should be in surrounding only
+                    "locationInMeshZ": 0,           //should be in surrounding only
+                    "allowFreeStandingZoneFaces": 1,
+                    "nSmoothPatch": 4,
+                    "tolerance": 0.5,
+                    "snapSolveIter": 200,
+                    "snapRelaxIter": 6,
+                    "relativeSizes": 1,
+                    "expansionRatio": 1.3,
+                    "finalLayerThickness": 1.0,
+                    "minThickness": 0.1,
+                    "nGrow": 0,
+                    "featureAngle": 30,
+                    "nRelaxIter": 3,
+                    "nSmoothSurfaceNormals": 1,
+                    "nSmoothNormals": 3,
+                    "nSmoothThickness": 2,
+                    "maxFaceThicknessRatio": 0.5,
+                    "maxThicknessToMedialRatio": 1.0,
+                    "minMedialAxisAngle": 90,
+                    "nBufferCellsNoExtrude": 0,
+                    "nLayerIter": 50,
+                    "maxNonOrtho": 65,
+                    "maxBoundarySkewness": 20,
+                    "maxInternalSkewness": 4,
+                    "maxConcave": 80,
+                    "minVol": 1e-13,
+                    "minTetQuality": 1e-15,
+                    "minArea": -1,
+                    "minTwist": 0.02,
+                    "minFaceWeight": 0.05,
+                    "minVolRatio": 0.01,
+                    "minDeterminant": 0.001,
+                    "minTriangleTwist": -1,
+                    "qcnSmoothScale": 5,
+                    "errorReduction": 0.75,
+                    "mergeTolerance": 1e-06
+                },
+                "blockMesh Parameters":
+                {
+                    "Input Dict File": 0,
+                    "Block Geometry": 1,
+                    "Sphere Geometry": 0,
+                    "Cylinder/Tapered_Cone Geometry": 0,
+                    "scaleToMeters": 1,
+                    "XdirectionCells": 45,
+                    "YdirectionCells": 60,
+                    "ZdirectionCells": 60,
+                    "Block Parameters":
+                    {
+                        "X1": -0.25,
+                        "Y1": -0.35,
+                        "Z1": -0.35,
+                        "LengthX": 0.45,
+                        "LengthY": 0.65,
+                        "LengthZ": 0.5,
+                        "GradingXdir": 1,
+                        "GradingYdir": 1,
+                        "GradingZdir": 1
+                    }
+                },
+                "MeshManipulation Parameters":
+                {
+                    "Enable SurfLambdaMuSmooth": 0,         //yet to implement   
+                    "Enable splitMeshRegions": 0,           //yet to implement   
+                    "Enable MergeMeshes": 0,                //yet to implement
+                    "Enable CreatePatch": 0,                //yet to implement
+                    "Enable foamToSurface": 0,              //yet to implement
+                    "Enable surfaceSplitByTopology": 0,     //yet to implement       
+
+                    "SurfLambdaMuSmooth Parameters":
+                    {
+                        "AddFeatureFile?": 0,
+                        "Input STL File": "icosidodecahedron_10_03.stl",
+                        "Output STL File": "out.stl",
+                        "Lambda": 0.8,
+                        "Mu": 0.8,
+                        "Smoothing Interations": 50
+                    },
+                    "mergeMeshes Parameters":
+                    {
+                        "Master Region Path": ".",
+                        "Add Region Path": ".",
+                        "overwrite?": 1,
+                        "Master Region": "domain1",         //Do not change
+                        "Add Region": "domain100",          //Do not change
+                        "Number of Domains": 2              //Should be = # of Packs
+                    },
+                    "foamToSurface Parameters":             //Keep name similar to inp file
+                    {
+                        "Output File Path": "./constant/triSurface/packs.stl"
+                    },
+                    "splitMeshRegions Parameters":
+                    {
+                        "overwrite?": 1,
+                        "useCellZones?": 1
+                    },
+                    "createPatch Parameters":
+                    {
+                        "Surrounding PatchName": "Dirt",
+                        "Packs PatchName": "Rocks",
+                        "Surrounding PatchType": "wall",
+                        "Packs PatchType": "wall",
+                        "overwrite?": 1,
+                        "Packs Path": "domain1",           //Do not change  
+                        "Surrounding Path": "domain0",     //Do not change      
+                        "overwrite?": 1
+                    },
+                    "surfaceSplitByTopology Parameters":
+                    {
+                        "Input File":"icosidodecahedron_10_03.stl",
+                        "Output File":"outSurf.stl"
+                    }
+                }
+            }
+        }
+]

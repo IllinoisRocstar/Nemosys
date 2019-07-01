@@ -83,10 +83,23 @@ void foamMesh::read(const std::string& fname)
     }
     else
     {
+      
+      if (fname == "PackMesh")
+      {
+        regionName = "domain1";
+      }
+      else if (fname == "SurroundingMesh")
+      {
+        regionName = "domain0";
+      }
+      else
+      {
         regionName = Foam::fvMesh::defaultRegion;
         Foam::Info
             << "Create mesh for time = "
             << _runTime->timeName() << Foam::nl << Foam::endl;
+      }
+
     }
     _fmesh = new Foam::fvMesh 
     (
