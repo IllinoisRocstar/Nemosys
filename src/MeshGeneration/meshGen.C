@@ -12,6 +12,10 @@
 #ifdef HAVE_CFMSH
   #include "cfmeshGen.H"
   #include "cfmeshParams.H"
+  #include "snappymeshGen.H"
+  #include "snappymeshParams.H"
+  #include "blockMeshGen.H"
+  #include "blockMeshParams.H"
 #endif
 
 
@@ -42,6 +46,16 @@ meshGen *meshGen::Create(const std::string &fname,
   {
     auto *generator = new cfmeshGen();
     return generator;
+  }
+  else if (meshEngine == "snappyHexMesh")
+  {
+    auto *generator = new snappymeshGen();
+    return generator;
+  }
+  else if (meshEngine == "blockMesh")
+  {
+	  auto *generator = new blockMeshGen();
+	  return generator;
   }
 #endif
   else
@@ -81,6 +95,16 @@ meshGen *meshGen::Create(const std::string &fname,
   {
     auto *generator = new cfmeshGen(dynamic_cast<cfmeshParams *>(params));
     return generator;
+  }
+  else if (meshEngine == "snappyHexMesh")
+  {
+    auto *generator = new snappymeshGen(dynamic_cast<snappymeshParams *>(params));
+    return generator;
+  }
+  else if (meshEngine == "blockMesh")
+  {
+	  auto *generator = new blockMeshGen(dynamic_cast<blockMeshParams *>(params));
+	  return generator;
   }
 #endif
   else
