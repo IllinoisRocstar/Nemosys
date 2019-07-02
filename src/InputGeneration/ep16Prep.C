@@ -145,7 +145,7 @@ void ep16Prep::process()
     jsoncons::json _matj = _jstrm["Material"];
     for (const auto &km: _matj.object_range())
     {
-      std::string kmkey = km.key();
+      std::string kmkey = std::string(km.key());
       nemAux::toLower(kmkey);
       _mat[kmkey] = km.value().as<int>();
     }
@@ -153,7 +153,7 @@ void ep16Prep::process()
     // boundary conditions information
     jsoncons::json _bcsj = _jstrm["Boundary Condition"];
     for (const auto &km: _bcsj.object_range()) {
-      std::string kmkey = km.key();
+      std::string kmkey = std::string(km.key());
       nemAux::toLower(kmkey);
       _bcs[kmkey] = km.value().as<std::string>();
       // translate to EPIC language
