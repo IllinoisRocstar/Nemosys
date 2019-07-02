@@ -280,7 +280,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           objRef.name = refObj["Name"].as<std::string>();
           for (const auto &prm: refObj["Params"].object_range())
           {
-            std::string key = prm.key();
+            std::string key = std::string(prm.key());
             std::string val = prm.value().as<std::string>();
             objRef.params[key] = val;
           }

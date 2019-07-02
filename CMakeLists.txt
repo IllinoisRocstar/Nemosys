@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 33)
+set(NEMOSYS_MINOR_VERSION 34)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -173,12 +173,14 @@ if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
 endif()
 message(STATUS "vtkCommonCore library ${VTK_COMMON_CORE_LIB}")
 
-# Find MAdLib and ANN
-add_subdirectory(contrib/madlib-1.3.0)
+# Find MAdLib, ANN, and jsoncons
+add_subdirectory(contrib/madlib-1.3.0) # includes ANN
+add_subdirectory(contrib/jsoncons-0.127.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
 get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
 get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
 
 # Find Gmsh
 find_library(GMSH_LIB gmsh HINTS lib)
@@ -570,6 +572,7 @@ target_link_libraries(Nemosys
     PUBLIC
         interp
         MAdLib
+        jsoncons
         ${VTK_LIBRARIES}
         ${GMSH_LIB}
         ${CGNS_LIB}
