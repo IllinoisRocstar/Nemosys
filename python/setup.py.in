@@ -18,6 +18,7 @@ pyNemosys = Extension(
             + '${CGNS_INCPATH}'.split(';')
             + '${MADLIB_INCPATH}'.split(';')
             + '${ANN_INCPATH}'.split(';')
+            + '${JSONCONS_INCPATH}'.split(';')
             + '${METIS_INCPATH}'.split(';')
             + '${NETGEN_INCLUDE_DIRS}'.split(';')
             + '${EXTRA_INCLUDE_DIRS}'.split(';')
