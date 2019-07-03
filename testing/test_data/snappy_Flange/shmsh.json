@@ -1,95 +1,88 @@
 [
-        {
-            "Reference File": "geom_mesh_ref.vtu",
-            "Program Type": "Mesh Generation",
-            "Mesh Generation Engine": "snappyHexMesh",
-            "Mesh File Options": 
-            {
-                "Input Geometry File": "flange.stl",
-                "Output Mesh File": "geom_mesh.vtu"
-            },
-            "Meshing Modules Options":
-            {
-                
-            },
-            "Meshing Parameters": 
-            {
-                "snappyHexMesh Parameters": 
-                {
-                    "Castellated Mesh": 1,
-                    "Snapping": 1,
-                    "Layer Addition": 0,
-                    "CellZones": 0,
-                    "RegionRefine": 1,
-                    "SurfaceRefine": 1,
-                    "InputPatchName": "flange",
-                    "SurfPatchName" : "flange",
-                    "maxLocalCells": 100000,
-                    "maxGlobalCells": 2000000,
-                    "minRefCells": 0,
-                    "nCellsBetweenLevels": 1,
-                    "surfaceRefinementLvlMin": 2,
-                    "surfaceRefinementLvlMax": 2,
-                    "resolveFeatureAngle": 30,
-                    "locationInMeshX": -9.23149e-05,
-                    "locationInMeshY": -0.0025,
-                    "locationInMeshZ": -0.0025,
-                    "allowFreeStandingZoneFaces": 1,
-                    "nSmoothPatch": 3,
-                    "tolerance": 1.0,
-                    "snapSolveIter": 300,
-                    "snapRelaxIter": 5,
-                    "relativeSizes": 1,
-                    "expansionRatio": 1.0,
-                    "finalLayerThickness": 0.3,
-                    "minThickness": 0.25,
-                    "nGrow": 0,
-                    "featureAngle": 30,
-                    "nRelaxIter": 5,
-                    "nSmoothSurfaceNormals": 1,
-                    "nSmoothNormals": 3,
-                    "nSmoothThickness": 10,
-                    "maxFaceThicknessRatio": 0.5,
-                    "maxThicknessToMedialRatio": 0.3,
-                    "minMedialAxisAngle": 90,
-                    "nBufferCellsNoExtrude": 0,
-                    "nLayerIter": 50,
-                    "maxNonOrtho": 65,
-                    "maxBoundarySkewness": 20,
-                    "maxInternalSkewness": 4,
-                    "maxConcave": 80,
-                    "minVol": 1e-20,
-                    "minTetQuality": 1e-30,
-                    "minArea": -1,
-                    "minTwist": 0.02,
-                    "minFaceWeight": 0.02,
-                    "minVolRatio": 0.01,
-                    "minDeterminant": 0.001,
-                    "minTriangleTwist": -1,
-                    "qcnSmoothScale": 4,
-                    "errorReduction": 0.75,
-                    "mergeTolerance": 1e-06,
-                    "GeomRefinementRegions":
-                    [
-                        {
-                            "PatchName": "refineHole",
-                            "searchableShape": "searchableSphere",
-                            "shapeParams1": "centre (0 0 -0.012)",
-                            "Radius": 0.003,
-                            "Mode": "inside",
-                            "MinLevel": 1e15,
-                            "MaxLevel": 3
-                        }
-                    ],
-                    "SurfaceRefinementRegions":
-                    [
-                        {
-                            "PatchName": "flange",
-                            "MinLevel": 2,
-                            "MaxLevel": 2
-                        }
-                    ]
-            }
-        }
+  {
+    "Reference File": "geom_mesh_ref.vtu",
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "snappyHexMesh",
+    "Mesh File Options": {
+      "Input Geometry File": "flange.stl",
+      "Output Mesh File": "geom_mesh.vtu"
+    },
+    "Meshing Modules Options": {
+    },
+    "Meshing Parameters": {
+      "snappyHexMesh Parameters": {
+        "Castellated Mesh": 1,
+        "Snapping": 1,
+        "Layer Addition": 0,
+        "CellZones": 0,
+        "RegionRefine": 1,
+        "SurfaceRefine": 1,
+        "InputPatchName": "flange",
+        "SurfPatchName": "flange",
+        "maxLocalCells": 100000,
+        "maxGlobalCells": 2000000,
+        "minRefCells": 0,
+        "nCellsBetweenLevels": 1,
+        "surfaceRefinementLvlMin": 2,
+        "surfaceRefinementLvlMax": 2,
+        "resolveFeatureAngle": 30,
+        "locationInMeshX": -9.23149e-05,
+        "locationInMeshY": -0.0025,
+        "locationInMeshZ": -0.0025,
+        "allowFreeStandingZoneFaces": 1,
+        "nSmoothPatch": 3,
+        "tolerance": 1.0,
+        "snapSolveIter": 300,
+        "snapRelaxIter": 5,
+        "relativeSizes": 1,
+        "expansionRatio": 1.0,
+        "finalLayerThickness": 0.3,
+        "minThickness": 0.25,
+        "nGrow": 0,
+        "featureAngle": 30,
+        "nRelaxIter": 5,
+        "nSmoothSurfaceNormals": 1,
+        "nSmoothNormals": 3,
+        "nSmoothThickness": 10,
+        "maxFaceThicknessRatio": 0.5,
+        "maxThicknessToMedialRatio": 0.3,
+        "minMedialAxisAngle": 90,
+        "nBufferCellsNoExtrude": 0,
+        "nLayerIter": 50,
+        "maxNonOrtho": 65,
+        "maxBoundarySkewness": 20,
+        "maxInternalSkewness": 4,
+        "maxConcave": 80,
+        "minVol": 1e-20,
+        "minTetQuality": 1e-30,
+        "minArea": -1,
+        "minTwist": 0.02,
+        "minFaceWeight": 0.02,
+        "minVolRatio": 0.01,
+        "minDeterminant": 0.001,
+        "minTriangleTwist": -1,
+        "qcnSmoothScale": 4,
+        "errorReduction": 0.75,
+        "mergeTolerance": 1e-06,
+        "GeomRefinementRegions": [
+          {
+            "PatchName": "refineHole",
+            "searchableShape": "searchableSphere",
+            "shapeParams1": "centre (0 0 -0.012)",
+            "Radius": 0.003,
+            "Mode": "inside",
+            "MinLevel": 1e15,
+            "MaxLevel": 3
+          }
+        ],
+        "SurfaceRefinementRegions": [
+          {
+            "PatchName": "flange",
+            "MinLevel": 2,
+            "MaxLevel": 2
+          }
+        ]
+      }
     }
+  }
 ]
