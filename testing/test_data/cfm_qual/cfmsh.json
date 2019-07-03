@@ -1,6 +1,6 @@
 [
   {
-    "Reference File": "geom_mesh_ref.vtu",
+    "Reference File": "geom_mesh_ref.vtk",
     "Program Type": "Mesh Generation",
     "Mesh Generation Engine": "cfmesh",
     "Mesh File Options": {
