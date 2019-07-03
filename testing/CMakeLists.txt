@@ -2,18 +2,6 @@ cmake_minimum_required(VERSION 3.1)
 
 message(STATUS "ACCESSING TEST DIRECTORY: ${PROJECT_SOURCE_DIR}")
 
-# macro to list subdirectories of a given current
-macro(subdirlist result curdir)
-  file(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  set(dirlist "")
-  foreach(child ${children})
-    if(IS_DIRECTORY ${curdir}/${child})
-      list(APPEND dirlist ${child})
-    endif()
-  endforeach()
-  set(${result} ${dirlist})
-endmacro()
-
 # adding gtest subdir with its own cmake file
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
@@ -24,170 +12,19 @@ add_subdirectory(lib/gtest-1.6.0)
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
 
-# standard tests
-add_executable(runCubatureInterpTest test_scripts/testCubature.C)
-add_executable(runConversionTest test_scripts/testConversion.C)
-add_executable(runOrthoPolyTest test_scripts/testOrthoPoly.C)
-add_executable(runPatchRecoveryTest test_scripts/testPatchRecovery.C)
-add_executable(runTransferTest test_scripts/testTransfer.C)
-add_executable(runMeshGenTest test_scripts/testMeshGen.C)
-add_executable(runPNTGenTest test_scripts/testPNTGen.C)
-add_executable(runAutoVerifTest test_scripts/testAutoVerification.C)
-add_executable(runRefinementTest test_scripts/testRefinement.C)
-add_executable(runGmshMeshTest test_scripts/testGmshMesh.C)
-
-target_link_libraries(runCubatureInterpTest gtest gtest_main Nemosys)
-target_link_libraries(runConversionTest gtest gtest_main Nemosys)
-target_link_libraries(runOrthoPolyTest gtest gtest_main Nemosys)
-target_link_libraries(runPatchRecoveryTest gtest gtest_main Nemosys)
-target_link_libraries(runTransferTest gtest gtest_main Nemosys)
-target_link_libraries(runMeshGenTest gtest gtest_main Nemosys)
-target_link_libraries(runPNTGenTest gtest gtest_main Nemosys)
-target_link_libraries(runAutoVerifTest gtest gtest_main Nemosys)
-target_link_libraries(runRefinementTest gtest gtest_main Nemosys)
-target_link_libraries(runGmshMeshTest gtest gtest_main Nemosys)
-
 add_custom_target(unittests)
-add_dependencies(unittests runCubatureInterpTest
-                           runConversionTest
-                           runOrthoPolyTest
-                           runPatchRecoveryTest
-                           runTransferTest
-                           runMeshGenTest
-                           runPNTGenTest
-                           runAutoVerifTest
-                           runRefinementTest
-                           runGmshMeshTest
-)
 
-# custom built tests
-if(ENABLE_EPIC)
-  add_executable(runEp16Test test_scripts/testEP16.C)
-  target_link_libraries(runEp16Test gtest gtest_main Nemosys)
-  add_dependencies(unittests runEp16Test)
-endif()
-if(ENABLE_CFMSH)
-  add_executable(runCFMTest test_scripts/testCFM.C)
-  target_link_libraries(runCFMTest gtest gtest_main Nemosys)
-  add_dependencies(unittests runCFMTest)
-
-  add_executable(runCFMQualTest test_scripts/testCFMQual.C)
-  target_link_libraries(runCFMQualTest gtest gtest_main Nemosys)
-  add_dependencies(unittests runCFMQualTest)
-
-  add_executable(runSHMTest test_scripts/testSHM.C)
-  target_link_libraries(runSHMTest gtest gtest_main Nemosys)
-  add_dependencies(unittests runSHMTest)
-
-  add_executable(runBlockMTest test_scripts/testBlockMSH.C)
-  target_link_libraries(runBlockMTest gtest gtest_main Nemosys)
-  add_dependencies(unittests runBlockMTest)
-
-  add_executable(runPackMeshTest test_scripts/testPackMesh.C)
-  target_link_libraries(runPackMeshTest gtest gtest_main Nemosys)
-  add_dependencies(unittests runPackMeshTest)
-endif()
-
+# Set location of test scripts, test data, and run directory
 file(COPY test_data
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-SUBDIRLIST(TEST_DIRS ${CMAKE_CURRENT_BINARY_DIR}/test_data)
-
+set(TEST_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts)
 set(TEST_DATA ${CMAKE_CURRENT_BINARY_DIR}/test_data)
-set(CUBATURE_TESTDIR ${TEST_DATA}/CubatureTest)
-set(CONVERSION_TESTDIR ${TEST_DATA}/ConversionTest)
-set(ORTHOPOLY_TESTDIR ${TEST_DATA}/OrthoPolyTest)
-set(PATCHRECOVERY_TESTDIR ${TEST_DATA}/PatchRecoveryTest)
-set(TRANSFER_TESTDIR ${TEST_DATA}/TransferTest)
-set(MESHGEN_TESTDIR ${TEST_DATA}/MeshGenTest)
-set(PNTGEN_TESTDIR ${TEST_DATA}/PNTGenTest)
-set(EP16_TESTDIR ${TEST_DATA}/Ep16Test)
-set(AUTOVERIF_TESTDIR ${TEST_DATA}/AutoVerificationTest)
-set(REFINEMENT_TESTDIR ${TEST_DATA}/RefinementTest)
-set(CFM_SM_TESTDIR ${TEST_DATA}/cfm_sm)
-set(CFM_2D_TESTDIR ${TEST_DATA}/cfm_2d)
-set(CFM_HINGE_TESTDIR ${TEST_DATA}/cfm_hinge)
-set(CFM_BUNNY_TESTDIR ${TEST_DATA}/cfm_bunny)
-set(CFM_BUNNY_OCT_TESTDIR ${TEST_DATA}/cfm_bunny_oct)
-set(CFM_QUAL_TESTDIR ${TEST_DATA}/cfm_qual)
-set(GMSHMESH_TESTDIR ${TEST_DATA}/GmshMeshTest)
-set(PACKMESH_TESTDIR ${TEST_DATA}/packmesh)
-set(SHM_BOXPACK_TESTDIR ${TEST_DATA}/snappy_BoxPack)
-set(SHM_BULLET_TESTDIR ${TEST_DATA}/snappy_Bullet)
-set(SHM_FLANGE_TESTDIR ${TEST_DATA}/snappy_Flange)
-set(BMSH_BOX_TESTDIR ${TEST_DATA}/blockMsh_Box)
-set(BMSH_SPHERE_TESTDIR ${TEST_DATA}/blockMsh_Sphere)
-set(BMSH_TCONE_TESTDIR ${TEST_DATA}/blockMsh_TCone)
-set(PACKMESH_TESTDIR ${TEST_DATA}/packmesh)
 
-set(meshgendefault_in ${MESHGEN_TESTDIR}/default_in.json)
-set(meshgendefault ${MESHGEN_TESTDIR}/default.json)
-set(meshgenunif_in ${MESHGEN_TESTDIR}/unif_in.json)
-set(meshgenunif ${MESHGEN_TESTDIR}/unif.json)
-set(meshgengeom_in ${MESHGEN_TESTDIR}/geom_in.json)
-set(meshgengeom ${MESHGEN_TESTDIR}/geom.json)
-set(pntgenbench1_in ${PNTGEN_TESTDIR}/bench1_in.json)
-set(pntgenbench1 ${PNTGEN_TESTDIR}/bench1.json)
-set(pntgenbench5_in ${PNTGEN_TESTDIR}/bench5_in.json)
-set(pntgenbench5 ${PNTGEN_TESTDIR}/bench5.json)
-set(pntgenbench6_in ${PNTGEN_TESTDIR}/bench6_in.json)
-set(pntgenbench6 ${PNTGEN_TESTDIR}/bench6.json)
-set(ep16test1_in ${EP16_TESTDIR}/gmsh2exo_in.json)
-set(ep16test1 ${EP16_TESTDIR}/gmsh2exo.json)
-set(ep16test2 ${EP16_TESTDIR}/ep16.json)
-set(refinementValue_in ${REFINEMENT_TESTDIR}/refine_value_in.json)
-set(refinementValue ${REFINEMENT_TESTDIR}/refine_value.json)
-set(refinementUniform_in ${REFINEMENT_TESTDIR}/refine_uniform_in.json)
-set(refinementUniform ${REFINEMENT_TESTDIR}/refine_uniform.json)
-set(cfm_sm_in ${CFM_SM_TESTDIR}/cfmsh_in.json)
-set(cfm_sm ${CFM_SM_TESTDIR}/cfmsh.json)
-set(cfm_2d_in ${CFM_2D_TESTDIR}/cfmsh_in.json)
-set(cfm_2d ${CFM_2D_TESTDIR}/cfmsh.json)
-set(cfm_hinge_in ${CFM_HINGE_TESTDIR}/cfmsh_in.json)
-set(cfm_hinge ${CFM_HINGE_TESTDIR}/cfmsh.json)
-set(cfm_bunny_in ${CFM_BUNNY_TESTDIR}/cfmsh_in.json)
-set(cfm_bunny ${CFM_BUNNY_TESTDIR}/cfmsh.json)
-set(cfm_bunny_oct_in ${CFM_BUNNY_OCT_TESTDIR}/cfmsh_in.json)
-set(cfm_bunny_oct ${CFM_BUNNY_OCT_TESTDIR}/cfmsh.json)
-set(cfm_qual_gen_in ${CFM_QUAL_TESTDIR}/cfmsh_in.json)
-set(cfm_qual_gen ${CFM_QUAL_TESTDIR}/cfmsh.json)
-set(cfm_qual ${CFM_QUAL_TESTDIR}/cfmsh_qual.json)
-set(packmesh ${PACKMESH_TESTDIR}/PackMsh_Master.json)
-set(snappy_BoxPack ${SHM_BOXPACK_TESTDIR}/shmsh.json)
-set(snappy_Bullet ${SHM_BULLET_TESTDIR}/shmsh.json)
-set(snappy_Flange ${SHM_FLANGE_TESTDIR}/shmsh.json)
-set(blockMsh_Box ${BMSH_BOX_TESTDIR}/blockMsh_Box.json)
-set(blockMsh_Sphere ${BMSH_SPHERE_TESTDIR}/blockMsh_Sphere.json)
-set(blockMsh_TCone ${BMSH_TCONE_TESTDIR}/blockMsh_TCone.json)
-
-configure_file(${meshgendefault_in} ${meshgendefault} @ONLY)
-configure_file(${meshgenunif_in} ${meshgenunif} @ONLY)
-configure_file(${meshgengeom_in} ${meshgengeom} @ONLY)
-configure_file(${pntgenbench1_in} ${pntgenbench1} @ONLY)
-configure_file(${pntgenbench5_in} ${pntgenbench5} @ONLY)
-configure_file(${pntgenbench6_in} ${pntgenbench6} @ONLY)
-configure_file(${ep16test1_in} ${ep16test1} @ONLY)
-configure_file(${refinementValue_in} ${refinementValue} @ONLY)
-configure_file(${refinementUniform_in} ${refinementUniform} @ONLY)
-configure_file(${cfm_sm_in} ${cfm_sm} @ONLY)
-configure_file(${cfm_2d_in} ${cfm_2d} @ONLY)
-configure_file(${cfm_hinge_in} ${cfm_hinge} @ONLY)
-configure_file(${cfm_bunny_in} ${cfm_bunny} @ONLY)
-configure_file(${cfm_bunny_oct_in} ${cfm_bunny_oct} @ONLY)
-configure_file(${cfm_qual_gen_in} ${cfm_qual_gen} @ONLY)
-configure_file(${packmesh_in} ${packmesh} @ONLY)
-configure_file(${snappy_BoxPack_in} ${snappy_BoxPack} @ONLY)
-configure_file(${snappy_Bullet_in} ${snappy_Bullet} @ONLY)
-configure_file(${snappy_Flange_in} ${snappy_Flange} @ONLY)
-configure_file(${blockMsh_Box_in} ${blockMsh_Box} @ONLY)
-configure_file(${blockMsh_Sphere_in} ${blockMsh_Sphere} @ONLY)
-configure_file(${blockMsh_TCone_in} ${blockMsh_TCone} @ONLY)
-configure_file(${packmesh_in} ${packmesh} @ONLY)
-
+# Set environment variables for testing.
 if(WIN32)
   # Note: Do not indent. The indentation whitespace is added to the variable!
   set(TEST_ENV_PATH_OPTIONS
-"PATH=${CMAKE_CURRENT_BINARY_DIR};\
+      "PATH=${CMAKE_CURRENT_BINARY_DIR};\
 ${CMAKE_BINARY_DIR};\
 ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0;\
 ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN;\
@@ -204,12 +41,12 @@ ${netCDF_LIB_DIR};${netCDF_LIB_DIR}/../bin;\
 ${SIMMETRIX_LIB_DIR};\
 $ENV{PATH}")
   set(TEST_ENV_LD_OPTIONS
-"LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
+      "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
 else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   # Note: Do not indent. The indentation whitespace is added to the variable!
   set(TEST_ENV_LD_OPTIONS
-"LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
+      "LD_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
 ${CMAKE_BINARY_DIR}:\
 ${VTK_LIB_DIR}:\
 ${NETGEN_LIBRARY_DIR}:\
@@ -219,164 +56,176 @@ endif()
 
 message(STATUS "Test Env Options: ${TEST_ENV_PATH_OPTIONS} ${TEST_ENV_LD_OPTIONS}")
 
-add_test(NAME cubatureInterpTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runCubatureInterpTest ${CUBATURE_TESTDIR}/cube_refined.vtu
-                              ${CUBATURE_TESTDIR}/cube_refinedGaussPoints.vtp
-                              ${CUBATURE_TESTDIR}/cube_refinedGaussPointsNoData.vtp
-                              ${CUBATURE_TESTDIR}/integrationREF.vtu
-                              ${CUBATURE_TESTDIR}/single-hex.vtu
+#-------------------------------------------------------------------------------
+# NEM_add_test_executable(<test_exe_name>)
+#
+# Adds a test executable named run<test_exe_name>Test. Requires:
+#  ${TEST_SCRIPTS}/test<test_exe_name>.C  = The executable to turn into test
+# Generates:
+#  run<test_exe_name>Test                 = name of executable
+macro(NEM_add_test_executable TEST_EXE_NAME)
+  add_executable(run${TEST_EXE_NAME}Test ${TEST_SCRIPTS}/test${TEST_EXE_NAME}.C)
+  target_link_libraries(run${TEST_EXE_NAME}Test gtest gtest_main Nemosys)
+  add_dependencies(unittests run${TEST_EXE_NAME}Test)
+endmacro()
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# NEM_add_test(<test_name> <test_exe_name> <test_pwd> [arguments...])
+#
+# Adds a test to Nemosys named <test_name>Test using run<test_exe_name>Test
+# executable. Requires:
+#  run<test_exe_name>Test         = name of executable
+#                                   (use NEM_add_test_executable())
+#  ${TEST_DATA}/<test_pwd>        = Directory to use as working directory
+#                                   to run the test
+#  [arguments...]                 = Arguments passed to executable
+# Generates:
+#  <test_name>Test                = name of CTest test
+macro(NEM_add_test TEST_NAME TEST_EXE_NAME TEST_PWD)
+  add_test(NAME ${TEST_NAME}Test
+      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
+      run${TEST_EXE_NAME}Test ${ARGN}
+      WORKING_DIRECTORY ${TEST_DATA}/${TEST_PWD}
+  )
+endmacro()
+#-------------------------------------------------------------------------------
+
+# standard tests
+NEM_add_test_executable(Cubature)
+NEM_add_test_executable(Conversion)
+NEM_add_test_executable(OrthoPoly)
+NEM_add_test_executable(PatchRecovery)
+NEM_add_test_executable(Transfer)
+NEM_add_test_executable(MeshGen)
+NEM_add_test_executable(PNTGen)
+NEM_add_test_executable(AutoVerification)
+NEM_add_test_executable(Refinement)
+NEM_add_test_executable(GmshMesh)
+
+# custom built tests
+if(ENABLE_EPIC)
+  NEM_add_test_executable(EP16)
+endif()
+if(ENABLE_CFMSH)
+  NEM_add_test_executable(CFM)
+  NEM_add_test_executable(CFMQual)
+  NEM_add_test_executable(SHM)
+  NEM_add_test_executable(BlockMSH)
+  NEM_add_test_executable(PackMesh)
+endif()
+
+NEM_add_test(cubatureInterp Cubature CubatureTest
+    cube_refined.vtu
+    cube_refinedGaussPoints.vtp
+    cube_refinedGaussPointsNoData.vtp
+    integrationREF.vtu
+    single-hex.vtu
 )
-add_test(NAME conversionTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runConversionTest ${CONVERSION_TESTDIR}/case0001_ref.vtu
-                          ${CONVERSION_TESTDIR}/case0001.msh
-                          ${CONVERSION_TESTDIR}/hinge.vtu
-                          ${CONVERSION_TESTDIR}/hinge.vol
-                          ${CONVERSION_TESTDIR}/legacyVTK1.vtk
-                          ${CONVERSION_TESTDIR}/legacyVTK2.vtk
-                          ${CONVERSION_TESTDIR}/legacyVTK1_ref.vtu
-                          ${CONVERSION_TESTDIR}/legacyVTK2_ref.vtu
-                          ${CONVERSION_TESTDIR}/gorilla.vtp
-                          ${CONVERSION_TESTDIR}/pnt-tri.pntmesh
-                          ${CONVERSION_TESTDIR}/pnt-tri-ref.vtu
-                          ${CONVERSION_TESTDIR}/pnt-quad.pntmesh
-                          ${CONVERSION_TESTDIR}/pnt-quad-ref.vtu
-                          ${CONVERSION_TESTDIR}/pnt-hex.pntmesh
-                          ${CONVERSION_TESTDIR}/pnt-hex-ref.vtu
-                          ${CONVERSION_TESTDIR}/pnt-mix.pntmesh
-                          ${CONVERSION_TESTDIR}/pnt-mix-ref.vtu
+
+NEM_add_test(conversion Conversion ConversionTest
+    case0001_ref.vtu
+    case0001.msh
+    hinge.vtu
+    hinge.vol
+    legacyVTK1.vtk
+    legacyVTK2.vtk
+    legacyVTK1_ref.vtu
+    legacyVTK2_ref.vtu
+    gorilla.vtp
+    pnt-tri.pntmesh
+    pnt-tri-ref.vtu
+    pnt-quad.pntmesh
+    pnt-quad-ref.vtu
+    pnt-hex.pntmesh
+    pnt-hex-ref.vtu
+    pnt-mix.pntmesh
+    pnt-mix-ref.vtu
 )
-add_test(NAME orthoPolyTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runOrthoPolyTest ${ORTHOPOLY_TESTDIR}/F.txt
+
+NEM_add_test(orthoPoly OrthoPoly OrthoPolyTest F.txt)
+
+NEM_add_test(patchRecovery PatchRecovery PatchRecoveryTest
+    case0001.vtu
+    testRef.vtu
+    fixedWithData.vtu
 )
-add_test(NAME patchRecoveryTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runPatchRecoveryTest ${PATCHRECOVERY_TESTDIR}/case0001.vtu
-                             ${PATCHRECOVERY_TESTDIR}/testRef.vtu
-                             ${PATCHRECOVERY_TESTDIR}/fixedWithData.vtu
+
+NEM_add_test(transfer Transfer TransferTest
+    pointSource.vtu
+    cellSource.vtu
+    target.vtu
+    pntRef.vtu
+    cellRef.vtu
 )
-add_test(NAME transferTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runTransferTest ${TRANSFER_TESTDIR}/pointSource.vtu
-                        ${TRANSFER_TESTDIR}/cellSource.vtu
-                        ${TRANSFER_TESTDIR}/target.vtu
-                        ${TRANSFER_TESTDIR}/pntRef.vtu
-                        ${TRANSFER_TESTDIR}/cellRef.vtu
+
+NEM_add_test(meshGen MeshGen MeshGenTest
+    default.json
+    hingeRef.vtu
+    unif.json
+    hingeUnifRef.vtu
+    geom.json
+    hingeGeomRef.vtu
 )
-add_test(NAME meshGenTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runMeshGenTest ${MESHGEN_TESTDIR}/default.json
-                       ${MESHGEN_TESTDIR}/hingeRef.vtu
-                       ${MESHGEN_TESTDIR}/unif.json
-                       ${MESHGEN_TESTDIR}/hingeUnifRef.vtu
-                       ${MESHGEN_TESTDIR}/geom.json
-                       ${MESHGEN_TESTDIR}/hingeGeomRef.vtu
+
+NEM_add_test(refinement Refinement RefinementTest
+    refine_value.json
+    refined_beam_value.vtu
+    gold_refined_beam_value.vtu
+    refine_uniform.json
+    refined_beam_uniform.vtu
+    gold_refined_beam_uniform.vtu
 )
-add_test(NAME refinementTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runRefinementTest ${REFINEMENT_TESTDIR}/refine_value.json
-                          ${REFINEMENT_TESTDIR}/refined_beam_value.vtu
-                          ${REFINEMENT_TESTDIR}/gold_refined_beam_value.vtu
-                          ${REFINEMENT_TESTDIR}/refine_uniform.json
-                          ${REFINEMENT_TESTDIR}/refined_beam_uniform.vtu
-                          ${REFINEMENT_TESTDIR}/gold_refined_beam_uniform.vtu
+
+NEM_add_test(autoVerif AutoVerification AutoVerificationTest
+    finer.vtu
+    fine.vtu
+    coarse.vtu
+    richardson.vtu
 )
-add_test(NAME autVerifTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runAutoVerifTest ${AUTOVERIF_TESTDIR}/finer.vtu
-                         ${AUTOVERIF_TESTDIR}/fine.vtu
-                         ${AUTOVERIF_TESTDIR}/coarse.vtu
-                         ${AUTOVERIF_TESTDIR}/richardson.vtu
+
+NEM_add_test(pntgen PNTGen PNTGenTest
+    bench1.json bench1_conv_gold.pntmesh
+    bench5.json bench5_conv_gold.pntmesh
+    bench6.json bench6_conv_gold.pntmesh
 )
-add_test(NAME pntgentest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runPNTGenTest ${PNTGEN_TESTDIR}/bench1.json ${PNTGEN_TESTDIR}/bench1_conv_gold.pntmesh
-                      ${PNTGEN_TESTDIR}/bench5.json ${PNTGEN_TESTDIR}/bench5_conv_gold.pntmesh
-                      ${PNTGEN_TESTDIR}/bench6.json ${PNTGEN_TESTDIR}/bench6_conv_gold.pntmesh
-)
-add_test(NAME gmshMeshTest
-    COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        runGmshMeshTest ${GMSHMESH_TESTDIR}/cube2.msh
-                        ${GMSHMESH_TESTDIR}/cube4.msh
-                        ${GMSHMESH_TESTDIR}/cube41.msh
+
+NEM_add_test(gmshMesh GmshMesh GmshMeshTest
+    cube2.msh
+    cube4.msh
+    cube41.msh
 )
 
 if(ENABLE_EPIC)
-  add_test(NAME ep16test
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-          runEp16Test ${ep16test1} ${EP16_TESTDIR}/bctest_ref.g
-                      ${ep16test2} ${EP16_TESTDIR}/bctest_ref.dat
+  NEM_add_test(ep16 EP16 Ep16Test
+      gmsh2exo.json bctest_ref.g
+      ep16.json bctest_ref.dat
   )
 endif()
 
 if(ENABLE_CFMSH)
-  add_test(NAME cfm_small
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_sm}
-      WORKING_DIRECTORY ${CFM_SM_TESTDIR}
-  )
-  add_test(NAME cfm_2d
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_2d}
-      WORKING_DIRECTORY ${CFM_2D_TESTDIR}
-  )
-  add_test(NAME cfm_hinge
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_hinge}
-      WORKING_DIRECTORY ${CFM_HINGE_TESTDIR}
-  )
-  add_test(NAME cfm_bunny
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_bunny}
-      WORKING_DIRECTORY ${CFM_BUNNY_TESTDIR}
-  )
-  add_test(NAME cfm_bunny_oct
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMTest ${cfm_bunny_oct}
-      WORKING_DIRECTORY ${CFM_BUNNY_OCT_TESTDIR}
-  )
-  add_test(NAME cfm_qual
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runCFMQualTest ${cfm_qual_gen} ${cfm_qual}
-      WORKING_DIRECTORY ${CFM_QUAL_TESTDIR}
-  )
-  add_test(NAME packmesh
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runPackMeshTest ${packmesh}
-      WORKING_DIRECTORY ${PACKMESH_TESTDIR}
-  )
-  add_test(NAME snappy_BoxPack
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runSHMTest ${snappy_BoxPack}
-      WORKING_DIRECTORY ${SHM_BOXPACK_TESTDIR}
-  )
-  add_test(NAME snappy_Bullet
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runSHMTest ${snappy_Bullet}
-      WORKING_DIRECTORY ${SHM_BULLET_TESTDIR}
-  )
-  add_test(NAME snappy_Flange
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runSHMTest ${snappy_Flange}
-      WORKING_DIRECTORY ${SHM_FLANGE_TESTDIR}
-  )
-  add_test(NAME blockMsh_Box
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runBlockMTest ${blockMsh_Box}
-      WORKING_DIRECTORY ${BMSH_BOX_TESTDIR}
-  )
-  add_test(NAME blockMsh_Sphere
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runBlockMTest ${blockMsh_Sphere}
-      WORKING_DIRECTORY ${BMSH_SPHERE_TESTDIR}
-  )
-  add_test(NAME blockMsh_TCone
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      runBlockMTest ${blockMsh_TCone}
-      WORKING_DIRECTORY ${BMSH_TCONE_TESTDIR}
-  )
+  # cfMesh tests
+  NEM_add_test(cfm_small CFM cfm_sm cfmsh.json)
+  NEM_add_test(cfm_2d CFM cfm_2d cfmsh.json)
+  NEM_add_test(cfm_hinge CFM cfm_hinge cfmsh.json)
+  NEM_add_test(cfm_bunny CFM cfm_bunny cfmsh.json)
+  NEM_add_test(cfm_bunny_oct CFM cfm_bunny_oct cfmsh.json)
+
+  # cfMesh Quality test
+  NEM_add_test(cfm_qual CFMQual cfm_qual cfmsh.json cfmsh_qual.json)
+
+  # PackMesh test
+  NEM_add_test(packmesh PackMesh packmesh PackMsh_Master.json)
+
+  # snappyHeshMesh tests
+  NEM_add_test(snappy_BoxPack SHM snappy_BoxPack shmsh.json)
+  NEM_add_test(snappy_Bullet SHM snappy_Bullet shmsh.json)
+  NEM_add_test(snappy_Flange SHM snappy_Flange shmsh.json)
+
+  # BlockMesh tests
+  NEM_add_test(blockMsh_Box BlockMSH blockMsh_Box blockMsh_Box.json)
+  NEM_add_test(blockMsh_Sphere BlockMSH blockMsh_Sphere blockMsh_Sphere.json)
+  NEM_add_test(blockMsh_TCone BlockMSH blockMsh_TCone blockMsh_TCone.json)
 endif()
 
 # Python wrapper testing
