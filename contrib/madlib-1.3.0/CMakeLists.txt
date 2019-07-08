@@ -157,7 +157,7 @@ if(ENABLE_GMSH)
 #  find_package(OpenCASCADE REQUIRED) # Used by Gmsh
 
   target_link_libraries(MAdLib PRIVATE ${GMSH_LIB})
-  target_include_directories(MAdLib PRIVATE ${GMSH_INCPATH})
+  target_include_directories(MAdLib SYSTEM PRIVATE ${GMSH_INCPATH})
   target_compile_definitions(MAdLib PUBLIC _HAVE_GMSH_)
 endif()
 

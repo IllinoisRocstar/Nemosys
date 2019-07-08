@@ -771,7 +771,7 @@ void cgnsWriter::writeWinToFile()
   if (cg_goto(indexFile, indexBase, "end")) cg_error_exit();
   if (cg_integral_write(intName.c_str())) cg_error_exit();
   if (cg_goto(indexFile, indexBase, intName.c_str(), 0, "end")) cg_error_exit();
-  double zoomFact_arr[1] = {intVal};
+  double zoomFact_arr[1] = {static_cast<double>(intVal)};
   if (cg_array_write("zoomFact", CG_RealDouble, 1, tmpDim, zoomFact_arr)) cg_error_exit();
   if (cg_goto(indexFile, indexBase, intName.c_str(), 0,"zoomFact",0,"end")) cg_error_exit();
   std::ostringstream os;

@@ -164,7 +164,7 @@ void snappymeshGen::createControlDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -209,7 +209,7 @@ void snappymeshGen::createfvSchemesDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -268,7 +268,7 @@ void snappymeshGen::createfvSolutionDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -315,7 +315,7 @@ void snappymeshGen::createSnappyDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -351,10 +351,10 @@ FoamFile\n\
   }
 
   // Geometry declaration
-  contText = contText + "\ngeometry\n\{\n";
+  contText = contText + "\ngeometry\n{\n";
   contText = contText + "\t" + (_params->geomFileName);
-  contText = contText + "\n\t\{\n\t\ttype\ttriSurfaceMesh;\n";
-  contText = contText + "\t\tname\t" + (_params->geomPatchName) + ";\n\t\}\n";
+  contText = contText + "\n\t{\n\t\ttype\ttriSurfaceMesh;\n";
+  contText = contText + "\t\tname\t" + (_params->geomPatchName) + ";\n\t}\n";
 
   if ((_params->_withGeomRefReg))
   {
@@ -363,7 +363,7 @@ FoamFile\n\
                           pt!=(_params->geomRefs).end(); pt++)
     {
       contText = contText + "\t" + (pt->patchNm);
-      contText = contText + "\n\t\{";
+      contText = contText + "\n\t{";
       contText = contText + "\n\t\ttype " + (pt->searchableName) + ";\n";
       contText = contText + "\t\t" + (pt->shapeParameters1) + ";\n";
 
@@ -373,14 +373,14 @@ FoamFile\n\
       }
 
       contText = contText + "\t\tradius " + std::to_string(pt->rad) + ";\n";
-      contText = contText + "\n\t\}\n";
+      contText = contText + "\n\t}\n";
     }
   }
 
-  contText = contText + "\};\n";
+  contText = contText + "};\n";
 
   // Castellated Mesh Controls
-  contText = contText + "\n\ncastellatedMeshControls\n\{\n";
+  contText = contText + "\n\ncastellatedMeshControls\n{\n";
   contText = contText + "\tmaxLocalCells\t"
           + std::to_string(_params->maxLCells) + ";\n";
   contText = contText + "\tmaxGlobalCells\t"
@@ -390,8 +390,8 @@ FoamFile\n\
   contText = contText + "\tminRefinementCells\t"
           + std::to_string(_params->minRefCells) + ";\n";
   contText = contText + "\n\tfeatures\n\t(\n\t);\n";
-  contText = contText + "\n\trefinementSurfaces\n\t\{\n";
-  contText = contText + "\t\t" + (_params->surfRefPatch) + "\n\t\t\{";
+  contText = contText + "\n\trefinementSurfaces\n\t{\n";
+  contText = contText + "\t\t" + (_params->surfRefPatch) + "\n\t\t{";
   contText = contText + "\n\t\t\tlevel ("
           + std::to_string(_params->refSurfLvlMin) + " "
           + std::to_string(_params->refSurfLvlMax) + ");\n";
@@ -405,7 +405,7 @@ FoamFile\n\
     contText = contText + "\t\t\tcellZoneInside\tinside;\n";
   }
 
-  contText = contText + "\t\t\}\n\t\}\n";
+  contText = contText + "\t\t}\n\t}\n";
   contText = contText + "\tresolveFeatureAngle\t"
           + std::to_string(_params->featAngle) + ";\n";
     
@@ -413,24 +413,24 @@ FoamFile\n\
   if ((_params->_withSurfRefReg))
   {
     contText = contText + "\n\trefinementSurfaces\n";
-    contText = contText + "\t\{\n";
+    contText = contText + "\t{\n";
 
     for (auto pt=(_params->surfRefs).begin();
                     pt!=(_params->surfRefs).end(); pt++)
     {
       contText = contText + "\n\t\t" + (pt->refPatchNm);
-      contText = contText + "\n\t\t\{";
+      contText = contText + "\n\t\t{";
       contText = contText + "\t\t\tlevels (("
               + std::to_string(pt->minLvl)
               + " " + std::to_string(pt->maxLvl) + "));\n";
-      contText = contText + "\t\t\}";
+      contText = contText + "\t\t}";
       }
 
-      contText = contText + "\n\t\}\n";
+      contText = contText + "\n\t}\n";
   }
 
 
-  contText = contText + "\n\trefinementRegions\n\t\{\n";
+  contText = contText + "\n\trefinementRegions\n\t{\n";
 
 
   if ((_params->_withGeomRefReg))
@@ -439,15 +439,15 @@ FoamFile\n\
                       pt!=(_params->geomRefs).end(); pt++)
     {
       contText = contText + "\n\t\t" + (pt->patchNm);
-      contText = contText + "\n\t\t\{";
+      contText = contText + "\n\t\t{";
       contText = contText + "\n\t\t\tmode " + (pt->mode) + ";\n";
       contText = contText + "\t\t\tlevels ((" + std::to_string(pt->minLvl)
                             + " " + std::to_string( pt->maxLvl) + "));\n";
-      contText = contText + "\t\t\}\n";
+      contText = contText + "\t\t}\n";
     }
   }
 
-  contText = contText + "\t\}";
+  contText = contText + "\t}";
 
   contText = contText + "\n\tlocationInMesh\t(" 
           + std::to_string(_params->locMeshX)
@@ -457,11 +457,11 @@ FoamFile\n\
     contText = contText + "\tallowFreeStandingZoneFaces\ttrue;\n";
   if ((_params->_alwFreeZone) == 0)
     contText = contText + "\tallowFreeStandingZoneFaces\tfalse;\n";
-  contText = contText + "\}\n";
+  contText = contText + "}\n";
 
 
   // Snap Controls
-  contText = contText + "\n\nsnapControls\n\{\n";
+  contText = contText + "\n\nsnapControls\n{\n";
   contText = contText + "\tnSmoothPatch\t"
         + std::to_string(_params->snapSmthPatch) + ";\n";
   contText = contText + "\ttolerance\t"
@@ -470,16 +470,16 @@ FoamFile\n\
         + std::to_string(_params->solveSnapIter) + ";\n";
   contText = contText + "\tnRelaxIter\t"
         + std::to_string(_params->relaxSnapIter) + ";\n";
-  contText = contText + "\}\n";
+  contText = contText + "}\n";
 
 
   // Layer Controls
-  contText = contText + "\n\naddLayersControls\n\{\n";
+  contText = contText + "\n\naddLayersControls\n{\n";
   if ((_params->_relSize) == 1)
     contText = contText + "\trelativeSizes\ttrue;\n";
   if ((_params->_relSize) == 0)
     contText = contText + "\trelativeSizes\tfalse;\n";
-  contText = contText + "\tlayers\n\t\{\n\t\}\n";
+  contText = contText + "\tlayers\n\t{\n\t}\n";
   contText = contText + "\texpansionRatio\t"
           + std::to_string(_params->expRatio) + ";\n";
   contText = contText + "\tfinalLayerThickness\t"
@@ -507,11 +507,11 @@ FoamFile\n\
           + std::to_string(_params->lyrBuffrCells) + ";\n";
   contText = contText + "\tnLayerIter\t"
           + std::to_string(_params->lyrIter) + ";\n";
-  contText = contText + "\}\n";
+  contText = contText + "}\n";
 
 
   // Mesh Quality Controls
-  contText = contText + "\n\nmeshQualityControls\n\{\n";
+  contText = contText + "\n\nmeshQualityControls\n{\n";
   contText = contText + "\tmaxNonOrtho\t" 
           + std::to_string(_params->qcMaxNOrtho) + ";\n";
   contText = contText + "\tmaxBoundarySkewness\t" 
@@ -540,7 +540,7 @@ FoamFile\n\
           + std::to_string(_params->qcSmthScale) + ";\n";
   contText = contText + "\terrorReduction\t" 
           + std::to_string(_params->qcErrRedctn) + ";\n";
-  contText = contText + "\}\n";
+  contText = contText + "}\n";
 
   contText = contText + "\nmergeTolerance\t"
           + std::to_string(_params->mergeTol) + ";\n";
