@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 35)
+set(NEMOSYS_MINOR_VERSION 36)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -37,6 +37,9 @@ analysis, adaptive mesh refinement, and data transfer between arbitrary \
 meshes.")
 set(PROJECT_NAME "NEMoSys version ${NEMOSYS_VERSION}")
 project(${PROJECT_NAME} CXX C)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set project defaults #########################################################
 
@@ -149,7 +152,8 @@ endif()
 
 # Find VTK
 find_package(VTK REQUIRED)
-include(${VTK_USE_FILE})
+# UseVTK.cmake file does not correctly set VTK headers as external.
+#include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
 list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
@@ -172,15 +176,6 @@ if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
   set(VTK_COMMON_CORE_LIB ":${VTK_COMMON_CORE_LIB}")
 endif()
 message(STATUS "vtkCommonCore library ${VTK_COMMON_CORE_LIB}")
-
-# Find MAdLib, ANN, and jsoncons
-add_subdirectory(contrib/madlib-1.3.0) # includes ANN
-add_subdirectory(contrib/jsoncons-0.127.0)
-list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
-list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
-get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
-get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
 
 # Find Gmsh
 find_library(GMSH_LIB gmsh HINTS lib)
@@ -385,25 +380,6 @@ endif()
 
 # Setting compile and link options #############################################
 
-if(NOT WIN32) # These tests only work on GNU compilers.
-  include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag("-std=c++14" COMPILER_SUPPORTS_CXX14)
-  check_cxx_compiler_flag("-std=c++11" COMPILER_SUPPORTS_CXX11)
-  check_cxx_compiler_flag("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-  if(COMPILER_SUPPORTS_CXX14)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -DHAVE_TIMES")
-    set(CMAKE_CXX_STANDARD 14)
-  elseif(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DHAVE_TIMES")
-    set(CMAKE_CXX_STANDARD 11)
-  elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -DHAVE_TIMES")
-  else()
-    message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no
-                    modern C++ support. Please use a different C++ compiler.")
-  endif()
-endif(NOT WIN32)
-
 # Adding flags to Debug
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
@@ -412,13 +388,24 @@ endif(NOT WIN32)
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Turn off warnings  TODO: Remove as this gives appereance of clean code!
+# Turn on default warnings as errors.
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wpedantic")
 #  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast \
 #-Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
 endif()
+
+# Find contrib libraries #######################################################
+
+# Find MAdLib, ANN, and jsoncons
+add_subdirectory(contrib/madlib-1.3.0) # includes ANN
+add_subdirectory(contrib/jsoncons-0.127.0)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
+get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
 
 # Setting library files ########################################################
 # TODO: clean up the unnecessary modules such as R8
@@ -582,8 +569,16 @@ target_include_directories(Nemosys
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+)
+target_include_directories(Nemosys SYSTEM
+    PUBLIC
+        ${VTK_INCLUDE_DIRS}
         ${GMSH_INCPATH}
         ${CGNS_INCPATH}
+)
+target_compile_definitions(Nemosys
+    PUBLIC
+        ${VTK_DEFINITIONS}
 )
 
 if(HAVE_HDF5_CONFIG)
@@ -624,7 +619,7 @@ endif()
 if(ENABLE_EXODUS)
   target_link_libraries(Nemosys PUBLIC ${EXO_LIB})
   target_compile_definitions(Nemosys PUBLIC HAVE_EXODUSII)
-  target_include_directories(Nemosys PUBLIC ${EXO_INCPATH})
+  target_include_directories(Nemosys SYSTEM PUBLIC ${EXO_INCPATH})
 
   if(WIN32)
     target_link_libraries(Nemosys PUBLIC netcdf)
@@ -637,19 +632,20 @@ endif()
 
 if(ENABLE_METIS)
   target_link_libraries(Nemosys PUBLIC ${METIS_LIB})
-  target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
-  target_include_directories(Nemosys PUBLIC ${METIS_INCPATH})
+  # Brought in by Gmsh already! Should avoid clash somehow.
+  # target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
+  target_include_directories(Nemosys SYSTEM PUBLIC ${METIS_INCPATH})
 endif()
 
 if(ENABLE_NETGEN)
   target_link_libraries(Nemosys PUBLIC nglib)
   target_compile_definitions(Nemosys PUBLIC HAVE_NGEN)
-  target_include_directories(Nemosys PUBLIC ${NETGEN_INCLUDE_DIRS})
+  target_include_directories(Nemosys SYSTEM PUBLIC ${NETGEN_INCLUDE_DIRS})
 endif()
 
 if(ENABLE_SIMMETRIX)
   target_link_libraries(Nemosys PUBLIC ${SIMMETRIX_LIBS})
-  target_include_directories(Nemosys PUBLIC ${SIMMETRIX_INCPATH})
+  target_include_directories(Nemosys SYSTEM PUBLIC ${SIMMETRIX_INCPATH})
   target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
 endif()
 
@@ -658,8 +654,8 @@ if(ENABLE_CFMSH)
   # CMake 3.13 required for target_link_directories
   #target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
   # /CMake 3.13
-  target_include_directories(Nemosys PUBLIC ${CFMSH_INCPATH}
-                                            ${OPNF_INCLUDE_DIRS})
+  target_include_directories(Nemosys SYSTEM
+      PUBLIC ${CFMSH_INCPATH} ${OPNF_INCLUDE_DIRS})
   target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
 
   string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)

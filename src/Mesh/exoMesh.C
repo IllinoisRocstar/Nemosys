@@ -814,7 +814,7 @@ void exoMesh::mergeNodes(double tol)
   // sanity check and node coordinate re-assignment
   int max, min;
   max = 0;
-  min = 1e6;
+  min = INT_MAX;
   for (auto im = old2NewNde.begin(); im != old2NewNde.end(); im++) {
     max = std::max(max, im->second);
     min = std::min(min, im->second);
@@ -885,7 +885,7 @@ void exoMesh::mergeNodes(double tol)
 
   // update element block connectivities
   max = 0;
-  min = 1e15;
+  min = INT_MAX;
   for (auto ieb = _elmBlock.begin(); ieb != _elmBlock.end(); ieb++) {
     for (auto itn = (ieb->conn).begin(); itn != (ieb->conn).end(); itn++) {
       int nid = *itn;

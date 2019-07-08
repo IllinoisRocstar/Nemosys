@@ -64,7 +64,7 @@ extern int		ANNptsVisited;		// number of pts visited in search
 //----------------------------------------------------------------------
 
 void annError(					// ANN error routine
-	char			*msg,		// error message
+	std::string			msg,		// error message
 	ANNerr			level);		// level of error
 
 void annPrintPt(				// print a point

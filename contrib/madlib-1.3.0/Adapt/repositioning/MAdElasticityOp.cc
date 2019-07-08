@@ -233,7 +233,7 @@ namespace MAd {
         }
       }
 
-    printf("Built a cavity with %d elements, dirichlet size: %d\n",cavity.size(),dirichlet.size());
+    printf("Built a cavity with %zd elements, dirichlet size: %zd\n",cavity.size(),dirichlet.size());
 
   }
 

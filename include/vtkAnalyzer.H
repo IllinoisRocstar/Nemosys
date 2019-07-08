@@ -105,7 +105,7 @@ class NEMOSYS_EXPORT vtkAnalyzer
 
     // read file and populate the class
     void read();
-    void write(char *outXMLFileName);
+    void write(std::string outXMLFileName);
 
   // inquiry
   public:

@@ -49,7 +49,10 @@
 #define MSH_TET_20 29
 #define MSH_TET_35 30
 #define MSH_TET_56 31
-#define MSH_TET_34 32
+// AEG: This is changed in the official Gmsh declaration.
+//#define MSH_TET_34 32
+#define MSH_TET_34 79
+// /AEG
 #define MSH_UNDEFINED_ELEM 33
 #define MSH_MAX_ELEMENT_NODES 56
 
