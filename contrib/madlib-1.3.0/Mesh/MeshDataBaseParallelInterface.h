@@ -24,8 +24,8 @@
 
 namespace MAd {
 
-  class MADLIB_EXPORT MDB_DataExchanger;
-  class MADLIB_EXPORT MDB_DataExchangerPeriodic;
+  class MDB_DataExchanger;
+  class MDB_DataExchangerPeriodic;
 
   // -------------------------------------------------------------------
 

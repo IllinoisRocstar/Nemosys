@@ -978,7 +978,7 @@ void MeshManipulationFoam::createPatchDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -995,17 +995,17 @@ FoamFile\n\
     contText = contText + "\n\npointSync true;\n";
     contText = contText + "\n\npatches\n";
     contText = contText + "(\n";
-    contText = contText + "\t\{\n";
+    contText = contText + "\t{\n";
     contText = contText + "\t\tname " + (_mshMnipPrms->surroundingName)
                         + ";\n";
     contText = contText + "\n\t\tpatchInfo\n";
-    contText = contText + "\t\t\{\n";
+    contText = contText + "\t\t{\n";
     contText = contText + "\t\t\ttype " + (_mshMnipPrms->srrndngPatchType)
                         + ";\n";
-    contText = contText + "\t\t\}\n";
+    contText = contText + "\t\t}\n";
     contText = contText + "\n\t\tconstructFrom patches;\n";
     contText = contText + "\n\t\tpatches (\"domain0_to_domain.*\");";
-    contText = contText + "\n\t\}\n";
+    contText = contText + "\n\t}\n";
     contText = contText + ");\n";
 
     contText = contText + 
@@ -1039,7 +1039,7 @@ FoamFile\n\
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -1056,16 +1056,16 @@ FoamFile\n\
     contText2 = contText2 + "\n\npointSync true;\n";
     contText2 = contText2 + "\n\npatches\n";
     contText2 = contText2 + "(\n";
-    contText2 = contText2 + "\t\{\n";
+    contText2 = contText2 + "\t{\n";
     contText2 = contText2 + "\t\tname " + (_mshMnipPrms->packsName) + ";\n";
     contText2 = contText2 + "\n\t\tpatchInfo\n";
-    contText2 = contText2 + "\t\t\{\n";
+    contText2 = contText2 + "\t\t{\n";
     contText2 = contText2 + "\t\t\ttype " + (_mshMnipPrms->packsPatchType)
                           + ";\n";
-    contText2 = contText2 + "\t\t\}\n";
+    contText2 = contText2 + "\t\t}\n";
     contText2 = contText2 + "\n\t\tconstructFrom patches;\n";
     contText2 = contText2 + "\n\t\tpatches (\"domain.*_to_domain0\");";
-    contText2 = contText2 + "\n\t\}\n";
+    contText2 = contText2 + "\n\t}\n";
     contText2 = contText2 + ");\n";
 
     contText2 = contText2 + 
@@ -2417,7 +2417,7 @@ Foam::autoPtr<Foam::mapPolyMesh> MeshManipulationFoam::createRegionMesh
     }
 
 
-#endif HAVE_OF5
+#endif
 
 #ifdef HAVE_OF4
 
@@ -2457,7 +2457,7 @@ Foam::autoPtr<Foam::mapPolyMesh> MeshManipulationFoam::createRegionMesh
         }
     }
 
-#endif HAVE_OF4
+#endif
 
 #ifdef HAVE_OF6
 
@@ -2498,7 +2498,7 @@ Foam::autoPtr<Foam::mapPolyMesh> MeshManipulationFoam::createRegionMesh
     }
 
 
-#endif HAVE_OF6
+#endif
 
     // Neighbour cellRegion.
     labelList coupledRegion(mesh.nFaces()-mesh.nInternalFaces());

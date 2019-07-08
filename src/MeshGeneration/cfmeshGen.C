@@ -128,7 +128,7 @@ void cfmeshGen::createControlDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -173,7 +173,7 @@ void cfmeshGen::createfvSchemesDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -232,7 +232,7 @@ void cfmeshGen::createfvSolutionDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -277,7 +277,7 @@ void cfmeshGen::createMshDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -319,7 +319,7 @@ FoamFile\n\
     // boundary layer
     if (_params->_withBndLyr)
     {
-        contText = contText + "\nboundaryLayers\n\{\n";
+        contText = contText + "\nboundaryLayers\n{\n";
         contText = contText + "\tnLayers\t" + std::to_string(_params->blNLyr)
             + ";\n";
         contText = contText + "\tthicknessRatio\t" + std::to_string(_params->blThkRto) + ";\n";
@@ -352,7 +352,7 @@ FoamFile\n\
             contText = contText + "\n\t}\n";
         }
 
-        contText = contText + "\n\}\n\n";
+        contText = contText + "\n}\n\n";
     }
 
     // object refinements

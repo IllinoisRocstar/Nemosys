@@ -123,7 +123,7 @@ void blockMeshGen::createControlDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -169,7 +169,7 @@ void blockMeshGen::createfvSchemesDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -228,7 +228,7 @@ void blockMeshGen::createfvSolutionDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -274,7 +274,7 @@ void blockMeshGen::createBlockMshDict()
 |  \\\\    /   O peration     |                                                |\n\
 |   \\\\  /    A nd           |                                                |\n\
 |    \\\\/     M anipulation  |                                                |\n\
-\*---------------------------------------------------------------------------*/\n\
+\\*---------------------------------------------------------------------------*/\n\
 \n\
 FoamFile\n\
 {\n\
@@ -449,12 +449,12 @@ FoamFile\n\
     contText = contText + "\ncz " + std::to_string(_params->centerZ) + ";";
     contText = contText + "\nrad " + std::to_string(_params->radius) + ";";
 
-    contText = contText + "\ngeometry\n\{\n";
-    contText = contText + "\tsphere\n\t\{\n";
+    contText = contText + "\ngeometry\n{\n";
+    contText = contText + "\tsphere\n\t{\n";
     contText = contText + "\t\ttype searchableSphere;\n";
     contText = contText + "\t\tcentre ($cx $cy $cz);\n";
     contText = contText + "\t\tradius $rad;\n";
-    contText = contText + "\t\}\n\}\n";
+    contText = contText + "\t}\n}\n";
 
     contText = contText + "\nconvertToMeters "
             + std::to_string(_params->cnvrtToMeters) + ";\n";
@@ -533,7 +533,7 @@ FoamFile\n\
     contText = contText + ");\n";
 
     contText = contText + "\nboundary\n(\n";
-    contText = contText + "\twalls\n\t\{\n";
+    contText = contText + "\twalls\n\t{\n";
     contText = contText + "\t\ttype wall;\n";
     contText = contText + "\t\tfaces\n\t\t(\n";
     contText = contText + "\t\t\t(0 4 7 3)\n";
@@ -543,7 +543,7 @@ FoamFile\n\
     contText = contText + "\t\t\t(0 3 2 1)\n";
     contText = contText + "\t\t\t(4 5 6 7)\n";
     contText = contText + "\t\t);\n";
-    contText = contText + "\t\}\n";
+    contText = contText + "\t}\n";
     contText = contText + ");\n";
 
     contText = contText + 
@@ -680,7 +680,7 @@ FoamFile\n\
     contText = contText + ");\n\n";
     
     contText = contText + "boundary\n(\n";
-    contText = contText + "\tinlet\n\t\{\n";
+    contText = contText + "\tinlet\n\t{\n";
     contText = contText + "\t\ttype patch;\n";
     contText = contText + "\t\tfaces\n\t\t(\n";
     contText = contText + "\t\t\t(0 1 2 3)\n";
@@ -689,9 +689,9 @@ FoamFile\n\
     contText = contText + "\t\t\t(0 2 6 7)\n";
     contText = contText + "\t\t\t(2 3 4 6)\n";
     contText = contText + "\t\t);\n";
-    contText = contText + "\t\}\n";
+    contText = contText + "\t}\n";
     
-    contText = contText + "\toutlet\n\t\{\n";
+    contText = contText + "\toutlet\n\t{\n";
     contText = contText + "\t\ttype patch;\n";
     contText = contText + "\t\tfaces\n\t\t(\n";
     contText = contText + "\t\t\t(8 9 10 11)\n";
@@ -700,9 +700,9 @@ FoamFile\n\
     contText = contText + "\t\t\t(14 15 10 8)\n";
     contText = contText + "\t\t\t(10 11 14 12)\n";
     contText = contText + "\t\t);\n";
-    contText = contText + "\t\}\n";
+    contText = contText + "\t}\n";
     
-    contText = contText + "\twalls\n\t\{\n";
+    contText = contText + "\twalls\n\t{\n";
     contText = contText + "\t\ttype patch;\n";
     contText = contText + "\t\tfaces\n\t\t(\n";
     contText = contText + "\t\t\t(1 5 13 9)\n";
@@ -710,7 +710,7 @@ FoamFile\n\
     contText = contText + "\t\t\t(7 0 8 15)\n";
     contText = contText + "\t\t\t(0 1 9 8)\n";
     contText = contText + "\t\t);\n";
-    contText = contText + "\t\}\n";
+    contText = contText + "\t}\n";
     contText = contText + ");\n";
     
     contText = contText + 
@@ -803,7 +803,7 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
             << exit(FatalError);
     }
 
-#endif HAVE_OF5
+#endif
 
 #ifdef HAVE_OF4
 
@@ -816,7 +816,7 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
             << exit(FatalError);
     }
     
-#endif HAVE_OF4
+#endif
 
 #ifdef HAVE_OF6
 
@@ -829,7 +829,7 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
             << exit(FatalError);
     }
 
-#endif HAVE_OF6
+#endif
 
   Info<< "Creating block mesh from\n    "
       << meshDictIO.objectPath() << endl;
