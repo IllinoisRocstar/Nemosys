@@ -61,14 +61,14 @@ void vtkAnalyzer::read()
     }
 }
 
-void vtkAnalyzer::write(char* outXMLFileName) 
+void vtkAnalyzer::write(std::string outXMLFileName)
 {
 
     // Dispatch based on the file extension
     if (extension == ".vtu")
     {
       if (unsGridReader) {
-        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName, unsGridReader->GetOutput());
+        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName.c_str(), unsGridReader->GetOutput());
       }
     }
     else if (extension == ".vtp")
@@ -90,7 +90,7 @@ void vtkAnalyzer::write(char* outXMLFileName)
     else if (extension == ".vtk")
     {
       if (dataSetReader) {
-        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName, dataSetReader->GetOutput());
+        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName.c_str(), dataSetReader->GetOutput());
       }
     }
     else {

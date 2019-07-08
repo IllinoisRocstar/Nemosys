@@ -60,7 +60,7 @@ namespace MAd {
       { return VECTORIAL; break; }
     }
     throw;
-  };
+  }
 
   std::string getOutputName( MAdOutputData type ) {
     switch (type) {
@@ -83,7 +83,7 @@ namespace MAd {
     case OD_DISTANCE: return "distance to the walls";
     }
     return "unknown output type";
-  };
+  }
 
   // ----------------------------------------------------------------------
   double* getData(MAdOutputData type, const pEntity pe, const pSField sf=NULL, int id=0)
