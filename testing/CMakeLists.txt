@@ -190,11 +190,14 @@ NEM_add_test(pntgen PNTGen PNTGenTest
     bench6.json bench6_conv_gold.pntmesh
 )
 
+# Disable in Win for now due to CI/CD being 32 bit.
+if(NOT WIN32) # TODO: Switch Win CI/CD to 64 bit to re-enable.
 NEM_add_test(gmshMesh GmshMesh GmshMeshTest
     cube2.msh
     cube4.msh
     cube41.msh
 )
+endif()
 
 if(ENABLE_EPIC)
   NEM_add_test(ep16 EP16 Ep16Test
