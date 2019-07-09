@@ -373,18 +373,6 @@ TEST(snappyHexMesh, NumberOfCells)
   EXPECT_EQ( mesh->getNumberOfCells(), ref->getNumberOfCells() );
 }
 
-// NOTE: This test is unreliable for binary files.
-//TEST(CfMesh, FileDiff)
-//{
-//  bool res = compareFiles
-//      ( 
-//       inputjson["Reference File"].as<std::string>(),
-//       inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>() 
-//      );
-//  EXPECT_EQ(res, 1);
-//}
-
-
 // test constructor
 int main(int argc, char** argv) {
   // IO
