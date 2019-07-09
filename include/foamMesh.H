@@ -18,6 +18,7 @@ class foamMesh : public meshBase
 {
   public:
     explicit foamMesh(bool readDB = false);
+    foamMesh(std::shared_ptr<meshBase> fullMesh);
     ~foamMesh() override;
 
   // --- diagnostics
@@ -56,6 +57,7 @@ class foamMesh : public meshBase
     // internal methods
   private:
     void genMshDB();
+    void createFoamDicts();
     void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
                        int cellType, std::vector<int> &vrtIds);
 

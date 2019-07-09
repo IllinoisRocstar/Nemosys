@@ -141,6 +141,8 @@ NEM_add_test(conversion Conversion ConversionTest
     pnt-hex-ref.vtu
     pnt-mix.pntmesh
     pnt-mix-ref.vtu
+    geom_pack_mesh.vtu
+    geom_pack_mesh_ref.vtu
 )
 
 NEM_add_test(orthoPoly OrthoPoly OrthoPolyTest F.txt)

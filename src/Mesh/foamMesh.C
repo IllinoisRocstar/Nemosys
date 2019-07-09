@@ -1,5 +1,8 @@
 #include <foamMesh.H>
 #include <AuxiliaryFunctions.H>
+#include <iostream>
+#include <string>
+#include <boost/filesystem.hpp>
 
 // openfoam headers
 #include <fvCFD.H>
@@ -20,6 +23,7 @@
 #include <vtkCellIterator.h>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkTriangleFilter.h>
+//#include <vtkUnstructuredGrid.h>
 
 using namespace FOAM;
 using namespace nemAux;
@@ -43,6 +47,12 @@ foamMesh::foamMesh(bool readDB)
     // reading mesh database from current location
     if (readDB)
         read("");
+}
+
+foamMesh::foamMesh(std::shared_ptr<meshBase> fullMesh)
+{
+  _volMB = fullMesh;
+  createFoamDicts();
 }
 
 foamMesh::~foamMesh()
@@ -422,10 +432,256 @@ vtkSmartPointer<vtkDataSet> foamMesh::extractSurface()
   return triFilt->GetOutput();
 }
 
+
+// Created foam dictionaries for VTK->FOAM conversion
+void foamMesh::createFoamDicts()
+{
+  // fvSchemesDict
+
+  // creating a base system directory
+  const char dir_path[] = "./system";
+  boost::filesystem::path dir(dir_path);
+    try
+    {
+      boost::filesystem::create_directory(dir);
+    }
+    catch (boost::filesystem::filesystem_error &e)
+    {
+    std::cerr << "Problem in creating system directory for the cfMesh" << "\n";
+        std::cerr << e.what() << std::endl;
+        throw;
+  }
+
+  std::ofstream contDict;
+  contDict.open(std::string(dir_path)+"/fvSchemes");
+  std::string contText=
+    "\
+/*--------------------------------*- C++ -*----------------------------------*\n\
+| =========                 |                                                |\n\
+| \\\\      /  F ield         | NEMoSys: Mesh Conversion interface             |\n\
+|  \\\\    /   O peration     |                                                |\n\
+|   \\\\  /    A nd           |                                                |\n\
+|    \\\\/     M anipulation  |                                                |\n\
+\\*---------------------------------------------------------------------------*/\n\
+\n\
+FoamFile\n\
+{\n\
+    version   2.0;\n\
+    format    ascii;\n\
+    class     dictionary;\n\
+    object    fvSchemes;\n\
+}\n\n\
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
+gradSchemes\n\
+{\n\
+    default         Gauss linear;\n\
+    grad(p)         Gauss linear;\n\
+}\n\
+\n\
+divSchemes\n\
+{\n\
+    default         none;\n\
+    div(phi,U)      Gauss linear;\n\
+}\n\
+\n\
+laplacianSchemes\n\
+{\n\
+    default         none;\n\
+    laplacian(nu,U) Gauss linear corrected;\n\
+    laplacian((1|A(U)),p) Gauss linear corrected;\n\
+}\n\
+// ************************************************************************* //";
+  contDict << contText;
+  contDict.close();
+
+
+  // fvSolutionDict
+
+  std::ofstream contDict2;
+  contDict2.open(std::string(dir_path)+"/fvSolution");
+  std::string contText2=
+    "\
+/*--------------------------------*- C++ -*----------------------------------*\n\
+| =========                 |                                                |\n\
+| \\\\      /  F ield         | NEMoSys: Mesh Conversion interface             |\n\
+|  \\\\    /   O peration     |                                                |\n\
+|   \\\\  /    A nd           |                                                |\n\
+|    \\\\/     M anipulation  |                                                |\n\
+\\*---------------------------------------------------------------------------*/\n\
+\n\
+FoamFile\n\
+{\n\
+    version   2.0;\n\
+    format    ascii;\n\
+    class     dictionary;\n\
+    object    fvSolution;\n\
+}\n\n\
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
+\n\
+// ************************************************************************* //";
+  contDict2 << contText2;
+  contDict2.close();
+
+
+  // ControlDict
+
+  std::ofstream contDict3;
+  contDict3.open(std::string(dir_path)+"/controlDict");
+  std::string contText3=
+    "\
+/*--------------------------------*- C++ -*----------------------------------*\n\
+| =========                 |                                                |\n\
+| \\\\      /  F ield         | NEMoSys: Mesh Conversion interface             |\n\
+|  \\\\    /   O peration     |                                                |\n\
+|   \\\\  /    A nd           |                                                |\n\
+|    \\\\/     M anipulation  |                                                |\n\
+\\*---------------------------------------------------------------------------*/\n\
+\n\
+FoamFile\n\
+{\n\
+    version   2.0;\n\
+    format    ascii;\n\
+    class     dictionary;\n\
+    location  \"system\";\n\
+    object    controlDict;\n\
+}\n\n\
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
+deltaT  1;\n\n\
+startTime 0;\n\n\
+writeInterval 1;\n\n\
+// ************************************************************************* //";
+  contDict3 << contText3;
+  contDict3.close();
+
+}
+
 // write the mesh to file named fname
 void foamMesh::write(const std::string &fname) const
 {
-    std::cerr << "This method is not impletemented yet!\n";
-    throw;
+
+  int argc = 1;
+  char** argv = new char*[2];
+  argv[0] = new char[100];
+  strcpy(argv[0], "NONE");
+  Foam::argList args(argc, argv);
+  Foam::Info<< "Create time\n" << Foam::endl;
+  Foam::argList::noParallel();
+
+  Time runTime
+  (
+      Time::controlDictName,
+      "",
+      ""
+  );
+  
+  // Fetches VTK dataset from VTU/VTK files
+  vtkSmartPointer<vtkDataSet> vtkDS = _volMB->getDataSet();
+
+  int numPoints = vtkDS->GetNumberOfPoints();
+  int numCells = vtkDS->GetNumberOfCells();
+
+  // Gets all point numbers and coordinates
+  std::vector<std::vector<double>> verticeZZ;
+  verticeZZ.resize(numPoints);
+  for (int ipt = 0; ipt < numPoints; ipt++)
+  {
+    std::vector<double> getPt = std::vector<double>(3);
+    vtkDS->GetPoint(ipt, &getPt[0]);
+    verticeZZ[ipt].resize(3);
+    verticeZZ[ipt][0] = getPt[0];
+    verticeZZ[ipt][1] = getPt[1];
+    verticeZZ[ipt][2] = getPt[2];
+  }
+
+  // Gets Ids for cells
+  std::vector<std::vector<int>> cellIdZZ;
+  cellIdZZ.resize(numCells);
+
+  // Foam point data container
+  Foam::pointField pointData(numPoints);
+
+  // Gets celltypes for all cells in mesh
+  std::vector<int> typeCell;
+  typeCell.resize(numCells);
+
+  // Foam cell data container
+  Foam::cellShapeList cellShapeData(numCells);
+
+  // Foam cell modelers
+  const Foam::cellModel& hex = *(Foam::cellModeller::lookup("hex"));
+  const Foam::cellModel& pyr = *(cellModeller::lookup("pyr"));
+  const Foam::cellModel& tet = *(cellModeller::lookup("tet"));
+
+
+  for (int i=0; i<numPoints; i++)
+  {
+    pointData[i] = Foam::vector(verticeZZ[i][0],verticeZZ[i][1],verticeZZ[i][2]);
+  }
+  
+  for (int i=0; i<numCells; i++)
+  {
+    vtkIdList *ptIds = vtkIdList::New();
+    vtkDS->GetCellPoints(i, ptIds);
+    int numIds = ptIds->GetNumberOfIds();
+    cellIdZZ[i].resize(numIds);
+    for (int j=0; j<numIds; j++)
+    {
+      cellIdZZ[i][j] = ptIds->GetId(j);
+    }
+
+    Foam::labelList meshPoints(numIds);
+
+    for (int k=0; k<numIds; k++)
+    {
+      meshPoints[k] = cellIdZZ[i][k];
+    }
+
+    typeCell[i] = vtkDS->GetCellType(i);
+
+    if (typeCell[i] == 12)
+    {
+      cellShapeData[i] = cellShape(hex, meshPoints, true);
+    }
+    else if (typeCell[i] == 14)
+    {
+      cellShapeData[i] = cellShape(pyr, meshPoints, true);
+    }
+    else if (typeCell[i] == 10)
+    {
+      cellShapeData[i] = cellShape(tet, meshPoints, true);
+    }
+    else
+    {
+      std::cerr << "Only Hexahedral, Tetrahedral," 
+                << " and Pyramid cells are supported for VTK->FOAM!"
+                << std::endl;
+      throw;
+    }
+    
+  }
+ 
+  Foam::polyMesh mesh
+  (
+    IOobject
+    (
+        Foam::polyMesh::defaultRegion,
+        runTime.constant(),
+        runTime
+    ),
+    Foam::xferMove(pointData), // Vertices
+    cellShapeData,  // Cell shape and points
+    Foam::faceListList(), // Boundary faces
+    Foam::wordList(), // Boundary Patch Names
+    Foam::wordList(), // Boundary Patch Type
+    "defaultPatch", // Default Patch Name
+    Foam::polyPatch::typeName,  // Default Patch Type
+    Foam::wordList()  // Boundary Patch Physical Type
+  );
+
+  // ****************************************************************** //
+
+  std::cout << "Writing mesh for time 0" << std::endl;
+
+  mesh.write();
 }
 
