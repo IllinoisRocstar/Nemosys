@@ -4,26 +4,30 @@
 #include <vector>
 #include <vtkUnstructuredGrid.h>
 #include <set>
+#include "meshBase.H"
+#include "foamMesh.H"
 #include "MeshManipulationFoam.H"
 #include "MeshManipulationFoamParams.H"
 #include <vtkCellData.h>
 #include <vtkFieldData.h>
 #include <vtkCell.h>
+#include <vtkMesh.H>
 #include <vtkCellType.h>
 #include <AuxiliaryFunctions.H>
 #include <boost/filesystem.hpp>
 
 // openfoam headers
-#include <fvCFD.H>
-#include <fvMesh.H>
-#include <fileName.H>
+#include "fvCFD.H"
+#include "fvMesh.H"
+#include "fileName.H"
+#include "vtkTopo.H"
 
 //SurfLambdaMuSmooth
-#include <argList.H>
-#include <boundBox.H>
-#include <edgeMesh.H>
-#include <matchPoints.H>
-#include <MeshedSurfaces.H>
+#include "argList.H"
+#include "boundBox.H"
+#include "edgeMesh.H"
+#include "matchPoints.H"
+#include "MeshedSurfaces.H"
 
 //splitMeshByRegions
 #include "SortableList.H"
@@ -65,6 +69,9 @@
 #include "timeSelector.H"
 #include "polyMesh.H"
 #include "IOdictionary.H"
+
+// third party
+#include <ANN/ANN.h>
 
 // TODO
 // 1. Two of these methods (mergeMesh and CreatePatch) are little bit pack
@@ -812,7 +819,7 @@ return impVar;
 MergeMeshes utility takes master region and slave region names/paths from user
 and merges the slave regions to master region one by one.
 */
-void MeshManipulationFoam::mergeMeshes(int dirStat)
+void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains)
 {
   using namespace Foam;
 
@@ -825,13 +832,43 @@ void MeshManipulationFoam::mergeMeshes(int dirStat)
   Foam::Time runTime(Foam::Time::controlDictName, args);
   Foam::argList::noParallel();
 
-  int ndoms = (_mshMnipPrms->numDomains);
+  int ndoms;
+
+  if ((_mshMnipPrms->numDomains) == -1)
+  {
+    ndoms = nDomains;
+  }
+  else{
+    ndoms = (_mshMnipPrms->numDomains);
+  }
+
   std::vector<std::string> addCases;
 
 
+  /*if ((_mshMnipPrms->numDomains) == 2)
+  {
+        addCases.push_back(_mshMnipPrms->addCase);
+  }
+  else
+  {
+    for (int i=2; i<(ndoms+1); i++)
+    {
+      if (i == dirStat)
+      {
+          i++;
+      }
+      addCases.push_back("domain" + (std::to_string(i)));
+    }
+    
+    addCases.push_back(_mshMnipPrms->addCase);
+  }*/
+
+
   // Collecting all domain names for automatic merging of all mesh regions.
-  // Directory number obtained from splitMeshRegions is used here.
-  if ((_mshMnipPrms->numDomains) == 2)
+  // Directory number obtained from splitMeshRegions is used here. Also
+  // number of packs are passed through this function for use in loop. 
+
+  if (ndoms == 2)
   {
         addCases.push_back(_mshMnipPrms->addCase);
   }
@@ -1559,7 +1596,7 @@ void MeshManipulationFoam::foamToSurface()
             Foam::polyMesh::defaultRegion,
             runTimeMaster.timeName(),
             runTimeMaster,
-      Foam::IOobject::MUST_READ
+            Foam::IOobject::MUST_READ
         )
     );
   
@@ -1603,7 +1640,7 @@ splitting multiple disconnected regions in geometry into separate surfaces and
 outputs a single surface file containing all regions as well as separate STL
 files for all regions. User inputs are input file name and output file name. 
 */
-void MeshManipulationFoam::surfSpltByTopology()
+int MeshManipulationFoam::surfSpltByTopology()
 {
   using namespace Foam;
 
@@ -1757,7 +1794,12 @@ void MeshManipulationFoam::surfSpltByTopology()
 
     label nZones = surf.markZones(multipleEdges, faceZone);
 
-    Info<< "Splitting remaining multiply connected parts" << endl;
+    int nofPacks = nZones;
+
+    // nZones is number of pack domains. it will be great to get that out for mergeMeshes.
+    // Also, surface renumbering is needed as output STL
+
+    /*Info<< "Splitting remaining multiply connected parts" << endl;
 
     for (label z = 0; z < nZones; z++)
     {
@@ -1787,10 +1829,281 @@ void MeshManipulationFoam::surfSpltByTopology()
             << z << " to " << remainingPartFileName << endl;
 
         zoneSurf.write(remainingPartFileName);
-    }
+    }*/
 
     Info << "End\n" << endl;
+
+    return nofPacks;
 }
+
+void MeshManipulationFoam::createControlDict()
+{
+  // creating a base system directory
+  const char dir_path[] = "./system";
+  boost::filesystem::path dir(dir_path);
+  try
+  {
+    boost::filesystem::create_directory(dir);
+  }
+  catch (boost::filesystem::filesystem_error &e)
+  {
+    std::cerr << "Problem in creating system directory for the cfMesh" << "\n";
+    std::cerr << e.what() << std::endl;
+    throw;
+  }
+
+  std::ofstream contDict;
+  contDict.open(std::string(dir_path)+"/controlDict");
+  std::string contText=
+    "\
+/*--------------------------------*- C++ -*----------------------------------*\n\
+| =========                 |                                                |\n\
+| \\\\      /  F ield         | NEMoSys: cfMesh interface                      |\n\
+|  \\\\    /   O peration     |                                                |\n\
+|   \\\\  /    A nd           |                                                |\n\
+|    \\\\/     M anipulation  |                                                |\n\
+\\*---------------------------------------------------------------------------*/\n\
+\n\
+FoamFile\n\
+{\n\
+    version   2.0;\n\
+    format    ascii;\n\
+    class     dictionary;\n\
+    location  \"system\";\n\
+    object    controlDict;\n\
+}\n\n\
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
+deltaT  1;\n\n\
+startTime   0;\n\n\
+writeInterval   1;\n\n\
+// ***************************************************************** //";
+    contDict << contText;
+    contDict.close();
+}
+
+
+// Feature in development currently
+
+/*// Adds connectivity information at shared interfaces.
+void MeshManipulationFoam::addConnectivityData()
+{
+  // Initializing FOAM
+  int argc = 1;
+  char** argv = new char*[2];
+  argv[0] = new char[100];
+  strcpy(argv[0], "NONE");
+  Foam::argList args(argc, argv);
+  Foam::argList::noParallel();
+
+  Time runTime
+  (
+      Time::controlDictName,
+      ".",
+      "."
+  );
+
+  Foam::word regionName = Foam::polyMesh::defaultRegion;
+
+  auto _fmeshSurr = new Foam::polyMesh
+  (
+    Foam::IOobject
+    (
+      regionName,
+      runTime.timeName(),
+      runTime,
+      Foam::IOobject::MUST_READ
+    )
+  );
+
+  // declare vtk dataset
+  vtkSmartPointer<vtkUnstructuredGrid> dataSetPack
+      = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+
+  // creating equivalent vtk topology from fvMesh
+  // by default polyhedral cells will be decomposed to 
+  // tets and pyramids. Additional points will be added
+  // to underlying fvMesh.
+  std::cout << "Performing topological decomposition.\n";
+  Foam::vtkTopo topo1(*_fmeshSurr);
+
+  // point data
+  Foam::pointField pfSurr = _fmeshSurr->points();
+  vtkSmartPointer<vtkPoints> points 
+      = vtkSmartPointer<vtkPoints>::New(); 
+  for (int ipt=0; ipt<_fmeshSurr->nPoints(); ipt++)
+      points->InsertNextPoint(
+              pfSurr[ipt].x(), 
+              pfSurr[ipt].y(), 
+              pfSurr[ipt].z() 
+              );
+  dataSetPack->SetPoints(points);
+
+  // cell data
+  std::vector<int> pntIds;
+  int nCelPnts = 0;
+  for (int icl=0; icl<topo1.vertLabels().size(); icl++)
+  {
+      nCelPnts = topo1.vertLabels()[icl].size();
+      pntIds.resize(nCelPnts, -1);
+      for (int ip=0; ip< nCelPnts; ip++)
+      {
+          pntIds[ip] = topo1.vertLabels()[icl][ip];
+      }
+      createVtkCell(dataSetPack, topo1.cellTypes()[icl], pntIds);
+  }
+
+  int numPoints = dataSetPack->GetNumberOfPoints();
+  int numCells = dataSetPack->GetNumberOfCells();
+
+
+  int nDim = 3;
+  ANNpointArray pntCrd;
+  pntCrd = annAllocPts(numPoints, nDim);
+  for (int iPnt=0; iPnt < numPoints; iPnt++)
+  {
+    std::vector<double> getPt = std::vector<double>(3);
+    dataSetPack->GetPoint(iPnt, &getPt[0]);
+    pntCrd[iPnt][0] = getPt[0];
+    pntCrd[iPnt][1] = getPt[1];
+    pntCrd[iPnt][2] = getPt[2];
+  }
+
+  ANNkd_tree *kdTree = new ANNkd_tree(pntCrd, numPoints, nDim);
+
+  // Finding duplicate nodes
+  int tol = 1e-13;
+  std::map<int, int> dupNdeMap;
+  ANNpoint qryPnt; // Query point.
+  int nNib = 2; // Number of neighbours to return (including query pt. itself).
+  ANNidxArray nnIdx = new ANNidx[nNib]; // Nearest neighbour array.
+  ANNdistArray dists = new ANNdist[nNib]; // Neighbour distance array.
+  qryPnt = annAllocPt(nDim); // Initializing query point
+
+  for (int iNde = 0; iNde < numPoints; iNde++) {
+    std::vector<double> getPt = std::vector<double>(3);
+    dataSetPack->GetPoint(iNde, &getPt[0]);
+    qryPnt[0] = getPt[0];
+    qryPnt[1] = getPt[1];
+    qryPnt[2] = getPt[2];
+    kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
+    if (dists[1] <= tol)
+      dupNdeMap[nnIdx[0] + 1] = nnIdx[1] + 1;
+  }
+  std::cout << "Found " << dupNdeMap.size() << " duplicate nodes.\n";
+
+  // Getting cell ids for one set of nodes.
+  std::map<int, int>::iterator it = dupNdeMap.begin();
+  std::vector<int> cellID;
+  std::vector<int> countCellz;
+  std::vector<int> foolme(13);
+  foolme[0] = 85903;
+  foolme[1] = 170096;
+  foolme[2] = 176469;
+  foolme[3] = 178342;
+  foolme[4] = 176615;
+  foolme[5] = 174143;
+  foolme[6] = 174426;
+  foolme[7] = 124535;
+  foolme[8] = 124797;
+  foolme[9] = 127771;
+  foolme[10] = 127959;
+  foolme[11] = 130551;
+  foolme[12] = 89635;
+  //for (int i=0; i<(dupNdeMap.size()); i++)
+  for (int i=0; i<1; i++)
+  {
+    int nCells, cellNum;
+    vtkIdList *cells = vtkIdList::New();
+
+    // get cells the point belongs to
+    //dataSetPack->GetPointCells( it->second, cells );
+    dataSetPack->GetPointCells( 124797, cells );
+
+    // for each cell
+    nCells = cells->GetNumberOfIds();
+    if (nCells > 4)
+    {
+      countCellz.push_back(i);
+    }
+    for( cellNum=0; cellNum<nCells; cellNum++ )
+    {
+      cellID.push_back(cells->GetId( cellNum ));  // get cell id from the list
+      //std::cout << "Cell ID = " << cells->GetId( cellNum ) << std::endl;
+    }
+    it++;
+  }
+
+  sort( cellID.begin(), cellID.end() );
+  cellID.erase( unique( cellID.begin(), cellID.end() ), cellID.end() );
+
+  int know = cellID.size();
+
+  std::cout << "Total Cells Found Are " << know << std::endl;
+
+  std::cout << "Points shared by more than 4 cells are " << countCellz.size() << std::endl;
+
+  //std::cout << "Check this one " << countCellz[500] << std::endl;
+  //std::cout << "Check this one " << countCellz[0] << std::endl;
+  //std::cout << "Check this one " << countCellz[1] << std::endl;
+  //std::cout << "Check this one " << countCellz[2] << std::endl;
+
+  vtkSmartPointer<vtkUnstructuredGrid> visDataSet
+      = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+std::vector<int> ptIdzz;
+for (int i=0; i<8; i++){
+
+  vtkCell *cell;
+  vtkPoints *fp;
+  cell = dataSetPack->GetCell( cellID[i] );
+
+  vtkIdList *pts = cell->GetPointIds();
+
+  for (int i=0; i<8; i++)
+  {
+    ptIdzz.push_back(pts->GetId(i));
+  }
+
+}
+
+vtkSmartPointer<vtkPoints> pointsViz 
+        = vtkSmartPointer<vtkPoints>::New();
+
+  for (int i=0; i<8; i++)
+  {
+    std::vector<double> getPt = std::vector<double>(3);
+    dataSetPack->GetPoint(ptIdzz[i], &getPt[0]);
+    pointsViz->InsertNextPoint(getPt[0],getPt[1],getPt[2]);
+  }
+
+  std::vector<int> ptnewIdz;
+
+  for (int i=0; i<8; i++)
+  {
+    ptnewIdz.push_back(i);
+  }
+
+  visDataSet->SetPoints(pointsViz);
+
+  createVtkCell(visDataSet, 12, ptnewIdz);
+
+  vtkMesh* vm = new vtkMesh(visDataSet,"finalMesh.vtu");
+  vm->report();
+  vm->write();
+
+}*/
+
+/*void MeshManipulationFoam::createVtkCell(
+        vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+        const int cellType, std::vector<int>& vrtIds)
+{
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(vrtIds.size());
+    for (auto pit = vrtIds.begin(); pit!= vrtIds.end(); pit++)
+        vtkCellIds->SetId(pit-vrtIds.begin(), *pit);
+    dataSet->InsertNextCell(cellType,vtkCellIds);
+}*/
 
 
 // All the private functions are defined here

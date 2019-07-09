@@ -747,6 +747,8 @@ int generate(const char* jsonF)
   objMsh->foamToSurface();
   */
 
+  int nDom = 2;
+
   // blockMesh
   blockMeshGen* objBM = new blockMeshGen(bmparams);
   objBM->createMeshFromSTL(nameFile);
@@ -759,7 +761,7 @@ int generate(const char* jsonF)
   int dirStat = objMsh->splitMshRegions(); // outputs the region number 
                                            // skipped during splitting process
   // mergeMeshes
-  objMsh->mergeMeshes(dirStat);
+  objMsh->mergeMeshes(dirStat,nDom);
 
   // createPatch
   objMsh->createPatch();

@@ -1,4 +1,5 @@
 #include <meshBase.H>
+#include <foamMesh.H>
 #include <gtest.h>
 
 const char* mshName;
@@ -18,6 +19,8 @@ const char* pnthex;
 const char* pnthex_ref;
 const char* pntmix;
 const char* pntmix_ref;
+const char* packConv;
+const char* packConv_ref;
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -112,9 +115,33 @@ TEST(Conversion, ConvertPNTMixToVTU)
   } 
 }
 
+#ifdef HAVE_CFMSH
+TEST(Conversion, ConvertVTUToFoam)
+{
+	// create meshBase object
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(packConv);
+
+  // create foamMesh object
+  FOAM::foamMesh *fm = new FOAM::foamMesh(mesh);
+
+  // Write polyMesh
+  fm->write("name");
+
+  // Reads polyMesh
+  meshBase *fm2 = new FOAM::foamMesh();
+  fm2->read("name");
+
+  std::unique_ptr<meshBase> origMesh = meshBase::CreateUnique(fm2);
+
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(packConv_ref);
+
+  EXPECT_EQ(0, diffMesh(origMesh.get(), refMesh.get()));
+}
+#endif
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 18);
+  assert(argc == 20);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -132,6 +159,8 @@ int main(int argc, char** argv) {
   pnthex_ref = argv[15];
   pntmix = argv[16];
   pntmix_ref = argv[17];
+  packConv = argv[18];
+  packConv_ref = argv[19];
   return RUN_ALL_TESTS();
 }
 
