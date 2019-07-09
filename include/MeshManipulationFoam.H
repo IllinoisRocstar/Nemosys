@@ -73,16 +73,20 @@ class MeshManipulationFoam
 
 
   public:
+  void createControlDict();
   void surfLambdaMuSmooth();  // SurfaceLambdaMuSmooth utility
   int splitMshRegions();    // SplitMeshRegions utility
-  void mergeMeshes(int dirStat);  // MergeMeshes utility
+  void mergeMeshes(int dirStat, int nDomains);  // MergeMeshes utility
   void createPatch();   // CreatePatch utility
   void foamToSurface();   // FoamToSurface utility
-  void surfSpltByTopology();  // surfaceSplitByTopology utility
+  int surfSpltByTopology();  // surfaceSplitByTopology utility
+  //void addConnectivityData(); // Adds connectivity info at duplicate nodes.
 
 
   private:
   void createPatchDict();   // Creates createPatchDict
+  //void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
+  //      const int cellType, std::vector<int>& vrtIds);
 
   // surfaceLambdaMuSmooth functions
   // Defines average between points
@@ -219,7 +223,9 @@ class MeshManipulationFoam
 
   // Pointer for parameters
   private:
-  MeshManipulationFoamParams* _mshMnipPrms; 
+  MeshManipulationFoamParams* _mshMnipPrms;
+  //vtkSmartPointer<vtkUnstructuredGrid> packDS;
+  //vtkSmartPointer<vtkUnstructuredGrid> surroundingDS;
 };
 
 #endif

@@ -511,6 +511,40 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
                                              nodeThermalMap, nppVec);
     //pat->write();
   }
+  else if(method == "VTK->FOAM")
+  {
+    #ifdef HAVE_CFMSH
+    if (srcmsh.find(".vt") != std::string::npos)
+    {
+      std::cout << "Detected file in VTK format" << std::endl;
+      std::cout << "Converting to FOAM Mesh ...." << std::endl;
+    }
+    else
+    {
+      std::cerr << "Source mesh file is not in VTK format" << std::endl;
+    }
+
+    std::ifstream meshStream(srcmsh);
+    if (!meshStream.good())
+    {
+      std::cerr << "Error opening file " << srcmsh << std::endl;
+      exit(1);
+    }
+    // create meshBase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
+
+    // create foamMesh object
+    FOAM::foamMesh *fm = new FOAM::foamMesh(myMesh);
+
+    // Write polyMesh
+    //fm->report();
+    fm->write(ofname);
+    #else
+    std::cerr << "Error: Compile NEMoSys with ENABLE_CFMSH to use this option."
+              << std::endl;
+    exit(-1);
+    #endif
+  }
 
   T.stop();
 }

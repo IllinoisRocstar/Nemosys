@@ -80,7 +80,14 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   MeshManipulationFoam* objMsh = new MeshManipulationFoam(_mparams);
   const char* nameFile = "a"; // Dummy name for input
 
-  // First step in process is to create hexahedral mesh of packs using
+
+  // RocPack output STL file lists all packs under one surface name. This step
+  // renumbers STL file into n distinct surfaces and outputs number of packs
+  // for mergeMeshes loop. It will overwrite the original input file
+  objMsh->createControlDict();
+  int nDomains = objMsh->surfSpltByTopology();
+
+  // Second step in process is to create hexahedral mesh of packs using
   // cartesianMesh utility of CfMesh. It writes the mesh in constant/polyMesh.
   cfmeshGen* objCF = new cfmeshGen(_cfparams);
   objCF->createMeshFromSTL(nameFile);
@@ -120,7 +127,7 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   // to master domain. It loops through all domains in sequential manner and 
   // skips the missing domain.* (also skipped by splitMeshRegions) to avoid
   // runtime error.
-  objMsh->mergeMeshes(dirStat);
+  objMsh->mergeMeshes(dirStat, nDomains);
 
   // createPatch utility reads domain mesh and createPatchDict to combine all
   // different patches of multiple packs/surrounding into one patch
@@ -178,7 +185,14 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   if (objPackQ)
     delete objPackQ;
 
-  // End of workflow
+  // End of workflow*/
+
+  // In development
+  //objMsh->addConnectivityData();
+
+  //if (objMsh)
+  //  delete objMsh;
+  
 }
 
 // Class destructor
@@ -343,8 +357,6 @@ PackMeshDriver* PackMeshDriver::readJSON(const std::string& ifname,
       cfmparams[cap].get_with_default("ConstrainedCellsSet","none");
     }
 
-
-    // LEFT COMMENTING HERE
     // optional capability
     cap = "LocalRefinement";
     if (cfmparams.has_key(cap))
@@ -1311,6 +1323,9 @@ PackMeshDriver* PackMeshDriver::readJSON(const std::string& ifname,
         mparams->numDomains = 
           pmshparams["mergeMeshes Parameters"]
             ["Number of Domains"].as<int>();
+      else{
+        mparams->numDomains = -1;
+      }
     }
 
 
@@ -1367,10 +1382,20 @@ PackMeshDriver* PackMeshDriver::readJSON(const std::string& ifname,
         mparams->surfFile = 
           pmshparams["surfaceSplitByTopology Parameters"]
             ["Input File"].as<std::string>();
+    else{
+      mparams->surfFile = cfparams->geomFilePath;
+    }
     if (pmshparams["surfaceSplitByTopology Parameters"].has_key("Output File"))
         mparams->outSurfFile = 
           pmshparams["surfaceSplitByTopology Parameters"]
             ["Output File"].as<std::string>();
+    else{
+      mparams->outSurfFile = cfparams->geomFilePath;
+    }
+   }
+   else{
+      mparams->surfFile = cfparams->geomFilePath;
+      mparams->outSurfFile = cfparams->geomFilePath;
    }
 
     
