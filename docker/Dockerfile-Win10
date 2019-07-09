@@ -1,0 +1,121 @@
+# escape=`
+
+# Run this file from the nemosys TPL directory containing a folder
+# for each dependency. Docker needs to have the data to copy in the working
+# directory.
+
+FROM ilrocstar/buildtools2019:latest
+
+ARG TPL_DIR=C:\Nemosys
+ENV TPL_DIR=${TPL_DIR}
+
+# Boost
+COPY .\boost_1_69_0 $TPL_DIR\boost_1_69_0
+
+# NEMoSys required dependencies
+# CGNS
+COPY .\cgns $TPL_DIR\cgns
+#  HDF5
+COPY .\hdf5 $TPL_DIR\hdf5
+# VTK
+COPY .\vtk $TPL_DIR\vtk
+# GMSH
+COPY .\gmsh $TPL_DIR\gmsh
+
+# NEMoSys optional dependencies
+# EXODUS
+COPY .\exodusii $TPL_DIR\exodusii
+#  NETCDF
+COPY .\netcdf $TPL_DIR\netcdf
+# METIS
+COPY .\metis $TPL_DIR\metis
+# NETGEN
+COPY .\netgen $TPL_DIR\netgen
+#  ZLIB
+COPY .\zlib $TPL_DIR\zlib
+# SIMMETRIX
+COPY .\simmetrix $TPL_DIR\simmetrix
+
+
+# Powershell required for some commands.
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# SWIG
+COPY .\swigwin-3.0.12 $TPL_DIR\swigwin-3.0.12
+RUN setx /m PATH ('{0}\swigwin-3.0.12;{1}' -f ${Env:TPL_DIR}, ${Env:PATH})
+
+################################################################################
+# Intel ifortran redist
+################################################################################
+#COPY .\ww_icl_redist_ia32_2019.4.245.msi $TPL_DIR
+#RUN msiexec /i $TPL_DIR\ww_icl_redist_ia32_2019.4.245.msi /quiet /qn
+COPY .\ia32_win $TPL_DIR\ia32_win
+RUN setx /m PATH ('{0}\ia32_win\mpirt;{0}\ia32_win\compiler;{1}' -f ${Env:TPL_DIR}, ${Env:PATH})
+
+
+################################################################################
+# Python installation.
+# Taken directly from official Docker repository for Python-in-Docker:
+# https://github.com/docker-library/python/blob/master/3.7/windows/windowsservercore-1809/Dockerfile
+################################################################################
+
+ENV PYTHON_VERSION 3.7.4
+ENV PYTHON_RELEASE 3.7.4
+
+# URL for 64bit
+#RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}-amd64.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
+# URL for 32bit
+RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
+	Write-Host ('Downloading {0} ...' -f $url); `
+	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+	Invoke-WebRequest -Uri $url -OutFile 'python.exe'; `
+	`
+	Write-Host 'Installing ...'; `
+# https://docs.python.org/3.5/using/windows.html#installing-without-ui
+	Start-Process python.exe -Wait `
+		-ArgumentList @( `
+			'/quiet', `
+			'InstallAllUsers=1', `
+			'TargetDir=C:\Python', `
+			'PrependPath=1', `
+			'Shortcuts=0', `
+			'Include_doc=0', `
+			'Include_pip=0', `
+			'Include_test=0' `
+		); `
+	`
+# the installer updated PATH, so we should refresh our local value
+	$env:PATH = [Environment]::GetEnvironmentVariable('PATH', [EnvironmentVariableTarget]::Machine); `
+	`
+	Write-Host 'Verifying install ...'; `
+	Write-Host '  python --version'; python --version; `
+	`
+	Write-Host 'Removing ...'; `
+	Remove-Item python.exe -Force; `
+	`
+	Write-Host 'Complete.';
+
+# if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
+ENV PYTHON_PIP_VERSION 19.1.1
+
+RUN Write-Host ('Installing pip=={0} ...' -f $env:PYTHON_PIP_VERSION); `
+	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+	Invoke-WebRequest -Uri 'https://bootstrap.pypa.io/get-pip.py' -OutFile 'get-pip.py'; `
+	python get-pip.py `
+		--disable-pip-version-check `
+		--no-cache-dir `
+		('pip=={0}' -f $env:PYTHON_PIP_VERSION) `
+	; `
+	Remove-Item get-pip.py -Force; `
+	`
+	Write-Host 'Verifying pip install ...'; `
+	pip --version; `
+	`
+	Write-Host 'Complete.';
+
+################################################################################
+# End Python section.
+################################################################################
+
+# Switch back after Python.
+SHELL ["cmd", "/S", "/C"]

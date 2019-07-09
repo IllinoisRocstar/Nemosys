@@ -1,29 +1,62 @@
-image: ilrocstar/nemosys-test-img:v2
+test:ubuntu16:
+  image: ilrocstar/nemosys-test-img:v2
+  script:
+    - apt update --fix-missing
+    - mkdir build && cd build
+    - CC=mpicc
+    - CXX=mpicxx
+    - >
+      cmake ..
+      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
+      -DCMAKE_INSTALL_PREFIX=../install
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=ON
+      -DENABLE_DTK=OFF
+      -DENABLE_EXODUS=ON
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_SIMMETRIX=OFF
+      -DENABLE_CFMSH=OFF
+    - make -j$(nproc)
+    - make install
+    - ctest --output-on-failure
 
-before_script:
-  - apt update --fix-missing
-  - mkdir build && cd build
-  - CC=mpicc
-  - CXX=mpicxx
-  - >
-    cmake ..
-    -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
-    -DCMAKE_INSTALL_PREFIX=../install
-    -DBUILD_SHARED_LIBS=ON
-    -DENABLE_MPI=ON
-    -DENABLE_DTK=OFF
-    -DENABLE_EXODUS=ON
-    -DENABLE_EPIC=ON
-    -DENABLE_PYTHON_BINDINGS=ON
-    -DENABLE_TESTING=ON
-    -DENABLE_BUILD_UTILS=ON
-    -DENABLE_METIS=ON
-    -DENABLE_NETGEN=ON
-    -DENABLE_SIMMETRIX=OFF
-    -DENABLE_CFMSH=OFF
-  - make -j$(nproc)
-  - make install
-
-job1:
- script:
-  - make test
+test:win10:
+  image: ilrocstar/nemosys-test-img-win:v1
+  tags:
+    - windows
+  script:
+    - Set-Variable -Name "NEM_DIR" -Value "$(pwd)"
+    - Copy-Item "$NEM_DIR" -Destination "$HOME\Nemosys" -Recurse
+    - cd "$HOME\Nemosys"
+    - md build
+    - md install
+    - cd build
+    - >
+      cmake ..
+      -G "Ninja"
+      -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\gmsh;C:\Nemosys\hdf5\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\simmetrix;C:\Nemosys\vtk;C:\Nemosys\zlib"
+      -DCMAKE_INSTALL_PREFIX=../install
+      -DCMAKE_BUILD_TYPE=Release
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=OFF
+      -DENABLE_DTK=OFF
+      -DENABLE_EXODUS=ON
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_SIMMETRIX=ON
+      -DENABLE_CFMSH=OFF
+      -DSIMMETRIX_LIB_DIR="C:\Nemosys\simmetrix\12.0-190622\lib\x86_win_vc14_shared"
+      -DPYTHON_EXECUTABLE="C:\Python\python.exe"
+      -DSWIG_EXECUTABLE="C:\Nemosys\swigwin-3.0.12\swig.exe"
+    - ninja -j ${Env:NUMBER_OF_PROCESSORS}
+    - ninja install
+    - ctest --output-on-failure
