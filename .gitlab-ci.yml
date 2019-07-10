@@ -1,5 +1,7 @@
 test:ubuntu16:
   image: ilrocstar/nemosys-test-img:v2
+  tags:
+    - linux
   script:
     - apt update --fix-missing
     - mkdir build && cd build
