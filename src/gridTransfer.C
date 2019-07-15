@@ -385,11 +385,11 @@ void gridTransfer::writeTrgCg(std::string cgFName)
   cgWrtObj->setGridXYZ(cgObj1->getVrtXCrd(), cgObj1->getVrtYCrd(), cgObj1->getVrtZCrd());
   // define connctivity
   cgWrtObj->setSection(cgObj1->getSectionName(), 
-           (CG_ElementType_t) cgObj1->getElementType(),
+           (CGNS_ENUMT(ElementType_t)) cgObj1->getElementType(),
            cgObj1->getElementConnectivity(-1));
   // define vertex and cell data 
-  cgWrtObj->setSolutionNode("NodeData", CG_Vertex);
-  cgWrtObj->setSolutionNode("ElemData", CG_CellCenter);
+  cgWrtObj->setSolutionNode("NodeData", CGNS_ENUMV(Vertex));
+  cgWrtObj->setSolutionNode("ElemData", CGNS_ENUMV(CellCenter));
 
   // write skelleton of the file
   cgWrtObj->writeGridToFile();
@@ -403,9 +403,9 @@ void gridTransfer::writeTrgCg(std::string cgFName)
     int tmp;
     solution_type_t st = trgCgObjs[0]->getSolutionDataStitched(*is, trgSlnVec, tmp, tmp);
     if (st== NODAL) {
-      cgWrtObj->writeSolutionField(*is, "NodeData", CG_RealDouble, &trgSlnVec[0]);
+      cgWrtObj->writeSolutionField(*is, "NodeData", CGNS_ENUMV(RealDouble), &trgSlnVec[0]);
     } else if (st == ELEMENTAL) {
-      cgWrtObj->writeSolutionField(*is, "ElemData", CG_RealDouble, &trgSlnVec[0]);
+      cgWrtObj->writeSolutionField(*is, "ElemData", CGNS_ENUMV(RealDouble), &trgSlnVec[0]);
     }
   }
 }
@@ -887,7 +887,7 @@ void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
     xCrd = getZoneCoords(cgObj, 1, 1);
     yCrd = getZoneCoords(cgObj, 1, 2);
     zCrd = getZoneCoords(cgObj, 1, 3);
-    sectionType = (CG_ElementType_t) getZoneRealSecType(cgObj, 1);
+    sectionType = (CGNS_ENUMT(ElementType_t)) getZoneRealSecType(cgObj, 1);
     elemConn = getZoneRealConn(cgObj, 1);
     stitchFldBc(cgObj, zoneIdx);
     return;
@@ -1158,10 +1158,10 @@ std::string gridTransfer::getZoneName(int cgIdx, int zoneIdx)
   return(zonename);
 }
 
-CG_ZoneType_t gridTransfer::getZoneType(int indx, int zidx)
+CGNS_ENUMT(ZoneType_t) gridTransfer::getZoneType(int indx, int zidx)
 {
   if (indx > nowCgFNames.size())
-    return(CG_ZoneTypeNull);
+    return(CGNS_ENUMV(ZoneTypeNull));
   nowCgObjs[indx]->loadZone(zidx);
   return(nowCgObjs[indx]->getZoneType());
 }
@@ -1213,7 +1213,7 @@ std::vector<double> gridTransfer::getZoneCoords(cgnsAnalyzer* cgObj, int zoneIdx
               "GridCoordinates_t", 1, "end"))
     cg_error_exit();
   char arrName[33];
-  CG_DataType_t dt;
+  CGNS_ENUMT(DataType_t) dt;
   int dd;
   cgsize_t dimVec[3];
   if (cg_array_info(dim, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -1230,7 +1230,7 @@ std::vector<int> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   std::vector<int> conn;
   int secidx = 1;
   char secname[33];
-  CG_ElementType_t et;
+  CGNS_ENUMT(ElementType_t) et;
   cgsize_t st, en;
   int nbndry, parflag;
   if (cg_section_read(cgObj->getIndexFile(),
@@ -1248,16 +1248,16 @@ std::vector<int> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
   int nVrtxElm;
   switch(et)
   {
-    case CG_TETRA_4:
+    case CGNS_ENUMV(TETRA_4):
       nVrtxElm = 4;
       break;
-    case CG_HEXA_8:
+    case CGNS_ENUMV(HEXA_8):
       nVrtxElm = 8;
       break;
-    case CG_TRI_3:
+    case CGNS_ENUMV(TRI_3):
       nVrtxElm = 3;
       break;
-    case CG_QUAD_4:
+    case CGNS_ENUMV(QUAD_4):
       nVrtxElm = 4;
       break;
     default:
@@ -1279,7 +1279,7 @@ int gridTransfer::getZoneRealSecType(cgnsAnalyzer* cgObj, int zoneIdx)
   std::vector<int> conn;
   int secidx = 1;
   char secname[33];
-  CG_ElementType_t et;
+  CGNS_ENUMT(ElementType_t) et;
   cgsize_t st, en;
   int nbndry, parflag;
   if (cg_section_read(cgObj->getIndexFile(),
@@ -1313,7 +1313,7 @@ int gridTransfer::getPaneBcflag(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-	CG_DataType_t dt;
+	CGNS_ENUMT(DataType_t) dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -1355,7 +1355,7 @@ bool gridTransfer::paneHasPatchNo(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-	CG_DataType_t dt;
+	CGNS_ENUMT(DataType_t) dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -1378,7 +1378,7 @@ int gridTransfer::getPanePatchNo(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-	CG_DataType_t dt;
+	CGNS_ENUMT(DataType_t) dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();
@@ -1408,7 +1408,7 @@ int gridTransfer::getPaneCnstrType(cgnsAnalyzer* cgObj, int zoneIdx)
   for (iArr=1; iArr<=nArr; iArr++)
   {
     char arrName[33];
-	CG_DataType_t dt;
+	CGNS_ENUMT(DataType_t) dt;
     int dd;
     cgsize_t dimVec[3];
     if (cg_array_info(iArr, arrName, &dt, &dd, dimVec)) cg_error_exit();

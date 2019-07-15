@@ -86,7 +86,7 @@ class NEMOSYS_EXPORT cgnsAnalyzer
   public:
     explicit cgnsAnalyzer(std::string fname, int verb = 0) :
         cgFileName(std::move(fname)), isUnstructured(false),
-        zoneType(CG_ZoneTypeNull),
+        zoneType(CGNS_ENUMV(ZoneTypeNull)),
         indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
         nVertex(0), nRindNdeStr(0), nElem(0), cellDim(0), physDim(0),
         nVrtxElem(0),
@@ -155,12 +155,12 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     int getPhysDim();
     int getElementType();
     int getNVrtxElem();
-    CG_MassUnits_t getMassUnit();
-    CG_LengthUnits_t getLengthUnit();
-    CG_TimeUnits_t getTimeUnit();
-    CG_TemperatureUnits_t getTemperatureUnit();
-    CG_AngleUnits_t getAngleUnit();
-    CG_ZoneType_t getZoneType();
+    CGNS_ENUMT(MassUnits_t) getMassUnit();
+    CGNS_ENUMT(LengthUnits_t) getLengthUnit();
+    CGNS_ENUMT(TimeUnits_t) getTimeUnit();
+    CGNS_ENUMT(TemperatureUnits_t) getTemperatureUnit();
+    CGNS_ENUMT(AngleUnits_t) getAngleUnit();
+    CGNS_ENUMT(ZoneType_t) getZoneType();
     bool isStructured();
     std::vector<double> getVertexCoords();
     std::vector<double> getVertexCoords(int vrtxId);
@@ -199,9 +199,9 @@ class NEMOSYS_EXPORT cgnsAnalyzer
 
     // access solution data related management data structures
     std::vector<std::string> getSolutionNodeNames();
-    std::vector<CG_GridLocation_t> getSolutionGridLocations();
+    std::vector<CGNS_ENUMT(GridLocation_t)> getSolutionGridLocations();
     std::map<int, std::pair<int, keyValueList> > getSolutionMap();
-    std::map<std::string, CG_GridLocation_t> getSolutionNameLocMap();
+    std::map<std::string, CGNS_ENUMT(GridLocation_t)> getSolutionNameLocMap();
 
     // mesh processing
     void exportToMAdMesh(MAd::pMesh MAdMesh);
@@ -220,7 +220,7 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     // write data from existing vtkdataset into open cgns file (for replacing data in file)
     void overwriteSolData(meshBase *mbObj);
     void overwriteSolData(const std::string &fname, const std::string &ndeName,
-                          int slnIdx, CG_DataType_t dt, void *data);
+                          int slnIdx, CGNS_ENUMT(DataType_t) dt, void *data);
 
     // utilities
     void writeSampleStructured();
@@ -239,21 +239,21 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     void buildElementKDTree();
     void loadSolutionDataContainer(int verb = 0);
     virtual void stitchFields(cgnsAnalyzer *inCg);
-    CG_ElementType_t getSectionType(std::string secName);
+    CGNS_ENUMT(ElementType_t) getSectionType(std::string secName);
 
   protected:
     std::string cgFileName;
     // type of the grid
     std::string baseName, zoneName, sectionName;
     bool isUnstructured;
-    CG_ZoneType_t zoneType;
-    CG_ElementType_t sectionType;
+    CGNS_ENUMT(ZoneType_t) zoneType;
+    CGNS_ENUMT(ElementType_t) sectionType;
     // units
-    CG_MassUnits_t massU;
-    CG_LengthUnits_t lengthU;
-    CG_TimeUnits_t timeU;
-    CG_TemperatureUnits_t tempU;
-    CG_AngleUnits_t angleU;
+    CGNS_ENUMT(MassUnits_t) massU;
+    CGNS_ENUMT(LengthUnits_t) lengthU;
+    CGNS_ENUMT(TimeUnits_t) timeU;
+    CGNS_ENUMT(TemperatureUnits_t) tempU;
+    CGNS_ENUMT(AngleUnits_t) angleU;
     // grid ints
     int rmin[3], rmax[3];
     int cgCoreSize[9];
@@ -281,10 +281,10 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     int nSolution;
     int nField;
     std::vector<solutionData *> slnDataCont;
-    std::map<std::string, CG_GridLocation_t> solutionNameLocMap;
+    std::map<std::string, CGNS_ENUMT(GridLocation_t)> solutionNameLocMap;
     std::map<int, std::pair<int, keyValueList> > solutionMap; // (#sln, <slnIdx, (fldIdx, fldName)>)
     std::vector<std::string> solutionName;
-    std::vector<CG_GridLocation_t> solutionGridLocation;
+    std::vector<CGNS_ENUMT(GridLocation_t)> solutionGridLocation;
     std::vector<std::string> appendedSolutionName;
     // export variables
     std::map<int, int> MAdToCgnsIds;
