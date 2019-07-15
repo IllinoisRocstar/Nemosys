@@ -1602,7 +1602,7 @@ namespace MAd {
                     curv1 = curv0 - maxDiff;
                     EN_attachDataDbl((pEntity)v1,vCurvId, curv1);
                   }
-                  mod++;
+                  mod = true;
                 }
               }
           }
