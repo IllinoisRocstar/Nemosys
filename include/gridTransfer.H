@@ -48,7 +48,7 @@ class NEMOSYS_EXPORT gridTransfer : public cgnsAnalyzer
     int getNZone(int indx);
     std::string getZoneName(cgnsAnalyzer *cgObj, int zoneIdx);
     std::string getZoneName(int cgIdx, int zoneIdx);
-    CG_ZoneType_t getZoneType(int indx, int zidx);
+    CGNS_ENUMT(ZoneType_t) getZoneType(int indx, int zidx);
     std::string getSectionName(int cgIdx, int zoneIdx);
     int getElementType(int cgIdx, int zoneIdx);
     int getZoneNVrtx(cgnsAnalyzer *cgObj, int zoneIdx);

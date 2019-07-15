@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 36)
+set(NEMOSYS_MINOR_VERSION 37)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -261,7 +261,7 @@ endif()
 
 # Find ExodusII
 if(ENABLE_EXODUS)
-  find_library(EXO_LIB NAMES exoIIv2 exodus exodIIv2c)
+  find_library(EXO_LIB NAMES exoIIv2 exodus exoIIv2c)
   find_file(EXO_HDR exodusII.h)
   get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
   get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
