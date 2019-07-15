@@ -50,14 +50,14 @@ class NEMOSYS_EXPORT cgnsWriter {
     ~cgnsWriter() { cg_close(indexFile); };
 
     void deleteFile();
-    void setUnits(CG_MassUnits_t mu, CG_LengthUnits_t lu,
-                  CG_TimeUnits_t tu, CG_TemperatureUnits_t tpu,
-                  CG_AngleUnits_t au);
+    void setUnits(CGNS_ENUMT(MassUnits_t) mu, CGNS_ENUMT(LengthUnits_t) lu,
+                  CGNS_ENUMT(TimeUnits_t) tu, CGNS_ENUMT(TemperatureUnits_t) tpu,
+                  CGNS_ENUMT(AngleUnits_t) au);
     void setBaseItrData(std::string bsitrname, int ntstp, double tval);
     void setZoneItrData(std::string zitrname, std::string grdptr,
                         std::string slnptr);
     void setIntData(std::string intname, int intval);
-    void setZone(std::string zName, CG_ZoneType_t zt);
+    void setZone(std::string zName, CGNS_ENUMT(ZoneType_t) zt);
     int getNSections();
     void setTimestamp(std::string trimmed_base_t);
     void setNVrtx(int nVt);
@@ -75,17 +75,17 @@ class NEMOSYS_EXPORT cgnsWriter {
     void setVolCellFacesNumber(int nVolCellFaces);
     void setPconnGhostDescriptor(int ghostDescriptor);
     void
-    setSection(std::string sName, CG_ElementType_t st, vect<int>::v1d elmConn);
-    void setGlobalSection(std::string sName, CG_ElementType_t st,
+    setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<int>::v1d elmConn);
+    void setGlobalSection(std::string sName, CGNS_ENUMT(ElementType_t) st,
                           vect<int>::v1d elmConn);
-    void setGlobalSection(std::string gsName, CG_ElementType_t gst);
+    void setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst);
     void resetSections();
     void resetGlobalSections();
-    void setSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc);
-    void writeSolutionNode(std::string ndeName, CG_GridLocation_t slnLoc,
+    void setSolutionNode(std::string ndeName, CGNS_ENUMT(GridLocation_t) slnLoc);
+    void writeSolutionNode(std::string ndeName, CGNS_ENUMT(GridLocation_t) slnLoc,
                            int emptyFlag, int virtFlag);
     void
-    writeSolutionField(std::string fname, std::string ndeName, CG_DataType_t dt,
+    writeSolutionField(std::string fname, std::string ndeName, CGNS_ENUMT(DataType_t) dt,
                        void *data);
     void writeGridToFile();
     void writeZoneToFile();
@@ -105,8 +105,8 @@ class NEMOSYS_EXPORT cgnsWriter {
   private:
     // general CGNS manager
     std::string myCgFileName;
-    CG_ZoneType_t zoneType;
-    CG_ElementType_t sectionType, gsectionType;
+    CGNS_ENUMT(ZoneType_t) zoneType;
+    CGNS_ENUMT(ElementType_t) sectionType, gsectionType;
     int rmin[3], rmax[3];
     cgsize_t cgCoreSize[9];
     std::string baseName, zoneName, sectionName, gsectionName;
@@ -137,11 +137,11 @@ class NEMOSYS_EXPORT cgnsWriter {
     int intVal;
     int nVolCellFaces;
     // units
-    CG_MassUnits_t massU;
-    CG_LengthUnits_t lengthU;
-    CG_TimeUnits_t timeU;
-    CG_TemperatureUnits_t tempU;
-    CG_AngleUnits_t angleU;
+    CGNS_ENUMT(MassUnits_t) massU;
+    CGNS_ENUMT(LengthUnits_t) lengthU;
+    CGNS_ENUMT(TimeUnits_t) timeU;
+    CGNS_ENUMT(TemperatureUnits_t) tempU;
+    CGNS_ENUMT(AngleUnits_t) angleU;
     // time-dependent data
     std::string baseItrName, zoneItrName;
     std::string intName;
@@ -151,11 +151,11 @@ class NEMOSYS_EXPORT cgnsWriter {
     // mesh data
     vect<double>::v1d xCrd, yCrd, zCrd;
     vect<std::string>::v1d zoneNames;
-    vect<CG_ZoneType_t>::v1d zoneTypes;
+    vect<CGNS_ENUMT(ZoneType_t)>::v1d zoneTypes;
     vect<std::string>::v1d sectionNames;
     vect<std::string>::v1d gsectionNames;
-    vect<CG_ElementType_t>::v1d sectionTypes;
-    vect<CG_ElementType_t>::v1d gsectionTypes;
+    vect<CGNS_ENUMT(ElementType_t)>::v1d sectionTypes;
+    vect<CGNS_ENUMT(ElementType_t)>::v1d gsectionTypes;
     vect<int>::v2d elmConns;
     vect<int>::v2d gelmConns;
     vect<int>::v1d nCells;
@@ -168,12 +168,12 @@ class NEMOSYS_EXPORT cgnsWriter {
     int nCellFld;
     std::map<std::string, int> slnNameNFld; // number of filed in the given solution name
     vect<int>::v1d solutionIdx; // solution node indices
-    std::map<std::string, CG_GridLocation_t> solutionNameLocMap;
+    std::map<std::string, CGNS_ENUMT(GridLocation_t)> solutionNameLocMap;
     // maps sol node to index (eg. NodeData0.0=1,ElemData0.0=2)
     std::map<std::string, int> solutionNameSolIdxMap;
     std::map<int, std::pair<int, keyValueList> > solutionMap; // (#sln, <slnIdx, [fldIdx, fldName]>)
     vect<std::string>::v1d solutionName;
-    vect<CG_GridLocation_t>::v1d solutionGridLocation;
+    vect<CGNS_ENUMT(GridLocation_t)>::v1d solutionGridLocation;
     // Rocstar variable units lookup dictionary
     std::map<std::string, std::string> fluidUnitsMap;
     std::map<std::string, std::vector<float>> fluidDimMap;

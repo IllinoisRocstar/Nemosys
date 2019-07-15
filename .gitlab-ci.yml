@@ -27,6 +27,35 @@ test:ubuntu16:
     - make install
     - ctest --output-on-failure
 
+test:ubuntu18:
+  image: ilrocstar/nemosys-test-img-ubuntu18:v1
+  tags:
+    - linux
+  script:
+    - apt update --fix-missing
+    - mkdir build && cd build
+    - CC=mpicc
+    - CXX=mpicxx
+    - >
+      cmake ..
+      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
+      -DCMAKE_INSTALL_PREFIX=../install
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=ON
+      -DENABLE_DTK=OFF
+      -DENABLE_EXODUS=ON
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_SIMMETRIX=OFF
+      -DENABLE_CFMSH=OFF
+    - make -j$(nproc)
+    - make install
+    - ctest --output-on-failure
+
 test:win10:
   image: ilrocstar/nemosys-test-img-win:v1
   tags:
