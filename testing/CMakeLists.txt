@@ -7,7 +7,7 @@ if(WIN32)
   set(BUILD_SHARED_LIBS ON)
   add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 endif()
-add_subdirectory(lib/gtest-1.6.0)
+add_subdirectory(lib/gtest-1.8.1)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
