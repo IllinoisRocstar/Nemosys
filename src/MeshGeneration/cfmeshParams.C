@@ -14,6 +14,7 @@ cfmeshParams::cfmeshParams()
   blNLyr = 1;
   blThkRto = 1.0;
   srfEdgAng = 45.0;
+  _alwDiscDomains = false;
 
   _withBndLyr = false;
   _withSrfEdg = false;

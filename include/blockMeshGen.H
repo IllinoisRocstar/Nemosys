@@ -18,53 +18,101 @@
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
-/*
-  blockMeshGen <-- meshGen <-- meshBase
-  This class incorporates mesh generating method of blockMesh utility.
-  Currently, we are supporting automatic generation and full-hex meshing
-  of Box, Sphere, Cylinder, and Tapered Cone geometries.
-*/
-
 class blockMeshParams;  // Friend Class
 
+
+/**
+  @brief blockMeshGen <-- meshGen <-- meshBase
+        This class incorporates mesh generating method of blockMesh utility.
+        Currently, we are supporting automatic full-hex mesh generation 
+        Box, Sphere, Cylinder, and Tapered Cone geometries. Output mesh is 
+        written in OpenFOAM polyMesh format.
+**/
 class blockMeshGen : public meshGen
 {
+  // --- constructors and destructor
   public:
+  /** @brief blockMeshGen standard constructor
+  **/
   blockMeshGen();   // Default constructor
+
+  /** @brief blockMeshGen alternate constructor. Uses user-defined parameters
+            to perform requested meshing operation.
+      @param params blockMeshParams object
+  **/
   blockMeshGen(blockMeshParams* params);  // Constructor with parameters
+
+  /** @brief blockMeshGen standard desctructor
+  **/
   ~blockMeshGen();  // Class destructor
 
-
+  // -- meshGen methods override
   public:
-  // Generates mesh and returns VTK database
+  /** @brief Generates mesh and returns VTK database
+      @param fname Input surface file name
+      @return meshBase mesh dataset
+  **/ 
   int createMeshFromSTL(const char* fname);
-  // Reads OpenFOAM mesh from polyMesh
+
+  /** @brief Reads OpenFOAM mesh from polyMesh directory
+  **/
   void readFoamMesh();
 
 
+  // -- Internal
   private:
-  // Initializes OpenFOAM args and runtime
+  /** 
+      @brief Initializes OpenFOAM args and runtime
+  **/
   void initialize();
-  // Creates blockMeshDict from user arguments
+  
+  /** 
+      @brief Creates blockMeshDict from user arguments
+  **/
   void createBlockMshDict();
-  // Creates dummy controlDict
+  
+  /** 
+      @brief Creates dummy controlDict
+  **/
   void createControlDict();
-  // Creates dummy fvSchemesDict
+  
+  /** 
+      @brief Creates dummy fvSchemesDict
+  **/
   void createfvSchemesDict();
-  // Creates dummy fvSolutionDict
+  
+  /** 
+      @brief Creates dummy fvSolutionDict
+  **/
   void createfvSolutionDict();
-  // Generated VTK database from Foam mesh. Used in readFoamMesh function
+  
+  /** 
+      @brief Generated VTK database from Foam mesh. Used in readFoamMesh function
+  **/
   void genMshDB();
-  // Generated VTK mesh statistics
+  
+  /** 
+      @brief Generated VTK mesh statistics
+  **/
   void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
                     const int cellType, std::vector<int>& vrtIds);
 
+  // --- Internal Use
   private:
+  /** @brief Enables usage of default paramters. Default mesh is a 3D block with
+            low point of (0,0,0) and high point of (1,1,1)
+  **/
   bool defaults;  // Default parameters boolean
+
+  /** @brief Meshing case name for internal use
+  **/
   std::string caseName; // Meshing case name for internal use
+
+  /** @brief Definition of parameters pointer
+  **/
   blockMeshParams* _params; // Definition of parameters pointer
 
-  // OpenFOAM Data Structure
+  // --- OpenFOAM Data Structure
   private:
   Foam::argList* _args;
   Foam::Time* _runTime;
