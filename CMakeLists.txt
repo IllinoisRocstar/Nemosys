@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 37)
+set(NEMOSYS_MINOR_VERSION 38)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -414,19 +414,20 @@ get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
 file(GLOB H_FILES include/*.H)
 file(GLOB h_FILES include/*.h)
 file(GLOB hpp_FILES include/*.hpp)
-set(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES})
+file(GLOB cpp_FILES include/*.cpp)
+set(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES} ${cpp_FILES})
 
 # Setting r8 source
 set(R8_SRCS
-    src/math/r8lib.cpp
+    src/Math/r8lib.cpp
 )
 
 # Setting interp source
 set(INTERP_SRCS
-    src/math/baseInterp.C
-    src/math/rbf_interp_nd.cpp
-    src/math/rbfInterp.C
-    src/spheres.C
+    src/Math/baseInterp.C
+    src/Math/rbf_interp_nd.cpp
+    src/Math/rbfInterp.C
+    src/Geometry/spheres.C
 )
 
 # Setting Nemosys source
@@ -482,12 +483,14 @@ set(NEMOSYS_SRCS
     src/Transfer/TransferBase.C
     src/Transfer/FETransfer.C
 
+    src/Geometry/point.C
+    src/Geometry/qhQuickHull.C
+    src/Math/kmeans.C
+    src/Geometry/convexContainer.C
+
     src/cgnsAnalyzer.C
     src/cgnsWriter.C
     src/gridTransfer.C
-#    src/MAdLibInterface.C
-#    src/meshPhys.C
-#    src/netgenInterface.C
     src/rocstarCgns.C
     src/StlToVtk.C
     src/vtkAnalyzer.C
@@ -504,6 +507,7 @@ endif()
 if(ENABLE_EPIC)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/InputGeneration/ep16Prep.C
+      src/InputGeneration/ep16Post.C
   )
 endif()
 

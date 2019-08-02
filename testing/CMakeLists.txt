@@ -102,10 +102,13 @@ NEM_add_test_executable(PNTGen)
 NEM_add_test_executable(AutoVerification)
 NEM_add_test_executable(Refinement)
 NEM_add_test_executable(GmshMesh)
+NEM_add_test_executable(KMeans)
+NEM_add_test_executable(QHull)
 
 # custom built tests
 if(ENABLE_EPIC)
-  NEM_add_test_executable(EP16)
+  NEM_add_test_executable(Ep16Pre)
+  NEM_add_test_executable(Ep16Post)
 endif()
 if(ENABLE_CFMSH)
   NEM_add_test_executable(CFM)
@@ -201,11 +204,16 @@ NEM_add_test(gmshMesh GmshMesh GmshMeshTest
 )
 endif()
 
+NEM_add_test(kMean KMeans kmeans)
+
+NEM_add_test(qHull QHull "")
+
 if(ENABLE_EPIC)
-  NEM_add_test(ep16 EP16 Ep16Test
+  NEM_add_test(ep16pre Ep16Pre ep16pre
       gmsh2exo.json bctest_ref.g
       ep16.json bctest_ref.dat
   )
+  NEM_add_test(ep16post Ep16Post ep16post)
 endif()
 
 if(ENABLE_CFMSH)
