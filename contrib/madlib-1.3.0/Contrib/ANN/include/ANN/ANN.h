@@ -68,6 +68,7 @@
 
 #include <cmath>			// math includes
 #include <iostream>			// I/O streams
+#include <string>			
 
 //----------------------------------------------------------------------
 // Limits

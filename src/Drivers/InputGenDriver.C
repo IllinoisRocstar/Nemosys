@@ -3,7 +3,8 @@
 #include "AuxiliaryFunctions.H"
 
 #ifdef HAVE_EPIC
-  #include "ep16Prep.H"
+#include "ep16Prep.H"
+#include "ep16Post.H"
 #endif
 
 #include <iostream>
@@ -22,6 +23,16 @@ InputGenDriver::InputGenDriver(const std::string &_srvName,
   {
 #ifdef HAVE_EPIC
     ep16Prep::readJSON(inputjson);
+#else
+    std::cerr << "Compile the code with EPIC module enabled." << std::endl;
+    exit(0);
+#endif
+  }
+  else if (srvName == "epic_2016_post")
+  {
+#ifdef HAVE_EPIC
+    int ret;
+    NEM::EPC::ep16Post::readJSON(inputjson, ret);
 #else
     std::cerr << "Compile the code with EPIC module enabled." << std::endl;
     exit(0);
