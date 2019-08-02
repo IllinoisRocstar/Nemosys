@@ -5,10 +5,11 @@
 #include <boost/filesystem.hpp>
 
 // openfoam headers
-#include <fvCFD.H>
-#include <fvMesh.H>
-#include <vtkTopo.H>
-#include <fileName.H>
+#include "fvCFD.H"
+#include "fvMesh.H"
+#include "vtkTopo.H"
+#include "fileName.H"
+#include "cellModeller.H"
 
 // vtk
 #include <vtkPoints.h>
@@ -94,14 +95,12 @@ void foamMesh::read(const std::string& fname)
     else
     {
       
-      if (fname == "PackMesh")
-      {
+      if (fname == "domain1")
         regionName = "domain1";
-      }
-      else if (fname == "SurroundingMesh")
-      {
+      else if (fname == "domain0")
         regionName = "domain0";
-      }
+      else if (fname == "domain2")
+        regionName = "domain2";
       else
       {
         regionName = Foam::fvMesh::defaultRegion;
@@ -109,8 +108,8 @@ void foamMesh::read(const std::string& fname)
             << "Create mesh for time = "
             << _runTime->timeName() << Foam::nl << Foam::endl;
       }
-
     }
+    
     _fmesh = new Foam::fvMesh 
     (
         Foam::IOobject
@@ -609,8 +608,8 @@ void foamMesh::write(const std::string &fname) const
 
   // Foam cell modelers
   const Foam::cellModel& hex = *(Foam::cellModeller::lookup("hex"));
-  const Foam::cellModel& pyr = *(cellModeller::lookup("pyr"));
-  const Foam::cellModel& tet = *(cellModeller::lookup("tet"));
+  const Foam::cellModel& pyr = *(Foam::cellModeller::lookup("pyr"));
+  const Foam::cellModel& tet = *(Foam::cellModeller::lookup("tet"));
 
 
   for (int i=0; i<numPoints; i++)
@@ -659,7 +658,9 @@ void foamMesh::write(const std::string &fname) const
     }
     
   }
- 
+
+#ifdef HAVE_OF4
+
   Foam::polyMesh mesh
   (
     IOobject
@@ -677,6 +678,74 @@ void foamMesh::write(const std::string &fname) const
     Foam::polyPatch::typeName,  // Default Patch Type
     Foam::wordList()  // Boundary Patch Physical Type
   );
+
+#endif
+
+#ifdef HAVE_OF5
+
+  Foam::polyMesh mesh
+  (
+    IOobject
+    (
+        Foam::polyMesh::defaultRegion,
+        runTime.constant(),
+        runTime
+    ),
+    Foam::xferMove(pointData), // Vertices
+    cellShapeData,  // Cell shape and points
+    Foam::faceListList(), // Boundary faces
+    Foam::wordList(), // Boundary Patch Names
+    Foam::wordList(), // Boundary Patch Type
+    "defaultPatch", // Default Patch Name
+    Foam::polyPatch::typeName,  // Default Patch Type
+    Foam::wordList()  // Boundary Patch Physical Type
+  );
+
+#endif
+
+#ifdef HAVE_OF6
+
+  Foam::polyMesh mesh
+  (
+    IOobject
+    (
+        Foam::polyMesh::defaultRegion,
+        runTime.constant(),
+        runTime
+    ),
+    Foam::xferMove(pointData), // Vertices
+    cellShapeData,  // Cell shape and points
+    Foam::faceListList(), // Boundary faces
+    Foam::wordList(), // Boundary Patch Names
+    Foam::wordList(), // Boundary Patch Type
+    "defaultPatch", // Default Patch Name
+    Foam::polyPatch::typeName,  // Default Patch Type
+    Foam::wordList()  // Boundary Patch Physical Type
+  );
+
+#endif
+
+#ifdef HAVE_OF7
+  
+  Foam::polyMesh mesh
+  (
+    IOobject
+    (
+        Foam::polyMesh::defaultRegion,
+        runTime.constant(),
+        runTime
+    ),
+    Foam::move(pointData), // Vertices
+    cellShapeData,  // Cell shape and points
+    Foam::faceListList(), // Boundary faces
+    Foam::wordList(), // Boundary Patch Names
+    Foam::wordList(), // Boundary Patch Type
+    "defaultPatch", // Default Patch Name
+    Foam::polyPatch::typeName,  // Default Patch Type
+    Foam::wordList()  // Boundary Patch Physical Type
+  );
+
+#endif
 
   // ****************************************************************** //
 
