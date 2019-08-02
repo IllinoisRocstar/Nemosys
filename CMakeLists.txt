@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 38)
-set(NEMOSYS_PATCH_VERSION 0)
+set(NEMOSYS_PATCH_VERSION 1)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -675,6 +675,11 @@ if(ENABLE_CFMSH)
   string(FIND $ENV{WM_PROJECT_VERSION} "6" OF6)
   if(OF6 GREATER -1)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF6)
+  endif()
+
+  string(FIND $ENV{WM_PROJECT_VERSION} "7" OF7)
+  if(OF7 GREATER -1)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
   endif()
 
   # openfoam variables

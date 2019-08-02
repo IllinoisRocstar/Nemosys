@@ -217,7 +217,9 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
             cfmparams["CheckForGluedMesh"].as<double>();
       if (cfmparams.has_key("AllowDisconnectedDomains"))
           params->_alwDiscDomains = 
-              cfmparams["AllowDisconnectedDomains"].as<double>();
+              cfmparams["AllowDisconnectedDomains"].as<bool>();
+      else
+        params->_alwDiscDomains = false;
 
       // optional capability
       std::string cap = "BoundaryLayers";

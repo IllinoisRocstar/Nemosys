@@ -291,9 +291,9 @@ FoamFile\n\
   if (((_params->_isBlock)) && !(_params->_isSphere) && 
       !(_params->_isCylinder_TCone))
   {
-  	double finalX = 0;
-		double finalY = 0;
-		double finalZ = 0;
+    double finalX = 0;
+    double finalY = 0;
+    double finalZ = 0;
 
     // Automatically Generates Box Around Packs and Meshes that Hexahedrally.
     if (_params->_autoGenerateBox)
@@ -326,22 +326,21 @@ FoamFile\n\
       finalZ = newBB.max()[2];
 
       if (_params->_cellSizeDefined)
-    	{
+      {
 
-    		double xLength =
-    			std::sqrt(((_params->initX)-(finalX))*((_params->initX)-(finalX)));
-				double yLength =
-					std::sqrt(((_params->initY)-(finalY))*((_params->initY)-(finalY)));
-				double zLength =
-					std::sqrt(((_params->initZ)-(finalZ))*((_params->initZ)-(finalZ)));
+        double xLength =
+          std::sqrt(((_params->initX)-(finalX))*((_params->initX)-(finalX)));
+        double yLength =
+          std::sqrt(((_params->initY)-(finalY))*((_params->initY)-(finalY)));
+        double zLength =
+          std::sqrt(((_params->initZ)-(finalZ))*((_params->initZ)-(finalZ)));
 
-    		(_params->cellsXDir) = xLength/(_params->cellSize);
-    		(_params->cellsYDir) = yLength/(_params->cellSize);
-    		(_params->cellsZDir) = zLength/(_params->cellSize);
-    	}
-
+        (_params->cellsXDir) = xLength/(_params->cellSize);
+        (_params->cellsYDir) = yLength/(_params->cellSize);
+        (_params->cellsZDir) = zLength/(_params->cellSize);
+      }
     }
-   	else
+    else
     {
       finalX = (_params->initX) + (_params->lenX);
       finalY = (_params->initY) + (_params->lenY);
@@ -803,35 +802,7 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
             << exit(FatalError);
     }
 
-#endif
-
-#ifdef HAVE_OF4
-
-    //if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-    
-#endif
-
-#ifdef HAVE_OF6
-
-    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    //if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-
-#endif
-
-  Info<< "Creating block mesh from\n    "
+      Info<< "Creating block mesh from\n    "
       << meshDictIO.objectPath() << endl;
 
   IOdictionary meshDict(meshDictIO);
@@ -858,6 +829,127 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
     defaultFacesType
   );
 
+#endif
+
+#ifdef HAVE_OF4
+
+    //if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
+    if (!meshDictIO.headerOk())  // OF-4.0
+    {
+        FatalErrorInFunction
+            << meshDictIO.objectPath()
+            << nl
+            << exit(FatalError);
+    }
+
+      Info<< "Creating block mesh from\n    "
+      << meshDictIO.objectPath() << endl;
+
+  IOdictionary meshDict(meshDictIO);
+  blockMesh blocks(meshDict, regionName);
+  
+  Info<< nl << "Creating polyMesh from blockMesh" << endl;
+
+  word defaultFacesName = "defaultFaces";
+  word defaultFacesType = emptyPolyPatch::typeName;
+  polyMesh mesh
+  (
+    IOobject
+    (
+      regionName,
+      runTime.constant(),
+      runTime
+    ),
+    xferCopy(blocks.points()),
+    blocks.cells(),
+    blocks.patches(),
+    blocks.patchNames(),
+    blocks.patchDicts(),
+    defaultFacesName,
+    defaultFacesType
+  );
+    
+#endif
+
+#ifdef HAVE_OF6
+
+    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
+    //if (!meshDictIO.headerOk())  // OF-4.0
+    {
+        FatalErrorInFunction
+            << meshDictIO.objectPath()
+            << nl
+            << exit(FatalError);
+    }
+
+      Info<< "Creating block mesh from\n    "
+      << meshDictIO.objectPath() << endl;
+
+  IOdictionary meshDict(meshDictIO);
+  blockMesh blocks(meshDict, regionName);
+  
+  Info<< nl << "Creating polyMesh from blockMesh" << endl;
+
+  word defaultFacesName = "defaultFaces";
+  word defaultFacesType = emptyPolyPatch::typeName;
+  polyMesh mesh
+  (
+    IOobject
+    (
+      regionName,
+      runTime.constant(),
+      runTime
+    ),
+    xferCopy(blocks.points()),
+    blocks.cells(),
+    blocks.patches(),
+    blocks.patchNames(),
+    blocks.patchDicts(),
+    defaultFacesName,
+    defaultFacesType
+  );
+
+#endif
+
+#ifdef HAVE_OF7
+
+    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
+    //if (!meshDictIO.headerOk())  // OF-4.0
+    {
+        FatalErrorInFunction
+            << meshDictIO.objectPath()
+            << nl
+            << exit(FatalError);
+    }
+
+    Info<< "Creating block mesh from\n    "
+    << meshDictIO.objectPath() << endl;
+
+    IOdictionary meshDict(meshDictIO);
+    blockMesh blocks(meshDict, regionName);
+  
+    Info<< nl << "Creating polyMesh from blockMesh" << endl;
+
+    word defaultFacesName = "defaultFaces";
+    word defaultFacesType = emptyPolyPatch::typeName;
+    polyMesh mesh
+    (
+        IOobject
+        (
+        regionName,
+        runTime.constant(),
+        runTime
+        ),
+        Foam::clone(blocks.points()),
+        blocks.cells(),
+        blocks.patches(),
+        blocks.patchNames(),
+        blocks.patchDicts(),
+        defaultFacesName,
+        defaultFacesType
+    );
+
+#endif
 
     // Disabling mergePairs feature for now
     /*// Read in a list of dictionaries for the merge patch pairs
@@ -908,6 +1000,11 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
 
       #endif
       #ifdef HAVE_OF6
+
+        const List<FixedList<label, 8>> blockCells = b.cells();  //OF-5.0
+
+      #endif
+      #ifdef HAVE_OF7
 
         const List<FixedList<label, 8>> blockCells = b.cells();  //OF-5.0
 

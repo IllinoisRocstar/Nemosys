@@ -1101,7 +1101,19 @@ void snappymeshGen::extractSurface
 
     // Gather all ZoneIDs
     List<labelList> gatheredZones(Pstream::nProcs());
+
+   #ifdef HAVE_OF4
     gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
+   #endif
+   #ifdef HAVE_OF5
+    gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
+   #endif
+   #ifdef HAVE_OF6
+    gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
+   #endif
+   #ifdef HAVE_OF7
+    gatheredZones[Pstream::myProcNo()] = move(compactZones);
+   #endif
     Pstream::gatherList(gatheredZones);
 
     // On master combine all points, faces, zones
@@ -1138,6 +1150,7 @@ void snappymeshGen::extractSurface
                 << endl;
         }
 
+      #ifdef HAVE_OF4
         UnsortedMeshedSurface<face> unsortedFace
         (
             xferMove(allPoints),
@@ -1145,6 +1158,34 @@ void snappymeshGen::extractSurface
             xferMove(allZones),
             xferMove(surfZones)
         );
+      #endif
+      #ifdef HAVE_OF5
+        UnsortedMeshedSurface<face> unsortedFace
+        (
+            xferMove(allPoints),
+            xferMove(allFaces),
+            xferMove(allZones),
+            xferMove(surfZones)
+        );
+      #endif
+      #ifdef HAVE_OF6
+        UnsortedMeshedSurface<face> unsortedFace
+        (
+            xferMove(allPoints),
+            xferMove(allFaces),
+            xferMove(allZones),
+            xferMove(surfZones)
+        );
+      #endif
+      #ifdef HAVE_OF7
+        UnsortedMeshedSurface<face> unsortedFace
+        (
+            clone(allPoints),
+            clone(allFaces),
+            clone(allZones),
+            clone(surfZones)
+        );
+      #endif
 
 
         MeshedSurface<face> sortedFace(unsortedFace);

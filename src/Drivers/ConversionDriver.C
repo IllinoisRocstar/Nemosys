@@ -114,7 +114,7 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
   {
 #ifdef HAVE_CFMSH
     meshBase *fm = new FOAM::foamMesh();
-    fm->read(NULL);
+    fm->read("NULL");
     // TODO: Fix report and write methods for the foamMesh class
     //fm->setFileName(ofname);
     //fm->report();
@@ -133,8 +133,9 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
 #ifdef HAVE_CFMSH
     // supports: vtu, vtk
     meshBase *fm = new FOAM::foamMesh();
-    fm->read(NULL);
+    fm->read("NULL");
     // TODO: Fix report and write methods for the foamMesh class
+    std::cout << "Variable values is = "<< srcmsh << std::endl;
     vtkMesh *vm = new vtkMesh(fm->getDataSet(), ofname);
     vm->report();
     vm->write();

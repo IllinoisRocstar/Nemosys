@@ -29,8 +29,7 @@
 #include <vtkCellData.h>
 
 // TODO
-// 1. Integrate surfaceSplitByTopology to divide packs into separate surfaces
-// 2. Some smart implementation to improve mesh if mesh is not of desired
+// 1. Some smart implementation to improve mesh if mesh is not of desired
 //    quality.
 
 // ------------------------- Pack Mesh Driver -------------------------------//
@@ -132,13 +131,18 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   // createPatch utility reads domain mesh and createPatchDict to combine all
   // different patches of multiple packs/surrounding into one patch
   // respectively
-  objMsh->createPatch();
+  objMsh->createPatch(dirStat);
 
   //Reads current mesh and write it to separate VTK/VTU files
   bool readDB = false;
 
   // Reads and converts pack mesh
-  std::string regNme = "PackMesh";
+  std::string regNme;
+  if (dirStat == 1)
+  	regNme = "domain2";
+  else
+  	regNme = "domain1";
+  
   meshBase* fm = new FOAM::foamMesh(readDB);
   fm->read(regNme);
   vtkMesh* vm = new vtkMesh(fm->getDataSet(),ofname1);
@@ -146,7 +150,7 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   vm->write();
 
   // Reads and converts surronding mesh
-  regNme = "SurroundingMesh";
+  regNme = "domain0";
   meshBase* fm2 = new FOAM::foamMesh(readDB);
   fm2->read(regNme);
   vtkMesh* vm2 = new vtkMesh(fm2->getDataSet(),ofname2);
@@ -185,10 +189,16 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   if (objPackQ)
     delete objPackQ;
 
-  // End of workflow*/
+  // End of workflow
 
-  // In development
-  //objMsh->addConnectivityData();
+  // Adds cohesive elements for hex and writes them in VTU file.
+  //objMsh->addCohesiveElements(1e-13, "FinalMesh.vtu");
+
+  //if (objMsh)
+  //  delete objMsh;
+
+  // Adds cohesive elements with thickness for hex and writes them in VTU file.
+  //objMsh->addArtificialThicknessElements(1e-13, "FinalMesh.vtu");
 
   //if (objMsh)
   //  delete objMsh;
