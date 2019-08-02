@@ -125,30 +125,29 @@ int generate(const char* jsonF)
       std::string subcap = "PatchBoundaryLayers";
       if (cfmparams[cap].has_key(subcap))
       {
-          cfparams->_withBndLyrPtch = true;
-          for (auto jptch : cfmparams[cap][subcap].array_range())
-          {
-              cfmPtchBndLyr blPatch;
-              blPatch.patchName = jptch["PatchName"].as<std::string>();
-              if (jptch.has_key("AllowDiscontinuity"))
-                  blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
-              else
-                  blPatch.alwDiscont = false;
-              if (jptch.has_key("MaxFirstLayerThickness"))
-                  blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
-              else
-                  blPatch.maxFrstLyrThk = -1;
-              if (jptch.has_key("NLayers"))
-                  blPatch.blNLyr = jptch["NLayers"].as<int>();
-              else
-                  blPatch.blNLyr = -1;
-              if (jptch.has_key("ThicknessRatio"))
+        cfparams->_withBndLyrPtch = true;
+        for (auto jptch : cfmparams[cap][subcap].array_range())
+        {
+          cfmPtchBndLyr blPatch;
+          blPatch.patchName = jptch["PatchName"].as<std::string>();
+          if (jptch.has_key("AllowDiscontinuity"))
+              blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
+          else
+              blPatch.alwDiscont = false;
+          if (jptch.has_key("MaxFirstLayerThickness"))
+              blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
+          else
+              blPatch.maxFrstLyrThk = -1;
+          if (jptch.has_key("NLayers"))
+              blPatch.blNLyr = jptch["NLayers"].as<int>();
+          else
+              blPatch.blNLyr = -1;
+          if (jptch.has_key("ThicknessRatio"))
                   blPatch.blThkRto = jptch["ThicknessRatio"].as<double>();
-              else
-                  blPatch.blThkRto = -1.;
-              (cfparams->blPatches).push_back(blPatch);
-          }
-                      
+          else
+              blPatch.blThkRto = -1.;
+          (cfparams->blPatches).push_back(blPatch);
+        }             
       }
   }
 
@@ -164,72 +163,72 @@ int generate(const char* jsonF)
   cap = "ObjectRefinements";
   if (cfmparams.has_key(cap))
   {
-      cfparams->_withObjRfn = true;
-      for (auto refObj : cfmparams[cap].array_range())
+    cfparams->_withObjRfn = true;
+    for (auto refObj : cfmparams[cap].array_range())
+    {
+      cfmObjRef objRef;
+      objRef.name= refObj["Name"].as<std::string>();
+      for (const auto&  prm: refObj["Params"].object_range())
       {
-          cfmObjRef objRef;
-          objRef.name= refObj["Name"].as<std::string>();
-          for (const auto&  prm: refObj["Params"].object_range())
-          {
-              std::string key = std::string(prm.key());
-              std::string val = prm.value().as<std::string>();
-              objRef.params[key] = val;
-          }
-          (cfparams->objRefLst).push_back(objRef);
+          std::string key = std::string(prm.key());
+          std::string val = prm.value().as<std::string>();
+          objRef.params[key] = val;
       }
+      (cfparams->objRefLst).push_back(objRef);
+    }
   }
 
   // optional capability
   cap = "ImproveMeshQuality";
   if (cfmparams.has_key(cap))
   {
-      cfparams->_withMshQlt = true;
-      cfparams->qltNItr = cfmparams[cap]["NIterations"].as<int>();
-      cfparams->qltNLop = cfmparams[cap]["NLoops"].as<int>();
-      cfparams->qltQltThr = cfmparams[cap]["QualityThreshold"].as<double>();
-      cfparams->qltNSrfItr = cfmparams[cap]["NSurfaceIterations"].as<int>();
-      cfparams->qltConCelSet = 
-          cfmparams[cap].get_with_default("ConstrainedCellsSet","none");
+    cfparams->_withMshQlt = true;
+    cfparams->qltNItr = cfmparams[cap]["NIterations"].as<int>();
+    cfparams->qltNLop = cfmparams[cap]["NLoops"].as<int>();
+    cfparams->qltQltThr = cfmparams[cap]["QualityThreshold"].as<double>();
+    cfparams->qltNSrfItr = cfmparams[cap]["NSurfaceIterations"].as<int>();
+    cfparams->qltConCelSet = 
+      cfmparams[cap].get_with_default("ConstrainedCellsSet","none");
   }
 
   // optional capability
   cap = "LocalRefinement";
   if (cfmparams.has_key(cap))
   {
-      cfparams->_withLclRef = true;
-      for (auto jptch : cfmparams[cap].array_range())
-      {
-          cfmLclRefPatch refPatch;
-          refPatch.patchName = jptch["PatchName"].as<std::string>();
-          if (jptch.has_key("AdditionalRefinementLevels"))
-              refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
-          else
-              refPatch.aditRefLvls = -1;
-          if (jptch.has_key("CellSize"))
-              refPatch.cellSize = jptch["CellSize"].as<double>();
-          else
-              refPatch.cellSize = -1.;
-          (cfparams->refPatches).push_back(refPatch);
-      }
+    cfparams->_withLclRef = true;
+    for (auto jptch : cfmparams[cap].array_range())
+    {
+      cfmLclRefPatch refPatch;
+      refPatch.patchName = jptch["PatchName"].as<std::string>();
+      if (jptch.has_key("AdditionalRefinementLevels"))
+          refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
+      else
+          refPatch.aditRefLvls = -1;
+      if (jptch.has_key("CellSize"))
+          refPatch.cellSize = jptch["CellSize"].as<double>();
+      else
+          refPatch.cellSize = -1.;
+      (cfparams->refPatches).push_back(refPatch);
+    }
   }
 
   // optional capability
   cap = "RenameBoundary";
   if (cfmparams.has_key(cap))
   {
-      cfparams->_withRenBndry = true;
-      cfmRenBndry renBndry;
-      renBndry.defName = cfmparams[cap]["DefaultName"].as<std::string>();
-      renBndry.defType = cfmparams[cap]["DefaultType"].as<std::string>();
-      for (auto jnw : cfmparams[cap]["NewPatchNames"].array_range())
-      {
-          cfmNewPatch nwPatch = std::make_tuple( 
-                  jnw["Name"].as<std::string>(),
-                  jnw["NewName"].as<std::string>(),
-                  jnw["NewType"].as<std::string>() );
-          renBndry.newPatches.push_back(nwPatch);
-      }
-      (cfparams->renBndry) = renBndry;
+    cfparams->_withRenBndry = true;
+    cfmRenBndry renBndry;
+    renBndry.defName = cfmparams[cap]["DefaultName"].as<std::string>();
+    renBndry.defType = cfmparams[cap]["DefaultType"].as<std::string>();
+    for (auto jnw : cfmparams[cap]["NewPatchNames"].array_range())
+    {
+      cfmNewPatch nwPatch = std::make_tuple( 
+          jnw["Name"].as<std::string>(),
+          jnw["NewName"].as<std::string>(),
+          jnw["NewType"].as<std::string>() );
+      renBndry.newPatches.push_back(nwPatch);
+    }
+    (cfparams->renBndry) = renBndry;
   }
 
 
@@ -243,24 +242,24 @@ int generate(const char* jsonF)
           inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
   else
   {
-      std::cerr << "A geometry file should be supplied.\n";
-      throw;        
+    std::cerr << "A geometry file should be supplied.\n";
+    throw;        
   }
 
   if (shmparams.has_key("InputPatchName"))
       snappyparams->geomPatchName = shmparams["InputPatchName"].as<std::string>();
   else
   {
-      std::cerr << "A patch name for input geometry must be defined.\n";
-      throw;        
+    std::cerr << "A patch name for input geometry must be defined.\n";
+    throw;        
   }
 
   if (shmparams.has_key("SurfPatchName"))
       snappyparams->surfRefPatch = shmparams["SurfPatchName"].as<std::string>();
   else
   {
-      std::cerr << "A patch name for surface refinement must be defined.\n";
-      throw;        
+    std::cerr << "A patch name for surface refinement must be defined.\n";
+    throw;        
   }
   
   if (shmparams.has_key("Castellated Mesh"))
@@ -486,26 +485,26 @@ int generate(const char* jsonF)
       inputjson["Mesh File Options"]["Input Dict File"].as<bool>();
   // parameter parsing starts here
   if (bmshparams.has_key("Block Geometry"))
-        bmparams->_isBlock =
-          bmshparams["Block Geometry"].as<bool>();
+    bmparams->_isBlock =
+      bmshparams["Block Geometry"].as<bool>();
   if (bmshparams.has_key("Sphere Geometry"))
-        bmparams->_isSphere =
-          bmshparams["Sphere Geometry"].as<bool>();
+    bmparams->_isSphere =
+      bmshparams["Sphere Geometry"].as<bool>();
   if (bmshparams.has_key("Cylinder/Tapered_Cone Geometry"))
-        bmparams->_isCylinder_TCone =
-          bmshparams["Cylinder/Tapered_Cone Geometry"].as<bool>();
+    bmparams->_isCylinder_TCone =
+      bmshparams["Cylinder/Tapered_Cone Geometry"].as<bool>();
   if (bmshparams.has_key("scaleToMeters"))
     bmparams->cnvrtToMeters = 
-    bmshparams["scaleToMeters"].as<double>();
+      bmshparams["scaleToMeters"].as<double>();
   if (bmshparams.has_key("XdirectionCells"))
     bmparams->cellsXDir = 
-    bmshparams["XdirectionCells"].as<int>();
+      bmshparams["XdirectionCells"].as<int>();
   if (bmshparams.has_key("YdirectionCells"))
     bmparams->cellsYDir = 
-    bmshparams["YdirectionCells"].as<int>();
+      bmshparams["YdirectionCells"].as<int>();
   if (bmshparams.has_key("ZdirectionCells"))
     bmparams->cellsZDir = 
-    bmshparams["ZdirectionCells"].as<int>();
+      bmshparams["ZdirectionCells"].as<int>();
     
   if (bmshparams.has_key("Block Parameters"))
   {
@@ -764,12 +763,17 @@ int generate(const char* jsonF)
   objMsh->mergeMeshes(dirStat,nDom);
 
   // createPatch
-  objMsh->createPatch();
+  objMsh->createPatch(dirStat);
 
   // read current mesh and write it to separate VTK/VTU files
   bool readDB = false;
   // converts pack mesh
-  std::string regNme = "PackMesh";
+  std::string regNme;
+  if (dirStat == 1)
+    regNme = "domain2";
+  else
+    regNme = "domain1";
+
   meshBase* fm = new FOAM::foamMesh(readDB);
   fm->read(regNme);
   vtkMesh* vm = new vtkMesh(fm->getDataSet(),ofname1);
@@ -777,7 +781,7 @@ int generate(const char* jsonF)
   vm->write();
 
   // converts surronding mesh
-  regNme = "SurroundingMesh";
+  regNme = "domain0";
   meshBase* fm2 = new FOAM::foamMesh(readDB);
   fm2->read(regNme);
   vtkMesh* vm2 = new vtkMesh(fm2->getDataSet(),ofname2);
@@ -812,8 +816,6 @@ TEST(PackMeshing, Generation)
   EXPECT_EQ(0, generate(inp_json));
 }
 
-
-#ifdef HAVE_OF4
 TEST(PackMeshing, NumberOfNodesPacks)
 {
   if (ref)
@@ -849,83 +851,6 @@ TEST(PackMeshing, NumberOfCellsSurrounding)
   meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
   EXPECT_EQ( cmp2->getNumberOfCells(), ref->getNumberOfCells() );
 }
-#endif
-
-#ifdef HAVE_OF5
-TEST(PackMeshing, NumberOfNodesPacks)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Pack Reference File"].as<std::string>() );
-  meshBase* cmp1 = meshBase::Create( "geom_pack_mesh.vtu" );
-  EXPECT_EQ( cmp1->getNumberOfPoints(), ref->getNumberOfPoints() );
-}
-
-TEST(PackMeshing, NumberOfNodesSurrounding)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Surrounding Reference File"].as<std::string>() );
-  meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
-  EXPECT_EQ( cmp2->getNumberOfPoints(), ref->getNumberOfPoints() );
-}
-
-TEST(PackMeshing, NumberOfCellsPacks)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Pack Reference File"].as<std::string>() );
-  meshBase* cmp1 = meshBase::Create( "geom_pack_mesh.vtu" );
-  EXPECT_EQ( cmp1->getNumberOfCells(), ref->getNumberOfCells() );
-}
-
-TEST(PackMeshing, NumberOfCellsSurrounding)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Surrounding Reference File"].as<std::string>() );
-  meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
-  EXPECT_EQ( cmp2->getNumberOfCells(), ref->getNumberOfCells() );
-}
-#endif
-
-#ifdef HAVE_OF6
-TEST(PackMeshing, NumberOfNodesPacks)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Pack Reference File"].as<std::string>() );
-  meshBase* cmp1 = meshBase::Create( "geom_pack_mesh.vtu" );
-  EXPECT_EQ( cmp1->getNumberOfPoints(), ref->getNumberOfPoints() );
-}
-
-TEST(PackMeshing, NumberOfNodesSurrounding)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Surrounding Reference File"].as<std::string>() );
-  meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
-  EXPECT_EQ( cmp2->getNumberOfPoints(), ref->getNumberOfPoints() );
-}
-
-TEST(PackMeshing, NumberOfCellsPacks)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Pack Reference File"].as<std::string>() );
-  meshBase* cmp1 = meshBase::Create( "geom_pack_mesh.vtu" );
-  EXPECT_EQ( cmp1->getNumberOfCells(), ref->getNumberOfCells() );
-}
-
-TEST(PackMeshing, NumberOfCellsSurrounding)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Surrounding Reference File"].as<std::string>() );
-  meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
-  EXPECT_EQ( cmp2->getNumberOfCells(), ref->getNumberOfCells() );
-}
-#endif
 
 
 // test constructor
@@ -938,7 +863,7 @@ int main(int argc, char** argv)
 
   if (!inp_json)
   {
-  	std::cerr << "No input file defined" << std::endl;
+    std::cerr << "No input file defined" << std::endl;
     throw;
   }
 
