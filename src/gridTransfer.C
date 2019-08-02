@@ -796,11 +796,14 @@ int gridTransfer::getElmIdx(std::string msh, std::vector<double>& xyz)
   }
   // find element indx containig the point
   SPoint3 pnt(xyz[0], xyz[1], xyz[2]);
-  MElement* elm;
-  elm = pg->getMeshElementByCoord(pnt);
-  if (!elm)
+  std::vector<MElement*> elms;
+  // TODO: because of changes in gmsh API now a vector
+  // of elements are provided by call to this following 
+  // method (used to pass a single element out)
+  elms = pg->getMeshElementsByCoord(pnt);
+  if (elms.size()==0)
    return(-1);
-  return(elm->getNum());
+  return(elms[0]->getNum());
 }
 
 int gridTransfer::getBaryCrds(std::string msh, std::vector<double>& xyz, std::vector<double>& baryCrds, std::vector<int>& vrtIds)
