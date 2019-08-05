@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "patran.H"
 
 #include <vtkCell.h>
