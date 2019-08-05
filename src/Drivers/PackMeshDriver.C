@@ -279,6 +279,9 @@ PackMeshDriver* PackMeshDriver::readJSON(const std::string& ifname,
     if (cfmparams.has_key("CheckForGluedMesh"))
       cfparams->chkGluMsh = 
         cfmparams["CheckForGluedMesh"].as<double>();
+    if (cfmparams.has_key("AllowDisconnectedDomains"))
+      cfparams->_alwDiscDomains = 
+        cfmparams["AllowDisconnectedDomains"].as<bool>();
 
     // optional capability
     std::string cap = "BoundaryLayers";
