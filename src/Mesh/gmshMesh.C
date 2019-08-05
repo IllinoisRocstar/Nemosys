@@ -13,6 +13,7 @@
 #include "gmshMesh.H"
 
 #include <vtkUnstructuredGrid.h>
+#include <vtkIdList.h>
 
 class nemosysGModel : public GModel {
   public:
