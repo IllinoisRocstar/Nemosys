@@ -2,6 +2,14 @@ cmake_minimum_required(VERSION 3.1)
 project(MAdLib CXX)
 set(CMAKE_CXX_STANDARD 11)
 
+set(MAdLib_MAJOR_VERSION 1)
+set(MAdLib_MINOR_VERSION 3)
+set(MAdLib_PATCH_VERSION 0)
+set(MAdLib_EXTRA_VERSION "")
+set(MAdLib_VERSION "${MAdLib_MAJOR_VERSION}.${MAdLib_MINOR_VERSION}")
+set(MAdLib_VERSION
+    "${MAdLib_VERSION}.${MAdLib_PATCH_VERSION}${MAdLib_EXTRA_VERSION}")
+
 macro(opt OPTION HELP VALUE)
   option(ENABLE_${OPTION} ${HELP} ${VALUE})
   set(OPT_TEXI "${OPT_TEXI}\n@item ENABLE_${OPTION}\n${HELP} (default: ${VALUE})")
@@ -120,7 +128,7 @@ target_include_directories(MAdLib
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Geo>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Mesh>
 
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/MAdLib>
 )
 
 # Set MAdLib compiler definitions
@@ -169,9 +177,13 @@ if(ENABLE_BENCHMARKS)
   add_subdirectory(Benchmarks/optimize)
 endif()
 
+# Set soname version
+set_target_properties(MAdLib PROPERTIES VERSION ${MAdLib_VERSION}
+                                        SOVERSION ${MAdLib_MAJOR_VERSION})
+
 # Install MAdLib headers
 install(FILES ${MADLIB_INC_FILES}
-    DESTINATION include)
+    DESTINATION include/MAdLib)
 
 # Install MAdLib library
 install(TARGETS MAdLib
