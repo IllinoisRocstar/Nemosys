@@ -18,6 +18,7 @@
 // vtk
 #include <vtkUnstructuredGrid.h>
 #include <vtkCellData.h>
+#include <vtkIdList.h>
 
 #include <string>
 #include <iostream>
