@@ -1,14 +1,13 @@
-#ifndef MESHMANIPULATIONFOAM_H
-#define MESHMANIPULATIONFOAM_H
+#ifndef NEMOSYS_MESHMANIPULATIONFOAM_H_
+#define NEMOSYS_MESHMANIPULATIONFOAM_H_
+
+#include "nemosys_export.h"
 
 #include <vtkMeshQuality.h>
 #include <vtkDoubleArray.h>
 
-#include "MeshManipulationFoamParams.H"
-#include "meshBase.H"
+// OpenFOAM
 #include "argList.H"
-#include "polyMeshGenModifier.H"
-#include "meshOptimizer.H"
 #include "fvCFD.H"
 #include "fvMesh.H"
 #include "fileName.H"
@@ -53,43 +52,45 @@
 #include "wordReList.H"
 #include "IOdictionary.H"
 
-//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
+// Nemosys
+#include "MeshManipulationFoamParams.H"
+#include "meshBase.H"
 
-class MeshManipulationFoamParams; // Friend Class
+//* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
 /** @brief MeshManipulation class contains several OpenFOAM utilities to perform
     various mesh manipulation operations. These utilities reads Foam mesh
     and outputs Foam mesh. Some of them are surface mesh manipulation
     utilities.
-    Manipulation utilities include 
+    Manipulation utilities include
     - surfaceLambdaMuSmooth
     - splitMeshRegions
     - mergeMeshes
     - createPatch
     - foamToSurface
     - surfaceSplitByTopology.
-    
+
     Foam mesh reading and writing capabilities are built inside each manipulation
     utility.
 **/
 
-class MeshManipulationFoam
+class NEMOSYS_EXPORT MeshManipulationFoam
 {
   // --- constructors and destructors
   public:
-  /** 
+  /**
       @brief Standard MeshManipulationFoam Constructor
   **/
   MeshManipulationFoam(){}; // Standard Constructor
 
-  /** 
+  /**
       @brief Custom MeshManipulationFoam Constructor
       @param params MeshManipulationFoamParams Object
   **/
   MeshManipulationFoam(MeshManipulationFoamParams* params)
   {_mshMnipPrms = params;}  // Alternate Constructor
 
-  /** 
+  /**
       @brief Standard MeshManipulationFoam Destructor
   **/
   ~MeshManipulationFoam();  // Class Destructor
@@ -97,17 +98,17 @@ class MeshManipulationFoam
 
   // --- meshBase factory methods
   public:
-  /** @brief surfLambdaMuSmooth performs laplacian smoothing over surface 
+  /** @brief surfLambdaMuSmooth performs laplacian smoothing over surface
             and writes it into output surface file. This utility supports .ofs,
-            .obj, .inp, .stl, .tri, .off, .stlb, .nas, .bdf, .gts, .vtk, .ac 
+            .obj, .inp, .stl, .tri, .off, .stlb, .nas, .bdf, .gts, .vtk, .ac
             extensions for input and output surface files.
   **/
   void surfLambdaMuSmooth();  // SurfaceLambdaMuSmooth utility
 
   /** @brief splitMshRegions walks through mesh using cell-face-cell walk and
-            identifies different cellZones as different regions. Writes these 
+            identifies different cellZones as different regions. Writes these
             regions in separate Foam meshes.
-      @param 
+      @param
       @return domain number skipped during splitting
   **/
   int splitMshRegions();    // SplitMeshRegions utility
@@ -129,17 +130,17 @@ class MeshManipulationFoam
   **/
   void foamToSurface();   // FoamToSurface utility
 
-  /** @brief surfSpltByTopology utility takes a surface file as an input and 
+  /** @brief surfSpltByTopology utility takes a surface file as an input and
             automatically divides disconnected regions into separate patches.
             writes a surface file with separated patches as well as multiple
             surface files for separate patches.
   **/
   int surfSpltByTopology();  // surfaceSplitByTopology utility
 
-  /** @brief addCohesiveElements method supports addition of zero-sized 
-            connectivity elements at conformal shared interface between two 
-            meshes. This method can take two .vtk/.vtu files or Foam meshes as input 
-            and outputs a single .vtk/.vtu file with original meshes plus 
+  /** @brief addCohesiveElements method supports addition of zero-sized
+            connectivity elements at conformal shared interface between two
+            meshes. This method can take two .vtk/.vtu files or Foam meshes as input
+            and outputs a single .vtk/.vtu file with original meshes plus
             cohesive elements.
       @param tol Tolerance for conformal duplicate nodes between two meshes.
       @param outName Output mesh name with extension (i.e "output.vtu")
@@ -181,23 +182,23 @@ class MeshManipulationFoam
   Foam::tmp<Foam::pointField> avg(const Foam::meshedSurface& s,
     const Foam::PackedBoolList& fixedPoints);
 
-  /** @brief surfLambdaMuSmooth Internal Function. Obtaines fixed mesh points 
-            from edges 
+  /** @brief surfLambdaMuSmooth Internal Function. Obtains fixed mesh points
+            from edges
   **/
   void getFixedPoints(const Foam::edgeMesh& feMesh,
     const Foam::pointField& points,
     Foam::PackedBoolList& fixedPoints);
 
   // splitMshByRegion functions
-  /** @brief splitMshByRegion Internal Function. Renames patches discovered 
+  /** @brief splitMshByRegion Internal Function. Renames patches discovered
             by walking in mesh
   **/
   void renamePatches(Foam::fvMesh& mesh,
     const Foam::word& prefix,
     const Foam::labelList& patchesToRename);
 
-  
-  /** @brief splitMshByRegion Internal Function. Makes volVectorFields of 
+
+  /** @brief splitMshByRegion Internal Function. Makes volVectorFields of
             subset volumes
   **/
   template<class GeoField>
@@ -207,7 +208,7 @@ class MeshManipulationFoam
     const Foam::labelList& faceMap,
     const Foam::labelHashSet& addedPatches);
 
-  /** @brief splitMshByRegion Internal Function. Makes volSurfaceFields of 
+  /** @brief splitMshByRegion Internal Function. Makes volSurfaceFields of
             subset surfaces
   **/
   template<class GeoField>
@@ -217,7 +218,7 @@ class MeshManipulationFoam
     const Foam::labelList& faceMap,
     const Foam::labelHashSet& addedPatches);
 
-  /** @brief splitMshByRegion Internal Function. Outputs non-region 
+  /** @brief splitMshByRegion Internal Function. Outputs non-region
             disconnected cells
   **/
   Foam::labelList getNonRegionCells(const Foam::labelList& cellRegion,
@@ -230,7 +231,7 @@ class MeshManipulationFoam
     const Foam::label neiRegion,
     Foam::EdgeMap<Foam::Map<Foam::label>>& regionsToSize);
 
-  /** @brief splitMshByRegion Internal Function. Interface size in terms of 
+  /** @brief splitMshByRegion Internal Function. Interface size in terms of
             cells
   **/
   void getInterfaceSizes(const Foam::polyMesh& mesh,
@@ -241,7 +242,7 @@ class MeshManipulationFoam
     Foam::labelList& interfaceSizes,
     Foam::labelList& faceToInterface);
 
-  /** @brief splitMshByRegion Internal Function. Defines mesh of disconnected 
+  /** @brief splitMshByRegion Internal Function. Defines mesh of disconnected
             regions after separating
   **/
   Foam::autoPtr<Foam::mapPolyMesh> createRegionMesh(
@@ -251,7 +252,7 @@ class MeshManipulationFoam
     const Foam::labelList& faceToInterface,
     Foam::autoPtr<Foam::fvMesh>& newMesh);
   
-  /** @brief splitMshByRegion Internal Function. Writes region mesh into 
+  /** @brief splitMshByRegion Internal Function. Writes region mesh into
             separate folders
   **/
   void createAndWriteRegion(const Foam::fvMesh& mesh,
@@ -263,7 +264,7 @@ class MeshManipulationFoam
     const Foam::label regionI,
     const Foam::word& newMeshInstance);
 
-  /** @brief splitMshByRegion Internal Function. Adds patches for new 
+  /** @brief splitMshByRegion Internal Function. Adds patches for new
             regions to mesh
   **/
   Foam::labelList addRegionPatches(Foam::fvMesh& mesh,
@@ -271,7 +272,7 @@ class MeshManipulationFoam
     const Foam::edgeList& interfaces,
     const Foam::List<Foam::Pair<Foam::word>>& interfaceNames);
 
-  /** @brief splitMshByRegion Internal Function. Finds certain region for 
+  /** @brief splitMshByRegion Internal Function. Finds certain region for
             writing
   **/
   Foam::label findCorrespondingRegion(
@@ -289,7 +290,7 @@ class MeshManipulationFoam
     Foam::labelList& zoneID,
     Foam::labelList& neiZoneID);
 
-  /** @brief splitMshByRegion Internal Function. Method for sloppyCellZone 
+  /** @brief splitMshByRegion Internal Function. Method for sloppyCellZone
             features
   **/
   int matchRegions(
@@ -318,7 +319,7 @@ class MeshManipulationFoam
     const Foam::label faceID, const Foam::label patchID,
     Foam::polyTopoChange& meshMod);
 
-  /** @brief createPatch Internal Function. Looks for duplicate and 
+  /** @brief createPatch Internal Function. Looks for duplicate and
             non-zero patches
   **/
   void filterPatches(Foam::polyMesh& mesh,
@@ -327,7 +328,7 @@ class MeshManipulationFoam
   /** @brief createPatch Internal Function. Moving mesh function
   **/
   void dumpCyclicMatch(
-    const Foam::fileName& prefix, 
+    const Foam::fileName& prefix,
     const Foam::polyMesh& mesh);
 
   /** @brief createPatch Internal Function. Lists all patches to be merged
@@ -336,7 +337,7 @@ class MeshManipulationFoam
     const Foam::vectorField& separation,
     Foam::UList<Foam::vector>& field);
 
-  /** @brief createPatch Internal Function. Ensures conformality 
+  /** @brief createPatch Internal Function. Ensures conformality
             if pointSync option is true
   **/
   template<class CombineOp>
@@ -352,4 +353,4 @@ class MeshManipulationFoam
   MeshManipulationFoamParams* _mshMnipPrms;
 };
 
-#endif
+#endif  // NEMOSYS_MESHMANIPULATIONFOAM_H_

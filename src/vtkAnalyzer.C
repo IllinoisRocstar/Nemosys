@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "vtkAnalyzer.H"
 
 #include "baseInterp.H"
