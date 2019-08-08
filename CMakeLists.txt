@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 38)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_MINOR_VERSION 39)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -16,9 +16,9 @@ set(NEMOSYS_AUTHOR
     "Masoud Safdari (lead)"
     "Alessandro Gondolo"
     "Sachin Natesh"
+    "Akash Patel"
     "Pavle Simonovic"
-    "Taiyo Wilson"
-    "Akash Patel")
+    "Taiyo Wilson")
 set(NEMOSYS_AUTHOR_EMAIL "msafdari@illinoisrocstar.com")
 set(NEMOSYS_PYTHON_CLASSIFIERS
     "Development Status :: 2 - Pre-Alpha"
@@ -189,6 +189,7 @@ message(STATUS "gmsh libs ${GMSH_LIB}")
 # Find OpenCascade (used by Gmsh)
 if(NOT WIN32)
   find_package(OpenCASCADE REQUIRED)
+  list(APPEND LIBRARY_DIRS ${OpenCASCADE_LIBRARY_DIR})
   message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
   message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
 
@@ -354,6 +355,10 @@ if(ENABLE_CFMSH)
   find_library(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
   set(CFMSH_INCPATH "/opt/cfMesh/meshLibrary/lnInclude"
       CACHE PATH "cfMesh lnInclude directory path.")
+
+  message(STATUS "cfMesh include path ${CFMSH_INCPATH}")
+  message(STATUS "cfMesh libs ${CFMSH_LIB}")
+  get_filename_component(CFMSH_LIB_PATH ${CFMSH_LIB} PATH)
 
   # CMake 3.13 required for target_link_directories
   link_directories(${OPNF_LIBRARY_DIRS})
@@ -542,7 +547,7 @@ add_library(r8 ${R8_SRCS})
 target_include_directories(r8
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/nemosys>
 )
 
 # Build interp library
@@ -554,7 +559,7 @@ target_link_libraries(interp PRIVATE
 target_include_directories(interp
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/nemosys>
 )
 
 # Build Nemosys library
@@ -572,7 +577,7 @@ target_link_libraries(Nemosys
 target_include_directories(Nemosys
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/nemosys>
 )
 target_include_directories(Nemosys SYSTEM
     PUBLIC
@@ -654,26 +659,36 @@ if(ENABLE_SIMMETRIX)
 endif()
 
 if(ENABLE_CFMSH)
-  target_link_libraries(Nemosys PUBLIC ${CFMSH_LIB} ${OPNF_LIBRARIES})
+  target_link_libraries(Nemosys
+      # TODO: Add namespace to cfMesh to protect the symbol clash between
+      #       libdynamicMesh.so in OpenFOAM and libmeshLibrary.so in cfMesh.
+      #       Till then, link cfMesh before OpenFOAM.
+      #PRIVATE ${CFMSH_LIB}
+      PUBLIC ${CFMSH_LIB}
+      PUBLIC ${OPNF_LIBRARIES})
   # CMake 3.13 required for target_link_directories
   #target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
   # /CMake 3.13
   target_include_directories(Nemosys SYSTEM
-      PUBLIC ${CFMSH_INCPATH} ${OPNF_INCLUDE_DIRS})
+      PRIVATE ${CFMSH_INCPATH}
+      PUBLIC ${OPNF_INCLUDE_DIRS})
   target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
 
   string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
   if(OF4 GREATER -1)
+    set(OF_VERSION 4)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF4)
   endif()
 
   string(FIND $ENV{WM_PROJECT_VERSION} "5" OF5)
   if(OF5 GREATER -1)
+    set(OF_VERSION 5)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF5)
   endif()
 
   string(FIND $ENV{WM_PROJECT_VERSION} "6" OF6)
   if(OF6 GREATER -1)
+    set(OF_VERSION 6)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF6)
   endif()
 
@@ -728,11 +743,21 @@ file(COPY ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h
           ${CMAKE_CURRENT_BINARY_DIR}/r8_export.h
     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Set soname version ###########################################################
+
+# TODO: Set r8 and interp versions properly. They should be in contrib!
+set_target_properties(r8 PROPERTIES VERSION ${NEMOSYS_VERSION}
+                                    SOVERSION ${NEMOSYS_MAJOR_VERSION})
+set_target_properties(interp PROPERTIES VERSION ${NEMOSYS_VERSION}
+                                        SOVERSION ${NEMOSYS_MAJOR_VERSION})
+set_target_properties(Nemosys PROPERTIES VERSION ${NEMOSYS_VERSION}
+                                         SOVERSION ${NEMOSYS_MAJOR_VERSION})
+
 # Install libraries ############################################################
 
 # Headers
-install(FILES ${Nemosys_INC_FILES}
-    DESTINATION include)
+install(FILES ${r8_INC_FILES} ${interp_INC_FILES} ${Nemosys_INC_FILES}
+    DESTINATION include/nemosys)
 
 # Libraries
 install(TARGETS r8 interp Nemosys
@@ -930,10 +955,50 @@ set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
 #set(CPACK_PACKAGE_ICON "") # image used by GUI installers
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
+
 if(WIN32)
   set(CPACK_GENERATOR NSIS)
-#else()
-#  set(CPACK_GENERATOR)
+else()
+  if(CMAKE_VERSION VERSION_LESS 3.10)
+    message(WARNING "CMake 3.10 or above is required to build a DEB package.")
+  else()
+    set(CPACK_GENERATOR DEB)
+    #set(CPACK_DEBIAN_PACKAGE_NAME "")
+    #set(CPACK_DEBIAN_PACKAGE_VERSION "")
+    #set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "")
+    if(ENABLE_CFMSH)
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnglib-6.2.1804, openfoam${OF_VERSION}")
+    else()
+      set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnglib-6.2.1804")
+    endif()
+    #set(CPACK_DEBIAN_PACKAGE_MAINTAINER "")
+    #set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "science")
+    #set(CPACK_DEBIAN_COMPRESSION_TYPE "gzip")
+    #set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "${CPACK_PACKAGE_HOMEPAGE_URL}")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_DEBUG ON)  # For testing only
+    #set(CPACK_DEBIAN_PACKAGE_PREDEPENDS "")
+    #set(CPACK_DEBIAN_PACKAGE_ENHANCES "")
+    #set(CPACK_DEBIAN_PACKAGE_BREAKS "")
+    #set(CPACK_DEBIAN_PACKAGE_CONFLICTS "")
+    #set(CPACK_DEBIAN_PACKAGE_PROVIDES "")
+    #set(CPACK_DEBIAN_PACKAGE_REPLACES "")
+    #set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "")
+    #set(CPACK_DEBIAN_PACKAGE_SUGGESTS "")
+    #set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "")
+
+    set(CPACK_DEBIAN_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)  # CMake 3.4
+    #set(CPACK_DEBIAN_PACKAGE_SOURCE "")  # CMake 3.5
+    #set(CPACK_DEB_COMPONENT_INSTALL OFF)  # CMake 3.6
+    set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")  # CMake 3.6
+    #set(CPACK_DEBIAN_PACKAGE_RELEASE "1")  # CMake 3.6
+    set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)  # CMake 3.6
+    #set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY "=")  # CMake 3.6
+    #set(CPACK_DEBIAN_ARCHIVE_TYPE "gnutar")  # CMake 3.7
+    #set(CPACK_DEBIAN_PACKAGE_EPOCH "")  # Cmake 3.10
+  endif()
 endif()
 # Lists exe and text label used for Start Menu shortcuts
 #set(CPACK_PACKAGE_EXECUTABLES "")

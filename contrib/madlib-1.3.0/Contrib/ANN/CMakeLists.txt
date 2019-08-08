@@ -1,3 +1,10 @@
+set(ANN_MAJOR_VERSION 1)
+set(ANN_MINOR_VERSION 1)
+#set(ANN_PATCH_VERSION 0)
+#set(ANN_EXTRA_VERSION "")
+set(ANN_VERSION "${ANN_MAJOR_VERSION}.${ANN_MINOR_VERSION}")
+#set(ANN_VERSION "${ANN_VERSION}.${ANN_PATCH_VERSION}${ANN_EXTRA_VERSION}")
+
 # Set ANN include files
 set(ANN_INC_FILES
     include/ANN/ANN.h
@@ -39,6 +46,10 @@ generate_export_header(ANN)
 list(APPEND ${ANN_INC_FILES} ann_export.h)
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/ann_export.h
     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include/ANN)
+
+# Set soname version
+set_target_properties(ANN PROPERTIES VERSION ${ANN_VERSION}
+                                     SOVERSION ${ANN_MAJOR_VERSION})
 
 # Install ANN headers
 install(FILES ${ANN_INC_FILES}

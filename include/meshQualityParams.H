@@ -1,11 +1,12 @@
-#ifndef MESHQUALITYPARAMS_H
-#define MESHQUALITYPARAMS_H
+#ifndef NEMOSYS_MESHQUALITYPARAMS_H_
+#define NEMOSYS_MESHQUALITYPARAMS_H_
 
-class meshQualityParams
-{
-  public:
-    meshQualityParams() = default;
-    virtual ~meshQualityParams() = default;
+#include "nemosys_export.h"
+
+class NEMOSYS_EXPORT meshQualityParams {
+ public:
+  meshQualityParams() = default;
+  virtual ~meshQualityParams() = default;
 };
 
-#endif
+#endif  // NEMOSYS_MESHQUALITYPARAMS_H_

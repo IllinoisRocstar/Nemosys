@@ -2,6 +2,7 @@
 
 #include <vtkCellTypes.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkIdList.h>
 
 /********************************************
     solutionData class implementation
