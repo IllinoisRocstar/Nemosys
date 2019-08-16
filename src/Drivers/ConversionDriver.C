@@ -31,6 +31,7 @@
 #include <unordered_map>
 #include <iterator>
 #include <memory>
+#include <algorithm>
 
 //----------------------- Conversion Driver -----------------------------------------//
 ConversionDriver::ConversionDriver(const std::string &srcmsh,
@@ -546,43 +547,45 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
               << std::endl;
     exit(-1);
     #endif
+  } else {
+    std::cerr << "Error: Conversion method " << method
+              << " is not a valid option." << std::endl;
+    exit(-1);
   }
 
   T.stop();
 }
 
-
-ConversionDriver::~ConversionDriver()
-{
+ConversionDriver::~ConversionDriver() {
   delete source;
   std::cout << "ConversionDriver destroyed" << std::endl;
 }
 
-
-ConversionDriver *ConversionDriver::readJSON(const jsoncons::json &inputjson)
-{
+ConversionDriver *ConversionDriver::readJSON(const jsoncons::json &inputjson) {
   std::cout << "Reading JSON object" << std::endl;
+
   std::string srcmsh;
   std::string trgmsh;
   std::string outmsh;
   std::string method;
 
-  srcmsh = "";
-  trgmsh = "";
-  outmsh = "";
+  if (inputjson.has_key("Mesh File Options")) {
+    if (inputjson["Mesh File Options"].has_key("Input Mesh Files")) {
+      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key(
+              "Source Mesh"))
+        srcmsh =
+            inputjson["Mesh File Options"]["Input Mesh Files"]["Source Mesh"]
+                .as<std::string>();
 
-  if (inputjson.has_key("Mesh File Options"))
-  {
-    if (inputjson["Mesh File Options"].has_key("Input Mesh Files"))
-    {
-      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key("Source Mesh"))
-        srcmsh = inputjson["Mesh File Options"]["Input Mesh Files"]["Source Mesh"].as<std::string>();
-
-      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key("Target Mesh"))
-        trgmsh = inputjson["Mesh File Options"]["Input Mesh Files"]["Target Mesh"].as<std::string>();
+      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key(
+              "Target Mesh"))
+        trgmsh =
+            inputjson["Mesh File Options"]["Input Mesh Files"]["Target Mesh"]
+                .as<std::string>();
 
       if (inputjson["Mesh File Options"].has_key("Output Mesh File"))
-        outmsh = inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>();
+        outmsh = inputjson["Mesh File Options"]["Output Mesh File"]
+                     .as<std::string>();
     }
   }
 
@@ -590,23 +593,19 @@ ConversionDriver *ConversionDriver::readJSON(const jsoncons::json &inputjson)
   method = inputjson["Conversion Options"]["Method"].as<std::string>();
 
   // starting proper conversion driver, right now just one
-  ConversionDriver *convdrvobj;
-  convdrvobj = new ConversionDriver(srcmsh, trgmsh, method, outmsh, inputjson);
+  auto convdrvobj = new ConversionDriver(srcmsh, trgmsh, method, outmsh, inputjson);
   return convdrvobj;
 }
 
-
-ConversionDriver *ConversionDriver::readJSON(const std::string &ifname)
-{
+ConversionDriver *ConversionDriver::readJSON(const std::string &ifname) {
   std::cout << "Reading JSON file" << std::endl;
+
   std::ifstream inputStream(ifname);
-  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json")
-  {
+  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json") {
     std::cerr << "Error opening file " << ifname << std::endl;
     exit(1);
   }
-  if (nemAux::find_ext(ifname) != ".json")
-  {
+  if (nemAux::find_ext(ifname) != ".json") {
     std::cerr << "Input File must be in .json format" << std::endl;
     exit(1);
   }
@@ -615,63 +614,85 @@ ConversionDriver *ConversionDriver::readJSON(const std::string &ifname)
   inputStream >> inputjson;
 
   // checking if array
-  if (inputjson.is_array())
-  {
+  if (inputjson.is_array()) {
     std::cerr
         << "Warning: Input is an array. Only first element will be processed"
         << std::endl;
     return ConversionDriver::readJSON(inputjson[0]);
-  }
-  else
-  {
+  } else {
     return ConversionDriver::readJSON(inputjson);
   }
 }
 
-
 #ifdef HAVE_EXODUSII
 void ConversionDriver::genExo(const jsoncons::json &opts,
-                              const std::string &fname)
-{
+                              const std::string &fname) {
   int nMsh = opts.get_with_default("Number of Mesh", 0);
   bool needsPP = opts.get_with_default("Post Processing", false);
 
   // sanity check
-  if (nMsh == 0)
-  {
+  if (nMsh == 0) {
     std::cerr << "Error: At least one mesh should be provided!" << std::endl;
     exit(-1);
   }
 
   // starting conversion operation
-  EXOMesh::exoMesh *em = new EXOMesh::exoMesh(fname);
+  auto em = new EXOMesh::exoMesh(fname);
 
   // reading meshes
   int ndeIdOffset = 0;
-  int ins = 0;
-  int ieb = 0;
-  for (int iMsh = 0; iMsh < nMsh; iMsh++)
-  {
+  int ins = 0;  // Node Set counter.
+  int ieb = 0;  // Element Block counter.
+  int iss = 0;  // Side Set counter.
+  for (int iMsh = 0; iMsh < nMsh; iMsh++) {
     jsoncons::json mshOpts = opts["Mesh Data"];
     std::string mshFName = mshOpts[iMsh].get_with_default("File", "");
     std::string mshName = mshOpts[iMsh].get_with_default("Name", "default");
     bool usePhys = mshOpts[iMsh].get_with_default("Use Physical Groups", false);
 
     // reading input mesh
+    std::string fileExt = nemAux::find_ext(mshFName);
+    if (fileExt == ".g" || fileExt == ".e" || fileExt == ".exo" ||
+        fileExt == ".exodus") {
+      // if already exodus format, stitch and continue.
+      EXOMesh::exoMesh em2;
+      em2.read(mshFName);
+
+      // Allow changing element block names using key-value.
+      if (mshOpts[iMsh].contains("Element Block Names")) {
+        std::map<std::string, std::string> elmBlkNames =
+            mshOpts[iMsh]["Element Block Names"]
+                .as<std::map<std::string, std::string>>();
+
+        for (const auto &kv : elmBlkNames)
+          em2.setBlockName(std::stoi(kv.first) - 1, kv.second);
+      }
+
+      em->stitch(em2);
+      ndeIdOffset += em2.getNumberOfNode();
+      ieb += em2.getNumberOfElementBlock();
+      ins += em2.getNumberOfNodeSet();
+      iss += em2.getNumberOfSideSets();
+      continue;
+    }
     meshBase *mb = meshBase::Create(mshFName);
-    //mb->write("exo_inp_mesh_"+std::to_string(iMsh)+".vtu");
+    // mb->write("exo_inp_mesh_" + std::to_string(iMsh) + ".vtu");
 
     // adding information to exodusII object
-    if (!usePhys)
-    {
+    if (!usePhys) {
+      // add nodes to database
+      for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
+        em->addNde(mb->getPoint(iNde));
+
       // node coordinate to one nodeSet
       EXOMesh::ndeSetType ns;
       ns.id = ++ins;
-      ns.name = mshName;
-      ns.usrNdeIds = false; // automatically node ids
       ns.nNde = mb->getNumberOfPoints();
-      for (int iNde = 0; iNde < ns.nNde; iNde++)
-        ns.crds.push_back(mb->getPoint(iNde));
+      ns.name = mshName;
+      ns.ndeIdOffset = ndeIdOffset;
+      for (int iNde = 0; iNde < ns.nNde; iNde++) {
+        ns.ndeIds.emplace_back(iNde + 1);
+      }
       em->addNdeSet(ns);
 
       // all elements into one element block
@@ -680,12 +701,12 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
       eb.id = ++ieb;
       eb.name = mshName;
       eb.ndeIdOffset = ndeIdOffset;
+
       int iTet = 0;
       int iHex = 0;
-      for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++)
-      {
+      for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
         EXOMesh::elementType eTpe = EXOMesh::v2eEMap(
-            (VTKCellType) (mb->getDataSet()->GetCellType(iElm)));
+            static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm)));
         if (eTpe == EXOMesh::elementType::TETRA)
           iTet++;
         else if (eTpe == EXOMesh::elementType::HEX)
@@ -697,12 +718,13 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
         for (int in = 0; in < nids->GetNumberOfIds(); in++)
           eb.conn.push_back(nids->GetId(in) + 1);  // offset node ids by 1
       }
+
       // sanity check
-      if (iTet * iHex != 0)
-      {
+      if (iTet * iHex != 0) {
         std::cerr << "Mixed Hex/Tet meshes are not supported!" << std::endl;
         throw;
       }
+
       if (iTet != 0)
         std::cout << "Number of tetrahedral elements = " << iTet << "\n";
       else
@@ -712,35 +734,32 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
                 << "Max nde indx = "
                 << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
       std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
-      if (iTet != 0)
-      {
+
+      if (iTet != 0) {
         eb.nElm = iTet;
-        eb.eTpe = EXOMesh::elementType::TETRA;
         eb.ndePerElm = 4;
-      }
-      else
-      {
+        eb.eTpe = EXOMesh::elementType::TETRA;
+      } else {
         eb.nElm = iHex;
-        eb.eTpe = EXOMesh::elementType::HEX;
         eb.ndePerElm = 8;
+        eb.eTpe = EXOMesh::elementType::HEX;
       }
       em->addElmBlk(eb);
+
       // offsetting starting node id for next file
       ndeIdOffset += ns.nNde;
-    }
-    else
-    {
+    } else {
       // get number of physical groups
       // loop through cell data and identify physical groups
       // we also filter only TETRA/HEX cells
       int nc = mb->getNumberOfCells();
+
       // check physical group (PhysGrpId) exists, obtain id, and data array
       int physGrpArrIdx = mb->getCellDataIdx("PhysGrpId");
-      if (physGrpArrIdx < 0)
-      {
-        std::cerr
-            << "Error : Input dataset does not have PhyGrpId cell data! Aborting."
-            << std::endl;
+      if (physGrpArrIdx < 0) {
+        std::cerr << "Error : Input dataset does not have PhyGrpId cell data! "
+                     "Aborting."
+                  << std::endl;
         exit(-1);
       }
       vtkCellData *cd = mb->getDataSet()->GetCellData();
@@ -749,12 +768,11 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
       // loop through elements and obtain physical group ids
       std::vector<int> elmIds;
       std::vector<int> elmPhysGrp;
-      for (int ic = 0; ic < nc; ic++)
-      {
+      for (int ic = 0; ic < nc; ic++) {
         EXOMesh::elementType eTpe = EXOMesh::v2eEMap(
-            (VTKCellType) (mb->getDataSet()->GetCellType(ic)));
-        if (eTpe != EXOMesh::elementType::TETRA
-            && eTpe != EXOMesh::elementType::HEX)
+            static_cast<VTKCellType>(mb->getDataSet()->GetCellType(ic)));
+        if (eTpe != EXOMesh::elementType::TETRA &&
+            eTpe != EXOMesh::elementType::HEX)
           continue;
         elmIds.push_back(ic);
         double *tmp = physGrpIds->GetTuple(ic);
@@ -764,37 +782,38 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
       // number of unique physical groups
       std::set<int> unqPhysGrpIds;
       int nPhysGrp;
-      for (auto it = elmPhysGrp.begin(); it != elmPhysGrp.end(); it++)
-        unqPhysGrpIds.insert(*it);
+      for (const auto &it : elmPhysGrp) unqPhysGrpIds.insert(it);
       nPhysGrp = unqPhysGrpIds.size();
       std::cout << "Number of physical groups : " << nPhysGrp << std::endl;
+
+      // add nodes to database
+      for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
+        em->addNde(mb->getPoint(iNde));
 
       // one node set for all groups
       // node coordinate to nodeSet
       EXOMesh::ndeSetType ns;
       ns.id = ++ins;
-      ns.name = mshName;
-      ns.usrNdeIds = false; // automatically node ids
       ns.nNde = mb->getNumberOfPoints();
+      ns.name = mshName;
+      ns.ndeIdOffset = ndeIdOffset;
       for (int iNde = 0; iNde < ns.nNde; iNde++)
-        ns.crds.push_back(mb->getPoint(iNde));
+        ns.ndeIds.emplace_back(iNde + 1);
       em->addNdeSet(ns);
 
       // for each physical group one element block
-      for (int unqPhysGrpId : unqPhysGrpIds)
-      {
+      for (int unqPhysGrpId : unqPhysGrpIds) {
         // element to elementBlock
         EXOMesh::elmBlockType eb;
         eb.id = ++ieb;
         eb.name = mshName + "_PhysGrp_" + std::to_string(ieb);
         eb.ndeIdOffset = ndeIdOffset;
+
         int iTet = 0;
         int iHex = 0;
-        for (int elmId : elmIds)
-        {
+        for (int elmId : elmIds) {
           double *tmp2 = physGrpIds->GetTuple(elmId);
-          if (int(*tmp2) != unqPhysGrpId)
-            continue;
+          if (int(*tmp2) != unqPhysGrpId) continue;
           vtkIdList *nids = vtkIdList::New();
           mb->getDataSet()->GetCellPoints(elmId, nids);
           if (nids->GetNumberOfIds() == 4)
@@ -804,37 +823,34 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
           for (int in = 0; in < nids->GetNumberOfIds(); in++)
             eb.conn.push_back(nids->GetId(in) + 1);  // offset node ids by 1
         }
+
         // sanity check
-        if (iTet * iHex != 0)
-        {
+        if (iTet * iHex != 0) {
           std::cerr << "Mixed Hex/Tet meshes are not supported!" << std::endl;
           throw;
         }
+
         if (iTet != 0)
           std::cout << "Number of group tetrahedral elements = " << iTet
                     << "\n";
         else if (iHex != 0)
-          std::cout << "Number of group hexahedral elements = " << iHex
-                    << "\n";
+          std::cout << "Number of group hexahedral elements = " << iHex << "\n";
         std::cout << "Min nde indx = "
                   << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
                   << "Max nde indx = "
                   << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
         std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
-        if (iTet != 0)
-        {
+
+        if (iTet != 0) {
           eb.nElm = iTet;
-          eb.eTpe = EXOMesh::elementType::TETRA;
           eb.ndePerElm = 4;
-          em->addElmBlk(eb);
-        }
-        else
-        {
+          eb.eTpe = EXOMesh::elementType::TETRA;
+        } else {
           eb.nElm = iHex;
-          eb.eTpe = EXOMesh::elementType::HEX;
           eb.ndePerElm = 8;
-          em->addElmBlk(eb);
+          eb.eTpe = EXOMesh::elementType::HEX;
         }
+        em->addElmBlk(eb);
       }
       // offset starting node id for next file
       ndeIdOffset += ns.nNde;
@@ -848,22 +864,18 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
   em->report();
 
   // performing post-processing tasks
-  if (needsPP)
-  {
+  if (needsPP) {
     int nTsk = opts.get_with_default("Number of Tasks", 0);
     jsoncons::json ppTsk = opts["Tasks"];
-    for (int iTsk = 0; iTsk < nTsk; iTsk++)
-    {
+    for (int iTsk = 0; iTsk < nTsk; iTsk++) {
       std::string ppFName = ppTsk[iTsk].get_with_default("File", "");
       std::cout << "Reading Post Processing JSON file " << iTsk << std::endl;
       std::ifstream inputStream(ppFName);
-      if (!inputStream.good() || nemAux::find_ext(ppFName) != ".json")
-      {
+      if (!inputStream.good() || nemAux::find_ext(ppFName) != ".json") {
         std::cerr << "Error opening file " << ppFName << std::endl;
         exit(1);
       }
-      if (nemAux::find_ext(ppFName) != ".json")
-      {
+      if (nemAux::find_ext(ppFName) != ".json") {
         std::cerr << "Input File must be in .json format" << std::endl;
         exit(1);
       }
@@ -881,141 +893,122 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
   delete em;
 }
 
-
 void ConversionDriver::procExo(const jsoncons::json &ppJson,
-                               const std::string &fname,
-                               EXOMesh::exoMesh *em)
-{
+                               const std::string &fname, EXOMesh::exoMesh *em) {
   // converting to mesh base for geometric inquiry
   meshBase *mb = meshBase::Create(fname);
 
   // performing requested operation
   std::string opr = ppJson.get_with_default("Operation", "");
-  if (opr == "Material Assignment")
-  {
+  if (opr == "Material Assignment") {
     meshSrch *ms = meshSrch::Create(mb);
     // gathering information about all zones
-    // if densities are defined materials with higher
-    // density will be prioritized
+    // if densities are defined, materials with higher density will be
+    // prioritized
     bool appDen = ppJson.get_with_default("Apply Density", false);
-    std::unordered_map<std::string, std::set<int> > zoneGeom;
-    jsoncons::json zones = ppJson["Zones"];
-    int nZn = zones.size();
-    // ordering zones based on density
-    // default is 1.0
-    std::map<double, std::vector<int> > znOrd;
+
+    std::map<std::pair<double, std::string>, std::set<int>> zoneGeom;
+
+    // loop over all zones
+    for (const auto &zone : ppJson["Zones"].array_range()) {
+      // assuming first element is zone information keyed by zone name
+      // that we do not care about yet
+      std::string matName = zone[0].get_with_default("Material Name", "N/A");
+      std::string shape = zone[0].get_with_default("Shape", "N/A");
+      std::cout << "Processing zone: " << zone.object_range().begin()->key()
+                << "  Material: " << matName << "  Shape: " << shape;
+
+      double density = 1.0;  // Default density is 1.0
+      if (appDen) {
+        density = zone[0].get_with_default("Density", 1.0);
+        std::cout << "  Density: " << density;
+      }
+      std::cout << std::endl;
+
+      if (shape == "Box") {
+        // Box shape. Requires 3-vector of Min and Max in x, y, and z, resp.
+        std::vector<double> bb;
+        bb.push_back(zone[0]["Params"]["Min"][0].as<double>());
+        bb.push_back(zone[0]["Params"]["Max"][0].as<double>());
+        bb.push_back(zone[0]["Params"]["Min"][1].as<double>());
+        bb.push_back(zone[0]["Params"]["Max"][1].as<double>());
+        bb.push_back(zone[0]["Params"]["Min"][2].as<double>());
+        bb.push_back(zone[0]["Params"]["Max"][2].as<double>());
+
+        std::vector<nemId_t> lst;
+        ms->FindCellsWithinBounds(bb, lst, true);
+        zoneGeom[{1.0 / density, matName}].insert(lst.begin(), lst.end());
+      } else if (shape == "STL") {
+        // STL shape. Only supports Tri surface.
+        // Node Coordinates are given as 3-vector in an array.
+        // Connectivities are given as 3-vectors in an array.
+        // Tris are 0-indexed.
+        std::vector<std::vector<double>> crds;
+        std::vector<std::vector<vtkIdType>> conns;
+        for (const auto &crd :
+             zone[0]["Params"]["Node Coordinates"].array_range())
+          crds.push_back(crd.as<std::vector<double>>());
+        for (const auto &conn :
+             zone[0]["Params"]["Connectivities"].array_range())
+          conns.push_back(conn.as<std::vector<vtkIdType>>());
+
+        std::vector<nemId_t> lst;
+        ms->FindPntsInTriSrf(crds, conns, lst);
+        zoneGeom[{1.0 / density, matName}].insert(lst.begin(), lst.end());
+      } else {
+        std::cerr << "WARNING: Skipping unknown zone shape: " << shape
+                  << std::endl;
+      }
+    }
+
     if (appDen)
-    {
       std::cout << "Applying material zones based on density ordering"
                 << std::endl;
-      // order based of density
-      for (int iZn = 0; iZn < nZn; iZn++)
-      {
-        jsoncons::json znInfo = zones[iZn][0];
-        double density = 1.0 / znInfo.get_with_default("Density", 1.0);
-        znOrd[density].push_back(iZn);
-      }
-    }
-    else
-    {
-      // order based on appearance in the file
-      for (int iZn = 0; iZn < nZn; iZn++)
-        znOrd[1.0].push_back(iZn);
-    }
-
-    for (const auto &im : znOrd)
-    {
-      for (auto iz = (im.second).begin(); iz != (im.second).end(); iz++)
-      {
-        int iZn = *iz;
-        // assuming first element is zone information keyed by zone name
-        // that we do not care about yet
-        jsoncons::json znInfo = zones[iZn][0];
-        std::string matName = znInfo.get_with_default("Material Name", "N/A");
-        std::string shape = znInfo.get_with_default("Shape", "N/A");
-        std::cout << "Processing zone " << iZn
-                  << " Material " << matName
-                  << " Shape " << shape;
-        if (appDen)
-          std::cout << " Density " << 1.0 / (im.first) << std::endl;
-        else
-          std::cout << std::endl;
-
-        if (shape == "Box")
-        {
-          std::vector<double> bb;
-          bb.push_back(znInfo["Params"]["Min"][0].as<double>());
-          bb.push_back(znInfo["Params"]["Max"][0].as<double>());
-          bb.push_back(znInfo["Params"]["Min"][1].as<double>());
-          bb.push_back(znInfo["Params"]["Max"][1].as<double>());
-          bb.push_back(znInfo["Params"]["Min"][2].as<double>());
-          bb.push_back(znInfo["Params"]["Max"][2].as<double>());
-
-          std::vector<nemId_t> lst;
-          ms->FindCellsWithinBounds(bb, lst, true);
-          zoneGeom[matName].insert(lst.begin(), lst.end());
-        }
-        else
-          std::cerr << "WARNING: Skipping unknown zone shape: "
-                    << shape << std::endl;
-      }
-    }
 
     // adjusting exodus database accordingly
-    // unordered_maps act LIFO
-    for (const auto &it1 : zoneGeom)
-    {
+    for (const auto &zone : zoneGeom) {
+      // zone is ((density, material name), ids)
       std::vector<int> elmLst;
-      std::cout << "Manipulating ExodusDB for " << (it1.first) << std::endl;
-      elmLst.insert(elmLst.end(), (it1.second).begin(), (it1.second).end());
-      em->addElmBlkByElmIdLst(it1.first, elmLst);
+      std::cout << "Manipulating ExodusDB for " << zone.first.second
+                << std::endl;
+      elmLst.insert(elmLst.end(), zone.second.begin(), zone.second.end());
+      em->addElmBlkByElmIdLst(zone.first.second, elmLst);
     }
-  }
-  else if (opr == "Check Duplicate Elements")
-  {
+  } else if (opr == "Check Duplicate Elements") {
     std::cout << "Checking for existence of duplicate elements ... ";
     meshSrch *ms = meshSrch::Create(mb);
     bool ret = ms->chkDuplElm();
-    if (ret)
-    {
+    if (ret) {
       std::cerr << " The exodus database contains duplicate elements."
                 << std::endl;
       exit(-1);
-    }
-    else
+    } else {
       std::cout << "False" << std::endl;
-  }
-  else if (opr == "Remove Block")
-  {
+    }
+  } else if (opr == "Remove Block") {
     std::string blkName = ppJson.get_with_default("Block Name", "");
     std::cout << "Removing Block " << blkName << std::endl;
     em->removeElmBlkByName(blkName);
-  }
-  else if (opr == "Snap Node Coords To Zero")
-  {
+  } else if (opr == "Snap Node Coords To Zero") {
     double tol = ppJson.get_with_default("Tolerance", 0.0);
-    std::cout << "Snapping nodal coordinates to zero using tolerance " << tol
+    std::cout << "Snapping nodal coordinates to zero using tolerance: " << tol
               << std::endl;
     em->snapNdeCrdsZero(tol);
-  }
-  else if (opr == "Boundary Condition Assignment")
-  {
-    // For EP16 boundary conditions are simply translated
-    // to node sets. Node sets may have shared nodes. In
-    // that case a node the order of nodeset matter. A later
-    // node set supersedes an earlier one.
+  } else if (opr == "Boundary Condition Assignment") {
+    // For EP16 boundary conditions are simply translated to node sets. Node
+    // sets may have shared nodes. In that case a node the order of nodeset
+    // matter. A later node set supersedes an earlier one.
     meshSrch *ms = meshSrch::Create(mb);
+
     // gathering information about all boundary node sets
     jsoncons::json bcs = ppJson["Condition"];
-    int nBC = bcs.size();
-    for (const auto &bc : bcs.array_range())
-    {
+    for (const auto &bc : bcs.array_range()) {
       std::set<nemId_t> pntIds;
+
       // identify node ids on each boundary
       std::string bcName = bc["Name"].as<std::string>();
       std::string bcTyp = bc["Boundary Type"].as<std::string>();
-      if (bcTyp =="Faces")
-      {
+      if (bcTyp == "Faces") {
         std::vector<double> srfCrd;
         std::vector<nemId_t> srfConn;
         jsoncons::json nc = bc["Params"]["Node Coordinates"];
@@ -1027,11 +1020,9 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
           for (const auto &idx : tri.array_range())
             srfConn.push_back(idx.as<nemId_t>());
         ms->FindPntsOnTriSrf(srfCrd, srfConn, pntIds);
-        std::cout << "Number of points residing on the boundary "
-                  << bcName << " is " << pntIds.size() << std::endl;
-      }
-      else if (bcTyp == "Edges")
-      {
+        std::cout << "Number of points residing on the boundary " << bcName
+                  << " is " << pntIds.size() << std::endl;
+      } else if (bcTyp == "Edges") {
         std::vector<double> edgeCrd;
         jsoncons::json ncs = bc["Params"]["Start"];
         for (const auto &crds : ncs.array_range())
@@ -1042,27 +1033,25 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
           for (const auto &cmp : crds.array_range())
             edgeCrd.push_back(cmp.as<double>());
         ms->FindPntsOnEdge(edgeCrd, pntIds);
-        std::cout << "Number of points residing on the boundary "
-                  << bcName << " is " << pntIds.size() << std::endl;
+        std::cout << "Number of points residing on the boundary " << bcName
+                  << " is " << pntIds.size() << std::endl;
+      } else {
+        std::cerr << "Warning: unsupported boundary type " << bcTyp
+                  << std::endl;
       }
-      else
-        std::cerr << "Warning: unsupported boundary type " << bcTyp << std::endl;
+
       // register node set in Exodus II database
-      if (!pntIds.empty())
-      {
+      if (!pntIds.empty()) {
         std::vector<int> nv;
         std::copy(pntIds.begin(), pntIds.end(), std::back_inserter(nv));
         em->addNdeSetByNdeIdLst(bcName, nv);
       }
     }
-  }
-  else if (opr == "Merge Nodes")
-  {
+  } else if (opr == "Merge Nodes") {
     em->mergeNodes();
-  }
-  else
-  {
-    std::cerr << "Unknown operation requested : " << opr << std::endl;
+  } else {
+    std::cerr << "Unknown operation requested: " << opr << std::endl;
   }
 }
-#endif
+
+#endif  // HAVE_EXODUSII

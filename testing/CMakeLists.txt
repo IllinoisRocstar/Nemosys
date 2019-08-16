@@ -105,7 +105,10 @@ NEM_add_test_executable(GmshMesh)
 NEM_add_test_executable(KMeans)
 NEM_add_test_executable(QHull)
 
-# custom built tests
+# custom-built tests
+if(ENABLE_EXODUS)
+  NEM_add_test_executable(ExoMesh)
+endif()
 if(ENABLE_EPIC)
   NEM_add_test_executable(Ep16Pre)
   NEM_add_test_executable(Ep16Post)
@@ -207,6 +210,13 @@ endif()
 NEM_add_test(kMean KMeans kmeans)
 
 NEM_add_test(qHull QHull "")
+
+if(ENABLE_EXODUS)
+  NEM_add_test(exoMesh ExoMesh ExoMeshTest
+      hardenedUGbunker_soil2.g pack.g
+      test_merge_in.g test_merge_ref.g
+  )
+endif()
 
 if(ENABLE_EPIC)
   NEM_add_test(ep16pre Ep16Pre ep16pre
