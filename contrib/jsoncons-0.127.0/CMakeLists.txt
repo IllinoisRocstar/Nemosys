@@ -28,6 +28,8 @@ file(GLOB_RECURSE JSONCONS_HEADERS ${JSONCONS_INCLUDE_DIR}/*.hpp)
 add_library(jsoncons INTERFACE)
 target_include_directories(jsoncons INTERFACE $<BUILD_INTERFACE:${JSONCONS_INCLUDE_DIR}>
                                            $<INSTALL_INTERFACE:include>)
+# TODO: Remove deprecated symbols.
+#target_compile_definitions(jsoncons INTERFACE JSONCONS_NO_DEPRECATED)
 
 #OPTION(BUILD_TESTS "jsoncons test suite" ON)
 #
