@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 39)
+set(NEMOSYS_MINOR_VERSION 40)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -74,8 +74,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/Modules/)
 # TODO: move out of main
 # macro definitions
 
-# This variable controls the default value of the options which are normally set
-# to ON (useful if you want to configure a minimal version of NEMoSys: e.g.,
+# This variable controls the default value of the options, which are normally
+# set to ON (useful if you want to configure a minimal version of NEMoSys: e.g.,
 #  "cmake -DDEFAULT=0 -DENABLE_DTK=1")
 set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
 # creating code compilation database
@@ -429,10 +429,11 @@ set(R8_SRCS
 
 # Setting interp source
 set(INTERP_SRCS
+    src/Geometry/spheres.C
+
     src/Math/baseInterp.C
     src/Math/rbf_interp_nd.cpp
     src/Math/rbfInterp.C
-    src/Geometry/spheres.C
 )
 
 # Setting Nemosys source
@@ -450,9 +451,15 @@ set(NEMOSYS_SRCS
 #    src/Drivers/RocRestartDriver.C
     src/Drivers/TransferDriver.C
 
+    src/Geometry/convexContainer.C
+    src/Geometry/point.C
+    src/Geometry/qhQuickHull.C
+
     src/InputGeneration/inputGen.C
 
     src/Integration/Cubature.C
+
+    src/Math/kmeans.C
 
     src/Mesh/meshBase.C
     src/Mesh/cobalt.C
@@ -488,11 +495,6 @@ set(NEMOSYS_SRCS
     src/Transfer/TransferBase.C
     src/Transfer/FETransfer.C
 
-    src/Geometry/point.C
-    src/Geometry/qhQuickHull.C
-    src/Math/kmeans.C
-    src/Geometry/convexContainer.C
-
     src/cgnsAnalyzer.C
     src/cgnsWriter.C
     src/gridTransfer.C
@@ -505,14 +507,15 @@ set(NEMOSYS_SRCS
 if(ENABLE_EXODUS)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Mesh/exoMesh.C
+
       src/MeshOperation/meshSrch.C
   )
 endif()
 
 if(ENABLE_EPIC)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/InputGeneration/ep16Prep.C
       src/InputGeneration/ep16Post.C
+      src/InputGeneration/ep16Prep.C
   )
 endif()
 
@@ -525,18 +528,22 @@ endif()
 
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/PackMeshDriver.C
+
       src/Mesh/foamMesh.C
-      src/MeshGeneration/cfmeshParams.C
-      src/MeshGeneration/cfmeshGen.C
-      src/MeshQuality/cfmshQualityParams.C
-      src/MeshGeneration/snappymeshParams.C
-      src/MeshGeneration/snappymeshGen.C
+
       src/MeshGeneration/blockMeshGen.C
       src/MeshGeneration/blockMeshParams.C
+      src/MeshGeneration/cfmeshGen.C
+      src/MeshGeneration/cfmeshParams.C
+      src/MeshGeneration/snappymeshGen.C
+      src/MeshGeneration/snappymeshParams.C
+
       src/MeshManipulationFoam/MeshManipulationFoam.C
       src/MeshManipulationFoam/MeshManipulationFoamParams.C
       src/MeshManipulationFoam/mergePolyMesh.C
-      src/Drivers/PackMeshDriver.C
+
+      src/MeshQuality/cfmshQualityParams.C
   )
 endif()
 
@@ -641,7 +648,7 @@ endif()
 
 if(ENABLE_METIS)
   target_link_libraries(Nemosys PUBLIC ${METIS_LIB})
-  # Brought in by Gmsh already! Should avoid clash somehow.
+  # Brought in by Gmsh already! Should avoid the clash somehow.
   # target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
   target_include_directories(Nemosys SYSTEM PUBLIC ${METIS_INCPATH})
 endif()
@@ -1002,7 +1009,7 @@ else()
 endif()
 # Lists exe and text label used for Start Menu shortcuts
 #set(CPACK_PACKAGE_EXECUTABLES "")
-# Must have matching Start Menu shortcut to create Desktop link
+# Must have matching Start Menu shortcut to create a Desktop link
 #set(CPACK_CREATE_DESKTOP_LINKS "")
 
 # WIN32 NOTE: - Run CPack from a MSVC environment as dumpbin is required
