@@ -599,130 +599,96 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
 
     }
 
-    if (line.find("$Elements") != -1)
-    {
-      getline(meshStream,line);
-      //std::cout << "line = " << line << std::endl;
+    if (line.find("$Elements") != -1) {
+      getline(meshStream, line);
+      // std::cout << "line = " << line << std::endl;
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
       double tmp2[1];
       // allocate space for cell connectivities
       dataSet_tmp->Allocate(numCells);
-      for (int i = 0; i < numCells; ++i)
-      {
+      for (int i = 0; i < numCells; ++i) {
         getline(meshStream, line);
         std::stringstream ss(line);
         ss >> id >> type >> numTags;
-        vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
-        if (type == 2)
-        {
+        vtkSmartPointer<vtkIdList> vtkCellIds =
+            vtkSmartPointer<vtkIdList>::New();
+        if (type == 2) {
           int tmp;
-          if (!fndPhyGrp)
-          {
-            for (int j = 0; j < numTags; ++j)
-                ss >> tmp;
-          }
-          else
-          {
-            std::vector<double> physGrpId(1);
-            for (int j = 0; j < numTags-1; ++j)
-                ss >> tmp;
-          ss >> physGrpId[0];
-          cellPhysGrpIds.push_back(physGrpId);
-          }
-          for (int j = 0; j < 3; ++j)
-          {
-            ss >> tmp;
-            // insert connectivies for cell into cellIds container
-            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
-          }
-          // insert connectivies for triangle elements into dataSet
-          dataSet_tmp->InsertNextCell(VTK_TRIANGLE,vtkcellIds);
-        }
-        else if (type == 4)
-        {
-          int tmp;
-          if (!fndPhyGrp)
-          {
-            for (int j = 0; j < numTags; ++j)
-                ss >> tmp;
-          }
-          else
-          {
-            std::vector<double> physGrpId(1);
-            for (int j = 0; j < numTags - 1; ++j)
-              ss >> tmp;
-            ss >> physGrpId[0];
-            cellPhysGrpIds.push_back(physGrpId);
-          }
-          for (int j = 0; j < 4; ++j)
-          {
-            ss >> tmp;
-            // insert connectivities for cell into cellids container
-            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
-          }
-          // insert connectivities for tet elements into dataSet
-          dataSet_tmp->InsertNextCell(VTK_TETRA,vtkcellIds);
-        }
-        else if (type == 3)
-        {
-          int tmp;
-          if (!fndPhyGrp)
-          {
-            for (int j = 0; j < numTags; ++j)
-                ss >> tmp;
-          }
-          else
-          {
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
             std::vector<double> physGrpId(1);
             ss >> physGrpId[0];
             cellPhysGrpIds.push_back(physGrpId);
-            for (int j = 0; j < numTags-1; ++j)
-                ss >> tmp;
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
           }
-          for (int j = 0; j < 4; ++j)
-          {
+          for (int j = 0; j < 3; ++j) {
             ss >> tmp;
-            // insert connectivities for cell into cellids container
-            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
           }
-          // insert connectivities for tet elements into dataSet
-          dataSet_tmp->InsertNextCell(VTK_QUAD,vtkcellIds);
-        }
-        else if (type == 5)
-        {
+          // insert connectivities for triangle elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_TRIANGLE, vtkCellIds);
+        } else if (type == 4) {
           int tmp;
-          if (!fndPhyGrp)
-          {
-            for (int j = 0; j < numTags; ++j)
-                ss >> tmp;
-          }
-          else
-          {
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
             std::vector<double> physGrpId(1);
             ss >> physGrpId[0];
             cellPhysGrpIds.push_back(physGrpId);
-            for (int j = 0; j < numTags-1; ++j)
-                ss >> tmp;
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
           }
-          for (int j = 0; j < 8; ++j)
-          {
+          for (int j = 0; j < 4; ++j) {
             ss >> tmp;
-            // insert connectivities for cell into cellids container
-            vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
           }
           // insert connectivities for tet elements into dataSet
-          dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON,vtkcellIds);
-        }
-        else
-        {
-          if (warning)
-          {
-            std::cout << "Warning: Only triangular, quadrilateral, tetrahedral, hexahedral elements are supported, "
+          dataSet_tmp->InsertNextCell(VTK_TETRA, vtkCellIds);
+        } else if (type == 3) {
+          int tmp;
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
+          }
+          for (int j = 0; j < 4; ++j) {
+            ss >> tmp;
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
+          }
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_QUAD, vtkCellIds);
+        } else if (type == 5) {
+          int tmp;
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
+          }
+          for (int j = 0; j < 8; ++j) {
+            ss >> tmp;
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
+          }
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON, vtkCellIds);
+        } else {
+          if (warning) {
+            std::cout << "Warning: Only triangular, quadrilateral, "
+                         "tetrahedral, and hexahedral elements are supported, "
                       << "everything else is ignored! " << std::endl;
             warning = false;
-            //exit(1);
+            // exit(1);
           }
         }
       }
@@ -1153,7 +1119,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
     std::vector<int> conn;
     conn.resize(num_el_in_blk*num_nod_per_el,0);
     _exErr = ex_get_elem_conn (fid, iEB, &conn[0]);
-    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block connectivites.\n");
+    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block connectivities.\n");
     // read element block attributes
     //std::vector<float> attr;
     //attr.resize(0.,num_el_in_blk*num_nod_per_el);
@@ -1167,10 +1133,10 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
                jc<(iEl+1)*num_nod_per_el;
                jc++)
       {
-        // insert connectivies for cell into cellIds container
+        // insert connectivities for cell into cellIds container
         vtkcellIds->InsertNextId(conn[jc]-1);
       }
-      // insert connectivies
+      // insert connectivities
       dataSet_tmp->InsertNextCell(vct, vtkcellIds);
     }
   }
