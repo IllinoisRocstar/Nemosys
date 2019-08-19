@@ -12,7 +12,7 @@ namespace EXOMesh {
 
 void NEMOSYS_EXPORT wrnErrMsg(int errCode, const std::string &errMsg = "None");
 
-enum NEMOSYS_EXPORT elementType { QUAD, TRIANGLE, TETRA, WEDGE, HEX, OTHER };
+enum NEMOSYS_EXPORT elementType { TRIANGLE, QUAD, TETRA, HEX, WEDGE, OTHER };
 
 enum NEMOSYS_EXPORT surfaceBCTag { FIXED, SYMMX, SYMMY, SYMMZ };
 
