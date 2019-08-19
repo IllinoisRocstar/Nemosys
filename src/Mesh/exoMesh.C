@@ -19,23 +19,26 @@ namespace EXOMesh {
 
 VTKCellType e2vEMap(elementType et) {
   std::map<elementType, VTKCellType> eMap = {
-      {elementType::QUAD, VTK_QUAD},      {elementType::TRIANGLE, VTK_TRIANGLE},
-      {elementType::TETRA, VTK_TETRA},    {elementType::WEDGE, VTK_WEDGE},
-      {elementType::HEX, VTK_HEXAHEDRON}, {elementType::OTHER, VTK_EMPTY_CELL}};
+      {elementType::TRIANGLE, VTK_TRIANGLE},
+      {elementType::QUAD, VTK_QUAD},
+      {elementType::TETRA, VTK_TETRA},
+      {elementType::HEX, VTK_HEXAHEDRON},
+      {elementType::WEDGE, VTK_WEDGE},
+      {elementType::OTHER, VTK_EMPTY_CELL}};
   return eMap[et];
 }
 
 elementType v2eEMap(VTKCellType vt) {
   std::map<VTKCellType, elementType> eMap = {
-      {VTK_QUAD, elementType::QUAD},
-      {VTK_QUADRATIC_QUAD, elementType::QUAD},
       {VTK_TRIANGLE, elementType::TRIANGLE},
-      {VTK_QUADRATIC_TRIANGLE, elementType::TRIANGLE},
-      {VTK_HEXAHEDRON, elementType::HEX},
-      {VTK_QUADRATIC_HEXAHEDRON, elementType::HEX},
+      {VTK_QUAD, elementType::QUAD},
       {VTK_TETRA, elementType::TETRA},
-      {VTK_QUADRATIC_TETRA, elementType::TETRA},
+      {VTK_HEXAHEDRON, elementType::HEX},
       {VTK_WEDGE, elementType::WEDGE},
+      {VTK_QUADRATIC_TRIANGLE, elementType::TRIANGLE},
+      {VTK_QUADRATIC_QUAD, elementType::QUAD},
+      {VTK_QUADRATIC_TETRA, elementType::TETRA},
+      {VTK_QUADRATIC_HEXAHEDRON, elementType::HEX},
       {VTK_EMPTY_CELL, elementType::OTHER}};
   return eMap[vt];
 }
@@ -61,55 +64,65 @@ std::string bcTagStr(int tag) {
 
 elementType elmTypeNum(std::string tag) {
   nemAux::toLower(tag);
-  if (tag == "quadrilateral") return elementType::QUAD;
-  if (tag == "quad") return elementType::QUAD;
   if (tag == "triangle") return elementType::TRIANGLE;
   if (tag == "tri") return elementType::TRIANGLE;
+  if (tag == "trishell3") return elementType::TRIANGLE;
+
+  if (tag == "quadrilateral") return elementType::QUAD;
+  if (tag == "quad") return elementType::QUAD;
+  if (tag == "shell4") return elementType::QUAD;
+
+  if (tag == "tetrahedron") return elementType::TETRA;
+  if (tag == "tetrahedral") return elementType::TETRA;
+  if (tag == "tetra") return elementType::TETRA;
+  if (tag == "tetra4") return elementType::TETRA;
+
   if (tag == "hexahedron") return elementType::HEX;
   if (tag == "hexahedral") return elementType::HEX;
   if (tag == "brick") return elementType::HEX;
   if (tag == "hex") return elementType::HEX;
-  if (tag == "tetrahedron") return elementType::TETRA;
-  if (tag == "tetrahedral") return elementType::TETRA;
-  if (tag == "tetra") return elementType::TETRA;
+  if (tag == "hex8") return elementType::HEX;
+
   if (tag == "wedge") return elementType::WEDGE;
   if (tag == "prismatic") return elementType::WEDGE;
   if (tag == "prism") return elementType::WEDGE;
-  std::cout << "Warning : Element type " << tag << " may be not supported\n";
+
+  std::cout << "Warning : Element type " << tag << " may be unsupported.\n";
   return elementType::OTHER;
 }
 
 std::string elmTypeStr(elementType tag) {
-  if (tag == elementType::QUAD) return "QUAD";
   if (tag == elementType::TRIANGLE) return "TRIANGLE";
-  if (tag == elementType::HEX) return "HEX";
+  if (tag == elementType::QUAD) return "QUAD";
   if (tag == elementType::TETRA) return "TETRA";
+  if (tag == elementType::HEX) return "HEX";
   if (tag == elementType::WEDGE) return "WEDGE";
   return "OTHER";
 }
 
 int elmNumNde(elementType tag, int order) {
-  if (tag == elementType::QUAD && order == 1) return 4;
-  if (tag == elementType::QUAD && order == 2) return 9;
   if (tag == elementType::TRIANGLE && order == 1) return 3;
   if (tag == elementType::TRIANGLE && order == 2) return 6;
-  if (tag == elementType::HEX && order == 1) return 8;
-  if (tag == elementType::HEX && order == 2) return 21;
+  if (tag == elementType::QUAD && order == 1) return 4;
+  if (tag == elementType::QUAD && order == 2) return 9;
   if (tag == elementType::TETRA && order == 1) return 4;
   if (tag == elementType::TETRA && order == 2) return 10;
+  if (tag == elementType::HEX && order == 1) return 8;
+  if (tag == elementType::HEX && order == 2) return 21;
   if (tag == elementType::WEDGE && order == 1) return 6;
   if (tag == elementType::WEDGE && order == 2) return 16;
-  std::cerr << "Unknown element/order combination\n";
+  std::cerr << "Unknown element/order combination " << tag << " " << order
+            << "\n";
   throw;
 }
 
 int elmNumSrf(elementType tag) {
-  if (tag == elementType::QUAD) return 4;
   if (tag == elementType::TRIANGLE) return 3;
-  if (tag == elementType::HEX) return 8;
+  if (tag == elementType::QUAD) return 4;
   if (tag == elementType::TETRA) return 4;
+  if (tag == elementType::HEX) return 8;
   if (tag == elementType::WEDGE) return 5;
-  std::cerr << "Unknown element type\n";
+  std::cerr << "Unknown element type " << tag << "\n";
   throw;
 }
 
