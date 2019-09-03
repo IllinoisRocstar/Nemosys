@@ -73,7 +73,7 @@ int generate(const char* jsonF)
 
   // required params here
   // cad file
-  if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+  if (inputjson["Mesh File Options"].contains("Input Geometry File"))
       cfparams->geomFilePath = 
           inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
   else
@@ -83,7 +83,7 @@ int generate(const char* jsonF)
   }
   
   // mesh generator
-  if (cfmparams.has_key("Generator"))
+  if (cfmparams.contains("Generator"))
       cfparams->generator = cfmparams["Generator"].as<std::string>();
   else
   {
@@ -93,60 +93,60 @@ int generate(const char* jsonF)
   }
   
   // rest of params are optional
-  if (cfmparams.has_key("MaxCellSize"))
+  if (cfmparams.contains("MaxCellSize"))
     cfparams->maxCellSize = 
         cfmparams["MaxCellSize"].as<double>();
-  if (cfmparams.has_key("MinCellSize"))
+  if (cfmparams.contains("MinCellSize"))
     cfparams->minCellSize = 
         cfmparams["MinCellSize"].as<double>();
-  if (cfmparams.has_key("BoundaryCellSize"))
+  if (cfmparams.contains("BoundaryCellSize"))
     cfparams->bndryCellSize = 
         cfmparams["BoundaryCellSize"].as<double>();
-  if (cfmparams.has_key("KeepCellsIntersectingBoundary"))
+  if (cfmparams.contains("KeepCellsIntersectingBoundary"))
     cfparams->keepCellIB = 
         cfmparams["KeepCellsIntersectingBoundary"].as<double>();
-  if (cfmparams.has_key("CheckForGluedMesh"))
+  if (cfmparams.contains("CheckForGluedMesh"))
     cfparams->chkGluMsh = 
         cfmparams["CheckForGluedMesh"].as<double>();
-  if (cfmparams.has_key("AllowDisconnectedDomains"))
+  if (cfmparams.contains("AllowDisconnectedDomains"))
       cfparams->_alwDiscDomains = 
         cfmparams["AllowDisconnectedDomains"].as<bool>();
 
 
   // optional capability
   std::string cap = "BoundaryLayers";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       cfparams->_withBndLyr = true;
       cfparams->blNLyr = cfmparams[cap]["NLayers"].as<double>();
       cfparams->blThkRto = cfmparams[cap]["ThicknessRatio"].as<double>();
-      if (cfmparams[cap].has_key("MaxFirstLayerThickness"))
+      if (cfmparams[cap].contains("MaxFirstLayerThickness"))
           cfparams->maxFrstLyrThk = cfmparams[cap]["MaxFirstLayerThickness"].as<double>();
-      if (cfmparams[cap].has_key("AllowDiscontinuity"))
+      if (cfmparams[cap].contains("AllowDiscontinuity"))
           cfparams->alwDiscont = cfmparams[cap]["AllowDiscontinuity"].as<bool>();
 
       // patch boundary layers
       std::string subcap = "PatchBoundaryLayers";
-      if (cfmparams[cap].has_key(subcap))
+      if (cfmparams[cap].contains(subcap))
       {
         cfparams->_withBndLyrPtch = true;
         for (auto jptch : cfmparams[cap][subcap].array_range())
         {
           cfmPtchBndLyr blPatch;
           blPatch.patchName = jptch["PatchName"].as<std::string>();
-          if (jptch.has_key("AllowDiscontinuity"))
+          if (jptch.contains("AllowDiscontinuity"))
               blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
           else
               blPatch.alwDiscont = false;
-          if (jptch.has_key("MaxFirstLayerThickness"))
+          if (jptch.contains("MaxFirstLayerThickness"))
               blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
           else
               blPatch.maxFrstLyrThk = -1;
-          if (jptch.has_key("NLayers"))
+          if (jptch.contains("NLayers"))
               blPatch.blNLyr = jptch["NLayers"].as<int>();
           else
               blPatch.blNLyr = -1;
-          if (jptch.has_key("ThicknessRatio"))
+          if (jptch.contains("ThicknessRatio"))
                   blPatch.blThkRto = jptch["ThicknessRatio"].as<double>();
           else
               blPatch.blThkRto = -1.;
@@ -157,7 +157,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "SurfaceFeatureEdges";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       cfparams->_withSrfEdg = true;
       cfparams->srfEdgAng = cfmparams[cap]["Angle"].as<double>();
@@ -165,7 +165,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "ObjectRefinements";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
     cfparams->_withObjRfn = true;
     for (auto refObj : cfmparams[cap].array_range())
@@ -184,7 +184,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "ImproveMeshQuality";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
     cfparams->_withMshQlt = true;
     cfparams->qltNItr = cfmparams[cap]["NIterations"].as<int>();
@@ -197,18 +197,18 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "LocalRefinement";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
     cfparams->_withLclRef = true;
     for (auto jptch : cfmparams[cap].array_range())
     {
       cfmLclRefPatch refPatch;
       refPatch.patchName = jptch["PatchName"].as<std::string>();
-      if (jptch.has_key("AdditionalRefinementLevels"))
+      if (jptch.contains("AdditionalRefinementLevels"))
           refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
       else
           refPatch.aditRefLvls = -1;
-      if (jptch.has_key("CellSize"))
+      if (jptch.contains("CellSize"))
           refPatch.cellSize = jptch["CellSize"].as<double>();
       else
           refPatch.cellSize = -1.;
@@ -218,7 +218,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "RenameBoundary";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
     cfparams->_withRenBndry = true;
     cfmRenBndry renBndry;
@@ -241,7 +241,7 @@ int generate(const char* jsonF)
   std::string defaults2 = 
   inputjson["Meshing Parameters"]["snappyHexMesh Parameters"].as<std::string>();
   jsoncons::json shmparams = inputjson["Meshing Parameters"]["snappyHexMesh Parameters"];
-  if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+  if (inputjson["Mesh File Options"].contains("Input Geometry File"))
       snappyparams->geomFileName = 
           inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
   else
@@ -250,7 +250,7 @@ int generate(const char* jsonF)
     throw;        
   }
 
-  if (shmparams.has_key("InputPatchName"))
+  if (shmparams.contains("InputPatchName"))
       snappyparams->geomPatchName = shmparams["InputPatchName"].as<std::string>();
   else
   {
@@ -258,7 +258,7 @@ int generate(const char* jsonF)
     throw;        
   }
 
-  if (shmparams.has_key("SurfPatchName"))
+  if (shmparams.contains("SurfPatchName"))
       snappyparams->surfRefPatch = shmparams["SurfPatchName"].as<std::string>();
   else
   {
@@ -266,163 +266,163 @@ int generate(const char* jsonF)
     throw;        
   }
   
-  if (shmparams.has_key("Castellated Mesh"))
+  if (shmparams.contains("Castellated Mesh"))
     snappyparams->_withCastMesh =
       shmparams["Castellated Mesh"].as<bool>();
-  if (shmparams.has_key("Snapping"))
+  if (shmparams.contains("Snapping"))
     snappyparams->_withSnap =
       shmparams["Snapping"].as<bool>();
-  if (shmparams.has_key("Layer Addition"))
+  if (shmparams.contains("Layer Addition"))
     snappyparams->_withLayers =
       shmparams["Layer Addition"].as<bool>();
-  if (shmparams.has_key("CellZones"))
+  if (shmparams.contains("CellZones"))
     snappyparams->_withCellZones =
       shmparams["CellZones"].as<bool>();
-  if (shmparams.has_key("RegionRefine"))
+  if (shmparams.contains("RegionRefine"))
     snappyparams->_withGeomRefReg =
       shmparams["RegionRefine"].as<bool>();
-  if (shmparams.has_key("SurfaceRefine"))
+  if (shmparams.contains("SurfaceRefine"))
     snappyparams->_withSurfRefReg =
       shmparams["SurfaceRefine"].as<bool>();
-  if (shmparams.has_key("maxLocalCells"))
+  if (shmparams.contains("maxLocalCells"))
     snappyparams->maxLCells =
       shmparams["maxLocalCells"].as<int>();
-  if (shmparams.has_key("maxGlobalCells"))
+  if (shmparams.contains("maxGlobalCells"))
     snappyparams->maxGCells =
       shmparams["maxGlobalCells"].as<int>();
-  if (shmparams.has_key("minRefCells"))
+  if (shmparams.contains("minRefCells"))
     snappyparams->minRefCells =
       shmparams["minRefCells"].as<int>();
-  if (shmparams.has_key("nCellsBetweenLevels"))
+  if (shmparams.contains("nCellsBetweenLevels"))
     snappyparams->cellsBetnLvls =
       shmparams["nCellsBetweenLevels"].as<int>();
-  if (shmparams.has_key("surfaceRefinementLvlMin"))
+  if (shmparams.contains("surfaceRefinementLvlMin"))
     snappyparams->refSurfLvlMin =
       shmparams["surfaceRefinementLvlMin"].as<int>();
-  if (shmparams.has_key("surfaceRefinementLvlMax"))
+  if (shmparams.contains("surfaceRefinementLvlMax"))
     snappyparams->refSurfLvlMax =
       shmparams["surfaceRefinementLvlMax"].as<int>();
-  if (shmparams.has_key("resolveFeatureAngle"))
+  if (shmparams.contains("resolveFeatureAngle"))
     snappyparams->featAngle =
       shmparams["resolveFeatureAngle"].as<double>();
-  if (shmparams.has_key("locationInMeshX"))
+  if (shmparams.contains("locationInMeshX"))
     snappyparams->locMeshX =
       shmparams["locationInMeshX"].as<double>();
-  if (shmparams.has_key("locationInMeshY"))
+  if (shmparams.contains("locationInMeshY"))
     snappyparams->locMeshY =
       shmparams["locationInMeshY"].as<double>();
-  if (shmparams.has_key("locationInMeshZ"))
+  if (shmparams.contains("locationInMeshZ"))
     snappyparams->locMeshZ =
       shmparams["locationInMeshZ"].as<double>();
-  if (shmparams.has_key("allowFreeStandingZoneFaces"))
+  if (shmparams.contains("allowFreeStandingZoneFaces"))
     snappyparams->_alwFreeZone =
       shmparams["allowFreeStandingZoneFaces"].as<double>();
-  if (shmparams.has_key("nSmoothPatch"))
+  if (shmparams.contains("nSmoothPatch"))
     snappyparams->snapSmthPatch =
       shmparams["nSmoothPatch"].as<int>();
-  if (shmparams.has_key("tolerance"))
+  if (shmparams.contains("tolerance"))
     snappyparams->snapTol =
       shmparams["tolerance"].as<double>();
-  if (shmparams.has_key("snapSolveIter"))
+  if (shmparams.contains("snapSolveIter"))
     snappyparams->solveSnapIter =
       shmparams["snapSolveIter"].as<int>();
-  if (shmparams.has_key("snapRelaxIter"))
+  if (shmparams.contains("snapRelaxIter"))
     snappyparams->relaxSnapIter =
       shmparams["snapRelaxIter"].as<int>();
-  if (shmparams.has_key("relativeSizes"))
+  if (shmparams.contains("relativeSizes"))
     snappyparams->_relSize =
       shmparams["relativeSizes"].as<double>();
-  if (shmparams.has_key("expansionRatio"))
+  if (shmparams.contains("expansionRatio"))
     snappyparams->expRatio =
       shmparams["expansionRatio"].as<double>();
-  if (shmparams.has_key("finalLayerThickness"))
+  if (shmparams.contains("finalLayerThickness"))
     snappyparams->finLThick =
       shmparams["finalLayerThickness"].as<double>();
-  if (shmparams.has_key("minThickness"))
+  if (shmparams.contains("minThickness"))
     snappyparams->minThick =
       shmparams["minThickness"].as<double>();
-  if (shmparams.has_key("nGrow"))
+  if (shmparams.contains("nGrow"))
     snappyparams->nGrow =
       shmparams["nGrow"].as<int>();
-  if (shmparams.has_key("featureAngle"))
+  if (shmparams.contains("featureAngle"))
     snappyparams->lyrFeatAngle =
       shmparams["featureAngle"].as<double>();
-  if (shmparams.has_key("nRelaxIter"))
+  if (shmparams.contains("nRelaxIter"))
     snappyparams->lyrRelaxIter =
       shmparams["nRelaxIter"].as<int>();
-  if (shmparams.has_key("nSmoothSurfaceNormals"))
+  if (shmparams.contains("nSmoothSurfaceNormals"))
     snappyparams->lyrSmthSurfNorm =
       shmparams["nSmoothSurfaceNormals"].as<int>();
-  if (shmparams.has_key("nSmoothNormals"))
+  if (shmparams.contains("nSmoothNormals"))
     snappyparams->lyrSmthNorm =
       shmparams["nSmoothNormals"].as<int>();
-  if (shmparams.has_key("nSmoothThickness"))
+  if (shmparams.contains("nSmoothThickness"))
     snappyparams->lyrSmthThick =
       shmparams["nSmoothThickness"].as<int>();
-  if (shmparams.has_key("maxFaceThicknessRatio"))
+  if (shmparams.contains("maxFaceThicknessRatio"))
     snappyparams->lyrMaxFcTR =
       shmparams["maxFaceThicknessRatio"].as<double>();
-  if (shmparams.has_key("maxThicknessToMedialRatio"))
+  if (shmparams.contains("maxThicknessToMedialRatio"))
     snappyparams->lyrMaxThickTMR =
       shmparams["maxThicknessToMedialRatio"].as<double>();
-  if (shmparams.has_key("minMedialAxisAngle"))
+  if (shmparams.contains("minMedialAxisAngle"))
     snappyparams->lyrMinMedAngl =
       shmparams["minMedialAxisAngle"].as<double>();
-  if (shmparams.has_key("nBufferCellsNoExtrude"))
+  if (shmparams.contains("nBufferCellsNoExtrude"))
     snappyparams->lyrBuffrCells =
       shmparams["nBufferCellsNoExtrude"].as<int>();
-  if (shmparams.has_key("nLayerIter"))
+  if (shmparams.contains("nLayerIter"))
     snappyparams->lyrIter =
       shmparams["nLayerIter"].as<int>();
-  if (shmparams.has_key("maxNonOrtho"))
+  if (shmparams.contains("maxNonOrtho"))
     snappyparams->qcMaxNOrtho =
       shmparams["maxNonOrtho"].as<int>();
-  if (shmparams.has_key("maxBoundarySkewness"))
+  if (shmparams.contains("maxBoundarySkewness"))
     snappyparams->qcMaxBndrySkew =
       shmparams["maxBoundarySkewness"].as<double>();
-  if (shmparams.has_key("maxInternalSkewness"))
+  if (shmparams.contains("maxInternalSkewness"))
     snappyparams->qcMaxIntSkew =
       shmparams["maxInternalSkewness"].as<double>();
-  if (shmparams.has_key("maxConcave"))
+  if (shmparams.contains("maxConcave"))
     snappyparams->qcMaxConc =
       shmparams["maxConcave"].as<double>();
-  if (shmparams.has_key("minVol"))
+  if (shmparams.contains("minVol"))
     snappyparams->qcMinVol =
       shmparams["minVol"].as<double>();
-  if (shmparams.has_key("minTetQuality"))
+  if (shmparams.contains("minTetQuality"))
     snappyparams->qcMinTetQ =
       shmparams["minTetQuality"].as<double>();
-  if (shmparams.has_key("minArea"))
+  if (shmparams.contains("minArea"))
     snappyparams->qcMinArea =
       shmparams["minArea"].as<double>();
-  if (shmparams.has_key("minTwist"))
+  if (shmparams.contains("minTwist"))
     snappyparams->qcMinTwist =
       shmparams["minTwist"].as<double>();
-  if (shmparams.has_key("minFaceWeight"))
+  if (shmparams.contains("minFaceWeight"))
     snappyparams->qcMinFaceW =
       shmparams["minFaceWeight"].as<double>();
-  if (shmparams.has_key("minVolRatio"))
+  if (shmparams.contains("minVolRatio"))
     snappyparams->qcMinVolRto =
       shmparams["minVolRatio"].as<double>();
-  if (shmparams.has_key("minDeterminant"))
+  if (shmparams.contains("minDeterminant"))
     snappyparams->qcMinDet =
       shmparams["minDeterminant"].as<double>();
-  if (shmparams.has_key("minTriangleTwist"))
+  if (shmparams.contains("minTriangleTwist"))
     snappyparams->qcMinTrTwist =
       shmparams["minTriangleTwist"].as<double>();
-  if (shmparams.has_key("qcnSmoothScale"))
+  if (shmparams.contains("qcnSmoothScale"))
     snappyparams->qcSmthScale =
       shmparams["qcnSmoothScale"].as<int>();
-  if (shmparams.has_key("errorReduction"))
+  if (shmparams.contains("errorReduction"))
     snappyparams->qcErrRedctn =
       shmparams["errorReduction"].as<double>();
-  if (shmparams.has_key("mergeTolerance"))
+  if (shmparams.contains("mergeTolerance"))
     snappyparams->mergeTol =
       shmparams["mergeTolerance"].as<double>();
 
   // optional capability
   std::string cap2 = "GeomRefinementRegions";
-  if (shmparams.has_key(cap2))
+  if (shmparams.contains(cap2))
   {
     snappyparams->_withGeomRefReg = true;
 
@@ -430,28 +430,28 @@ int generate(const char* jsonF)
     {
       shmGeomRefine geomRef;
 
-      if (jptch2.has_key("PatchName"))
+      if (jptch2.contains("PatchName"))
         geomRef.patchNm = jptch2["PatchName"].as<std::string>();
 
-      if (jptch2.has_key("searchableShape"))
+      if (jptch2.contains("searchableShape"))
         geomRef.searchableName = jptch2["searchableShape"].as<std::string>();
 
-      if (jptch2.has_key("shapeParams1"))
+      if (jptch2.contains("shapeParams1"))
         geomRef.shapeParameters1 = jptch2["shapeParams1"].as<std::string>();
 
-      if (jptch2.has_key("shapeParams2"))
+      if (jptch2.contains("shapeParams2"))
         geomRef.shapeParameters2 = jptch2["shapeParams2"].as<std::string>();
 
-      if (jptch2.has_key("Radius"))
+      if (jptch2.contains("Radius"))
         geomRef.rad = jptch2["Radius"].as<double>();
 
-      if (jptch2.has_key("Mode"))
+      if (jptch2.contains("Mode"))
         geomRef.mode = jptch2["Mode"].as<std::string>();
 
-      if (jptch2.has_key("MinLevel"))
+      if (jptch2.contains("MinLevel"))
         geomRef.minLvl = jptch2["MinLevel"].as<int>();
 
-      if (jptch2.has_key("MaxLevel"))
+      if (jptch2.contains("MaxLevel"))
         geomRef.maxLvl = jptch2["MaxLevel"].as<int>();
 
       (snappyparams->geomRefs).push_back(geomRef);
@@ -461,17 +461,17 @@ int generate(const char* jsonF)
 
   // optional capability
   std::string cap3 = "SurfaceRefinementRegions";
-  if (shmparams.has_key(cap3))
+  if (shmparams.contains(cap3))
   {
     snappyparams->_withSurfRefReg = true;
     for (auto jptch3 : shmparams[cap3].array_range())
     {
       shmRegionRef surfRef;
-      if (jptch3.has_key("PatchName"))
+      if (jptch3.contains("PatchName"))
         surfRef.refPatchNm = jptch3["PatchName"].as<std::string>();
-      if (jptch3.has_key("MinLevel"))
+      if (jptch3.contains("MinLevel"))
         surfRef.minLvl = jptch3["MinLevel"].as<int>();
-      if (jptch3.has_key("MaxLevel"))
+      if (jptch3.contains("MaxLevel"))
         surfRef.maxLvl = jptch3["MaxLevel"].as<int>();
       (snappyparams->surfRefs).push_back(surfRef);
     }
@@ -484,102 +484,102 @@ int generate(const char* jsonF)
       inputjson["Meshing Parameters"]["blockMesh Parameters"].as<std::string>();
     jsoncons::json bmshparams = inputjson["Meshing Parameters"]["blockMesh Parameters"];
   
-  if (inputjson["Mesh File Options"].has_key("Input Dict File"))
+  if (inputjson["Mesh File Options"].contains("Input Dict File"))
     bmparams->_ownBlockMshDict = 
       inputjson["Mesh File Options"]["Input Dict File"].as<bool>();
   // parameter parsing starts here
-  if (bmshparams.has_key("Block Geometry"))
+  if (bmshparams.contains("Block Geometry"))
     bmparams->_isBlock =
       bmshparams["Block Geometry"].as<bool>();
-  if (bmshparams.has_key("Sphere Geometry"))
+  if (bmshparams.contains("Sphere Geometry"))
     bmparams->_isSphere =
       bmshparams["Sphere Geometry"].as<bool>();
-  if (bmshparams.has_key("Cylinder/Tapered_Cone Geometry"))
+  if (bmshparams.contains("Cylinder/Tapered_Cone Geometry"))
     bmparams->_isCylinder_TCone =
       bmshparams["Cylinder/Tapered_Cone Geometry"].as<bool>();
-  if (bmshparams.has_key("scaleToMeters"))
+  if (bmshparams.contains("scaleToMeters"))
     bmparams->cnvrtToMeters = 
       bmshparams["scaleToMeters"].as<double>();
-  if (bmshparams.has_key("XdirectionCells"))
+  if (bmshparams.contains("XdirectionCells"))
     bmparams->cellsXDir = 
       bmshparams["XdirectionCells"].as<int>();
-  if (bmshparams.has_key("YdirectionCells"))
+  if (bmshparams.contains("YdirectionCells"))
     bmparams->cellsYDir = 
       bmshparams["YdirectionCells"].as<int>();
-  if (bmshparams.has_key("ZdirectionCells"))
+  if (bmshparams.contains("ZdirectionCells"))
     bmparams->cellsZDir = 
       bmshparams["ZdirectionCells"].as<int>();
     
-  if (bmshparams.has_key("Block Parameters"))
+  if (bmshparams.contains("Block Parameters"))
   {
     bmparams->_autoGenerateBox = false;
-    if (bmshparams["Block Parameters"].has_key("X1"))
+    if (bmshparams["Block Parameters"].contains("X1"))
       bmparams->initX = bmshparams["Block Parameters"]["X1"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("Y1"))
+    if (bmshparams["Block Parameters"].contains("Y1"))
       bmparams->initY = bmshparams["Block Parameters"]["Y1"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("Z1"))
+    if (bmshparams["Block Parameters"].contains("Z1"))
       bmparams->initZ = bmshparams["Block Parameters"]["Z1"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("LengthX"))
+    if (bmshparams["Block Parameters"].contains("LengthX"))
       bmparams->lenX = bmshparams["Block Parameters"]["LengthX"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("LengthY"))
+    if (bmshparams["Block Parameters"].contains("LengthY"))
       bmparams->lenY = bmshparams["Block Parameters"]["LengthY"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("LengthZ"))
+    if (bmshparams["Block Parameters"].contains("LengthZ"))
       bmparams->lenZ = bmshparams["Block Parameters"]["LengthZ"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("GradingXdir"))
+    if (bmshparams["Block Parameters"].contains("GradingXdir"))
       bmparams->smplGradingX = 
       bmshparams["Block Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("GradingYdir"))
+    if (bmshparams["Block Parameters"].contains("GradingYdir"))
       bmparams->smplGradingY = 
       bmshparams["Block Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Block Parameters"].has_key("GradingZdir"))
+    if (bmshparams["Block Parameters"].contains("GradingZdir"))
       bmparams->smplGradingZ = 
       bmshparams["Block Parameters"]["GradingZdir"].as<double>();
   }
   
-  if (bmshparams.has_key("Sphere Parameters"))
+  if (bmshparams.contains("Sphere Parameters"))
   {
-    if (bmshparams["Sphere Parameters"].has_key("Center X"))
+    if (bmshparams["Sphere Parameters"].contains("Center X"))
       bmparams->centerX = bmshparams["Sphere Parameters"]["Center X"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("Center Y"))
+    if (bmshparams["Sphere Parameters"].contains("Center Y"))
       bmparams->centerY = bmshparams["Sphere Parameters"]["Center Y"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("Center Z"))
+    if (bmshparams["Sphere Parameters"].contains("Center Z"))
       bmparams->centerZ = bmshparams["Sphere Parameters"]["Center Z"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("Radius"))
+    if (bmshparams["Sphere Parameters"].contains("Radius"))
       bmparams->radius = bmshparams["Sphere Parameters"]["Radius"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("GradingXdir"))
+    if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
       bmparams->sphrGradingX = bmshparams["Sphere Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("GradingYdir"))
+    if (bmshparams["Sphere Parameters"].contains("GradingYdir"))
       bmparams->sphrGradingY = bmshparams["Sphere Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Sphere Parameters"].has_key("GradingXdir"))
+    if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
       bmparams->sphrGradingZ = bmshparams["Sphere Parameters"]["GradingZdir"].as<double>();
   }
   
-  if (bmshparams.has_key("Cylinder/Tapered_Cone Parameters"))
+  if (bmshparams.contains("Cylinder/Tapered_Cone Parameters"))
   {
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center X"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center X"))
       bmparams->centerCyl[0] = bmshparams["Cylinder/Tapered_Cone Parameters"]["Center X"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center Y"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Y"))
       bmparams->centerCyl[1] = bmshparams["Cylinder/Tapered_Cone Parameters"]["Center Y"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center Z"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Z"))
       bmparams->centerCyl[2] = bmshparams["Cylinder/Tapered_Cone Parameters"]["Center Z"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Radius1"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius1"))
       bmparams->radius1 = bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius1"].as<double>();
     
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Radius2")){
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius2")){
       bmparams->radius2 = bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius2"].as<double>();
     }
     else{
       bmparams->radius2 = bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius1"].as<double>();
     }
     
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingXdir"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
       bmparams->cylGrading[0] = bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingYdir"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingYdir"))
       bmparams->cylGrading[1] = bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingXdir"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
       bmparams->cylGrading[2] = bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingZdir"].as<double>();
     
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Height"))
+    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Height"))
       bmparams->height = bmshparams["Cylinder/Tapered_Cone Parameters"]["Height"].as<double>();
   }
 
@@ -591,120 +591,120 @@ int generate(const char* jsonF)
 
   
   // parameter parsing starts here
-  if (pmshparams.has_key("Enable SurfLambdaMuSmooth"))
+  if (pmshparams.contains("Enable SurfLambdaMuSmooth"))
         mparams->_doSurfaceLMSmth =
           pmshparams["Enable SurfLambdaMuSmooth"].as<bool>();
-  if (pmshparams.has_key("Enable splitMeshRegions"))
+  if (pmshparams.contains("Enable splitMeshRegions"))
         mparams->_doSplitMshRegs =
           pmshparams["Enable splitMeshRegions"].as<bool>();
-  if (pmshparams.has_key("Enable MergeMeshes"))
+  if (pmshparams.contains("Enable MergeMeshes"))
         mparams->_doMergeMsh = 
           pmshparams["Enable MergeMeshes"].as<bool>();
-  if (pmshparams.has_key("Enable CreatePatch"))
+  if (pmshparams.contains("Enable CreatePatch"))
         mparams->_doCreatePtchs = 
           pmshparams["Enable CreatePatch"].as<bool>();
-  if (pmshparams.has_key("Enable foamToSurface"))
+  if (pmshparams.contains("Enable foamToSurface"))
         mparams->_doFoam2Surf = 
           pmshparams["Enable foamToSurface"].as<bool>();
-  if (pmshparams.has_key("Enable surfaceSplitByTopology"))
+  if (pmshparams.contains("Enable surfaceSplitByTopology"))
         mparams->_doSurfSplit = 
           pmshparams["Enable surfaceSplitByTopology"].as<bool>();
 
-  if (pmshparams.has_key("SurfLambdaMuSmooth Parameters"))
+  if (pmshparams.contains("SurfLambdaMuSmooth Parameters"))
   {
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("AddFeatureFile?"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("AddFeatureFile?"))
         mparams->_addFeatureFile =
           pmshparams["SurfLambdaMuSmooth Parameters"]["AddFeatureFile?"].as<bool>();
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("Input STL File"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Input STL File"))
         mparams->slmssurfaceFile =
           pmshparams["SurfLambdaMuSmooth Parameters"]["Input STL File"].as<std::string>();
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("Output STL File"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Output STL File"))
         mparams->slmsoutputFile =
           pmshparams["SurfLambdaMuSmooth Parameters"]["Output STL File"].as<std::string>();
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("Lambda"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Lambda"))
         mparams->lambda =
           pmshparams["SurfLambdaMuSmooth Parameters"]["Lambda"].as<double>();
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("Mu"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Mu"))
         mparams->mu =
           pmshparams["SurfLambdaMuSmooth Parameters"]["Mu"].as<double>();
-    if (pmshparams["SurfLambdaMuSmooth Parameters"].has_key("Smoothing Interations"))
+    if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Smoothing Interations"))
         mparams->slmsIterations =
           pmshparams["SurfLambdaMuSmooth Parameters"]["Smoothing Interations"].as<int>();           
   }
 
 
-  if (pmshparams.has_key("splitMeshRegions Parameters"))
+  if (pmshparams.contains("splitMeshRegions Parameters"))
   {
-    if (pmshparams["splitMeshRegions Parameters"].has_key("overwrite?"))
+    if (pmshparams["splitMeshRegions Parameters"].contains("overwrite?"))
       mparams->_overwriteMsh = 
         pmshparams["splitMeshRegions Parameters"]["overwrite?"].as<bool>();
-    if (pmshparams["splitMeshRegions Parameters"].has_key("usecellZones?"))
+    if (pmshparams["splitMeshRegions Parameters"].contains("usecellZones?"))
       mparams->_cellZones = 
         pmshparams["splitMeshRegions Parameters"]["usecellZones?"].as<bool>();
   }
 
 
-  if (pmshparams.has_key("mergeMeshes Parameters"))
+  if (pmshparams.contains("mergeMeshes Parameters"))
   {
-    if (pmshparams["mergeMeshes Parameters"].has_key("Master Region"))
+    if (pmshparams["mergeMeshes Parameters"].contains("Master Region"))
       mparams->masterCase =
         pmshparams["mergeMeshes Parameters"]["Master Region"].as<std::string>();
-    if (pmshparams["mergeMeshes Parameters"].has_key("Add Region"))
+    if (pmshparams["mergeMeshes Parameters"].contains("Add Region"))
       mparams->addCase = 
         pmshparams["mergeMeshes Parameters"]["Add Region"].as<std::string>();
-    if (pmshparams["mergeMeshes Parameters"].has_key("overwrite?"))
+    if (pmshparams["mergeMeshes Parameters"].contains("overwrite?"))
       mparams->_overwriteMergeMsh =
         pmshparams["mergeMeshes Parameters"]["overwrite?"].as<bool>();
-    if (pmshparams["mergeMeshes Parameters"].has_key("Master Region Path"))
+    if (pmshparams["mergeMeshes Parameters"].contains("Master Region Path"))
       mparams->masterCasePath =
         pmshparams["mergeMeshes Parameters"]["Master Region Path"].as<std::string>();
-    if (pmshparams["mergeMeshes Parameters"].has_key("Add Region Path"))
+    if (pmshparams["mergeMeshes Parameters"].contains("Add Region Path"))
       mparams->addCasePath = 
         pmshparams["mergeMeshes Parameters"]["Add Region Path"].as<std::string>();
-    if (pmshparams["mergeMeshes Parameters"].has_key("Number of Domains"))
+    if (pmshparams["mergeMeshes Parameters"].contains("Number of Domains"))
       mparams->numDomains = 
         pmshparams["mergeMeshes Parameters"]["Number of Domains"].as<int>();
   }
 
 
-  if (pmshparams.has_key("createPatch Parameters"))
+  if (pmshparams.contains("createPatch Parameters"))
   {
-    if (pmshparams["createPatch Parameters"].has_key("Surrounding PatchName"))
+    if (pmshparams["createPatch Parameters"].contains("Surrounding PatchName"))
       mparams->surroundingName = 
         pmshparams["createPatch Parameters"]["Surrounding PatchName"].as<std::string>();
-    if (pmshparams["createPatch Parameters"].has_key("Packs PatchName"))
+    if (pmshparams["createPatch Parameters"].contains("Packs PatchName"))
       mparams->packsName = 
         pmshparams["createPatch Parameters"]["Packs PatchName"].as<std::string>();
-    if (pmshparams["createPatch Parameters"].has_key("Surrounding PatchType"))
+    if (pmshparams["createPatch Parameters"].contains("Surrounding PatchType"))
       mparams->srrndngPatchType = 
         pmshparams["createPatch Parameters"]["Surrounding PatchType"].as<std::string>();
-    if (pmshparams["createPatch Parameters"].has_key("Packs PatchType"))
+    if (pmshparams["createPatch Parameters"].contains("Packs PatchType"))
       mparams->packsPatchType = 
         pmshparams["createPatch Parameters"]["Packs PatchType"].as<std::string>();
-    if (pmshparams["createPatch Parameters"].has_key("overwrite?"))
+    if (pmshparams["createPatch Parameters"].contains("overwrite?"))
       mparams->_overwritecpMsh = 
         pmshparams["createPatch Parameters"]["overwrite?"].as<bool>();
-    if (pmshparams["createPatch Parameters"].has_key("Packs Path"))
+    if (pmshparams["createPatch Parameters"].contains("Packs Path"))
       mparams->pathPacks = 
         pmshparams["createPatch Parameters"]["Packs Path"].as<std::string>();
-    if (pmshparams["createPatch Parameters"].has_key("Surrounding Path"))
+    if (pmshparams["createPatch Parameters"].contains("Surrounding Path"))
       mparams->pathSurrounding = 
         pmshparams["createPatch Parameters"]["Surrounding Path"].as<std::string>();
   }
   
-  if (pmshparams.has_key("foamToSurface Parameters"))
+  if (pmshparams.contains("foamToSurface Parameters"))
   {
-    if (pmshparams["foamToSurface Parameters"].has_key("Output File Path"))
+    if (pmshparams["foamToSurface Parameters"].contains("Output File Path"))
       mparams->outSurfName = 
         pmshparams["foamToSurface Parameters"]["Output File Path"].as<std::string>();
   }
 
-  if (pmshparams.has_key("surfaceSplitByTopology Parameters"))
+  if (pmshparams.contains("surfaceSplitByTopology Parameters"))
   {
-    if (pmshparams["surfaceSplitByTopology Parameters"].has_key("Input File"))
+    if (pmshparams["surfaceSplitByTopology Parameters"].contains("Input File"))
       mparams->surfFile = 
         pmshparams["surfaceSplitByTopology Parameters"]["Input File"].as<std::string>();
-    if (pmshparams["surfaceSplitByTopology Parameters"].has_key("Output File"))
+    if (pmshparams["surfaceSplitByTopology Parameters"].contains("Output File"))
       mparams->outSurfFile = 
         pmshparams["surfaceSplitByTopology Parameters"]["Output File"].as<std::string>();
   }

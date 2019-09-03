@@ -1,43 +1,40 @@
 #include "vtkMesh.H"
-#include "AuxiliaryFunctions.H"
 
-// VTK
-#include <vtkDataSetSurfaceFilter.h>
-#include <vtkTriangleFilter.h>
-#include <vtkDoubleArray.h>
-#include <vtkPointData.h>
-#include <vtkCellData.h>
-#include <vtkFieldData.h>
-//#include <vtkPoints.h>
+#include <sstream>
+
 //#include <vtkCell.h>
-//#include <vtkIdList.h>
-#include <vtksys/SystemTools.hxx>
-//#include <vtkCellTypes.h>
-#include <vtkExtractEdges.h>
-#include <vtkGenericCell.h>
+#include <vtkCellData.h>
 #include <vtkCellIterator.h>
-
-
-// VTK Reader
-#include <vtkSTLReader.h>
-#include <vtkXMLImageDataReader.h>
-#include <vtkXMLPolyDataReader.h>
-#include <vtkXMLRectilinearGridReader.h>
-#include <vtkXMLStructuredGridReader.h>
-#include <vtkXMLUnstructuredGridReader.h>
-#include <vtkStructuredGrid.h>
-#include <vtkRectilinearGrid.h>
+//#include <vtkCellTypes.h>
+#include <vtkDataSetSurfaceFilter.h>
+#include <vtkDoubleArray.h>
+#include <vtkExtractEdges.h>
+#include <vtkFieldData.h>
+#include <vtkGenericCell.h>
+//#include <vtkIdList.h>
 #include <vtkImageData.h>
-
-// VTK Writer
+#include <vtkPointData.h>
+//#include <vtkPoints.h>
+#include <vtkRectilinearGrid.h>
+#include <vtkSTLReader.h>
 #include <vtkSTLWriter.h>
+#include <vtkStructuredGrid.h>
+#include <vtkTriangleFilter.h>
 #include <vtkUnstructuredGridWriter.h>
+#include <vtkXMLImageDataReader.h>
 #include <vtkXMLImageDataWriter.h>
+#include <vtkXMLPolyDataReader.h>
 #include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLRectilinearGridReader.h>
 #include <vtkXMLRectilinearGridWriter.h>
+#include <vtkXMLStructuredGridReader.h>
 #include <vtkXMLStructuredGridWriter.h>
+#include <vtkXMLUnstructuredGridReader.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkXMLWriter.h>
+#include <vtksys/SystemTools.hxx>
+
+#include "AuxiliaryFunctions.H"
 
 using nemAux::operator*; // for vector multiplication.
 using nemAux::operator+; // for vector addition.

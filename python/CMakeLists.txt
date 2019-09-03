@@ -2,7 +2,8 @@ find_package(PythonInterp 2.7 REQUIRED) # Needed for PYTHON_EXECUTABLE
 find_package(PythonLibs REQUIRED) # Needed for PYTHON_INCLUDE_DIRS
 find_package(SWIG REQUIRED)
 
-set(WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${PYTHON_INCLUDE_DIRS})
+list(APPEND WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include
+                                 ${PYTHON_INCLUDE_DIRS})
 set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
@@ -10,12 +11,23 @@ set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
 file(COPY pyNemosys.i
           ${CMAKE_SOURCE_DIR}/include/meshBase.H
           ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
+          ${CMAKE_SOURCE_DIR}/include/NemDriver.H
+          ${CMAKE_SOURCE_DIR}/include/TransferDriver.H
+          ${CMAKE_SOURCE_DIR}/include/RefineDriver.H
+          ${CMAKE_SOURCE_DIR}/include/MeshGenDriver.H
+          ${CMAKE_SOURCE_DIR}/include/MeshQualityDriver.H
+          ${CMAKE_SOURCE_DIR}/include/ConversionDriver.H
+          ${CMAKE_SOURCE_DIR}/include/OrderOfAccuracy.H
+          ${CMAKE_SOURCE_DIR}/include/meshingParams.H
+          ${CMAKE_SOURCE_DIR}/include/meshGen.H
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-if(ENABLE_SIMMETRIX)
-  list(APPEND EXTRA_INCLUDE_DIRS "${SIMMETRIX_INCPATH}")
-  list(APPEND EXTRA_COMPILE_ARGS "-DHAVE_SIMMETRIX")
+get_target_property(WRAPPER_COMPILE_ARGS Nemosys COMPILE_DEFINITIONS)
+get_target_property(JSONCONS_COMPILE_ARGS jsoncons INTERFACE_COMPILE_DEFINITIONS)
+list(APPEND WRAPPER_COMPILE_ARGS ${JSONCONS_COMPILE_ARGS})
+message(STATUS "${WRAPPER_COMPILE_ARGS}")
 
+if(ENABLE_SIMMETRIX)
   file(COPY pyNemosysSimmetrix.i
             ${CMAKE_SOURCE_DIR}/include/simmetrixParams.H
             ${CMAKE_SOURCE_DIR}/include/simmetrixGen.H

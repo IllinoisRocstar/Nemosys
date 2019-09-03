@@ -7,8 +7,8 @@ const char* bench1_json;
 const char* bench1_ref;
 const char* bench2_json;
 const char* bench2_ref;
-EXOMesh::exoMesh* rm;
-EXOMesh::exoMesh* nm;
+NEM::MSH::EXOMesh::exoMesh* rm;
+NEM::MSH::EXOMesh::exoMesh* nm;
 
 
 // Aux functions
@@ -56,8 +56,8 @@ int exoTestConv(const char* jsonF, const char* ofname, const char* refname)
       = std::unique_ptr<NemDriver>(NemDriver::readJSON(prog));
   } 
  
-  rm = new EXOMesh::exoMesh(std::string(refname));
-  nm = new EXOMesh::exoMesh(ofname);
+  rm = new NEM::MSH::EXOMesh::exoMesh(std::string(refname));
+  nm = new NEM::MSH::EXOMesh::exoMesh(ofname);
   rm->read();
   nm->read();
 
@@ -66,27 +66,27 @@ int exoTestConv(const char* jsonF, const char* ofname, const char* refname)
 
 int exoTestNodeNum()
 {
-    return (rm->getNumberOfNode() == nm->getNumberOfNode());
+    return (rm->getNumberOfNodes() == nm->getNumberOfNodes());
 }
 
 int exoTestNumElm()
 {
-    return (rm->getNumberOfElement() == nm->getNumberOfElement());
+    return (rm->getNumberOfElements() == nm->getNumberOfElements());
 }
 
 int exoTestNodeSetNum()
 {
-    return (rm->getNumberOfNodeSet() == nm->getNumberOfNodeSet());
+    return (rm->getNumberOfNodeSets() == nm->getNumberOfNodeSets());
 }
 
 int exoTestElmBlkNum()
 {
-    return (rm->getNumberOfElementBlock() == nm->getNumberOfElementBlock());
+    return (rm->getNumberOfElementBlocks() == nm->getNumberOfElementBlocks());
 }
 
 int exoTestNodeSetNames()
 {
-    int nns = rm->getNumberOfNodeSet();
+    int nns = rm->getNumberOfNodeSets();
     for (int ins=1; ins<nns; ins++)
         if (rm->getNdeSetName(ins) != nm->getNdeSetName(ins))
             return(1);
@@ -95,9 +95,9 @@ int exoTestNodeSetNames()
 
 int exoTestElmBlkNames()
 {
-    int neb = rm->getNumberOfElementBlock();
+    int neb = rm->getNumberOfElementBlocks();
     for (int ieb=1; ieb<neb; ieb++)
-        if (rm->getBlockName(ieb) != nm->getBlockName(ieb))
+        if (rm->getElmBlkName(ieb) != nm->getElmBlkName(ieb))
             return(1);
     return (0);
 }

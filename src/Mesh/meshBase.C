@@ -1027,7 +1027,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
 
   /* open EXODUS II files */
   fid = ex_open(fname.c_str(),EX_READ,&CPU_word_size,&IO_word_size,&version);
-  EXOMesh::wrnErrMsg(_exErr, "Problem opening file "+fname+"\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem opening file "+fname+"\n");
 
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -1047,41 +1047,41 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   float fdum;
   char cdum;
   _exErr = ex_inquire(fid, EX_INQ_API_VERS, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Exodus II API version is "<< fdum << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_DB_VERS, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Exodus II Database version is "<< fdum << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_DIM, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of coordinate dimensions is "<< num_props << std::endl;
   if (num_props != 3)
-    EXOMesh::wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
+    NEM::MSH::EXOMesh::wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
 
   _exErr = ex_inquire(fid, EX_INQ_NODES, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numPoints = num_props;
   std::cout << "Number of points "<< numPoints << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_ELEM, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numVolCells = num_props;
   std::cout << "Number of elements "<< numVolCells << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_ELEM_BLK, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numElmBlk = num_props;
   std::cout << "Number of element blocks "<< numElmBlk << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_NODE_SETS, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numNdeSet = num_props;
   std::cout << "Number of node sets "<< numNdeSet << std::endl;
 
   _exErr = ex_inquire(fid, EX_INQ_SIDE_SETS, &num_props, &fdum, &cdum);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading file contents.\n");
   numSideSet = num_props;
   std::cout << "Number of side sets "<< numSideSet << std::endl;
 
@@ -1091,7 +1091,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
   y.resize(numPoints,0);
   z.resize(numPoints,0);
   _exErr = ex_get_coord(fid, &x[0], &y[0], &z[0]);
-  EXOMesh::wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
 
   // allocate memory for points
   points->SetNumberOfPoints(numPoints);
@@ -1114,12 +1114,12 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
     char elem_type[MAX_STR_LENGTH+1];
     // read element block parameters
     _exErr = ex_get_elem_block (fid, iEB, elem_type, &num_el_in_blk, &num_nod_per_el, &num_attr);
-    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
+    NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
     // read element connectivity
     std::vector<int> conn;
     conn.resize(num_el_in_blk*num_nod_per_el,0);
     _exErr = ex_get_elem_conn (fid, iEB, &conn[0]);
-    EXOMesh::wrnErrMsg(_exErr, "Problem reading element block connectivities.\n");
+    NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem reading element block connectivities.\n");
     // read element block attributes
     //std::vector<float> attr;
     //attr.resize(0.,num_el_in_blk*num_nod_per_el);
@@ -1128,7 +1128,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
     for (int iEl = 0; iEl < num_el_in_blk; ++iEl)
     {
       vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
-      VTKCellType vct = EXOMesh::e2vEMap(EXOMesh::elmTypeNum(elem_type));
+      VTKCellType vct = NEM::MSH::EXOMesh::e2vEMap(NEM::MSH::EXOMesh::elmTypeNum(elem_type));
       for (int jc=iEl*num_nod_per_el;
                jc<(iEl+1)*num_nod_per_el;
                jc++)
@@ -1154,7 +1154,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname)
 
   // closing the file
   _exErr = ex_close(fid);
-  EXOMesh::wrnErrMsg(_exErr, "Problem closing the exodusII file.");
+  NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem closing the exodusII file.");
 
   return vtkmesh;
 #else

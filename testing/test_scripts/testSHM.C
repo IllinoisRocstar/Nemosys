@@ -97,7 +97,7 @@ int generate(const char* jsonF)
 
   // required params here
   // cad file
-  if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+  if (inputjson["Mesh File Options"].contains("Input Geometry File"))
       params->geomFileName = 
           inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
   else
@@ -106,7 +106,7 @@ int generate(const char* jsonF)
       throw;        
   }  
 
-        if (shmparams.has_key("SurfPatchName"))
+        if (shmparams.contains("SurfPatchName"))
             params->surfRefPatch = shmparams["SurfPatchName"].as<std::string>();
         else
         {
@@ -114,7 +114,7 @@ int generate(const char* jsonF)
             throw;        
         }
 
-        if (shmparams.has_key("InputPatchName"))
+        if (shmparams.contains("InputPatchName"))
             params->geomPatchName = shmparams["InputPatchName"].as<std::string>();
         else
         {
@@ -122,164 +122,164 @@ int generate(const char* jsonF)
             throw;        
         }
 
-        if (shmparams.has_key("Castellated Mesh"))
+        if (shmparams.contains("Castellated Mesh"))
           params->_withCastMesh =
             shmparams["Castellated Mesh"].as<bool>();
-        if (shmparams.has_key("Snapping"))
+        if (shmparams.contains("Snapping"))
           params->_withSnap =
             shmparams["Snapping"].as<bool>();
-        if (shmparams.has_key("Layer Addition"))
+        if (shmparams.contains("Layer Addition"))
           params->_withLayers =
             shmparams["Layer Addition"].as<bool>();
-        if (shmparams.has_key("CellZones"))
+        if (shmparams.contains("CellZones"))
           params->_withCellZones =
             shmparams["CellZones"].as<bool>();
-        if (shmparams.has_key("RegionRefine"))
+        if (shmparams.contains("RegionRefine"))
           params->_withGeomRefReg =
             shmparams["RegionRefine"].as<bool>();
-        if (shmparams.has_key("SurfaceRefine"))
+        if (shmparams.contains("SurfaceRefine"))
           params->_withSurfRefReg =
             shmparams["SurfaceRefine"].as<bool>();
 
-        if (shmparams.has_key("maxLocalCells"))
+        if (shmparams.contains("maxLocalCells"))
           params->maxLCells =
             shmparams["maxLocalCells"].as<int>();
-        if (shmparams.has_key("maxGlobalCells"))
+        if (shmparams.contains("maxGlobalCells"))
           params->maxGCells =
             shmparams["maxGlobalCells"].as<int>();
-        if (shmparams.has_key("minRefCells"))
+        if (shmparams.contains("minRefCells"))
           params->minRefCells =
             shmparams["minRefCells"].as<int>();
-        if (shmparams.has_key("nCellsBetweenLevels"))
+        if (shmparams.contains("nCellsBetweenLevels"))
           params->cellsBetnLvls =
             shmparams["nCellsBetweenLevels"].as<int>();
-        if (shmparams.has_key("surfaceRefinementLvlMin"))
+        if (shmparams.contains("surfaceRefinementLvlMin"))
           params->refSurfLvlMin =
             shmparams["surfaceRefinementLvlMin"].as<int>();
-        if (shmparams.has_key("surfaceRefinementLvlMax"))
+        if (shmparams.contains("surfaceRefinementLvlMax"))
           params->refSurfLvlMax =
             shmparams["surfaceRefinementLvlMax"].as<int>();
-        if (shmparams.has_key("resolveFeatureAngle"))
+        if (shmparams.contains("resolveFeatureAngle"))
           params->featAngle =
             shmparams["resolveFeatureAngle"].as<double>();
-        if (shmparams.has_key("locationInMeshX"))
+        if (shmparams.contains("locationInMeshX"))
           params->locMeshX =
             shmparams["locationInMeshX"].as<double>();
-        if (shmparams.has_key("locationInMeshY"))
+        if (shmparams.contains("locationInMeshY"))
           params->locMeshY =
             shmparams["locationInMeshY"].as<double>();
-        if (shmparams.has_key("locationInMeshZ"))
+        if (shmparams.contains("locationInMeshZ"))
           params->locMeshZ =
             shmparams["locationInMeshZ"].as<double>();
-        if (shmparams.has_key("allowFreeStandingZoneFaces"))
+        if (shmparams.contains("allowFreeStandingZoneFaces"))
           params->_alwFreeZone =
             shmparams["allowFreeStandingZoneFaces"].as<double>();
-        if (shmparams.has_key("nSmoothPatch"))
+        if (shmparams.contains("nSmoothPatch"))
           params->snapSmthPatch =
             shmparams["nSmoothPatch"].as<int>();
-        if (shmparams.has_key("tolerance"))
+        if (shmparams.contains("tolerance"))
           params->snapTol =
             shmparams["tolerance"].as<double>();
-        if (shmparams.has_key("snapSolveIter"))
+        if (shmparams.contains("snapSolveIter"))
           params->solveSnapIter =
             shmparams["snapSolveIter"].as<int>();
-        if (shmparams.has_key("snapRelaxIter"))
+        if (shmparams.contains("snapRelaxIter"))
           params->relaxSnapIter =
             shmparams["snapRelaxIter"].as<int>();
-        if (shmparams.has_key("relativeSizes"))
+        if (shmparams.contains("relativeSizes"))
           params->_relSize =
             shmparams["relativeSizes"].as<double>();
-        if (shmparams.has_key("expansionRatio"))
+        if (shmparams.contains("expansionRatio"))
           params->expRatio =
             shmparams["expansionRatio"].as<double>();
-        if (shmparams.has_key("finalLayerThickness"))
+        if (shmparams.contains("finalLayerThickness"))
           params->finLThick =
             shmparams["finalLayerThickness"].as<double>();
-        if (shmparams.has_key("minThickness"))
+        if (shmparams.contains("minThickness"))
           params->minThick =
             shmparams["minThickness"].as<double>();
-        if (shmparams.has_key("nGrow"))
+        if (shmparams.contains("nGrow"))
           params->nGrow =
             shmparams["nGrow"].as<int>();
-        if (shmparams.has_key("featureAngle"))
+        if (shmparams.contains("featureAngle"))
           params->lyrFeatAngle =
             shmparams["featureAngle"].as<double>();
-        if (shmparams.has_key("nRelaxIter"))
+        if (shmparams.contains("nRelaxIter"))
           params->lyrRelaxIter =
             shmparams["nRelaxIter"].as<int>();
-        if (shmparams.has_key("nSmoothSurfaceNormals"))
+        if (shmparams.contains("nSmoothSurfaceNormals"))
           params->lyrSmthSurfNorm =
             shmparams["nSmoothSurfaceNormals"].as<int>();
-        if (shmparams.has_key("nSmoothNormals"))
+        if (shmparams.contains("nSmoothNormals"))
           params->lyrSmthNorm =
             shmparams["nSmoothNormals"].as<int>();
-        if (shmparams.has_key("nSmoothThickness"))
+        if (shmparams.contains("nSmoothThickness"))
           params->lyrSmthThick =
             shmparams["nSmoothThickness"].as<int>();
-        if (shmparams.has_key("maxFaceThicknessRatio"))
+        if (shmparams.contains("maxFaceThicknessRatio"))
           params->lyrMaxFcTR =
             shmparams["maxFaceThicknessRatio"].as<double>();
-        if (shmparams.has_key("maxThicknessToMedialRatio"))
+        if (shmparams.contains("maxThicknessToMedialRatio"))
           params->lyrMaxThickTMR =
             shmparams["maxThicknessToMedialRatio"].as<double>();
-        if (shmparams.has_key("minMedialAxisAngle"))
+        if (shmparams.contains("minMedialAxisAngle"))
           params->lyrMinMedAngl =
             shmparams["minMedialAxisAngle"].as<double>();
-        if (shmparams.has_key("nBufferCellsNoExtrude"))
+        if (shmparams.contains("nBufferCellsNoExtrude"))
           params->lyrBuffrCells =
             shmparams["nBufferCellsNoExtrude"].as<int>();
-        if (shmparams.has_key("nLayerIter"))
+        if (shmparams.contains("nLayerIter"))
           params->lyrIter =
             shmparams["nLayerIter"].as<int>();
-        if (shmparams.has_key("maxNonOrtho"))
+        if (shmparams.contains("maxNonOrtho"))
           params->qcMaxNOrtho =
             shmparams["maxNonOrtho"].as<int>();
-        if (shmparams.has_key("maxBoundarySkewness"))
+        if (shmparams.contains("maxBoundarySkewness"))
           params->qcMaxBndrySkew =
             shmparams["maxBoundarySkewness"].as<double>();
-        if (shmparams.has_key("maxInternalSkewness"))
+        if (shmparams.contains("maxInternalSkewness"))
           params->qcMaxIntSkew =
             shmparams["maxInternalSkewness"].as<double>();
-        if (shmparams.has_key("maxConcave"))
+        if (shmparams.contains("maxConcave"))
           params->qcMaxConc =
             shmparams["maxConcave"].as<double>();
-        if (shmparams.has_key("minVol"))
+        if (shmparams.contains("minVol"))
           params->qcMinVol =
             shmparams["minVol"].as<double>();
-        if (shmparams.has_key("minTetQuality"))
+        if (shmparams.contains("minTetQuality"))
           params->qcMinTetQ =
             shmparams["minTetQuality"].as<double>();
-        if (shmparams.has_key("minArea"))
+        if (shmparams.contains("minArea"))
           params->qcMinArea =
             shmparams["minArea"].as<double>();
-        if (shmparams.has_key("minTwist"))
+        if (shmparams.contains("minTwist"))
           params->qcMinTwist =
             shmparams["minTwist"].as<double>();
-        if (shmparams.has_key("minFaceWeight"))
+        if (shmparams.contains("minFaceWeight"))
           params->qcMinFaceW =
             shmparams["minFaceWeight"].as<double>();
-        if (shmparams.has_key("minVolRatio"))
+        if (shmparams.contains("minVolRatio"))
           params->qcMinVolRto =
             shmparams["minVolRatio"].as<double>();
-        if (shmparams.has_key("minDeterminant"))
+        if (shmparams.contains("minDeterminant"))
           params->qcMinDet =
             shmparams["minDeterminant"].as<double>();
-        if (shmparams.has_key("minTriangleTwist"))
+        if (shmparams.contains("minTriangleTwist"))
           params->qcMinTrTwist =
             shmparams["minTriangleTwist"].as<double>();
-        if (shmparams.has_key("qcnSmoothScale"))
+        if (shmparams.contains("qcnSmoothScale"))
           params->qcSmthScale =
             shmparams["qcnSmoothScale"].as<int>();
-        if (shmparams.has_key("errorReduction"))
+        if (shmparams.contains("errorReduction"))
           params->qcErrRedctn =
             shmparams["errorReduction"].as<double>();
-        if (shmparams.has_key("mergeTolerance"))
+        if (shmparams.contains("mergeTolerance"))
           params->mergeTol =
             shmparams["mergeTolerance"].as<double>();
 
 
         std::string cap2 = "GeomRefinementRegions";
-        if (shmparams.has_key(cap2))
+        if (shmparams.contains(cap2))
         {
           params->_withGeomRefReg = 1;
 
@@ -287,28 +287,28 @@ int generate(const char* jsonF)
           {
             shmGeomRefine geomRef;
 
-            if (jptch2.has_key("PatchName"))
+            if (jptch2.contains("PatchName"))
               geomRef.patchNm = jptch2["PatchName"].as<std::string>();
 
-            if (jptch2.has_key("searchableShape"))
+            if (jptch2.contains("searchableShape"))
               geomRef.searchableName = jptch2["searchableShape"].as<std::string>();
 
-            if (jptch2.has_key("shapeParams1"))
+            if (jptch2.contains("shapeParams1"))
               geomRef.shapeParameters1 = jptch2["shapeParams1"].as<std::string>();
 
-            if (jptch2.has_key("shapeParams2"))
+            if (jptch2.contains("shapeParams2"))
               geomRef.shapeParameters2 = jptch2["shapeParams2"].as<std::string>();
 
-            if (jptch2.has_key("Radius"))
+            if (jptch2.contains("Radius"))
               geomRef.rad = jptch2["Radius"].as<double>();
 
-            if (jptch2.has_key("Mode"))
+            if (jptch2.contains("Mode"))
               geomRef.mode = jptch2["Mode"].as<std::string>();
 
-            if (jptch2.has_key("MinLevel"))
+            if (jptch2.contains("MinLevel"))
               geomRef.minLvl = jptch2["MinLevel"].as<int>();
 
-            if (jptch2.has_key("MaxLevel"))
+            if (jptch2.contains("MaxLevel"))
               geomRef.maxLvl = jptch2["MaxLevel"].as<int>();
 
             (params->geomRefs).push_back(geomRef);
@@ -318,7 +318,7 @@ int generate(const char* jsonF)
 
 
         std::string cap3 = "SurfaceRefinementRegions";
-        if (shmparams.has_key(cap3))
+        if (shmparams.contains(cap3))
         {
           params->_withSurfRefReg = 1;
 
@@ -327,13 +327,13 @@ int generate(const char* jsonF)
 
             shmRegionRef surfRef;
 
-            if (jptch3.has_key("PatchName"))
+            if (jptch3.contains("PatchName"))
               surfRef.refPatchNm = jptch3["PatchName"].as<std::string>();
 
-            if (jptch3.has_key("MinLevel"))
+            if (jptch3.contains("MinLevel"))
               surfRef.minLvl = jptch3["MinLevel"].as<int>();
 
-            if (jptch3.has_key("MaxLevel"))
+            if (jptch3.contains("MaxLevel"))
               surfRef.maxLvl = jptch3["MaxLevel"].as<int>();
 
             (params->surfRefs).push_back(surfRef);
