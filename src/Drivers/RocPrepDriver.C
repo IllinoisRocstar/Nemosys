@@ -587,7 +587,7 @@ RocPrepDriver* RocPrepDriver::readJSON(json inputjson)
   //{
   //  std::string prefix_key = "File Prefix";
   //  prefix_key += std::to_string(i);  
-  //  if(templateCgnsName.has_key(prefix_key))
+  //  if(templateCgnsName.contains(prefix_key))
   //    prefixes.push_back(templateCgnsName[prefix_key].as<std::string>();  
   //  else
   //    readAll = true;

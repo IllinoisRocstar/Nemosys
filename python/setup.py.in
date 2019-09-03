@@ -12,16 +12,6 @@ pyNemosys = Extension(
     sources='${WRAPPER_SOURCE_FILES}'.split(';'),
     include_dirs=list(filter(None, (
             '${WRAPPER_INCLUDE_DIRS}'.split(';')
-            + '${VTK_INCLUDE_DIRS}'.split(';')
-            + '${GMSH_INCPATH}'.split(';')
-            + '${OpenCASCADE_INCLUDE_DIR}'.split(';')
-            + '${CGNS_INCPATH}'.split(';')
-            + '${MADLIB_INCPATH}'.split(';')
-            + '${ANN_INCPATH}'.split(';')
-            + '${JSONCONS_INCPATH}'.split(';')
-            + '${METIS_INCPATH}'.split(';')
-            + '${NETGEN_INCLUDE_DIRS}'.split(';')
-            + '${EXTRA_INCLUDE_DIRS}'.split(';')
     ))),
     libraries=(
             ['Nemosys',
@@ -37,11 +27,11 @@ pyNemosys = Extension(
     runtime_library_dirs=runtime_lib_dirs,
     swig_opts=list(filter(None, (
             ['-c++', '-DNEMOSYS_EXPORT=']
-            + '${EXTRA_COMPILE_ARGS}'.split(';')
+            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
     ))),
     extra_compile_args=list(filter(None, (
             ['-std=c++11', '-w']
-            + '${EXTRA_COMPILE_ARGS}'.split(';')
+            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
     )))
 )
 

@@ -15,6 +15,8 @@
 
 #include "AuxiliaryFunctions.H"
 
+namespace NEM {
+namespace MSH {
 namespace EXOMesh {
 
 VTKCellType e2vEMap(elementType et) {
@@ -91,12 +93,13 @@ elementType elmTypeNum(std::string tag) {
   return elementType::OTHER;
 }
 
-std::string elmTypeStr(elementType tag) {
-  if (tag == elementType::TRIANGLE) return "TRIANGLE";
-  if (tag == elementType::QUAD) return "QUAD";
-  if (tag == elementType::TETRA) return "TETRA";
-  if (tag == elementType::HEX) return "HEX";
-  if (tag == elementType::WEDGE) return "WEDGE";
+std::string elmTypeStr(elementType et) {
+  if (et == elementType::QUAD) return "QUAD";
+  if (et == elementType::TRIANGLE) return "TRIANGLE";
+  if (et == elementType::QUAD) return "QUAD";
+  if (et == elementType::TETRA) return "TETRA";
+  if (et == elementType::HEX) return "HEX";
+  if (et == elementType::WEDGE) return "WEDGE";
   return "OTHER";
 }
 
@@ -165,7 +168,8 @@ void wrnErrMsg(int errCode, const std::string &msg) {
               << std::endl;
     throw;
   } else if (errCode > 0) {
-    std::cerr << "Warning: code number " << errCode << std::endl;
+    std::cerr << "Warning: " << msg << " with warning code " << errCode
+              << std::endl;
   }
 }
 
@@ -183,18 +187,18 @@ void exoMesh::write() {
 
   // initializing exodus database
   _exErr = ex_put_init(_fid, "NEMoSys ExodusII database", 3, _numNdes, _numElms,
-                       _elmBlock.size(), _ndeSet.size(), _sdeSet.size());
-  wrnErrMsg(_exErr, "Problem during initialization of exodusII database");
+                       _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
+  wrnErrMsg(_exErr, "Problem initializing EXODUS II database");
 
   // writing node coordinates
   _exErr = ex_put_coord(_fid, _xCrds.data(), _yCrds.data(), _zCrds.data());
-  wrnErrMsg(_exErr, "Problem during writing node coordinates.");
+  wrnErrMsg(_exErr, "Problem writing node coordinates.");
 
   // writing element blocks
-  for (const auto &ieb : _elmBlock) {
+  for (const auto &ieb : _elmBlks) {
     _exErr = ex_put_elem_block(_fid, ieb.id, elmTypeStr(ieb.eTpe).c_str(),
                                ieb.nElm, ieb.ndePerElm, 1);
-    wrnErrMsg(_exErr, "Problem during writing elementBlock parameters.");
+    wrnErrMsg(_exErr, "Problem writing element block parameters.");
     /*
     int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
     std::string elem_type;
@@ -210,7 +214,7 @@ void exoMesh::write() {
               << std::endl;
     */
     _exErr = ex_put_elem_conn(_fid, ieb.id, ieb.conn.data());
-    wrnErrMsg(_exErr, "Problem during writing elementBlock connectivities.");
+    wrnErrMsg(_exErr, "Problem writing element block connectivities.");
     // write element attribute
     /*
     std::vector<double> elmAttrib;
@@ -221,34 +225,47 @@ void exoMesh::write() {
   }
 
   // writing node sets
-  for (const auto &ins : _ndeSet) {
+  for (const auto &ins : _ndeSets) {
     _exErr = ex_put_node_set_param(_fid, ins.id, ins.nNde, 0);
-    wrnErrMsg(_exErr, "Problem during writing nodeSet parameters.");
+    wrnErrMsg(_exErr, "Problem writing node set parameters.");
     _exErr = ex_put_node_set(_fid, ins.id, ins.ndeIds.data());
-    wrnErrMsg(_exErr, "Problem during writing nodeSet node Ids.");
+    wrnErrMsg(_exErr, "Problem writing node set node ids.");
+  }
+
+  // writing side sets
+  for (const auto &iss : _sdeSets) {
+    _exErr = ex_put_side_set_param(_fid, iss.id, iss.nSde, 0);
+    wrnErrMsg(_exErr, "Problem writing side set parameters.");
+    _exErr =
+        ex_put_side_set(_fid, iss.id, iss.elmIds.data(), iss.sdeIds.data());
+    wrnErrMsg(_exErr, "Problem writing side set element and side ids.");
   }
 
   // writing names
   std::vector<char *> names;
   for (auto &&_elmBlkName : _elmBlkNames) names.push_back(&_elmBlkName[0]);
-  _exErr = ex_put_names(_fid, EX_ELEM_BLOCK, names.data());
-  wrnErrMsg(_exErr, "Problem writing elementBlock names.");
+  if (!names.empty()) {
+    _exErr = ex_put_names(_fid, EX_ELEM_BLOCK, names.data());
+    wrnErrMsg(_exErr, "Problem writing element block names.");
+  }
 
   names.clear();
   for (auto &&_ndeSetName : _ndeSetNames) names.push_back(&_ndeSetName[0]);
-  _exErr = ex_put_names(_fid, EX_NODE_SET, names.data());
-  wrnErrMsg(_exErr, "Problem writing nodeSet names.");
+  if (!names.empty()) {
+    _exErr = ex_put_names(_fid, EX_NODE_SET, names.data());
+    wrnErrMsg(_exErr, "Problem writing node set names.");
+  }
 
-  /* TODO: Add full side set support.
   names.clear();
   for (auto &&_sdeSetName : _sdeSetNames) names.push_back(&_sdeSetName[0]);
-  _exErr = ex_put_names(_fid, EX_SIDE_SET, names.data());
-  wrnErrMsg(_exErr, "Problem writing sideSet names.");
-  */
+  if (!names.empty()) {
+    _exErr = ex_put_names(_fid, EX_SIDE_SET, names.data());
+    wrnErrMsg(_exErr, "Problem writing side set names.");
+  }
 
   // closing the file
   _exErr = ex_close(_fid);
-  wrnErrMsg(_exErr, "Problem closing the exodusII file.");
+  wrnErrMsg(_exErr, "Problem closing the EXODUS II database.");
   _isOpen = false;
 }
 
@@ -256,85 +273,98 @@ void exoMesh::exoPopulate(bool updElmLst) {
   _numElms = 0;
   _elmBlkNames.clear();
   if (updElmLst) {
-    for (auto &&it : _elmBlock) it.elmIds.clear();
+    for (auto &&ieb : _elmBlks) ieb.elmIds.clear();
     glbConn.clear();
   }
-
   _ndeSetNames.clear();
-
   _sdeSetNames.clear();
 
   // removing empty element blocks
-  std::vector<elmBlockType> nebs;
-  for (auto &&it1 : _elmBlock)
-    if (it1.nElm > 0) nebs.emplace_back(std::move(it1));
-  _elmBlock = nebs;
+  std::vector<elmBlkType> nebs;
+  for (auto &&ieb : _elmBlks)
+    if (ieb.nElm > 0) nebs.emplace_back(std::move(ieb));
+  _elmBlks = nebs;
 
   // removing empty node sets
   std::vector<ndeSetType> nnss;
-  for (auto &&it1 : _ndeSet)
-    if (it1.nNde > 0) nnss.emplace_back(std::move(it1));
-  _ndeSet = nnss;
+  for (auto &&ins : _ndeSets)
+    if (ins.nNde > 0) nnss.emplace_back(std::move(ins));
+  _ndeSets = nnss;
 
-  /* TODO: Add side set support
   // removing empty side sets
   std::vector<sdeSetType> nsss;
-  for (auto &&it1 : _sdeSet)
-    if (it1.NUM_OF_SIDE_SETS > 0) nsss.emplace_back(std::move(it1));
-  _sdeSet = nsss;
-  */
+  for (auto &&iss : _sdeSets)
+    if (iss.nSde > 0) nsss.emplace_back(std::move(iss));
+  _sdeSets = nsss;
 
   // updating element blocks
   int blkId = 0;  // Reindex the blocks.
-  for (auto &&it1 : _elmBlock) {
-    it1.id = ++blkId;
-    _elmBlkNames.emplace_back(it1.name);
+  for (auto &&ieb : _elmBlks) {
+    ieb.id = ++blkId;
+    _elmBlkNames.emplace_back(ieb.name);
 
     // offsetting element connectivities
-    if (it1.ndeIdOffset != 0) {
-      for (auto &&it2 : it1.conn) it2 += it1.ndeIdOffset;
-      it1.ndeIdOffset = 0;
+    if (ieb.ndeIdOffset != 0) {
+      for (auto &&conn : ieb.conn) conn += ieb.ndeIdOffset;
+      ieb.ndeIdOffset = 0;
     }
 
     // updating global connectivity
     if (updElmLst) {
-      it1.elmIds.clear();
-      int nn = it1.ndePerElm;
-      for (int elmIdx = 0; elmIdx < it1.nElm; ++elmIdx) {
+      ieb.elmIds.clear();
+      int nn = ieb.ndePerElm;
+      for (int elmIdx = 0; elmIdx < ieb.nElm; ++elmIdx) {
         std::vector<int> elmConn;
         for (int idx = elmIdx * nn; idx < (elmIdx + 1) * nn; ++idx)
-          elmConn.emplace_back(it1.conn[idx]);
-        it1.elmIds.emplace_back(_numElms + elmIdx);
+          elmConn.emplace_back(ieb.conn[idx]);
+        ieb.elmIds.emplace_back(_numElms + elmIdx);
         glbConn.emplace_back(elmConn);
       }
 
       // sanity check
-      if (it1.nElm != it1.elmIds.size())
-        std::cerr << "WARNING: Malformed element block " << it1.name << ".\n";
+      if (ieb.nElm != ieb.elmIds.size())
+        std::cerr << "WARNING: Malformed element block " << ieb.name << ".\n";
     }
 
     // sanity check
-    if (it1.nElm * it1.ndePerElm != it1.conn.size())
-      std::cerr << "WARNING: Malformed element block " << it1.name << ".\n";
+    if (ieb.nElm * ieb.ndePerElm != ieb.conn.size())
+      std::cerr << "WARNING: Malformed element block " << ieb.name << ".\n";
 
-    _numElms += it1.nElm;
+    _numElms += ieb.nElm;
   }
 
   // updating node sets
   int nsetId = 0;  // Reindex the node sets.
-  for (auto &&it1 : _ndeSet) {
-    it1.id = ++nsetId;
-    _ndeSetNames.emplace_back(it1.name);
+  for (auto &&ins : _ndeSets) {
+    ins.id = ++nsetId;
+    _ndeSetNames.emplace_back(ins.name);
 
     // offsetting node ids
-    if (it1.ndeIdOffset != 0) {
-      for (auto &&it2 : it1.ndeIds) it2 += it1.ndeIdOffset;
-      it1.ndeIdOffset = 0;
+    if (ins.ndeIdOffset != 0) {
+      for (auto &&it2 : ins.ndeIds) it2 += ins.ndeIdOffset;
+      ins.ndeIdOffset = 0;
     }
 
     // sanity check
-    if (it1.nNde != it1.ndeIds.size())
-      std::cerr << "WARNING: Malformed node set " << it1.name << ".\n";
+    if (ins.nNde != ins.ndeIds.size())
+      std::cerr << "WARNING: Malformed node set " << ins.name << ".\n";
+  }
+
+  // updating side sets
+  int ssetId = 0;  // Reindex the side sets.
+  for (auto &&iss : _sdeSets) {
+    iss.id = ++ssetId;
+    _sdeSetNames.emplace_back(iss.name);
+
+    // offsetting node ids
+    if (iss.elmIdOffset != 0) {
+      for (auto &&elm : iss.elmIds) elm += iss.elmIdOffset;
+      iss.elmIdOffset = 0;
+    }
+
+    // sanity check
+    if (iss.nSde != iss.sdeIds.size() || iss.nSde != iss.elmIds.size())
+      std::cerr << "WARNING: Malformed side set " << iss.name << ".\n";
   }
 
   if (_isVerbose) report();
@@ -347,30 +377,38 @@ void exoMesh::report() const {
   std::cout << "Database: " << _ifname << "\n";
   std::cout << "Nodes: " << _numNdes << "\n";
   std::cout << "Elements: " << _numElms << "\n";
-  std::cout << "Element blocks: " << getNumberOfElementBlock() << "\n";
-  std::cout << "Node sets: " << getNumberOfNodeSet() << "\n";
+  std::cout << "Element blocks: " << getNumberOfElementBlocks() << "\n";
+  std::cout << "Node sets: " << getNumberOfNodeSets() << "\n";
   std::cout << "Side sets: " << getNumberOfSideSets() << "\n";
-  if (getNumberOfElementBlock() > 0) {
+  if (getNumberOfElementBlocks() > 0) {
     std::cout << "  Blk      nElm     eType               Name\n";
     std::cout << "  ---      ----     -----              ------\n";
-    for (const auto &ib : _elmBlock)
-      std::cout << std::setw(5) << ib.id << std::setw(10) << ib.nElm
-                << std::setw(10) << elmTypeStr(ib.eTpe) << std::setw(20)
-                << ib.name << "\n";
+    for (const auto &ieb : _elmBlks)
+      std::cout << std::setw(5) << ieb.id << std::setw(10) << ieb.nElm
+                << std::setw(10) << elmTypeStr(ieb.eTpe) << std::setw(20)
+                << ieb.name << "\n";
   }
-  if (getNumberOfNodeSet() > 0) {
+  if (getNumberOfNodeSets() > 0) {
     std::cout << "  Nde      nNde               Name\n";
     std::cout << "  ---      ----              ------\n";
-    for (const auto &ib : _ndeSet)
-      std::cout << std::setw(5) << ib.id << std::setw(10) << ib.nNde
-                << std::setw(20) << ib.name << "\n";
+    for (const auto &ins : _ndeSets)
+      std::cout << std::setw(5) << ins.id << std::setw(10) << ins.nNde
+                << std::setw(20) << ins.name << "\n";
+  }
+  if (getNumberOfSideSets() > 0) {
+    std::cout << "  Sde      nSde               Name\n";
+    std::cout << "  ---      ----              ------\n";
+    for (const auto &iss : _sdeSets)
+      std::cout << std::setw(5) << iss.id << std::setw(10) << iss.nSde
+                << std::setw(20) << iss.name << "\n";
   }
   std::cout << std::flush;
 }
 
 void exoMesh::removeByElmIdLst(int blkIdx, const std::vector<int> &idLst) {
+  // TODO: Does NOT update side sets properly!
   // range check
-  if (blkIdx > getNumberOfElementBlock() || blkIdx < 0)
+  if (blkIdx > getNumberOfElementBlocks() || blkIdx < 0)
     wrnErrMsg(-1, "Block Id is out of the range.");
 
   // the idLst should not eliminate the old block
@@ -384,8 +422,8 @@ void exoMesh::removeByElmIdLst(int blkIdx, const std::vector<int> &idLst) {
   // now updating the old block
   _isPopulated = false;
 
-  elmBlockType oeb = _elmBlock[blkIdx];
-  elmBlockType neb;
+  elmBlkType oeb = _elmBlks[blkIdx];
+  elmBlkType neb;
   neb.id = oeb.id;
   neb.name = oeb.name;
   neb.eTpe = oeb.eTpe;
@@ -395,32 +433,32 @@ void exoMesh::removeByElmIdLst(int blkIdx, const std::vector<int> &idLst) {
 
   // elmIds and connectivities
   int oei = -1;
-  for (const auto &it1 : oeb.elmIds) {
+  for (const auto &eid : oeb.elmIds) {
     oei++;
 
     bool stays = true;
-    for (const auto &it2 : idLst)
-      if (it2 == it1) {
+    for (const auto &id : idLst)
+      if (id == eid) {
         stays = false;
         break;
       }
     if (!stays) continue;
 
     neb.nElm++;
-    neb.elmIds.emplace_back(it1);
+    neb.elmIds.emplace_back(eid);
     for (int ni = oei * oeb.ndePerElm; ni < (oei + 1) * oeb.ndePerElm; ni++)
       neb.conn.emplace_back(oeb.conn[ni]);
   }
   std::cout << "Removed " << oeb.elmIds.size() - neb.elmIds.size()
             << " elements from original" << std::endl;
-  _elmBlock[blkIdx] = neb;
+  _elmBlks[blkIdx] = neb;
 }
 
 void exoMesh::addElmBlkByElmIdLst(const std::string &name,
                                   std::vector<int> &lst) {
   if (lst.empty()) {
-    std::cerr << "WARNING: No elements are contained in Material Zone " << name
-              << "." << std::endl;
+    std::cerr << "WARNING: Attempting to add element block " << name
+              << " with no elements." << std::endl;
     return;
   }
 
@@ -431,20 +469,20 @@ void exoMesh::addElmBlkByElmIdLst(const std::string &name,
   // create element block
   // Assumption here: All elements in the provided list are in the same element
   // block
-  elmBlockType neb;
-  neb.id = _elmBlock.size() + 1;
+  elmBlkType neb;
+  neb.id = _elmBlks.size() + 1;
   neb.name = name;
   neb.ndeIdOffset = 0;
 
-  // int blkIdx = findElmBlkIdx(lst[0]); // faster but less accurate
-  int blkIdx = findElmLstBlkIdx(lst);  // slower, more accurate
+  // int blkIdx = findElmBlkIdxByElmId(lst[0]); // faster but less accurate
+  int blkIdx = findElmBlkIdxByElmIdLst(lst);  // slower, more accurate
   if (blkIdx == -1) wrnErrMsg(-1, "Elements ids are not registered.");
   // std::cout << "Block Indx = " << blkIdx << std::endl;
 
   // now adjust the list and remove elements that are not owned by this block
   std::vector<int> owndLst;
   bool allIn = false;
-  owndLst = lstElmInBlck(blkIdx, lst, allIn);
+  owndLst = lstElmInBlk(blkIdx, lst, allIn);
   if (!allIn) {
     std::cout << owndLst.size() << " Elements are in the block.\n";
     std::cout << "Some of the elements in the list are outside the block.\n";
@@ -453,8 +491,8 @@ void exoMesh::addElmBlkByElmIdLst(const std::string &name,
 
   neb.elmIds = lst;
   neb.nElm = lst.size();
-  neb.eTpe = getBlockElmType(blkIdx);
-  neb.ndePerElm = _elmBlock[blkIdx].ndePerElm;
+  neb.eTpe = getElmBlkType(blkIdx);
+  neb.ndePerElm = _elmBlks[blkIdx].ndePerElm;
   for (const auto &eid : lst)
     for (int idx = 0; idx < neb.ndePerElm; ++idx)
       neb.conn.emplace_back(glbConn[eid][idx]);
@@ -474,7 +512,7 @@ void exoMesh::addNdeSetByNdeIdLst(const std::string &name,
   _isPopulated = false;
   // create and add new node set
   ndeSetType nns;
-  nns.id = _ndeSet.size() + 1;  // 1-indexed
+  nns.id = _ndeSets.size() + 1;  // 1-indexed
   nns.nNde = idLst.size();
   nns.name = name;
   nns.ndeIdOffset = 0;
@@ -513,67 +551,66 @@ void exoMesh::snapNdeCrdsZero(double tol) {
 void exoMesh::removeElmBlkByName(const std::string &blkName) {
   if (blkName.empty()) return;
 
-  std::vector<elmBlockType> neb;
-  for (const auto &it1 : _elmBlock)
-    if (it1.name != blkName)
-      neb.emplace_back(it1);
+  std::vector<elmBlkType> nebs;
+  for (const auto &ieb : _elmBlks)
+    if (ieb.name != blkName)
+      nebs.emplace_back(ieb);
     else
       _isPopulated = false;
-  _elmBlock = neb;
+  _elmBlks = nebs;
 
   exoPopulate(true);
 }
 
-int exoMesh::findElmBlkIdx(int elmId) const {
+int exoMesh::findElmBlkIdxByElmId(int elmId) const {
   int blkIdx = 0;
-  for (const auto &it1 : _elmBlock) {
-    for (const auto &it2 : it1.elmIds)
-      if (it2 == elmId) return blkIdx;
+  for (const auto &ieb : _elmBlks) {
+    for (const auto &eid : ieb.elmIds)
+      if (eid == elmId) return blkIdx;
 
     blkIdx++;
   }
   return -1;
 }
 
-int exoMesh::findElmLstBlkIdx(const std::vector<int> &elmIds) const {
+int exoMesh::findElmBlkIdxByElmIdLst(const std::vector<int> &elmIds) const {
   if (elmIds.empty()) return -1;
 
   int blkIdx = -1;
   int intfCnt = 0;
 
   bool allIn = false;
-  for (int ib = 0; ib < _elmBlock.size(); ++ib) {
-    std::vector<int> intfLst{};
-    intfLst = lstElmInBlck(ib, elmIds, allIn);
+  for (int ieb = 0; ieb < _elmBlks.size(); ++ieb) {
+    std::vector<int> intfLst;
+    intfLst = lstElmInBlk(ieb, elmIds, allIn);
 
     if (allIn) {
-      return ib;
+      return ieb;
     } else if (intfLst.size() > intfCnt) {
       intfCnt = intfLst.size();
-      blkIdx = ib;
+      blkIdx = ieb;
     }
   }
 
   if (!allIn)
-    std::cerr << "WARNING: Elements in list are not all in one element "
-                 "block. Only block containing largest amount of elements is "
-                 "processed.\n"
-              << "         This might indicate selected elements overlap or are"
-                 "different element types (e.g., HEX and TETRA)."
+    std::cerr << "WARNING: Elements in list are not all in one element block. "
+                 "Only block containing largest amount of elements is "
+                 "processed. This might indicate selected elements overlap or "
+                 "are different element types (e.g., HEX and TETRA)."
               << std::endl;
 
   return blkIdx;
 }
 
-std::vector<int> exoMesh::lstElmInBlck(int blkId,
-                                       const std::vector<int> &elmIds,
-                                       bool &allIn) const {
+std::vector<int> exoMesh::lstElmInBlk(int blkIdx,
+                                      const std::vector<int> &elmIds,
+                                      bool &allIn) const {
   std::vector<int> out;
   allIn = true;
 
   // compare elmIds with list of the elements within block
   std::set<int> current;
-  for (const auto &elmId : _elmBlock[blkId].elmIds) current.insert(elmId);
+  for (const auto &elmId : _elmBlks[blkIdx].elmIds) current.insert(elmId);
   for (const auto &elmId : elmIds)
     if (!current.insert(elmId).second)
       out.emplace_back(elmId);
@@ -585,9 +622,9 @@ std::vector<int> exoMesh::lstElmInBlck(int blkId,
 
 void exoMesh::reset() {
   _isPopulated = false;
-  _ndeSet.clear();
-  _elmBlock.clear();
-  _sdeSet.clear();
+  _ndeSets.clear();
+  _elmBlks.clear();
+  _sdeSets.clear();
   _fid = 0;
   _numNdes = 0;
   _numElms = 0;
@@ -618,9 +655,9 @@ void exoMesh::read(const std::string &ifname) {
   wrnErrMsg(_fid > 0 ? 0 : -1, "Problem opening file " + _ifname + "\n");
 
   int dim;
-  int numElmBlk;
-  int numNdeSet;
-  int numSdeSet;
+  int numElmBlks;
+  int numNdeSets;
+  int numSdeSets;
 
   // parameter inquiry from Exodus file
   int idum;
@@ -655,17 +692,17 @@ void exoMesh::read(const std::string &ifname) {
   _exErr = ex_inquire(_fid, EX_INQ_ELEM_BLK, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of element blocks " << idum << std::endl;
-  numElmBlk = idum;
+  numElmBlks = idum;
 
   _exErr = ex_inquire(_fid, EX_INQ_NODE_SETS, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of node sets " << idum << std::endl;
-  numNdeSet = idum;
+  numNdeSets = idum;
 
   _exErr = ex_inquire(_fid, EX_INQ_SIDE_SETS, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of side sets " << idum << std::endl;
-  numSdeSet = idum;
+  numSdeSets = idum;
 
   // nodal coordinates
   _xCrds.resize(_numNdes, 0.0);
@@ -675,19 +712,30 @@ void exoMesh::read(const std::string &ifname) {
   wrnErrMsg(_exErr, "Problem reading nodal coordinates.\n");
 
   // ids
-  std::vector<int> elem_blk_ids(numElmBlk, 0);
-  _exErr = ex_get_elem_blk_ids(_fid, elem_blk_ids.data());
-  wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+  std::vector<int> elmBlkIds(numElmBlks, 0);
+  if (numElmBlks > 0) {
+    _exErr = ex_get_elem_blk_ids(_fid, elmBlkIds.data());
+    wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+  }
 
-  std::vector<int> nde_set_ids(numNdeSet, 0);
-  _exErr = ex_get_node_set_ids(_fid, nde_set_ids.data());
-  wrnErrMsg(_exErr, "Problem reading node set ids.\n");
+  std::vector<int> ndeSetIds(numNdeSets, 0);
+  if (numNdeSets > 0) {
+    _exErr = ex_get_node_set_ids(_fid, ndeSetIds.data());
+    wrnErrMsg(_exErr, "Problem reading node set ids.\n");
+  }
+
+  std::vector<int> sdeSetIds(numSdeSets, 0);
+  if (numSdeSets > 0) {
+    _exErr = ex_get_side_set_ids(_fid, sdeSetIds.data());
+    wrnErrMsg(_exErr, "Problem reading side set ids.\n");
+  }
 
   // element block names
   std::string blk_name;
-  for (int iEB = 0; iEB < numElmBlk; ++iEB) {
+  for (int iEB = 0; iEB < numElmBlks; ++iEB) {
+    blk_name.clear();
     blk_name.resize(MAX_STR_LENGTH);
-    int blk_id = elem_blk_ids[iEB];
+    int blk_id = elmBlkIds[iEB];
     _exErr = ex_get_name(_fid, EX_ELEM_BLOCK, blk_id, &blk_name[0]);
     wrnErrMsg(_exErr, "Problem reading element block names.\n");
     blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
@@ -697,10 +745,10 @@ void exoMesh::read(const std::string &ifname) {
   }
 
   // node set names
-  blk_name.clear();
-  for (int iNS = 0; iNS < numNdeSet; ++iNS) {
+  for (int iNS = 0; iNS < numNdeSets; ++iNS) {
+    blk_name.clear();
     blk_name.resize(MAX_STR_LENGTH);
-    int blk_id = nde_set_ids[iNS];
+    int blk_id = ndeSetIds[iNS];
     _exErr = ex_get_name(_fid, EX_NODE_SET, blk_id, &blk_name[0]);
     wrnErrMsg(_exErr, "Problem reading node set names.\n");
     blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
@@ -709,15 +757,29 @@ void exoMesh::read(const std::string &ifname) {
     _ndeSetNames.push_back(blk_name);
   }
 
+  // side set names
+  for (int iSS = 0; iSS < numSdeSets; ++iSS) {
+    blk_name.clear();
+    blk_name.resize(MAX_STR_LENGTH);
+    int blk_id = sdeSetIds[iSS];
+    _exErr = ex_get_name(_fid, EX_SIDE_SET, blk_id, &blk_name[0]);
+    wrnErrMsg(_exErr, "Problem reading side set names.\n");
+    blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
+                   blk_name.end());
+    // std::cout << blk_id << " " << blk_name << std::endl;
+    _sdeSetNames.push_back(blk_name);
+  }
+
   // element blocks
   std::string elem_type;
   int elmId = 1;
-  for (int iEB = 0; iEB < numElmBlk; ++iEB) {
+  for (int iEB = 0; iEB < numElmBlks; ++iEB) {
+    elem_type.clear();
     elem_type.resize(MAX_STR_LENGTH);
-    elmBlockType eb;
-    eb.id = elem_blk_ids[iEB];
+    elmBlkType eb;
+    eb.id = elmBlkIds[iEB];
     int num_el_in_blk, num_nod_per_el, num_attr;
-    _exErr = ex_get_elem_block(_fid, elem_blk_ids[iEB], &elem_type[0],
+    _exErr = ex_get_elem_block(_fid, elmBlkIds[iEB], &elem_type[0],
                                &num_el_in_blk, &num_nod_per_el, &num_attr);
     wrnErrMsg(_exErr, "Problem reading element block parameters.\n");
     elem_type.erase(std::remove(elem_type.begin(), elem_type.end(), '\0'),
@@ -732,7 +794,7 @@ void exoMesh::read(const std::string &ifname) {
     // read element connectivity
     eb.conn.clear();
     eb.conn.resize(num_el_in_blk * num_nod_per_el, 0);
-    _exErr = ex_get_elem_conn(_fid, elem_blk_ids[iEB], eb.conn.data());
+    _exErr = ex_get_elem_conn(_fid, elmBlkIds[iEB], eb.conn.data());
     wrnErrMsg(_exErr, "Problem reading element block connectivities.\n");
 
     // fill element ids
@@ -741,13 +803,13 @@ void exoMesh::read(const std::string &ifname) {
     std::iota(eb.elmIds.begin(), eb.elmIds.end(), elmId);
     elmId += num_el_in_blk;
 
-    _elmBlock.push_back(eb);
+    _elmBlks.push_back(eb);
   }
 
   // node sets
-  for (int iNS = 0; iNS < numNdeSet; ++iNS) {
+  for (int iNS = 0; iNS < numNdeSets; ++iNS) {
     ndeSetType ns;
-    ns.id = nde_set_ids[iNS];
+    ns.id = ndeSetIds[iNS];
     _exErr = ex_get_node_set_param(_fid, ns.id, &ns.nNde, &idum);
     wrnErrMsg(_exErr, "Problem reading node set parameters.\n");
     ns.name = _ndeSetNames[iNS];
@@ -755,11 +817,25 @@ void exoMesh::read(const std::string &ifname) {
     ns.ndeIdOffset = 0;
     ns.ndeIds.resize(ns.nNde, 0);
     _exErr = ex_get_node_set(_fid, ns.id, ns.ndeIds.data());
-    wrnErrMsg(_exErr, "Problem reading node set ids.\n");
-    _ndeSet.push_back(ns);
+    wrnErrMsg(_exErr, "Problem reading node set node ids.\n");
+    _ndeSets.push_back(ns);
   }
 
-  // side sets TODO: add read support for side sets.
+  // side sets
+  for (int iSS = 0; iSS < numSdeSets; ++iSS) {
+    sdeSetType ss;
+    ss.id = sdeSetIds[iSS];
+    _exErr = ex_get_side_set_param(_fid, ss.id, &ss.nSde, &idum);
+    wrnErrMsg(_exErr, "Problem reading side set parameters.\n");
+    ss.name = _sdeSetNames[iSS];
+
+    ss.elmIdOffset = 0;
+    ss.sdeIds.resize(ss.nSde, 0);
+    ss.elmIds.resize(ss.nSde, 0);
+    _exErr = ex_get_side_set(_fid, ss.id, ss.elmIds.data(), ss.sdeIds.data());
+    wrnErrMsg(_exErr, "Problem reading side set element and side ids.\n");
+    _sdeSets.push_back(ss);
+  }
 
   report();
 
@@ -799,8 +875,7 @@ void exoMesh::mergeNodes(double tol) {
   std::vector<double> xn, yn, zn;
   std::map<int, int> old2NewNde;
   for (int iNde = 0; iNde < _numNdes; iNde++) {
-    auto ite = dupNdeMap.find(iNde + 1);
-    if (ite == dupNdeMap.end()) {
+    if (dupNdeMap.find(iNde + 1) == dupNdeMap.end()) {
       xn.push_back(_xCrds[iNde]);
       yn.push_back(_yCrds[iNde]);
       zn.push_back(_zCrds[iNde]);
@@ -823,9 +898,9 @@ void exoMesh::mergeNodes(double tol) {
     qryPnt[1] = _yCrds[iNde];
     qryPnt[2] = _zCrds[iNde];
     kdTree->annkSearch(qryPnt, 1, nnIdx, dists);
-    if (dists[0] <= tol)
+    if (dists[0] <= tol) {
       old2NewNde[iNde + 1] = nnIdx[0] + 1;
-    else {
+    } else {
       std::cerr << "ERROR: Found a node in database not properly copied.\n";
       exit(1);
     }
@@ -855,25 +930,24 @@ void exoMesh::mergeNodes(double tol) {
   // update element block connectivities
   max = 0;
   min = std::numeric_limits<int>::max();
-  for (auto &&ieb : _elmBlock) {
-    for (auto &&itn : ieb.conn) {
-      int nid = itn;
-      itn = old2NewNde[nid];
-      max = std::max(max, itn);
-      min = std::min(min, itn);
+  for (auto &&ieb : _elmBlks) {
+    for (auto &&icn : ieb.conn) {
+      int nid = icn;
+      icn = old2NewNde[nid];
+      max = std::max(max, icn);
+      min = std::min(min, icn);
     }
   }
   std::cout << "Max conn = " << max << "\n";
   std::cout << "Min conn = " << min << "\n";
 
   // update node set ids
-  for (auto &&ins : _ndeSet) {
+  for (auto &&ins : _ndeSets) {
     // updating node indices, removing duplicates
     std::set<int> newNSNdeIds;  // set must have unique entries
 
-    for (const auto &nid : ins.ndeIds) {
-      newNSNdeIds.insert(old2NewNde[nid]);
-    }
+    for (const auto &nid : ins.ndeIds) newNSNdeIds.insert(old2NewNde[nid]);
+
     ins.ndeIds.clear();
     ins.ndeIds.assign(newNSNdeIds.begin(), newNSNdeIds.end());
     std::cout << "Original node set with " << ins.nNde
@@ -900,38 +974,39 @@ void exoMesh::stitch(const exoMesh &otherMesh) {
   _yCrds.insert(_yCrds.end(), otherMesh._yCrds.begin(), otherMesh._yCrds.end());
   _zCrds.insert(_zCrds.end(), otherMesh._zCrds.begin(), otherMesh._zCrds.end());
 
+  // Append all element blocks with extra offset.
+  for (const auto &elmBlk : otherMesh._elmBlks) {
+    // offset by number of nodes in current mesh.
+    auto offElmBlk = elmBlk;
+    offElmBlk.ndeIdOffset += _numNdes;
+
+    addElmBlk(offElmBlk);
+  }
+
   // Append all node sets.
-  for (const auto &ndeSet_ : otherMesh._ndeSet) {
-    auto offNdeSet = ndeSet_;
+  for (const auto &ndeSet : otherMesh._ndeSets) {
+    auto offNdeSet = ndeSet;
     offNdeSet.ndeIdOffset += _numNdes;
 
     addNdeSet(offNdeSet);
   }
 
-  // Append all element blocks with extra offset.
-  for (const auto &elmBlock_ : otherMesh._elmBlock) {
-    // offset by number of nodes in current mesh.
-    auto offElmBlock = elmBlock_;
-    offElmBlock.ndeIdOffset += _numNdes;
+  // Append all side sets.
+  for (const auto &sdeSet : otherMesh._sdeSets) {
+    auto offSdeSet = sdeSet;
+    offSdeSet.elmIdOffset += _numElms;
 
-    addElmBlk(offElmBlock);
+    addSdeSet(offSdeSet);
   }
-
-  // TODO: Add SideSet support in exoPopulate method.
-  /*
-    // Append all side sets.
-    for (const auto &sideSet_ : otherMesh._sideSet) {
-
-      addSdeSet(sideSet_);
-    }
-  */
 
   // Increase node count. This is delayed as the old value is needed for adding
   // offset to blocks and sets.
   _numNdes += otherMesh._numNdes;
 
-  // Full update to the database.
+  // Full update to the database. Also updates element count _numElms
   exoPopulate(true);
 }
 
 }  // namespace EXOMesh
+}  // namespace MSH
+}  // namespace NEM

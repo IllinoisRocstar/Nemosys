@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.40.1
+Version 0.41.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -31,19 +31,19 @@ The following table contains all available CMake options to
 configure NEMoSys functionality. The necessary third-party library is listed
 in the notes section.
 
-| Option name            | Option description              | Default | Notes                        |
-|------------------------|---------------------------------|---------|------------------------------|
-| ENABLE_TESTING         | Enable testing                  | ON      |                              |
-| ENABLE_METIS           | Enable Metis interface          | ON      | Requires METIS               |
-| ENABLE_NETGEN          | Enable Netgen interface         | ON      | Requires Netgen              |
-| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                              |
-| ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler        |
-| ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II           |
-| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS       |
-| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG     |
-| ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix           |
-| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires cfMesh and OpenFOAM |
-| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                  |
+| Option name            | Option description              | Default | Notes                            |
+|------------------------|---------------------------------|---------|----------------------------------|
+| ENABLE_TESTING         | Enable testing                  | ON      |                                  |
+| ENABLE_METIS           | Enable Metis interface          | ON      | Requires METIS                   |
+| ENABLE_NETGEN          | Enable Netgen interface         | ON      | Requires Netgen                  |
+| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
+| ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler            |
+| ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II               |
+| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
+| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
+| ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
+| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires cfMesh and OpenFOAM     |
+| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
@@ -64,7 +64,7 @@ command:
 -DENABLE_CFMSH=ON -DCFMSH_INCPATH=${PATH_TO_CFMSH_INCPATH}
 ```
 
-### Enabling Simmetrix ###
+### Enabling Simmetrix (UNSUPPORTED) ###
 **Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
 (http://www.simmetrix.com/). To enable NEMoSys interface to the Simmetrix,
 compile with `ENABLE_SIMMETRIX=ON` and set the location of the Simmetrix

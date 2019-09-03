@@ -70,45 +70,45 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       auto *params = new netgenParams();
 
-      if (ngparams.has_key("uselocalh"))
+      if (ngparams.contains("uselocalh"))
         params->uselocalh = ngparams["uselocalh"].as<bool>();
-      if (ngparams.has_key("maxh"))
+      if (ngparams.contains("maxh"))
         params->maxh = ngparams["maxh"].as<double>();
-      if (ngparams.has_key("fineness"))
+      if (ngparams.contains("fineness"))
         params->fineness = ngparams["fineness"].as<double>();
-      if (ngparams.has_key("grading"))
+      if (ngparams.contains("grading"))
         params->grading = ngparams["grading"].as<double>();
-      if (ngparams.has_key("elementsperedge"))
+      if (ngparams.contains("elementsperedge"))
         params->elementsperedge = ngparams["elementsperedge"].as<double>();
-      if (ngparams.has_key("elementspercurve"))
+      if (ngparams.contains("elementspercurve"))
         params->elementspercurve = ngparams["elementspercurve"].as<double>();
-      if (ngparams.has_key("closeedgeenable"))
+      if (ngparams.contains("closeedgeenable"))
         params->closeedgeenable = ngparams["closeedgeenable"].as<bool>();
-      if (ngparams.has_key("closeedgefact"))
+      if (ngparams.contains("closeedgefact"))
         params->closeedgefact = ngparams["closeedgefact"].as<double>();
-      if (ngparams.has_key("second_order"))
+      if (ngparams.contains("second_order"))
         params->second_order = ngparams["second_order"].as<bool>();
-      if (ngparams.has_key("meshsize_filename"))
+      if (ngparams.contains("meshsize_filename"))
         params->meshsize_filename = ngparams["meshsize_filename"].as<std::string>();
-      if (ngparams.has_key("quad_dominated"))
+      if (ngparams.contains("quad_dominated"))
         params->quad_dominated = ngparams["quad_dominated"].as<bool>();
-      if (ngparams.has_key("optvolmeshenable"))
+      if (ngparams.contains("optvolmeshenable"))
         params->optvolmeshenable = ngparams["optvolmeshenable"].as<bool>();
-      if (ngparams.has_key("optsteps_2d"))
+      if (ngparams.contains("optsteps_2d"))
         params->optsteps_2d = ngparams["optsteps_2d"].as<int>();
-      if (ngparams.has_key("optsteps_3d"))
+      if (ngparams.contains("optsteps_3d"))
         params->optsteps_3d = ngparams["optsteps_3d"].as<int>();
-      if (ngparams.has_key("invert_tets"))
+      if (ngparams.contains("invert_tets"))
         params->invert_tets = ngparams["invert_tets"].as<bool>();
-      if (ngparams.has_key("invert_trigs"))
+      if (ngparams.contains("invert_trigs"))
         params->invert_trigs = ngparams["invert_trigs"].as<bool>();
-      if (ngparams.has_key("check_overlap"))
+      if (ngparams.contains("check_overlap"))
         params->check_overlap = ngparams["check_overlap"].as<bool>();
-      if (ngparams.has_key("check_overlapping_boundary"))
+      if (ngparams.contains("check_overlapping_boundary"))
         params->check_overlapping_boundary = ngparams["check_overlapping_boundary"].as<bool>();
-      if (ngparams.has_key("refine_with_geometry_adaptation"))
+      if (ngparams.contains("refine_with_geometry_adaptation"))
         params->refine_with_geom = ngparams["refine_with_geometry_adaptation"].as<bool>();
-      if (ngparams.has_key("refine_without_geometry_adaptation"))
+      if (ngparams.contains("refine_without_geometry_adaptation"))
         params->refine_without_geom = ngparams["refine_without_geometry_adaptation"].as<bool>();
 
       auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
@@ -122,7 +122,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
               << std::endl;
     exit(1);
 #else
-    if (!inputjson.has_key("License File"))
+    if (!inputjson.contains("License File"))
     {
       std::cerr << "Simmetrix license file must be specified in JSON"
                 << std::endl;
@@ -143,15 +143,15 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
     else
     {
       jsoncons::json simmxParams = inputjson["Meshing Parameters"]["Simmetrix Parameters"];
-      if (simmxParams.has_key("Mesh Size"))
+      if (simmxParams.contains("Mesh Size"))
         params->meshSize = simmxParams["Mesh Size"].as<double>();
-      if (simmxParams.has_key("Anisotropic Curvature Refinement"))
+      if (simmxParams.contains("Anisotropic Curvature Refinement"))
         params->anisoMeshCurv = simmxParams["Anisotropic Curvature Refinement"].as<double>();
-      if (simmxParams.has_key("Global Gradation Rate"))
+      if (simmxParams.contains("Global Gradation Rate"))
         params->glbSizeGradRate = simmxParams["Global Gradation Rate"].as<double>();
-      if (simmxParams.has_key("Surface Mesh Improver Gradation Rate"))
+      if (simmxParams.contains("Surface Mesh Improver Gradation Rate"))
         params->surfMshImprovGradRate = simmxParams["Surface Mesh Improver Gradation Rate"].as<double>();
-      if (simmxParams.has_key("Surface Mesh Improver Min Size"))
+      if (simmxParams.contains("Surface Mesh Improver Min Size"))
         params->surfMshImprovMinSize = simmxParams["Surface Mesh Improver Min Size"].as<double>();
 
       auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params,
@@ -180,7 +180,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // required params here
       // cad file
-      if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+      if (inputjson["Mesh File Options"].contains("Input Geometry File"))
         params->geomFilePath =
             inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
       else
@@ -190,7 +190,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
 
       // mesh generator
-      if (cfmparams.has_key("Generator"))
+      if (cfmparams.contains("Generator"))
         params->generator = cfmparams["Generator"].as<std::string>();
       else
       {
@@ -200,22 +200,22 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
 
       // rest of params are optional
-      if (cfmparams.has_key("MaxCellSize"))
+      if (cfmparams.contains("MaxCellSize"))
         params->maxCellSize =
             cfmparams["MaxCellSize"].as<double>();
-      if (cfmparams.has_key("MinCellSize"))
+      if (cfmparams.contains("MinCellSize"))
         params->minCellSize =
             cfmparams["MinCellSize"].as<double>();
-      if (cfmparams.has_key("BoundaryCellSize"))
+      if (cfmparams.contains("BoundaryCellSize"))
         params->bndryCellSize =
             cfmparams["BoundaryCellSize"].as<double>();
-      if (cfmparams.has_key("KeepCellsIntersectingBoundary"))
+      if (cfmparams.contains("KeepCellsIntersectingBoundary"))
         params->keepCellIB =
             cfmparams["KeepCellsIntersectingBoundary"].as<double>();
-      if (cfmparams.has_key("CheckForGluedMesh"))
+      if (cfmparams.contains("CheckForGluedMesh"))
         params->chkGluMsh =
             cfmparams["CheckForGluedMesh"].as<double>();
-      if (cfmparams.has_key("AllowDisconnectedDomains"))
+      if (cfmparams.contains("AllowDisconnectedDomains"))
           params->_alwDiscDomains = 
               cfmparams["AllowDisconnectedDomains"].as<bool>();
       else
@@ -223,38 +223,38 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       std::string cap = "BoundaryLayers";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withBndLyr = true;
         params->blNLyr = cfmparams[cap]["NLayers"].as<double>();
         params->blThkRto = cfmparams[cap]["ThicknessRatio"].as<double>();
-        if (cfmparams[cap].has_key("MaxFirstLayerThickness"))
+        if (cfmparams[cap].contains("MaxFirstLayerThickness"))
           params->maxFrstLyrThk = cfmparams[cap]["MaxFirstLayerThickness"].as<double>();
-        if (cfmparams[cap].has_key("AllowDiscontinuity"))
+        if (cfmparams[cap].contains("AllowDiscontinuity"))
           params->alwDiscont = cfmparams[cap]["AllowDiscontinuity"].as<bool>();
 
         // patch boundary layers
         std::string subcap = "PatchBoundaryLayers";
-        if (cfmparams[cap].has_key(subcap))
+        if (cfmparams[cap].contains(subcap))
         {
           params->_withBndLyrPtch = true;
           for (const auto &jptch : cfmparams[cap][subcap].array_range())
           {
             cfmPtchBndLyr blPatch;
             blPatch.patchName = jptch["PatchName"].as<std::string>();
-            if (jptch.has_key("AllowDiscontinuity"))
+            if (jptch.contains("AllowDiscontinuity"))
               blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
             else
               blPatch.alwDiscont = false;
-            if (jptch.has_key("MaxFirstLayerThickness"))
+            if (jptch.contains("MaxFirstLayerThickness"))
               blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
             else
               blPatch.maxFrstLyrThk = -1;
-            if (jptch.has_key("NLayers"))
+            if (jptch.contains("NLayers"))
               blPatch.blNLyr = jptch["NLayers"].as<int>();
             else
               blPatch.blNLyr = -1;
-            if (jptch.has_key("ThicknessRatio"))
+            if (jptch.contains("ThicknessRatio"))
               blPatch.blThkRto = jptch["ThicknessRatio"].as<double>();
             else
               blPatch.blThkRto = -1.;
@@ -265,7 +265,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       cap = "SurfaceFeatureEdges";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withSrfEdg = true;
         params->srfEdgAng = cfmparams[cap]["Angle"].as<double>();
@@ -273,7 +273,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       cap = "ObjectRefinements";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withObjRfn = true;
         for (const auto &refObj : cfmparams[cap].array_range())
@@ -292,7 +292,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       cap = "ImproveMeshQuality";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withMshQlt = true;
         params->qltNItr = cfmparams[cap]["NIterations"].as<int>();
@@ -305,18 +305,18 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       cap = "LocalRefinement";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withLclRef = true;
         for (const auto &jptch : cfmparams[cap].array_range())
         {
           cfmLclRefPatch refPatch;
           refPatch.patchName = jptch["PatchName"].as<std::string>();
-          if (jptch.has_key("AdditionalRefinementLevels"))
+          if (jptch.contains("AdditionalRefinementLevels"))
             refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
           else
             refPatch.aditRefLvls = -1;
-          if (jptch.has_key("CellSize"))
+          if (jptch.contains("CellSize"))
             refPatch.cellSize = jptch["CellSize"].as<double>();
           else
             refPatch.cellSize = -1.;
@@ -326,7 +326,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
       // optional capability
       cap = "RenameBoundary";
-      if (cfmparams.has_key(cap))
+      if (cfmparams.contains(cap))
       {
         params->_withRenBndry = true;
         cfmRenBndry renBndry;
@@ -369,7 +369,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       jsoncons::json shmparams =
               inputjson["Meshing Parameters"]["snappyHexMesh Parameters"];
 
-      if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+      if (inputjson["Mesh File Options"].contains("Input Geometry File"))
           params->geomFileName = 
               inputjson["Mesh File Options"]
                       ["Input Geometry File"].as<std::string>();
@@ -379,7 +379,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           throw;        
       }
 
-      if (shmparams.has_key("InputPatchName"))
+      if (shmparams.contains("InputPatchName"))
           params->geomPatchName = 
               shmparams["InputPatchName"].as<std::string>();
       else
@@ -388,7 +388,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           throw;        
       }
 
-      if (shmparams.has_key("SurfPatchName"))
+      if (shmparams.contains("SurfPatchName"))
         params->surfRefPatch = 
             shmparams["SurfPatchName"].as<std::string>();
       else
@@ -397,7 +397,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         throw;        
       }
     
-      if (shmparams.has_key("Castellated Mesh"))
+      if (shmparams.contains("Castellated Mesh"))
             params->_withCastMesh =
               shmparams["Castellated Mesh"].as<bool>();
       else{
@@ -405,7 +405,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "\n" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("Snapping"))
+      if (shmparams.contains("Snapping"))
         params->_withSnap =
           shmparams["Snapping"].as<bool>();
       else{
@@ -413,7 +413,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "Keyword!\n" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("Layer Addition"))
+      if (shmparams.contains("Layer Addition"))
         params->_withLayers =
           shmparams["Layer Addition"].as<bool>();
       else{
@@ -421,7 +421,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "Keyword!\n" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("CellZones"))
+      if (shmparams.contains("CellZones"))
         params->_withCellZones =
           shmparams["CellZones"].as<bool>();
       else{
@@ -429,7 +429,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
               << "Keyword!\n" << std::endl;
               throw;
       }
-      if (shmparams.has_key("RegionRefine"))
+      if (shmparams.contains("RegionRefine"))
         params->_withGeomRefReg =
           shmparams["RegionRefine"].as<bool>();
       else{
@@ -437,7 +437,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
               << "Keyword!\n" << std::endl;
               throw;
       }
-      if (shmparams.has_key("SurfaceRefine"))
+      if (shmparams.contains("SurfaceRefine"))
         params->_withSurfRefReg =
           shmparams["SurfaceRefine"].as<bool>();
       else{
@@ -445,49 +445,49 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
               << "Keyword!\n" << std::endl;
               throw;
       }
-      if (shmparams.has_key("maxLocalCells"))
+      if (shmparams.contains("maxLocalCells"))
         params->maxLCells =
           shmparams["maxLocalCells"].as<int>();
       else{
         params->maxLCells = 2000000;
       }
-      if (shmparams.has_key("maxGlobalCells"))
+      if (shmparams.contains("maxGlobalCells"))
         params->maxGCells =
           shmparams["maxGlobalCells"].as<int>();
       else{
         params->maxGCells = 4000000;
       }
-      if (shmparams.has_key("minRefCells"))
+      if (shmparams.contains("minRefCells"))
         params->minRefCells =
           shmparams["minRefCells"].as<int>();
       else{
         params->minRefCells = 0;
       }
-      if (shmparams.has_key("nCellsBetweenLevels"))
+      if (shmparams.contains("nCellsBetweenLevels"))
         params->cellsBetnLvls =
           shmparams["nCellsBetweenLevels"].as<int>();
       else{
         params->cellsBetnLvls = 3;
       }
-      if (shmparams.has_key("surfaceRefinementLvlMin"))
+      if (shmparams.contains("surfaceRefinementLvlMin"))
         params->refSurfLvlMin =
           shmparams["surfaceRefinementLvlMin"].as<int>();
       else{
         params->refSurfLvlMin = 0;
       }
-      if (shmparams.has_key("surfaceRefinementLvlMax"))
+      if (shmparams.contains("surfaceRefinementLvlMax"))
         params->refSurfLvlMax =
           shmparams["surfaceRefinementLvlMax"].as<int>();
       else{
         params->refSurfLvlMax = 0;
       }
-      if (shmparams.has_key("resolveFeatureAngle"))
+      if (shmparams.contains("resolveFeatureAngle"))
         params->featAngle =
           shmparams["resolveFeatureAngle"].as<double>();
       else{
         params->featAngle = 60;
       }
-      if (shmparams.has_key("locationInMeshX"))
+      if (shmparams.contains("locationInMeshX"))
         params->locMeshX =
           shmparams["locationInMeshX"].as<double>();
       else{
@@ -495,7 +495,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "keep cells is needed!" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("locationInMeshY"))
+      if (shmparams.contains("locationInMeshY"))
         params->locMeshY =
           shmparams["locationInMeshY"].as<double>();
       else{
@@ -503,7 +503,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "keep cells is needed!" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("locationInMeshZ"))
+      if (shmparams.contains("locationInMeshZ"))
         params->locMeshZ =
           shmparams["locationInMeshZ"].as<double>();
       else{
@@ -511,211 +511,211 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   << "keep cells is needed!" << std::endl;
                   throw;
       }
-      if (shmparams.has_key("allowFreeStandingZoneFaces"))
+      if (shmparams.contains("allowFreeStandingZoneFaces"))
         params->_alwFreeZone =
           shmparams["allowFreeStandingZoneFaces"].as<double>();
       else{
         params->_alwFreeZone = true;
       }
-      if (shmparams.has_key("nSmoothPatch"))
+      if (shmparams.contains("nSmoothPatch"))
         params->snapSmthPatch =
           shmparams["nSmoothPatch"].as<int>();
       else{
         params->snapSmthPatch = 4;
       }
-      if (shmparams.has_key("tolerance"))
+      if (shmparams.contains("tolerance"))
         params->snapTol =
           shmparams["tolerance"].as<double>();
       else{
         params->snapTol = 0.5;
       }
-      if (shmparams.has_key("snapSolveIter"))
+      if (shmparams.contains("snapSolveIter"))
         params->solveSnapIter =
           shmparams["snapSolveIter"].as<int>();
       else{
         params->solveSnapIter = 200;
       }
-      if (shmparams.has_key("snapRelaxIter"))
+      if (shmparams.contains("snapRelaxIter"))
         params->relaxSnapIter =
           shmparams["snapRelaxIter"].as<int>();
       else{
         params->relaxSnapIter = 6;
       }
-      if (shmparams.has_key("relativeSizes"))
+      if (shmparams.contains("relativeSizes"))
         params->_relSize =
           shmparams["relativeSizes"].as<double>();
       else{
         params->_relSize = 1;
       }
-      if (shmparams.has_key("expansionRatio"))
+      if (shmparams.contains("expansionRatio"))
         params->expRatio =
           shmparams["expansionRatio"].as<double>();
       else{
         params->expRatio = 1.3;
       }
-      if (shmparams.has_key("finalLayerThickness"))
+      if (shmparams.contains("finalLayerThickness"))
         params->finLThick =
           shmparams["finalLayerThickness"].as<double>();
       else{
         params->finLThick = 1.0;
       }
-      if (shmparams.has_key("minThickness"))
+      if (shmparams.contains("minThickness"))
         params->minThick =
           shmparams["minThickness"].as<double>();
       else{
         params->minThick = 0.1;
       }
-      if (shmparams.has_key("nGrow"))
+      if (shmparams.contains("nGrow"))
         params->nGrow =
           shmparams["nGrow"].as<int>();
       else{
         params->nGrow = 0;
       }
-      if (shmparams.has_key("featureAngle"))
+      if (shmparams.contains("featureAngle"))
         params->lyrFeatAngle =
           shmparams["featureAngle"].as<double>();
       else{
         params->lyrFeatAngle = 30;
       }
-      if (shmparams.has_key("nRelaxIter"))
+      if (shmparams.contains("nRelaxIter"))
         params->lyrRelaxIter =
           shmparams["nRelaxIter"].as<int>();
       else{
         params->lyrRelaxIter = 3;
       }
-      if (shmparams.has_key("nSmoothSurfaceNormals"))
+      if (shmparams.contains("nSmoothSurfaceNormals"))
         params->lyrSmthSurfNorm =
           shmparams["nSmoothSurfaceNormals"].as<int>();
       else{
         params->lyrSmthSurfNorm = 1;
       }
-      if (shmparams.has_key("nSmoothNormals"))
+      if (shmparams.contains("nSmoothNormals"))
         params->lyrSmthNorm =
         shmparams["nSmoothNormals"].as<int>();
       else{
         params->lyrSmthNorm = 3;
       }
-      if (shmparams.has_key("nSmoothThickness"))
+      if (shmparams.contains("nSmoothThickness"))
         params->lyrSmthThick =
           shmparams["nSmoothThickness"].as<int>();
       else{
         params->lyrSmthThick = 2;
       }
-      if (shmparams.has_key("maxFaceThicknessRatio"))
+      if (shmparams.contains("maxFaceThicknessRatio"))
         params->lyrMaxFcTR =
           shmparams["maxFaceThicknessRatio"].as<double>();
       else{
         params->lyrMaxFcTR = 0.5;
       }
-      if (shmparams.has_key("maxThicknessToMedialRatio"))
+      if (shmparams.contains("maxThicknessToMedialRatio"))
         params->lyrMaxThickTMR =
           shmparams["maxThicknessToMedialRatio"].as<double>();
       else{
         params->lyrMaxThickTMR = 1.0;
       }
-      if (shmparams.has_key("minMedialAxisAngle"))
+      if (shmparams.contains("minMedialAxisAngle"))
         params->lyrMinMedAngl =
           shmparams["minMedialAxisAngle"].as<double>();
       else{
         params->lyrMinMedAngl = 90;
       }
-      if (shmparams.has_key("nBufferCellsNoExtrude"))
+      if (shmparams.contains("nBufferCellsNoExtrude"))
         params->lyrBuffrCells =
           shmparams["nBufferCellsNoExtrude"].as<int>();
       else{
         params->lyrBuffrCells = 0;
       }
-      if (shmparams.has_key("nLayerIter"))
+      if (shmparams.contains("nLayerIter"))
         params->lyrIter =
           shmparams["nLayerIter"].as<int>();
       else{
         params->lyrIter = 50;
       }
-      if (shmparams.has_key("maxNonOrtho"))
+      if (shmparams.contains("maxNonOrtho"))
         params->qcMaxNOrtho =
           shmparams["maxNonOrtho"].as<int>();
       else{
         params->qcMaxNOrtho = 65;
       }
-      if (shmparams.has_key("maxBoundarySkewness"))
+      if (shmparams.contains("maxBoundarySkewness"))
         params->qcMaxBndrySkew =
           shmparams["maxBoundarySkewness"].as<double>();
       else{
         params->qcMaxBndrySkew = 20;
       }
-      if (shmparams.has_key("maxInternalSkewness"))
+      if (shmparams.contains("maxInternalSkewness"))
         params->qcMaxIntSkew =
           shmparams["maxInternalSkewness"].as<double>();
       else{
         params->qcMaxIntSkew = 4;
       }
-      if (shmparams.has_key("maxConcave"))
+      if (shmparams.contains("maxConcave"))
         params->qcMaxConc =
           shmparams["maxConcave"].as<double>();
       else{
         params->qcMaxConc = 80;
       }
-      if (shmparams.has_key("minVol"))
+      if (shmparams.contains("minVol"))
         params->qcMinVol =
           shmparams["minVol"].as<double>();
       else{
         params->qcMinVol = 1e-13;
       }
-      if (shmparams.has_key("minTetQuality"))
+      if (shmparams.contains("minTetQuality"))
         params->qcMinTetQ =
           shmparams["minTetQuality"].as<double>();
       else{
         params->qcMinTetQ = 1e-15;
       }
-      if (shmparams.has_key("minArea"))
+      if (shmparams.contains("minArea"))
         params->qcMinArea =
           shmparams["minArea"].as<double>();
       else{
         params->qcMinArea = -1;
       }
-      if (shmparams.has_key("minTwist"))
+      if (shmparams.contains("minTwist"))
         params->qcMinTwist =
           shmparams["minTwist"].as<double>();
       else{
         params->qcMinTwist = 0.02;
       }
-      if (shmparams.has_key("minFaceWeight"))
+      if (shmparams.contains("minFaceWeight"))
         params->qcMinFaceW =
           shmparams["minFaceWeight"].as<double>();
       else{
         params->qcMinFaceW = 0.05;
       }
-      if (shmparams.has_key("minVolRatio"))
+      if (shmparams.contains("minVolRatio"))
         params->qcMinVolRto =
           shmparams["minVolRatio"].as<double>();
       else{
         params->qcMinVolRto = 0.01;
       }
-      if (shmparams.has_key("minDeterminant"))
+      if (shmparams.contains("minDeterminant"))
         params->qcMinDet =
           shmparams["minDeterminant"].as<double>();
       else{
         params->qcMinDet = 0.001;
       }
-      if (shmparams.has_key("minTriangleTwist"))
+      if (shmparams.contains("minTriangleTwist"))
         params->qcMinTrTwist =
           shmparams["minTriangleTwist"].as<double>();
       else{
         params->qcMinTrTwist = -1;
       }
-      if (shmparams.has_key("qcnSmoothScale"))
+      if (shmparams.contains("qcnSmoothScale"))
         params->qcSmthScale =
           shmparams["qcnSmoothScale"].as<int>();
       else{
         params->qcSmthScale = 5;
       }
-      if (shmparams.has_key("errorReduction"))
+      if (shmparams.contains("errorReduction"))
         params->qcErrRedctn =
           shmparams["errorReduction"].as<double>();
       else{
         params->qcErrRedctn = 0.75;
       }
-      if (shmparams.has_key("mergeTolerance"))
+      if (shmparams.contains("mergeTolerance"))
         params->mergeTol =
           shmparams["mergeTolerance"].as<double>();
       else{
@@ -724,7 +724,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
 
       std::string cap2 = "GeomRefinementRegions";
-      if (shmparams.has_key(cap2))
+      if (shmparams.contains(cap2))
       {
         params->_withGeomRefReg = true;
 
@@ -732,48 +732,48 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         {
           shmGeomRefine geomRef;
 
-          if (jptch2.has_key("PatchName"))
+          if (jptch2.contains("PatchName"))
             geomRef.patchNm = jptch2["PatchName"].as<std::string>();
           else{
             std::cerr << "Please define \"PatchName\"\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("searchableShape"))
+          if (jptch2.contains("searchableShape"))
             geomRef.searchableName =
                   jptch2["searchableShape"].as<std::string>();
           else{
             std::cerr << "Please define \"searchableShape\"\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("shapeParams1"))
+          if (jptch2.contains("shapeParams1"))
             geomRef.shapeParameters1 =
                   jptch2["shapeParams1"].as<std::string>();
           else{
             std::cerr << "Insufficient Parameters\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("shapeParams2"))
+          if (jptch2.contains("shapeParams2"))
             geomRef.shapeParameters2 =
                   jptch2["shapeParams2"].as<std::string>();
-          if (jptch2.has_key("Radius"))
+          if (jptch2.contains("Radius"))
             geomRef.rad = jptch2["Radius"].as<double>();
           else{
             std::cerr << "Please define \"Radius\"\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("Mode"))
+          if (jptch2.contains("Mode"))
             geomRef.mode = jptch2["Mode"].as<std::string>();
           else{
             std::cerr << "Please define \"Mode\"\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("MinLevel"))
+          if (jptch2.contains("MinLevel"))
             geomRef.minLvl = jptch2["MinLevel"].as<int>();
           else{
             std::cerr << "Please define \"MinLevel\"\n" << std::endl;
             throw;
           }
-          if (jptch2.has_key("MaxLevel"))
+          if (jptch2.contains("MaxLevel"))
             geomRef.maxLvl = jptch2["MaxLevel"].as<int>();
           else{
             std::cerr << "Please define \"MaxLevel\"\n" << std::endl;
@@ -787,7 +787,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
 
       std::string cap3 = "SurfaceRefinementRegions";
-      if (shmparams.has_key(cap3))
+      if (shmparams.contains(cap3))
       {
         params->_withSurfRefReg = true;
 
@@ -796,19 +796,19 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
 
           shmRegionRef surfRef;
 
-          if (jptch3.has_key("PatchName"))
+          if (jptch3.contains("PatchName"))
             surfRef.refPatchNm = jptch3["PatchName"].as<std::string>();
           else{
             surfRef.refPatchNm = params->surfRefPatch;
           }
 
-          if (jptch3.has_key("MinLevel"))
+          if (jptch3.contains("MinLevel"))
             surfRef.minLvl = jptch3["MinLevel"].as<int>();
           else{
             surfRef.minLvl = 1;
           }
 
-          if (jptch3.has_key("MaxLevel"))
+          if (jptch3.contains("MaxLevel"))
             surfRef.maxLvl = jptch3["MaxLevel"].as<int>();
           else{
             std::cerr << "Please define maximum surface refinement"
@@ -849,13 +849,13 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         jsoncons::json bmshparams =
               inputjson["Meshing Parameters"]["blockMesh Parameters"];
     
-    if (inputjson["Mesh File Options"].has_key("Input Dict File"))
+    if (inputjson["Mesh File Options"].contains("Input Dict File"))
       params->_ownBlockMshDict = 
         inputjson["Mesh File Options"]["Input Dict File"].as<bool>();
 
     
     // Parameter parsing starts here
-    if (bmshparams.has_key("Block Geometry"))
+    if (bmshparams.contains("Block Geometry"))
       params->_isBlock =
         bmshparams["Block Geometry"].as<bool>();
     else{
@@ -863,7 +863,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 << "\n" << std::endl;
                 throw;
     }
-    if (bmshparams.has_key("Sphere Geometry"))
+    if (bmshparams.contains("Sphere Geometry"))
       params->_isSphere =
         bmshparams["Sphere Geometry"].as<bool>();
     else{
@@ -871,7 +871,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 << "\n" << std::endl;
                 throw;
     }
-    if (bmshparams.has_key("Cylinder/Tapered_Cone Geometry"))
+    if (bmshparams.contains("Cylinder/Tapered_Cone Geometry"))
       params->_isCylinder_TCone =
         bmshparams["Cylinder/Tapered_Cone Geometry"].as<bool>();
     else{
@@ -879,7 +879,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 << "\n" << std::endl;
                 throw;
     }
-    if (bmshparams.has_key("scaleToMeters"))
+    if (bmshparams.contains("scaleToMeters"))
       params->cnvrtToMeters = 
        bmshparams["scaleToMeters"].as<double>();
     else{
@@ -888,7 +888,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 throw;
     }
 
-    if (bmshparams.has_key("Cell_Size")){
+    if (bmshparams.contains("Cell_Size")){
       params->_cellSizeDefined = true;
       params->cellSize = 
        bmshparams["Cell_Size"].as<double>();
@@ -899,7 +899,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       params->_cellSizeDefined = false;
     }
 
-    if (bmshparams.has_key("XdirectionCells"))
+    if (bmshparams.contains("XdirectionCells"))
       params->cellsXDir = 
        bmshparams["XdirectionCells"].as<int>();
     else{
@@ -912,7 +912,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 throw;
       }
     }
-    if (bmshparams.has_key("YdirectionCells"))
+    if (bmshparams.contains("YdirectionCells"))
       params->cellsYDir = 
        bmshparams["YdirectionCells"].as<int>();
     else{
@@ -925,7 +925,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                 throw;
       }
     }
-    if (bmshparams.has_key("ZdirectionCells"))
+    if (bmshparams.contains("ZdirectionCells"))
       params->cellsZDir = 
        bmshparams["ZdirectionCells"].as<int>();
     else{
@@ -939,14 +939,14 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
     }
       
-    if (bmshparams.has_key("Block Parameters"))
+    if (bmshparams.contains("Block Parameters"))
     {
 
-      if (bmshparams["Block Parameters"].has_key("Auto_Generate"))
+      if (bmshparams["Block Parameters"].contains("Auto_Generate"))
       {
         params->_autoGenerateBox = true;
 
-        if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+        if (inputjson["Mesh File Options"].contains("Input Geometry File"))
           params->packFileName = 
               inputjson["Mesh File Options"]
                       ["Input Geometry File"].as<std::string>();
@@ -957,7 +957,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         }
 
         if (bmshparams["Block Parameters"]
-            ["Auto_Generate"].has_key("Offset_XDir"))
+            ["Auto_Generate"].contains("Offset_XDir"))
               params->offsetX = 
               bmshparams["Block Parameters"]
                 ["Auto_Generate"]["Offset_XDir"].as<double>();
@@ -965,7 +965,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           params->offsetX = 0.1;
         }
         if (bmshparams["Block Parameters"]
-            ["Auto_Generate"].has_key("Offset_YDir"))
+            ["Auto_Generate"].contains("Offset_YDir"))
              params->offsetY = 
               bmshparams["Block Parameters"]
               ["Auto_Generate"]["Offset_YDir"].as<double>();
@@ -973,7 +973,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           params->offsetY = 0.1;
         }
         if (bmshparams["Block Parameters"]
-            ["Auto_Generate"].has_key("Offset_ZDir"))
+            ["Auto_Generate"].contains("Offset_ZDir"))
              params->offsetZ = 
               bmshparams["Block Parameters"]
               ["Auto_Generate"]["Offset_ZDir"].as<double>();
@@ -986,7 +986,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         params->_autoGenerateBox = false;
       }
       
-      if (bmshparams["Block Parameters"].has_key("X1"))
+      if (bmshparams["Block Parameters"].contains("X1"))
         params->initX = bmshparams["Block Parameters"]["X1"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -997,7 +997,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }
       }
-      if (bmshparams["Block Parameters"].has_key("Y1"))
+      if (bmshparams["Block Parameters"].contains("Y1"))
        params->initY = bmshparams["Block Parameters"]["Y1"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -1008,7 +1008,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }
       }
-      if (bmshparams["Block Parameters"].has_key("Z1"))
+      if (bmshparams["Block Parameters"].contains("Z1"))
         params->initZ = bmshparams["Block Parameters"]["Z1"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -1019,7 +1019,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }
       }
-      if (bmshparams["Block Parameters"].has_key("LengthX"))
+      if (bmshparams["Block Parameters"].contains("LengthX"))
         params->lenX = bmshparams["Block Parameters"]["LengthX"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -1031,7 +1031,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }    
       }
-      if (bmshparams["Block Parameters"].has_key("LengthY"))
+      if (bmshparams["Block Parameters"].contains("LengthY"))
         params->lenY = bmshparams["Block Parameters"]["LengthY"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -1043,7 +1043,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }
       }
-      if (bmshparams["Block Parameters"].has_key("LengthZ"))
+      if (bmshparams["Block Parameters"].contains("LengthZ"))
         params->lenZ = bmshparams["Block Parameters"]["LengthZ"].as<double>();
       else{
         if (!(params->_autoGenerateBox)){
@@ -1055,19 +1055,19 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
           std::cout << "Box will be generated automatically" << std::endl;
         }
       }
-      if (bmshparams["Block Parameters"].has_key("GradingXdir"))
+      if (bmshparams["Block Parameters"].contains("GradingXdir"))
         params->smplGradingX = 
         bmshparams["Block Parameters"]["GradingXdir"].as<double>();
         else{
           params->smplGradingX = 1;
         }
-      if (bmshparams["Block Parameters"].has_key("GradingYdir"))
+      if (bmshparams["Block Parameters"].contains("GradingYdir"))
         params->smplGradingY = 
         bmshparams["Block Parameters"]["GradingYdir"].as<double>();
         else{
           params->smplGradingY = 1;
         }
-      if (bmshparams["Block Parameters"].has_key("GradingZdir"))
+      if (bmshparams["Block Parameters"].contains("GradingZdir"))
         params->smplGradingZ = 
         bmshparams["Block Parameters"]["GradingZdir"].as<double>();
         else{
@@ -1075,50 +1075,50 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         }
     }
     
-    if (bmshparams.has_key("Sphere Parameters"))
+    if (bmshparams.contains("Sphere Parameters"))
     {
       
-      if (bmshparams["Sphere Parameters"].has_key("Center X"))
+      if (bmshparams["Sphere Parameters"].contains("Center X"))
         params->centerX =
             bmshparams["Sphere Parameters"]["Center X"].as<double>();
       else{
         std::cerr << "Define sphere center!\n" << std::endl;
         throw;
       }
-      if (bmshparams["Sphere Parameters"].has_key("Center Y"))
+      if (bmshparams["Sphere Parameters"].contains("Center Y"))
         params->centerY =
             bmshparams["Sphere Parameters"]["Center Y"].as<double>();
       else{
         std::cerr << "Define sphere center!\n" << std::endl;
         throw;
       }
-      if (bmshparams["Sphere Parameters"].has_key("Center Z"))
+      if (bmshparams["Sphere Parameters"].contains("Center Z"))
         params->centerZ =
             bmshparams["Sphere Parameters"]["Center Z"].as<double>();
       else{
         std::cerr << "Define sphere center!\n" << std::endl;
         throw;
       }
-      if (bmshparams["Sphere Parameters"].has_key("Radius"))
+      if (bmshparams["Sphere Parameters"].contains("Radius"))
         params->radius =
             bmshparams["Sphere Parameters"]["Radius"].as<double>();
       else{
         std::cerr << "Define sphere radius!\n" << endl;
         throw;
       }
-      if (bmshparams["Sphere Parameters"].has_key("GradingXdir"))
+      if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
         params->sphrGradingX =
             bmshparams["Sphere Parameters"]["GradingXdir"].as<double>();
       else{
         params->sphrGradingX = 1;
       }
-      if (bmshparams["Sphere Parameters"].has_key("GradingYdir"))
+      if (bmshparams["Sphere Parameters"].contains("GradingYdir"))
         params->sphrGradingY =
             bmshparams["Sphere Parameters"]["GradingYdir"].as<double>();
       else{
         params->sphrGradingY = 1;
       }
-      if (bmshparams["Sphere Parameters"].has_key("GradingXdir"))
+      if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
         params->sphrGradingZ =
             bmshparams["Sphere Parameters"]["GradingZdir"].as<double>();
       else{
@@ -1126,9 +1126,9 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
     }
     
-    if (bmshparams.has_key("Cylinder/Tapered_Cone Parameters"))
+    if (bmshparams.contains("Cylinder/Tapered_Cone Parameters"))
     {
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center X"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center X"))
         params->centerCyl[0] =
               bmshparams["Cylinder/Tapered_Cone Parameters"]
                                                 ["Center X"].as<double>();
@@ -1136,7 +1136,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         std::cerr << "Define center point for cylinder axis\n" << std::endl;
         throw;
       }
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center Y"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Y"))
         params->centerCyl[1] =
               bmshparams["Cylinder/Tapered_Cone Parameters"]
                                                 ["Center Y"].as<double>();
@@ -1144,7 +1144,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         std::cerr << "Define center point for cylinder axis\n" << std::endl;
         throw;
       }
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Center Z"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Z"))
         params->centerCyl[2] =
               bmshparams["Cylinder/Tapered_Cone Parameters"]
                                                 ["Center Z"].as<double>();
@@ -1152,12 +1152,12 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         std::cerr << "Define center point for cylinder axis\n" << std::endl;
         throw;
       }
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Radius1"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius1"))
         params->radius1 =
               bmshparams["Cylinder/Tapered_Cone Parameters"]
                                                 ["Radius1"].as<double>();
       
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Radius2")){
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius2")){
         params->radius2 =
                 bmshparams["Cylinder/Tapered_Cone Parameters"]
                                                   ["Radius2"].as<double>();
@@ -1169,21 +1169,21 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
                   ["Radius1"].as<double>();
       }
 
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingXdir"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
         params->cylGrading[0] =
             bmshparams["Cylinder/Tapered_Cone Parameters"]
                   ["GradingXdir"].as<double>();
       else{
         params->cylGrading[0] = 1;
       }
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingYdir"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingYdir"))
         params->cylGrading[1] =
             bmshparams["Cylinder/Tapered_Cone Parameters"]
                   ["GradingYdir"].as<double>();
       else{
         params->cylGrading[1] = 1;
       }
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("GradingXdir"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
         params->cylGrading[2] =
             bmshparams["Cylinder/Tapered_Cone Parameters"]
                   ["GradingZdir"].as<double>();
@@ -1191,7 +1191,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         params->cylGrading[2] = 1;
       }
       
-      if (bmshparams["Cylinder/Tapered_Cone Parameters"].has_key("Height"))
+      if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Height"))
         params->height =
             bmshparams["Cylinder/Tapered_Cone Parameters"]
                 ["Height"].as<double>();
