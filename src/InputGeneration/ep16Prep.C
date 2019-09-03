@@ -63,7 +63,7 @@ void ep16Prep::readJSON()
   // reading mandatory fields
   std::string type;
   _fname = _jstrm["File Name"].as<std::string>();
-  if (_jstrm.has_key("Type"))
+  if (_jstrm.contains("Type"))
   {
     type = _jstrm["Type"].as<std::string>();
     nemAux::toLower(type);
@@ -138,7 +138,7 @@ void ep16Prep::process()
 
     // reading mesh databse
     std::string exo_fname = _jstrm["Mesh"]["File"].as<std::string>();
-    _mdb = new EXOMesh::exoMesh(exo_fname);
+    _mdb = new NEM::MSH::EXOMesh::exoMesh(exo_fname);
     _mdb->read();
 
     // material information
@@ -295,8 +295,8 @@ void ep16Prep::wrtPre(const std::string &_tsk, const std::string &__tsk)
   {
     // data gathering
     int _mxn, _mxl, _mxmn, _mxsn;
-    _mxn = _mdb->getNumberOfNode();
-    _mxl = _mdb->getNumberOfElement();
+    _mxn = _mdb->getNumberOfNodes();
+    _mxl = _mdb->getNumberOfElements();
     _mxmn = _mxn;
     _mxsn = _mxn;
 
@@ -347,7 +347,7 @@ void ep16Prep::wrtMsh(const std::string &_tsk, const std::string &__tsk)
     }
     _tcmnt << getCmntStr() << "NSET     XYZ";
     wrtCmnt(_tcmnt.str());
-    for (int ns = 0; ns < _mdb->getNumberOfNodeSet(); ns++)
+    for (int ns = 0; ns < _mdb->getNumberOfNodeSets(); ns++)
     {
       std::string pre = nemAux::findToStr(_mdb->getNdeSetName(ns), "_");
       nemAux::toLower(pre);
@@ -396,9 +396,9 @@ void ep16Prep::wrtMsh(const std::string &_tsk, const std::string &__tsk)
     double _ta;
     std::string _blnk;
     _blnk.insert(_blnk.end(), 50, ' ');
-    for (int es = 0; es < (_mdb->getNumberOfElementBlock()); es++)
+    for (int es = 0; es < (_mdb->getNumberOfElementBlocks()); es++)
     {
-      std::string es_name = _mdb->getBlockName(es);
+      std::string es_name = _mdb->getElmBlkName(es);
       nemAux::toLower(es_name);
       std::string pre = nemAux::findToStr(es_name, "_");
       if (pre == preStr)
@@ -407,9 +407,9 @@ void ep16Prep::wrtMsh(const std::string &_tsk, const std::string &__tsk)
         _matl = _mat[es_name];
         if (_matl == 0)
         {
-          std::cerr << "Error: Keyword " << es_name
+          std::cerr << "WARNING: Keyword " << es_name
                     << " is not defined in input file." << std::endl;
-          throw;
+          continue;
         }
         _type = 0;
         _sset = 0;
@@ -495,7 +495,7 @@ void ep16Prep::edit(const std::string &_tsk, const std::string &__tsk)
   else if (_tsk == "slideline" && __tsk == "seek")
   {
     // slide line keyword check
-    if (!_jstrm.has_key("Slideline"))
+    if (!_jstrm.contains("Slideline"))
       return;
     int seek = _jstrm["Slideline"].get_with_default("Seek", 6);
 
@@ -534,21 +534,21 @@ void ep16Prep::edit(const std::string &_tsk, const std::string &__tsk)
   else if (_tsk == "detonation")
   {
     // detonation information
-    if (!_jstrm.has_key("Detonation"))
+    if (!_jstrm.contains("Detonation"))
       return;
 
     std::vector<double> _g;
     _g.resize(3, 0.0);
     double tburn = 0.0;
 
-    if (_jstrm["Detonation"].has_key("Gravity"))
+    if (_jstrm["Detonation"].contains("Gravity"))
     {
       _g[0] = _jstrm["Detonation"]["Gravity"][0].as<double>();
       _g[1] = _jstrm["Detonation"]["Gravity"][1].as<double>();
       _g[2] = _jstrm["Detonation"]["Gravity"][2].as<double>();
     }
 
-    if (_jstrm["Detonation"].has_key("Tburn"))
+    if (_jstrm["Detonation"].contains("Tburn"))
       tburn = _jstrm["Detonation"]["Tburn"].as<double>();
 
     std::stringstream iss;
@@ -605,7 +605,7 @@ void ep16Prep::edit(const std::string &_tsk, const std::string &__tsk)
   else if (_tsk == "main")
   {
     // detonation information
-    if (!_jstrm.has_key("Main"))
+    if (!_jstrm.contains("Main"))
       return;
 
     // set defaults to unused values

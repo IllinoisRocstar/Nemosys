@@ -1,7 +1,10 @@
-#include <gtest/gtest.h>
-#include "point.H"
-#include "kmeans.H"
 #include <cmath>
+#include <memory>
+
+#include <gtest/gtest.h>
+
+#include "kmeans.H"
+#include "point.H"
 
 using namespace NEM::GEO;
 using namespace NEM::MTH;

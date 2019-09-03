@@ -100,7 +100,7 @@ RemeshDriver::RemeshDriver(std::vector<std::string> _fluidNames,
 
   if (writeIntermediateFiles) this->remeshedSurf->write();
   bool withC2CTransSmooth =
-      remeshjson.has_key("C2CTransSmooth")
+      remeshjson.contains("C2CTransSmooth")
       ? remeshjson["C2CTransSmooth"].as<bool>()
       : false;
 
@@ -193,12 +193,12 @@ RemeshDriver *RemeshDriver::readJSON(const jsoncons::json &inputjson)
   int numPartitions = inputjson["Number Of New Partitions"].as<int>();
   int writeIntermediateFiles = 0;
   double searchTolerance;
-  if (inputjson.has_key("Search Tolerance"))
+  if (inputjson.contains("Search Tolerance"))
     searchTolerance = inputjson["Search Tolerance"].as<double>();
   else
     searchTolerance = 1.e-16;
 
-  if (inputjson.has_key("Write Intermediate Files"))
+  if (inputjson.contains("Write Intermediate Files"))
   {
     writeIntermediateFiles = inputjson["Write Intermediate Files"].as<int>();
   }
@@ -206,7 +206,7 @@ RemeshDriver *RemeshDriver::readJSON(const jsoncons::json &inputjson)
   // Map surface patch numbers to surface types
   std::map<std::string, std::vector<int>> surfacePatchTypes;
 
-  if (inputjson.has_key("Burning Surface Patches"))
+  if (inputjson.contains("Burning Surface Patches"))
   {
     std::vector<int> bPatchMap = inputjson["Burning Surface Patches"].as<std::vector<int>>();
     // sort by patch ID
@@ -221,7 +221,7 @@ RemeshDriver *RemeshDriver::readJSON(const jsoncons::json &inputjson)
     std::cerr << "Specify Burning Surface Patches in input file." << std::endl;
     throw;
   }
-  if (inputjson.has_key("Non-Burning Surface Patches"))
+  if (inputjson.contains("Non-Burning Surface Patches"))
   {
     std::vector<int> nbPatchMap = inputjson["Non-Burning Surface Patches"].as<std::vector<int>>();
     // sort by patch ID
@@ -237,7 +237,7 @@ RemeshDriver *RemeshDriver::readJSON(const jsoncons::json &inputjson)
               << std::endl;
     throw;
   }
-  if (inputjson.has_key("Non-Interacting Surface Patches"))
+  if (inputjson.contains("Non-Interacting Surface Patches"))
   {
     std::vector<int> niPatchMap = inputjson["Non-Interacting Surface Patches"].as<std::vector<int>>();
     // sort by patch ID
@@ -256,12 +256,12 @@ RemeshDriver *RemeshDriver::readJSON(const jsoncons::json &inputjson)
 
   int writeToTemporaryDirectory = 0;
   std::string tmp_main_dir;
-  if (inputjson.has_key("Write To Temporary Directory"))
+  if (inputjson.contains("Write To Temporary Directory"))
   {
     writeToTemporaryDirectory = inputjson["Write To Temporary Directory"].as<int>();
     if (writeToTemporaryDirectory)
     {
-      if (inputjson.has_key("Temporary Rocstar Case Directory"))
+      if (inputjson.contains("Temporary Rocstar Case Directory"))
       {
         tmp_main_dir = inputjson["Temporary Rocstar Case Directory"].as<std::string>();
       }

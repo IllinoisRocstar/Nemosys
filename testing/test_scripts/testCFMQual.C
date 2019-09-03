@@ -67,7 +67,7 @@ int generate(const char* jsonF)
 
   // required params here
   // cad file
-  if (inputjson["Mesh File Options"].has_key("Input Geometry File"))
+  if (inputjson["Mesh File Options"].contains("Input Geometry File"))
       params->geomFilePath = 
           inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
   else
@@ -77,7 +77,7 @@ int generate(const char* jsonF)
   }
   
   // mesh generator
-  if (cfmparams.has_key("Generator"))
+  if (cfmparams.contains("Generator"))
       params->generator = cfmparams["Generator"].as<std::string>();
   else
   {
@@ -87,56 +87,56 @@ int generate(const char* jsonF)
   }
   
   // rest of params are optional
-  if (cfmparams.has_key("MaxCellSize"))
+  if (cfmparams.contains("MaxCellSize"))
     params->maxCellSize = 
         cfmparams["MaxCellSize"].as<double>();
-  if (cfmparams.has_key("MinCellSize"))
+  if (cfmparams.contains("MinCellSize"))
     params->minCellSize = 
         cfmparams["MinCellSize"].as<double>();
-  if (cfmparams.has_key("BoundaryCellSize"))
+  if (cfmparams.contains("BoundaryCellSize"))
     params->bndryCellSize = 
         cfmparams["BoundaryCellSize"].as<double>();
-  if (cfmparams.has_key("KeepCellsIntersectingBoundary"))
+  if (cfmparams.contains("KeepCellsIntersectingBoundary"))
     params->keepCellIB = 
         cfmparams["KeepCellsIntersectingBoundary"].as<double>();
-  if (cfmparams.has_key("CheckForGluedMesh"))
+  if (cfmparams.contains("CheckForGluedMesh"))
     params->chkGluMsh = 
         cfmparams["CheckForGluedMesh"].as<double>();
 
   // optional capability
   std::string cap = "BoundaryLayers";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withBndLyr = true;
       params->blNLyr = cfmparams[cap]["NLayers"].as<double>();
       params->blThkRto = cfmparams[cap]["ThicknessRatio"].as<double>();
-      if (cfmparams[cap].has_key("MaxFirstLayerThickness"))
+      if (cfmparams[cap].contains("MaxFirstLayerThickness"))
           params->maxFrstLyrThk = cfmparams[cap]["MaxFirstLayerThickness"].as<double>();
-      if (cfmparams[cap].has_key("AllowDiscontinuity"))
+      if (cfmparams[cap].contains("AllowDiscontinuity"))
           params->alwDiscont = cfmparams[cap]["AllowDiscontinuity"].as<bool>();
 
       // patch boundary layers
       std::string subcap = "PatchBoundaryLayers";
-      if (cfmparams[cap].has_key(subcap))
+      if (cfmparams[cap].contains(subcap))
       {
           params->_withBndLyrPtch = true;
           for (auto jptch : cfmparams[cap][subcap].array_range())
           {
               cfmPtchBndLyr blPatch;
               blPatch.patchName = jptch["PatchName"].as<std::string>();
-              if (jptch.has_key("AllowDiscontinuity"))
+              if (jptch.contains("AllowDiscontinuity"))
                   blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
               else
                   blPatch.alwDiscont = false;
-              if (jptch.has_key("MaxFirstLayerThickness"))
+              if (jptch.contains("MaxFirstLayerThickness"))
                   blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
               else
                   blPatch.maxFrstLyrThk = -1;
-              if (jptch.has_key("NLayers"))
+              if (jptch.contains("NLayers"))
                   blPatch.blNLyr = jptch["NLayers"].as<int>();
               else
                   blPatch.blNLyr = -1;
-              if (jptch.has_key("ThicknessRatio"))
+              if (jptch.contains("ThicknessRatio"))
                   blPatch.blThkRto = jptch["ThicknessRatio"].as<double>();
               else
                   blPatch.blThkRto = -1.;
@@ -148,7 +148,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "SurfaceFeatureEdges";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withSrfEdg = true;
       params->srfEdgAng = cfmparams[cap]["Angle"].as<double>();
@@ -156,7 +156,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "ObjectRefinements";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withObjRfn = true;
       for (auto refObj : cfmparams[cap].array_range())
@@ -175,7 +175,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "ImproveMeshQuality";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withMshQlt = true;
       params->qltNItr = cfmparams[cap]["NIterations"].as<int>();
@@ -188,18 +188,18 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "LocalRefinement";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withLclRef = true;
       for (auto jptch : cfmparams[cap].array_range())
       {
           cfmLclRefPatch refPatch;
           refPatch.patchName = jptch["PatchName"].as<std::string>();
-          if (jptch.has_key("AdditionalRefinementLevels"))
+          if (jptch.contains("AdditionalRefinementLevels"))
               refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
           else
               refPatch.aditRefLvls = -1;
-          if (jptch.has_key("CellSize"))
+          if (jptch.contains("CellSize"))
               refPatch.cellSize = jptch["CellSize"].as<double>();
           else
               refPatch.cellSize = -1.;
@@ -209,7 +209,7 @@ int generate(const char* jsonF)
 
   // optional capability
   cap = "RenameBoundary";
-  if (cfmparams.has_key(cap))
+  if (cfmparams.contains(cap))
   {
       params->_withRenBndry = true;
       cfmRenBndry renBndry;
@@ -269,7 +269,7 @@ int optimize(const char* jsonF)
             jsch["Params"]["QualityThreshold"].as<double>();
         params->nSrfItr = 
             jsch["Params"]["NSurfaceIterations"].as<int>();
-        if (jsch["Params"].has_key("ConstrainedCellSet"))
+        if (jsch["Params"].contains("ConstrainedCellSet"))
         {
             params->_withConstraint = true;
             params->consCellSet = 

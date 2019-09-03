@@ -1,19 +1,18 @@
 #include <gtest.h>
 
-#include <NemDriver.H>
-#include <exoMesh.H>
-#include <meshBase.H>
+#include "exoMesh.H"
 
 std::string arg_fName1;
 std::string arg_fName2;
 std::string arg_fName3;
 std::string arg_fName4;
 
-bool diffExoMesh(const EXOMesh::exoMesh &em1, const EXOMesh::exoMesh &em2) {
-  if (em1.getNumberOfNode() != em2.getNumberOfNode()) return true;
-  if (em1.getNumberOfElement() != em2.getNumberOfElement()) return true;
-  if (em1.getNumberOfNodeSet() != em2.getNumberOfNodeSet()) return true;
-  if (em1.getNumberOfElementBlock() != em2.getNumberOfElementBlock())
+bool diffExoMesh(const NEM::MSH::EXOMesh::exoMesh &em1,
+                 const NEM::MSH::EXOMesh::exoMesh &em2) {
+  if (em1.getNumberOfNodes() != em2.getNumberOfNodes()) return true;
+  if (em1.getNumberOfElements() != em2.getNumberOfElements()) return true;
+  if (em1.getNumberOfNodeSets() != em2.getNumberOfNodeSets()) return true;
+  if (em1.getNumberOfElementBlocks() != em2.getNumberOfElementBlocks())
     return true;
   if (em1.getNumberOfSideSets() != em2.getNumberOfSideSets()) return true;
 
@@ -21,16 +20,16 @@ bool diffExoMesh(const EXOMesh::exoMesh &em1, const EXOMesh::exoMesh &em2) {
 }
 
 int test_exoMesh_stitch(const std::string &fName1, const std::string &fName2) {
-  EXOMesh::exoMesh em1;
-  EXOMesh::exoMesh em2;
+  NEM::MSH::EXOMesh::exoMesh em1;
+  NEM::MSH::EXOMesh::exoMesh em2;
 
   em1.read(fName1);
   em2.read(fName2);
 
-  int non = em1.getNumberOfNode() + em2.getNumberOfNode();
-  int noe = em1.getNumberOfElement() + em2.getNumberOfElement();
-  int nons = em1.getNumberOfNodeSet() + em2.getNumberOfNodeSet();
-  int noeb = em1.getNumberOfElementBlock() + em2.getNumberOfElementBlock();
+  int non = em1.getNumberOfNodes() + em2.getNumberOfNodes();
+  int noe = em1.getNumberOfElements() + em2.getNumberOfElements();
+  int nons = em1.getNumberOfNodeSets() + em2.getNumberOfNodeSets();
+  int noeb = em1.getNumberOfElementBlocks() + em2.getNumberOfElementBlocks();
   int noss = em1.getNumberOfSideSets() + em2.getNumberOfSideSets();
 
   em1.stitch(em2);
@@ -39,10 +38,10 @@ int test_exoMesh_stitch(const std::string &fName1, const std::string &fName2) {
   em1.write();
   em1.report();
 
-  if (em1.getNumberOfNode() != non) return 1;
-  if (em1.getNumberOfElement() != noe) return 1;
-  if (em1.getNumberOfNodeSet() != nons) return 1;
-  if (em1.getNumberOfElementBlock() != noeb) return 1;
+  if (em1.getNumberOfNodes() != non) return 1;
+  if (em1.getNumberOfElements() != noe) return 1;
+  if (em1.getNumberOfNodeSets() != nons) return 1;
+  if (em1.getNumberOfElementBlocks() != noeb) return 1;
   if (em1.getNumberOfSideSets() != noss) return 1;
 
   return 0;
@@ -50,8 +49,8 @@ int test_exoMesh_stitch(const std::string &fName1, const std::string &fName2) {
 
 bool test_exoMesh_mergeNodes(const std::string &fName1,
                              const std::string &fName2) {
-  EXOMesh::exoMesh em1;
-  EXOMesh::exoMesh em2;
+  NEM::MSH::EXOMesh::exoMesh em1;
+  NEM::MSH::EXOMesh::exoMesh em2;
 
   em1.read(fName1);
   em2.read(fName2);

@@ -7,6 +7,9 @@
 #include <vtkDataSet.h>
 #include <vtkIdTypeArray.h>
 
+#include <vtkIdList.h>
+#include <vtkModelMetadata.h>
+
 // Nemosys headers
 #include "nemosys_export.h"
 
@@ -38,7 +41,8 @@ class NEMOSYS_EXPORT meshBase
   public:
     meshBase()
         : dataSet(nullptr), numPoints(0), numCells(0),
-          hasSizeField(false), checkQuality(false), continuous(false), order(1)
+          hasSizeField(false), checkQuality(false), continuous(false), order(1),
+          metadata(nullptr)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
@@ -417,7 +421,12 @@ class NEMOSYS_EXPORT meshBase
         @return <>
     **/
     virtual std::vector<nemId_t> getConnectivities() const = 0;
+    // set metadata, including sidesets
+    void setMetadata(vtkSmartPointer<vtkModelMetadata> _metadata){metadata = _metadata;}
+    vtkSmartPointer<vtkModelMetadata> getMetadata(){return metadata;}
 
+
+  
   // --- data transfer
   public:
 
@@ -813,6 +822,9 @@ class NEMOSYS_EXPORT meshBase
     /** @brief map between local and global cell idx in partition
     **/
     std::map<nemId_t, nemId_t> partToGlobCellMap;
+    // metadata
+    vtkSmartPointer<vtkModelMetadata> metadata;
+
 };
 
 /** @brief sum comparison for vectors representing faces inserted into map

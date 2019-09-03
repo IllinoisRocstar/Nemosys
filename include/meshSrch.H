@@ -1,12 +1,11 @@
 #ifndef NEMOSYS_MESHSRCH_H_
 #define NEMOSYS_MESHSRCH_H_
 
-#include "nemosys_export.h"
-
 #include <set>
 
 #include <vtkCellLocator.h>
 
+#include "nemosys_export.h"
 #include "meshBase.H"
 
 class NEMOSYS_EXPORT meshSrch : public meshBase {
@@ -57,10 +56,8 @@ class NEMOSYS_EXPORT meshSrch : public meshBase {
  public:
   bool chkDuplElm() const;  // finds duplicate elements
 
-  // cell search methods
+  // point search methods
  public:
-  void FindCellsWithinBounds(std::vector<double> &bb, std::vector<nemId_t> &ids,
-                             bool fulImrsd = true);
   // get coordinates and connectivities of the surface triangulation and returns
   // ids for the nodes that reside on the triangulation within given tolerance.
   void FindPntsOnTriSrf(const std::vector<double> &crds,
@@ -71,9 +68,28 @@ class NEMOSYS_EXPORT meshSrch : public meshBase {
   void FindPntsOnEdge(std::vector<double> &crds, std::set<nemId_t> &ids,
                       double tol = 0.1e-15) const;
 
-  void FindPntsInTriSrf(const std::vector<std::vector<double>> &crds,
-                        const std::vector<std::vector<vtkIdType>> &conn,
-                        std::vector<nemId_t> &ids, double tol = 0.1e-15) const;
+  // cell search methods
+ public:
+  // get vtkPolyData and return ids for the cells whose center reside inside the
+  // polyData.
+  void FindCellsInPolyData(vtkPolyData *polyData, std::vector<nemId_t> &ids,
+                           bool query3Donly = true, double tol = 0.1e-15) const;
+  // get coordinates of a bounding box [xmin,xmax, ymin,ymax, zmin,zmax] and
+  // return ids for the cells whose center reside inside the bounding box.
+  void FindCellsWithinBounds(std::vector<double> &bb, std::vector<nemId_t> &ids,
+                             bool fulImrsd = true);
+  // get coordinates and connectivities of the surface triangulation of a closed
+  // manifold and return ids for the cells whose center reside inside the
+  // manifold.
+  void FindCellsInTriSrf(const std::vector<std::vector<double>> &crds,
+                         const std::vector<std::vector<vtkIdType>> &conns,
+                         std::vector<nemId_t> &ids, bool query3Donly = true,
+                         double tol = 0.1e-15) const;
+  // get center and radius of sphere and return ids for the cells whose center
+  // reside inside the sphere.
+  void FindCellsInSphere(const std::vector<double> &center, double radius,
+                         std::vector<nemId_t> &ids, bool query3Donly = true,
+                         double tol = 0.1e-15) const;
 
   // misc
  public:

@@ -11,11 +11,13 @@
 // Authors: Gaetan Compere, Jean-Francois Remacle
 // -------------------------------------------------------------------
 
-#include "DistanceFunction.h"
-#include "MAdOutput.h"
+#include <array>
+
 #include "CallbackManager.h"
-#include "MeshSizeBase.h"
+#include "DistanceFunction.h"
 #include "MAdDefines.h"
+#include "MAdOutput.h"
+#include "MeshSizeBase.h"
 
 /*
 // available in Gmsh repository, not in 2.4.2 version
@@ -1382,17 +1384,14 @@ namespace MAd {
       for (int j=0; j<3; j++) vGrad[3*i+j] = 0.;
     }
 
-
-    int nbNodes = 3;
-    std::vector<double[3]> xyz(nbNodes);
-    std::vector<double> dist(nbNodes);
-    double invjac[3][3], jac [3][3], detJ;
+    constexpr int nbNodes = 3;
+    double xyz[nbNodes][3];
+    double dist[nbNodes], invjac[3][3], jac[3][3], detJ;
     double fGrad[3];
     double Grads[4][3];
     int iF = 0;
-    for ( fIt = faces.begin(); fIt != faces.end(); fIt++ )
-      {
-        F_coordP1(*fIt,xyz.data());
+    for (fIt = faces.begin(); fIt != faces.end(); fIt++) {
+         F_coordP1(*fIt, xyz);
 
         // get distances
         for (int iV = 0; iV<3; iV++) dist[iV] = getDistance(F_vertex(*fIt,iV));

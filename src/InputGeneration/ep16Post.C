@@ -62,13 +62,13 @@ int ep16Post::readJSON()
 
   // reading mandatory fields
   int nTask;
-  if (!_jstrm.has_key("Number of Task"))
+  if (!_jstrm.contains("Number of Task"))
   {
     std::cerr << "Number of Task field is not defined.\n";
     return(-1);
   }
   nTask = _jstrm["Number of Task"].as<int>();
-  if (!_jstrm.has_key("Task"))
+  if (!_jstrm.contains("Task"))
   {
     std::cerr << "Task field is not defined.\n";
     return(-1);
@@ -108,7 +108,7 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
 
   // read csv input file
   std::string fname;
-  if (!jtsk.has_key("Input File"))
+  if (!jtsk.contains("Input File"))
   {
     std::cerr << "An input file should be provided.\n";
     return(-1);

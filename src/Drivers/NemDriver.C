@@ -6,12 +6,15 @@
 #include "MeshGenDriver.H"
 #include "ConversionDriver.H"
 #include "InputGenDriver.H"
+
+#include "NucMeshDriver.H"
 #include "RemeshDriver.H"
 #include "RocPartCommGenDriver.H"
 #include "PackMeshDriver.H"
 
 #include <string>
 #include <iostream>
+
 
 //------------------------------ Factory of Drivers ----------------------------------------//
 NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson)
@@ -40,6 +43,10 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson)
   else if (program_type == "Input Generation")
   {
     return InputGenDriver::readJSON(inputjson);
+  }
+  else if (!program_type.compare("NucMesh Generation"))
+  {
+  	return NucMeshDriver::readJSON(inputjson);
   }
   else if (program_type == "Pack Mesh Generation")
   {
