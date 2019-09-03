@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.41.0
+Version 0.42.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -42,26 +42,23 @@ in the notes section.
 | ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
 | ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
-| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires cfMesh and OpenFOAM     |
+| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM     |
 | ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
 NEMoSys comes with a fully integrated cfMesh-based meshing module. To enable
-the capability, the NEMoSys should be compiled with `ENABLE_CFMSH=ON` and also
-pointed to the location of the installation of the cfMesh's meshLibrary headers
-(`${PATH_TO_CFMSH_INCPATH}`). Following OpenFOAM conventions, headers are
-usually kept in `meshLibrary\lnInclude` folder.
+the capability, the NEMoSys should be compiled with `ENABLE_CFMSH=ON`.
 
 **Note:** cfMesh depends on
 OpenFOAM, so before starting the compile process make sure to load OpenFOAM
 environment variables. Depending on the version, OpenFOAM can be loaded by
 sourcing the bashrc, or cshrc scripts provided in the `OpenFoam-x.y/etc/`.
 Refer to the OpenFOAM documentation for further instructions. After OpenFOAM
-environment is loaded, enable cfMesh build by adding these lines to the cmake
+environment is loaded, enable cfMesh build by adding this line to the cmake
 command:
 ```
--DENABLE_CFMSH=ON -DCFMSH_INCPATH=${PATH_TO_CFMSH_INCPATH}
+-DENABLE_CFMSH=ON
 ```
 
 ### Enabling Simmetrix (UNSUPPORTED) ###
