@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 41)
+set(NEMOSYS_MINOR_VERSION 42)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -378,28 +378,13 @@ if(ENABLE_CFMSH)
   message(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
   message(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
 
-  # Requires cfMesh
-  find_library(CFMSH_LIB meshLibrary HINTS /opt/cfMesh/lib)
-  set(CFMSH_INCPATH "/opt/cfMesh/meshLibrary/lnInclude"
-      CACHE PATH "cfMesh lnInclude directory path.")
-
-  message(STATUS "cfMesh include path ${CFMSH_INCPATH}")
-  message(STATUS "cfMesh libs ${CFMSH_LIB}")
-  get_filename_component(CFMSH_LIB_PATH ${CFMSH_LIB} PATH)
-
-  # CMake 3.13 required for target_link_directories
-  link_directories(${OPNF_LIBRARY_DIRS})
-  # /CMake 3.13
+  find_package(OpenMP REQUIRED)
 
   # CMake 3.13 required for target_link_options
-  set(CMAKE_EXE_LINKER_FLAGS
-      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_MODULE_LINKER_FLAGS
-      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_SHARED_LINKER_FLAGS
-      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
-  set(CMAKE_STATIC_LINKER_FLAGS
-      "-Xlinker --copy-dt-needed-entries -Xlinker --no-as-needed")
+  set(CMAKE_EXE_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
+  set(CMAKE_MODULE_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
+  set(CMAKE_SHARED_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
+  set(CMAKE_STATIC_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
   # /CMake 3.13
 endif()
 
@@ -426,21 +411,32 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
   #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast \
   #-Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
+elseif(MSVC)
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
+  string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
 # Find contrib libraries #######################################################
 
-# Find MAdLib, ANN, and jsoncons
+# Find MAdLib and ANN
 add_subdirectory(contrib/madlib-1.3.0) # includes ANN
-add_subdirectory(contrib/jsoncons-0.127.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
 get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND WRAPPER_INCLUDE_DIRS ${MADLIB_INCPATH})
 get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND WRAPPER_INCLUDE_DIRS ${ANN_INCPATH})
+
+# Find jsoncons
+add_subdirectory(contrib/jsoncons-0.127.0)
 get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND WRAPPER_INCLUDE_DIRS ${JSONCONS_INCPATH})
+
+if(ENABLE_CFMSH)
+  # Find cfMesh
+  add_subdirectory(contrib/cfmesh-1.1.2ir1)
+  # TODO: Add incpath and wrapper include dirs
+endif()
 
 # Setting library files ########################################################
 # TODO: clean up the unnecessary modules such as R8
@@ -693,7 +689,7 @@ if(ENABLE_NETGEN)
   if(HAVE_NETGEN_OLD)
     target_link_libraries(Nemosys PUBLIC ${NETGEN_LIB})
   else()
-  target_link_libraries(Nemosys PUBLIC nglib)
+    target_link_libraries(Nemosys PUBLIC nglib)
   endif()
   target_compile_definitions(Nemosys PUBLIC HAVE_NGEN)
   target_include_directories(Nemosys SYSTEM PUBLIC ${NETGEN_INCLUDE_DIRS})
@@ -710,16 +706,14 @@ if(ENABLE_CFMSH)
       # TODO: Add namespace to cfMesh to protect the symbol clash between
       #       libdynamicMesh.so in OpenFOAM and libmeshLibrary.so in cfMesh.
       #       Till then, link cfMesh before OpenFOAM.
-      #PRIVATE ${CFMSH_LIB}
-      PUBLIC ${CFMSH_LIB}
+      PUBLIC cfmesh
       PUBLIC ${OPNF_LIBRARIES})
-  # CMake 3.13 required for target_link_directories
-  #target_link_directories(Nemosys PUBLIC ${OPNF_LIBRARY_DIRS})
-  # /CMake 3.13
   target_include_directories(Nemosys SYSTEM
-      PRIVATE ${CFMSH_INCPATH}
       PUBLIC ${OPNF_INCLUDE_DIRS})
-  target_compile_definitions(Nemosys PUBLIC HAVE_CFMSH)
+  target_compile_definitions(Nemosys PUBLIC
+      HAVE_CFMSH
+      ${OPNF_COMPILE_DEFINITIONS}
+  )
 
   string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
   if(OF4 GREATER -1)
@@ -741,40 +735,9 @@ if(ENABLE_CFMSH)
 
   string(FIND $ENV{WM_PROJECT_VERSION} "7" OF7)
   if(OF7 GREATER -1)
+    set(OF_VERSION 7)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
   endif()
-
-  # openfoam variables
-  set(LABEL_SIZE 32)
-  set(PRECISION DP)
-  target_compile_definitions(Nemosys PUBLIC
-      OF_DOUBLE_PRECISION
-      WM_LABEL_SIZE=${LABEL_SIZE}
-      WM_${PRECISION}
-      NoRepository
-#      linux64
-#      WM_ARCH_OPTION=64
-  )
-  target_compile_options(Nemosys PUBLIC
-      -ftemplate-depth-100
-  )
-  # CMake 3.13 required for target_link_options
-  #target_link_options(Nemosys PUBLIC
-  #    LINKER:--copy-dt-needed-entries
-  #    LINKER:--no-as-needed
-  #)
-  # /CMake 3.13
-
-  # python wrapper flags
-  set(PYTHON_PPDS ${PYTHON_PPDS}
-      -DOF_DOUBLE_PRECISION
-      -DWM_LABEL_SIZE=${LABEL_SIZE}
-      -DWM_${PRECISION}
-      -DNoRepository
-#      linux64
-#      WM_ARCH_OPTION=64
-  )
-  set(PYTHON_PPDS ${PYTHON_PPDS} -DHAVE_CFMSH)
 endif()
 
 # Generate export header #######################################################
