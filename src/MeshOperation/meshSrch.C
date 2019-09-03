@@ -6,6 +6,7 @@
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkSelectEnclosedPoints.h>
+#include <vtkSphereSource.h>
 
 // DEBUG:
 //#include <vtkSTLWriter.h>
@@ -195,27 +196,9 @@ bool meshSrch::chkDuplElm() const {
   return false;
 }
 
-void meshSrch::FindPntsInTriSrf(
-    const std::vector<std::vector<double>> &crds,
-    const std::vector<std::vector<vtkIdType>> &conns, std::vector<nemId_t> &ids,
-    double tol) const {
-  // create vtkPolyData using crds and conns
-  vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
-  vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
-  vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
-
-  for (const auto &crd : crds) pnts->InsertNextPoint(crd.data());
-  for (const auto &conn : conns)
-    polys->InsertNextCell(conn.size(), conn.data());
-  polyData->SetPoints(pnts);
-  polyData->SetPolys(polys);
-
-  // DEBUG: Write polyData to STL
-//  vtkSmartPointer<vtkSTLWriter> stlw = vtkSmartPointer<vtkSTLWriter>::New();
-//  stlw->SetInputData(polyData);
-//  stlw->SetFileName("polydata.stl");
-//  stlw->Write();
-
+void meshSrch::FindCellsInPolyData(vtkPolyData *polyData,
+                                   std::vector<nemId_t> &ids, bool query3Donly,
+                                   double tol) const {
   // pass dataSet through vtkCellCenters filter
   vtkSmartPointer<vtkCellCenters> cc = vtkSmartPointer<vtkCellCenters>::New();
 
@@ -228,12 +211,53 @@ void meshSrch::FindPntsInTriSrf(
   sep->SetInputConnection(cc->GetOutputPort());
 
   sep->SetSurfaceData(polyData);
-//  sep->CheckSurfaceOn();
+  // sep->CheckSurfaceOn();
 
   sep->SetTolerance(tol);
 
   sep->Update();
 
   for (nemId_t id = 0; id < getNumberOfCells(); ++id)
-    if (sep->IsInside(id)) ids.emplace_back(id);
+    if (sep->IsInside(id)) {
+      if (query3Donly && dataSet->GetCell(id)->GetCellDimension() != 3)
+        continue;
+      ids.emplace_back(id);
+    }
+}
+
+void meshSrch::FindCellsInTriSrf(
+    const std::vector<std::vector<double>> &crds,
+    const std::vector<std::vector<vtkIdType>> &conns, std::vector<nemId_t> &ids,
+    bool query3Donly, double tol) const {
+  // create vtkPolyData using crds and conns
+  vtkSmartPointer<vtkPoints> pnts = vtkSmartPointer<vtkPoints>::New();
+  vtkSmartPointer<vtkCellArray> polys = vtkSmartPointer<vtkCellArray>::New();
+  vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+
+  for (const auto &crd : crds) pnts->InsertNextPoint(crd.data());
+  for (const auto &conn : conns)
+    polys->InsertNextCell(conn.size(), conn.data());
+  polyData->SetPoints(pnts);
+  polyData->SetPolys(polys);
+
+  // DEBUG: Write polyData to STL
+  //  vtkSmartPointer<vtkSTLWriter> stlw = vtkSmartPointer<vtkSTLWriter>::New();
+  //  stlw->SetInputData(polyData);
+  //  stlw->SetFileName("polydata.stl");
+  //  stlw->Write();
+
+  FindCellsInPolyData(polyData, ids, query3Donly, tol);
+}
+
+void meshSrch::FindCellsInSphere(const std::vector<double> &center,
+                                 double radius, std::vector<nemId_t> &ids,
+                                 bool query3Donly, double tol) const {
+  // create vtkSphere using center and radius
+  vtkSmartPointer<vtkSphereSource> ss = vtkSmartPointer<vtkSphereSource>::New();
+  ss->SetRadius(radius);
+  ss->SetCenter(center[0], center[1], center[2]);
+
+  ss->Update();
+
+  FindCellsInPolyData(ss->GetOutput(), ids, query3Donly, tol);
 }

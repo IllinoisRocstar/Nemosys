@@ -104,6 +104,7 @@ NEM_add_test_executable(Refinement)
 NEM_add_test_executable(GmshMesh)
 NEM_add_test_executable(KMeans)
 NEM_add_test_executable(QHull)
+NEM_add_test_executable(NucMesh)
 
 # custom-built tests
 if(ENABLE_EXODUS)
@@ -198,18 +199,26 @@ NEM_add_test(pntgen PNTGen PNTGenTest
     bench6.json bench6_conv_gold.pntmesh
 )
 
-# Disable in Win for now due to CI/CD being 32 bit.
-if(NOT WIN32) # TODO: Switch Win CI/CD to 64 bit to re-enable.
+# Disable in Win due to CI/CD being 32-bit.
+if(NOT WIN32) # TODO: Switch Win CI/CD to 64-bit to re-enable.
 NEM_add_test(gmshMesh GmshMesh GmshMeshTest
     cube2.msh
     cube4.msh
     cube41.msh
 )
-endif()
+endif() # Disable in Win
 
 NEM_add_test(kMean KMeans kmeans)
 
 NEM_add_test(qHull QHull "")
+
+# Disable in Win due to CI/CD's Gmsh lacking OpenCASCADE support.
+if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
+NEM_add_test(nucMesh NucMesh NucMeshTest
+    atr_example_arrays.json
+    atr_example_REF.msh
+)
+endif() # Disable in Win
 
 if(ENABLE_EXODUS)
   NEM_add_test(exoMesh ExoMesh ExoMeshTest

@@ -3,7 +3,7 @@
     "Program Type": "Input Generation",
     "Service": "EPIC_2016",
     "Description": "Sample input file for EPIC 2016 with BCs",
-    "File Name": "bctest.dat",
+    "File Name": "bctest_ref.dat",
     "Case": {
       "Type": 902,
       "Id": 100,
@@ -15,12 +15,12 @@
       "Tmax": 100.0E-6
     },
     "Mesh": {
-      "File": "bctest.g"
+      "File": "bctest_ref.g"
     },
     "Material": {
       "PRJ_01_PhysGrp_1": 158,
       "PRJ_01_PhysGrp_2": 53,
-      "TRG_01": 14
+      "TRG_01_4": 14
     },
     "Boundary Condition": {
       "TRG_F1": "Fixed",

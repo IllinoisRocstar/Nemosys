@@ -61,7 +61,7 @@ class NEMOSYS_EXPORT ep16Prep : public inputGen {
   private:
     std::string _fname;
     bool _shortForm;
-    EXOMesh::exoMesh *_mdb;
+    NEM::MSH::EXOMesh::exoMesh *_mdb;
     std::map<std::string, int> _mat;
     std::map<std::string, std::string> _bcs;
     std::stringstream _buffer;

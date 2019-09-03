@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 40)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_MINOR_VERSION 41)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -151,11 +151,13 @@ if(ENABLE_MPI)
 endif()
 
 # Find VTK
-find_package(VTK REQUIRED)
+# v7.1.0 required for node set and side set name support in vtkModelMetadata
+find_package(VTK 7.1.0 REQUIRED)
 # UseVTK.cmake file does not correctly set VTK headers as external.
 #include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
 list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
+list(APPEND WRAPPER_INCLUDE_DIRS ${VTK_INCLUDE_DIRS})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
@@ -183,13 +185,15 @@ find_file(GMSH_HDR gmsh.h HINTS include)
 get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
 get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
 list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
+list(APPEND WRAPPER_INCLUDE_DIRS ${GMSH_INCPATH})
 message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
 
-# Find OpenCascade (used by Gmsh)
+# Find OpenCascade (used by Gmsh if build without ENABLE_OCC_STATIC)
 if(NOT WIN32)
   find_package(OpenCASCADE REQUIRED)
   list(APPEND LIBRARY_DIRS ${OpenCASCADE_LIBRARY_DIR})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${OpenCASCADE_INCLUDE_DIR})
   message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
   message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
 
@@ -205,14 +209,16 @@ if(WIN32) # Test new HDF5 logic on UNIX
   find_package(hdf5 REQUIRED COMPONENTS CXX CXX_HL CONFIG)
   NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
   list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
   message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
   message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
-  set(HAVE_HDF5_CONFIG)
+  set(HAVE_HDF5_CONFIG TRUE)
 else()
   find_package(HDF5 REQUIRED COMPONENTS CXX)
   list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
   get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
   list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
   message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
   message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
 endif()
@@ -227,6 +233,7 @@ find_file(CGNS_HDR cgnslib.h)
 get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
 get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
 list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
+list(APPEND WRAPPER_INCLUDE_DIRS ${CGNS_INCPATH})
 message(STATUS "cgns include path ${CGNS_INCPATH}")
 message(STATUS "cgns libs ${CGNS_LIB}")
 
@@ -237,6 +244,7 @@ if(ENABLE_METIS)
   get_filename_component(METIS_INCPATH ${METIS_HDR} PATH)
   get_filename_component(METIS_LIB_PATH ${METIS_LIB} PATH)
   list(APPEND LIBRARY_DIRS ${METIS_LIB_PATH})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${METIS_INCPATH})
   message(STATUS "metis include path ${METIS_INCPATH}")
   message(STATUS "metis libs ${METIS_LIB}")
 endif()
@@ -244,7 +252,21 @@ endif()
 # Find Netgen
 if(ENABLE_NETGEN)
   find_package(Netgen REQUIRED)
+  if(NOT Netgen_FOUND)
+    find_library(NETGEN_LIB nglib)
+    get_filename_component(NETGEN_LIBRARY_DIR ${NETGEN_LIB} PATH)
+    foreach(comp mesh visual csg geom2d occ occvis stl interface)
+      find_library(NETGEN_LIB_${comp} ${comp} HINTS ${NETGEN_LIBRARY_DIR})
+      list(APPEND NETGEN_LIB ${NETGEN_LIB_${comp}})
+    endforeach()
+
+    find_file(NETGEN_HDR nglib.h PATH /usr/include/netgen-mesher)
+    get_filename_component(NETGEN_INCLUDE_DIRS ${NETGEN_HDR} PATH)
+
+    set(HAVE_NETGEN_OLD TRUE)
+  endif()
   list(APPEND LIBRARY_DIRS ${NETGEN_LIBRARY_DIR} ${NETGEN_LIBRARY_DIR}/../bin)
+  list(APPEND WRAPPER_INCLUDE_DIRS ${NETGEN_INCLUDE_DIRS})
   message(STATUS "netgen include path ${NETGEN_INCLUDE_DIRS}")
   message(STATUS "netgen libs ${NETGEN_LIBRARY_DIR}")
 
@@ -255,6 +277,7 @@ if(ENABLE_NETGEN)
     include_directories(${ZLIB_INCLUDE_DIRS})
     get_filename_component(ZLIB_LIB_PATH ${ZLIB_LIBRARIES} PATH)
     list(APPEND LIBRARY_DIRS ${ZLIB_LIB_PATH})
+    list(APPEND WRAPPER_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
     message(STATUS "zlib include path ${ZLIB_INCLUDE_DIRS}")
     message(STATUS "zlib libs ${ZLIB_LIBRARIES}")
   endif()
@@ -267,6 +290,7 @@ if(ENABLE_EXODUS)
   get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
   get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
   list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${EXO_INCPATH})
   message(STATUS "exodus include path ${EXO_INCPATH}")
   message(STATUS "exodus libs ${EXO_LIB}")
 
@@ -274,6 +298,7 @@ if(ENABLE_EXODUS)
   if(WIN32)
     find_package(netCDF REQUIRED)
     list(APPEND LIBRARY_DIRS ${netCDF_LIB_DIR} ${netCDF_LIB_DIR}/../bin)
+    list(APPEND WRAPPER_INCLUDE_DIRS ${netCDF_INCLUDE_DIRS})
     message(STATUS "netcdf include path ${netCDF_INCLUDE_DIR}")
     message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
   endif()
@@ -311,6 +336,7 @@ if(ENABLE_SIMMETRIX)
   find_file(SIMMETRIX_HDR MeshSim.h HINTS ${SIMMETRIX_LIB_DIR}/../../include)
   get_filename_component(SIMMETRIX_INCPATH ${SIMMETRIX_HDR} PATH)
   get_filename_component(SIMMETRIX_LIB_PATH ${SIMMDL_LIB} PATH)
+  list(APPEND WRAPPER_INCLUDE_DIRS ${SIMMETRIX_INCPATH})
   message(STATUS "Simmetrix include path ${SIMMETRIX_INCPATH}")
   message(STATUS "Simmetrix libs ${SIMMETRIX_LIBS}")
 endif()
@@ -326,6 +352,7 @@ if(ENABLE_SIMMETRIX OR ENABLE_CFMSH OR NOT HAVE_GLOB_H)
   if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     list(APPEND LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
+    list(APPEND WRAPPER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -409,8 +436,11 @@ add_subdirectory(contrib/jsoncons-0.127.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
 get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND WRAPPER_INCLUDE_DIRS ${MADLIB_INCPATH})
 get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND WRAPPER_INCLUDE_DIRS ${ANN_INCPATH})
 get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND WRAPPER_INCLUDE_DIRS ${JSONCONS_INCPATH})
 
 # Setting library files ########################################################
 # TODO: clean up the unnecessary modules such as R8
@@ -444,6 +474,7 @@ set(NEMOSYS_SRCS
     src/Drivers/InputGenDriver.C
     src/Drivers/MeshGenDriver.C
     src/Drivers/MeshQualityDriver.C
+    src/Drivers/NucMeshDriver.C
     src/Drivers/RefineDriver.C
     src/Drivers/RemeshDriver.C
     src/Drivers/RocPartCommGenDriver.C
@@ -476,6 +507,10 @@ set(NEMOSYS_SRCS
     src/MeshPartitioning/meshStitcher.C
 
     src/MeshQuality/MeshQuality.C
+
+    src/NucMesh/circles.C
+    src/NucMesh/polygon.C
+    src/NucMesh/shape.C
 
     src/PatchRecovery/orthoPoly1D.C
     src/PatchRecovery/orthoPoly3D.C
@@ -559,9 +594,10 @@ target_include_directories(r8
 
 # Build interp library
 add_library(interp ${INTERP_SRCS})
-target_link_libraries(interp PRIVATE
-    r8
-    ANN
+target_link_libraries(interp
+    PRIVATE
+        r8
+        ANN
 )
 target_include_directories(interp
     PUBLIC
@@ -654,7 +690,11 @@ if(ENABLE_METIS)
 endif()
 
 if(ENABLE_NETGEN)
+  if(HAVE_NETGEN_OLD)
+    target_link_libraries(Nemosys PUBLIC ${NETGEN_LIB})
+  else()
   target_link_libraries(Nemosys PUBLIC nglib)
+  endif()
   target_compile_definitions(Nemosys PUBLIC HAVE_NGEN)
   target_include_directories(Nemosys SYSTEM PUBLIC ${NETGEN_INCLUDE_DIRS})
 endif()

@@ -1,83 +1,75 @@
-// Nemosys headers
 #include "ConversionDriver.H"
 
-#include "AuxiliaryFunctions.H"
-#include "pntMesh.H"
-#include "vtkMesh.H"
-#include "cobalt.H"
-#include "patran.H"
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#ifdef HAVE_EXODUSII
-  #include "meshSrch.H"
-#endif
-#ifdef HAVE_CFMSH
-  #include "foamMesh.H"
-  #include "gmshMesh.H"
-#endif
-
-// vtk
-#include <vtkUnstructuredGrid.h>
 #include <vtkCellData.h>
 #include <vtkIdList.h>
+#include <vtkModelMetadata.h>
+#include <vtkStringArray.h>
+#include <vtkUnstructuredGrid.h>
 
-#include <string>
-#include <iostream>
-#include <vector>
-#include <fstream>
-#include <map>
-#include <sstream>
-#include <algorithm>
-#include <set>
-#include <unordered_map>
-#include <iterator>
-#include <memory>
-#include <algorithm>
+#include "AuxiliaryFunctions.H"
+#include "cobalt.H"
+#include "patran.H"
+#include "pntMesh.H"
+#include "vtkMesh.H"
+#ifdef HAVE_EXODUSII
+#  include "meshSrch.H"
+#endif
+#ifdef HAVE_CFMSH
+#  include "foamMesh.H"
+#  include "gmshMesh.H"
+#endif
 
-//----------------------- Conversion Driver -----------------------------------------//
+//----------------------- Conversion Driver
+//-----------------------------------------//
 ConversionDriver::ConversionDriver(const std::string &srcmsh,
                                    const std::string &trgmsh,
                                    const std::string &method,
                                    const std::string &ofname,
                                    const jsoncons::json &inputjson)
-    : source(nullptr)
-{
+    : source(nullptr) {
   std::cout << "ConversionDriver created" << std::endl;
   nemAux::Timer T;
   T.start();
   // convert to pnt mesh
-  if (method == "VTK->PNT")
-  {
+  if (method == "VTK->PNT") {
     source = meshBase::Create(srcmsh);
     // number of dimensions
-    int dim = inputjson["Conversion Options"]
-    ["Dimension"].as<int>();
+    int dim = inputjson["Conversion Options"]["Dimension"].as<int>();
     // looping through blocks
     int nBlk = inputjson["Conversion Options"]["Block Data"].size();
     std::cout << "Number of Blocks : " << nBlk << std::endl;
     PNTMesh::BlockMap elmBlkMap;
     elmBlkMap.resize(nBlk);
     int iBlk = 0;
-    for (auto it = inputjson["Conversion Options"]["Block Data"].array_range().begin();
+    for (auto it = inputjson["Conversion Options"]["Block Data"]
+                       .array_range()
+                       .begin();
          it !=
          inputjson["Conversion Options"]["Block Data"].array_range().end();
-         ++it)
-    {
+         ++it) {
       // element ids for block
       std::cout << (*it)["Name"].as<std::string>() << std::endl;
       std::vector<int> ids;
-      if (it->has_key("Element ID Range"))
-      {
+      if (it->contains("Element ID Range")) {
         int rs, re;
         rs = (*it)["Element ID Range"][0].as<int>();
         re = (*it)["Element ID Range"][1].as<int>();
         std::cout << "Range " << rs << " to " << re << std::endl;
-        for (int eid = rs; eid <= re; eid++)
-          ids.push_back(eid);
-      }
-      else
-      {
-        for (const auto &it2 : (*it)["Element ID"].array_range())
-        {
+        for (int eid = rs; eid <= re; eid++) ids.push_back(eid);
+      } else {
+        for (const auto &it2 : (*it)["Element ID"].array_range()) {
           ids.push_back(it2.as<int>());
           std::cout << it2.as<int>() << " ";
         }
@@ -86,8 +78,8 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
       // registering block information
       elmBlkMap[iBlk].ordIntrp = (*it)["Element Order"].as<int>();
       elmBlkMap[iBlk].ordEquat = (*it)["Equation Order"].as<int>();
-      elmBlkMap[iBlk].eTpe = PNTMesh::elmTypeNum(
-          (*it)["Element Type"].as<std::string>());
+      elmBlkMap[iBlk].eTpe =
+          PNTMesh::elmTypeNum((*it)["Element Type"].as<std::string>());
       elmBlkMap[iBlk].regionName = (*it)["Name"].as<std::string>();
       std::string bcTagName = (*it)["BC Tag"].as<std::string>();
       elmBlkMap[iBlk].srfBCTag.push_back(PNTMesh::bcTagNum(bcTagName));
@@ -97,11 +89,8 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     auto *pm = new PNTMesh::pntMesh(source, dim, nBlk, elmBlkMap);
     pm->write(trgmsh);
     delete pm;
-    pm = nullptr;
-  }
-  else if (method == "GMSH->EXO")
-  {
-#ifdef HAVE_EXODUSII // NEMoSys is compiled with exodus
+  } else if (method == "GMSH->EXO") {
+#ifdef HAVE_EXODUSII  // NEMoSys is compiled with exodus
     // reading vitals
     std::cout << "Converting to EXODUS II..." << std::endl;
     jsoncons::json opts = inputjson["Conversion Options"];
@@ -111,17 +100,15 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
               << std::endl;
     exit(-1);
 #endif
-  }
-  else if (method == "FOAM->MSH")
-  {
+  } else if (method == "FOAM->MSH") {
 #ifdef HAVE_CFMSH
     meshBase *fm = new FOAM::foamMesh();
     fm->read("NULL");
     // TODO: Fix report and write methods for the foamMesh class
-    //fm->setFileName(ofname);
-    //fm->report();
-    //fm->writeMSH();
-    gmshMesh *gm = new gmshMesh(fm);
+    // fm->setFileName(ofname);
+    // fm->report();
+    // fm->writeMSH();
+    auto *gm = new gmshMesh(fm);
     gm->write(ofname);
     delete fm;
 #else
@@ -129,15 +116,13 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
               << std::endl;
     exit(-1);
 #endif
-  }
-  else if (method == "FOAM->VTK")
-  {
+  } else if (method == "FOAM->VTK") {
 #ifdef HAVE_CFMSH
     // supports: vtu, vtk
     meshBase *fm = new FOAM::foamMesh();
     fm->read("NULL");
     // TODO: Fix report and write methods for the foamMesh class
-    std::cout << "Variable values is = "<< srcmsh << std::endl;
+    std::cout << "Variable values is = " << srcmsh << std::endl;
     vtkMesh *vm = new vtkMesh(fm->getDataSet(), ofname);
     vm->report();
     vm->write();
@@ -148,22 +133,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
               << std::endl;
     exit(-1);
 #endif
-  }
-  else if (method == "GMSH->VTK")
-  {
-    if (srcmsh.find(".msh") != std::string::npos)
-    {
+  } else if (method == "GMSH->VTK") {
+    if (srcmsh.find(".msh") != std::string::npos) {
       std::cout << "Detected file in GMSH format" << std::endl;
       std::cout << "Converting to VTK ...." << std::endl;
-    }
-    else
-    {
+    } else {
       std::cerr << "Source mesh file is not in GMSH format" << std::endl;
     }
 
     std::ifstream meshStream(srcmsh);
-    if (!meshStream.good())
-    {
+    if (!meshStream.good()) {
       std::cerr << "Error opening file " << srcmsh << std::endl;
       exit(1);
     }
@@ -178,19 +157,20 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     // declare points to be pushed into dataSet_tmp
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
     // declare dataSet_tmp which will be associated to output vtkMesh
-    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp =
+        vtkSmartPointer<vtkUnstructuredGrid>::New();
     // map to hold true index of points (gmsh allows non-contiguous ordering)
     std::map<int, int> trueIndex;
 
     // declare array to store physical entity for each element
-    vtkSmartPointer<vtkDataArray> physicalEntity = vtkSmartPointer<vtkIdTypeArray>::New();;
+    vtkSmartPointer<vtkDataArray> physicalEntity =
+        vtkSmartPointer<vtkIdTypeArray>::New();
+    ;
     physicalEntity->SetNumberOfComponents(1);
     physicalEntity->SetName("patchNo");
 
-    while (getline(meshStream, line))
-    {
-      if (line.find("$Nodes") != std::string::npos)
-      {
+    while (getline(meshStream, line)) {
+      if (line.find("$Nodes") != std::string::npos) {
         getline(meshStream, line);
         std::stringstream ss(line);
         ss >> numPoints;
@@ -198,8 +178,7 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         double x, y, z;
         // allocate memory for points
         points->SetNumberOfPoints(numPoints);
-        for (int i = 0; i < numPoints; ++i)
-        {
+        for (int i = 0; i < numPoints; ++i) {
           getline(meshStream, line);
           std::stringstream ss(line);
           ss >> id >> x >> y >> z;
@@ -215,64 +194,52 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         dataSet_tmp->SetPoints(points);
       }
 
-      if (line.find("$Elements") != std::string::npos)
-      {
+      if (line.find("$Elements") != std::string::npos) {
         getline(meshStream, line);
         std::stringstream ss(line);
         ss >> numCells;
         int id, type, numTags;
         // allocate space for cell connectivities
         dataSet_tmp->Allocate(numCells);
-        for (int i = 0; i < numCells; ++i)
-        {
+        for (int i = 0; i < numCells; ++i) {
           getline(meshStream, line);
           std::stringstream ss(line);
           ss >> id >> type >> numTags;
-          vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
-          if (type == 2)
-          {
+          vtkSmartPointer<vtkIdList> vtkcellIds =
+              vtkSmartPointer<vtkIdList>::New();
+          if (type == 2) {
             int tmp;
             double tmp2[1];
-            for (int j = 0; j < numTags; ++j)
-            {
+            for (int j = 0; j < numTags; ++j) {
               ss >> tmp2[0];
-              if (j == 0)
-              {
+              if (j == 0) {
                 physicalEntity->InsertNextTuple(tmp2);
               }
             }
-            for (int j = 0; j < 3; ++j)
-            {
+            for (int j = 0; j < 3; ++j) {
               ss >> tmp;
               // insert connectivities for cell into cellIds container
-              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+              vtkcellIds->InsertNextId(trueIndex[tmp]);  //-1);
             }
             // insert connectivities for triangle elements into dataSet
             dataSet_tmp->InsertNextCell(VTK_TRIANGLE, vtkcellIds);
-          }
-          else if (type == 4)
-          {
+          } else if (type == 4) {
             int tmp;
             double tmp2[1];
-            for (int j = 0; j < numTags; ++j)
-            {
+            for (int j = 0; j < numTags; ++j) {
               ss >> tmp2[0];
-              if (j == 0)
-              {
+              if (j == 0) {
                 physicalEntity->InsertNextTuple(tmp2);
               }
             }
-            for (int j = 0; j < 4; ++j)
-            {
+            for (int j = 0; j < 4; ++j) {
               ss >> tmp;
               // insert connectivities for cell into cellIds container
-              vtkcellIds->InsertNextId(trueIndex[tmp]);//-1);
+              vtkcellIds->InsertNextId(trueIndex[tmp]);  //-1);
             }
             // insert connectivities for tet elements into dataSet
             dataSet_tmp->InsertNextCell(VTK_TETRA, vtkcellIds);
-          }
-          else
-          {
+          } else {
             std::cerr
                 << "Only triangular and tetrahedral elements are supported!"
                 << std::endl;
@@ -281,19 +248,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         }
       }
 
-      if (line.find("$NodeData") != std::string::npos)
-      {
+      if (line.find("$NodeData") != std::string::npos) {
         std::vector<std::vector<double>> currPointData;
-        getline(meshStream, line); // moving to num_string_tags
+        getline(meshStream, line);  // moving to num_string_tags
         std::stringstream ss(line);
         int num_string_tags;
         ss >> num_string_tags;
         std::string dataname;
-        for (int i = 0; i < num_string_tags; ++i)
-        {
-          getline(meshStream, line); // get string tag
-          if (i == 0)
-          {
+        for (int i = 0; i < num_string_tags; ++i) {
+          getline(meshStream, line);  // get string tag
+          if (i == 0) {
             std::stringstream ss(line);
             ss >> dataname;
           }
@@ -301,21 +265,19 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         dataname.erase(std::remove(dataname.begin(), dataname.end(), '"'),
                        dataname.end());
         pointDataNames.push_back(dataname);
-        getline(meshStream, line); // moving to num_real_tags
+        getline(meshStream, line);  // moving to num_real_tags
         std::stringstream ss1(line);
         int num_real_tags;
         ss1 >> num_real_tags;
-        for (int i = 0; i < num_real_tags; ++i)
-          getline(meshStream, line);
+        for (int i = 0; i < num_real_tags; ++i) getline(meshStream, line);
 
-        getline(meshStream, line); // moving to num_int_tags
+        getline(meshStream, line);  // moving to num_int_tags
         std::stringstream ss2(line);
         int num_int_tags;
         ss2 >> num_int_tags;
         int dt, dim = 0, numFields = 0, tmp;
-        for (int i = 0; i < num_int_tags; ++i)
-        {
-          getline(meshStream, line); // get int tag
+        for (int i = 0; i < num_int_tags; ++i) {
+          getline(meshStream, line);  // get int tag
           std::stringstream ss(line);
           if (i == 0)
             ss >> dt;
@@ -326,16 +288,14 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
           else
             ss >> tmp;
         }
-        for (int i = 0; i < numFields; ++i)
-        {
+        for (int i = 0; i < numFields; ++i) {
           std::vector<double> data(dim);
           int id;
           double val;
           getline(meshStream, line);
           std::stringstream ss(line);
           ss >> id;
-          for (int j = 0; j < dim; ++j)
-          {
+          for (int j = 0; j < dim; ++j) {
             ss >> val;
             data[j] = val;
           }
@@ -344,19 +304,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         pointData.push_back(currPointData);
       }
 
-      if (line.find("$ElementData") != std::string::npos)
-      {
+      if (line.find("$ElementData") != std::string::npos) {
         std::vector<std::vector<double>> currCellData;
-        getline(meshStream, line); // moving to num_string_tags
+        getline(meshStream, line);  // moving to num_string_tags
         std::stringstream ss(line);
         int num_string_tags;
         ss >> num_string_tags;
         std::string dataname;
-        for (int i = 0; i < num_string_tags; ++i)
-        {
-          getline(meshStream, line); // get string tag
-          if (i == 0)
-          {
+        for (int i = 0; i < num_string_tags; ++i) {
+          getline(meshStream, line);  // get string tag
+          if (i == 0) {
             std::stringstream ss(line);
             ss >> dataname;
           }
@@ -364,21 +321,19 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
         dataname.erase(std::remove(dataname.begin(), dataname.end(), '"'),
                        dataname.end());
         cellDataNames.push_back(dataname);
-        getline(meshStream, line); // moving to num_real_tags
+        getline(meshStream, line);  // moving to num_real_tags
         std::stringstream ss1(line);
         int num_real_tags;
         ss1 >> num_real_tags;
-        for (int i = 0; i < num_real_tags; ++i)
-          getline(meshStream, line);
+        for (int i = 0; i < num_real_tags; ++i) getline(meshStream, line);
 
-        getline(meshStream, line); // moving to num_int_tags
+        getline(meshStream, line);  // moving to num_int_tags
         std::stringstream ss2(line);
         int num_int_tags;
         ss2 >> num_int_tags;
         int dt, dim = 0, numFields = 0, tmp;
-        for (int i = 0; i < num_int_tags; ++i)
-        {
-          getline(meshStream, line); // get int tag
+        for (int i = 0; i < num_int_tags; ++i) {
+          getline(meshStream, line);  // get int tag
           std::stringstream ss(line);
           if (i == 0)
             ss >> dt;
@@ -389,16 +344,14 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
           else
             ss >> tmp;
         }
-        for (int i = 0; i < numFields; ++i)
-        {
+        for (int i = 0; i < numFields; ++i) {
           std::vector<double> data(dim);
           int id;
           double val;
           getline(meshStream, line);
           std::stringstream ss(line);
           ss >> id;
-          for (int j = 0; j < dim; ++j)
-          {
+          for (int j = 0; j < dim; ++j) {
             ss >> val;
             data[j] = val;
           }
@@ -417,22 +370,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     // add physical entity mesh to VTK
     outputMesh->getDataSet()->GetCellData()->AddArray(physicalEntity);
     outputMesh->write();
-  }
-  else if (method == "VTK->COBALT")
-  {
-    if (srcmsh.find(".vt") != std::string::npos)
-    {
+  } else if (method == "VTK->COBALT") {
+    if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to COBALT ...." << std::endl;
-    }
-    else
-    {
+    } else {
       std::cerr << "Source mesh file is not in VTK format" << std::endl;
     }
 
     std::ifstream meshStream(srcmsh);
-    if (!meshStream.good())
-    {
+    if (!meshStream.good()) {
       std::cerr << "Error opening file " << srcmsh << std::endl;
       exit(1);
     }
@@ -444,22 +391,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     COBALT::cobalt *cm = new COBALT::cobalt(myMesh, srcmsh, trgmsh, ofname);
     // write to file
     cm->write();
-  }
-  else if (method == "VTK->PATRAN")
-  {
-    if (srcmsh.find(".vt") != std::string::npos)
-    {
+  } else if (method == "VTK->PATRAN") {
+    if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to PATRAN ...." << std::endl;
-    }
-    else
-    {
+    } else {
       std::cerr << "Source mesh file is not in VTK format" << std::endl;
     }
 
     std::ifstream meshStream(srcmsh);
-    if (!meshStream.good())
-    {
+    if (!meshStream.good()) {
       std::cerr << "Error opening file " << srcmsh << std::endl;
       exit(1);
     }
@@ -469,37 +410,44 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     std::cout << "Number of Boundary Conditions read: " << nBC << std::endl;
 
     // PATRAN specific BC information
-    // Each map below maps the indicated information from the "Patch Number" specified in the file
+    // Each map below maps the indicated information from the "Patch Number"
+    // specified in the file
 
-    std::map<int, int> faceTypeMap;         // Rocfrac FSI Type;
+    std::map<int, int> faceTypeMap;  // Rocfrac FSI Type;
     // 0 = no FSI, 1 = FSI w/ burn, 2 = FSI w/o burn, etc.
     // see Rocfrac manual for details
-    std::map<int, int> nodeTypeMap;         // patch numbers as specified in RocfracControl.txt
+    std::map<int, int>
+        nodeTypeMap;  // patch numbers as specified in RocfracControl.txt
     std::map<int, bool> nodeStructuralMap;  // boolean indicating structural BC
     std::map<int, bool> nodeMeshMotionMap;  // boolean indicating mesh motion BC
-    std::map<int, bool> nodeThermalMap;     // boolean indicating heat transfer BC
+    std::map<int, bool> nodeThermalMap;  // boolean indicating heat transfer BC
 
-    for (auto it = inputjson["Conversion Options"]["BC Info"].array_range().begin();
+    for (auto it =
+             inputjson["Conversion Options"]["BC Info"].array_range().begin();
          it != inputjson["Conversion Options"]["BC Info"].array_range().end();
-         ++it)
-    {
-      if ((*it)["BC Type"].as<std::string>() == "Face")
-      {
-        faceTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["Rocfrac FSI Type"].as<int>();
-      }
-      else if ((*it)["BC Type"].as<std::string>() == "Node")
-      {
-        nodeTypeMap[(*it)["Patch Number"].as<int>()] = (*it)["RocfracControl Type"].as<int>();
-        nodeStructuralMap[(*it)["Patch Number"].as<int>()] = (*it)["Structural"].as<bool>();
-        nodeMeshMotionMap[(*it)["Patch Number"].as<int>()] = (*it)["Mesh Motion"].as<bool>();
-        nodeThermalMap[(*it)["Patch Number"].as<int>()] = (*it)["Thermal"].as<bool>();
+         ++it) {
+      if ((*it)["BC Type"].as<std::string>() == "Face") {
+        faceTypeMap[(*it)["Patch Number"].as<int>()] =
+            (*it)["Rocfrac FSI Type"].as<int>();
+      } else if ((*it)["BC Type"].as<std::string>() == "Node") {
+        nodeTypeMap[(*it)["Patch Number"].as<int>()] =
+            (*it)["RocfracControl Type"].as<int>();
+        nodeStructuralMap[(*it)["Patch Number"].as<int>()] =
+            (*it)["Structural"].as<bool>();
+        nodeMeshMotionMap[(*it)["Patch Number"].as<int>()] =
+            (*it)["Mesh Motion"].as<bool>();
+        nodeThermalMap[(*it)["Patch Number"].as<int>()] =
+            (*it)["Thermal"].as<bool>();
       }
     }
 
     // Accumulate node patch preference
-    // (determines which patch a node belongs to if it borders two or more patches)
+    // (determines which patch a node belongs to if it borders two or more
+    // patches)
     std::vector<int> nppVec;
-    for (const auto &nppItr : inputjson["Conversion Options"]["Node Patch Preference"].array_range()) {
+    for (const auto &nppItr :
+         inputjson["Conversion Options"]["Node Patch Preference"]
+             .array_range()) {
       nppVec.push_back(nppItr.as<int>());
     }
 
@@ -507,29 +455,21 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
 
     // create PATRAN object from meshBase
-    PATRAN::patran *pat = new PATRAN::patran(myMesh, srcmsh, trgmsh,
-                                             faceTypeMap, nodeTypeMap,
-                                             nodeStructuralMap,
-                                             nodeMeshMotionMap,
-                                             nodeThermalMap, nppVec);
-    //pat->write();
-  }
-  else if(method == "VTK->FOAM")
-  {
-    #ifdef HAVE_CFMSH
-    if (srcmsh.find(".vt") != std::string::npos)
-    {
+    auto *pat = new PATRAN::patran(myMesh, srcmsh, trgmsh, faceTypeMap,
+                                   nodeTypeMap, nodeStructuralMap,
+                                   nodeMeshMotionMap, nodeThermalMap, nppVec);
+    // pat->write();
+  } else if (method == "VTK->FOAM") {
+#ifdef HAVE_CFMSH
+    if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to FOAM Mesh ...." << std::endl;
-    }
-    else
-    {
+    } else {
       std::cerr << "Source mesh file is not in VTK format" << std::endl;
     }
 
     std::ifstream meshStream(srcmsh);
-    if (!meshStream.good())
-    {
+    if (!meshStream.good()) {
       std::cerr << "Error opening file " << srcmsh << std::endl;
       exit(1);
     }
@@ -540,13 +480,13 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     FOAM::foamMesh *fm = new FOAM::foamMesh(myMesh);
 
     // Write polyMesh
-    //fm->report();
+    // fm->report();
     fm->write(ofname);
-    #else
+#else
     std::cerr << "Error: Compile NEMoSys with ENABLE_CFMSH to use this option."
               << std::endl;
     exit(-1);
-    #endif
+#endif
   } else {
     std::cerr << "Error: Conversion method " << method
               << " is not a valid option." << std::endl;
@@ -569,21 +509,21 @@ ConversionDriver *ConversionDriver::readJSON(const jsoncons::json &inputjson) {
   std::string outmsh;
   std::string method;
 
-  if (inputjson.has_key("Mesh File Options")) {
-    if (inputjson["Mesh File Options"].has_key("Input Mesh Files")) {
-      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key(
+  if (inputjson.contains("Mesh File Options")) {
+    if (inputjson["Mesh File Options"].contains("Input Mesh Files")) {
+      if (inputjson["Mesh File Options"]["Input Mesh Files"].contains(
               "Source Mesh"))
         srcmsh =
             inputjson["Mesh File Options"]["Input Mesh Files"]["Source Mesh"]
                 .as<std::string>();
 
-      if (inputjson["Mesh File Options"]["Input Mesh Files"].has_key(
+      if (inputjson["Mesh File Options"]["Input Mesh Files"].contains(
               "Target Mesh"))
         trgmsh =
             inputjson["Mesh File Options"]["Input Mesh Files"]["Target Mesh"]
                 .as<std::string>();
 
-      if (inputjson["Mesh File Options"].has_key("Output Mesh File"))
+      if (inputjson["Mesh File Options"].contains("Output Mesh File"))
         outmsh = inputjson["Mesh File Options"]["Output Mesh File"]
                      .as<std::string>();
     }
@@ -593,7 +533,8 @@ ConversionDriver *ConversionDriver::readJSON(const jsoncons::json &inputjson) {
   method = inputjson["Conversion Options"]["Method"].as<std::string>();
 
   // starting proper conversion driver, right now just one
-  auto convdrvobj = new ConversionDriver(srcmsh, trgmsh, method, outmsh, inputjson);
+  auto *convdrvobj =
+      new ConversionDriver(srcmsh, trgmsh, method, outmsh, inputjson);
   return convdrvobj;
 }
 
@@ -637,13 +578,14 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
   }
 
   // starting conversion operation
-  auto em = new EXOMesh::exoMesh(fname);
+  auto *em = new NEM::MSH::EXOMesh::exoMesh(fname);
 
   // reading meshes
-  int ndeIdOffset = 0;
-  int ins = 0;  // Node Set counter.
-  int ieb = 0;  // Element Block counter.
-  int iss = 0;  // Side Set counter.
+  int ieb = 0;          // Element Block counter.
+  int ins = 0;          // Node Set counter.
+  int iss = 0;          // Side Set counter.
+  int ndeIdOffset = 0;  // for element blocks and node sets
+  int elmIdOffset = 0;  // for side sets
   for (int iMsh = 0; iMsh < nMsh; iMsh++) {
     jsoncons::json mshOpts = opts["Mesh Data"];
     std::string mshFName = mshOpts[iMsh].get_with_default("File", "");
@@ -655,7 +597,7 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
     if (fileExt == ".g" || fileExt == ".e" || fileExt == ".exo" ||
         fileExt == ".exodus") {
       // if already exodus format, stitch and continue.
-      EXOMesh::exoMesh em2;
+      NEM::MSH::EXOMesh::exoMesh em2;
       em2.read(mshFName);
 
       // Allow changing element block names using key-value.
@@ -668,193 +610,181 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
           em2.setBlockName(std::stoi(kv.first) - 1, kv.second);
       }
 
+      // Allow defining a global node set containing all nodes.
+      if (mshOpts[iMsh].contains("Add Global Node Set")) {
+        NEM::MSH::EXOMesh::ndeSetType ns;
+        ns.id = ++ins;
+        ns.nNde = em2.getNumberOfNodes();
+        ns.name = mshOpts[iMsh]["Add Global Node Set"].as<std::string>();
+        ns.ndeIdOffset = ndeIdOffset;
+        for (int iNde = 0; iNde < ns.nNde; ++iNde)
+          ns.ndeIds.emplace_back(iNde + 1);
+        em2.addNdeSet(ns);
+      }
+
       em->stitch(em2);
-      ndeIdOffset += em2.getNumberOfNode();
-      ieb += em2.getNumberOfElementBlock();
-      ins += em2.getNumberOfNodeSet();
+      ieb += em2.getNumberOfElementBlocks();
+      ins += em2.getNumberOfNodeSets();
       iss += em2.getNumberOfSideSets();
+      ndeIdOffset += em2.getNumberOfNodes();
+      elmIdOffset += em2.getNumberOfElements();
       continue;
     }
+
     meshBase *mb = meshBase::Create(mshFName);
     // mb->write("exo_inp_mesh_" + std::to_string(iMsh) + ".vtu");
 
     // adding information to exodusII object
-    if (!usePhys) {
-      // add nodes to database
-      for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
-        em->addNde(mb->getPoint(iNde));
+    int ndeIdOffset_local = 0;
+    int elmIdOffset_local = 0;
 
-      // node coordinate to one nodeSet
-      EXOMesh::ndeSetType ns;
-      ns.id = ++ins;
-      ns.nNde = mb->getNumberOfPoints();
-      ns.name = mshName;
-      ns.ndeIdOffset = ndeIdOffset;
-      for (int iNde = 0; iNde < ns.nNde; iNde++) {
-        ns.ndeIds.emplace_back(iNde + 1);
-      }
-      em->addNdeSet(ns);
+    // add nodes to database
+    for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
+      em->addNde(mb->getPoint(iNde));
 
-      // all elements into one element block
-      // assuming input mesh has only one element type
-      EXOMesh::elmBlockType eb;
-      eb.id = ++ieb;
-      eb.name = mshName;
-      eb.ndeIdOffset = ndeIdOffset;
+    // node coordinate to one nodeSet
+    NEM::MSH::EXOMesh::ndeSetType ns;
+    ns.id = ++ins;
+    ns.nNde = mb->getNumberOfPoints();
+    ns.name = mshName;
+    ns.ndeIdOffset = ndeIdOffset;
+    for (int iNde = 0; iNde < ns.nNde; iNde++) {
+      ns.ndeIds.emplace_back(iNde + 1);
+    }
+    em->addNdeSet(ns);
+    ndeIdOffset_local += ns.nNde;
 
-      int iTet = 0;
-      int iHex = 0;
-      for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
-        EXOMesh::elementType eTpe = EXOMesh::v2eEMap(
-            static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm)));
-        if (eTpe == EXOMesh::elementType::TETRA)
-          iTet++;
-        else if (eTpe == EXOMesh::elementType::HEX)
-          iHex++;
-        else
-          continue;
-        vtkIdList *nids = vtkIdList::New();
-        mb->getDataSet()->GetCellPoints(iElm, nids);
-        for (int in = 0; in < nids->GetNumberOfIds(); in++)
-          eb.conn.push_back(nids->GetId(in) + 1);  // offset node ids by 1
-      }
+    // add element blocks
 
-      // sanity check
-      if (iTet * iHex != 0) {
-        std::cerr << "Mixed Hex/Tet meshes are not supported!" << std::endl;
-        throw;
-      }
+    // Element bucket where they will be sorted.
+    // Outer layer: Specifies grouping, such as physical groups. The 0th index
+    // is reserved for elements without a group.
+    // Inner layer: Sorted by element type. The 0th index is reserved for
+    // unsupported elements. The current support respects the ordering of the
+    // NEM::MSH::EXOMesh::elementType enum:
+    //     OTHER, TRIANGLE, QUAD, TETRA, HEX
+    std::map<int, std::map<NEM::MSH::EXOMesh::elementType, std::vector<int>>>
+        elmBucket;
 
-      if (iTet != 0)
-        std::cout << "Number of tetrahedral elements = " << iTet << "\n";
-      else
-        std::cout << "Number of hexahedral elements = " << iHex << "\n";
-      std::cout << "Min nde indx = "
-                << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
-                << "Max nde indx = "
-                << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
-      std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
+    std::vector<double> grpIds(mb->getNumberOfCells(), 0.0);
+    if (usePhys) mb->getCellDataArray("PhysGrpId", grpIds);
 
-      if (iTet != 0) {
-        eb.nElm = iTet;
-        eb.ndePerElm = 4;
-        eb.eTpe = EXOMesh::elementType::TETRA;
-      } else {
-        eb.nElm = iHex;
-        eb.ndePerElm = 8;
-        eb.eTpe = EXOMesh::elementType::HEX;
-      }
-      em->addElmBlk(eb);
+    for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
+      VTKCellType vtkType =
+          static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm));
+      NEM::MSH::EXOMesh::elementType exoType =
+          NEM::MSH::EXOMesh::v2eEMap(vtkType);
+      elmBucket[grpIds[iElm]][exoType].emplace_back(iElm);
+    }
 
-      // offsetting starting node id for next file
-      ndeIdOffset += ns.nNde;
-    } else {
-      // get number of physical groups
-      // loop through cell data and identify physical groups
-      // we also filter only TETRA/HEX cells
-      int nc = mb->getNumberOfCells();
+    // sanity check
+    int numUnsupported = 0;
+    for (const auto &elmGroup : elmBucket)
+      if (elmGroup.second.count(NEM::MSH::EXOMesh::elementType::WEDGE) != 0 ||
+          elmGroup.second.count(NEM::MSH::EXOMesh::elementType::OTHER) != 0)
+        numUnsupported +=
+            elmGroup.second.at(NEM::MSH::EXOMesh::elementType::WEDGE).size() +
+            elmGroup.second.at(NEM::MSH::EXOMesh::elementType::OTHER).size();
+    if (numUnsupported > 0) {
+      std::cerr << "WARNING: Detected " << numUnsupported
+                << " unsupported elements.\n";
+      throw;
+    }
 
-      // check physical group (PhysGrpId) exists, obtain id, and data array
-      int physGrpArrIdx = mb->getCellDataIdx("PhysGrpId");
-      if (physGrpArrIdx < 0) {
-        std::cerr << "Error : Input dataset does not have PhyGrpId cell data! "
-                     "Aborting."
-                  << std::endl;
-        exit(-1);
-      }
-      vtkCellData *cd = mb->getDataSet()->GetCellData();
-      vtkDataArray *physGrpIds = cd->GetArray(physGrpArrIdx);
+    // for each group and supported type, if existent, add an element block
+    for (const auto &elmGroup : elmBucket) {
+      for (const auto &elmIds : elmGroup.second) {
+        if (elmIds.second.empty()) continue;  // skip if empty
 
-      // loop through elements and obtain physical group ids
-      std::vector<int> elmIds;
-      std::vector<int> elmPhysGrp;
-      for (int ic = 0; ic < nc; ic++) {
-        EXOMesh::elementType eTpe = EXOMesh::v2eEMap(
-            static_cast<VTKCellType>(mb->getDataSet()->GetCellType(ic)));
-        if (eTpe != EXOMesh::elementType::TETRA &&
-            eTpe != EXOMesh::elementType::HEX)
-          continue;
-        elmIds.push_back(ic);
-        double *tmp = physGrpIds->GetTuple(ic);
-        elmPhysGrp.push_back(int(*tmp));
-      }
-
-      // number of unique physical groups
-      std::set<int> unqPhysGrpIds;
-      int nPhysGrp;
-      for (const auto &it : elmPhysGrp) unqPhysGrpIds.insert(it);
-      nPhysGrp = unqPhysGrpIds.size();
-      std::cout << "Number of physical groups : " << nPhysGrp << std::endl;
-
-      // add nodes to database
-      for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
-        em->addNde(mb->getPoint(iNde));
-
-      // one node set for all groups
-      // node coordinate to nodeSet
-      EXOMesh::ndeSetType ns;
-      ns.id = ++ins;
-      ns.nNde = mb->getNumberOfPoints();
-      ns.name = mshName;
-      ns.ndeIdOffset = ndeIdOffset;
-      for (int iNde = 0; iNde < ns.nNde; iNde++)
-        ns.ndeIds.emplace_back(iNde + 1);
-      em->addNdeSet(ns);
-
-      // for each physical group one element block
-      for (int unqPhysGrpId : unqPhysGrpIds) {
-        // element to elementBlock
-        EXOMesh::elmBlockType eb;
+        NEM::MSH::EXOMesh::elmBlkType eb;
         eb.id = ++ieb;
-        eb.name = mshName + "_PhysGrp_" + std::to_string(ieb);
         eb.ndeIdOffset = ndeIdOffset;
+        eb.nElm = elmIds.second.size();
 
-        int iTet = 0;
-        int iHex = 0;
-        for (int elmId : elmIds) {
-          double *tmp2 = physGrpIds->GetTuple(elmId);
-          if (int(*tmp2) != unqPhysGrpId) continue;
-          vtkIdList *nids = vtkIdList::New();
-          mb->getDataSet()->GetCellPoints(elmId, nids);
-          if (nids->GetNumberOfIds() == 4)
-            iTet++;
-          else if (nids->GetNumberOfIds() == 8)
-            iHex++;
-          for (int in = 0; in < nids->GetNumberOfIds(); in++)
-            eb.conn.push_back(nids->GetId(in) + 1);  // offset node ids by 1
+        if (usePhys)
+          eb.name = mshName + "_PhysGrp_" + std::to_string(ieb);
+        else
+          eb.name = mshName + "_" + std::to_string(ieb);
+
+        switch (elmIds.first) {
+          case NEM::MSH::EXOMesh::elementType::TRIANGLE:
+            std::cout << "Number of triangular elements = " << eb.nElm << "\n";
+            eb.ndePerElm = 3;
+            eb.eTpe = NEM::MSH::EXOMesh::elementType::TRIANGLE;
+            break;
+          case NEM::MSH::EXOMesh::elementType::QUAD:
+            std::cout << "Number of quadrilateral elements = " << eb.nElm
+                      << "\n";
+            eb.ndePerElm = 4;
+            eb.eTpe = NEM::MSH::EXOMesh::elementType::QUAD;
+            break;
+          case NEM::MSH::EXOMesh::elementType::TETRA:
+            std::cout << "Number of tetrahedral elements = " << eb.nElm << "\n";
+            eb.ndePerElm = 4;
+            eb.eTpe = NEM::MSH::EXOMesh::elementType::TETRA;
+            break;
+          case NEM::MSH::EXOMesh::elementType::HEX:
+            std::cout << "Number of hexahedral elements = " << eb.nElm << "\n";
+            eb.ndePerElm = 8;
+            eb.eTpe = NEM::MSH::EXOMesh::elementType::HEX;
+            break;
+          case NEM::MSH::EXOMesh::elementType::WEDGE:
+          case NEM::MSH::EXOMesh::elementType::OTHER:
+          default:
+            std::cerr << "WARNING: Processing unsupported element. Previous "
+                         "sanity check failed!\n";
+            throw;
         }
 
-        // sanity check
-        if (iTet * iHex != 0) {
-          std::cerr << "Mixed Hex/Tet meshes are not supported!" << std::endl;
-          throw;
+        eb.conn.reserve(eb.nElm * eb.ndePerElm);
+        vtkIdList *nids = vtkIdList::New();
+        for (const auto &iElm : elmIds.second) {
+          mb->getDataSet()->GetCellPoints(iElm, nids);
+          for (int in = 0; in < eb.ndePerElm; ++in) {
+            // offset node ids by 1
+            eb.conn.emplace_back(nids->GetId(in) + 1);
+          }
         }
 
-        if (iTet != 0)
-          std::cout << "Number of group tetrahedral elements = " << iTet
-                    << "\n";
-        else if (iHex != 0)
-          std::cout << "Number of group hexahedral elements = " << iHex << "\n";
-        std::cout << "Min nde indx = "
+        std::cout << "Min node index = "
                   << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
-                  << "Max nde indx = "
+                  << "Max node index = "
                   << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
         std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
 
-        if (iTet != 0) {
-          eb.nElm = iTet;
-          eb.ndePerElm = 4;
-          eb.eTpe = EXOMesh::elementType::TETRA;
-        } else {
-          eb.nElm = iHex;
-          eb.ndePerElm = 8;
-          eb.eTpe = EXOMesh::elementType::HEX;
-        }
         em->addElmBlk(eb);
+        elmIdOffset_local += eb.nElm;
       }
-      // offset starting node id for next file
-      ndeIdOffset += ns.nNde;
     }
+
+    // add side sets
+    if (mb->getMetadata()) {
+      // get side set metadata
+      vtkSmartPointer<vtkModelMetadata> metadata = mb->getMetadata();
+      vtkSmartPointer<vtkStringArray> sdeSetNames = metadata->GetSideSetNames();
+      int *sdeSetElmLst = metadata->GetSideSetElementList();
+      int *sdeSetSdeLst = metadata->GetSideSetSideList();
+      int *sdeSetSze = metadata->GetSideSetSize();
+
+      for (int iSS = 0; iSS < metadata->GetNumberOfSideSets(); iSS++) {
+        NEM::MSH::EXOMesh::sdeSetType ss;
+        ss.id = ++iss;
+        ss.name = sdeSetNames->GetValue(iSS);
+        ss.nSde = sdeSetSze[iSS];
+        ss.elmIds.assign(sdeSetElmLst, sdeSetElmLst + sdeSetSze[iSS]);
+        ss.sdeIds.assign(sdeSetSdeLst, sdeSetSdeLst + sdeSetSze[iSS]);
+        ss.elmIdOffset = elmIdOffset;
+        em->addSdeSet(ss);
+
+        // Advance pointer for reading next side set.
+        sdeSetElmLst += sdeSetSze[iSS];
+        sdeSetSdeLst += sdeSetSze[iSS];
+      }
+    }
+
+    // offsetting starting ids for next file
+    ndeIdOffset += ndeIdOffset_local;
+    elmIdOffset += elmIdOffset_local;
     // clean up
     delete mb;
   }
@@ -894,7 +824,8 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
 }
 
 void ConversionDriver::procExo(const jsoncons::json &ppJson,
-                               const std::string &fname, EXOMesh::exoMesh *em) {
+                               const std::string &fname,
+                               NEM::MSH::EXOMesh::exoMesh *em) {
   // converting to mesh base for geometric inquiry
   meshBase *mb = meshBase::Create(fname);
 
@@ -925,6 +856,7 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
       }
       std::cout << std::endl;
 
+      std::vector<nemId_t> lst;
       if (shape == "Box") {
         // Box shape. Requires 3-vector of Min and Max in x, y, and z, resp.
         std::vector<double> bb;
@@ -935,9 +867,7 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
         bb.push_back(zone[0]["Params"]["Min"][2].as<double>());
         bb.push_back(zone[0]["Params"]["Max"][2].as<double>());
 
-        std::vector<nemId_t> lst;
         ms->FindCellsWithinBounds(bb, lst, true);
-        zoneGeom[{1.0 / density, matName}].insert(lst.begin(), lst.end());
       } else if (shape == "STL") {
         // STL shape. Only supports Tri surface.
         // Node Coordinates are given as 3-vector in an array.
@@ -952,13 +882,41 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
              zone[0]["Params"]["Connectivities"].array_range())
           conns.push_back(conn.as<std::vector<vtkIdType>>());
 
-        std::vector<nemId_t> lst;
-        ms->FindPntsInTriSrf(crds, conns, lst);
-        zoneGeom[{1.0 / density, matName}].insert(lst.begin(), lst.end());
+        ms->FindCellsInTriSrf(crds, conns, lst);
+      } else if (shape == "Sphere") {
+        // Sphere shape.
+        // Center is a 3-vector in an array.
+        // Radius is a double.
+        std::vector<double> center =
+            zone[0]["Params"]["Center"].as<std::vector<double>>();
+        auto radius = zone[0]["Params"]["Radius"].as<double>();
+
+        ms->FindCellsInSphere(center, radius, lst);
       } else {
         std::cerr << "WARNING: Skipping unknown zone shape: " << shape
                   << std::endl;
+        continue;
       }
+
+      if (zone[0].contains("Only From Block")) {
+        std::string blkName = zone[0]["Only From Block"].as<std::string>();
+
+        std::vector<std::string> elmBlkNames = em->getElmBlkNames();
+        auto elmBlkName =
+            std::find(elmBlkNames.begin(), elmBlkNames.end(), blkName);
+        if (elmBlkName == elmBlkNames.end()) {
+          std::cerr << "WARNING: Only From Block " << blkName
+                    << " matches no available blocks. Continuing with no "
+                       "restriction.\n";
+        } else {
+          std::vector<int> lst_int(lst.begin(), lst.end());
+          bool allIn = false;
+          lst_int = em->lstElmInBlk(
+              std::distance(elmBlkNames.begin(), elmBlkName), lst_int, allIn);
+          lst.assign(lst_int.begin(), lst_int.end());
+        }
+      }
+      zoneGeom[{1.0 / density, matName}].insert(lst.begin(), lst.end());
     }
 
     if (appDen)

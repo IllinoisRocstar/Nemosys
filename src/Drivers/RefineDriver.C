@@ -93,7 +93,7 @@ RefineDriver *RefineDriver::readJSON(const jsoncons::json &inputjson)
     dev_mult = inputjson["Refinement Options"]["StdDev Multiplier"].as<double>();
     maxIsmin = inputjson["Refinement Options"]["Max Is Min for Scaling"].as<bool>();
     double sizeFactor;
-    sizeFactor = inputjson["Refinement Options"].has_key("Size Factor")
+    sizeFactor = inputjson["Refinement Options"].contains("Size Factor")
                  ? inputjson["Refinement Options"]["Size Factor"].as<double>()
                  : 1.0;
     refdrvobj = new RefineDriver(_mesh, method, arrayName, dev_mult, maxIsmin,
