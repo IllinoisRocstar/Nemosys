@@ -20,6 +20,26 @@
 #include <AuxiliaryFunctions.H>
 #include <boost/filesystem.hpp>
 #include <vtkCell3D.h>
+#include <vtkDataSetTriangleFilter.h>
+#include <vtkAppendFilter.h>
+#include <vtkDataSet.h>
+#include <vtkBooleanOperationPolyDataFilter.h>
+#include <vtkSTLReader.h>
+#include <vtkSTLWriter.h>
+#include <vtkTriangleFilter.h>
+
+// New
+
+#include <vtkActor.h>
+#include <vtkPolyDataReader.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkProperty.h>
+#include <vtkRenderer.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
+#include <vtkSmartPointer.h>
+#include <vtkSphereSource.h>
+
 
 // openfoam headers
 #include "fvCFD.H"
@@ -74,6 +94,7 @@
 #include "timeSelector.H"
 #include "polyMesh.H"
 #include "IOdictionary.H"
+#include "polyPatch.H"
 
 // third party
 #include <ANN/ANN.h>
@@ -82,6 +103,7 @@
 // 1. Two of these methods (mergeMesh and CreatePatch) are little bit pack
 //    mesh specific but can be modified to accept very broad user
 //    arguments and perform mesh manipulations. - Akash
+// 2. Extend cohesive element methods for tetrahedrons.
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
@@ -209,7 +231,7 @@ void MeshManipulationFoam::surfLambdaMuSmooth()
   returned and used in mergeMeshes function so that it knows which directory is
   missing from constant folder.
 */
-int MeshManipulationFoam::splitMshRegions()
+std::pair<int,int> MeshManipulationFoam::splitMshRegions()
 {
   int impVar;
   using namespace Foam;
@@ -815,8 +837,8 @@ int MeshManipulationFoam::splitMshRegions()
   }
 
     Info<< "End\n" << endl;
-
-return impVar;
+    
+return std::make_pair(impVar,nCellRegions);
 
 }
 
@@ -2015,11 +2037,6 @@ void MeshManipulationFoam::addCohesiveElements(double tol, const std::string out
 
   Foam::pointField packsPF = _fmeshPacks->points();
 
-  // Try reading pack mesh and get all duplicate nodes mapped correctly.
-  // Think of a way to capture the way nodes are positioned so
-  // that making VTK cells becomes easy.
-  // will need to capture face orders and IDs somehow.
-
   // declare vtk datasets
   vtkSmartPointer<vtkUnstructuredGrid> dataSetSurr
       = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -2362,7 +2379,6 @@ void MeshManipulationFoam::addCohesiveElements(double tol, const std::string out
   vm->write();
 
   // ********************************************* //
-
   vtkMesh* vm2 = new vtkMesh(dataSetSurr,outName);
   vm2->report();
   vm2->write();
@@ -2371,6 +2387,20 @@ void MeshManipulationFoam::addCohesiveElements(double tol, const std::string out
     delete vm;
   if (vm2)
     delete vm2;
+
+  bool tetra = false;
+  std::string ofnameTet = "Tetra" + outName;
+
+  if (tetra == true)
+  {
+    // create meshBase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(outName);
+
+    // Converts hex mesh to tet mesh and writes in VTU file.
+    myMesh->convertHexToTetVTK(dataSetSurr);
+    myMesh->report();
+    myMesh->write(ofnameTet);
+  }
   // ******************************************************************************* //
 
 }
@@ -2378,7 +2408,8 @@ void MeshManipulationFoam::addCohesiveElements(double tol, const std::string out
 void MeshManipulationFoam::addArtificialThicknessElements
 (
   double tol,
-  const std::string outName
+  const std::string outName,
+  double thickness
 )
 {
   // Initializing FOAM
@@ -2422,11 +2453,6 @@ void MeshManipulationFoam::addArtificialThicknessElements
   );
 
   Foam::pointField packsPF = _fmeshPacks->points();
-
-  // Try reading pack mesh and get all duplicate nodes mapped correctly.
-  // Think of a way to capture the way nodes are positioned so
-  // that making VTK cells becomes easy.
-  // will need to capture face orders and IDs somehow.
 
   // declare vtk datasets
   vtkSmartPointer<vtkUnstructuredGrid> dataSetSurr
@@ -2566,9 +2592,6 @@ void MeshManipulationFoam::addArtificialThicknessElements
 
   int know = cellID.size();
 
-  //std::cout << "Total Cells Found Are " << know << std::endl;
-
-
   // Determines which cells are useful
   std::vector<int> newCellIds;
   std::vector<int> debugCellIds;
@@ -2704,11 +2727,11 @@ void MeshManipulationFoam::addArtificialThicknessElements
 
   polyDataNormal->SetInputData(polydata);
 
-  // Setting points normals calculation to ON
+  // Setting points normals calculation to ON with other options
   polyDataNormal->ComputePointNormalsOn();
   polyDataNormal->ComputeCellNormalsOff();
   //polyDataNormal->SetNonManifoldTraversal(1);
-  //polyDataNormal->SetAutoOrientNormals(1);
+  //polyDataNormal->SetAutoOrientNormals(0);
   polyDataNormal->SetSplitting(0);
   //polyDataNormal->SetFeatureAngle(0.1);
   polyDataNormal->SetConsistency(1);
@@ -2721,22 +2744,18 @@ void MeshManipulationFoam::addArtificialThicknessElements
   // Count points
   vtkIdType numPointsNew = polydata->GetNumberOfPoints();
   std::cout << "There are " << numPointsNew << " points." << std::endl;
-
-  // Count triangles
-  //vtkIdType numPolys = polydata->GetNumberOfPolys();
-  //std::cout << "There are " << numPolys << " polys." << std::endl;
-
   
   vtkDataArray* normalsGeneric = polydata->GetPointData()->GetNormals();
 
+  // Number of normals should match number of points
   std::cout << "There are " << normalsGeneric->GetNumberOfTuples()
             << " normals in normalsGeneric" << std::endl;
 
 
-  // Changing point coordinates for adding artificial thickness of 0.2;
+  // Changing point coordinates for adding artificial thickness;
 
+  // Surrounding cells
   for (int i=0; i<surroundingArray.size(); i++)
-  //for (int i=0; i<5; i++)
   {
     double normalOfPt[3];
     normalsGeneric->GetTuple(surroundingArray[i], normalOfPt);
@@ -2744,17 +2763,18 @@ void MeshManipulationFoam::addArtificialThicknessElements
     std::vector<double> getPt = std::vector<double>(3);
     dataSetSurr->GetPoint(surroundingArray[i], &getPt[0]);
 
+    // TODO : Need to figure out thickness formula considering pack and
+    // surrounding mesh cell size and unit normal scale.
     double newCoords[3];
-    //newCoords[0] = (getPt[0] + 0.01*normalOfPt[0]);
-    newCoords[0] = getPt[0] + 0.01*normalOfPt[0];
-    //newCoords[1] = (getPt[1] + 0.01*normalOfPt[1]);
-    newCoords[1] = getPt[1] + 0.01*normalOfPt[1];
-    //newCoords[2] = (getPt[2] + 0.01*normalOfPt[2]);
-    newCoords[2] = getPt[2] + 0.01*normalOfPt[2];
+    newCoords[0] = getPt[0] + 0.001*normalOfPt[0];
+    newCoords[1] = getPt[1] + 0.001*normalOfPt[1];
+    newCoords[2] = getPt[2] + 0.001*normalOfPt[2];
 
     dataSetSurr->GetPoints()->SetPoint(surroundingArray[i], newCoords);
   }
 
+
+  // Pack cells
   for (int i=0; i<packArray.size(); i++)
   {
     double normalOfPt[3];
@@ -2764,18 +2784,14 @@ void MeshManipulationFoam::addArtificialThicknessElements
     dataSetSurr->GetPoint(packArray[i], &getPt[0]);
 
     double newCoords[3];
-    newCoords[0] = (getPt[0] + 0.01*normalOfPt[0]);
-    //newCoords[0] = getPt[0];
-    newCoords[1] = (getPt[1] + 0.01*normalOfPt[1]);
-    //newCoords[1] = getPt[1];
-    newCoords[2] = (getPt[2] + 0.01*normalOfPt[2]);
-    //newCoords[2] = getPt[2];
+    newCoords[0] = (getPt[0] + 0.001*normalOfPt[0]);
+    newCoords[1] = (getPt[1] + 0.001*normalOfPt[1]);
+    newCoords[2] = (getPt[2] + 0.001*normalOfPt[2]);
 
     dataSetSurr->GetPoints()->SetPoint(packArray[i], newCoords);
   }
 
   // Making cells now and plotting them
-  //std::cout << "Size = " << packArray.size() << std::endl;
   int newCells = packArray.size()/4;
   int startNum = dataSetSurr->GetNumberOfCells();
 
@@ -2854,23 +2870,38 @@ void MeshManipulationFoam::addArtificialThicknessElements
     createVtkCell(visDataSet, 12, ptnewIdz);
   }
 
-  vtkMesh* vm = new vtkMesh(visDataSet,"CohesiveElements.vtu");
+  vtkMesh* vm = new vtkMesh(visDataSet,"ArtificialElements.vtu");
   vm->report();
   vm->write();
 
   if (vm)
     delete vm;
 
-  /*vtkMesh* vm2 = new vtkMesh(dataSetSurr,outName);
+  vtkMesh* vm2 = new vtkMesh(dataSetSurr,outName);
   vm2->report();
   vm2->write();
 
   if (vm2)
-    delete vm2;*/
+    delete vm2;
+
+  bool tetra = false;
+  std::string ofnameTet = "Tetra" + outName;
+
+  if (tetra == true)
+  {
+    // create meshBase object
+    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(outName);
+
+    // Converts hex mesh to tet mesh and writes in VTU file.
+    myMesh->convertHexToTetVTK(dataSetSurr);
+    myMesh->report();
+    myMesh->write(ofnameTet);
+  }
   
 
 }
 
+// Creates a VTK cell in databse using provided points and cell type.
 void MeshManipulationFoam::createVtkCell(
         vtkSmartPointer<vtkUnstructuredGrid> dataSet,
         const int cellType, std::vector<int>& vrtIds)
@@ -2880,6 +2911,134 @@ void MeshManipulationFoam::createVtkCell(
     for (auto pit = vrtIds.begin(); pit!= vrtIds.end(); pit++)
         vtkCellIds->SetId(pit-vrtIds.begin(), *pit);
     dataSet->InsertNextCell(cellType,vtkCellIds);
+}
+
+
+// Generates Periodic Mesh
+void MeshManipulationFoam::periodicMeshMapper(std::string patch1, 
+  std::string patch2)
+{
+  // Initializing FOAM
+  int argc = 1;
+  char** argv = new char*[2];
+  argv[0] = new char[100];
+  strcpy(argv[0], "NONE");
+  Foam::argList args(argc, argv);
+  Foam::argList::noParallel();
+
+  Time runTime
+  (
+      Time::controlDictName,
+      ".",
+      "."
+  );
+
+  vtkSmartPointer<vtkPoints> points 
+      = vtkSmartPointer<vtkPoints>::New(); 
+
+  Foam::word regionName = Foam::polyMesh::defaultRegion;
+
+  auto _fmeshPacks = new Foam::polyMesh
+  (
+    Foam::IOobject
+    (
+      regionName,
+      runTime.timeName(),
+      runTime,
+      Foam::IOobject::MUST_READ
+    )
+  );
+
+  // Creating patch objects for periodic boundary patches
+  int patchIDIn = _fmeshPacks->boundaryMesh().findPatchID(patch1);
+  int patchIDOut = _fmeshPacks->boundaryMesh().findPatchID(patch2);
+
+  const Foam::polyPatch& InPolyPatch = _fmeshPacks->boundaryMesh()[patchIDIn];
+  const Foam::polyPatch& OutPolyPatch = _fmeshPacks->boundaryMesh()[patchIDOut];
+
+  // Point IDs from periodic patches.
+  Foam::labelList inPts(InPolyPatch.meshPoints());
+  Foam::labelList outPts(OutPolyPatch.meshPoints());
+
+  if (inPts.size() != outPts.size())
+  {
+    std::cerr << "Selected boundaries are not periodic!" 
+              << "\nExiting!" << std::endl;
+    throw;
+  }
+
+  Foam::pointField packsPF = _fmeshPacks->points();
+
+  // Creating map of IDs on both patches
+  std::map<int, int> periodicMap;
+
+  for (int i=0; i<inPts.size(); i++)
+  {
+    periodicMap[inPts[i]] = outPts[i];
+  }
+
+  ofstream myfile;
+  myfile.open ("PeriodicMap.csv");
+  for (int i=0; i<inPts.size(); i++)
+  {
+    myfile << inPts[i] << "," << outPts[i] << std::endl;
+  }
+  myfile.close();
+
+
+  // Method test using VTK unstructured writer
+  // Very useful for extracting face node orders. Might use this in
+  // cohesive elements. Also, Foam::facePointPatch::pointNormals()
+  // can be useful for artificial thickness elements
+  vtkSmartPointer<vtkUnstructuredGrid> dataSetTest
+      = vtkSmartPointer<vtkUnstructuredGrid>::New();
+  vtkSmartPointer<vtkPoints> pointsMesh
+      = vtkSmartPointer<vtkPoints>::New();
+
+  for (int i=0; i<packsPF.size(); i++)
+  {
+    pointsMesh->InsertNextPoint(packsPF[i].x(),packsPF[i].y(),packsPF[i].z());
+  }
+
+  dataSetTest->SetPoints(pointsMesh);
+
+  forAll (_fmeshPacks->boundaryMesh()[patchIDIn],facei) 
+  {
+    const Foam::label& faceID = _fmeshPacks->boundaryMesh()[patchIDIn].start() + facei;
+    std::vector<int> pntIds;
+    pntIds.resize(4, -1);
+    int g = 0;
+    forAll (_fmeshPacks->faces()[faceID], nodei)
+    {
+      const Foam::label& nodeID = _fmeshPacks->faces()[faceID][nodei];
+      pntIds[g] = nodeID;
+      g++;
+    }
+    createVtkCell(dataSetTest,9,pntIds);
+  }
+
+  forAll (_fmeshPacks->boundaryMesh()[patchIDOut],facei) 
+  {
+    const Foam::label& faceID = _fmeshPacks->boundaryMesh()[patchIDOut].start() + facei;
+    std::vector<int> pntIds;
+    pntIds.resize(4, -1);
+    int g = 0;
+    forAll (_fmeshPacks->faces()[faceID], nodei)
+    {
+      const Foam::label& nodeID = _fmeshPacks->faces()[faceID][nodei];
+      pntIds[g] = nodeID;
+      g++;
+    }
+    createVtkCell(dataSetTest,9,pntIds);
+  }
+
+  vtkMesh* vm = new vtkMesh(dataSetTest,"PeriodicMesh.vtu");
+  vm->report();
+  vm->write();
+
+  if (vm)
+    delete vm;
+
 }
 
 
