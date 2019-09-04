@@ -761,19 +761,22 @@ int generate(const char* jsonF)
   objSHM->createMeshFromSTL(nameFile);
 
   // splitMeshRegions
-  int dirStat = objMsh->splitMshRegions(); // outputs the region number 
+  std::pair<int,int> dirStat = objMsh->splitMshRegions(); // outputs the region number 
                                            // skipped during splitting process
+  int skippedDir = dirStat.first;
+  int totalRegs = dirStat.second - 1;
+
   // mergeMeshes
-  objMsh->mergeMeshes(dirStat,nDom);
+  objMsh->mergeMeshes(skippedDir,nDom);
 
   // createPatch
-  objMsh->createPatch(dirStat);
+  objMsh->createPatch(skippedDir);
 
   // read current mesh and write it to separate VTK/VTU files
   bool readDB = false;
   // converts pack mesh
   std::string regNme;
-  if (dirStat == 1)
+  if (skippedDir == 1)
     regNme = "domain2";
   else
     regNme = "domain1";
@@ -855,7 +858,6 @@ TEST(PackMeshing, NumberOfCellsSurrounding)
   meshBase* cmp2 = meshBase::Create( "geom_surrounding_mesh.vtu" );
   EXPECT_EQ( cmp2->getNumberOfCells(), ref->getNumberOfCells() );
 }
-
 
 // test constructor
 int main(int argc, char** argv) 

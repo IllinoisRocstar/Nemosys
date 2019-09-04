@@ -109,9 +109,9 @@ class NEMOSYS_EXPORT MeshManipulationFoam
             identifies different cellZones as different regions. Writes these
             regions in separate Foam meshes.
       @param
-      @return domain number skipped during splitting
+      @return domain number skipped during splitting, Total disconnected regions
   **/
-  int splitMshRegions();    // SplitMeshRegions utility
+  std::pair<int,int> splitMshRegions();    // SplitMeshRegions utility
 
   /** @brief .
       @param dirStat domain number to skip (output from splitMshRegions)
@@ -155,8 +155,19 @@ class NEMOSYS_EXPORT MeshManipulationFoam
 
   /** @brief This method adds connectivity elements with finite thickness
         at shared interface between two conformal meshes
+      @param tol Tolerance for conformal duplicate nodes between two meshes.
+      @param outName Output mesh name with extension (i.e "output.vtu")
+      @param thickness Desired thickness for new cohesive elements.
   **/
-  void addArtificialThicknessElements(double tol, const std::string outName);
+  void addArtificialThicknessElements(double tol, const std::string outName, 
+                                      double thickness);
+
+  /** @brief periodicMeshMapper method generates map of nodes on periodic mesh 
+             interfaces at boundaries for FEM analysis.
+      @param patch1 First boundary for mapping.
+      @param patch2 Second boundary for mapping.
+  **/
+  void periodicMeshMapper(std::string patch1, std::string patch2);
 
 
   // --- private methods

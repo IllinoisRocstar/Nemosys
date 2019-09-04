@@ -30,6 +30,7 @@
 #include <vtkSelection.h>
 #include <vtkSelectionNode.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkDataSetTriangleFilter.h>
 
 // netgen
 #ifdef HAVE_NGEN
@@ -1903,4 +1904,15 @@ bool sortNemId_tVec_compare::operator()(std::vector<nemId_t> lhs,
   std::sort(lhs.begin(), lhs.end());
   std::sort(rhs.begin(), rhs.end());
   return lhs < rhs;
+}
+
+void meshBase::convertHexToTetVTK(vtkSmartPointer<vtkDataSet> meshdataSet)
+{
+
+  vtkSmartPointer<vtkDataSetTriangleFilter> triFilter =  
+  vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+  triFilter->SetInputData(meshdataSet);
+  triFilter->Update();
+
+  dataSet = triFilter->GetOutput();
 }

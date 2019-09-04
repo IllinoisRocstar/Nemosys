@@ -101,6 +101,8 @@ void foamMesh::read(const std::string& fname)
         regionName = "domain0";
       else if (fname == "domain2")
         regionName = "domain2";
+      else if (fname == "domain100")
+        regionName = "domain100";
       else
       {
         regionName = Foam::fvMesh::defaultRegion;

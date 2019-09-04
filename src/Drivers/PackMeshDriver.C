@@ -12,6 +12,7 @@
 #include "MeshQualityDriver.H"
 #include "MeshQuality.H"
 #include <boost/filesystem.hpp>
+#include <rocPack.H>
 
 // std c++
 #include <vector>
@@ -43,6 +44,7 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
                               const std::string& ofname1,
                               const std::string& ofname2)
 {
+  std::cout << "PackMeshDriver constructed!" << std::endl;
 
   // Makes sure that constant and triSurface directories are present.
   // If directories are already present, it will not do anything.
@@ -80,11 +82,20 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   const char* nameFile = "a"; // Dummy name for input
 
 
+  // RockPack output is converted into surface files (STL/VTK) which is an
+  // input to this meshing pipeline. To be enabled in future.
+  // TODO -> Add json parameters for inputs to create rocPack object
+  //auto* objrocPck = new NEM::GEO::rocPack("rocOut", "shapes");
+  //objrocPck->rocPack2Surf();
+  //if (objrocPck)
+    //delete objrocPck;
+
   // RocPack output STL file lists all packs under one surface name. This step
   // renumbers STL file into n distinct surfaces and outputs number of packs
   // for mergeMeshes loop. It will overwrite the original input file
-  objMsh->createControlDict();
-  int nDomains = objMsh->surfSpltByTopology();
+  // Not needed for now!
+  //objMsh->createControlDict();
+  //int nDomains = objMsh->surfSpltByTopology();
 
   // Second step in process is to create hexahedral mesh of packs using
   // cartesianMesh utility of CfMesh. It writes the mesh in constant/polyMesh.
@@ -119,29 +130,50 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   // in constant folder, it skips one number for the disconnected region it
   // encounters first. This number is taken out to provide as input to merge
   // mesh. 
-  int dirStat = objMsh->splitMshRegions();
+  std::pair<int,int> dirStat = objMsh->splitMshRegions();
+
+  int skippedDir = dirStat.first;
+  int totalRegs = dirStat.second - 1;
 
   // mergeMeshes will read master domain (defined by user) from constant folder
   // and start merging other domain to it untill all slave domains are attached
   // to master domain. It loops through all domains in sequential manner and 
   // skips the missing domain.* (also skipped by splitMeshRegions) to avoid
   // runtime error.
-  objMsh->mergeMeshes(dirStat, nDomains);
+  std::cout << "Total # of domains are = " << totalRegs << std::endl;
+  if (totalRegs == 1)
+  {
+    // Nothing
+  }
+  else
+  {
+    objMsh->mergeMeshes(skippedDir, totalRegs);
+  }
 
   // createPatch utility reads domain mesh and createPatchDict to combine all
   // different patches of multiple packs/surrounding into one patch
   // respectively
-  objMsh->createPatch(dirStat);
+  if (totalRegs == 1)
+  {
+    // Nothing
+  }
+  else
+  {
+    objMsh->createPatch(skippedDir);
+  }
 
   //Reads current mesh and write it to separate VTK/VTU files
   bool readDB = false;
 
   // Reads and converts pack mesh
   std::string regNme;
-  if (dirStat == 1)
+  if (skippedDir == 1)
   	regNme = "domain2";
   else
   	regNme = "domain1";
+
+  if (totalRegs == 1)
+    regNme = "domain100";
   
   meshBase* fm = new FOAM::foamMesh(readDB);
   fm->read(regNme);
@@ -150,12 +182,20 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
   vm->write();
 
   // Reads and converts surronding mesh
-  regNme = "domain0";
+  if (skippedDir == 1)
+    regNme = "domain1";
+  else
+    regNme = "domain0";
+
+  if (totalRegs == 1)
+    regNme = "domain0";
   meshBase* fm2 = new FOAM::foamMesh(readDB);
   fm2->read(regNme);
   vtkMesh* vm2 = new vtkMesh(fm2->getDataSet(),ofname2);
   vm2->report();
   vm2->write();
+
+  std::cout << "DirStat  is = " << skippedDir << std::endl;
 
   // Outputs useful mesh quality parameters for users
   std::string SurroundingName = "surroundingMeshQuality";
@@ -191,17 +231,23 @@ PackMeshDriver::PackMeshDriver(const std::string& ifname,
 
   // End of workflow
 
+
+  // * * * * * *  IN DEVELOPMENT * * * * * * * * // 
   // Adds cohesive elements for hex and writes them in VTU file.
-  //objMsh->addCohesiveElements(1e-13, "FinalMesh.vtu");
+  //objMsh->addCohesiveElements(1e-13, "FinalMeshZero.vtu");
+  // Adds artificial thickness elements for hex and writes them in VTU file.
+  //objMsh->addArtificialThicknessElements(1e-13, "FinalMeshArti.vtu", 1);
+  //objMsh->periodicMeshMapper("front", "back");
+  //objMsh->periodicGeomGen("packs.stl", "Box.stl");
 
   //if (objMsh)
   //  delete objMsh;
 
-  // Adds cohesive elements with thickness for hex and writes them in VTU file.
-  //objMsh->addArtificialThicknessElements(1e-13, "FinalMesh.vtu");
-
-  //if (objMsh)
-  //  delete objMsh;
+  //auto* objrocPck = new NEM::GEO::rocPack("rocOut", "shapes");
+  //objrocPck->rocPack2Surf();
+  //if (objrocPck)
+  //  delete objrocPck;
+  // * * * * * *  IN DEVELOPMENT * * * * * * * * //
   
 }
 
