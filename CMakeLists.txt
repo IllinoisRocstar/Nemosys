@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 42)
+set(NEMOSYS_MINOR_VERSION 43)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -481,6 +481,11 @@ set(NEMOSYS_SRCS
     src/Geometry/convexContainer.C
     src/Geometry/point.C
     src/Geometry/qhQuickHull.C
+    src/Geometry/rocPack.C
+    src/Geometry/rocPackShape.C
+    src/Geometry/hmxShape.C
+    src/Geometry/petnShape.C
+    src/Geometry/icosidodecahedronShape.C
 
     src/InputGeneration/inputGen.C
 

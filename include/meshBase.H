@@ -3,6 +3,8 @@
 
 // VTK
 #include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkDataSetTriangleFilter.h>
 #include <vtkCellLocator.h>
 #include <vtkDataSet.h>
 #include <vtkIdTypeArray.h>
@@ -764,6 +766,13 @@ class NEMOSYS_EXPORT meshBase
     /** @brief clear the new array names if set
     **/
     void unsetNewArrayNames() { newArrayNames.clear(); }
+
+    /** @brief Converts given hexahedral VTK dataset into tetrahedral mesh
+                and stores it into dataSet variable.
+        @param meshdataSet Input hexahedral mesh dataset
+    **/
+    void convertHexToTetVTK(vtkSmartPointer<vtkDataSet> meshdataSet);
+
 
   protected:
     /** @brief number of points in mesh

@@ -21,6 +21,8 @@ const char* pntmix;
 const char* pntmix_ref;
 const char* packConv;
 const char* packConv_ref;
+const char* buildingTet;
+const char* buildingTet_ref;
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -139,9 +141,25 @@ TEST(Conversion, ConvertVTUToFoam)
 }
 #endif
 
+TEST(Conversion, ConvertVTKHexToTet)
+{
+  // create meshBase object
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(buildingTet);
+  
+  // Converts hex mesh to tet mesh and writes in VTU file.
+  mesh->convertHexToTetVTK(mesh->getDataSet());
+  mesh->write("outputTet.vtu");
+
+  std::unique_ptr<meshBase> origMesh = meshBase::CreateUnique("outputTet.vtu");
+
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(buildingTet_ref);
+
+  EXPECT_EQ(0, diffMesh(origMesh.get(), refMesh.get()));
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 20);
+  assert(argc == 22);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -161,6 +179,8 @@ int main(int argc, char** argv) {
   pntmix_ref = argv[17];
   packConv = argv[18];
   packConv_ref = argv[19];
+  buildingTet = argv[20];
+  buildingTet_ref = argv[21];
   return RUN_ALL_TESTS();
 }
 

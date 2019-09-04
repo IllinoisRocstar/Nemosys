@@ -104,6 +104,7 @@ NEM_add_test_executable(Refinement)
 NEM_add_test_executable(GmshMesh)
 NEM_add_test_executable(KMeans)
 NEM_add_test_executable(QHull)
+NEM_add_test_executable(RocPackPeriodic)
 NEM_add_test_executable(NucMesh)
 
 # custom-built tests
@@ -150,6 +151,8 @@ NEM_add_test(conversion Conversion ConversionTest
     pnt-mix-ref.vtu
     geom_pack_mesh.vtu
     geom_pack_mesh_ref.vtu
+    Building.vtu
+    TetBuilding.vtu
 )
 
 NEM_add_test(orthoPoly OrthoPoly OrthoPolyTest F.txt)
@@ -217,6 +220,11 @@ if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
 NEM_add_test(nucMesh NucMesh NucMeshTest
     atr_example_arrays.json
     atr_example_REF.msh
+)
+
+NEM_add_test(RocPackPeriodic RocPackPeriodic rocPackPeriodicTest
+    rocOut
+    periodicGeom_ref.vtk
 )
 endif() # Disable in Win
 
