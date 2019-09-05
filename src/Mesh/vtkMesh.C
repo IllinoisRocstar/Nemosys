@@ -11,7 +11,6 @@
 #include <vtkExtractEdges.h>
 #include <vtkFieldData.h>
 #include <vtkGenericCell.h>
-//#include <vtkIdList.h>
 #include <vtkImageData.h>
 #include <vtkPointData.h>
 //#include <vtkPoints.h>
@@ -31,6 +30,8 @@
 #include <vtkXMLStructuredGridWriter.h>
 #include <vtkXMLUnstructuredGridReader.h>
 #include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkGenericDataObjectReader.h>
+#include <vtkDataSetReader.h>
 #include <vtkXMLWriter.h>
 #include <vtksys/SystemTools.hxx>
 
@@ -203,7 +204,18 @@ vtkMesh::vtkMesh(const std::string &fname)
       std::cout << "vtkMesh constructed" << std::endl;
     }
     else
-      dataSet = vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname));
+    {
+      // reading legacy formated vtk files
+      vtkSmartPointer<vtkGenericDataObjectReader> reader
+          = vtkSmartPointer<vtkGenericDataObjectReader>::New();
+//      vtkSmartPointer<vtkDataSetReader> reader
+//          = vtkSmartPointer<vtkDataSetReader>::New();
+      reader->SetFileName(fname.c_str());
+      reader->Update();
+      reader->GetOutput()->Register(reader);
+      // obtaining dataset
+      dataSet.TakeReference(vtkDataSet::SafeDownCast(reader->GetOutput()));
+    }
   }
   else
   {
