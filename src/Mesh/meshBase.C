@@ -1830,6 +1830,10 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
       if (std::fabs(coord1[j]-coord2[j]) > tol)
       {
         std::cerr << "Meshes differ in point coordinates" << std::endl;
+        std::cerr << "Index " << i << " Component " << j << std::endl;
+        std::cerr << "Coord 1 " << std::setprecision(15) << coord1[j] 
+                 <<  " Coord 2 " <<  std::setprecision(15) << coord2[j] << std::endl;
+        std::cerr << "Meshes differ in point coordinates" << std::endl;
         return 1;
       }
     }
@@ -1867,13 +1871,16 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
   if (numArr1 != numArr2)
   {
     std::cerr << "Meshes have different numbers of point data" << std::endl;
+    std::cerr << "Mesh 1 has " << numArr1 << std::endl;
+    std::cerr << "Mesh 2 has " << numArr2 << std::endl;
     return 1;
   }
 
   for (int i = 0; i < numArr1; ++i)
   {
     vtkDataArray* da1 = pd1->GetArray(i);
-    vtkDataArray* da2 = pd2->GetArray(i);
+    //vtkDataArray* da2 = pd2->GetArray(i);
+    vtkDataArray* da2 = pd2->GetArray(pd1->GetArrayName(i));
     int numComponent = da1->GetNumberOfComponents();
     for (int j = 0; j < mesh1->getNumberOfPoints(); ++j)
     {
@@ -1885,7 +1892,9 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2)
       {
         if (std::fabs(comps1[k] - comps2[k]) > tol)
         {
-          std::cerr << "Meshes differ in point data values at point " << j <<  std::endl;
+          std::cerr << "For point data array " << da1->GetName() << std::endl;
+          std::cerr << "Meshes differ in point data values at point " << j 
+              << " component " << k <<  std::endl;
           std::cerr << comps1[k] << " " << comps2[k] << std::endl;
           return 1;
         }
