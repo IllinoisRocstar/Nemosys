@@ -1,11 +1,12 @@
-#include <OrderOfAccuracy.H>
+#include "OrderOfAccuracy.H"
+#include "AuxiliaryFunctions.H"
+
 #include <vtkPointData.h>
 #include <vtkDoubleArray.h>
-#include <AuxiliaryFunctions.H>
 
-OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
-                const std::vector<int>& _arrayIDs)
-  : f1(_f1), f2(_f2), f3(_f3), arrayIDs(_arrayIDs)
+OrderOfAccuracy::OrderOfAccuracy(meshBase *_f1, meshBase *_f2, meshBase *_f3,
+                                 std::vector<int> _arrayIDs)
+    : f1(_f1), f2(_f2), f3(_f3), arrayIDs(std::move(_arrayIDs))
 {
   // set names for array from coarse mesh to be transferred to fine
   int numArr = arrayIDs.size();
@@ -28,22 +29,18 @@ OrderOfAccuracy::OrderOfAccuracy(meshBase* _f1, meshBase* _f2, meshBase* _f3,
   f3->setNewArrayNames(f3ArrNames);
   f2->setNewArrayNames(f2ArrNames);
   f3->transfer(f2, "Consistent Interpolation", arrayIDs);
-  f2->transfer(f1, "Consistent Interpolation", arrayIDs); 
-  diffF3F2 = computeDiff(f2,f3ArrNames);
-  diffF2F1 = computeDiff(f1,f2ArrNames);
-  r21 = pow(f1->getNumberOfPoints()/f2->getNumberOfPoints(),1./3.);
-  r32 = pow(f2->getNumberOfPoints()/f3->getNumberOfPoints(),1./3.);
+  f2->transfer(f1, "Consistent Interpolation", arrayIDs);
+  diffF3F2 = computeDiff(f2, f3ArrNames);
+  diffF2F1 = computeDiff(f1, f2ArrNames);
+  // TODO: Double-check the integer division below.
+  r21 = pow(f1->getNumberOfPoints() / f2->getNumberOfPoints(), 1. / 3.);
+  r32 = pow(f2->getNumberOfPoints() / f3->getNumberOfPoints(), 1. / 3.);
   std::cout << r21 << " " << r32 << std::endl;
 }
 
-OrderOfAccuracy::~OrderOfAccuracy()
-{
-
-}
 
 std::vector<std::vector<double>> OrderOfAccuracy::computeDiffF3F1()
 {
-
   vtkSmartPointer<vtkPointData> finePD = f1->getDataSet()->GetPointData();
   int numArr = arrayIDs.size();
   for (int id = 0; id < numArr; ++id)
@@ -51,23 +48,23 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeDiffF3F1()
     std::string arrname(finePD->GetArrayName(arrayIDs[id]));
     std::string old(arrname);
     arrname += "f2";
-    f1->unsetPointDataArray(&arrname[0u]);
+    f1->unsetPointDataArray(arrname.c_str());
     arrname = old;
     arrname += "DiffSqr";
-    f1->unsetPointDataArray(&arrname[0u]);
+    f1->unsetPointDataArray(arrname.c_str());
     arrname = old;
     arrname += "Diff";
-    f1->unsetPointDataArray(&arrname[0u]);
+    f1->unsetPointDataArray(arrname.c_str());
     arrname = old;
     arrname += "Sqr";
-    f1->unsetPointDataArray(&arrname[0u]);
+    f1->unsetPointDataArray(arrname.c_str());
     arrname = old;
     arrname += "DifSqrIntegral";
-    f1->unsetCellDataArray(&arrname[0u]);  
+    f1->unsetCellDataArray(arrname.c_str());
   }
 
   f3->transfer(f1, "Consistent Interpolation", arrayIDs);
-  return computeDiff(f1,f3ArrNames);
+  return computeDiff(f1, f3ArrNames);
 }
 
 
@@ -79,16 +76,16 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeOrderOfAccuracy()
     orderOfAccuracy[i].resize(diffF3F2[i].size());
     for (int j = 0; j < diffF3F2[i].size(); ++j)
     {
-      // picard-type iteration to solve transendental equation for p
+      // Picard-type iteration to solve transcendental equation for p
       double q_p = 0;
-      double f32_f21 = diffF3F2[i][j]/diffF2F1[i][j];
+      double f32_f21 = diffF3F2[i][j] / diffF2F1[i][j];
       int s = (f32_f21 > 0) - (f32_f21 < 0);
       double p = -1;
       double old_p = 1;
       for (int k = 0; k < 1000; ++k)
       {
-        p = std::fabs(log(std::fabs(f32_f21)) + q_p)/log(r21);
-        q_p = log((pow(r21,p) - s)/(pow(r32,p)-s));
+        p = std::fabs(log(std::fabs(f32_f21)) + q_p) / log(r21);
+        q_p = log((pow(r21, p) - s) / (pow(r32, p) - s));
         if (std::fabs(old_p - p) < 1e-16)
           break;
         else
@@ -116,8 +113,9 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeGCI_21()
       GCI_21[i].resize(orderOfAccuracy[i].size());
       for (int j = 0; j < orderOfAccuracy[i].size(); ++j)
       {
-        double relativeError = diffF2F1[i][j]/std::sqrt(f1L2[i][j]);
-        GCI_21[i][j] = 1.25*relativeError/(pow(r21,orderOfAccuracy[i][j])-1); 
+        double relativeError = diffF2F1[i][j] / std::sqrt(f1L2[i][j]);
+        GCI_21[i][j] =
+            1.25 * relativeError / (pow(r21, orderOfAccuracy[i][j]) - 1);
       }
     }
   }
@@ -139,15 +137,18 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeGCI_32()
       GCI_32[i].resize(orderOfAccuracy[i].size());
       for (int j = 0; j < orderOfAccuracy[i].size(); ++j)
       {
-        double relativeError = diffF3F2[i][j]/std::sqrt(f2L2[i][j]);
-        GCI_32[i][j] = 1.25*relativeError/(pow(r32,orderOfAccuracy[i][j])-1);
+        double relativeError = diffF3F2[i][j] / std::sqrt(f2L2[i][j]);
+        GCI_32[i][j] =
+            1.25 * relativeError / (pow(r32, orderOfAccuracy[i][j]) - 1);
       }
     }
   }
   return GCI_32;
 }
 
-std::vector<std::vector<double>> OrderOfAccuracy::computeResolution(double gciStar)
+
+std::vector<std::vector<double>>
+OrderOfAccuracy::computeResolution(double gciStar)
 {
   if (GCI_32.empty())
     computeGCI_32();
@@ -157,38 +158,43 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeResolution(double gciSt
     res[i].resize(GCI_32[i].size());
     for (int j = 0; j < GCI_32[i].size(); ++j)
     {
-      res[i][j] = pow(gciStar/GCI_32[i][j],1./orderOfAccuracy[i][j]);
+      res[i][j] = pow(gciStar / GCI_32[i][j], 1. / orderOfAccuracy[i][j]);
     }
   }
   return res;
 }
 
-void OrderOfAccuracy::computeMeshWithResolution(double gciStar, const std::string& ofname)
+
+void OrderOfAccuracy::computeMeshWithResolution(double gciStar,
+                                                const std::string &ofname)
 {
   std::vector<std::vector<double>> ratios(checkAsymptoticRange());
-  for (int i = 0; i < ratios.size(); ++i)
+  for (const auto &ratio : ratios)
   {
-    for (int j = 0; j < ratios[i].size(); ++j)
+    for (double j : ratio)
     {
-      if (std::abs(ratios[i][j] - 1) > 1)
+      if (std::abs(j - 1) > 1)
       {
-        std::cout << "WARNING: Solutions are not in the asymptotic convergence range" << std::endl;
+        std::cerr
+            << "WARNING: Solutions are not in the asymptotic convergence range"
+            << std::endl;
       }
     }
   }
 
-  std::vector<double> resolution = flatten(computeResolution(gciStar));
-  auto minmax = std::minmax_element(resolution.begin(),resolution.end());
-  double ave = (*minmax.first + *minmax.second)/2;
-  f3->refineMesh("uniform", ave, ofname, 0);
-  meshBase* refined = meshBase::Create(ofname);
+  std::vector<double> resolution = nemAux::flatten(computeResolution(gciStar));
+  auto minmax = std::minmax_element(resolution.begin(), resolution.end());
+  double ave = (*minmax.first + *minmax.second) / 2;
+  f3->refineMesh("uniform", ave, ofname, false);
+  meshBase *refined = meshBase::Create(ofname);
   f3->unsetNewArrayNames();
   f3->transfer(refined, "Consistent Interpolation", arrayIDs);
   delete f3;
   f3 = refined;
   computeRichardsonExtrapolation();
-  f3->write(ofname);  
+  f3->write(ofname);
 }
+
 
 std::vector<std::vector<double>> OrderOfAccuracy::checkAsymptoticRange()
 {
@@ -202,36 +208,38 @@ std::vector<std::vector<double>> OrderOfAccuracy::checkAsymptoticRange()
     ratios[i].resize(GCI_21[i].size());
     for (int j = 0; j < GCI_21[i].size(); ++j)
     {
-      ratios[i][j] = GCI_32[i][j]/(pow(r21,orderOfAccuracy[i][j])*GCI_21[i][j]);
+      ratios[i][j] =
+          GCI_32[i][j] / (pow(r21, orderOfAccuracy[i][j]) * GCI_21[i][j]);
     }
   }
   return ratios;
 }
 
+
 void OrderOfAccuracy::computeRichardsonExtrapolation()
 {
-
   if (orderOfAccuracy.empty())
     computeOrderOfAccuracy();
 
   int numArr = arrayIDs.size();
-  
+
   std::vector<vtkSmartPointer<vtkDoubleArray>> fineDatas(numArr);
   std::vector<vtkSmartPointer<vtkDoubleArray>> diffDatas(numArr);
   std::vector<vtkSmartPointer<vtkDoubleArray>> richardsonDatas(numArr);
-  
+
   vtkSmartPointer<vtkPointData> finePD
-    = f1->getDataSet()->GetPointData();
-  
-  std::vector<std::string> names(numArr);  
+      = f1->getDataSet()->GetPointData();
+
+  std::vector<std::string> names(numArr);
   for (int id = 0; id < numArr; ++id)
   {
-    diffDatas[id] 
-      = vtkDoubleArray::SafeDownCast(finePD->GetArray(realDiffIDs[id]));
+    diffDatas[id]
+        = vtkDoubleArray::SafeDownCast(finePD->GetArray(realDiffIDs[id]));
     fineDatas[id]
-      = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id]));
+        = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id]));
     vtkSmartPointer<vtkDoubleArray> richardsonData = vtkSmartPointer<vtkDoubleArray>::New();
-    richardsonData->SetNumberOfComponents(diffDatas[id]->GetNumberOfComponents());
+    richardsonData->SetNumberOfComponents(
+        diffDatas[id]->GetNumberOfComponents());
     richardsonData->SetNumberOfTuples(f1->getNumberOfPoints());
     std::string name(finePD->GetArrayName(arrayIDs[id]));
     name += "_richExtrap";
@@ -242,35 +250,39 @@ void OrderOfAccuracy::computeRichardsonExtrapolation()
 
   for (int i = 0; i < f1->getNumberOfPoints(); ++i)
   {
-    for (int id = 0; id < numArr; ++id)
-    {
+    for (int id = 0; id < numArr; ++id) {
       int numComponent = diffDatas[id]->GetNumberOfComponents();
-      double fine_comps[numComponent];
-      fineDatas[id]->GetTuple(i,fine_comps);
-      double diff_comps[numComponent];
-      diffDatas[id]->GetTuple(i,diff_comps);
-      double richierich[numComponent];
+      auto *fine_comps = new double[numComponent];
+      fineDatas[id]->GetTuple(i, fine_comps);
+      auto *diff_comps = new double[numComponent];
+      diffDatas[id]->GetTuple(i, diff_comps);
+      auto *richierich = new double[numComponent];
       for (int j = 0; j < numComponent; ++j)
-      { 
-        double money = fine_comps[j] + diff_comps[j]/(pow(r21,orderOfAccuracy[id][j])-1); 
+      {
+        double money = fine_comps[j]
+                       + diff_comps[j] / (pow(r21, orderOfAccuracy[id][j]) - 1);
         richierich[j] = money;
-      } 
-      richardsonDatas[id]->SetTuple(i,richierich);
-    }  
+      }
+      richardsonDatas[id]->SetTuple(i, richierich);
+      delete[] fine_comps;
+      delete[] diff_comps;
+      delete[] richierich;
+    }
   }
-  
-  std::vector<int> richExtrapIDs(numArr); 
+
+  std::vector<int> richExtrapIDs(numArr);
   for (int id = 0; id < numArr; ++id)
   {
     finePD->AddArray(richardsonDatas[id]);
-    finePD->GetArray(&(names[id])[0u],richExtrapIDs[id]);
+    finePD->GetArray(names[id].c_str(), richExtrapIDs[id]);
   }
   f1->transfer(f3, "Consistent Interpolation", richExtrapIDs);
 }
 
-std::vector<std::vector<double>> 
-OrderOfAccuracy::computeDiff
-  (meshBase* mesh, const std::vector<std::string>& newArrNames)
+
+std::vector<std::vector<double>>
+OrderOfAccuracy::computeDiff(meshBase *mesh,
+                             const std::vector<std::string> &newArrNames)
 {
   int numArr = arrayIDs.size();
   std::vector<vtkSmartPointer<vtkDoubleArray>> fineDatas(numArr);
@@ -278,19 +290,19 @@ OrderOfAccuracy::computeDiff
   std::vector<vtkSmartPointer<vtkDoubleArray>> diffDatas(numArr);
   std::vector<vtkSmartPointer<vtkDoubleArray>> fineDatasSqr(numArr);
   std::vector<vtkSmartPointer<vtkDoubleArray>> realDiffDatas(numArr);
-  
-  vtkSmartPointer<vtkPointData> finePD 
-    = mesh->getDataSet()->GetPointData();
+
+  vtkSmartPointer<vtkPointData> finePD
+      = mesh->getDataSet()->GetPointData();
 
   std::vector<std::string> names(numArr);
   std::vector<std::string> names2(numArr);
   std::vector<std::string> names3(numArr);
   for (int id = 0; id < numArr; ++id)
   {
-    fineDatas[id] 
-      = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id]));
-    coarseDatas[id] 
-      = vtkDoubleArray::SafeDownCast(finePD->GetArray(&(newArrNames[id])[0u]));
+    fineDatas[id]
+        = vtkDoubleArray::SafeDownCast(finePD->GetArray(arrayIDs[id]));
+    coarseDatas[id]
+        = vtkDoubleArray::SafeDownCast(finePD->GetArray(newArrNames[id].c_str()));
     vtkSmartPointer<vtkDoubleArray> diffData = vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> fineDataSqr = vtkSmartPointer<vtkDoubleArray>::New();
     vtkSmartPointer<vtkDoubleArray> realDiffData = vtkSmartPointer<vtkDoubleArray>::New();
@@ -299,70 +311,72 @@ OrderOfAccuracy::computeDiff
     std::string name(finePD->GetArrayName(arrayIDs[id]));
     name += "DiffSqr";
     names[id] = name;
-    diffData->SetName(&name[0u]);
+    diffData->SetName(name.c_str());
     diffDatas[id] = diffData;
     fineDataSqr->SetNumberOfComponents(fineDatas[id]->GetNumberOfComponents());
     fineDataSqr->SetNumberOfTuples(mesh->getNumberOfPoints());
     std::string name2(finePD->GetArrayName(arrayIDs[id]));
     name2 += "Sqr";
     names2[id] = name2;
-    fineDataSqr->SetName(&name2[0u]);
+    fineDataSqr->SetName(name2.c_str());
     fineDatasSqr[id] = fineDataSqr;
     realDiffData->SetNumberOfComponents(fineDatas[id]->GetNumberOfComponents());
     realDiffData->SetNumberOfTuples(mesh->getNumberOfPoints());
     std::string name3(finePD->GetArrayName(arrayIDs[id]));
     name3 += "Diff";
     names3[id] = name3;
-    realDiffData->SetName(&name3[0u]);
+    realDiffData->SetName(name3.c_str());
     realDiffDatas[id] = realDiffData;
   }
   for (int i = 0; i < mesh->getNumberOfPoints(); ++i)
   {
-    for (int id = 0; id < numArr; ++id)
-    {
+    for (int id = 0; id < numArr; ++id) {
       int numComponent = fineDatas[id]->GetNumberOfComponents();
-      double fine_comps[numComponent];
-      double coarse_comps[numComponent];
-      fineDatas[id]->GetTuple(i,fine_comps);
-      coarseDatas[id]->GetTuple(i,coarse_comps);
-      double diff[numComponent];
-      double fsqr[numComponent];
-      double realdiff[numComponent];
+      auto *fine_comps = new double[numComponent];
+      auto *coarse_comps = new double[numComponent];
+      fineDatas[id]->GetTuple(i, fine_comps);
+      coarseDatas[id]->GetTuple(i, coarse_comps);
+      auto *diff = new double[numComponent];
+      auto *fsqr = new double[numComponent];
+      auto *realdiff = new double[numComponent];
       for (int j = 0; j < numComponent; ++j)
-      { 
+      {
         double error = (coarse_comps[j] - fine_comps[j]);
-        diff[j] = error*error;
-        fsqr[j] = fine_comps[j]*fine_comps[j];
+        diff[j] = error * error;
+        fsqr[j] = fine_comps[j] * fine_comps[j];
         realdiff[j] = fine_comps[j] - coarse_comps[j];
-      } 
-      diffDatas[id]->SetTuple(i,diff);
-      fineDatasSqr[id]->SetTuple(i,fsqr);
-      realDiffDatas[id]->SetTuple(i,realdiff); 
-    }  
+      }
+      diffDatas[id]->SetTuple(i, diff);
+      fineDatasSqr[id]->SetTuple(i, fsqr);
+      realDiffDatas[id]->SetTuple(i, realdiff);
+      delete[] fine_comps;
+      delete[] coarse_comps;
+      delete[] diff;
+      delete[] fsqr;
+      delete[] realdiff;
+    }
   }
- 
-   
+
   for (int id = 0; id < numArr; ++id)
   {
     finePD->AddArray(diffDatas[id]);
-    finePD->GetArray(&(names[id])[0u], diffIDs[id]);
+    finePD->GetArray(names[id].c_str(), diffIDs[id]);
     finePD->AddArray(fineDatasSqr[id]);
-    finePD->GetArray(&(names2[id])[0u],relEIDs[id]);
+    finePD->GetArray(names2[id].c_str(), relEIDs[id]);
     finePD->AddArray(realDiffDatas[id]);
-    finePD->GetArray(&(names3[id])[0u],realDiffIDs[id]);
+    finePD->GetArray(names3[id].c_str(), realDiffIDs[id]);
   }
-     
-  std::vector<std::vector<double>> diff_integral(mesh->integrateOverMesh(diffIDs)); 
-  for (int i = 0; i < diff_integral.size(); ++i)
+
+  std::vector<std::vector<double>> diff_integral(
+      mesh->integrateOverMesh(diffIDs));
+  for (auto &&i : diff_integral)
   {
-    for (int j = 0; j < diff_integral[i].size(); ++j)
+    for (double &j : i)
     {
-      diff_integral[i][j] = std::sqrt(diff_integral[i][j]);
-      std::cout << diff_integral[i][j] << " ";
+      j = std::sqrt(j);
+      std::cout << j << " ";
     }
     std::cout << std::endl;
   }
-  return diff_integral; 
-}  
-
-
+  return diff_integral;
+}

@@ -289,10 +289,10 @@ int main(int argc, char* argv[])
 			  mPart->getCrds(iCg, MAd::M_getVrtZCrds(mesh)));
      // define connctivity
      cgWrtObj->setSection(cgObj1->getSectionName(), 
-			  (CG_ElementType_t) cgObj1->getElementType(), 
+			  (CGNS_ENUMT(ElementType_t)) cgObj1->getElementType(),
 			  mPart->getConns(iCg));
      // define vertex and cell data 
-     std::map<std::string, CG_GridLocation_t> slnNLMap = cgObj1->getSolutionNameLocMap();
+     std::map<std::string, CGNS_ENUMT(GridLocation_t)> slnNLMap = cgObj1->getSolutionNameLocMap();
      for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
        cgWrtObj->setSolutionNode(is->first, is->second);
      // write skeleton of the file
@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
      
     // write individual data fields
      std::map<int,std::pair<int,keyValueList> > slnMap = cgObj1->getSolutionMap();
-     std::vector<CG_GridLocation_t> gLoc = cgObj1->getSolutionGridLocations();
+     std::vector<CGNS_ENUMT(GridLocation_t)> gLoc = cgObj1->getSolutionGridLocations();
      std::vector<std::string> slnName = cgObj1->getSolutionNodeNames();
      std::vector<double> regCntCrdsPart = mPart->getElmSlnVec(iCg, regCntCrdsNew, 3);
      //cog = getCOG(regCntCrdsPart);
@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
 	       std::vector<double> stitPhysData;
 	       std::vector<double> partPhysData;
 	       int nData;
-	       if (gLoc[iSol] == CG_Vertex)
+	       if (gLoc[iSol] == CGNS_ENUMV(Vertex))
 	       {
 	         nData = mPart->getNNdePart(iCg);
 	         ma->getMeshData(ifl->second, &stitPhysData);
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 	           << slnName[iSol]
 	           << std::endl;
 	       // write to file
-	       cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], CG_RealDouble, &partPhysData[0]);
+	       cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], CGNS_ENUMV(RealDouble), &partPhysData[0]);
        }
      }
      delete cgWrtObj;

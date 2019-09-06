@@ -1,0 +1,15 @@
+[
+  {
+    "Program Type": "Conversion",
+    "Mesh File Options": {
+      "Input Mesh Files": {
+        "Source Mesh": "test_input.vtu",
+        "Target Mesh": "test_output.cgr"
+      },
+      "Output Mesh File": "test_output.cgi"
+    },
+    "Conversion Options": {
+      "Method": "VTK->COBALT"
+    }
+  }
+]

@@ -1,0 +1,117 @@
+//-*- C++ -*-
+Input {
+  Mesh {
+    MshFile = "A319_2D.msh"; // gmsh -o A319_2D.msh -2 -optimize -parametric -clscale 0.1 A319.brep
+    GeoFile = "A319.brep"; 
+  }
+}
+Output {
+  Prefix = "result/";
+  Frequency = 1;
+  Type = Msh;
+}
+Task {
+  Type = MobileObject; // MobileObject RemoveRegion SizeField RemoveSliverFaces LaplaceSmoothing GeoConstraints TopoConstraints FaceSwap UglyMesh RemoveSliverRegions DESC EdgeSwap GeoMatcher EdgeSplit EdgeCollapse EdgeSplitCollapse FaceCollapse OptimizeLength OptimizeShape None
+}
+Debug {
+  DebugLevel = 1;
+  // OpenJournal = No; // Yes No
+  // ReferenceJournal = "";
+  // ReportSlivers = No; // Yes No
+  // TestSliverOperators = No; // Yes No
+}
+Adaptation {
+//   // MaxNumberOfInnerIteration = 10;
+//   LowerLengthBound = 0.9;
+//   UpperLengthBound = 2.7;
+//   // SwapMinImproveRatio = 1.000000e+00;
+//   SliverQuality = 0.1;
+//   SplitCanMakeSlivers    = Yes;
+//   CollapseCanMakeSlivers = Yes;
+//   SliverLowerLengthBound = 0.5;
+//   SliverUpperLengthBound = 4.0;
+  CollapseOnBoundary = Yes;
+  BoundaryCollapses {
+    Tolerance = 1.e6;
+  }
+  SwapOnBoundary = Yes;
+  BoundarySwaps {
+    Tolerance = 1.e6;
+  }
+  TrackGeometry = Yes;
+  VertexSnapping {
+    IsMeshTheCavity = No; // No Yes
+    CavityThickness = 0;
+    // StiffnessAlteration = 1.000000e+00;
+  }
+  SmoothSizeField = Yes;
+  SizeFieldSmoothing {
+    MaximumGradient = 0.2;
+  }
+}
+MovingObjects {
+}
+SizeField {
+  Type = Analytical;
+  Analytical {
+    OrientationType = Isotropic;
+    Isotropic {
+      // original length: ? (approx), x bound: [0.,33000.]
+      // fine: 30
+      // coarse: 1000
+      //      Length = "0.5";
+      //Length = "0.02+0.98*Abs(Cos(2.*3.14*t))";
+      // Advancing bump (straight)
+      // V = 1     (velocity)
+      // L = 0.15   (width = 2*L)
+      // H = 0.3   (default edge length)
+      // h = 0.04  (edge length in the bump)
+      // X0 = 3.  (starting x)
+      //Length = "0.04+(0.3-0.04)*(Step((x-(3.))-(1.*t+0.15))+(1.-Step((x-(3.))-(1.*t-0.15))))";
+      // Advancing bump (circle)
+      // V = 1.     (velocity)
+      // L = 2.0    (width = 2*L)
+      // H = 5.0    (default edge length)
+      // h = 0.5    (edge length in the bump)
+      // X0 = 40.   (starting x)
+//       Length = "0.5+(5.0-0.5)*(Step(Sqrt((x-(40.))*(x-(40.))+y*y)-(1.*t+2.0))+(1.-Step(Sqrt((x-(40.))*(x-(40.))+y*y)-(1.*t-2.0))))";
+      // Advancing bump (sphere)
+      // V = 1.     (velocity)
+      // L = 300.    (width = 2*L)
+      // H = 300.    (default edge length)
+      // h = 30.    (edge length in the bump)
+      // X0 = -100.   (starting x)
+      // Y0 = 0.    (starting y)
+      // Z0 = 0.  (starting z)
+//       Length = "30.+(300.-30.)*(Step(Sqrt((x-(-100.))*(x-(-100.))+(y-0.)*(y-0.)+(z-(0.))*(z-(0.)))-(1.*t+300.0))+(1.-Step(Sqrt((x-(-100.))*(x-(-100.))+(y-0.)*(y-0.)+(z-(0.))*(z-(0.)))-(1.*t-300.0))))";
+      // Sphere advancing sinusoidal bump
+      // V = 1.     (velocity)
+      // L = 600.    (width = 2*L)
+      // H = 300.    (default edge length)
+      // h = 10.    (edge length in the bump)
+      // X0 = -100.   (starting x)
+      // Y0 = 0.    (starting y)
+      // Z0 = 0.  (starting z)
+//       Length = "300.-(300.-10.)*Cos((Sqrt((x-(-100.))*(x-(-100.))+(y-0.)*(y-0.)+(z-(0.))*(z-(0.)))-(1.*t))*6.28/(4*600.))*(Step(Sqrt((x-(-100.))*(x-(-100.))+(y-0.)*(y-0.)+(z-(0.))*(z-(0.)))-(1.*t-600.0))-Step(Sqrt((x-(-100.))*(x-(-100.))+(y-0.)*(y-0.)+(z-(0.))*(z-(0.)))-(1.*t+600.0)))";
+      // Spherical sinus
+      // V = 1.     (velocity)
+      // L = 2000.    (period = 2*L)
+      // H = 300.    (default edge length)
+      // h = 10.    (edge length in the bump)
+      Length = "300.-(300.-10.)*Cos((Sqrt(x*x+y*y+z*z)-(1.*t))*6.28/2000.)*Sin(6.28*t/4000.)";
+    }
+  }
+}
+NodeMotion {
+  Type = None;
+  ElasticParameters {
+    // IsMeshTheCavity = Yes; // No Yes
+    // CavityThickness = 3;
+    // StiffnessAlteration = 1.000000e+00;
+  }
+}
+TimeSpecifications {
+  //  MaxTimeSteps = 1;
+  TimeStep = 400.;
+  FinalTime = 36000.;
+}

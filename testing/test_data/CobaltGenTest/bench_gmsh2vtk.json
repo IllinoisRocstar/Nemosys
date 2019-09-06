@@ -1,0 +1,15 @@
+[
+  {
+    "Program Type": "Conversion",
+    "Mesh File Options": {
+      "Input Mesh Files": {
+        "Source Mesh": "test_input.msh",
+        "Target Mesh": "test_output.vtu"
+      },
+      "Output Mesh File": ""
+    },
+    "Conversion Options": {
+      "Method": "GMSH->VTK"
+    }
+  }
+]

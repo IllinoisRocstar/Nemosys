@@ -3,49 +3,56 @@
 
 // VTK
 #include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkDataSetTriangleFilter.h>
 #include <vtkCellLocator.h>
 #include <vtkDataSet.h>
-#include <vtkUnstructuredGrid.h>
 #include <vtkIdTypeArray.h>
 
-//MAd Lib
-#include <MAdLib.h>
+#include <vtkIdList.h>
+#include <vtkModelMetadata.h>
 
-// Nemosys
-#include <pntMesh.H>
+// Nemosys headers
+#include "nemosys_export.h"
 
 // stl
 #include <vector>
-#include <iosfwd>
-#include <fstream>
+#include <iostream>
 #include <map>
 #include <string>
 #include <memory>
 
-
-/* NOTE: virtual methods are usually implemented in vtkMesh.C. We use that class 
-         for more vtk specific functions that we want wrapped by meshbase */ 
-/* NOTE: try using smart pointer instances of meshbase in drivers
-         and pass the underlying raw pointer with the get member function of 
-         the smart pointer when required (eg. source->transfer(target.get(),...) for
-         smart pointer instance of target. Ideally, driver classes should have 
-         empty destructors, which can be realized by using smart pointers. In general
-         smart pointer should be used and scoped when they can. */
+typedef std::size_t nemId_t;
 
 class meshingParams;
 
-class meshBase 
-{
+/** @brief A brief description of meshBase.
+    @note Virtual methods are usually implemented in vtkMesh.C. We use that
+        class for more VTK-specific functions that we want wrapped by meshBase
+    @note Try using smart pointer instances of meshBase in drivers and pass the
+        underlying raw pointer with the get member function of the smart
+        pointer when required (e.g., source->transfer(target.get(), ...))
+        for smart pointer instance of target. Ideally, driver classes should
+        have empty destructors, which can be realized by using smart pointers.
+        In general, smart pointer should be used and scoped when they can.
+**/
 
+class NEMOSYS_EXPORT meshBase
+{
   // --- constructors and destructors
   public:
-
     meshBase()
-      : dataSet(0),numPoints(0),numCells(0),
-        hasSizeField(0),checkQuality(0), continuous(false),order(1)
+        : dataSet(nullptr), numPoints(0), numCells(0),
+          hasSizeField(false), checkQuality(false), continuous(false), order(1),
+          metadata(nullptr)
     {
       std::cout << "meshBase constructed" << std::endl;
     }
+
+//    meshBase(const meshBase &mb) = delete;
+//    meshBase &operator=(const meshBase &mb) = delete;
+//    meshBase(meshBase &&mb) = delete;
+//    meshBase &operator=(meshBase &&mb) = delete;
 
     // Dropping support for copy constructor
     //meshBase(const meshBase& mb)
@@ -64,311 +71,801 @@ class meshBase
     {
       std::cout << "meshBase destroyed" << std::endl;
     }
-  
+
   // --- meshBase factory methods
   public:
-    // construct vtkMesh from filename
-    // this method calls the other factory methods based on extension
-    // caller must delete object after use
-    static meshBase* Create(std::string fname); 
-    // construct from existing vtkDataSet and assign newname as filename
-    // caller must delete object after use
-    static meshBase* Create(vtkSmartPointer<vtkDataSet> other, std::string newname);
-    /* create from coordinates and connectivities.
-       NOTE: use of this is only valid when mesh has one cell type. 
-             cellType one of the vtkCellType enums.
-             Currently, only VTK_TETRA and VTK_TRIANGLE are supported
-       Caller must delete object after use  */
+    /** @brief Construct vtkMesh from filename.
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase* Create(const std::string &fname);
+
+    /** @brief Construct from existing vtkDataSet and assign newname as
+            filename.
+        @param other The vtkDataSet used to construct the mesh
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase* Create(vtkSmartPointer<vtkDataSet> other,
+                            const std::string &newname);
+
+    /** @brief create from coordinates and connectivities.
+        @param xCrds <>
+        @param yCrds <>
+        @param zCrds <>
+        @param elmConn <>
+        @param cellType one of the vtkCellType enums. Currently, only VTK_TETRA
+            and VTK_TRIANGLE are supported.
+        @param newname name of mesh file
+        @return <>
+    **/
     static meshBase* Create(const std::vector<double>& xCrds,
                             const std::vector<double>& yCrds,
                             const std::vector<double>& zCrds,
-                            const std::vector<int>& elmConn, const int cellType,
-                            std::string newname);
-    // create shared ptr from fname
-    // memory is managed by shared pointer, so do not call delete after use
-    static std::shared_ptr<meshBase> CreateShared(std::string fname);
-    // create shared ptr from existing meshbase
-    // memory is managed by shared pointer, so do not call delete after use
-    // (be careful with this one!)
-    static std::shared_ptr<meshBase> CreateShared(meshBase* mesh);
-    // create shared ptr from existing vtkDataset and assign newname as filename
-    // memory is managed by shared pointer, so do not call delete after use
-    static std::shared_ptr<meshBase> 
-    CreateShared(vtkSmartPointer<vtkDataSet> other, std::string newname);
-    // version of raw data mesh creation for memory managed shared_ptr instance (do not call delete)
-    static std::shared_ptr<meshBase> CreateShared(const std::vector<double>& xCrds,
-                                                  const std::vector<double>& yCrds,
-                                                  const std::vector<double>& zCrds,
-                                                  const std::vector<int>& elmConn, 
-                                                  const int cellType,
-                                                  std::string newname);
-    // create unique ptr from fname
-    // memory is managed by unique pointer, so do not call delete after use
-    static std::unique_ptr<meshBase> CreateUnique(std::string fname);
-    // version of raw data mesh creation for memory managed unique ptr instance (do not call delete)
-    static std::unique_ptr<meshBase> CreateUnique(const std::vector<double>& xCrds,
-                                                  const std::vector<double>& yCrds,
-                                                  const std::vector<double>& zCrds,
-                                                  const std::vector<int>& elmConn, 
-                                                  const int cellType,
-                                                  std::string newname);
-    // construct from existing vtkDataSet and assign newname as filename
-    // memory is managed by unique ptr, so do not call delete
-    static std::unique_ptr<meshBase> 
-    CreateUnique(vtkSmartPointer<vtkDataSet> other, std::string newname);
-    // construct from existing meshbase object
-    // memory is managed by unique ptr, so do not call delete
-    static std::unique_ptr<meshBase> CreateUnique(meshBase* mesh);
-    // construct vtkMesh from gmsh msh file (called in Create methods)
-    static meshBase* exportGmshToVtk(std::string fname);
-    // construct vtkMesh from netgen vol file (called in Create methods)
-    static meshBase* exportVolToVtk(std::string fname);
-    // construct vtkMesh from netgen vol file (called in Create methods)
-    static meshBase* exportPntToVtk(std::string fname);
-    // construct vtkMesh from exodusII files
-    static meshBase* exportExoToVtk(std::string fname);
-    // generate volume mesh from stl
-    // caller must delete object after use
-    static meshBase* generateMesh(std::string fname, std::string meshEngine,
-                                  meshingParams* params); 
-    // stitch together several meshBases
-    // caller must delete object after use
-    static meshBase* stitchMB(const std::vector<meshBase*>& mbObjs);
-    // stitch togeher several meshbases
-    // memory is managed by shared ptr, so do not call delete
-    static std::shared_ptr<meshBase> 
-    stitchMB(const std::vector<std::shared_ptr<meshBase>>& _mbObjs);
-    // mesh partitioning (with METIS)
-    // memory is managed by shared ptr, so do not call delete
-    static std::vector<std::shared_ptr<meshBase>> 
-    partition(const meshBase* mbObj, const int numPartitions);
-    // extract subset of mesh given list of cell ids and return meshbase obj
-    static meshBase* extractSelectedCells(meshBase* mesh, const std::vector<int>& celIds);
-    // helper wrapped by function above
-    static meshBase* extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh, 
-                                          vtkSmartPointer<vtkIdTypeArray> cellIds);
+                            const std::vector<nemId_t>& elmConn,
+                            const int cellType,
+                            const std::string &newname);
 
- 
+    /** @brief Create shared ptr from fname.
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::shared_ptr<meshBase> CreateShared(const std::string &fname);
+
+    /** @brief Create shared ptr from existing meshbase.
+        @param mesh the existing meshbase
+        @return <>
+    **/
+    static std::shared_ptr<meshBase> CreateShared(meshBase* mesh);
+
+    /** @brief Create shared ptr from existing vtkDataset and assign newname as
+            filename.
+        @param other The vtkDataSet used to construct the mesh
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::shared_ptr<meshBase>
+        CreateShared(vtkSmartPointer<vtkDataSet> other,
+                     const std::string &newname);
+
+    /** @brief Version of raw data mesh creation for memory managed shared_ptr
+            instance.
+        @param xCrds <>
+        @param yCrds <>
+        @param zCrds <>
+        @param elmConn <>
+        @param cellType one of the vtkCellType enums. Currently, only
+            VTK_TETRA and VTK_TRIANGLE are supported.
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::shared_ptr<meshBase>
+    CreateShared(const std::vector<double> &xCrds,
+                 const std::vector<double> &yCrds,
+                 const std::vector<double> &zCrds,
+                 const std::vector<nemId_t> &elmConn,
+                 int cellType,
+                 const std::string &newname);
+
+    /** @brief create unique ptr from fname
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::unique_ptr<meshBase> CreateUnique(const std::string &fname);
+
+    /** @brief version of raw data mesh creation for memory managed unique ptr
+            instance
+        @param xCrds <>
+        @param yCrds <>
+        @param zCrds <>
+        @param elmConn <>
+        @param cellType one of the vtkCellType enums. Currently, only VTK_TETRA
+            and VTK_TRIANGLE are supported.
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::unique_ptr<meshBase>
+    CreateUnique(const std::vector<double> &xCrds,
+                 const std::vector<double> &yCrds,
+                 const std::vector<double> &zCrds,
+                 const std::vector<nemId_t> &elmConn,
+                 int cellType,
+                 const std::string &newname);
+    /** @brief construct from existing vtkDataSet and assign newname as filename
+        @param other The vtkDataSet used to construct the mesh
+        @param fname name of mesh file
+        @return <>
+    **/
+    static std::unique_ptr<meshBase>
+    CreateUnique(vtkSmartPointer<vtkDataSet> other,
+                 const std::string &newname);
+    /** @brief construct from existing meshbase object
+        @param mesh the existing meshbase
+        @return <>
+    **/
+    static std::unique_ptr<meshBase> CreateUnique(meshBase *mesh);
+
+    /** @brief construct vtkMesh from gmsh msh file (called in Create methods)
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase *exportGmshToVtk(const std::string &fname);
+
+    /** @brief construct vtkMesh from netgen vol file (called in Create methods)
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase *exportVolToVtk(const std::string &fname);
+
+    /** @brief construct vtkMesh from netgen vol file (called in Create methods)
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase *exportPntToVtk(const std::string &fname);
+
+    /** @brief construct vtkMesh from exodusII files
+        @param fname name of mesh file
+        @return <>
+    **/
+    static meshBase *exportExoToVtk(const std::string &fname);
+
+    /** @brief generate volume mesh from stl
+        @param fname name of mesh file
+        @param meshEngine <>
+        @param params <>
+        @return <>
+    **/
+    static meshBase *generateMesh(const std::string &fname,
+                                  const std::string &meshEngine,
+                                  meshingParams *params);
+
+    /** @brief stitch together several meshBases
+        @param mbObjs a vector of meshBase objects to stich together
+        @return <>
+    **/
+    static meshBase *stitchMB(const std::vector<meshBase *> &mbObjs);
+
+    /** @brief stitch together several meshBase
+        @param mbObjs a vector of meshBase objects to stich together
+        @return <>
+    **/
+    static std::shared_ptr<meshBase>
+        stitchMB(const std::vector<std::shared_ptr<meshBase>> &_mbObjs);
+
+    /** @brief mesh partitioning (with METIS)
+        @param mbObj The meshBase object to partition.
+        @param numPartitions The number of partitions to partition the mesh into
+        @return <>
+    **/
+    static std::vector<std::shared_ptr<meshBase>>
+        partition(const meshBase *mbObj, int numPartitions);
+
+    /** @brief extract subset of mesh given list of cell ids and return meshBase
+            obj
+        @param mesh The meshBase object to extract the subset from.
+        @param cellIds <>
+        @return meshBase object representing the subset
+    **/
+    static meshBase *extractSelectedCells(meshBase *mesh,
+                         const std::vector<nemId_t> &cellIds);
+
+    /** @brief helper wrapped by function above
+        @param mesh The meshBase object to extract the subset from.
+        @param cellIds <>
+        @return meshBase object representing the subset
+    **/
+    static meshBase *
+    extractSelectedCells(vtkSmartPointer<vtkDataSet> mesh,
+                         vtkSmartPointer<vtkIdTypeArray> cellIds);
+
   // --- access
   public:
-    // get point with id
-    virtual std::vector<double> getPoint(int id) const {}
-    // get 3 vecs with x,y and z coords
-    virtual std::vector<std::vector<double>> getVertCrds() const {}
-    // get cell with id : returns point indices and respective coordinates
-    virtual std::map<int, std::vector<double>> getCell(int id) const {}
-    // get vector of coords of cell with id
-    virtual std::vector<std::vector<double>> getCellVec(int id) const {}
-    // get edge lengths of dataSet
-    virtual void inspectEdges(const std::string& ofname){}
-    // get this meshes' dataSet
+    /** @brief abstract read method reserved for derived classes
+        @param fname name of mesh file
+    **/
+    virtual void read(const std::string &fname) = 0;
+
+    /** @brief get point with id
+        @param id The id of the point.
+        @return <>
+    **/
+    virtual std::vector<double> getPoint(nemId_t id) const = 0;
+
+    /** @brief get 3 vecs with x,y and z coords
+        @return <>
+    **/
+    virtual std::vector<std::vector<double>> getVertCrds() const = 0;
+
+    /** @brief get cell with id
+        @param id The id of the cell.
+        @return point indices and respective coordinates
+    **/
+    virtual std::map<nemId_t, std::vector<double>> getCell(nemId_t id) const = 0;
+
+    /** @brief get vector of coords of cell with id
+        @param id The id of the cell.
+        @return vector of coords of cell
+    **/
+    virtual std::vector<std::vector<double>> getCellVec(nemId_t id) const = 0;
+
+    /** @brief get edge lengths of dataSet
+        @param ofname <>
+    **/
+    virtual void inspectEdges(const std::string &ofname) const = 0;
+
+    /** @brief get this meshes' dataSet
+        @return this mesh's dataSet
+    **/
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
-    // extract the surface mesh
-    virtual vtkSmartPointer<vtkDataSet> extractSurface(){}
 
-    // register data to dataSet's point data
-    virtual void setPointDataArray(const char* name, 
-                                   const std::vector<std::vector<double>>& data){}
-    virtual void setPointDataArray(const char* name, const std::vector<double>& data){}
-    // register data to dataSet's cell data
-    virtual void setCellDataArray(const char* name,
-                                  const std::vector<std::vector<double>>& data){}
-    virtual void setCellDataArray(const char* name,
-                                  const std::vector<double>& data){}
-    // get *scalar* point or cell data array. assumes data is not allocated prior to calling
-    virtual void getPointDataArray(const std::string& name,
-                                   std::vector<double>& data) {}
+    /** @brief extract the surface mesh
+        @return the surface mesh for this mesh.
+    **/
+    virtual vtkSmartPointer<vtkDataSet> extractSurface() = 0;
+
+    /** @brief register data to dataSet's point data
+        @param name <>
+        @param data <>
+    **/
+    virtual void setPointDataArray(const std::string &name,
+                      const std::vector<std::vector<double>> &data) {}
+
+     /** @brief register data to dataSet's point data
+         @param name <>
+         @param data <>
+    **/
+    virtual void setPointDataArray(const std::string &name,
+                                   const std::vector<double> &data) {}
+
+    /** @brief register data to dataSet's cell data
+        @param name <>
+        @param data <>
+    **/
+    virtual void setCellDataArray(const std::string &name,
+                     const std::vector<std::vector<double>> &data) {}
+
+    /** @brief register data to dataSet's cell data
+        @param name <>
+        @param data <>
+    **/
+    virtual void setCellDataArray(const std::string &name,
+                                  const std::vector<double> &data) {}
+
+    /** @brief get *scalar* point or cell data array.
+            assumes data is not allocated prior to calling
+        @param name <>
+        @param data <>
+    **/
+    virtual void getPointDataArray(const std::string &name,
+                                   std::vector<double> &data) {}
+
+    /** @brief get *scalar* point or cell data array.
+            assumes data is not allocated prior to calling
+        @param arrayId <>
+        @param data <>
+    **/
     virtual void getPointDataArray(int arrayId,
-                                   std::vector<double>& data) {}
-    virtual void getCellDataArray(const std::string& name,
-                                  std::vector<double>& data) {}
+                                   std::vector<double> &data) {}
+
+    /** @brief <>
+        @param name <>
+        @return <>
+    **/
+    virtual int getCellDataIdx(const std::string &name) { return 0; }
+
+    /** @brief <>
+        @param name <>
+        @param data <>
+    **/
+    virtual void getCellDataArray(const std::string &name,
+                                  std::vector<double> &data) {}
+
+    /** @brief <>
+        @param arrayId <>
+        @param data <>
+    **/
     virtual void getCellDataArray(int arrayId,
-                                  std::vector<double>& data) {}
-    // delete array with id from dataSet's point data
-    virtual void unsetPointDataArray(int arrayID){}
-    virtual void unsetPointDataArray(const char* name){}
-    // delete array with id from dataSet's cell data
-    virtual void unsetCellDataArray(int arrayID){} 
-    virtual void unsetCellDataArray(const char* name){}
-    // delete array with id from dataSet's field data
-    virtual void unsetFieldDataArray(const char* name){}
-    // get diameter of circumsphere of each cell
-    virtual std::vector<double> getCellLengths() const {}
-    // get center of a cell
-    virtual std::vector<double> getCellCenter(int cellID) const {}
-    // build locators for efficient search operations
+                                  std::vector<double> &data) {}
+
+    /** @brief delete array with id from dataSet's point data
+        @param arrayID <>
+    **/
+    virtual void unsetPointDataArray(int arrayID) {}
+
+    /** @brief <>
+        @param name <>
+    **/
+    virtual void unsetPointDataArray(const std::string &name) {}
+
+    /** @brief delete array with id from dataSet's cell data
+        @param arrayID <>
+    **/
+    virtual void unsetCellDataArray(int arrayID) {}
+
+    /** @brief <>
+        @param name <>
+    **/
+    virtual void unsetCellDataArray(const std::string &name) {}
+
+    /** @brief delete array with id from dataSet's field data
+        @param name <>
+    **/
+    virtual void unsetFieldDataArray(const std::string &name) {}
+
+    /** @brief get diameter of circumsphere of each cell
+        @return <>
+    **/
+    virtual std::vector<double> getCellLengths() const = 0;
+
+    /** @brief get center of a cell
+        @param cellID <>
+        @return <>
+    **/
+    virtual std::vector<double> getCellCenter(nemId_t cellID) const = 0;
+
+    /** @brief build locators for efficient search operations
+        @return <>
+    **/
     vtkSmartPointer<vtkCellLocator> buildLocator();
-    // get cell type as an integer
-    // assumes all elements are the same type
+
+    /** @brief get cell type as an integer
+        assumes all elements are the same type
+        @return <>
+    **/
     virtual int getCellType() const = 0;
-    // get connectivities. this is only safe to use if mesh has cells of the same type
-    // or you have information on the number of cells of each type and the order in 
-    // which they appear (for look up in resulting vector)
-    virtual std::vector<int> getConnectivities() const {}
+
+    /** @brief get connectivities.
+
+        This is only safe to use if mesh has cells of the same type or you have
+        information on the number of cells of each type and
+        the order in which they appear (for look up in resulting vector)
+
+        @return <>
+    **/
+    virtual std::vector<nemId_t> getConnectivities() const = 0;
+    // set metadata, including sidesets
+    void setMetadata(vtkSmartPointer<vtkModelMetadata> _metadata){metadata = _metadata;}
+    vtkSmartPointer<vtkModelMetadata> getMetadata(){return metadata;}
 
 
+  
   // --- data transfer
   public:
-    /* transfer point data (pointOrCell=0) or cell data (pointOrCell=1)
-       with given id from this mesh to target
-       method can be "Consistent Interpolation", "Mortar Element", "RBF" etc.
-       only "Consistent Interpolation" has been implemented */
-    int transfer(meshBase* target, std::string method, 
-                 const std::vector<int>& arrayIDs, bool pointOrCell = 0);
-    int transfer(meshBase* target, std::string method, 
-                 const std::vector<std::string>& arrayNames, bool pointOrCell = 0);
-    // transfer all point and cell data from this mesh to target
-    int transfer(meshBase* target, std::string method);
+
+    /** @brief transfer point data or cell data with given id from this mesh to
+            target.
+        @param target <>
+        @param method can be "Consistent Interpolation", "Mortar Element",
+            "RBF", etc. Only "Consistent Interpolation" has been implemented
+        @param arrayIDs <>
+        @param pointOrCell boolean that tells the method whether to transfer
+            point (False) or cell (True) data.
+        @return <>
+    **/
+    int transfer(meshBase *target, const std::string &method,
+                 const std::vector<int> &arrayIDs, bool pointOrCell = false);
+
+    /** @brief transfer point data or cell data with given id from this mesh to
+            target.
+        @param target <>
+        @param method can be "Consistent Interpolation", "Mortar Element",
+            "RBF", etc. Only "Consistent Interpolation" has been implemented
+        @param arrayNames <>
+        @param pointOrCell boolean that tells the method whether to transfer
+            point (False) or cell (True) data.
+        @return <>
+    **/
+    int transfer(meshBase *target,
+                 const std::string &method,
+                 const std::vector<std::string> &arrayNames,
+                 bool pointOrCell = false);
+
+    /** @brief transfer all point and cell data from this mesh to target
+        @param target <>
+        @param method can be "Consistent Interpolation", "Mortar Element",
+            "RBF", etc. Only "Consistent Interpolation" has been implemented
+        @return <>
+    **/
+    int transfer(meshBase *target, const std::string &method);
 
   // --- integration
   public:
-    // integrate arrays in arrayIDs over the mesh. 
-    // integrated data is available per cell as vtk cell data after operation
-    // total integral for each datum is returned
-    std::vector<std::vector<double>> 
-    integrateOverMesh(const std::vector<int>& arrayIDs);
- 
+    /** @brief integrate arrays in arrayIDs over the mesh.
+        @param arrayIDs <>
+        @return total integral for each datum is returned
+    **/
+    std::vector<std::vector<double>>
+        integrateOverMesh(const std::vector<int> &arrayIDs);
+
   // --- size field generation
   public:
-    // generate size field based on method ("gradient", "value", "error estimator")
-    // and given a point data array. dev_mlt and maxIsmin are used to determine
-    // which cells to consider for refinement
-    void generateSizeField(std::string method, int arrayID, double dev_mlt, 
-                           bool maxIsmin, double sizeFactor=1.);
-    // set whether this mesh has a sizefield
+    /** @brief generate size field based on method and given a point data array.
+        @param method (e.g., "gradient", "value", "error estimator")
+        @param arrayID <>
+        @param dev_mlt used to determine which cells to consider for refinement
+        @param maxIsmin used to determine which cells to consider for refinement
+        @param sizeFactor <>
+    **/
+    void generateSizeField(const std::string &method,
+                           int arrayID,
+                           double dev_mlt,
+                           bool maxIsmin,
+                           double sizeFactor = 1.);
+
+    /** @brief set whether this mesh has a sizefield
+        @param q <>
+    **/
     void setSFBool(bool q) { hasSizeField = q; }
-    // get this meshes' sizefield  
+
+    /** @brief get this meshes' sizefield
+        @return <>
+    **/
     bool getSFBool() const { return hasSizeField; }
-    // check for named array in vtk and return its integer id (0-point data, 1-cell data)
-    int IsArrayName(std::string name, const bool pointOrCell = 0);
-    // set element shape function order (default is 1 when meshBase is constructed)
-    void setOrder(int _order) { order = _order;}
-    // get the shape function order
-    int getOrder() const { return order; } 
- 
+
+    /** @brief check for named array in vtk and return its integer id.
+        @param pointOrCell boolean that tells the method whether to transfer
+            point (False) or cell (True) data.
+        @return <>
+    **/
+    int IsArrayName(const std::string &name, bool pointOrCell = false) const;
+
+    /** @brief set element shape function order
+            (default is 1 when meshBase is constructed)
+        @param _order <>
+    **/
+    void setOrder(int _order) { order = _order; }
+
+    /** @brief get the shape function order
+        @return <>
+    **/
+    int getOrder() const { return order; }
+
   // --- adaptive mesh refinement
   public:
-    // perform sizefield-based h-refinement. edge_scale is for uniform refinement and 
-    // is ignored in calls where method is "gradient", "value" etc. instead of "uniform"
-    void refineMesh(std::string method, int arrayID, 
-                    double dev_mult, bool maxIsmin, double edge_scale, 
-                    std::string ofname, bool transferData, double sizeFactor=1.); 
-    void refineMesh(std::string method, std::string arrayName, 
-                    double dev_mult, bool maxIsmin, double edge_scale, 
-                    std::string ofname, bool transferData, double sizeFactor=1.); 
-    // added for uniform refinement by driver
-    void refineMesh(std::string method, double edge_scale, std::string ofname, bool transferData); 
-    void refineMesh(std::string method, int arrayID, int order, 
-                    std::string ofname, bool transferData);
-    void refineMesh(std::string method, std::string arrayName, int order, 
-                    std::string ofname, bool transferData);
+
+    /** @brief perform sizefield-based h-refinement.
+        @param method <>
+        @param arrayID <>
+        @param dev_mult <>
+        @param maxIsmin <>
+        @param edge_scale <>
+        @param ofname <>
+        @param transferData <>
+        @param sizeFactor <>
+    **/
+    void refineMesh(const std::string &method,
+                    int arrayID,
+                    double dev_mult,
+                    bool maxIsmin,
+                    double edge_scale,
+                    const std::string &ofname,
+                    bool transferData,
+                    double sizeFactor = 1.);
+
+    /** @brief perform sizefield-based h-refinement.
+        @param method <>
+        @param arrayName <>
+        @param dev_mult <>
+        @param maxIsmin <>
+        @param edge_scale <>
+        @param ofname <>
+        @param transferData <>
+        @param sizeFactor <>
+    **/
+    void refineMesh(const std::string &method,
+                    const std::string &arrayName,
+                    double dev_mult,
+                    bool maxIsmin,
+                    double edge_scale,
+                    const std::string &ofname,
+                    bool transferData,
+                    double sizeFactor = 1.);
+
+    /** @brief added for uniform refinement by driver
+        @param method <>
+        @param edge_scale <>
+        @param ofname <>
+        @param transferData <>
+    **/
+    void refineMesh(const std::string &method,
+                    double edge_scale,
+                    const std::string &ofname,
+                    bool transferData);
+
+    /** @brief <>
+        @param method <>
+        @param arrayID <>
+        @param order <>
+        @param ofname <>
+        @param transferData <>
+    **/
+    void refineMesh(const std::string &method,
+                    int arrayID,
+                    int order,
+                    const std::string &ofname,
+                    bool transferData);
+
+    /** @brief <>
+        @param method <>
+        @param arrayName <>
+        @param order <>
+        @param ofname <>
+        @param transferData <>
+    **/
+    void refineMesh(const std::string &method,
+                    const std::string &arrayName,
+                    int order,
+                    const std::string &ofname,
+                    bool transferData);
+
   // --- diagnostics
   public:
-    // generate a report of the mesh
-    virtual void report(){}; 
-    // return the number of points
-    int getNumberOfPoints() const {return numPoints;}
-    // return the number of cells
-    int getNumberOfCells() const { return numCells;}
-    void checkMesh(std::string ofname);
+    /** @brief generate a report of the mesh
+    **/
+    virtual void report() const {};
 
-  // --- for distributed data sets. 
+    /** @brief return the number of points
+        @return The number of points.
+    **/
+    nemId_t getNumberOfPoints() const { return numPoints; }
+
+    /** @brief return the number of cells
+        @return The number of cells.
+    **/
+    nemId_t getNumberOfCells() const { return numCells; }
+
+    /** @brief <>
+        @param ofname <>
+    **/
+    void checkMesh(const std::string &ofname) const;
+
+  // --- for distributed data sets.
   public:
-     /* NOTE: These are only generated if mesh is one of the partitions returned from 
-              a call to meshBase::partition */
-    // global to local mapping of nodes
-    std::map<int,int> getGlobToPartNodeMap() { return globToPartNodeMap; }
-    // global to local mapping of cells
-    std::map<int,int> getGlobToPartCellMap() { return globToPartCellMap; }
-    // local to global mapping of nodes
-    std::map<int,int> getPartToGlobNodeMap() { return partToGlobNodeMap; }
-    // local to global mapping of cells
-    std::map<int,int> getPartToGlobCellMap() { return partToGlobCellMap; }
-  
+    /** @brief global to local mapping of nodes
+        @note These are only generated if mesh is one of the partitions returned
+             from a call to meshBase::partition
+    **/
+    std::map<nemId_t, nemId_t> getGlobToPartNodeMap() {
+      return globToPartNodeMap;
+    }
+
+    /** @brief global to local mapping of cells
+        @note These are only generated if mesh is one of the partitions returned
+             from a call to meshBase::partition
+    **/
+    std::map<nemId_t, nemId_t> getGlobToPartCellMap() {
+      return globToPartCellMap;
+    }
+
+    /** @brief local to global mapping of nodes
+        @note These are only generated if mesh is one of the partitions returned
+             from a call to meshBase::partition
+    **/
+    std::map<nemId_t, nemId_t> getPartToGlobNodeMap() {
+      return partToGlobNodeMap;
+    }
+
+    /** @brief local to global mapping of cells
+        @note These are only generated if mesh is one of the partitions returned
+             from a call to meshBase::partition
+    **/
+    std::map<nemId_t, nemId_t> getPartToGlobCellMap() {
+      return partToGlobCellMap;
+    }
+
   // --- write and conversion
   public:
-    // write the mesh to file named after the private var 'filename'. the file extension
-    // of the private var "filename" determines the format of the output file
-    virtual void write(){}
-    // write the mesh to file named fname
-    virtual void write(std::string fname){}
-    // convert to gmsh format without data 
-    void writeMSH(std::ofstream& outputStream);
-    void writeMSH(std::string fname);
-    // convert to gmsh format with specified point or cell data
-    void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID); 
-    void writeMSH(std::string fname, std::string pointOrCell, int arrayID);
-    // convert to gmsh format with specified point or cell data for
-    // only volume elements (USE ONLY FOR MADLIB STUFF)
-    void writeMSH(std::ofstream& outputStream, std::string pointOrCell, int arrayID, 
-                  bool onlyVol); // added for overloading, doesn't do anything 
-    void writeMSH(std::string fname, std::string pointOrCell, int arrayID,
+    /** @brief write the mesh to file named after the private var 'filename'.
+
+        The file extension of the private var "filename" determines the format of the
+        output file
+    **/
+    virtual void write() const { write(filename); }
+
+    /** @brief write the mesh to file named fname
+        @param fname The name of the file to write to
+    **/
+    virtual void write(const std::string &fname) const = 0;
+
+    /** @brief convert to gmsh format without data
+        @param outputStream <>
+    **/
+    void writeMSH(std::ofstream &outputStream);
+
+    /** @brief convert to gmsh format without data
+        @param fname The name of the file to write to
+    **/
+    void writeMSH(const std::string &fname);
+
+    /** @brief convert to gmsh format with specified point or cell data
+        @param outputStream <>
+        @param pointOrCell <>
+        @param arrayID <>
+    **/
+    void writeMSH(std::ofstream &outputStream,
+                  const std::string &pointOrCell, int arrayID);
+
+    /** @brief convert to gmsh format without data
+        @param fname The name of the file to write to
+        @param pointOrCell <>
+        @param arrayID <>
+    **/
+    void writeMSH(const std::string &fname,
+                  const std::string &pointOrCell, int arrayID);
+
+    /** @brief convert to gmsh format with specified point or cell data for
+            only volume elements (USE ONLY FOR MADLIB STUFF)
+        @param outputStream <>
+        @param pointOrCell <>
+        @param arrayID <>
+        @param onlyVol <>
+    **/
+    void writeMSH(std::ofstream &outputStream,
+                  const std::string &pointOrCell, int arrayID,
+                  bool onlyVol); // added for overloading, doesn't do anything
+
+    /** @brief convert to gmsh format with specified point or cell data for
+            only volume elements (USE ONLY FOR MADLIB STUFF)
+        @param fname The name of the file to write to
+        @param pointOrCell <>
+        @param arrayID <>
+        @param onlyVol <>
+    **/
+    void writeMSH(const std::string &fname,
+                  const std::string &pointOrCell, int arrayID,
                   bool onlyVol);
-    // for rocstar restart hack through rflupart/prep
-    // surfWithPatch must have patchNo array
-    void writeCobalt(meshBase* surfWithPatch, const std::string& mapFile, 
-                     std::ofstream& outputStream);
-    void writeCobalt(meshBase* surfWithPatch, 
-                     const std::string& mapFile, const std::string& ofname);
 
+    /** @brief surfWithPatch must have patchNo array
+        @param surfWithPatch <>
+        @param mapFile <>
+        @param outputStream <>
+    **/
+    void writeCobalt(meshBase *surfWithPatch, const std::string &mapFile,
+                     std::ofstream &outputStream);
 
-    // set the file name - this will allow vtk to dispatch appropriate writers based on
-    // the extension and whether it is supported by vtk. 
-    void setFileName(std::string fname) { filename = fname; }
-    // get the current file name
-    std::string getFileName() const { return filename; }
-    // set whether to check quality of transfer by back-transfer and rmse
+    /** @brief surfWithPatch must have patchNo array
+        @param surfWithPatch <>
+        @param mapFile <>
+        @param ofname <>
+    **/
+    void writeCobalt(meshBase *surfWithPatch,
+                     const std::string &mapFile, const std::string &ofname);
+
+    /** @brief set the file name.
+
+        This will allow vtk to dispatch appropriate writers
+        based on the extension and whether it is supported by vtk.
+
+        @param fname The name to set the private variable "filename" to
+    **/
+    void setFileName(const std::string &fname) { filename = fname; }
+
+    /** @brief get the current file name
+        @return The current value of the private variable "filename"
+    **/
+    const std::string &getFileName() const { return filename; }
+
+    /** @brief set whether to check quality of transfer by back-transfer and rmse
+        @param x <>
+    **/
     void setCheckQuality(bool x) { checkQuality = x; }
-    // switch on/off weighted averaging/smoothing for cell data transfer (default is off)
-    void setContBool(bool x) { continuous = x;}
-    // set the array names to name transfered data on target mesh
-    void setNewArrayNames(const std::vector<std::string>& newnames) { newArrayNames = newnames; }
-    // clear the new array names if set
+
+    /** @brief set weighted averaging/smoothing for cell data transfer
+            (default is off)
+        @param x <>
+    **/
+    void setContBool(bool x) { continuous = x; }
+
+    /** @brief set the array names to name transferred data on target mesh
+        @param newnames <>
+    **/
+    void setNewArrayNames(const std::vector<std::string> &newnames) {
+      newArrayNames = newnames;
+    }
+
+    /** @brief clear the new array names if set
+    **/
     void unsetNewArrayNames() { newArrayNames.clear(); }
 
-   
+    /** @brief Converts given hexahedral VTK dataset into tetrahedral mesh
+                and stores it into dataSet variable.
+        @param meshdataSet Input hexahedral mesh dataset
+    **/
+    void convertHexToTetVTK(vtkSmartPointer<vtkDataSet> meshdataSet);
+
+
   protected:
-    // number of points in mesh
-    int numPoints; 
-    // number of cells in mesh
-    int numCells;  
-    // set to 1 if sizeField attached to dataSet
-    bool hasSizeField; 
-    // mesh points, topology and data
-    vtkSmartPointer<vtkDataSet> dataSet; 
-    // name of mesh file
-    std::string filename; 
-    // check transfer quality when on
+    /** @brief number of points in mesh
+    **/
+    nemId_t numPoints;
+
+    /** @brief number of cells in mesh
+    **/
+    nemId_t numCells;
+
+    /** @brief set to true if sizeField attached to dataSet
+    **/
+    bool hasSizeField;
+
+    /** @brief mesh points, topology and data
+    **/
+    vtkSmartPointer<vtkDataSet> dataSet;
+
+    /** @brief name of mesh file
+    **/
+    std::string filename;
+
+    /** @brief check transfer quality when on
+    **/
     bool checkQuality;
-    // switch on / off weighted averaging for cell data transfer (defaul is off) 
+
+    /** @brief switch on / off weighted averaging for cell data transfer
+            (default is off)
+    **/
     bool continuous;
-    // shape function order (default is 1)
+
+    /** @brief shape function order
+            (default is 1)
+    **/
     int order;
-    // new names to set for transferred data
-    std::vector<std::string> newArrayNames; 
-    // --- for distributed data sets
-    // --- (only populated for mesh resulting from call to meshBase::partition)
-    // map between global and local node idx in partition
-    std::map<int,int> globToPartNodeMap; 
-    // map between global and local cell idx in partition
-    std::map<int,int> globToPartCellMap; 
-    // map between local and global node idx in partition
-    std::map<int,int> partToGlobNodeMap;
-    // map between local and global cell idx in partition
-    std::map<int,int> partToGlobCellMap;
+
+    /** @brief new names to set for transferred data
+    **/
+    std::vector<std::string> newArrayNames;
+
+    /** @brief map between global and local node idx in partition
+            for distributed data sets
+
+        Only populated for mesh resulting from call to meshBase::partition
+    **/
+    std::map<nemId_t, nemId_t> globToPartNodeMap;
+
+    /** @brief map between global and local cell idx in partition
+    **/
+    std::map<nemId_t, nemId_t> globToPartCellMap;
+
+    /** @brief map between local and global node idx in partition
+    **/
+    std::map<nemId_t, nemId_t> partToGlobNodeMap;
+
+    /** @brief map between local and global cell idx in partition
+    **/
+    std::map<nemId_t, nemId_t> partToGlobCellMap;
+    // metadata
+    vtkSmartPointer<vtkModelMetadata> metadata;
+
 };
 
+/** @brief sum comparison for vectors representing faces inserted into map
+**/
+struct NEMOSYS_EXPORT sortNemId_tVec_compare {
+  // TODO: This is a comparison operation making copies since passed by value!
+  //       Should be pass by const-ref. If sorting is necessary, do it beforehand.
+  bool operator()(std::vector<nemId_t> lhs,
+    std::vector<nemId_t> rhs) const;
+};
+
+#ifndef SWIG
 // --- auxiliary helpers
-// compares two meshBases- used in testing
-int diffMesh(meshBase* mesh1, meshBase* mesh2);
+/** @brief compares two meshBase classes. used in testing
+    @param mesh1 <>
+    @param mesh2 <>
+**/
+NEMOSYS_EXPORT int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
-// sum comparison for vectors representing faces inserted into map
-struct sortIntVec_compare
-{
-  bool operator() (std::vector<int> lhs, std::vector<int> rhs) const;
-};
-// write patch map file for roc prep (trivial identity mapping)
-void writePatchMap(const std::string& mapFile, const std::map<int,int>& patchMap); 
-void writePatchMap(std::ofstream& outputStream, const std::map<int,int>& patchMap); 
+/** @brief write patch map file for roc prep (trivial identity mapping)
+    @param mapFile <>
+    @param patchMap <>
+**/
+NEMOSYS_EXPORT void writePatchMap(const std::string &mapFile,
+                   const std::map<int, int> &patchMap);
+
+/** @brief write patch map file for roc prep (trivial identity mapping)
+    @param outputStream <>
+    @param patchMap <>
+**/
+NEMOSYS_EXPORT void writePatchMap(std::ofstream &outputStream,
+                   const std::map<int, int> &patchMap);
+#endif // SWIG
 
 #endif // meshBase_H

@@ -104,7 +104,7 @@ class TestPyNemosys(unittest.TestCase):
         from pyNemosys import RefineDriver, diffMesh, meshBase
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.chdir(tmpdirname)
-            path = '/Nemosys/testing/test_data/test_pyNemosys/refine/'
+            path = '/Nemosys/testing/test_data/RefinementTest/'
             for f in os.listdir(path):
                 copy2(os.path.join(path, f), tmpdirname)
 
@@ -130,7 +130,7 @@ class TestPyNemosys(unittest.TestCase):
         from pyNemosys import RefineDriver, diffMesh, meshBase
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.chdir(tmpdirname)
-            path = '/Nemosys/testing/test_data/test_pyNemosys/refine/'
+            path = '/Nemosys/testing/test_data/RefinementTest/'
             for f in os.listdir(path):
               copy2(os.path.join(path, f), tmpdirname)
 
@@ -153,7 +153,7 @@ class TestPyNemosys(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.chdir(tmpdirname)
-            path = '/Nemosys/testing/test_data/test_pyNemosys/refine/'
+            path = '/Nemosys/testing/test_data/RefinementTest/'
             for f in os.listdir(path):
               copy2(os.path.join(path, f), tmpdirname)
 
@@ -173,7 +173,7 @@ class TestPyNemosys(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             os.chdir(tmpdirname)
-            path = '/Nemosys/testing/test_data/test_pyNemosys/refine/'
+            path = '/Nemosys/testing/test_data/RefinementTest/'
             for f in os.listdir(path):
               copy2(os.path.join(path, f), tmpdirname)
 

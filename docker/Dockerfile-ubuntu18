@@ -1,0 +1,51 @@
+FROM ubuntu:18.04
+
+RUN apt-get update
+
+# Compilers and build tools.
+RUN apt-get -y install build-essential cmake gfortran libopenmpi-dev
+
+# System TPLs needed by NEMoSys dependencies.
+RUN apt-get -y install zlib1g-dev libfreetype6-dev "libfltk1.3-dev" libxmu-dev libxi-dev
+RUN apt-get -y install libhdf5-dev liblapack-dev libjpeg-dev
+
+# System TPLs needed by NEMoSys.
+RUN apt-get -y install libcgns-dev libmetis-dev libexodusii-dev
+RUN apt-get -y install "python3.7-dev" python3-pip "python2.7-dev" python-pip swig
+
+# Run setuptools upgrade twice in case of "distribute" switch
+RUN pip2 install --upgrade pip
+RUN pip2 install --upgrade setuptools
+RUN pip2 install --upgrade setuptools
+RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade setuptools
+RUN pip3 install --upgrade setuptools
+
+# OpenFOAM 5
+RUN apt-get -y install wget software-properties-common apt-transport-https
+RUN sh -c "wget -O - http://dl.openfoam.org/gpg.key | apt-key add -"
+RUN add-apt-repository "http://dl.openfoam.org/ubuntu"
+RUN apt-get update
+RUN apt-get -y install openfoam5
+
+# Simmetrix
+COPY ./contrib/simmetrix /Nemosys/
+
+# Copy the TPLs and the build script.
+COPY ./contrib/nemosys_tpls.tar.gz /Nemosys/
+COPY ./scripts/build.sh /Nemosys/
+
+WORKDIR /Nemosys/
+
+# Install NEMoSys dependencies
+RUN apt-get -y install libboost-filesystem-dev libboost-regex-dev
+RUN ./build.sh $PWD/nemosys_tpls.tar.gz /Nemosys-Deps
+
+RUN echo "source /opt/openfoam5/etc/bashrc" >> /etc/bashrc
+ENV BASH_ENV "/etc/bashrc"
+
+RUN useradd --user-group --create-home --shell /bin/bash admin ;\
+    echo "admin ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+USER admin
+
+ENTRYPOINT /bin/bash

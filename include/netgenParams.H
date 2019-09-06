@@ -1,20 +1,23 @@
 #ifndef NETGENPARAMS_H
 #define NETGENPARAMS_H
-#include <meshingParams.H>
+
+#include "nemosys_export.h"
+#include "meshingParams.H"
+
 #include <string>
 
-class netgenParams : public meshingParams
+class NEMOSYS_EXPORT netgenParams : public meshingParams
 {
-  
   public:
     // initializing params with defaults
     netgenParams();
-    ~netgenParams(){};
-  
+
+    ~netgenParams() override = default;
+
   public:
     bool uselocalh;
     double maxh;
-    double fineness;  
+    double fineness;
     double grading;
     double elementsperedge;
     double elementspercurve;
@@ -33,7 +36,5 @@ class netgenParams : public meshingParams
     bool refine_with_geom;
     bool refine_without_geom;
 };
-
-
 
 #endif

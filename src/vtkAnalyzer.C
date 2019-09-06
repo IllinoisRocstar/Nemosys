@@ -1,4 +1,8 @@
-#include <vtkAnalyzer.H>
+#include <algorithm>
+
+#include "vtkAnalyzer.H"
+
+#include "baseInterp.H"
 
 // TODO: We shouldn't be returning double arrays declared in the function
 //       The stack is restored after the function's scope, so the addresses
@@ -59,14 +63,14 @@ void vtkAnalyzer::read()
     }
 }
 
-void vtkAnalyzer::write(char* outXMLFileName) 
+void vtkAnalyzer::write(std::string outXMLFileName)
 {
 
     // Dispatch based on the file extension
     if (extension == ".vtu")
     {
       if (unsGridReader) {
-        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName, unsGridReader->GetOutput());
+        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName.c_str(), unsGridReader->GetOutput());
       }
     }
     else if (extension == ".vtp")
@@ -88,7 +92,7 @@ void vtkAnalyzer::write(char* outXMLFileName)
     else if (extension == ".vtk")
     {
       if (dataSetReader) {
-        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName, dataSetReader->GetOutput());
+        WriteAnXMLFile<vtkXMLUnstructuredGridWriter> (outXMLFileName.c_str(), dataSetReader->GetOutput());
       }
     }
     else {
@@ -665,8 +669,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::vector<sphere>& spheres,
-                                  std::vector<string>& mat_sphere_names,
-                                  std::vector<string>& material_names,
+                                  std::vector<std::string>& mat_sphere_names,
+                                  std::vector<std::string>& material_names,
                                   std::vector<double>& youngs_inc_default,
                                   std::vector<double>& shear_inc_default,
                                   std::vector<double>& poisson_inc_default,
@@ -762,8 +766,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                                   double poisson_dom_default, double T, double R,
                                   const std::vector<double>& PlaneCellCenters, int nDim,
                                   std::vector<sphere>& spheres,
-                                  std::vector<string>& mat_sphere_names,
-                                  std::vector<string>& material_names,
+                                  std::vector<std::string>& mat_sphere_names,
+                                  std::vector<std::string>& material_names,
                                   std::vector<double>& youngs_inc_default,
                                   std::vector<double>& shear_inc_default,
                                   std::vector<double>& poisson_inc_default,
@@ -894,8 +898,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
                        double poisson_dom_default, double T, double R,
                        const std::vector<double>& PlaneCellCenters, int nDim,
                        std::vector<sphere>& spheres,
-                       std::vector<string>& mat_sphere_names,
-                       std::vector<string>& material_names,
+                       std::vector<std::string>& mat_sphere_names,
+                       std::vector<std::string>& material_names,
                        std::vector<double>& youngs_inc_default,
                        std::vector<double>& shear_inc_default,
                        std::vector<double>& poisson_inc_default,
@@ -945,7 +949,7 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
       numTuple = da->GetNumberOfTuples();
       pntData.resize(numTuple);
       for (int iTup=0; iTup<numTuple; iTup++){
-        double comps[numComponent];
+        double* comps = new double[numComponent];
         // EDIT: causing indexing issues
         //       shouldn't resize if pushing back //  pntData[iTup].resize(numComponent);
         da->GetTuple(iTup, comps);
@@ -1016,10 +1020,11 @@ void vtkAnalyzer::setPointDataArray(const char* name, int numComponent,
     da->SetNumberOfComponents(numComponent);
     for(int i=0; i<getNumberOfPoints(); i++)
     {
-      double pntData[numComponent];
+      double* pntData = new double[numComponent];
       for (int j = 0; j < numComponent; ++j)
         pntData[j] = pntArrData[i*numComponent + j];
       da->InsertNextTuple(pntData);
+	  delete [] pntData;
     }
     pointData->SetActiveScalars(name);
     pointData->SetScalars(da);
@@ -1040,17 +1045,18 @@ void vtkAnalyzer::setCellDataArray(const char* name, int numComponent,
     da->SetNumberOfComponents(numComponent);
     for(int i=0; i<getNumberOfCells(); i++)
     {
-      double cllData[numComponent];
+      double* cllData = new double[numComponent];
       for (int j = 0; j < numComponent; ++j)
         cllData[j] = cellArrData[i*numComponent +j];
       da->InsertNextTuple(cllData);
       cellData->SetActiveScalars(name);
       cellData->SetScalars(da);
+	  delete[] cllData;
     } 
   }
 }
 
-void vtkAnalyzer::writeMSH(string filename)
+void vtkAnalyzer::writeMSH(std::string filename)
 {
   
   std::ofstream outputStream(filename.c_str());
@@ -1218,7 +1224,7 @@ void vtkAnalyzer::writeMSH(string filename)
 }
 
 
-void vtkAnalyzer::writeBackgroundMSH(string filename, const double size)
+void vtkAnalyzer::writeBackgroundMSH(std::string filename, const double size)
 {
   
   std::ofstream outputStream(filename.c_str());

@@ -48,12 +48,12 @@ void GhostGenerator::getGlobalIds(int me)
   {
     this->myGlobToPartNodeMap = partitions[me]->getGlobToPartNodeMap();
     this->myPartToGlobNodeMap = partitions[me]->getPartToGlobNodeMap();
-    this->myGlobalNodeIds = getSortedKeys(this->myGlobToPartNodeMap);
+    this->myGlobalNodeIds = nemAux::getSortedKeys(this->myGlobToPartNodeMap);
       //partitions[me]->getSortedGlobPartNodeIds();
   }
   if (this->myGlobalCellIds.empty())
   {
-    this->myGlobalCellIds = getSortedKeys(partitions[me]->getGlobToPartCellMap());
+    this->myGlobalCellIds = nemAux::getSortedKeys(partitions[me]->getGlobToPartCellMap());
       //partitions[me]->getSortedGlobPartCellIds();
   }
 }
@@ -110,7 +110,7 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
       continue;
     }
     // ------ shared nodes between me and proc i
-    std::vector<int> procsGlobalNodeIds(getSortedKeys(partitions[i]->getGlobToPartNodeMap()));
+    std::vector<int> procsGlobalNodeIds(nemAux::getSortedKeys(partitions[i]->getGlobToPartNodeMap()));
       //partitions[i]->getSortedGlobPartNodeIds());
     // compute the intersection and assign to sharedNodes vec
     std::vector<int> tmpVec;
@@ -159,7 +159,7 @@ void GhostGenerator::getPconnInformation(int me, int numProcs)
                           std::back_inserter(tmpVec));
     this->receivedNodesNum[i] = tmpVec.size(); 
     tmpVec.clear();
-    std::vector<int> procsGlobalCellIds(getSortedKeys(partitions[i]->getGlobToPartCellMap()));
+    std::vector<int> procsGlobalCellIds(nemAux::getSortedKeys(partitions[i]->getGlobToPartCellMap()));
       //partitions[i]->getSortedGlobPartCellIds());
     std::set_intersection(this->myGlobalGhostCellIds.begin(), this->myGlobalGhostCellIds.end(),
                           procsGlobalCellIds.begin(), procsGlobalCellIds.end(),
@@ -421,7 +421,7 @@ void GhostGenerator::Execute()
     this->writeReceivedToPconn(type,me,1);
     int ghostDescriptor = pConnVec.size() - notGhostDescriptor;
     cgWrtObj->setPconnGhostDescriptor(ghostDescriptor);
-    printVec(pConnVec);
+    nemAux::printVec(pConnVec);
 
     cgWrtObj->setZone(cgObj->getZoneName(), cgObj->getZoneType());
     cgWrtObj->setNVrtx(partitions[me]->getNumberOfPoints());
@@ -587,7 +587,7 @@ RocPrepDriver* RocPrepDriver::readJSON(json inputjson)
   //{
   //  std::string prefix_key = "File Prefix";
   //  prefix_key += std::to_string(i);  
-  //  if(templateCgnsName.has_key(prefix_key))
+  //  if(templateCgnsName.contains(prefix_key))
   //    prefixes.push_back(templateCgnsName[prefix_key].as<std::string>();  
   //  else
   //    readAll = true;

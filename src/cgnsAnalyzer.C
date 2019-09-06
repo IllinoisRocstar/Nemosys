@@ -1,16 +1,14 @@
-#include <cgnsAnalyzer.H>
-#include <GmshEntities.h>
-#include <string.h>
-#include <iostream>
-#include <meshBase.H>
-#include <algorithm>
+#include "cgnsAnalyzer.H"
 
+#include <vtkCellTypes.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkIdList.h>
 
 /********************************************
     solutionData class implementation
 *********************************************/
 
-void solutionData::appendData(const vecSlnType& inBuff, int inNData, int inNDim)
+void solutionData::appendData(const vecSlnType &inBuff, int inNData, int inNDim)
 {
   // sanity check
   if (!slnData.empty())
@@ -33,7 +31,8 @@ void solutionData::appendData(const vecSlnType& inBuff, int inNData, int inNDim)
   nData += inNData;
 }
 
-void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim)
+void
+solutionData::getData(vecSlnType &outBuff, int &outNData, int &outNDim) const
 {
   // deep copy data
   outBuff.insert(outBuff.begin(), slnData.begin(), slnData.end());
@@ -42,13 +41,14 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim)
 }
 
 // only copies data that are defined in the given mask
-void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
-                           std::vector<bool> mask)
+void solutionData::getData(vecSlnType &outBuff,
+                           int &outNData, int &outNDim,
+                           const std::vector<bool> &mask) const
 {
   // deep copy data
   int cntr1 = 0;
   int cntr2 = 0;
-  for (auto &&id : mask)
+  for (const auto &id : mask)
   {
     if (id)
     {
@@ -61,11 +61,11 @@ void solutionData::getData(vecSlnType& outBuff, int& outNData, int& outNDim,
   outNDim = nDim;
 }
 
-void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
+void solutionData::rmvDataIdx(const std::vector<int> &rmvIdx)
 {
   vecSlnType nsdv;
   int nnd = 0;
-  for (int id=0; id<nData; id++)
+  for (int id = 0; id < nData; id++)
   {
     auto it = std::find(rmvIdx.begin(), rmvIdx.end(), id);
     if (it != rmvIdx.end())
@@ -73,12 +73,12 @@ void solutionData::rmvDataIdx(const std::vector<int> rmvIdx)
     else
     {
       nnd++;
-      for (int iDim=0; iDim<nDim; iDim++)
-        nsdv.push_back(slnData[id*nDim + iDim]); 
+      for (int iDim = 0; iDim < nDim; iDim++)
+        nsdv.push_back(slnData[id * nDim + iDim]);
     }
   }
   slnData = nsdv;
-  nData = nnd; 
+  nData = nnd;
 }
 
 
@@ -124,7 +124,7 @@ void cgnsAnalyzer::loadGrid(int verb)
   int nArrays;
   std::cout << baseItrName << std::endl;
   if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
-  if (cg_array_read_as(1, CG_RealDouble, &timeLabel)) cg_error_exit();
+  if (cg_array_read_as(1, CGNS_ENUMV(RealDouble), &timeLabel)) cg_error_exit();
   if (verb > 0) std::cout << "Time label = " << timeLabel << std::endl;
 
   // reading zone information
@@ -149,22 +149,22 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   if (verb) std::cout << "Zone name = " << zoneName << std::endl;
 
   // type of zone
-  if (zoneType == CG_ZoneTypeNull)
+  if (zoneType == CGNS_ENUMV(ZoneTypeNull))
   {
     if (verb) std::cout << "Zone type = CG_ZoneTypeNull\n";
   }
-  else if (zoneType == CG_Structured)
+  else if (zoneType == CGNS_ENUMV(Structured))
   {
     isUnstructured = false;
     if (verb) std::cout << "Zone type = CG_Structured\n";
     std::cerr << "Warning: Structured meshes only supported experimentally.\n";
   }
-  else if (zoneType == CG_Unstructured)
+  else if (zoneType == CGNS_ENUMV(Unstructured))
   {
     isUnstructured = true;
     if (verb) std::cout << "Zone type = CG_Unstructured\n";
   }
-  else if (zoneType == CG_ZoneTypeUserDefined)
+  else if (zoneType == CGNS_ENUMV(ZoneTypeUserDefined))
   {
     if (verb) std::cout << "Zone type = CG_ZoneTypeUserDefined\n";
   }
@@ -182,12 +182,12 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   //if (!cg_goto(indexFile, indexBase, zonename, 0, zitername, 0, "GridCoordiatesPointers", 0, "end"))
   if (!cg_goto(indexFile, indexBase, "Zone_t", indexZone, "ZoneIterativeData_t", 1, "end"))
   {
-    if (!cg_array_read_as(1,  CG_Character, gridcoorpntr))
+    if (!cg_array_read_as(1,  CGNS_ENUMV(Character), gridcoorpntr))
       gridCrdPntr = gridcoorpntr;
     else
       gridCrdPntr = "NA";
     if (verb) std::cout << "Grid coordinate pointer = " << gridcoorpntr << std::endl;
-    if (!cg_array_read_as(2,  CG_Character, flowslnpntr))
+    if (!cg_array_read_as(2,  CGNS_ENUMV(Character), flowslnpntr))
       flowSlnPntr = flowslnpntr;
     else
       flowSlnPntr = "NA";
@@ -199,7 +199,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   }
 
   // finding number of vertices and elements
-  if (zoneType == CG_Unstructured)
+  if (zoneType == CGNS_ENUMV(Unstructured))
   {
     nVertex = cgCoreSize[0];
     nElem = cgCoreSize[1];
@@ -263,46 +263,46 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
 
   // reading coordinates
   int one = 1;
-  if (zoneType == CG_Unstructured)
+  if (zoneType == CGNS_ENUMV(Unstructured))
   {
     // reading coordinates X
     xCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateX", CG_RealDouble, &one, &rmax[0], &xCrd[0]) != CG_OK)
+                      "CoordinateX", CGNS_ENUMV(RealDouble), &one, &rmax[0], &xCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
     // reading coordinates Y
     yCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateY", CG_RealDouble, &one, &rmax[1], &yCrd[0]) != CG_OK)
+                      "CoordinateY", CGNS_ENUMV(RealDouble), &one, &rmax[1], &yCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
     // reading coordinates Z
     zCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateZ", CG_RealDouble, &one, &rmax[2], &zCrd[0]) != CG_OK)
+                      "CoordinateZ", CGNS_ENUMV(RealDouble), &one, &rmax[2], &zCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
   }
-  else if (zoneType == CG_Structured)
+  else if (zoneType == CGNS_ENUMV(Structured))
   {
     // rind information in case any (testing)
 
     // reading coordinates X
     xCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateX", CG_RealDouble, &rmin[0], &rmax[0], &xCrd[0]) != CG_OK)
+                      "CoordinateX", CGNS_ENUMV(RealDouble), &rmin[0], &rmax[0], &xCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
     // reading coordinates Y
     yCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateY", CG_RealDouble, &rmin[0], &rmax[0], &yCrd[0]) != CG_OK)
+                      "CoordinateY", CGNS_ENUMV(RealDouble), &rmin[0], &rmax[0], &yCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
 
     // reading coordinates Z
     zCrd.resize(nVertex, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateZ", CG_RealDouble, &rmin[0], &rmax[0], &zCrd[0]) != CG_OK)
+                      "CoordinateZ", CGNS_ENUMV(RealDouble), &rmin[0], &rmax[0], &zCrd[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
   }
   else
@@ -312,7 +312,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   }
 
   // reading connectivity only if CG_Unstructured
-  if (zoneType == CG_Unstructured)
+  if (zoneType == CGNS_ENUMV(Unstructured))
   {
     int indexSection, eBeg, eEnd, nBdry, parentFlag;
     char sectionname[33];
@@ -335,19 +335,19 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
                 << std::endl;
     switch (sectionType)
     {
-      case CG_TETRA_4:
+      case CGNS_ENUMV(TETRA_4):
         nVrtxElem = 4;
         break;
-      case CG_HEXA_8:
+      case CGNS_ENUMV(HEXA_8):
         nVrtxElem = 8;
         break;
-      case CG_TRI_3:
+      case CGNS_ENUMV(TRI_3):
         nVrtxElem = 3;
         break;
-      case CG_QUAD_4:
+      case CGNS_ENUMV(QUAD_4):
         nVrtxElem = 4;
         break;
-      case CG_TETRA_10:
+      case CGNS_ENUMV(TETRA_10):
         nVrtxElem = 10;
         break;
       default:
@@ -362,11 +362,11 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
     //std::for_each(elemConn.begin(), elemConn.end(), [](int& d) { d -= 1; });
     if (verb) std::cout << "Size of connectivity vector = " << elemConn.size() << std::endl;
   }
-  else if (zoneType == CG_Structured)
+  else if (zoneType == CGNS_ENUMV(Structured))
   {
     // Generating connectivity for structured meshes since file does not contain data
     std::cerr << "Warning: converting implicit structured connectivity to 8-Node hexahedrals.\n";
-    sectionType = CG_HEXA_8;
+    sectionType = CGNS_ENUMV(HEXA_8);
     elemConn.resize(8*nElem, -1);
     int iElm;
     int bs,d1,d2,d3,d4,d5;
@@ -517,32 +517,32 @@ double cgnsAnalyzer::getTimeStep()
   return timeLabel;
 }
 
-CG_MassUnits_t cgnsAnalyzer::getMassUnit()
+CGNS_ENUMT(MassUnits_t) cgnsAnalyzer::getMassUnit()
 {
   return massU;
 }
 
-CG_LengthUnits_t cgnsAnalyzer::getLengthUnit()
+CGNS_ENUMT(LengthUnits_t) cgnsAnalyzer::getLengthUnit()
 {
   return lengthU;
 }
 
-CG_TimeUnits_t cgnsAnalyzer::getTimeUnit()
+CGNS_ENUMT(TimeUnits_t) cgnsAnalyzer::getTimeUnit()
 {
   return timeU;
 }
 
-CG_TemperatureUnits_t cgnsAnalyzer::getTemperatureUnit()
+CGNS_ENUMT(TemperatureUnits_t) cgnsAnalyzer::getTemperatureUnit()
 {
   return tempU;
 }
 
-CG_AngleUnits_t cgnsAnalyzer::getAngleUnit()
+CGNS_ENUMT(AngleUnits_t) cgnsAnalyzer::getAngleUnit()
 {
   return angleU;
 }
 
-CG_ZoneType_t cgnsAnalyzer::getZoneType()
+CGNS_ENUMT(ZoneType_t) cgnsAnalyzer::getZoneType()
 {
   return zoneType;
 }
@@ -645,20 +645,20 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
   // returning individual element connectivity
   switch (sectionType)
   {
-    case CG_TETRA_4:
+    case CGNS_ENUMV(TETRA_4):
       nNdeElm = 4;
       break;
-    case CG_HEXA_8:
+    case CGNS_ENUMV(HEXA_8):
       nNdeElm = 8;
       break;
-    case CG_TRI_3:
+    case CGNS_ENUMV(TRI_3):
       nNdeElm = 3;
       elemConn.resize(3 * nElem, -1);
       break;
-    case CG_QUAD_4:
+    case CGNS_ENUMV(QUAD_4):
       nNdeElm = 4;
       break;
-    case CG_TETRA_10:
+    case CGNS_ENUMV(TETRA_10):
       nNdeElm = 10;
       break;
     default:
@@ -676,7 +676,7 @@ void cgnsAnalyzer::getSectionNames(std::vector<std::string> &names)
 {
   // reading section names 
   int eBeg, eEnd, nBdry, parentFlag;
-  CG_ElementType_t secTyp;
+  CGNS_ENUMT(ElementType_t) secTyp;
   char sectionname[33];
   if (cg_nsections(indexFile, indexBase, indexZone, &nSection) != CG_OK)
     std::cerr << "Error in reading sections, " << cg_get_error();
@@ -696,7 +696,7 @@ void cgnsAnalyzer::getSectionNames(std::vector<std::string> &names)
   }
 }
 
-CG_ElementType_t cgnsAnalyzer::getSectionType(std::string secName)
+CGNS_ENUMT(ElementType_t) cgnsAnalyzer::getSectionType(std::string secName)
 {
   std::vector<std::string> secNames;
   getSectionNames(secNames);
@@ -710,7 +710,7 @@ CG_ElementType_t cgnsAnalyzer::getSectionType(std::string secName)
 
   // reading section info 
   int eBeg, eEnd, nBdry, parentFlag;
-  CG_ElementType_t secTyp;
+  CGNS_ENUMT(ElementType_t) secTyp;
   char sectionname[33];
   if (cg_section_read(indexFile, indexBase, indexZone, iSec, sectionname, 
                 &secTyp, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
@@ -732,26 +732,26 @@ void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<int>& conn, i
     // reading connectivities
     int eBeg, eEnd, nBdry, parentFlag, nVrtxElem;
     char sectionname[33];
-    CG_ElementType_t secTyp;
+    CGNS_ENUMT(ElementType_t) secTyp;
     int iSec = it-secNames.begin()+1;
     if (cg_section_read(indexFile, indexBase, indexZone, iSec,
                         sectionname, &secTyp, &eBeg, &eEnd, &nBdry, &parentFlag) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
     switch (secTyp)
     {
-      case CG_TETRA_4:
+      case CGNS_ENUMV(TETRA_4):
         nVrtxElem = 4;
         break;
-      case CG_HEXA_8:
+      case CGNS_ENUMV(HEXA_8):
         nVrtxElem = 8;
         break;
-      case CG_TRI_3:
+      case CGNS_ENUMV(TRI_3):
         nVrtxElem = 3;
         break;
-      case CG_QUAD_4:
+      case CGNS_ENUMV(QUAD_4):
         nVrtxElem = 4;
         break;
-      case CG_TETRA_10:
+      case CGNS_ENUMV(TETRA_10):
         nVrtxElem = 10;
         break;
       default:
@@ -784,18 +784,18 @@ vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
     yCrdR.resize(rmax, 0);
     zCrdR.resize(rmax, 0);
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateX", CG_RealDouble, &one, &rmax, &xCrdR[0]) != CG_OK)
+                      "CoordinateX", CGNS_ENUMV(RealDouble), &one, &rmax, &xCrdR[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateY", CG_RealDouble, &one, &rmax, &yCrdR[0]) != CG_OK)
+                      "CoordinateY", CGNS_ENUMV(RealDouble), &one, &rmax, &yCrdR[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
     if (cg_coord_read(indexFile, indexBase, indexZone,
-                      "CoordinateZ", CG_RealDouble, &one, &rmax, &zCrdR[0]) != CG_OK)
+                      "CoordinateZ", CGNS_ENUMV(RealDouble), &one, &rmax, &zCrdR[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
     int nElmSec;
     std::vector<int> connSec;
     getSectionConn(secName, connSec, nElmSec);
-    CG_ElementType_t secTyp = getSectionType(secName);
+    CGNS_ENUMT(ElementType_t) secTyp = getSectionType(secName);
 
     // points to be pushed into dataSet
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -823,19 +823,19 @@ vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
           vtkElmIds->SetId(j, connSec[i*nNdeElm+j] - 1);
         switch (secTyp)
         {
-          case CG_TETRA_4:
+          case CGNS_ENUMV(TETRA_4):
             dataSet_tmp->InsertNextCell(VTK_TETRA, vtkElmIds);
             break;
-          case CG_HEXA_8:
+          case CGNS_ENUMV(HEXA_8):
             dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON, vtkElmIds);
             break;
-          case CG_TRI_3:
+          case CGNS_ENUMV(TRI_3):
             dataSet_tmp->InsertNextCell(VTK_TRIANGLE, vtkElmIds);
             break;
-          case CG_QUAD_4:
+          case CGNS_ENUMV(QUAD_4):
             dataSet_tmp->InsertNextCell(VTK_QUAD, vtkElmIds);
             break;
-          case CG_TETRA_10:
+          case CGNS_ENUMV(TETRA_10):
             dataSet_tmp->InsertNextCell(VTK_QUADRATIC_TETRA, vtkElmIds);
             break;
           default:
@@ -905,13 +905,13 @@ void cgnsAnalyzer::writeSampleStructured()
   isize[2][1] = 0;
   isize[2][2] = 0;
   /* create zone */
-  cg_zone_write(indexFile, indexBase, zonename, *isize, CG_Structured, &indexZone);
+  cg_zone_write(indexFile, indexBase, zonename, *isize, CGNS_ENUMV(Structured), &indexZone);
   /* write grid coordinates (user must use SIDS-standard names here) */
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateX",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateX",
                  x, &indexCoord);
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateY",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateY",
                  y, &indexCoord);
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateZ",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateZ",
                  z, &indexCoord);
 }
 
@@ -966,13 +966,13 @@ void cgnsAnalyzer::writeSampleUnstructured()
   isize[0][1] = 20 * 16 * 8;
   isize[0][2] = 0;
   /* create zone */
-  cg_zone_write(indexFile, indexBase, zonename, *isize, CG_Unstructured, &indexZone);
+  cg_zone_write(indexFile, indexBase, zonename, *isize, CGNS_ENUMV(Unstructured), &indexZone);
   /* write grid coordinates (user must use SIDS-standard names here) */
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateX",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateX",
                  x, &indexCoord);
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateY",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateY",
                  y, &indexCoord);
-  cg_coord_write(indexFile, indexBase, indexZone, CG_RealDouble, "CoordinateZ",
+  cg_coord_write(indexFile, indexBase, indexZone, CGNS_ENUMV(RealDouble), "CoordinateZ",
                  z, &indexCoord);
   /* write connectivities */
   cgsize_t elemConn[8][20 * 16 * 8];
@@ -1004,16 +1004,16 @@ void cgnsAnalyzer::writeSampleUnstructured()
   int nBdyElem = 0;
   /* write HEX_8 element connectivity (user can give any name) */
   cg_section_write(indexFile, indexBase, indexZone,
-                   "Elem", CG_HEXA_8, nElemStart, nElemEnd,
+                   "Elem", CGNS_ENUMV(HEXA_8), nElemStart, nElemEnd,
                    nBdyElem, elemConn[0], &indexSection);
   /* write vertex based field data */
   std::string solName = "solution";
   cg_sol_write(indexFile, indexBase, indexZone,
-               solName.c_str(), CG_Vertex, &index_flow);
+               solName.c_str(), CGNS_ENUMV(Vertex), &index_flow);
   std::vector<double> T;
   T.resize(isize[0][0], 10);
   cg_field_write(indexFile, indexBase, indexZone,
-                 index_flow, CG_RealDouble, "T", &T[0], &index_field);
+                 index_flow, CGNS_ENUMV(RealDouble), "T", &T[0], &index_field);
   /* close CGNS file */
   cg_close(indexFile);
 }
@@ -1044,10 +1044,10 @@ void cgnsAnalyzer::populateSolutionDataNames()
   // populating solution data
   char fieldName[33];
   char solName[33];
-  CG_GridLocation_t gloc;
+  CGNS_ENUMT(GridLocation_t) gloc;
   int nFlds;
   int cntr = 0;
-  CG_DataType_t dt;
+  CGNS_ENUMT(DataType_t) dt;
   // number of solution fields
   cg_nsols(indexFile, indexBase, indexZone, &nSolution);
   for (int iSol = 1; iSol <= nSolution; ++iSol)
@@ -1099,7 +1099,7 @@ void cgnsAnalyzer::getSolutionDataNames(std::vector<std::string>& list)
 */
 solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<double>& slnData)
 {
-  CG_DataType_t dt;
+  CGNS_ENUMT(DataType_t) dt;
   char fieldName[33];
   int slnCntr = -1;
   int slnIndx = -1;
@@ -1139,12 +1139,12 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
   dataType = solutionGridLocation[slnCntr];
   if (isUnstructured)
   {
-    if (dataType == CG_Vertex)
+    if (dataType == CGNS_ENUMV(Vertex))
     {
       slnData.resize(nVertex, -1.0);
       rmax[0] = nVertex;
     }
-    else if (dataType == CG_CellCenter)
+    else if (dataType == CGNS_ENUMV(CellCenter))
     {
       slnData.resize(nElem, -1.0);
       rmax[0] = nElem;
@@ -1158,14 +1158,14 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
   }
   else
   {
-    if (dataType == CG_Vertex)
+    if (dataType == CGNS_ENUMV(Vertex))
     {
       slnData.resize(nVertex, -1.0);
       rmax[0] = cgCoreSize[0]; 
       rmax[1] = cgCoreSize[1]; 
       rmax[2] = cgCoreSize[2]; 
     }
-    else if (dataType == CG_CellCenter)
+    else if (dataType == CGNS_ENUMV(CellCenter))
     {
       slnData.resize(nElem, -1.0);
       rmax[0] = cgCoreSize[3]; 
@@ -1183,14 +1183,14 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
 
   if (isUnstructured)
   {
-    if (dt == CG_RealDouble)
+    if (dt == CGNS_ENUMV(RealDouble))
     {
       // for double solution data
       if (cg_field_read(indexFile, indexBase, indexZone, slnIndx, fieldName,
                         dt, &one, &rmax[0], &slnData[0]) != CG_OK)
         std::cerr << "Error in reading solution data, " << cg_get_error() << std::endl;
     }
-    else if (dt == CG_Integer)
+    else if (dt == CGNS_ENUMV(Integer))
     {
       // for integer solution data
       std::vector<int> tmpSlnData;
@@ -1355,7 +1355,7 @@ std::vector<std::string> cgnsAnalyzer::getSolutionNodeNames()
 }
 
 /* provides the list of solution types */
-std::vector<CG_GridLocation_t> cgnsAnalyzer::getSolutionGridLocations()
+std::vector<CGNS_ENUMT(GridLocation_t)> cgnsAnalyzer::getSolutionGridLocations()
 {
   return solutionGridLocation;
 }
@@ -1367,7 +1367,7 @@ std::map<int, std::pair<int, keyValueList> > cgnsAnalyzer::getSolutionMap()
 }
 
 /* gets a map between solution node name and solution location type */
-std::map<std::string, CG_GridLocation_t> cgnsAnalyzer::getSolutionNameLocMap()
+std::map<std::string, CGNS_ENUMT(GridLocation_t)> cgnsAnalyzer::getSolutionNameLocMap()
 {
   return solutionNameLocMap;
 }
@@ -1405,19 +1405,19 @@ void cgnsAnalyzer::exportToVTKMesh()
       }
       switch (sectionType)
       {
-        case CG_TETRA_4:
+        case CGNS_ENUMV(TETRA_4):
           dataSet_tmp->InsertNextCell(VTK_TETRA, vtkElmIds);
           break;
-        case CG_HEXA_8:
+        case CGNS_ENUMV(HEXA_8):
           dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON, vtkElmIds);
           break;
-        case CG_TRI_3:
+        case CGNS_ENUMV(TRI_3):
           dataSet_tmp->InsertNextCell(VTK_TRIANGLE, vtkElmIds);
           break;
-        case CG_QUAD_4:
+        case CGNS_ENUMV(QUAD_4):
           dataSet_tmp->InsertNextCell(VTK_QUAD, vtkElmIds);
           break;
-        case CG_TETRA_10:
+        case CGNS_ENUMV(TETRA_10):
           dataSet_tmp->InsertNextCell(VTK_QUADRATIC_TETRA, vtkElmIds);
           break;
         default:
@@ -1445,7 +1445,7 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
     {
       iSol++;
       std::vector<double> newData;
-      if (solutionGridLocation[iSol] == CG_Vertex)
+      if (solutionGridLocation[iSol] == CGNS_ENUMV(Vertex))
       {
         mbObj->getPointDataArray(ifl.second, newData);
       }
@@ -1472,25 +1472,25 @@ void cgnsAnalyzer::overwriteSolData(meshBase* mbObj)
                 << solutionName[iSol]
                 << std::endl;
       // write to file
-      //if (!(ifl.second).compare("bflag")) // cg_io complains if this isn't CG_Integer type
-      if (slnDataCont[slnIdx]->getDataType() == CG_Integer || !(ifl.second).compare("bflag"))
+      if (!(ifl.second).compare("bflag")) // cg_io complains if this isn't CG_Integer type
+      //if (slnDataCont[slnIdx]->getDataType() == CGNS_ENUMV(Integer) || !(ifl.second).compare("bflag"))
       {
         // need to cast to int before passing as void*
         std::vector<int> newDataToInt(newData.begin(), newData.end());
-        overwriteSolData(ifl.second, solutionName[iSol], slnIdx, CG_Integer, &newDataToInt[0]);
+        overwriteSolData(ifl.second, solutionName[iSol], slnIdx, CGNS_ENUMV(Integer), &newDataToInt[0]);
       }
       else
-        overwriteSolData(ifl.second, solutionName[iSol], slnIdx, CG_RealDouble, &newData[0]);
+        overwriteSolData(ifl.second, solutionName[iSol], slnIdx, CGNS_ENUMV(RealDouble), &newData[0]);
     }
   }
 }
 
 void cgnsAnalyzer::overwriteSolData(const std::string& fname,
                                     const std::string& ndeName,
-                                    int slnIdx, CG_DataType_t dt, void* data)
+                                    int slnIdx, CGNS_ENUMT(DataType_t) dt, void* data)
 {
   // write solution to file
-  CG_GridLocation_t gloc(solutionNameLocMap[fname]);
+  CGNS_ENUMT(GridLocation_t) gloc(solutionNameLocMap[fname]);
   int fldIdx;
   if (cg_field_write(indexFile, indexBase, indexZone, slnIdx,
                      dt, fname.c_str(), data, &fldIdx))
@@ -1500,7 +1500,7 @@ void cgnsAnalyzer::overwriteSolData(const std::string& fname,
   double min = tmpData[0];
   double max = tmpData[0];
   int nItr = 0;
-  if (gloc == CG_Vertex)
+  if (gloc == CGNS_ENUMV(Vertex))
   {
     nItr = nVertex;
   }
@@ -1522,14 +1522,14 @@ void cgnsAnalyzer::overwriteSolData(const std::string& fname,
     cg_error_exit();
   if (cg_descriptor_write("Range", range.c_str())) cg_error_exit();
   // write DimensionalExponents and units for cell data
-  if (gloc == CG_CellCenter)
+  if (gloc == CGNS_ENUMV(CellCenter))
   {
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, "FlowSolution_t", slnIdx,
                 "DataArray_t", fldIdx, "end"))
       cg_error_exit();
     // dummy exponents and units
     float exponents[5] = {0, 0, 0, 0, 0};
-    if (cg_exponents_write(CG_RealSingle, exponents)) cg_error_exit();
+    if (cg_exponents_write(CGNS_ENUMV(RealSingle), exponents)) cg_error_exit();
     if (cg_descriptor_write("Units", "dmy")) cg_error_exit();
   }
 }
@@ -1550,7 +1550,7 @@ void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
   if (physDim == 3)
     switch (sectionType)
     {
-      case CG_TETRA_4:
+      case CGNS_ENUMV(TETRA_4):
       {
         for (int iC = 0; iC < nElem; ++iC)
         {
@@ -1565,7 +1565,7 @@ void cgnsAnalyzer::exportToMAdMesh(const MAd::pMesh MAdMesh)
         }
       }
         break;
-      case CG_TRI_3:
+      case CGNS_ENUMV(TRI_3):
       {
         for (int iC = 0; iC < nElem; ++iC)
         {

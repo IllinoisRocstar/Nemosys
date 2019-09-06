@@ -1,0 +1,91 @@
+[
+  {
+    "Reference File": "geom_mesh_ref.vtu",
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "snappyHexMesh",
+    "Mesh File Options": {
+      "Input Geometry File": "bullet.stl",
+      "Output Mesh File": "geom_mesh.vtu"
+    },
+    "Meshing Modules Options": {
+    },
+    "Meshing Parameters": {
+      "snappyHexMesh Parameters": {
+        "Castellated Mesh": 1,
+        "Snapping": 1,
+        "Layer Addition": 1,
+        "CellZones": 0,
+        "RegionRefine": 1,
+        "SurfaceRefine": 1,
+        "InputPatchName": "bullet",
+        "SurfPatchName": "bullet",
+        "maxLocalCells": 100000,
+        "maxGlobalCells": 2000000,
+        "minRefCells": 10,
+        "nCellsBetweenLevels": 2,
+        "surfaceRefinementLvlMin": 4,
+        "surfaceRefinementLvlMax": 4,
+        "resolveFeatureAngle": -1,
+        "locationInMeshX": 0,
+        "locationInMeshY": 0,
+        "locationInMeshZ": -10e-3,
+        "allowFreeStandingZoneFaces": 0,
+        "nSmoothPatch": 3,
+        "tolerance": 4.0,
+        "snapSolveIter": 30,
+        "snapRelaxIter": 5,
+        "relativeSizes": 1,
+        "expansionRatio": 1.0,
+        "finalLayerThickness": 0.3,
+        "minThickness": 0.1,
+        "nGrow": 0,
+        "featureAngle": 30,
+        "nRelaxIter": 3,
+        "nSmoothSurfaceNormals": 1,
+        "nSmoothNormals": 3,
+        "nSmoothThickness": 10,
+        "maxFaceThicknessRatio": 0.5,
+        "maxThicknessToMedialRatio": 0.3,
+        "minMedialAxisAngle": 90,
+        "nBufferCellsNoExtrude": 0,
+        "nLayerIter": 50,
+        "maxNonOrtho": 65,
+        "maxBoundarySkewness": 20,
+        "maxInternalSkewness": 4,
+        "maxConcave": 80,
+        "minVol": 1e-20,
+        "minTetQuality": 1e-30,
+        "minArea": -1,
+        "minTwist": 0.02,
+        "minFaceWeight": 0.02,
+        "minVolRatio": 0.01,
+        "minDeterminant": 0.001,
+        "minTriangleTwist": -1,
+        "qcnSmoothScale": 4,
+        "errorReduction": 0.75,
+        "mergeTolerance": 1e-06,
+        "GeomRefinementRegions": [
+          {
+            "PatchName": "refine1",
+            "searchableShape": "searchableSphere",
+            "shapeParams1": "centre (0 0 0.0025)",
+            "Radius": 0.0075,
+            "Mode": "inside",
+            "MinLevel": 0,
+            "MaxLevel": 3
+          },
+          {
+            "PatchName": "refine2",
+            "searchableShape": "searchableCylinder",
+            "shapeParams1": "point1 (0 0 0)",
+            "shapeParams2": "point2 (0 0 0.03)",
+            "Radius": 0.0075,
+            "Mode": "inside",
+            "MinLevel": 0,
+            "MaxLevel": 3
+          }
+        ]
+      }
+    }
+  }
+]

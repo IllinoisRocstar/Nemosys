@@ -1,0 +1,43 @@
+[
+  {
+    "Reference File": "geom_mesh_ref.vtk",
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "cfmesh",
+    "Mesh File Options": {
+      "Input Geometry File": "box.stl",
+      "Output Mesh File": "geom_mesh.vtu"
+    },
+    "Meshing Parameters": {
+      "CFMesh Parameters": {
+        "Generator": "tetMesh",
+        "MaxCellSize": 0.45,
+        "MinCellSize": 0.45,
+        "BoundaryCellSize": 0.3,
+        "KeepCellsIntersectingBoundary": 0,
+        "CheckForGluedMesh": 0,
+        "SurfaceFeatureEdges": {
+          "Angle": 60
+        },
+        "ObjectRefinements": [
+          {
+            "Name": "ConeSizeField",
+            "Params": {
+              "type": "cone",
+              "cellSize": 0.2,
+              "p0": "(6 6 2)",
+              "p1": "(6 6 -2)",
+              "radius0": 0.3048,
+              "radius1": 0.5048
+            }
+          }
+        ],
+        "ImproveMeshQuality": {
+          "NIterations": 3,
+          "NLoops": 2,
+          "QualityThreshold": 0.4,
+          "NSurfaceIterations": 3
+        }
+      }
+    }
+  }
+]

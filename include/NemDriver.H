@@ -1,19 +1,17 @@
-#ifndef NEMDRIVERS_H
-#define NEMDRIVERS_H
+#ifndef NEMOSYS_NEMDRIVER_H_
+#define NEMOSYS_NEMDRIVER_H_
 
-#include <meshBase.H>
 #include <jsoncons/json.hpp>
 
-using jsoncons::json;
+#include "nemosys_export.h"
 
 // TODO: need to harden json input checks etc.
+class NEMOSYS_EXPORT NemDriver {
+ public:
+  NemDriver() = default;
+  virtual ~NemDriver() = default;
 
-class NemDriver
-{
-  public:
-    NemDriver(){}
-    virtual ~NemDriver(){}
-    static NemDriver* readJSON(json inputjson);
+  static NemDriver *readJSON(const jsoncons::json &inputjson);
 };
 
-#endif
+#endif  // NEMOSYS_NEMDRIVER_H_

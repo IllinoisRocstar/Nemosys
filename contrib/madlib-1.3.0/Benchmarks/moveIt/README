@@ -1,0 +1,32 @@
+MAdLib - Benchmarks - moveIt
+
+Description
+------------
+
+This benchmark allows to define a motion of the domain boundaries 
+and adapt the mesh accordingly. 
+
+How to use it ?
+----------------
+
+The parameters of the computations are defined in a file called 
+'MyParams.h' which has to be located in this directory and will 
+be included during the compilation of the executable. 
+You can make a link to the .h file you defined in a subdirectory
+for instance.
+
+The 'MyParams.h' file has to be written according to the template 
+defined in 'Parameters.h'.
+
+In the 'MyParams.h' file, a target mesh file with a '.msh' 
+extension is required. In order to produce it, download Gmsh at 
+<http://www.geuz.org/gmsh> and run:
+
+gmsh -3 -optimize 'the_geo_file'
+
+where 'the_geo_file' is a file with a '.geo' extension, the 
+native CAD file format of Gmsh.
+
+Once the executable is compiled, run it without any argument. The 
+output will be produced and stored according to the parameters 
+contained in the 'MyParams.h' file at the time of the compilation.

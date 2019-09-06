@@ -1,0 +1,30 @@
+[
+  {
+    "Reference File": "hinge_ref.vtu",
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "cfmesh",
+    "Mesh File Options": {
+      "Input Geometry File": "hinge.stl",
+      "Output Mesh File": "hinge.vtu"
+    },
+    "Meshing Parameters": {
+      "CFMesh Parameters": {
+        "Generator": "tetMesh",
+        "MaxCellSize": 0.9,
+        "MinCellSize": 0.9,
+        "BoundaryCellSize": 0.9,
+        "KeepCellsIntersectingBoundary": 0,
+        "CheckForGluedMesh": 0,
+        "SurfaceFeatureEdges": {
+          "Angle": 45
+        },
+        "ImproveMeshQuality": {
+          "NIterations": 5,
+          "NLoops": 2,
+          "QualityThreshold": 0.4,
+          "NSurfaceIterations": 5
+        }
+      }
+    }
+  }
+]

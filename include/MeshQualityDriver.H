@@ -1,19 +1,22 @@
-#ifndef MESHQUALITYDRIVER_H
-#define MESHQUALITYDRIVER_H
+#ifndef NEMOSYS_MESHQUALITYDRIVER_H_
+#define NEMOSYS_MESHQUALITYDRIVER_H_
 
-#include <NemDriver.H>
+#include "nemosys_export.h"
+#include "NemDriver.H"
+#include "meshBase.H"
 
-class MeshQualityDriver : public NemDriver
-{
-  public:
-    
-    MeshQualityDriver(std::string _mesh, std::string ofname); 
-    ~MeshQualityDriver();
+#include <string>
 
-    static MeshQualityDriver* readJSON(json inputjson);
+class NEMOSYS_EXPORT MeshQualityDriver : public NemDriver {
+ public:
+  MeshQualityDriver() : mesh(nullptr) {}
+  MeshQualityDriver(const std::string &_mesh, const std::string &ofname);
+  ~MeshQualityDriver() override;
 
-  private:
-    meshBase* mesh; 
+  static MeshQualityDriver *readJSON(const jsoncons::json &inputjson);
+
+ private:
+  meshBase *mesh;
 };
 
-#endif
+#endif  // NEMOSYS_MESHQUALITYDRIVER_H_
