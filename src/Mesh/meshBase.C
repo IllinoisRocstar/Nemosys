@@ -1189,9 +1189,6 @@ void meshBase::writeMSH(std::ofstream &outputStream)
                 << " meshes can be written to gmsh format" << std::endl;
       exit(3);
     }
-                << " meshes can be written to gmsh format" << std::endl;
-      exit(3);
-    }
   }
 
   // ------------------------ write point coords -------------------------- //
@@ -1251,16 +1248,6 @@ void
 meshBase::writeMSH(std::ofstream &outputStream, const std::string &pointOrCell,
                    int arrayID)
 {
-
-  // write points and cells
-  writeMSH(outputStream);
-
-  if(!outputStream.good())
-  {
-{
-
-  // write points and cells
-  writeMSH(outputStream);
 
   if(!outputStream.good())
   {
@@ -1372,8 +1359,7 @@ meshBase::writeMSH(std::ofstream &outputStream, const std::string &pointOrCell,
 
 /** convert to gmsh format with specified point or cell data for
 **/
-void
-meshBase::writeMSH(std::ofstream &outputStream, const std::string &pointOrCell,
+void meshBase::writeMSH(std::ofstream &outputStream, const std::string &pointOrCell,
                    int arrayID,
                    bool onlyVol)
 {
