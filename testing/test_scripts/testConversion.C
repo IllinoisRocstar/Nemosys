@@ -1,4 +1,5 @@
 #include <meshBase.H>
+#include <foamMesh.H>
 #include <gtest.h>
 
 const char* mshName;
@@ -18,6 +19,10 @@ const char* pnthex;
 const char* pnthex_ref;
 const char* pntmix;
 const char* pntmix_ref;
+const char* packConv;
+const char* packConv_ref;
+const char* buildingTet;
+const char* buildingTet_ref;
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -43,7 +48,9 @@ TEST(Conversion, ConvertLegacyVTKToVTU)
   std::cout << mesh_ref->getNumberOfCells() << std::endl;
   std::cout << mesh1->getNumberOfCells() << std::endl;
   std::cout << mesh1_ref->getNumberOfCells() << std::endl;
+  std::cout << __FILE__ << __LINE__ << std::endl;
   EXPECT_EQ(0, diffMesh(mesh.get(), mesh_ref.get()));
+  std::cout << __FILE__ << __LINE__ << std::endl;
   EXPECT_EQ(0, diffMesh(mesh1.get(), mesh1_ref.get()));
 }
 
@@ -112,9 +119,49 @@ TEST(Conversion, ConvertPNTMixToVTU)
   } 
 }
 
+#ifdef HAVE_CFMSH
+TEST(Conversion, ConvertVTUToFoam)
+{
+	// create meshBase object
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(packConv);
+
+  // create foamMesh object
+  FOAM::foamMesh *fm = new FOAM::foamMesh(mesh);
+
+  // Write polyMesh
+  fm->write("name");
+
+  // Reads polyMesh
+  meshBase *fm2 = new FOAM::foamMesh();
+  fm2->read("name");
+
+  std::unique_ptr<meshBase> origMesh = meshBase::CreateUnique(fm2);
+
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(packConv_ref);
+
+  EXPECT_EQ(0, diffMesh(origMesh.get(), refMesh.get()));
+}
+#endif
+
+TEST(Conversion, ConvertVTKHexToTet)
+{
+  // create meshBase object
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(buildingTet);
+  
+  // Converts hex mesh to tet mesh and writes in VTU file.
+  mesh->convertHexToTetVTK(mesh->getDataSet());
+  mesh->write("outputTet.vtu");
+
+  std::unique_ptr<meshBase> origMesh = meshBase::CreateUnique("outputTet.vtu");
+
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(buildingTet_ref);
+
+  EXPECT_EQ(0, diffMesh(origMesh.get(), refMesh.get()));
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 18);
+  assert(argc == 22);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -132,6 +179,10 @@ int main(int argc, char** argv) {
   pnthex_ref = argv[15];
   pntmix = argv[16];
   pntmix_ref = argv[17];
+  packConv = argv[18];
+  packConv_ref = argv[19];
+  buildingTet = argv[20];
+  buildingTet_ref = argv[21];
   return RUN_ALL_TESTS();
 }
 

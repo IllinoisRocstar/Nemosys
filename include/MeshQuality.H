@@ -1,30 +1,48 @@
-#ifndef MESHQUALITY_H
-#define MESHQUALITY_H
+#ifndef NEMOSYS_MESHQUALITY_H_
+#define NEMOSYS_MESHQUALITY_H_
 
-#include <meshBase.H>
-#include <vtkMeshQuality.h>
+#include "nemosys_export.h"
+
+#include <ostream>
+#include <string>
+
 #include <vtkDoubleArray.h>
+#include <vtkMeshQuality.h>
+#include <vtkSmartPointer.h>
+#ifdef HAVE_CFMSH
+#include "cfmeshQualityParams.H"
+#endif
 
-class MeshQuality
-{
-  public:
-    MeshQuality(){}
-    MeshQuality(meshBase* _mesh);
-    ~MeshQuality();
+#include "meshBase.H"
 
-  public:
-    void checkMesh(std::ostream& outputStream);
-    void checkMesh();
-    void checkMesh(std::string fname); 
-    vtkSmartPointer<vtkDoubleArray> getStats(int n);
+class NEMOSYS_EXPORT MeshQuality {
+ public:
+  MeshQuality() = default;
+  explicit MeshQuality(const meshBase *_mesh);
+#ifdef HAVE_CFMSH
+  explicit MeshQuality(cfmshQualityParams *params) { _cfmQPrms = params; }
+#endif
+  ~MeshQuality();
 
-  private:
-    meshBase* mesh;
-    vtkSmartPointer<vtkMeshQuality> qualityFilter;
-  
-    MeshQuality(const MeshQuality& that) = delete;
-    MeshQuality& operator=(const MeshQuality& that) = delete; 
+  // disable copy and copy-assignment constructors
+  MeshQuality(const MeshQuality &that) = delete;
+  MeshQuality &operator=(const MeshQuality &that) = delete;
+
+ public:
+  void checkMesh(std::ostream &outputStream);
+  void checkMesh();
+  void checkMesh(const std::string &fname);
+  vtkSmartPointer<vtkDoubleArray> getStats(int n);
+
+ public:
+  void cfmOptimize();
+
+ private:
+  const meshBase *mesh;
+  vtkSmartPointer<vtkMeshQuality> qualityFilter;
+#ifdef HAVE_CFMSH
+  cfmshQualityParams *_cfmQPrms;
+#endif
 };
 
-
-#endif
+#endif  // NEMOSYS_MESHQUALITY_H_

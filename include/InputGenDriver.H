@@ -1,19 +1,20 @@
 #ifndef INPUTGENDRIVER_H
 #define INPUTGENDRIVER_H
 
-#include <NemDriver.H>
+#include "nemosys_export.h"
+#include "NemDriver.H"
 
-class InputGenDriver : public NemDriver
+#include <string>
+
+class NEMOSYS_EXPORT InputGenDriver : public NemDriver
 {
   public:
-    
-    InputGenDriver(std::string srvName, json inputjson);
-    ~InputGenDriver();
+    InputGenDriver(const std::string &srvName,
+                   const jsoncons::json &inputjson);
+    ~InputGenDriver() override;
 
-    static InputGenDriver* readJSON(json inputjson);
-    static InputGenDriver* readJSON(std::string ifname);
-
+    static InputGenDriver *readJSON(const jsoncons::json &inputjson);
+    static InputGenDriver *readJSON(const std::string &ifname);
 };
-
 
 #endif

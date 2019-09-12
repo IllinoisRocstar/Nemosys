@@ -1,0 +1,39 @@
+[
+  {
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "cfmesh",
+    "Mesh File Options": {
+      "Input Geometry File": "masonry_test1_tagged.stl",
+      "Output Mesh File": "geom_mesh.vtu"
+    },
+    "Meshing Parameters": {
+      "CFMesh Parameters": {
+        "Generator": "tetMesh",
+        "MaxCellSize": 0.5,
+        "MinCellSize": 0.5,
+        "BoundaryCellSize": 0.4,
+        "KeepCellsIntersectingBoundary": 1,
+        "CheckForGluedMesh": 0,
+        "SurfaceFeatureEdges": {
+          "Angle": 60
+        },
+//        "ObjectRefinements": {
+//          "ConeSizeField": {
+//            "Type": "cone",
+//            "CellSize": 0.1,
+//            "P0": "(6 6 8)",
+//            "P1": "(6 6 0)",
+//            "Radius0": 0.3048,
+//            "Radius1": 0.3048
+//          }
+//        },
+        "ImproveMeshQuality": {
+          "NIterations": 5,
+          "NLoops": 3,
+          "QualityThreshold": 0.4,
+          "NSurfaceIterations": 5
+        }
+      }
+    }
+  }
+]

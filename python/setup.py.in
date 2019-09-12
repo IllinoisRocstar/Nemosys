@@ -1,18 +1,50 @@
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
+# from distutils.core import setup, Extension
+import sys
 
-pyNemosys = Extension('_pyNemosys',
-                    sources = [file for file in '${WRAPPER_SOURCE_FILES}'.split(';')],
-                    include_dirs = [dir for dir in '${WRAPPER_INCLUDE_DIRS}'.split(';')] \
-                               + [dir for dir in '${VTK_INCLUDE_DIRS}'.split(';')]\
-                               + ['${MADLIB_INCPATH}', '${GMSH_INCPATH}', '${CGNS_INCPATH}', '${ANN_INCPATH}', '${METIS_INCPATH}', '${NETGEN_INCPATH}'],
-                    libraries = ['Nemosys'],
-                    library_dirs = ['${CMAKE_BINARY_DIR}/lib/'],
-                    swig_opts=['-c++'],
-                    extra_compile_args = ['-std=c++11', '-w']
-                    )
+if sys.platform == 'win32':
+    runtime_lib_dirs = []
+else:
+    runtime_lib_dirs = ['$ORIGIN', '${CMAKE_INSTALL_PREFIX}/lib']
 
+pyNemosys = Extension(
+    '_pyNemosys',
+    sources='${WRAPPER_SOURCE_FILES}'.split(';'),
+    include_dirs=list(filter(None, (
+            '${WRAPPER_INCLUDE_DIRS}'.split(';')
+    ))),
+    libraries=(
+            ['Nemosys',
+             '${VTK_COMMON_CORE_LIB}'
+             ]
+    ),
+    library_dirs=(
+            ['${CMAKE_BINARY_DIR}',
+             '${VTK_LIB_DIR}',
+             '${VTK_LIB_DIR}/../lib'
+             ]
+    ),
+    runtime_library_dirs=runtime_lib_dirs,
+    swig_opts=list(filter(None, (
+            ['-c++', '-DNEMOSYS_EXPORT=']
+            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
+    ))),
+    extra_compile_args=list(filter(None, (
+            ['-std=c++11', '-w']
+            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
+    )))
+)
 
-setup(name='_pyNemosys',
-      version='${NEMOSYS_VERSION}',
-      ext_modules = [pyNemosys]
-     )
+setup(
+    name='pyNemosys',
+    version='${NEMOSYS_VERSION}',
+    url='${NEMOSYS_HOMEPAGE_URL}',
+    author='${NEMOSYS_AUTHOR}',
+    author_email='${NEMOSYS_AUTHOR_EMAIL}',
+    classifiers='${NEMOSYS_PYTHON_CLASSIFIERS}'.split(';'),
+    license='${NEMOSYS_SHORT_LICENSE}',
+    description='${NEMOSYS_DESCRIPTION}',
+    py_modules=['pyNemosys'],
+    ext_modules=[pyNemosys],
+    test_suite='test_pyNemosys27'
+)

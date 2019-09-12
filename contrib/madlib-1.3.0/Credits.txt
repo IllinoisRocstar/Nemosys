@@ -1,0 +1,37 @@
+             MAdLib is copyright (C) 2008-2009
+
+             Universite catholique de Louvain
+                 <http://www.uclouvain.be>
+
+The main authors are Gaetan Compere and Jean-Francois Remacle.
+
+Gaetan Compere
+Departement of Civil Engineering
+Universite catholique de Louvain
+Avenue Georges Lemaitre 4, 1348 Louvain-la-Neuve, Belgium
+gaetan.compere@uclouvain.be
+
+Jean-Francois Remacle
+Departement of Civil Engineering
+Universite catholique de Louvain
+Avenue Georges Lemaitre 4, 1348 Louvain-la-Neuve, Belgium
+jean-francois.remacle@uclouvain.be
+
+Major code contributions have been provided by Cecile Dobrzynski
+(parallel adaptation and periodic meshes) and Koen Hillewaert 
+(high order elements and a lot of testing and bug reports/fixes).
+
+Other code contributors include: Arnaud Francois (edge swap operator), 
+Olivier Pierard (DESC, edge split and face collapse operators), 
+Richard Comblen (PETSc interface), Josue Barboza (parallel adaptation 
+testing and debugging), Jonathan Lambrechts (bug fixes), 
+Sebastien Blaise (bug fixes) and Paul-Emile Bernard (bug fixes).
+
+This version of MAdLib may contain code (in the Contrib/gmm
+subdirectory) copyright (C) 2002-2008 Yves Renard: check the
+configuration options.
+
+This version of MAdLib may contain code (in the Contrib/mathex
+subdirectory) copyright (C) 2000-2003 Sadao Massago: check the
+configuration options.
+

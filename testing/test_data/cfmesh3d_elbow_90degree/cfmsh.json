@@ -1,0 +1,50 @@
+[
+  {
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "cfmesh",
+    "Mesh File Options": {
+      "Input Geometry File": "elbow_90degree.stl",
+      "Output Mesh File": "elbow_mesh.vtu"
+    },
+    "Meshing Parameters": {
+      "CFMesh Parameters": {
+        "Generator": "cartesian3D",
+        "MaxCellSize": 5.0,
+        "MinCellSize": 1.0,
+        "BoundaryCellSize": 3.0,
+        "BoundaryLayers": {
+          "NLayers": 5,
+          "ThicknessRatio": 1.1,
+          "MaxFirstLayerThickness": 0.5
+        },
+        "LocalRefinement": [
+          {
+            "PatchName": "ringArea.*",
+            "CellSize": 0.2
+          }
+        ],
+        "RenameBoundary": {
+          "DefaultName": "fixedWalls",
+          "DefaultType": "wall",
+          "NewPatchNames": [
+            {
+              "Name": "orificeRegion.*",
+              "NewName": "orificeRegion",
+              "NewType": "wall"
+            },
+            {
+              "Name": "inlet.*",
+              "NewName": "inlet",
+              "NewType": "patch"
+            },
+            {
+              "Name": "outlet.*",
+              "NewName": "outlet",
+              "NewType": "patch"
+            }
+          ]
+        }
+      }
+    }
+  }
+]

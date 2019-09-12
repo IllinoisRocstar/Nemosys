@@ -1,3 +1,4 @@
+#include "r8_export.h"
 using namespace std;
 
 void gamma_values ( int &n_data, double &x, double &fx );

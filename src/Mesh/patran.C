@@ -1,16 +1,15 @@
-#include <meshBase.H>
-#include <patran.H>
-#include <fstream>
 #include <algorithm>
-#include <vtkIdList.h>
+
+#include "patran.H"
+
 #include <vtkCell.h>
 #include <vtkCellData.h>
+#include <vtkCellTypes.h>
 #include <vtkThreshold.h>
 #include <vtkGeometryFilter.h>
 #include <vtkGenericCell.h>
-
-
-using namespace PATRAN;
+#include <vtkPoints.h>
+#include <vtkUnstructuredGrid.h>
 
 //////////////////////////////////
 // patran class 
@@ -18,7 +17,7 @@ using namespace PATRAN;
 
 
 // Write title card (packet 25)
-void patran::write25(std::ofstream& outputStream)
+void PATRAN::patran::write25(std::ofstream &outputStream) const
 {
   std::cout << "writing packet 25..." << std::endl;
 
@@ -33,24 +32,26 @@ void patran::write25(std::ofstream& outputStream)
 }
 
 // Write summary data (packet 26)
-void patran::write26(std::ofstream& outputStream)
+void PATRAN::patran::write26(std::ofstream &outputStream) const
 {
   std::cout << "writing packet 26..." << std::endl;
-  
+
   // write header card
   outputStream << "26";
   for (int i = 0; i < 8; i++)
   {
-    switch(i)
+    switch (i)
     {
       case 2:
         outputStream << std::setw(8) << std::right << "1";
         break;
       case 3:
-        outputStream << std::setw(8) << std::right << volMeshBase->getDataSet()->GetNumberOfPoints();
+        outputStream << std::setw(8) << std::right
+                     << volMeshBase->getDataSet()->GetNumberOfPoints();
         break;
       case 4:
-        outputStream << std::setw(8) << std::right << volMeshBase->getDataSet()->GetNumberOfCells();
+        outputStream << std::setw(8) << std::right
+                     << volMeshBase->getDataSet()->GetNumberOfCells();
         break;
       default:
         outputStream << std::setw(8) << std::right << "0";
@@ -60,24 +61,26 @@ void patran::write26(std::ofstream& outputStream)
   outputStream << std::endl;
 
   // Write time stamp info card
-  std::time_t t = std::time(0);
-  std::tm* now = std::localtime(&t);
-  outputStream << std::setw(12) << std::left << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' <<  now->tm_mday;
-  outputStream << std::endl;  
+  std::time_t t = std::time(nullptr);
+  std::tm *now = std::localtime(&t);
+  outputStream << std::setw(12) << std::left << (now->tm_year + 1900) << '-'
+               << (now->tm_mon + 1) << '-' << now->tm_mday;
+  outputStream << std::endl;
 }
 
 // Write node data (packet 1)
-void patran::write1(std::ofstream& outputStream)
+void PATRAN::patran::write1(std::ofstream &outputStream) const
 {
   std::cout << "writing packet 1..." << std::endl;
 
-  for (int iNode = 0; iNode < volMeshBase->getDataSet()->GetNumberOfPoints(); iNode++)
+  for (int iNode = 0;
+       iNode < volMeshBase->getDataSet()->GetNumberOfPoints(); iNode++)
   {
     // Write header card
     // packet no
     outputStream << " 1";
     // node id (1-indexed)
-    outputStream << std::setw(8) << std::right << iNode+1;
+    outputStream << std::setw(8) << std::right << iNode + 1;
     // IV, default to 0
     outputStream << std::setw(8) << std::right << "0";
     // KC, default to 2
@@ -93,10 +96,10 @@ void patran::write1(std::ofstream& outputStream)
     // Get node coordinates
     double coords[3];
     volMeshBase->getDataSet()->GetPoint(iNode, coords);
-    for (int i = 0; i < 3; i++)
+    for (double coord : coords)
     {
       char buffer[17];
-      snprintf(buffer,17,"%16.9E",coords[i]);
+      snprintf(buffer, 17, "%16.9E", coord);
       outputStream << buffer;
     }
     outputStream << std::endl;
@@ -112,26 +115,26 @@ void patran::write1(std::ofstream& outputStream)
     outputStream << std::setw(8) << std::right << "0";
     // Write two white spaces
     outputStream << std::setw(2) << std::right << "";
-    // PSPC, permament single point constraing flags
+    // PSPC, permanent single point constraining flags
     outputStream << std::setw(6) << std::right << "000000";
     outputStream << std::endl;
   }
 }
 
 // Write element data (packet 2)
-void patran::write2(std::ofstream& outputStream)
+void PATRAN::patran::write2(std::ofstream &outputStream) const
 {
-
   std::cout << "writing packet 2..." << std::endl;
-  
-  for (int iCell = 0; iCell < volMeshBase->getDataSet()->GetNumberOfCells(); iCell++)
+
+  for (int iCell = 0;
+       iCell < volMeshBase->getDataSet()->GetNumberOfCells(); iCell++)
   {
     // Note: only tetrahedral elements are written
 
     // Get element type
     double elemType[1];
     volMeshBase->getDataSet()->GetCellData()->GetArray("elemType")
-                                                  ->GetTuple(iCell, elemType);
+        ->GetTuple(iCell, elemType);
     if (elemType[0] == VTK_TETRA)
     {
       // Write header card
@@ -139,7 +142,7 @@ void patran::write2(std::ofstream& outputStream)
       std::string defaultHeader = " 2";
       outputStream << defaultHeader;
       // cell id
-      outputStream << std::setw(8) << std::right << iCell+1;
+      outputStream << std::setw(8) << std::right << iCell + 1;
       // IV, default to 5 (tetrahedral)
       outputStream << std::setw(8) << std::right << "5";
       // KC, default to 2
@@ -150,8 +153,6 @@ void patran::write2(std::ofstream& outputStream)
         outputStream << std::setw(8) << std::right << "0";
       }
       outputStream << std::endl;
-    
-      // Write data card 1
       // Default to 4 nodes per tetrahedral
       outputStream << std::setw(8) << std::right << "4";
       // CONFIG, element type (unused)
@@ -164,11 +165,11 @@ void patran::write2(std::ofstream& outputStream)
       for (int i = 0; i < 3; i++)
       {
         char buffer[17];
-        snprintf(buffer,17,"%16.9E",0.0);
+        snprintf(buffer, 17, "%16.9E", 0.0);
         outputStream << buffer;
       }
       outputStream << std::endl;
-  
+
       // Write data Card 2
       // Get tetrahedral cell points
       // Pts beyond 4th can be omitted (don't need to write buffer zeros)
@@ -176,87 +177,108 @@ void patran::write2(std::ofstream& outputStream)
       volMeshBase->getDataSet()->GetCellPoints(iCell, cellPtIds);
       for (int iPt = 0; iPt < cellPtIds->GetNumberOfIds(); iPt++)
       {
-        outputStream << std::setw(8) << std::right << cellPtIds->GetId(iPt)+1;
+        outputStream << std::setw(8) << std::right << cellPtIds->GetId(iPt) + 1;
       }
       outputStream << std::endl;
-  
+
       // Data Card 3 is ignored
     }
   }
 }
 
 // Write distributed loads (packet 6)
-void patran::write6(std::ofstream& outputStream)
+void PATRAN::patran::write6(std::ofstream &outputStream)
 {
   std::cout << "writing packet 6..." << std::endl;
-  
+
   vtkSmartPointer<vtkIdList> facePtIds;
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
-  vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New(); 
+  vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New();
   vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New();
-  
-  // building cell locator for looking up patch number in remeshed surface mesh
-  vtkSmartPointer<vtkCellLocator> surfCellLocator = surfMeshBase->buildLocator(); 
-  // maximum number of vertices per face (to be found in proceeding loop)
-  int nVerticesPerFaceMax = 0;
-  // maximum number of faces per cell (to be found in proceeding loop)
-  int nFacesPerCellMax = 0; 
 
-  std::map<std::vector<int>, std::pair<int,int>, sortIntVec_compare> faceMap;
-  for (int i = 0; i < volMeshBase->getNumberOfCells(); ++i)
+  // building cell locator for looking up patch number in remeshed surface mesh
+  vtkSmartPointer<vtkCellLocator> surfCellLocator = surfMeshBase->buildLocator();
+  // maximum number of vertices per face (to be found in proceeding loop)
+  vtkIdType nVerticesPerFaceMax = 0;
+  // maximum number of faces per cell (to be found in proceeding loop)
+  int nFacesPerCellMax = 0;
+
+  std::map<std::vector<nemId_t>,
+           std::pair<nemId_t, nemId_t>,
+           sortNemId_tVec_compare> faceMap;
+  for (nemId_t i = 0; i < volMeshBase->getNumberOfCells(); ++i)
   {
     // get cell i 
     volMeshBase->getDataSet()->GetCell(i, genCell1);
     // get faces, find cells sharing it. if no cell shares it, 
     // use the locator of the surfMeshBase to find the patch number
     int numFaces = genCell1->GetNumberOfFaces();
-    nFacesPerCellMax = (nFacesPerCellMax < numFaces ? numFaces : nFacesPerCellMax);
+    nFacesPerCellMax = (nFacesPerCellMax < numFaces
+                        ? numFaces
+                        : nFacesPerCellMax);
     for (int j = 0; j < numFaces; ++j)
     {
-      vtkCell* faceObj = genCell1->GetFace(j);
-      bool shared = 0;
-      int numVerts = faceObj->GetNumberOfPoints();
-      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);
-      facePtIds = faceObj->GetPointIds(); 
+      vtkCell *faceObj = genCell1->GetFace(j);
+      bool shared = false;
+      vtkIdType numVerts = faceObj->GetNumberOfPoints();
+      nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts
+                             ? numVerts
+                             : nVerticesPerFaceMax);
+      facePtIds = faceObj->GetPointIds();
 
-      volMeshBase->getDataSet()->GetCellNeighbors(i, facePtIds, sharedCellPtIds); 
-      std::vector<int> facePntIds(numVerts);
-      for (int k = 0; k < numVerts; ++k)
+      volMeshBase->getDataSet()->GetCellNeighbors(i, facePtIds,
+                                                  sharedCellPtIds);
+      std::vector<nemId_t> facePntIds(numVerts);
+      for (vtkIdType k = 0; k < numVerts; ++k)
       {
-        facePntIds[k] = faceObj->GetPointId(k)+1;
+        facePntIds[k] = faceObj->GetPointId(k) + 1;
       }
-      //std::cout << "sharedCellPtIds->GetNumberOfIds() = " << sharedCellPtIds->GetNumberOfIds() << std::endl;
       if (sharedCellPtIds->GetNumberOfIds())
       {
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>
-                        (facePntIds, std::make_pair(i+1, (int) sharedCellPtIds->GetId(0)+1))); 
+        faceMap.insert(
+            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
+                facePntIds,
+                std::make_pair(
+                    i + 1,
+                    sharedCellPtIds->GetId(0) + 1
+                )
+            )
+        );
       }
       else
       {
         double p1[3], p2[3], p3[3];
-        faceObj->GetPoints()->GetPoint(0,p1);
-        faceObj->GetPoints()->GetPoint(1,p2);
-        faceObj->GetPoints()->GetPoint(2,p3);
+        faceObj->GetPoints()->GetPoint(0, p1);
+        faceObj->GetPoints()->GetPoint(1, p2);
+        faceObj->GetPoints()->GetPoint(2, p3);
         double faceCenter[3];
-        for (int k = 0; k < numVerts; ++k)
+        for (nemId_t k = 0; k < numVerts; ++k)
         {
-          faceCenter[k] = (p1[k] + p2[k] + p3[k])/3.0;
-        } 
+          faceCenter[k] = (p1[k] + p2[k] + p3[k]) / 3.0;
+        }
         vtkIdType closestCellId;
         int subId;
         double minDist2;
         double closestPoint[3];
         // find closest point and closest cell to faceCenter
         surfCellLocator->FindClosestPoint(
-          faceCenter, closestPoint, genCell2,closestCellId,subId,minDist2);
+            faceCenter, closestPoint, genCell2, closestCellId, subId, minDist2);
         double patchNo[1];
         surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo")
-                                                  ->GetTuple(closestCellId, patchNo);
-        faceMap.insert(std::pair<std::vector<int>, std::pair<int,int>>      
-                  (facePntIds, std::make_pair(i+1, (int) -1*patchNo[0])));
+            ->GetTuple(closestCellId, patchNo);
+        faceMap.insert(
+            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
+                facePntIds,
+                std::make_pair(
+                    i + 1,
+                    -1 * patchNo[0]
+                )
+            )
+        );
 
         // Assign patch numbers to all nodes in the face
-        for (int iFaceNode = 0; iFaceNode < facePtIds->GetNumberOfIds(); iFaceNode++)
+        for (vtkIdType iFaceNode = 0;
+             iFaceNode < facePtIds->GetNumberOfIds(); iFaceNode++)
         {
           boundaryNodeId2PatchNo[facePtIds->GetId(iFaceNode)].push_back(patchNo[0]);
         }
@@ -265,7 +287,7 @@ void patran::write6(std::ofstream& outputStream)
         // packet number
         outputStream << std::setw(2) << std::right << "6";
         // element number, 1-indexed
-        outputStream << std::setw(8) << std::right << i+1;
+        outputStream << std::setw(8) << std::right << i + 1;
         // default load set = 1
         outputStream << std::setw(8) << std::right << "1";
         // default KC = 2
@@ -279,22 +301,25 @@ void patran::write6(std::ofstream& outputStream)
 
         // Write data card 1
         // default face value
-        outputStream << std::setw(3) << std::right << "110"; // unused by Rocfrac
-        
+        outputStream << std::setw(3) << std::right
+                     << "110"; // unused by Rocfrac
+
         // load direction
-        outputStream << std::setw(6) << std::right << "000000"; // ICOMP, unused by Rocfrac
-        
+        outputStream << std::setw(6) << std::right
+                     << "000000"; // ICOMP, unused by Rocfrac
+
         // face nodes
         outputStream << std::setw(8) << std::right << face2nodes[j];
-        
+
         // face number
-        outputStream << std::setw(2) << std::right << "1"; // NFE, unused by Rocfrac
+        outputStream << std::setw(2) << std::right
+                     << "1"; // NFE, unused by Rocfrac
         outputStream << std::endl;
 
         // Write data card 2
         // card number
         char buffer[17];
-        snprintf(buffer,17,"%16.9E",(double) faceTypeMap[patchNo[0]]);
+        snprintf(buffer, 17, "%16.9E", (double) faceTypeMap[patchNo[0]]);
         outputStream << buffer;
 
         outputStream << std::endl;
@@ -304,29 +329,21 @@ void patran::write6(std::ofstream& outputStream)
 }
 
 // compare patches in nppVec to determine preference
-bool patran::comparePatch(int i, int j)
+bool PATRAN::patran::comparePatch(int i, int j)
 {
   auto posi = find(nppVec.begin(), nppVec.end(), i);
   auto posj = find(nppVec.begin(), nppVec.end(), j);
-  if (posi-nppVec.begin() < posj-nppVec.begin())
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  return posi - nppVec.begin() < posj - nppVec.begin();
 }
 
 // Write node BCs: structural, mesh motion, and thermal (packet 8)
-void patran::write8(std::ofstream& outputStream)
+void PATRAN::patran::write8(std::ofstream &outputStream)
 {
-
   std::cout << "writing packet 8..." << std::endl;
 
-  for (auto nodeItr = boundaryNodeId2PatchNo.begin(); nodeItr != boundaryNodeId2PatchNo.end(); ++nodeItr)
+  for (const auto &nodeItr : boundaryNodeId2PatchNo)
   {
-    int iNode = nodeItr->first;
+    nemId_t iNode = nodeItr.first;
 
     vtkSmartPointer<vtkIdList> pointCellIds = vtkSmartPointer<vtkIdList>::New();
     volMeshBase->getDataSet()->GetPointCells(iNode, pointCellIds);
@@ -335,7 +352,7 @@ void patran::write8(std::ofstream& outputStream)
     // packet number
     outputStream << std::setw(2) << std::right << "8";
     // node number, 1-indexed
-    outputStream << std::setw(8) << std::right << iNode+1;
+    outputStream << std::setw(8) << std::right << iNode + 1;
     // default load set = 1
     outputStream << std::setw(8) << std::right << "1";
     // default KC = 2
@@ -349,34 +366,28 @@ void patran::write8(std::ofstream& outputStream)
 
     // Get patch no
     std::vector<int> patchNoVec;
-    for (auto patchItr = boundaryNodeId2PatchNo[iNode].begin(); patchItr != boundaryNodeId2PatchNo[iNode].end(); patchItr++)
-    {
-      patchNoVec.push_back(*patchItr);
-    }
+    for (int &patchItr : boundaryNodeId2PatchNo[iNode])
+      patchNoVec.push_back(patchItr);
+
     // sort patches
     int outFlag = 0;
     int patchVal = -1;
-    for (auto patchItr = patchNoVec.begin(); patchItr != patchNoVec.end()-1; ++patchItr)
+    for (auto patchItr = patchNoVec.begin();
+         patchItr != patchNoVec.end() - 1; ++patchItr)
     {
       int firstVal = *patchItr;
       if (patchVal == -1)
-      {
         patchVal = *patchItr;
-      }
       else
-      {
-        if (comparePatch(*patchItr,patchVal))
-        {
-
+        if (comparePatch(*patchItr, patchVal))
           patchVal = *patchItr;
-        }
-      }
     }
     int patchNo[1] = {patchVal};
 
     // Write data card 1
     // coordinate frame id, set default to 0
-    outputStream << std::setw(8) << std::right << "0";  // default CID, unused by Rocfrac
+    outputStream << std::setw(8) << std::right
+                 << "0";  // default CID, unused by Rocfrac
     std::string structuralFlag, thermalFlag, meshMotionFlag;
     int nFlags = 0;
     if (nodeStructuralMap[patchNo[0]])
@@ -407,7 +418,8 @@ void patran::write8(std::ofstream& outputStream)
       meshMotionFlag = "0";
     }
 
-    outputStream << std::setw(6) << std::right << structuralFlag + thermalFlag + meshMotionFlag + "000";
+    outputStream << std::setw(6) << std::right
+                 << structuralFlag << thermalFlag << meshMotionFlag << "000";
     outputStream << std::endl;
 
     // Write data card 2
@@ -415,7 +427,7 @@ void patran::write8(std::ofstream& outputStream)
     for (int i = 0; i < nFlags; i++)
     {
       char buffer[17];
-      snprintf(buffer,17,"%16.9E",(double) nodeTypeMap[patchNo[0]]);
+      snprintf(buffer, 17, "%16.9E", (double) nodeTypeMap[patchNo[0]]);
       outputStream << buffer;
     }
     outputStream << std::endl;
@@ -423,20 +435,24 @@ void patran::write8(std::ofstream& outputStream)
 }
 
 // Write "end of file" line (packet 99)
-void patran::write99(std::ofstream& outputStream)
+void PATRAN::patran::write99(std::ofstream &outputStream) const
 {
-  outputStream << "99       0       0       1       0       0       0       0       0";
+  outputStream
+      << "99       0       0       1       0       0       0       0       0";
   outputStream << std::endl;
 }
 
 // constructor from meshBase object
-patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inFnameVtk,
-  const std::string _outFnameNeu, std::map<int, int> _faceTypeMap,
-  std::map<int, int> _nodeTypeMap, std::map<int, bool> _nodeStructuralMap,
-  std::map<int, bool> _nodeMeshMotionMap, std::map<int, bool> _nodeThermalMap,
-  std::vector<int> _nppVec)
+PATRAN::patran::patran(const std::shared_ptr<meshBase> _fullMesh,
+                       const std::string &_inFnameVtk,
+                       const std::string &_outFnameNeu,
+                       const std::map<int, int> &_faceTypeMap,
+                       const std::map<int, int> &_nodeTypeMap,
+                       const std::map<int, bool> &_nodeStructuralMap,
+                       const std::map<int, bool> &_nodeMeshMotionMap,
+                       const std::map<int, bool> &_nodeThermalMap,
+                       const std::vector<int> &_nppVec)
 {
-
   std::cout << "Writing Patran file in Rocfrac input format..." << std::endl;
 
   fullMesh = _fullMesh;
@@ -468,25 +484,27 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
 
   // instantiate output stream for writing
   std::ofstream outputStream(outFnameNeu);
-  if(!outputStream.good()) 
+  if (!outputStream.good())
   {
     std::cout << "Cannot open file " << outFnameNeu << std::endl;
     exit(1);
   }
 
   // declare array to store element type
-  vtkSmartPointer<vtkDataArray> elementTypeArray = vtkSmartPointer<vtkIdTypeArray>::New();;
+  vtkSmartPointer<vtkDataArray> elementTypeArray = vtkSmartPointer<vtkIdTypeArray>::New();
   elementTypeArray->SetNumberOfComponents(1);
   elementTypeArray->SetName("elemType");
 
   // get element types
   double tmp[1];  // storing inserted tuples
-  for (int iCell = 0; iCell < fullMesh->getDataSet()->GetNumberOfCells(); iCell++)
+  for (vtkIdType iCell = 0;
+       iCell < fullMesh->getDataSet()->GetNumberOfCells(); iCell++)
   {
-    if (fullMesh->getDataSet()->GetCellType(iCell) != VTK_TETRA &&
-        fullMesh->getDataSet()->GetCellType(iCell) != VTK_TRIANGLE)
+    if (fullMesh->getDataSet()->GetCellType(iCell) != VTK_TETRA
+        && fullMesh->getDataSet()->GetCellType(iCell) != VTK_TRIANGLE)
     {
-      std::cout << "Error: only triangle and tetrahedral elements supported." << std::endl;
+      std::cout << "Error: only triangle and tetrahedral elements supported."
+                << std::endl;
       exit(1);
     }
     tmp[0] = fullMesh->getDataSet()->GetCellType(iCell);
@@ -497,7 +515,9 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   // threshold to extract only volume cells
   vtkSmartPointer<vtkThreshold> volThreshold = vtkSmartPointer<vtkThreshold>::New();
   volThreshold->SetInputData(fullMesh->getDataSet());
-  volThreshold->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "elemType");
+  volThreshold->SetInputArrayToProcess(0, 0, 0,
+                                       vtkDataObject::FIELD_ASSOCIATION_CELLS,
+                                       "elemType");
   volThreshold->ThresholdBetween(VTK_TETRA, VTK_TETRA);
   volThreshold->Update();
   // store output in unstructured grid
@@ -509,7 +529,9 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   // threshold to extract only surface cells
   vtkSmartPointer<vtkThreshold> surfThreshold = vtkSmartPointer<vtkThreshold>::New();
   surfThreshold->SetInputData(fullMesh->getDataSet());
-  surfThreshold->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "elemType");
+  surfThreshold->SetInputArrayToProcess(0, 0, 0,
+                                        vtkDataObject::FIELD_ASSOCIATION_CELLS,
+                                        "elemType");
   surfThreshold->ThresholdBetween(VTK_TRIANGLE, VTK_TRIANGLE);
   surfThreshold->Update();
   // store output in unstructured grid
@@ -522,7 +544,6 @@ patran::patran(const std::shared_ptr<meshBase> _fullMesh, const std::string _inF
   // create meshbase object
   surfMeshBase = meshBase::CreateShared(surfPD, "extractedSurface.vtp");
   //surfMeshBase->write();  // write to file
-
 
   // Write Patran file packets
   std::cout << "Writing Patran file..." << std::endl;

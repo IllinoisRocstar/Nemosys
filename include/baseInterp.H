@@ -4,16 +4,18 @@
 #ifndef _BASEINTERP_H_
 #define _BASEINTERP_H_
 
+#include "interp_export.h"
+
 // standard
-#include<vector>
+#include <vector>
 
 // third party
-#include <ANN.h>
+#include <ANN/ANN.h>
 // types
 
 class sphere;
 
-class basicInterpolant {
+class INTERP_EXPORT basicInterpolant {
 
 // public members
 public:

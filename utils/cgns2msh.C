@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-//Nemosys
+// Nemosys headers
 #include <baseInterp.H>
 
 // MAdLib headers 

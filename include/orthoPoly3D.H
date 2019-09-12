@@ -1,103 +1,111 @@
 #ifndef ORTHOPOLY3D_H
 #define ORTHOPOLY3D_H
 
-#include <iostream>
+#include "nemosys_export.h"
+#include "orthoPoly1D.H"
+
 #include <memory>
-#include <orthoPoly1D.H>
-#ifdef DEBUG
-  #include <AuxiliaryFunctions.H>
-#endif
+
+
 using Eigen::Matrix;
-using Eigen::ArrayXd;
-using Eigen::KroneckerProduct;
 using Eigen::Dynamic;
 using Eigen::RowMajor;
 
-/* This class takes 3 dimensional points and n diminensional data
+
+/* This class takes 3 dimensional points and n dimensional data
    to build a multidimensional orthogonal polynomial approximant
    to data in a cubic domain defined by the minmax x,y,z coordinates
    of the points. Orthogonality is accomplished by tensor-product construction
    using 1D orthogonal polynomials defined by x,y and z coordinates. As such,
    the points must be representable by a cartesian product. For example, the
-   4 points (x1,y1),(x1,y2),(x2,y1),(x2,y2) can equivilantly be written as
+   4 points (x1,y1),(x1,y2),(x2,y1),(x2,y2) can equivalently be written as
    (x1,x2) <X> (y1,y2) where <X> is the cartesian product */
 
 /* Based on the requirements above, this class is suitable for use with
    rectilinear, structured quad/hex grids */ 
 
 
-// TODO: Generalize to higher order elements with more than one internal node per patch
-//       where averages need to be taken for duplicate recovered vaules
+// TODO: Generalize to higher order elements with more than one internal node
+//     per patch where averages need to be taken for duplicate recovered values
 
 
 // defines dynamically sized matrix type with row-major storage
 // this is used to optimize computations involving access to entire rows
-typedef Matrix<double,Dynamic,Dynamic,RowMajor> MatrixXdRM;
+typedef Matrix<double, Dynamic, Dynamic, RowMajor> MatrixXdRM;
 
 
 // remove given row from matrix
-void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove);
+void removeRow(MatrixXd &matrix, unsigned int rowToRemove);
 
 // remove rows from given matrix
-void removeRow(const MatrixXdRM& matrix, 
-               MatrixXdRM& matrix_red,
-               const std::vector<unsigned int>& toRemove);
-
-void removeRow(const MatrixXd& matrix, 
-               MatrixXdRM& matrix_red,
-               const std::vector<unsigned int>& toRemove);
+void removeRow(const MatrixXdRM &matrix,
+               MatrixXdRM &matrix_red,
+               const std::vector<unsigned int> &toRemove);
+void removeRow(const MatrixXd &matrix,
+               MatrixXdRM &matrix_red,
+               const std::vector<unsigned int> &toRemove);
 // remove given column from matrix
-void removeColumn(Eigen::MatrixXd& matrix, unsigned int colToRemove);
+void removeColumn(MatrixXd &matrix, unsigned int colToRemove);
 
-class orthoPoly3D
+
+class NEMOSYS_EXPORT orthoPoly3D
 {
- 
-  // constructors and destructors 
+  // constructors and destructors
   public:
     // default ctor
     orthoPoly3D();
-   
+
     // complete ctor 
-    orthoPoly3D(int _order, const VectorXd& _sigma, 
-                const std::vector<double>& _x, const std::vector<double>& _y, 
-                const std::vector<double>& _z);
-    
+    orthoPoly3D(int _order,
+                const VectorXd &_sigma,
+                const std::vector<double> &_x,
+                const std::vector<double> &_y,
+                const std::vector<double> &_z);
+
     // partial ctor, must manually call computeA
-    orthoPoly3D(int _order, const std::vector<std::vector<double>>&& coords);
+    orthoPoly3D(int _order, const std::vector<std::vector<double>> &coords);
 
     // move constructor
-    orthoPoly3D(orthoPoly3D&& op); 
+    orthoPoly3D(orthoPoly3D &&op);
 
     // move assignment  
-    orthoPoly3D& operator=(orthoPoly3D&& op);
+    orthoPoly3D &operator=(orthoPoly3D &&op);
+
+    // disable copy and copy-assignment constructors
+    orthoPoly3D(const orthoPoly3D &) = delete;
+    orthoPoly3D &operator=(const orthoPoly3D &) = delete;
 
     // factories
-    static orthoPoly3D* Create(int _order, const std::vector<std::vector<double>>&& coords);
-    static std::unique_ptr<orthoPoly3D> 
-      CreateUnique(int _order, const std::vector<std::vector<double>>&& coords);
+    static orthoPoly3D *
+    Create(int _order, const std::vector<std::vector<double>> &coords);
+    static std::unique_ptr<orthoPoly3D>
+    CreateUnique(int _order, const std::vector<std::vector<double>> &coords);
 
     // dtor
-    ~orthoPoly3D(){}
+    ~orthoPoly3D() = default;
 
   // methods
   public:
-    #ifdef DEBUG
+#ifdef NEMOSYS_DEBUG
     // compute multivariate polynomial approximation of prescribed order to sigma
-    void run1(const VectorXd& sigma);
-    #endif
+    void run1(const VectorXd &sigma);
+#endif
     // compute coefficients for polynomial expansion of sampled function
-    void computeA(const VectorXd& sigma);
+    void computeA(const VectorXd &sigma);
     // evaluate the fitting polynomial at coord
-    const double operator()(const std::vector<double>& coord);
-    const double eval(const std::vector<double>& coord);
+    const double operator()(const std::vector<double> &coord);
+    const double eval(const std::vector<double> &coord);
+
     // return the status of the approximant object
     // 1 indicates approximant is available, 0 otherwise 
-    const bool status() const {return finished;}  
+    const bool status() const { return finished; }
+
     // reset coefficients to default state
     void resetA();
     // reset the object to its default state
     void Reset();
-    VectorXd getCoeffs() { return a; }
+
+    VectorXd getCoeffs() const { return a; }
 
   private:
     // total order of basis
@@ -114,13 +122,9 @@ class orthoPoly3D
     std::vector<unsigned int> toRemove;
     // status bool
     bool finished;
-  // compiler safe guards
-  private: 
-    // private lvalue copy ctor disables it (not implemented)
-    orthoPoly3D(const orthoPoly3D&) = delete;
-    // private lvalue copy assignment ctor disables it (not implemented)
-    orthoPoly3D& operator=(const orthoPoly3D&) = delete; 
-    // checks order compatiblity and determines toRemove array
+
+  private:
+    // checks order compatibility and determines toRemove array
     void initCheck();
 };
 

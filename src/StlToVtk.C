@@ -1,4 +1,12 @@
-#include <StlToVtk.H>
+#include "StlToVtk.H"
+
+#include "AuxiliaryFunctions.H"
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <map>
+
 
 void exportStlToVtk(std::string ifname)
 {
@@ -69,13 +77,13 @@ void exportStlToVtk(std::string ifname)
       i = 1;
     }
   }
-    
-  std::multimap<int, std::vector<double>> flipped = flip_map(point_map);
-  
-  std::ofstream vtk(trim_fname(ifname,".vtk"));
-  if (!vtk.good())
-  {
-    std::cout << "Error opening file " << trim_fname(ifname,".vtk") << std::endl;
+
+  std::multimap<int, std::vector<double>> flipped = nemAux::flip_map(point_map);
+
+  std::ofstream vtk(nemAux::trim_fname(ifname, ".vtk"));
+  if (!vtk.good()) {
+    std::cout << "Error opening file " << nemAux::trim_fname(ifname, ".vtk")
+              << std::endl;
     exit(1);
   }
 
@@ -107,8 +115,3 @@ void exportStlToVtk(std::string ifname)
   for (int i = 0; i < triangles.size(); ++i)
     vtk << 5 << std::endl; 
 }
-
-
-
-
-

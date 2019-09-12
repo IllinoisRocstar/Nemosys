@@ -1,0 +1,144 @@
+//-*- C++ -*-
+
+Input {
+  Mesh {
+    MshFile = "tube.msh"; // gmsh -3 -optimize tube.geo
+    //GeoFile = "tube.geo";
+    //MshFile = "tube_fullGeo.msh"; // gmsh -3 -optimize tube_fullGeo.geo -parametric
+    //GeoFile = "tube_fullGeo.geo";
+  }
+}
+Output {
+  Prefix = "result/";
+  Frequency = 100;
+  Type = Msh;
+}
+Task {
+  Type = MobileObject; // RemoveRegion SizeField RemoveSliverFaces LaplaceSmoothing GeoConstraints TopoConstraints FaceSwap UglyMesh RemoveSliverRegions DESC EdgeSwap GeoMatcher EdgeSplit EdgeCollapse EdgeSplitCollapse FaceCollapse OptimizeLength OptimizeShape None
+}
+Debug {
+  DebugLevel = 1;
+//  OpenJournal = Yes;
+//  ReferenceJournal = "";
+//  ReportSlivers = Yes;
+}
+Adaptation {
+//   LowerLengthBound     = 0.58; // 1/sqrt(3)
+//   UpperLengthBound     = 1.73; // sqrt(3)
+//   SwapMinImproveRatio  = 1.0;
+//   SliverQuality        = 0.02;
+//   SplitCanMakeSlivers    = Yes;
+//   CollapseCanMakeSlivers = Yes;
+//   SliverLowerLengthSqBound = 0.32; // 1/sqrt(10)
+//   SliverUpperLengthSqBound = 3.16; // sqrt(10)
+//   CollapseOnBoundary = Yes;
+//   BoundaryCollapses {
+//     Tolerance = 1.e-2;
+//   }
+//   SwapOnBoundary = Yes;
+//   BoundarySwaps {
+//     Tolerance = 1.e6;
+//   }
+//   TrackGeometry = No;
+//   VertexSnapping {
+//     IsMeshTheCavity = Yes;
+//     CavityThickness = 0;
+//     StiffnessAlteration = 1.;
+//   }
+  SmoothSizeField = Yes;
+  SizeFieldSmoothing {
+    // MaximumGradient = 1.000000e+00;
+  }
+}
+MovingObjects {
+  Object = "Cylinder" {
+    Geometry {
+      GeometricalType = Face; 
+      GeometricalTags = [8 12 16 20 22 126];
+    }
+    Kinematics {
+
+      KinematicsSpecification = Velocity;
+      Velocity {
+        Formulation = ["0." "0." "1.*sign(sin(2.*3.14159265/8.*t+1.e-6))"];
+        //        Formulation = ["0." "0." "1."];
+        //Formulation = ["0." "0." "0."];
+      }
+    } 
+    LocalSizeField {
+      DistanceComputation = ToWallVertices;
+      Orientation = Isotropic;
+      Radius = 1.0;
+      Isotropic {
+        Size  = "0.1+(x/1.0)*(0.6-0.1)"; // linear
+        //Size  = "0.02+(sqrt(x)/sqrt(0.5))*(0.2-0.02)"; // sqrt
+      }
+      Anisotropic {
+        NormalSize  = "0.02+(x/1.0)*(0.4-0.02)"; // linear
+        TangentSize = "0.4";
+      }
+      CurvatureBasedLimiter {
+        Enable = No;
+        TangentSizeOverRadius = 0.4;
+      }
+    }
+  }
+  Object = "Tube" {
+    Geometry {
+      GeometricalType = Face; 
+      GeometricalTags = [40 44 48 52 56 60 64 68 71 106];
+    }
+    Kinematics {
+      KinematicsSpecification = Velocity;
+      Velocity {
+        Formulation = ["0." "0." "-1.*sign(sin(2.*3.14159265/8.*t+1.e-6))"];
+        //Formulation = ["0." "0." "-1."];
+        //Formulation = ["0." "0." "0."];
+      }
+    }
+    LocalSizeField {
+      DistanceComputation = ToWallVertices;
+      Orientation = Isotropic;
+      Radius = 1.0;
+      Isotropic {
+        Size  = "0.2+(x/1.0)*(0.6-0.2)"; // linear
+      }
+      Anisotropic {
+        NormalSize  = "0.02+(x/1.0)*(0.4-0.02)"; // linear
+        TangentSize = "0.4";
+      }
+      CurvatureBasedLimiter {
+        Enable = No;
+        TangentSizeOverRadius = 0.4;
+      }
+    }
+  }
+}
+SizeField {
+  Type = Analytical;
+  Analytical {
+    OrientationType = Isotropic; // Isotropic Anisotropic
+    Isotropic {
+      Length = "0.6";
+    }
+//     Anisotropic {
+//       Lengths = ["0.6" "0.3" "0.2"];
+//       Direction1 = ["1." "0." "0."];
+//       Direction2 = ["0." "1." "0."];
+//       Direction3 = ["0." "0." "1."];
+//     }
+  }
+}
+NodeMotion {
+  Type = ElasticAnalogy; // ElasticAnalogy ForceBoundaries None
+  ElasticParameters {
+    StiffnessAlteration = 1.;
+    IsMeshTheCavity = Yes;
+    //    CavityThickness = 3;
+  }
+}
+TimeSpecifications {
+  //  MaxTimeSteps = 4000;
+  TimeStep = 0.01;
+  FinalTime = 4.0;
+}

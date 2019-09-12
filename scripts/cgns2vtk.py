@@ -3,6 +3,10 @@
 import os
 import glob
 
+# UPDATE TO USE
+# Set to the path to rocStitchMesh executable.
+rocStitchMesh_path = ''
+
 # Descriptions for each file type
 file_type = {0: 'volumetric',
              1: 'burning',
@@ -55,21 +59,27 @@ def get_time(fname):
 
 # Get list of files
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
 file_list = []
 i = 0
 while len(file_list) == 0:
     file_list = glob.glob(file_string[i])
     i = i + 1
+<<<<<<< HEAD
+=======
 =======
 file_list = glob.glob(file_string[0])
 >>>>>>> 9e3961565116ea8aca937fca55166773202e999c
+>>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
 file_list = sorted(file_list, key=get_time)
 
 # Get number of time steps output
 all_base_t = []
 for file in file_list:
     base_t = file.split('_')[1]
-    if (base_t not in all_base_t):
+    if base_t not in all_base_t:
         all_base_t.append(base_t)
 
 # For each type of file
@@ -89,7 +99,9 @@ for itype in range(len(file_string)):
     for base_t in all_base_t:
 
         # Get and sort filenames by time
-        file_list = glob.glob(file_string[itype].split('*')[0]+base_t+"*"+file_string[itype].split('*')[1])
+        file_list = glob.glob(file_string[itype].split('*')[0]
+                              + base_t + "*"
+                              + file_string[itype].split('*')[1])
         file_list = sorted(file_list, key=get_time)
 
         if len(file_list) != 0:
@@ -97,12 +109,14 @@ for itype in range(len(file_string)):
 
             surf = surf_bool[itype]
             prefix = file_prefix_string[itype]
-            os.system('rocStitchMesh ' + '.' + ' ' + prefix + ' ' + base_t + ' ' + str(surf))
+            os.system(rocStitchMesh_path + 'rocStitchMesh ' + '.' + ' '
+                      + prefix + ' ' + base_t + ' ' + str(surf))
 
             list_of_files = glob.glob('./*.vtu')
             if len(list_of_files) != 0:
                 latest_file = max(list_of_files, key=os.path.getctime)
                 fname = file_type[itype] + '_' + str(itime)
-                os.system('mv ' + latest_file + ' ' + file_type[itype] + '/' + fname + '.vtu')
+                os.system('mv ' + latest_file + ' ' + file_type[itype] + '/'
+                          + fname + '.vtu')
 
             itime = itime + 1
