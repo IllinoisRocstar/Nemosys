@@ -106,6 +106,9 @@ third-party libraries is with the `build.sh` script. Assume
 `$NEMOSYS_PROJECT_PATH` is the path to NEMoSys, and `$NEMOSYS_INSTALL_PATH` is
 the desired installation location. Make sure to use absolute paths and execute
 the following:
+
+** NOTE: please contact developers for obtaining a copy of `contrib\nemosys_tpls.tar.gz` **
+
 ```
 $ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys/source
 $ NEMOSYS_DEPS_INSTALL_PATH=/full/path/to/dependency/install
