@@ -8,6 +8,17 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
+Version 0.43.0
+
+NEMoSys follows semantic versioning. The versions will be major.minor.patch.
+We will:
+* Increase the patch version for bug fixes, security fixes, and code
+documentation. Backwards compatible; no breaking changes.
+* Increase the minor version for new features and additions to the library’s
+interface. Backwards compatible; no breaking changes.
+* Increase the major version for breaking changes to the library’s interface or
+breaking changes to behavior.
+
 
 ## Getting Started ##
 To acquire NEMoSys, you can download it from Illinois Rocstar's GitHub or clone
