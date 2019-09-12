@@ -549,17 +549,11 @@ if(ENABLE_EXODUS)
 endif()
 
 if(ENABLE_EPIC)
-  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/InputGeneration/ep16Post.C
-      src/InputGeneration/ep16Prep.C
-  )
+    # remain inactive in public branch
 endif()
 
 if(ENABLE_SIMMETRIX)
-  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/MeshGeneration/simmetrixGen.C
-      src/MeshGeneration/simmetrixParams.C
-  )
+    # remain inactive in public branch
 endif()
 
 if(ENABLE_CFMSH)

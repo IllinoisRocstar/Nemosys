@@ -112,8 +112,7 @@ if(ENABLE_EXODUS)
   NEM_add_test_executable(ExoMesh)
 endif()
 if(ENABLE_EPIC)
-  NEM_add_test_executable(Ep16Pre)
-  NEM_add_test_executable(Ep16Post)
+    # remain inactive in public branch
 endif()
 if(ENABLE_CFMSH)
   NEM_add_test_executable(CFM)
@@ -236,11 +235,7 @@ if(ENABLE_EXODUS)
 endif()
 
 if(ENABLE_EPIC)
-  NEM_add_test(ep16pre Ep16Pre ep16pre
-      gmsh2exo.json bctest_ref.g
-      ep16.json bctest_ref.dat
-  )
-  NEM_add_test(ep16post Ep16Post ep16post)
+    # remain inactive in public branch
 endif()
 
 if(ENABLE_CFMSH)

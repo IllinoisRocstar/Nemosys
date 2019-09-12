@@ -1,5 +1,5 @@
 find_package(PythonInterp 2.7 REQUIRED) # Needed for PYTHON_EXECUTABLE
-find_package(PythonLibs REQUIRED) # Needed for PYTHON_INCLUDE_DIRS
+find_package(PythonLibs 2.7 REQUIRED) # Needed for PYTHON_INCLUDE_DIRS
 find_package(SWIG REQUIRED)
 
 list(APPEND WRAPPER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include
@@ -28,13 +28,7 @@ list(APPEND WRAPPER_COMPILE_ARGS ${JSONCONS_COMPILE_ARGS})
 message(STATUS "${WRAPPER_COMPILE_ARGS}")
 
 if(ENABLE_SIMMETRIX)
-  file(COPY pyNemosysSimmetrix.i
-            ${CMAKE_SOURCE_DIR}/include/simmetrixParams.H
-            ${CMAKE_SOURCE_DIR}/include/simmetrixGen.H
-            ${CMAKE_SOURCE_DIR}/include/meshStitcher.H
-            ${CMAKE_SOURCE_DIR}/include/meshPartitioner.H
-       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
+  # remain inactive in public branch
 else()
   set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
 endif()
