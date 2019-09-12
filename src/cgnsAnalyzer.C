@@ -1,5 +1,4 @@
 #include "cgnsAnalyzer.H"
-
 #include <vtkCellTypes.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkIdList.h>

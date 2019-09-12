@@ -153,8 +153,6 @@ void PATRAN::patran::write2(std::ofstream &outputStream) const
         outputStream << std::setw(8) << std::right << "0";
       }
       outputStream << std::endl;
-
-      // Write data card 1
       // Default to 4 nodes per tetrahedral
       outputStream << std::setw(8) << std::right << "4";
       // CONFIG, element type (unused)

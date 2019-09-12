@@ -207,7 +207,6 @@ void COBALT::cobalt::write() const
     outputStream << std::setw(21) << std::fixed << std::setprecision(15)
                  << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
   }
-
   auto it = faceMap.begin();
   while (it != faceMap.end())
   {

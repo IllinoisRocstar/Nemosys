@@ -321,24 +321,7 @@ endif()
 
 # Find Simmetrix
 if(ENABLE_SIMMETRIX)
-  set(SIMMETRIX_LIB_DIR CACHE PATH "Simmetrix library directory path.")
-  find_library(SIMADM_LIB SimAdvMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMEXP_LIB SimExport HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMPMH_LIB SimPartitionedMesh HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMPWR_LIB SimPartitionWrapper HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMSH_LIB SimMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMTL_LIB SimMeshTools HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMDL_LIB SimModel HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMLCN_LIB SimLicense HINTS ${SIMMETRIX_LIB_DIR})
-  set(SIMMETRIX_LIBS ${SIMADM_LIB} ${SIMEXP_LIB} ${SIMDSC_LIB} ${SIMPMH_LIB}
-      ${SIMPWR_LIB} ${SIMMSH_LIB} ${SIMMTL_LIB} ${SIMMDL_LIB} ${SIMLCN_LIB})
-  find_file(SIMMETRIX_HDR MeshSim.h HINTS ${SIMMETRIX_LIB_DIR}/../../include)
-  get_filename_component(SIMMETRIX_INCPATH ${SIMMETRIX_HDR} PATH)
-  get_filename_component(SIMMETRIX_LIB_PATH ${SIMMDL_LIB} PATH)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${SIMMETRIX_INCPATH})
-  message(STATUS "Simmetrix include path ${SIMMETRIX_INCPATH}")
-  message(STATUS "Simmetrix libs ${SIMMETRIX_LIBS}")
+  # remain inactive in public branch
 endif()
 
 # Find boost
@@ -674,7 +657,7 @@ if(ENABLE_EXODUS)
 endif()
 
 if(ENABLE_EPIC)
-  target_compile_definitions(Nemosys PUBLIC HAVE_EPIC)
+  # remain inactive in the public branch
 endif()
 
 if(ENABLE_METIS)
@@ -695,9 +678,7 @@ if(ENABLE_NETGEN)
 endif()
 
 if(ENABLE_SIMMETRIX)
-  target_link_libraries(Nemosys PUBLIC ${SIMMETRIX_LIBS})
-  target_include_directories(Nemosys SYSTEM PUBLIC ${SIMMETRIX_INCPATH})
-  target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
+  # remain inactive in public branch
 endif()
 
 if(ENABLE_CFMSH)

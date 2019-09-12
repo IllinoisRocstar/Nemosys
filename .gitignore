@@ -5,7 +5,11 @@ Build.dat
 *.swp
 *.swo
 lnInclude/
+<<<<<<< HEAD
 *_export.h
+=======
+*.swp
+>>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
 
 # Prerequisites
 *.d

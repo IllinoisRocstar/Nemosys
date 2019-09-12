@@ -58,11 +58,21 @@ def get_time(fname):
 
 
 # Get list of files
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
 file_list = []
 i = 0
 while len(file_list) == 0:
     file_list = glob.glob(file_string[i])
     i = i + 1
+<<<<<<< HEAD
+=======
+=======
+file_list = glob.glob(file_string[0])
+>>>>>>> 9e3961565116ea8aca937fca55166773202e999c
+>>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
 file_list = sorted(file_list, key=get_time)
 
 # Get number of time steps output

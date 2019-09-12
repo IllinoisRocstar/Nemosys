@@ -427,8 +427,6 @@ class NEMOSYS_EXPORT meshBase
     void setMetadata(vtkSmartPointer<vtkModelMetadata> _metadata){metadata = _metadata;}
     vtkSmartPointer<vtkModelMetadata> getMetadata(){return metadata;}
 
-
-  
   // --- data transfer
   public:
 

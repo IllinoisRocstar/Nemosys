@@ -274,7 +274,6 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     {
       std::cerr << "Source mesh file is not in VTK format" << std::endl;
     }
-
     std::ifstream meshStream(srcmsh);
     if (!meshStream.good())
     {
