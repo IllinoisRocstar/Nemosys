@@ -968,6 +968,14 @@ void exoMesh::mergeNodes(double tol) {
   exoPopulate(true);
 }
 
+void exoMesh::scaleNodes(double sc) {
+    using namespace nemAux;
+    _xCrds=sc*_xCrds;
+    _yCrds=sc*_yCrds;
+    _zCrds=sc*_zCrds;
+}
+
+
 void exoMesh::stitch(const exoMesh &otherMesh) {
   // Append nodes.
   _xCrds.insert(_xCrds.end(), otherMesh._xCrds.begin(), otherMesh._xCrds.end());
