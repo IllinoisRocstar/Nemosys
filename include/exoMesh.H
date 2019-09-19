@@ -25,9 +25,8 @@ void NEMOSYS_EXPORT wrnErrMsg(int errCode, const std::string &errMsg = "None");
 enum NEMOSYS_EXPORT elementType { TRIANGLE, QUAD, TETRA, HEX, WEDGE, OTHER };
 
 /**
- *
+ * Boundary condition types
  */
-// TODO: documentation
 enum NEMOSYS_EXPORT surfaceBCTag { FIXED, SYMMX, SYMMY, SYMMZ };
 
 /**
@@ -150,36 +149,105 @@ class NEMOSYS_EXPORT exoMesh {
 
   // fast access
  public:
+  // TODO: this flag is no longer supported and will be deprecated soon
   bool isCompatible() const { return _isSupported; }
 
+  /**
+   * Returns total number of nodes
+   */
   int getNumberOfNodes() const { return _numNdes; }
+
+  /**
+   * Returns total number of elements
+   */
   int getNumberOfElements() const { return _numElms; }
+
+  /**
+   * Returns total number of element blocks
+   */
   int getNumberOfElementBlocks() const { return _elmBlks.size(); }
+
+  /**
+   * Returns total number of node sets
+   */
   int getNumberOfNodeSets() const { return _ndeSets.size(); }
+
+  /**
+   * Returns total number of side sets
+   */
   int getNumberOfSideSets() const { return _sdeSets.size(); }
 
+  /**
+   * Returns the name the element block for given index
+   * @param idx index of block
+   */
   const std::string &getElmBlkName(int idx) const { return _elmBlks[idx].name; }
+
+  /**
+   * Returns the name the nodeset for given index
+   * @param idx index of block
+   */
   const std::string &getNdeSetName(int idx) const { return _ndeSets[idx].name; }
+
+  /**
+   * Returns the name the sideset for given index
+   * @param idx index of block
+   */
   const std::string &getSdeSetName(int idx) const { return _sdeSets[idx].name; }
 
+  /**
+   * Returns the id for the element block for given index
+   * @param idx index of block
+   */
   int getElmBlkId(int idx) const { return _elmBlks[idx].id; }
+
+  /**
+   * Returns the id for the nodeset for given index
+   * @param idx index of block
+   */
   int getNdeSetId(int idx) const { return _ndeSets[idx].id; }
+
+  /**
+   * Returns the id for the sideset for given index
+   * @param idx index of block
+   */
   int getSdeSetId(int idx) const { return _sdeSets[idx].id; }
 
+  /**
+   * Returns the element type for the block
+   * @param idx index of block
+   */
   elementType getElmBlkType(int idx) const { return _elmBlks[idx].eTpe; };
 
+  /**
+   * Returns the names of registered element blocks
+   */
   const std::vector<std::string> &getElmBlkNames() const {
     return _elmBlkNames;
   };
+
+  /**
+   * Returns the names of registered node sets
+   */
   const std::vector<std::string> &getNdeSetNames() const {
     return _ndeSetNames;
   };
+
+  /**
+   * Returns the names of registered side sets
+   */
   const std::vector<std::string> &getSdeSetNames() const {
     return _sdeSetNames;
   };
 
   // fast modification
  public:
+
+  /**
+   * Sets/changes block name
+   * @param idx index of block
+   * @param name name of the block
+   */
   void setBlockName(int idx, const std::string &name) {
     _elmBlks[idx].name = name;
   }
@@ -276,12 +344,14 @@ class NEMOSYS_EXPORT exoMesh {
    */
   // TODO: Does NOT update side sets properly!
   void removeByElmIdLst(int blkIdx, const std::vector<int> &idLst);
+  
   /**
    * Creates a new element block and augments previous owners
    * @param name new element block name
    * @param idLst vector of element ids
    */
   void addElmBlkByElmIdLst(const std::string &name, std::vector<int> &idLst);
+
   /**
    * Creates a new node set and augments previous ones if needed
    * @param name new node set name
@@ -294,11 +364,18 @@ class NEMOSYS_EXPORT exoMesh {
    * @param tol tolerance used to determine if zero
    */
   void snapNdeCrdsZero(double tol = 1e-5);
+
   /**
    * Merges duplicated and nodes within given proximity
    * @param tol tolerance used in determining if a line intersects a surface
    */
   void mergeNodes(double tol = 1e-15);
+
+  /**
+   * scales the nodal coordinates 
+   * @param sc scale factor
+   */
+  void scaleNodes(double sc = 1.0);
 
  public:
   /**

@@ -810,6 +810,8 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
     }
   } else if (opr == "Merge Nodes") {
     em->mergeNodes();
+  } else if (opr == "Mesh Scaling") {
+    em->scaleNodes(ppJson["Scale"].as<double>());
   } else {
     std::cerr << "Unknown operation requested: " << opr << std::endl;
   }
