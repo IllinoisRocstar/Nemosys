@@ -2,7 +2,9 @@
 
 #include "meshPartitioner.H"
 
+/* disable -- AEG
 #include "cgnsAnalyzer.H"
+*/
 #include "meshBase.H"
 
 #include <vtkCellTypes.h>
@@ -108,6 +110,7 @@ meshPartition::getElmSlnsVec(const std::vector<double> &slns, int nComp) const
 
 
 /* Implementation of partitioner class */
+/* disable -- AEG
 meshPartitioner::meshPartitioner(cgnsAnalyzer *inCg)
 {
   nNde = inCg->getNVertex();
@@ -132,6 +135,7 @@ meshPartitioner::meshPartitioner(cgnsAnalyzer *inCg)
       break;
   }
 }
+*/
 
 
 meshPartitioner::meshPartitioner(const meshBase *inMB)

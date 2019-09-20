@@ -1,5 +1,8 @@
 #include "NemDriver.H"
 
+#include <string>
+#include <iostream>
+
 #include "TransferDriver.H"
 #include "RefineDriver.H"
 #include "MeshQualityDriver.H"
@@ -8,12 +11,14 @@
 #include "InputGenDriver.H"
 
 #include "NucMeshDriver.H"
-#include "RemeshDriver.H"
-#include "RocPartCommGenDriver.H"
 #include "PackMeshDriver.H"
+#ifdef HAVE_CGNS
+#  include "RocPartCommGenDriver.H"
+#endif
+#ifdef HAVE_SIMMETRIX
+#  include "RemeshDriver.H"
+#endif
 
-#include <string>
-#include <iostream>
 
 
 //------------------------------ Factory of Drivers ----------------------------------------//
@@ -78,7 +83,14 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson)
   //}
   else if (program_type == "Rocstar Communication Generation")
   {
+#ifdef HAVE_CGNS
     return RocPartCommGenDriver::readJSON(inputjson);
+#else
+    std::cerr << "Program Type " << program_type
+              << " is not enabled. Build NEMoSys with CGNS capabilities."
+              << std::endl;
+    exit(1);
+#endif  // HAVE_CGNS
   }
   else
   {

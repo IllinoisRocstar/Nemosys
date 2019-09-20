@@ -22,6 +22,8 @@ test:ubuntu16:
       -DENABLE_NETGEN=ON
       -DENABLE_SIMMETRIX=OFF
       -DENABLE_CFMSH=ON
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
       -DSIMMETRIX_LIB_DIR=/Nemosys/12.0-190512/lib/x64_rhel7_gcc48
     - make -j$(nproc)
     - make install
@@ -51,6 +53,8 @@ test:ubuntu18:
       -DENABLE_NETGEN=ON
       -DENABLE_SIMMETRIX=OFF
       -DENABLE_CFMSH=ON
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
       -DSIMMETRIX_LIB_DIR=/Nemosys/12.0-190512/lib/x64_rhel7_gcc48
     - make -j$(nproc)
     - make install
@@ -85,6 +89,9 @@ test:win10:
       -DENABLE_NETGEN=ON
       -DENABLE_SIMMETRIX=ON
       -DENABLE_CFMSH=OFF
+      -DENABLE_OPENCASCADE=OFF
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
       -DSIMMETRIX_LIB_DIR="C:\Nemosys\simmetrix\12.0-190622\lib\x86_win_vc14_shared"
       -DPYTHON_EXECUTABLE="C:\Python\python.exe"
       -DSWIG_EXECUTABLE="C:\Nemosys\swigwin-3.0.12\swig.exe"

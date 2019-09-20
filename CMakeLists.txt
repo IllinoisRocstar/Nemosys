@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 43)
-set(NEMOSYS_PATCH_VERSION 0)
+set(NEMOSYS_PATCH_VERSION 1)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -108,16 +108,19 @@ endmacro()
 
 # set to ${DEFAULT} to use by DEFAULT
 opt(MPI "Enable MPI support" OFF)
+opt(TESTING "Enable testing" ${DEFAULT})
+opt(BUILD_UTILS "Build utilities" OFF)
+opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
+opt(CFMSH "Enable cfMesh Meshing engine" OFF)
+opt(CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
 opt(EPIC "Enable EPIC preprocessor" OFF)
-opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
-opt(TESTING "Enable testing" ${DEFAULT})
-opt(BUILD_UTILS "Build utilities" OFF)
-opt(METIS "Enable Metis interface" ${DEFAULT})
+opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
+opt(METIS "Enable METIS interface (Used for mesh partitioning)" ${DEFAULT})
 opt(NETGEN "Enable Netgen interface" ${DEFAULT})
-opt(SIMMETRIX "Enable Simmetrix Meshing engine" OFF)
-opt(CFMSH "Enable cfMesh Meshing engine" OFF)
+opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
+opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 
 # Check for option interdependencies ###########################################
 
@@ -190,7 +193,7 @@ message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
 
 # Find OpenCascade (used by Gmsh if build without ENABLE_OCC_STATIC)
-if(NOT WIN32)
+if(ENABLE_OPENCASCADE)
   find_package(OpenCASCADE REQUIRED)
   list(APPEND LIBRARY_DIRS ${OpenCASCADE_LIBRARY_DIR})
   list(APPEND WRAPPER_INCLUDE_DIRS ${OpenCASCADE_INCLUDE_DIR})
@@ -201,41 +204,49 @@ if(NOT WIN32)
   link_directories(${OpenCASCADE_LIBRARY_DIR})
   # /CMake 3.13
 
-  set(HAVE_OPENCASCADE)
-endif()
-
-# Find HDF5
-if(WIN32) # Test new HDF5 logic on UNIX
-  find_package(hdf5 REQUIRED COMPONENTS CXX CXX_HL CONFIG)
-  NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
-  list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-  message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
-  message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
-  set(HAVE_HDF5_CONFIG TRUE)
-else()
-  find_package(HDF5 REQUIRED COMPONENTS CXX)
-  list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
-  get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
-  list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-  message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
-  message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
+  set(HAVE_OPENCASCADE TRUE)
 endif()
 
 # Find CGNS
-if(WIN32 AND BUILD_SHARED_LIBS)
-  find_library(CGNS_LIB cgnsdll)
-else()
-  find_library(CGNS_LIB cgns)
+if(ENABLE_CGNS)
+  if(WIN32 AND BUILD_SHARED_LIBS)
+    find_library(CGNS_LIB cgnsdll)
+  else()
+    find_library(CGNS_LIB cgns)
+  endif()
+  find_file(CGNS_HDR cgnslib.h)
+  get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
+  get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
+  list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${CGNS_INCPATH})
+  message(STATUS "cgns include path ${CGNS_INCPATH}")
+  message(STATUS "cgns libs ${CGNS_LIB}")
+  set(HAVE_CGNS TRUE)
 endif()
-find_file(CGNS_HDR cgnslib.h)
-get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
-get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
-list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
-list(APPEND WRAPPER_INCLUDE_DIRS ${CGNS_INCPATH})
-message(STATUS "cgns include path ${CGNS_INCPATH}")
-message(STATUS "cgns libs ${CGNS_LIB}")
+
+# Find HDF5
+if(ENABLE_HDF5)
+  if(WIN32) # Test new HDF5 logic on UNIX
+    find_package(hdf5 REQUIRED COMPONENTS CXX CXX_HL CONFIG)
+    NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
+    list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+    list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
+    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
+    message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
+    set(HAVE_HDF5 TRUE)
+    set(HAVE_HDF5_CONFIG TRUE)
+  else()
+    find_package(HDF5 REQUIRED COMPONENTS CXX)
+    list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
+    get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
+    list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
+    list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
+    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
+    message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
+    set(HAVE_HDF5 TRUE)
+    set(HAVE_HDF5_CONFIG FALSE)
+  endif()
+endif()
 
 # Find METIS
 if(ENABLE_METIS)
@@ -247,11 +258,12 @@ if(ENABLE_METIS)
   list(APPEND WRAPPER_INCLUDE_DIRS ${METIS_INCPATH})
   message(STATUS "metis include path ${METIS_INCPATH}")
   message(STATUS "metis libs ${METIS_LIB}")
+  set(HAVE_METIS TRUE)
 endif()
 
 # Find Netgen
 if(ENABLE_NETGEN)
-  find_package(Netgen REQUIRED)
+  find_package(Netgen)
   if(NOT Netgen_FOUND)
     find_library(NETGEN_LIB nglib)
     get_filename_component(NETGEN_LIBRARY_DIR ${NETGEN_LIB} PATH)
@@ -472,10 +484,6 @@ set(NEMOSYS_SRCS
     src/Drivers/MeshQualityDriver.C
     src/Drivers/NucMeshDriver.C
     src/Drivers/RefineDriver.C
-    src/Drivers/RemeshDriver.C
-    src/Drivers/RocPartCommGenDriver.C
-#    src/Drivers/RocPrepDriver.C
-#    src/Drivers/RocRestartDriver.C
     src/Drivers/TransferDriver.C
 
     src/Geometry/convexContainer.C
@@ -505,7 +513,6 @@ set(NEMOSYS_SRCS
     src/MeshGeneration/netgenParams.C
 
     src/MeshPartitioning/meshPartitioner.C
-    src/MeshPartitioning/meshStitcher.C
 
     src/MeshQuality/MeshQuality.C
 
@@ -531,15 +538,26 @@ set(NEMOSYS_SRCS
     src/Transfer/TransferBase.C
     src/Transfer/FETransfer.C
 
-    src/cgnsAnalyzer.C
-    src/cgnsWriter.C
-    src/gridTransfer.C
-    src/rocstarCgns.C
     src/StlToVtk.C
     src/vtkAnalyzer.C
 )
 
 # Optional source files
+if(HAVE_CGNS)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/RocPartCommGenDriver.C
+      # src/Drivers/RocPrepDriver.C
+      # src/Drivers/RocRestartDriver.C
+
+      src/MeshPartitioning/meshStitcher.C
+
+      src/cgnsAnalyzer.C
+      src/cgnsWriter.C
+      src/gridTransfer.C
+      src/rocstarCgns.C
+  )
+endif()
+
 if(ENABLE_EXODUS)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Mesh/exoMesh.C
@@ -557,6 +575,8 @@ endif()
 
 if(ENABLE_SIMMETRIX)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/RemeshDriver.C
+
       src/MeshGeneration/simmetrixGen.C
       src/MeshGeneration/simmetrixParams.C
   )
@@ -615,7 +635,6 @@ target_link_libraries(Nemosys
         jsoncons
         ${VTK_LIBRARIES}
         ${GMSH_LIB}
-        ${CGNS_LIB}
         ${Boost_LIBRARIES}
 )
 target_include_directories(Nemosys
@@ -627,29 +646,36 @@ target_include_directories(Nemosys SYSTEM
     PUBLIC
         ${VTK_INCLUDE_DIRS}
         ${GMSH_INCPATH}
-        ${CGNS_INCPATH}
 )
 target_compile_definitions(Nemosys
     PUBLIC
         ${VTK_DEFINITIONS}
 )
 
-if(HAVE_HDF5_CONFIG)
-  if(BUILD_SHARED_LIBS)
-    target_link_libraries(Nemosys
-        PUBLIC
-            hdf5::hdf5_cpp-shared
-            hdf5::hdf5-shared
-    )
+if(HAVE_CGNS)
+  target_link_libraries(Nemosys PUBLIC ${CGNS_LIB})
+  target_include_directories(Nemosys SYSTEM PUBLIC ${CGNS_INCPATH})
+  target_compile_definitions(Nemosys PRIVATE HAVE_CGNS)
+endif()
+
+if(HAVE_HDF5)
+  if(HAVE_HDF5_CONFIG)
+    if(BUILD_SHARED_LIBS)
+      target_link_libraries(Nemosys
+          PUBLIC
+              hdf5::hdf5_cpp-shared
+              hdf5::hdf5-shared
+      )
+    else()
+      target_link_libraries(Nemosys
+          PUBLIC
+              hdf5::hdf5_cpp-static
+              hdf5::hdf5-static
+      )
+    endif()
   else()
-    target_link_libraries(Nemosys
-        PUBLIC
-            hdf5::hdf5_cpp-static
-            hdf5::hdf5-static
-    )
+    target_link_libraries(Nemosys PUBLIC ${HDF5_LIBRARIES})
   endif()
-else()
-  target_link_libraries(Nemosys PUBLIC ${HDF5_LIBRARIES})
 endif()
 
 if(HAVE_OPENCASCADE)
@@ -683,10 +709,10 @@ if(ENABLE_EPIC)
   target_compile_definitions(Nemosys PUBLIC HAVE_EPIC)
 endif()
 
-if(ENABLE_METIS)
+if(HAVE_METIS)
   target_link_libraries(Nemosys PUBLIC ${METIS_LIB})
   # Brought in by Gmsh already! Should avoid the clash somehow.
-  # target_compile_definitions(Nemosys PUBLIC HAVE_METIS)
+  target_compile_definitions(Nemosys PRIVATE HAVE_METIS)
   target_include_directories(Nemosys SYSTEM PUBLIC ${METIS_INCPATH})
 endif()
 
@@ -800,23 +826,25 @@ if(ENABLE_BUILD_UTILS)
   # Setting xmlDump utility source
   set(XMLDUMP_SRCS utils/xmlDump.C)
 
-  # Setting cgns2gmsh utility source
-  set(CGNS2GMSH_SRCS utils/cgns2msh.C)
+  if(HAVE_CGNS)
+    # Setting cgns2gmsh utility source
+    set(CGNS2GMSH_SRCS utils/cgns2msh.C)
 
-  # Setting stitch cgns utility source
-  set(ROCSTITCHMESH_SRCS utils/rocStitchMesh.C)
+    # Setting stitch cgns utility source
+    set(ROCSTITCHMESH_SRCS utils/rocStitchMesh.C)
 
-  # Setting Rocstar volume remesh utility source
-  set(ROCREMESH_SRCS utils/rocRemesh.C)
+    # Setting Rocstar volume remesh utility source
+    set(ROCREMESH_SRCS utils/rocRemesh.C)
 
-  # Setting Rocstar surface remesh utility source
-  set(ROCSURFREMESH_SRCS utils/rocSurfRemesh.C)
+    # Setting Rocstar surface remesh utility source
+    set(ROCSURFREMESH_SRCS utils/rocSurfRemesh.C)
 
-  # Setting Rocstar surface remesh utility source
-  set(GRID2GRIDTRANSFER_SRCS utils/grid2gridTransfer.C)
+    # Setting Rocstar surface remesh utility source
+    set(GRID2GRIDTRANSFER_SRCS utils/grid2gridTransfer.C)
 
-  # Setting meshTransfer tutorial source
-  set(MSHTRANSFER_SRCS tutorials/mshTransfer.C)
+    # Setting meshTransfer tutorial source
+    set(MSHTRANSFER_SRCS tutorials/mshTransfer.C)
+  endif()
 
   # TODO: Orphaned files! Check if used.
 #  set(TUTR_SRCS tutorials/writeStructured.C)
@@ -845,29 +873,31 @@ if(ENABLE_BUILD_UTILS)
     target_link_libraries(xmlDump vtkHybrid vtkWidgets)
   endif()
 
-  # Building cgns2gmsh utility
-  add_executable(cgns2msh ${CGNS2GMSH_SRCS})
-  target_link_libraries(cgns2msh Nemosys)
+  if(HAVE_CGNS)
+    # Building cgns2gmsh utility
+    add_executable(cgns2msh ${CGNS2GMSH_SRCS})
+    target_link_libraries(cgns2msh Nemosys)
 
-  # Building stitch cgns utility
-  add_executable(rocStitchMesh ${ROCSTITCHMESH_SRCS})
-  target_link_libraries(rocStitchMesh Nemosys)
+    # Building stitch cgns utility
+    add_executable(rocStitchMesh ${ROCSTITCHMESH_SRCS})
+    target_link_libraries(rocStitchMesh Nemosys)
 
-  # Building Rocstar volume remesh utility
-  add_executable(rocRemesh ${ROCREMESH_SRCS})
-  target_link_libraries(rocRemesh Nemosys)
+    # Building Rocstar volume remesh utility
+    add_executable(rocRemesh ${ROCREMESH_SRCS})
+    target_link_libraries(rocRemesh Nemosys)
 
-  # Building Rocstar surface remesh utility
-  add_executable(rocSurfRemesh ${ROCSURFREMESH_SRCS})
-  target_link_libraries(rocSurfRemesh Nemosys)
+    # Building Rocstar surface remesh utility
+    add_executable(rocSurfRemesh ${ROCSURFREMESH_SRCS})
+    target_link_libraries(rocSurfRemesh Nemosys)
 
-  # Building Rocstar surface remesh utility
-  add_executable(grid2gridTransfer ${GRID2GRIDTRANSFER_SRCS})
-  target_link_libraries(grid2gridTransfer Nemosys)
+    # Building Rocstar surface remesh utility
+    add_executable(grid2gridTransfer ${GRID2GRIDTRANSFER_SRCS})
+    target_link_libraries(grid2gridTransfer Nemosys)
 
-  # Building meshTransfer tutorial
-  add_executable(mshTransfer ${MSHTRANSFER_SRCS})
-  target_link_libraries(mshTransfer Nemosys)
+    # Building meshTransfer tutorial
+    add_executable(mshTransfer ${MSHTRANSFER_SRCS})
+    target_link_libraries(mshTransfer Nemosys)
+  endif()
 
   # Building DTK tutorial
   if(ENABLE_DTK)
@@ -893,15 +923,21 @@ install(TARGETS nemosysRun
 
 if(ENABLE_BUILD_UTILS)
   install(TARGETS xmlDump
-                  cgns2msh
-                  rocStitchMesh
-                  rocRemesh
-                  rocSurfRemesh
-                  grid2gridTransfer
-                  mshTransfer
       RUNTIME DESTINATION bin
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
       GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+  if(HAVE_CGNS)
+    install(TARGETS grid2gridTransfer
+                    cgns2msh
+                    rocStitchMesh
+                    rocRemesh
+                    rocSurfRemesh
+                    mshTransfer
+        RUNTIME DESTINATION bin
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  endif()
 
   if(ENABLE_DTK)
     install(TARGETS dtkTutorial
