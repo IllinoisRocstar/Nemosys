@@ -140,13 +140,10 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     } else {
       std::cerr << "Source mesh file is not in GMSH format" << std::endl;
     }
-    meshBase* mb = meshBase::exportGmshToVtk(srcmsh);
+    meshBase *mb = meshBase::exportGmshToVtk(srcmsh);
     mb->write(trgmsh);
-  }
-  else if (method == "VTK->COBALT")
-  {
-    if (srcmsh.find(".vt") != std::string::npos)
-    {
+  } else if (method == "VTK->COBALT") {
+    if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to COBALT ...." << std::endl;
     } else {
@@ -235,7 +232,7 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
                                    nodeMeshMotionMap, nodeThermalMap, nppVec);
     // pat->write();
   } else if (method == "VTK->FOAM") {
-  #ifdef HAVE_CFMSH
+#ifdef HAVE_CFMSH
     if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to FOAM Mesh ...." << std::endl;
@@ -257,27 +254,21 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     // Write polyMesh
     // fm->report();
     fm->write(ofname);
-  #else
+#else
     std::cerr << "Error: Compile NEMoSys with ENABLE_CFMSH to use this option."
               << std::endl;
     exit(-1);
-  #endif
-  }
-  else if(method == "VTK-HEX->VTK-TET")
-  {
-    if (srcmsh.find(".vt") != std::string::npos)
-    {
+#endif
+  } else if (method == "VTK-HEX->VTK-TET") {
+    if (srcmsh.find(".vt") != std::string::npos) {
       std::cout << "Detected file in VTK format" << std::endl;
       std::cout << "Converting to tet Mesh ...." << std::endl;
-    }
-    else
-    {
+    } else {
       std::cerr << "Source mesh file is not in VTK format" << std::endl;
     }
 
     std::ifstream meshStream(srcmsh);
-    if (!meshStream.good())
-    {
+    if (!meshStream.good()) {
       std::cerr << "Error opening file " << srcmsh << std::endl;
       exit(1);
     }
@@ -288,9 +279,7 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     myMesh->convertHexToTetVTK(myMesh->getDataSet());
     myMesh->report();
     myMesh->write(ofname);
-  }
-  else 
-  {
+  } else {
     std::cerr << "Error: Conversion method " << method
               << " is not a valid option." << std::endl;
     exit(-1);
