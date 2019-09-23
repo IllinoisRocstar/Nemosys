@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.43.1
+Version 0.43.2
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -33,17 +33,20 @@ in the notes section.
 
 | Option name            | Option description              | Default | Notes                            |
 |------------------------|---------------------------------|---------|----------------------------------|
-| ENABLE_TESTING         | Enable testing                  | ON      |                                  |
-| ENABLE_METIS           | Enable Metis interface          | ON      | Requires METIS                   |
-| ENABLE_NETGEN          | Enable Netgen interface         | ON      | Requires Netgen                  |
-| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
 | ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler            |
+| ENABLE_TESTING         | Enable testing                  | ON      |                                  |
+| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
+| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
+| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM                |
+| ENABLE_CGNS            | Enable CGNS extensions          | OFF     | Requires CGNS                    |
+| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 | ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II               |
 | ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
-| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
+| ENABLE_HDF5            | Enable HDF5 extensions          | OFF     | Requires HDF5                    |
+| ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
+| ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
+| ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
-| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM     |
-| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
