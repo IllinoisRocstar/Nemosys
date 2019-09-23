@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 43)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_PATCH_VERSION 2)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -17,6 +17,7 @@ set(NEMOSYS_AUTHOR
     "Alessandro Gondolo"
     "Sachin Natesh"
     "Akash Patel"
+    "Seth Pemberton"
     "Pavle Simonovic"
     "Taiyo Wilson")
 set(NEMOSYS_AUTHOR_EMAIL "msafdari@illinoisrocstar.com")
@@ -117,8 +118,8 @@ opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
 opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
-opt(METIS "Enable METIS interface (Used for mesh partitioning)" ${DEFAULT})
-opt(NETGEN "Enable Netgen interface" ${DEFAULT})
+opt(METIS "Enable METIS partitioner" ${DEFAULT})
+opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 
