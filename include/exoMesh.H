@@ -123,11 +123,11 @@ int NEMOSYS_EXPORT elmNumNde(elementType et, int order);
 int NEMOSYS_EXPORT elmNumSrf(elementType et);
 
 /**
- * @brief A complete I/O class for EXODUS II file format.
+ * @brief A complete I/O class for EXODUS II file format. 
  *
  * Methods for definition, addition, removal, and modification of the elements,
  * nodes, element blocks, node sets, and side sets are implemented. The
- * implementation relies on standard EXODUS II library provided in system
+ * implementation relies on standard EXODUS II library provided in system 
  * repository.
  */
 class NEMOSYS_EXPORT exoMesh {
@@ -220,6 +220,12 @@ class NEMOSYS_EXPORT exoMesh {
   elementType getElmBlkType(int idx) const { return _elmBlks[idx].eTpe; };
 
   /**
+   * Returns the element type for the block
+   * @param ebName name of the element block
+   */
+  elementType getElmBlkType(std::string ebName) const;
+
+  /**
    * Returns the names of registered element blocks
    */
   const std::vector<std::string> &getElmBlkNames() const {
@@ -242,6 +248,7 @@ class NEMOSYS_EXPORT exoMesh {
 
   // fast modification
  public:
+
   /**
    * Sets/changes block name
    * @param idx index of block
@@ -265,7 +272,6 @@ class NEMOSYS_EXPORT exoMesh {
     _zCrds.emplace_back(z);
     ++_numNdes;
   }
-
   /**
    * Add nodes to the database
    * @param xyz 3-vector of form (x, y, z)
@@ -273,7 +279,6 @@ class NEMOSYS_EXPORT exoMesh {
   void addNde(const std::vector<double> &xyz) {
     addNde(xyz[0], xyz[1], xyz[2]);
   }
-
   /**
    * Add element block to the database
    * @param eb EXODUS element block
@@ -282,7 +287,6 @@ class NEMOSYS_EXPORT exoMesh {
     _elmBlks.emplace_back(eb);
     _isPopulated = false;
   }
-
   /**
    * Add node set to the database
    * @param ns EXODUS node set
@@ -291,7 +295,6 @@ class NEMOSYS_EXPORT exoMesh {
     _ndeSets.emplace_back(ns);
     _isPopulated = false;
   }
-
   /**
    * Add side set to the database
    * @param ss EXODUS side set
@@ -318,7 +321,6 @@ class NEMOSYS_EXPORT exoMesh {
    * @return element block index
    */
   int findElmBlkIdxByElmId(int elmId) const;  // returns -1 if not found
-
   /**
    * Finds index of the block containing most or all of the list (slower)
    * @note returns -1 if not found
@@ -348,7 +350,7 @@ class NEMOSYS_EXPORT exoMesh {
    */
   // TODO: Does NOT update side sets properly!
   void removeByElmIdLst(int blkIdx, const std::vector<int> &idLst);
-
+  
   /**
    * Creates a new element block and augments previous owners
    * @param name new element block name
@@ -363,7 +365,6 @@ class NEMOSYS_EXPORT exoMesh {
    */
   void addNdeSetByNdeIdLst(const std::string &name,
                            const std::vector<int> &idLst);
-
   /**
    * Filter nodal coordinates and snap to zero
    * @param tol tolerance used to determine if zero
@@ -377,7 +378,7 @@ class NEMOSYS_EXPORT exoMesh {
   void mergeNodes(double tol = 1e-15);
 
   /**
-   * Scales the nodal coordinates
+   * scales the nodal coordinates 
    * @param sc scale factor
    */
   void scaleNodes(double sc = 1.0);
@@ -400,17 +401,14 @@ class NEMOSYS_EXPORT exoMesh {
    * @param fName file name
    */
   void setFileName(const std::string &fName) { _ifname = fName; }
-
   /**
    * Write to file name specified at construction or using setFileName method
    */
   void write();
-
   /**
    * Resets the class and reads from file name provided
    */
   void read(const std::string &ifname = std::string());
-
   /**
    * Resets the EXODUS database. Clears nodes, element blocks, node sets, side
    * sets.

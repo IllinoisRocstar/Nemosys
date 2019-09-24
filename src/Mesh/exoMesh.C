@@ -969,11 +969,12 @@ void exoMesh::mergeNodes(double tol) {
 }
 
 void exoMesh::scaleNodes(double sc) {
-  using nemAux::operator*;
-  _xCrds = sc * _xCrds;
-  _yCrds = sc * _yCrds;
-  _zCrds = sc * _zCrds;
+    using namespace nemAux;
+    _xCrds=sc*_xCrds;
+    _yCrds=sc*_yCrds;
+    _zCrds=sc*_zCrds;
 }
+
 
 void exoMesh::stitch(const exoMesh &otherMesh) {
   // Append nodes.
@@ -1013,6 +1014,23 @@ void exoMesh::stitch(const exoMesh &otherMesh) {
   // Full update to the database. Also updates element count _numElms
   exoPopulate(true);
 }
+
+elementType exoMesh::getElmBlkType(std::string ebName) const 
+{
+    auto eb=_elmBlks.begin();
+    for (;eb!=_elmBlks.end(); eb++)
+        if (eb->name == ebName)
+            return (eb->eTpe);
+
+    // warning if the element block name is not registered
+    if (eb == _elmBlks.end())
+        std::cerr << "Warning: There is no element block with name "
+            << ebName 
+            << std::endl; 
+
+    return(NEM::MSH::EXOMesh::elementType::OTHER);
+}
+
 
 }  // namespace EXOMesh
 }  // namespace MSH
