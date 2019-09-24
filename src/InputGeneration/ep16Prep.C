@@ -260,6 +260,14 @@ void ep16Prep::wrtPre(const std::string &_tsk, const std::string &__tsk)
     }
     for (auto ei = eb_names.begin(); ei != eb_names.end(); ei++)
     {
+      // skipping TRIANGULAR element blocks
+      NEM::MSH::EXOMesh::elementType et = _mdb->getElmBlkType(*ei);
+      if (et == NEM::MSH::EXOMesh::elementType::TRIANGLE)
+      {
+          std::cerr << "Warnning: TRIANGLE element blocks will be ignored!\n";
+          continue;
+      }
+
       std::string pre = nemAux::findToStr(*ei, "_");
       nemAux::toLower(pre);
       if (pre == "prj")
