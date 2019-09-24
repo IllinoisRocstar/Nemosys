@@ -30,9 +30,9 @@ test:ubuntu16:
     - ctest --output-on-failure
 
 test:ubuntu18:
-  image: ilrocstar/nemosys-test-img-ubuntu18:v2
+  image: ilrocstar/nemosys-test-img-ubuntu18:v2-merc
   tags:
-    - linux
+    - mercury1
   script:
     - mkdir build && cd build
     - CC=mpicc
