@@ -1,7 +1,7 @@
 [
   {
-    "Pack Reference File": "geom_pack_mesh_ref6.vtu",
-    "Surrounding Reference File": "geom_surrounding_mesh_ref6.vtu",
+    "Pack Reference File": "geom_pack_mesh_ref.vtu",
+    "Surrounding Reference File": "geom_surrounding_mesh_ref.vtu",
     "Program Type": "Pack Mesh Generation",
     "Mesh Generation Engine": "packmesh",
     "Mesh File Options": {
@@ -82,9 +82,9 @@
         "Sphere Geometry": 0,
         "Cylinder/Tapered_Cone Geometry": 0,
         "scaleToMeters": 1,
-        "XdirectionCells": 45,
-        "YdirectionCells": 60,
-        "ZdirectionCells": 60,
+        "XdirectionCells": 23,
+        "YdirectionCells": 30,
+        "ZdirectionCells": 30,
         "Block Parameters": {
           "X1": -0.25,
           "Y1": -0.35,

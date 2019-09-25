@@ -23,8 +23,8 @@
         "maxGlobalCells": 2000000,
         "minRefCells": 10,
         "nCellsBetweenLevels": 2,
-        "surfaceRefinementLvlMin": 4,
-        "surfaceRefinementLvlMax": 4,
+        "surfaceRefinementLvlMin": 2,
+        "surfaceRefinementLvlMax": 2,
         "resolveFeatureAngle": -1,
         "locationInMeshX": 0,
         "locationInMeshY": 0,
@@ -72,7 +72,7 @@
             "Radius": 0.0075,
             "Mode": "inside",
             "MinLevel": 0,
-            "MaxLevel": 3
+            "MaxLevel": 2
           },
           {
             "PatchName": "refine2",
@@ -82,7 +82,7 @@
             "Radius": 0.0075,
             "Mode": "inside",
             "MinLevel": 0,
-            "MaxLevel": 3
+            "MaxLevel": 2
           }
         ]
       }
