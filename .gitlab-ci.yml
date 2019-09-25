@@ -8,6 +8,7 @@ test:ubuntu16:
     - CXX=mpicxx
     - >
       cmake ..
+      -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
@@ -39,6 +40,7 @@ test:ubuntu18:
     - CXX=mpicxx
     - >
       cmake ..
+      -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
@@ -74,6 +76,7 @@ test:win10:
     - >
       cmake ..
       -G "Ninja"
+      -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\gmsh;C:\Nemosys\hdf5\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\simmetrix;C:\Nemosys\vtk;C:\Nemosys\zlib"
       -DCMAKE_INSTALL_PREFIX=../install
       -DCMAKE_BUILD_TYPE=Release
