@@ -14,14 +14,14 @@
         "Sphere Geometry": 1,
         "Cylinder/Tapered_Cone Geometry": 0,
         "scaleToMeters": 1,
-        "XdirectionCells": 40,
-        "YdirectionCells": 40,
-        "ZdirectionCells": 40,
+        "XdirectionCells": 10,
+        "YdirectionCells": 10,
+        "ZdirectionCells": 10,
         "Sphere Parameters": {
           "Center X": 1,
           "Center Y": 1,
           "Center Z": 1,
-          "Radius": 1.5,
+          "Radius": 1.0,
           "GradingXdir": 1.5,
           "GradingYdir": 1.5,
           "GradingZdir": 1.5
