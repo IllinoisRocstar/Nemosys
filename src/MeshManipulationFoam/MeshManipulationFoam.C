@@ -27,6 +27,7 @@
 #include <vtkSTLReader.h>
 #include <vtkSTLWriter.h>
 #include <vtkTriangleFilter.h>
+#include <vtkXMLUnstructuredGridReader.h>
 
 // New
 
@@ -103,7 +104,6 @@
 // 1. Two of these methods (mergeMesh and CreatePatch) are little bit pack
 //    mesh specific but can be modified to accept very broad user
 //    arguments and perform mesh manipulations. - Akash
-// 2. Extend cohesive element methods for tetrahedrons.
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
@@ -2104,7 +2104,6 @@ void MeshManipulationFoam::addCohesiveElements(double tol, const std::string out
 
   int numCells = dataSetSurr->GetNumberOfCells();
   int numPoints = dataSetSurr->GetNumberOfPoints();
-
 
   int nDim = 3;
   ANNpointArray pntCrd;

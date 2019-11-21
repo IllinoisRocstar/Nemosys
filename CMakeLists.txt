@@ -1,11 +1,12 @@
+
 # TODO: Make this hierarchical
 cmake_minimum_required(VERSION 3.1)
 
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 43)
-set(NEMOSYS_PATCH_VERSION 2)
+set(NEMOSYS_MINOR_VERSION 45)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -486,6 +487,7 @@ set(NEMOSYS_SRCS
     src/Drivers/NucMeshDriver.C
     src/Drivers/RefineDriver.C
     src/Drivers/TransferDriver.C
+    src/Drivers/PackMeshDriver.C
 
     src/Geometry/convexContainer.C
     src/Geometry/point.C
@@ -585,8 +587,6 @@ endif()
 
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/Drivers/PackMeshDriver.C
-
       src/Mesh/foamMesh.C
 
       src/MeshGeneration/blockMeshGen.C

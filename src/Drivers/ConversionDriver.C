@@ -141,6 +141,7 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
       std::cerr << "Source mesh file is not in GMSH format" << std::endl;
     }
     meshBase *mb = meshBase::exportGmshToVtk(srcmsh);
+    mb->report();
     mb->write(trgmsh);
   } else if (method == "VTK->COBALT") {
     if (srcmsh.find(".vt") != std::string::npos) {
@@ -284,7 +285,6 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
               << " is not a valid option." << std::endl;
     exit(-1);
   }
-
   T.stop();
 }
 
