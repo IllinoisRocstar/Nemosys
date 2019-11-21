@@ -9,7 +9,6 @@
 #include "rocPack.H"
 #include "meshBase.H"
 
-
 TEST(rocPack, NumCellsPeriodicSpheres)
 {
   auto* objrocPck = new NEM::GEO::rocPack("rocOut", "periodicGeom");
@@ -18,8 +17,8 @@ TEST(rocPack, NumCellsPeriodicSpheres)
   if (objrocPck)
     delete objrocPck;
 
-  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtk" );
-  meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtk" );
+  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtu" );
+  meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfCells() >= cmp2->getNumberOfCells()*0.90) &&
               (cmp1->getNumberOfCells() <= cmp2->getNumberOfCells()*1.1));
 
@@ -31,8 +30,8 @@ TEST(rocPack, NumCellsPeriodicSpheres)
 
 TEST(rocPack, NumNodesPeriodicSpheres)
 {  
-  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtk" );
-  meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtk" );
+  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtu" );
+  meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfPoints() >= cmp2->getNumberOfPoints()*0.90) &&
               (cmp1->getNumberOfPoints() <= cmp2->getNumberOfPoints()*1.1));
 
@@ -45,14 +44,14 @@ TEST(rocPack, NumNodesPeriodicSpheres)
 TEST(rocPack, NumCellsBoundaryPacks)
 {
   auto* objrocPck = 
-        new NEM::GEO::rocPack("rocOut", "boundaryPacks");
+        new NEM::GEO::rocPack("rocOut2", "shapes");
   objrocPck->rocPack2Surf();
 
   if (objrocPck)
     delete objrocPck;
 
-  meshBase* cmp1 = meshBase::Create( "boundaryPacks.vtk" );
-  meshBase* cmp2 = meshBase::Create( "shapes_ref.vtk" );
+  meshBase* cmp1 = meshBase::Create( "shapes.vtu" );
+  meshBase* cmp2 = meshBase::Create( "shapes_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfCells() >= cmp2->getNumberOfCells()*0.90) &&
               (cmp1->getNumberOfCells() <= cmp2->getNumberOfCells()*1.1));
 
@@ -64,8 +63,8 @@ TEST(rocPack, NumCellsBoundaryPacks)
 
 TEST(rocPack, NumNodesBoundaryPacks)
 {  
-  meshBase* cmp1 = meshBase::Create( "boundaryPacks.vtk" );
-  meshBase* cmp2 = meshBase::Create( "shapes_ref.vtk" );
+  meshBase* cmp1 = meshBase::Create( "shapes.vtu" );
+  meshBase* cmp2 = meshBase::Create( "shapes_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfPoints() >= cmp2->getNumberOfPoints()*0.90) &&
               (cmp1->getNumberOfPoints() <= cmp2->getNumberOfPoints()*1.1));
 
@@ -73,6 +72,23 @@ TEST(rocPack, NumNodesBoundaryPacks)
     delete cmp1;
   if (cmp2)
     delete cmp2;
+}
+
+
+TEST(rocPack, PeriodicMesh)
+{
+  auto* objrocPck = 
+        new NEM::GEO::rocPack("rocOut_Mesh", "meshPeriodic3D");
+  objrocPck->setPeriodicGeometry();
+  objrocPck->setPeriodicMesh();
+  objrocPck->rocPack2Periodic3D();
+  objrocPck->setNodeLocations(15,30,55);
+  objrocPck->setRandomSurface(25);
+
+  EXPECT_EQ(true, objrocPck->getTestResult());
+
+  if (objrocPck)
+    delete objrocPck;
 }
 
 

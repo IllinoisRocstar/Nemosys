@@ -55,12 +55,7 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson)
   }
   else if (program_type == "Pack Mesh Generation")
   {
-    #ifdef HAVE_CFMSH
     return PackMeshDriver::readJSON(inputjson);
-    #else
-    std::cerr << "Build NEMoSys with CfMesh" << std::endl;
-    exit(1);
-    #endif
   }
   else if (program_type == "Rocstar Remeshing")
   {
