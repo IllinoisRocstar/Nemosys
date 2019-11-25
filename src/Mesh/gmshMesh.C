@@ -166,7 +166,6 @@ void gmshMesh::read(const std::string &fname)
   order = 1;
   std::cout << "Number of points: " << numPoints << std::endl;
   std::cout << "Number of cells: " << numCells << std::endl;
-
 }
 void gmshMesh::write(const std::string &fname) const {
   write(fname, 4.1, false);

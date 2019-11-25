@@ -1,4 +1,5 @@
 #include "Refine.H"
+#include "TransferDriver.H"
 #include "AuxiliaryFunctions.H"
 
 #include <vtkPointData.h>
@@ -189,8 +190,13 @@ void Refine::run(bool transferData)
 
   meshBase *refinedVTK = meshBase::exportGmshToVtk("refined.msh");
   //mesh->setCheckQuality(1);
+
   if (transferData)
-    mesh->transfer(refinedVTK, "Consistent Interpolation");
+  {
+    // mesh->transfer(refinedVTK, "Consistent Interpolation");
+    auto transfer = TransferDriver::CreateTransferObject(mesh, refinedVTK, "Consistent Interpolation");
+    transfer->run(mesh->getNewArrayNames());
+  }
 
   refinedVTK->setFileName(ofname);
   refinedVTK->report();

@@ -123,6 +123,14 @@ if(ENABLE_CFMSH)
   NEM_add_test_executable(PackMesh)
 endif()
 
+if(ENABLE_CONSRV_VOLUME_TRANSFER)
+  NEM_add_test_executable(ConservativeVolumeTransfer)
+endif()
+
+if(ENABLE_CONSRV_SURFACE_TRANSFER)
+  NEM_add_test_executable(ConservativeSurfaceTransfer)
+endif()
+
 NEM_add_test(cubatureInterp Cubature CubatureTest
     cube_refined.vtu
     cube_refinedGaussPoints.vtp
@@ -266,6 +274,20 @@ if(ENABLE_CFMSH)
   NEM_add_test(blockMsh_Box BlockMSH blockMsh_Box blockMsh_Box.json)
   NEM_add_test(blockMsh_Sphere BlockMSH blockMsh_Sphere blockMsh_Sphere.json)
   NEM_add_test(blockMsh_TCone BlockMSH blockMsh_TCone blockMsh_TCone.json)
+endif()
+
+if(ENABLE_CONSRV_VOLUME_TRANSFER)
+  NEM_add_test(conservativeVolumeTransfer ConservativeVolumeTransfer
+    ConservativeVolumeTransferTest
+    sources/sph_source.vtk
+    targets/inner_sphere.vtk)
+endif()
+
+if(ENABLE_CONSRV_SURFACE_TRANSFER)
+  NEM_add_test(conservativeSurfaceTransfer ConservativeSurfaceTransfer
+    ConservativeSurfaceTransferTest
+    sources/plane_source.vtk
+    targets/plane_target.vtk)
 endif()
 
 # Python wrapper testing

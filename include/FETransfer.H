@@ -20,6 +20,20 @@ class NEMOSYS_EXPORT FETransfer : public TransferBase
       std::cout << "FETransfer destroyed" << std::endl;
     }
 
+  public:
+
+    static FETransfer * Create(meshBase* source, meshBase* target)
+    {
+      return new FETransfer(source, target);
+    }
+
+    static std::shared_ptr<FETransfer> CreateShared(meshBase* source, meshBase* target)
+    {
+      return std::shared_ptr<FETransfer>(FETransfer::Create(source, target));
+    }
+
+
+
   // point data transfer
   public:
     /* Transfers point data with arrayID from source mesh to target

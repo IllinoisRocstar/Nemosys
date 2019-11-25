@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.45.0
+Version 0.46.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -47,6 +47,8 @@ in the notes section.
 | ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
+| ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT |
+| ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.

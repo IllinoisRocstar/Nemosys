@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 45)
+set(NEMOSYS_MINOR_VERSION 46)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -123,13 +123,22 @@ opt(METIS "Enable METIS partitioner" ${DEFAULT})
 opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
+opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
+opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 
 # Check for option interdependencies ###########################################
 
-# Epic modules require exodus
-if(ENABLE_EPIC AND NOT ENABLE_EXODUS)
-  message(FATAL_ERROR "Epic preprocessor requires EXODUS II extensions.\
- Set ENABLE_EXODUS to ON.")
+if(WIN32)
+  if(ENABLE_CONSRV_SURFACE_TRANSFER)
+    message(FATAL_ERROR "Conservative surface transfer is not supported on Windows.")
+  endif()
+  if(ENABLE_CONSRV_VOLUME_TRANSFER)
+    message(FATAL_ERROR "Conservative volume transfer is not supported on Windows.")
+  endif()
+endif()
+
+if(ENABLE_CONSRV_VOLUME_TRANSFER AND NOT ENABLE_MPI)
+  message(FATAL_ERROR "Conservative volume transfer requires MPI.")
 endif()
 
 # Check system configuration ###################################################
@@ -402,6 +411,10 @@ if(ENABLE_CFMSH)
   # /CMake 3.13
 endif()
 
+if(ENABLE_CONSRV_SURFACE_TRANSFER)
+  find_package(IMPACT REQUIRED)
+endif()
+
 # For some reason, older versions of cmake fail to find the local gmsh include
 # files when compiling MAdLib header references.
 # TODO: Is this still true in Gmsh 4.2+ and CMake 2.8+?
@@ -443,13 +456,18 @@ list(APPEND WRAPPER_INCLUDE_DIRS ${ANN_INCPATH})
 
 # Find jsoncons
 add_subdirectory(contrib/jsoncons-0.127.0)
-get_target_property(JSONCONS_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
-list(APPEND WRAPPER_INCLUDE_DIRS ${JSONCONS_INCPATH})
+get_target_property(JSONCONSRV_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND WRAPPER_INCLUDE_DIRS ${JSONCONSRV_INCPATH})
 
 if(ENABLE_CFMSH)
   # Find cfMesh
   add_subdirectory(contrib/cfmesh-1.1.2ir1)
-  # TODO: Add incpath and wrapper include dirs
+  # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
+endif()
+
+if(ENABLE_CONSRV_VOLUME_TRANSFER)
+  add_subdirectory(contrib/libsupermesh-1.0.1)
+  # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
 endif()
 
 # Setting library files ########################################################
@@ -540,6 +558,7 @@ set(NEMOSYS_SRCS
 
     src/Transfer/TransferBase.C
     src/Transfer/FETransfer.C
+#   src/Transfer/ConservativeVolumeTransfer.C
 
     src/StlToVtk.C
     src/vtkAnalyzer.C
@@ -601,6 +620,18 @@ if(ENABLE_CFMSH)
       src/MeshManipulationFoam/mergePolyMesh.C
 
       src/MeshQuality/cfmshQualityParams.C
+  )
+endif()
+
+if(ENABLE_CONSRV_VOLUME_TRANSFER)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+    src/Transfer/ConservativeVolumeTransfer.C
+  )
+endif()
+
+if(ENABLE_CONSRV_SURFACE_TRANSFER)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Transfer/ConservativeSurfaceTransfer.C
   )
 endif()
 
@@ -770,6 +801,20 @@ if(ENABLE_CFMSH)
     set(OF_VERSION 7)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
   endif()
+endif()
+
+if(ENABLE_CONSRV_VOLUME_TRANSFER)
+  target_link_libraries(Nemosys PUBLIC supermesh)
+  target_compile_definitions(Nemosys PUBLIC HAVE_SUPERMESH)
+endif()
+
+if(ENABLE_CONSRV_SURFACE_TRANSFER)
+    target_link_libraries(Nemosys
+        PUBLIC
+        IMPACT::SITCOM
+        IMPACT::SurfX
+        IMPACT::SimOUT)
+  target_compile_definitions(Nemosys PUBLIC HAVE_IMPACT)
 endif()
 
 # Generate export header #######################################################

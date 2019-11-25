@@ -4,7 +4,6 @@
 
 #include "vtkMesh.H"
 #include "meshGen.H"
-#include "TransferBase.H"
 #include "meshPartitioner.H"
 #include "Cubature.H"
 #include "SizeFieldGen.H"
@@ -347,54 +346,6 @@ int meshBase::IsArrayName(const std::string &name, const bool pointOrCell) const
     }
   }
   return -1;
-}
-
-/** transfer point data or cell data with given ids from this mesh to target
-**/
-int meshBase::transfer(meshBase *target, const std::string &method,
-                       const std::vector<int> &arrayIDs, bool pointOrCell)
-{
-  std::unique_ptr<TransferBase> transobj
-      = TransferBase::CreateUnique(method, this, target);
-  transobj->setCheckQual(checkQuality);
-  // adding continuity flag, set by this object
-  transobj->setContBool(continuous);
-  if (!pointOrCell) {
-    return transobj->transferPointData(arrayIDs, newArrayNames);
-  } else {
-    return transobj->transferCellData(arrayIDs, newArrayNames);
-  }
-  return 0;
-}
-
-/**
-**/
-int meshBase::transfer(meshBase *target, const std::string &method,
-                       const std::vector<std::string> &arrayNames,
-                       bool pointOrCell)
-{
-  std::vector<int> arrayIDs(arrayNames.size());
-  for (std::size_t i = 0; i < arrayNames.size(); ++i) {
-    int id = IsArrayName(arrayNames[i], pointOrCell);
-    if (id == -1) {
-      std::cout << "Array " << arrayNames[i]
-                << " not found in set of data arrays" << std::endl;
-      exit(1);
-    }
-    arrayIDs[i] = id;
-  }
-  return transfer(target, method, arrayIDs, pointOrCell);
-}
-
-/** transfer all data from this mesh to target
-**/
-int meshBase::transfer(meshBase *target, const std::string &method)
-{
-  std::unique_ptr<TransferBase> transobj
-      = TransferBase::CreateUnique(method, this, target);
-  transobj->setCheckQual(checkQuality);
-  transobj->setContBool(continuous);
-  return transobj->run(newArrayNames);
 }
 
 /** partition mesh into numPartition pieces (static fcn)
@@ -1924,4 +1875,21 @@ void meshBase::convertHexToTetVTK(vtkSmartPointer<vtkDataSet> meshdataSet)
   triFilter->Update();
 
   dataSet = triFilter->GetOutput();
+}
+
+std::vector<int> meshBase::getArrayIDs(std::vector<std::string> arrayNames, bool fromPointArrays)
+{
+  std::vector<int> arrayIDs(arrayNames.size());
+  for(int i = 0; i < arrayNames.size(); ++i)
+  {
+    int id = IsArrayName(arrayNames[i], fromPointArrays);
+    if(id == -1)
+    {
+      std::cerr << "Array " << arrayNames[i]
+                << " not found in set of data arrays." << std::endl;
+      exit(1);
+    }
+    arrayIDs[i] = id;
+  }
+  return arrayIDs;
 }

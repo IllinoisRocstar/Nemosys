@@ -1,0 +1,11 @@
+Info    : Running 'gmsh -1 -bin line.1.geo' [Gmsh 2.8.5, 1 node, max. 1 thread]
+Info    : Started on Wed Feb  3 13:32:35 2016
+Info    : Reading 'line.1.geo'...
+Info    : Done reading 'line.1.geo'
+Info    : Meshing 1D...
+Info    : Meshing curve 1 (Line)
+Info    : Done meshing 1D (0.003 s)
+Info    : 27 vertices 28 elements
+Info    : Writing 'line.1.msh'...
+Info    : Done writing 'line.1.msh'
+Info    : Stopped on Wed Feb  3 13:32:35 2016

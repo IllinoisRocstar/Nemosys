@@ -1,4 +1,5 @@
 #include "OrderOfAccuracy.H"
+#include "TransferDriver.H"
 #include "AuxiliaryFunctions.H"
 
 #include <vtkPointData.h>
@@ -28,8 +29,15 @@ OrderOfAccuracy::OrderOfAccuracy(meshBase *_f1, meshBase *_f2, meshBase *_f3,
   }
   f3->setNewArrayNames(f3ArrNames);
   f2->setNewArrayNames(f2ArrNames);
-  f3->transfer(f2, "Consistent Interpolation", arrayIDs);
-  f2->transfer(f1, "Consistent Interpolation", arrayIDs);
+  
+  // f3->transfer(f2, "Consistent Interpolation", arrayIDs);
+  // f2->transfer(f1, "Consistent Interpolation", arrayIDs);
+
+  auto f3f2Transfer = TransferDriver::CreateTransferObject(f3, f2, "Consistent Interpolation");
+  f3f2Transfer->transferPointData(arrayIDs, f3->getNewArrayNames());
+  auto f2f1Transfer = TransferDriver::CreateTransferObject(f2, f1, "Consistent Interpolation");
+  f2f1Transfer->transferPointData(arrayIDs, f2->getNewArrayNames());
+
   diffF3F2 = computeDiff(f2, f3ArrNames);
   diffF2F1 = computeDiff(f1, f2ArrNames);
   // TODO: Double-check the integer division below.
@@ -63,7 +71,11 @@ std::vector<std::vector<double>> OrderOfAccuracy::computeDiffF3F1()
     f1->unsetCellDataArray(arrname.c_str());
   }
 
-  f3->transfer(f1, "Consistent Interpolation", arrayIDs);
+  // f3->transfer(f1, "Consistent Interpolation", arrayIDs);
+
+  auto f3f1Transfer = TransferDriver::CreateTransferObject(f3, f1, "Consistent Interpolation");
+  f3f1Transfer->transferPointData(arrayIDs, f3->getNewArrayNames());
+
   return computeDiff(f1, f3ArrNames);
 }
 
@@ -189,7 +201,9 @@ void OrderOfAccuracy::computeMeshWithResolution(double gciStar,
   f3->refineMesh("uniform", ave, ofname, false);
   meshBase *refined = meshBase::Create(ofname);
   f3->unsetNewArrayNames();
-  f3->transfer(refined, "Consistent Interpolation", arrayIDs);
+  // f3->transfer(refined, "Consistent Interpolation", arrayIDs);
+  auto f3refinedTransfer = TransferDriver::CreateTransferObject(f3, refined, "Consistent Interpolation");
+  f3refinedTransfer->transferPointData(arrayIDs, f3->getNewArrayNames());
   delete f3;
   f3 = refined;
   computeRichardsonExtrapolation();
@@ -277,7 +291,9 @@ void OrderOfAccuracy::computeRichardsonExtrapolation()
     finePD->AddArray(richardsonDatas[id]);
     finePD->GetArray(names[id].c_str(), richExtrapIDs[id]);
   }
-  f1->transfer(f3, "Consistent Interpolation", richExtrapIDs);
+  // f1->transfer(f3, "Consistent Interpolation", richExtrapIDs);
+  auto f1f3Transfer = TransferDriver::CreateTransferObject(f1, f3, "Consistent Interpolation");
+  f1f3Transfer->transferPointData(arrayIDs, f1->getNewArrayNames());
 }
 
 

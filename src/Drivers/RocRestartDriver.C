@@ -3,6 +3,8 @@
 #include <rocstarCgns.H>
 #include <AuxiliaryFunctions.H>
 
+#include "TransferDriver.H"
+
 RocRestartDriver::RocRestartDriver(const std::vector<std::string>& _fluidNamesRm,
                                    const std::vector<std::string>& _ifluidniNamesRm,
                                    const std::vector<std::string>& _ifluidnbNamesRm,
@@ -130,37 +132,55 @@ void RocRestartDriver::transferStitchedToPartCg(const std::string& transferType)
   // fluid
   for (int i = 0; i < fluidRmMb.size(); ++i)
   {
-    mbObjs[0]->transfer(fluidRmMb[i].get(), transferType); 
+    // mbObjs[0]->transfer(fluidRmMb[i].get(), transferType); 
+    auto transfer = TransferDriver::CreateTransferObject(mbObjs[0], fluidRmMb[i].get(), transferType);
+    transfer->run(mbObjs[0]->getNewArrayNames());
+
     fluidRmCg[i]->overwriteSolData(fluidRmMb[i].get());
   }
 	// burn
 	for (int i = 0; i < burnRmMb.size(); ++i)
 	{
-		mbObjs[1]->transfer(burnRmMb[i].get(), transferType);
+		// mbObjs[1]->transfer(burnRmMb[i].get(), transferType);
+    auto transfer = TransferDriver::CreateTransferObject(mbObjs[1], burnRmMb[i].get(), transferType);
+    transfer->run(mbObjs[1]->getNewArrayNames());
+
 		burnRmCg[i]->overwriteSolData(burnRmMb[i].get());
 	}
 	// iburn
 	for (int i = 0; i < iBurnRmMb.size(); ++i)
 	{
-		mbObjs[2]->transfer(iBurnRmMb[i].get(), transferType);
+		// mbObjs[2]->transfer(iBurnRmMb[i].get(), transferType);
+    auto transfer = TransferDriver::CreateTransferObject(mbObjs[2], iBurnRmMb[i].get(), transferType);
+    transfer->run(mbObjs[2]->getNewArrayNames());
+
 		iBurnRmCg[i]->overwriteSolData(iBurnRmMb[i].get());
 	}
   // ifluid_ni
   for (int i = 0; i < ifluidNiRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNiRmMb[i].get(), transferType);
+    // stitchedSurf->transfer(ifluidNiRmMb[i].get(), transferType);
+    auto transfer = TransferDriver::CreateTransferObject(stitchedSurf, ifluidNiRmMb[i].get(), transferType);
+    transfer->run(stichedSurf->getNewArrayNames());
+
     ifluidNiRmCg[i]->overwriteSolData(ifluidNiRmMb[i].get());
   }
   // ifluid_nb
   for (int i = 0; i < ifluidNbRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidNbRmMb[i].get(), transferType);
+    // stitchedSurf->transfer(ifluidNbRmMb[i].get(), transferType);
+    auto transfer = TransferDriver::CreateTransferObject(stitchedSurf, ifluidNbRmMb[i].get(), transferType);
+    transfer->run(stichedSurf->getNewArrayNames());
+
     ifluidNbRmCg[i]->overwriteSolData(ifluidNbRmMb[i].get());
   }
   // ifluid_b
   for (int i = 0; i < ifluidBRmMb.size(); ++i)
   {
-    stitchedSurf->transfer(ifluidBRmMb[i].get(), transferType);
+    // stitchedSurf->transfer(ifluidBRmMb[i].get(), transferType);
+    auto transfer = TransferDriver::CreateTransferObject(stitchedSurf, ifluidBRmMb[i].get(), transferType);
+    transfer->run(stichedSurf->getNewArrayNames());
+
     ifluidBRmCg[i]->overwriteSolData(ifluidBRmMb[i].get());
   }
 }

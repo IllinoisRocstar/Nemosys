@@ -1,21 +1,52 @@
 #include "TransferBase.H"
 
-#include "FETransfer.H"
+#include "vtkCellData.h"
+#include "vtkPointData.h"
 
-TransferBase *TransferBase::Create(const std::string &method,
-                                   meshBase *_source,
-                                   meshBase *_target)
+ // transfer point data with given names from source to target
+ // (converts names to ids before passing to subclass)
+int TransferBase::transferPointData(const std::vector<std::string> &arrayNames,
+                                    const std::vector<std::string> &newnames)
 {
-  if (method == "Consistent Interpolation")
-  {
-    auto *transobj = new FETransfer(_source, _target);
-    return transobj;
-  }
-  else
-  {
-    std::cerr << "Method " << method << " is not supported\n";
-    std::cerr << "Supported methods are: \n"
-              << "1) Consistent Interpolation" << std::endl;
-    exit(1);
-  }
+  vtkPointData* pointData = source->getDataSet()->GetPointData();
+  std::vector<int> arrayIDs = getArrayIDs(arrayNames, pointData);
+
+  return transferPointData(arrayIDs, newnames);
 }
+
+// transfer cell data with given names from source to target - converts names to ids
+// (see above)
+int TransferBase::transferCellData(const std::vector<std::string> &arrayNames,
+                                   const std::vector<std::string> &newnames)
+{
+  vtkCellData* cellData = source->getDataSet()->GetCellData();
+  std::vector<int> arrayIDs = getArrayIDs(arrayNames, cellData);
+
+  return transferCellData(arrayIDs, newnames);
+}
+
+std::vector<int> TransferBase::getArrayIDs(const std::vector<std::string>& arrayNames, vtkFieldData* fieldData)
+{
+  std::vector<int> arrayIDs;
+  for(auto arrayName : arrayNames)
+  {
+    int arrayIndex = getDataArrayIndex(arrayName, fieldData);
+    if(arrayIndex == -1)
+    {
+      std::cerr << "Array " << arrayName << " not found." << std::endl;
+      exit(1);
+    }
+    arrayIDs.push_back(arrayIndex);
+  }
+  return arrayIDs;
+}
+
+int TransferBase::getDataArrayIndex(const std::string& arrayName, vtkFieldData* data)
+{
+  for(int arrayIndex = 0; arrayIndex < data->GetNumberOfArrays(); ++arrayIndex)
+  {
+    if(arrayName == data->GetArrayName(arrayIndex)) return arrayIndex;
+  }
+  return -1;
+}
+

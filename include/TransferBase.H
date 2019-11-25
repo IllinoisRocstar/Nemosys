@@ -4,7 +4,6 @@
 #include "nemosys_export.h"
 #include "meshBase.H"
 
-
 class NEMOSYS_EXPORT TransferBase
 {
   // constructors and destructors
@@ -22,26 +21,26 @@ class NEMOSYS_EXPORT TransferBase
       std::cout << "TransferBase destroyed" << std::endl;
     }
 
-  // TransferBase factory method
-  public:
-    static TransferBase *
-    Create(const std::string &method, meshBase *source, meshBase *target);
-
-    static std::unique_ptr<TransferBase>
-    CreateUnique(const std::string &method, meshBase *source, meshBase *target)
-    {
-      return std::unique_ptr<TransferBase>(
-          TransferBase::Create(method, source, target));
-    }
-
   // transfer methods
   public:
+
     // transfer point data with given id from source to target
     virtual int transferPointData(const std::vector<int> &arrayIDs,
                                   const std::vector<std::string> &newnames = std::vector<std::string>()) = 0;
     // transfer cell data with given id from source to target
     virtual int transferCellData(const std::vector<int> &arrayIDs,
                                  const std::vector<std::string> &newnames = std::vector<std::string>()) = 0;
+
+     // transfer point data with given names from source to target
+     // (converts names to ids before passing to subclass)
+    int transferPointData(const std::vector<std::string> &arrayNames,
+                          const std::vector<std::string> &newnames = std::vector<std::string>());
+
+    // transfer cell data with given names from source to target - converts names to ids
+    // (see above)
+    int transferCellData(const std::vector<std::string> &arrayNames,
+                         const std::vector<std::string> &newnames = std::vector<std::string>());
+
     // transfer all data from source to target
     virtual int
     run(const std::vector<std::string> &newnames = std::vector<std::string>()) = 0;
@@ -59,6 +58,14 @@ class NEMOSYS_EXPORT TransferBase
     bool checkQual;
     bool continuous; // switch on / off weighted averaging for cell transfer
     double c2cTrnsDistTol;
+
+  private:
+
+    // given array names and field data, return vector of corresponding array ids in the field data
+    std::vector<int> getArrayIDs(const std::vector<std::string>& arrayNames, vtkFieldData* fieldData);
+    // given array name and field data, returns index of array with given name (-1 if not found)
+    int getDataArrayIndex(const std::string& arrayName, vtkFieldData* data);
+
 };
 
 #endif

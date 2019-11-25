@@ -1,5 +1,8 @@
-#include <meshBase.H>
 #include <gtest.h>
+
+#include "TransferDriver.H"
+#include "TransferBase.H"
+#include "meshBase.H"
 
 const char* pntSource;
 const char* cellSource;
@@ -29,7 +32,9 @@ TEST_F(TransferTest, pntDataTransfer)
 {
   std::shared_ptr<meshBase> source = meshBase::CreateShared(pntSource);
   std::string method("Consistent Interpolation");
-  source.get()->transfer(target.get(),method);
+  // source.get()->transfer(target.get(),method);
+  auto transfer = TransferDriver::CreateTransferObject(source.get(), target.get(), method);
+  transfer->run();
   std::shared_ptr<meshBase> ref = meshBase::CreateShared(pntRef);
   target.get()->write("test.vtu");
   EXPECT_EQ(0,diffMesh(target.get(),ref.get()));
@@ -39,7 +44,9 @@ TEST_F(TransferTest, cellDataTransfer)
 {
   std::shared_ptr<meshBase> source = meshBase::CreateShared(cellSource);
   std::string method("Consistent Interpolation");
-  source.get()->transfer(target.get(),method);
+  // source.get()->transfer(target.get(),method);
+  auto transfer = TransferDriver::CreateTransferObject(source.get(), target.get(), method);
+  transfer->run();
   std::shared_ptr<meshBase> ref = meshBase::CreateShared(cellRef);
   EXPECT_EQ(0,diffMesh(target.get(),ref.get()));
 } 
