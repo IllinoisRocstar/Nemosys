@@ -53,8 +53,11 @@ int FETransfer::transferPointData(const std::vector<int> &arrayIDs,
       target->unsetPointDataArray(pd->GetArrayName(arrayID));
     }
   }
+
   std::vector<vtkSmartPointer<vtkDoubleArray>> dasSource(arrayIDs.size());
   std::vector<vtkSmartPointer<vtkDoubleArray>> dasTarget(arrayIDs.size());
+
+  std::cerr << "newnames size : " << newnames.size() << std::endl;
 
   // initializing arrays storing interpolated data
   for (int id = 0; id < arrayIDs.size(); ++id)
@@ -68,11 +71,18 @@ int FETransfer::transferPointData(const std::vector<int> &arrayIDs,
     vtkSmartPointer<vtkDoubleArray> daTarget = vtkSmartPointer<vtkDoubleArray>::New();
     // names and sizing
     if (newnames.empty())
+    {
       daTarget->SetName(pd->GetArrayName(arrayIDs[id]));
+    }
     else
+    {
       daTarget->SetName(newnames[id].c_str());
+    }
     daTarget->SetNumberOfComponents(numComponent);
     daTarget->SetNumberOfTuples(target->getNumberOfPoints());
+
+    std::cout << "num components : " << numComponent << std::endl;
+    std::cout << "num points     : " << target->getNumberOfPoints() << std::endl << std::endl;
     dasSource[id] = daSource;
     dasTarget[id] = daTarget;
   }
@@ -464,6 +474,8 @@ int FETransfer::run(const std::vector<std::string> &newnames)
     std::cerr << "source and target meshes must be initialized" << std::endl;
     exit(1);
   }
+
+  std::cerr << "newnames init size : " << newnames.size() << std::endl;
 
   // transferring point data
   int numArr = source->getDataSet()->GetPointData()->GetNumberOfArrays();

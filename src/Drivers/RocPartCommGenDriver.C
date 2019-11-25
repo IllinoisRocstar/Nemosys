@@ -3,6 +3,7 @@
 #include "meshBase.H"
 #include "cgnsWriter.H"
 #include "AuxiliaryFunctions.H"
+#include "TransferDriver.H"
 
 #include <vtkUnstructuredGrid.h>
 #include <vtkCellData.h>
@@ -126,10 +127,16 @@ void RocPartCommGenDriver::execute(int numPartitions)
     // and transfer some pane data
     this->surfacePartitions[i] = meshBase::CreateShared(unstructuredGrid,
                                                         basename);
+
+    /*
     remeshedSurf->transfer(this->surfacePartitions[i].get(),
                            "Consistent Interpolation",
                            paneDataAndGlobalCellIds,
                            true);
+                           */
+    auto transfer = TransferDriver::CreateTransferObject(remeshedSurf.get(), this->surfacePartitions[i].get(), "Consistent Interpolation");
+    transfer->transferCellData(paneDataAndGlobalCellIds, remeshedSurf->getNewArrayNames());
+
     if (this->writeAllFiles > 0) this->surfacePartitions[i]->write();
 
     // get ghost information for volume partitions
@@ -2026,16 +2033,30 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       if (this->surfWithSol)
       {
         // transfer data to the surf-partition-with-virtual-cells mesh 
+        /*
         this->burnSurfWithSol->transfer(patchOfPartitionWithRealMesh.get(),
                                         "Consistent Interpolation");
+                                        */
+
+        std::shared_ptr<TransferBase> transfer;
+
+        transfer = TransferDriver::CreateTransferObject(this->burnSurfWithSol.get(), patchOfPartitionWithRealMesh.get(), "Consistent Interpolation");
+        transfer->run(this->burnSurfWithSol->getNewArrayNames());
+
         if (this->writeAllFiles > 1)
           patchOfPartitionWithRealMesh.get()->write(
               prefixPath + "_" + std::to_string(me) +
               "_real_patch_" + std::to_string(it->first) + ".vtu");
 
         // transfer data to the surf-partition-with-virtual-cells mesh 
+        /*
         this->surfWithSol->transfer(patchOfPartitionWithVirtualMesh.get(),
                                     "Consistent Interpolation");
+                                    */
+
+        transfer = TransferDriver::CreateTransferObject(this->surfWithSol.get(), patchOfPartitionWithVirtualMesh.get(), "Consistent Interpolation");
+        transfer->run(this->surfWithSol->getNewArrayNames());
+
         if (this->writeAllFiles > 1)
           patchOfPartitionWithVirtualMesh.get()->write(
               prefixPath + "_" + std::to_string(me) +
@@ -2365,8 +2386,13 @@ void RocPartCommGenDriver::writeVolCgns(const std::string &prefix,
   {
     // transfer data to the partition-with-virtual-cells mesh
     this->volWithSol->setContBool(this->smoothC2CTrans);
+
+    /*
     this->volWithSol->transfer(partitionWithVirtualMesh.get(),
                                "Consistent Interpolation");
+                               */
+    auto transfer = TransferDriver::CreateTransferObject(this->volWithSol.get(), partitionWithVirtualMesh.get(), "Consistent Interpolation");
+    transfer->run(this->volWithSol->getNewArrayNames());
 
     // output volumetric information if needed
     if (this->writeAllFiles > 1)

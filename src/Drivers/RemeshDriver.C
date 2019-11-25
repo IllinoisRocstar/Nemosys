@@ -2,6 +2,7 @@
 // Nemosys headers
 #include "RemeshDriver.H"
 #include "AuxiliaryFunctions.H"
+#include "TransferDriver.H"
 
 #include "meshStitcher.H"
 #include "cgnsAnalyzer.H"
@@ -92,8 +93,13 @@ RemeshDriver::RemeshDriver(std::vector<std::string> _fluidNames,
     // transfer patch number to remeshed surface
     std::vector<std::string> transferPaneData{"patchNo", "bcflag",
                                               "cnstr_type"};
+    /*
     this->stitchedSurf->transfer(remeshedSurf.get(), "Consistent Interpolation",
                                  transferPaneData, true);
+                                 */
+    auto transfer = TransferDriver::CreateTransferObject(this->stitchedSurf.get(), remeshedSurf.get(), "Consistent Interpolation");
+    transfer->transferCellData(transferPaneData);
+
     if (writeIntermediateFiles) this->stitchedSurf->write();
     if (writeIntermediateFiles) this->stitchedBurnSurf->write();
   }

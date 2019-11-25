@@ -3,6 +3,13 @@
 #include <iostream>
 #include <string>
 
+#include "FETransfer.H"
+#ifdef HAVE_IMPACT
+#include "ConservativeSurfaceTransfer.H"
+#endif
+#ifdef HAVE_SUPERMESH
+#include "ConservativeVolumeTransfer.H"
+#endif
 #include "AuxiliaryFunctions.H"
 
 //----------------------- Transfer Driver ------------------------------------//
@@ -10,14 +17,20 @@ TransferDriver::TransferDriver(const std::string &srcmsh,
                                const std::string &trgmsh,
                                const std::string &method,
                                const std::string &ofname, bool checkQuality) {
+  std::cerr << "creating src" << std::endl;
   source = meshBase::Create(srcmsh);
+  std::cerr << "creating trg" << std::endl;
   target = meshBase::Create(trgmsh);
+  std::cerr << "creating transfer object" << std::endl;
+  transfer = TransferDriver::CreateTransferObject(source, target, method);
   std::cout << "TransferDriver created" << std::endl;
 
   nemAux::Timer T;
   T.start();
   source->setCheckQuality(checkQuality);
-  source->transfer(target, method);
+  // source->transfer(target, method);
+  auto transfer = TransferDriver::CreateTransferObject(source, target, method);
+  transfer->run(source->getNewArrayNames());
   T.stop();
 
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
@@ -37,8 +50,10 @@ TransferDriver::TransferDriver(const std::string &srcmsh,
   nemAux::Timer T;
   T.start();
   source->setCheckQuality(checkQuality);
-  source->transfer(target, method, arrayNames);
-  // source->write("new.vtu");
+  // source->transfer(target, method, arrayNames);
+  auto transfer = TransferDriver::CreateTransferObject(source, target, method);
+  transfer->transferPointData(source->getArrayIDs(arrayNames), source->getNewArrayNames());
+  source->write("new.vtu");
   T.stop();
 
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
@@ -112,5 +127,39 @@ TransferDriver *TransferDriver::readJSON(const std::string &ifname) {
     return TransferDriver::readJSON(inputjson[0]);
   } else {
     return TransferDriver::readJSON(inputjson);
+  }
+}
+
+std::shared_ptr<TransferBase> TransferDriver::CreateTransferObject(meshBase* srcmsh, meshBase* trgmsh, 
+                                                                   const std::string &method)
+{
+  if(method == "Consistent Interpolation")
+  {
+    return FETransfer::CreateShared(srcmsh, trgmsh);
+  }
+#ifdef HAVE_IMPACT
+  else if(method == "Conservative Surface Transfer")
+  {
+    return ConservativeSurfaceTransfer::CreateShared(srcmsh, trgmsh);
+  }
+#endif
+#ifdef HAVE_SUPERMESH
+  else if(method == "Conservative Volume Transfer")
+  {
+    return ConservativeVolumeTransfer::CreateShared(srcmsh, trgmsh);
+  }
+#endif
+  else
+  {
+    std::cerr << "Method " << method << " is not supported." << std::endl;
+    std::cerr << "Supported methods are : " << std::endl;
+    std::cerr << "1) Consistent Interpolation" << std::endl;
+#ifdef HAVE_IMPACT
+    std::cerr << "2) Conservative Surface Transfer" << std::endl;
+#endif
+#ifdef HAVE_SUPERMESH
+    std::cerr << "3) Conservative Volume Transfer" << std::endl;
+#endif
+    exit(1);
   }
 }

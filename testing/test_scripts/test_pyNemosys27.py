@@ -9,7 +9,6 @@ from inspect import currentframe, getframeinfo
 
 topsrcdir = "@CMAKE_CURRENT_BINARY_DIR@"
 
-
 class TestPyNemosys(unittest.TestCase):
 
     # def setUp(self):
@@ -19,7 +18,7 @@ class TestPyNemosys(unittest.TestCase):
     def testMeshBase(self):
         frameinfo = getframeinfo(currentframe())
         print (str(frameinfo.filename) + '-' + str(frameinfo.lineno))
-        from pyNemosys import meshBase, diffMesh
+        from pyNemosys import meshBase, diffMesh, TransferDriver, TransferBase
 
         # tmpdirname = tempfile.mkdtemp()
         # os.chdir(tmpdirname)
@@ -40,7 +39,11 @@ class TestPyNemosys(unittest.TestCase):
         output_file = str(inputjson['Mesh File Options']['Output Mesh File'])
         source = meshBase.Create(source_file)
         target = meshBase.Create(target_file)
-        source.transfer(target, method_name, array_names)
+        print(source, target, method_name, array_names);
+        for name in array_names:
+            print(name)
+        transfer = TransferDriver.CreateTransferObject(source, target, method_name)
+        transfer.transferPointData(source.getArrayIDs(array_names))
         target.write('transfer_test.vtu')
 
         gold_output_file = 'gold_transfer_test.vtu'

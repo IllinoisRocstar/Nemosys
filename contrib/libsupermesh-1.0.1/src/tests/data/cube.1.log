@@ -1,0 +1,77 @@
+Info    : Running 'gmsh -3 -bin cube.1.geo' [Gmsh 2.8.5, 1 node, max. 1 thread]
+Info    : Started on Wed Feb  3 13:33:00 2016
+Info    : Reading 'cube.1.geo'...
+Info    : Done reading 'cube.1.geo'
+Info    : Meshing 1D...
+Info    : Meshing curve 1 (Line)
+Info    : Meshing curve 2 (Line)
+Info    : Meshing curve 3 (Line)
+Info    : Meshing curve 4 (Line)
+Info    : Meshing curve 5 (Line)
+Info    : Meshing curve 6 (Line)
+Info    : Meshing curve 7 (Line)
+Info    : Meshing curve 8 (Line)
+Info    : Meshing curve 9 (Line)
+Info    : Meshing curve 10 (Line)
+Info    : Meshing curve 11 (Line)
+Info    : Meshing curve 12 (Line)
+Info    : Done meshing 1D (0.007998 s)
+Info    : Meshing 2D...
+Info    : Meshing surface 14 (Plane, Delaunay)
+Info    : Meshing surface 16 (Plane, Delaunay)
+Info    : Meshing surface 18 (Plane, Delaunay)
+Info    : Meshing surface 20 (Plane, Delaunay)
+Info    : Meshing surface 22 (Plane, Delaunay)
+Info    : Meshing surface 24 (Plane, Delaunay)
+Info    : Done meshing 2D (0.010901 s)
+Info    : Meshing 3D...
+Info    : Delaunay Meshing 1 volumes with 1 connected components
+Info    : Meshing volume 26 (Delaunay)
+Delaunizing vertices...
+Delaunay seconds:  0
+Creating surface mesh ...
+Surface mesh seconds:  0
+Recovering boundaries...
+Boundary recovery seconds:  0
+Removing exterior tetrahedra ...
+Exterior tets removal seconds:  0
+Recovering Delaunayness...
+Delaunay recovery seconds:  0
+Optimizing mesh...
+Optimization seconds:  0
+
+Writing nodes.
+Writing elements.
+Writing faces.
+Writing edges.
+
+Output seconds:  0
+Total running seconds:  0
+
+Statistics:
+
+  Input points: 92
+  Input facets: 180
+  Input segments: 270
+  Input holes: 0
+  Input regions: 0
+
+  Mesh points: 92
+  Mesh tetrahedra: 218
+  Mesh faces: 526
+  Mesh edges: 399
+  Mesh faces on facets: 180
+  Mesh edges on segments: 270
+
+Info    : 92 points 399 edges and 180 faces in the initial mesh
+Info    : Found region 26
+Info    : 0 points created - Worst tet radius is 1.69781 (PTS removed 0 0)
+Info    : 3D point insertion terminated (100 points created):
+Info    :  - 0 Delaunay cavities modified for star shapeness
+Info    :  - 0 points could not be inserted
+Info    :  - 274 tetrahedra created in 0 sec. (-2147483648 tets/sec.)
+Info    : Done meshing 3D (0.003999 s)
+Info    : 100 vertices 498 elements
+Info    : Writing 'cube.1.msh'...
+Info    : Done writing 'cube.1.msh'
+Info    : Stopped on Wed Feb  3 13:33:00 2016

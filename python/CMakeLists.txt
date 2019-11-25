@@ -13,6 +13,8 @@ file(COPY pyNemosys.i
           ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
           ${CMAKE_SOURCE_DIR}/include/NemDriver.H
           ${CMAKE_SOURCE_DIR}/include/TransferDriver.H
+          ${CMAKE_SOURCE_DIR}/include/TransferBase.H
+          ${CMAKE_SOURCE_DIR}/include/FETransfer.H
           ${CMAKE_SOURCE_DIR}/include/RefineDriver.H
           ${CMAKE_SOURCE_DIR}/include/MeshGenDriver.H
           ${CMAKE_SOURCE_DIR}/include/MeshQualityDriver.H

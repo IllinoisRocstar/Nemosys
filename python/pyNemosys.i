@@ -2,11 +2,15 @@
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_map.i"
+%include "std_shared_ptr.i"
+
 %{
 #include "nemosys_export.h"
 #include "meshBase.H"
 #include "vtkMesh.H"
 #include "TransferDriver.H"
+#include "TransferBase.H"
+#include "FETransfer.H"
 #include "NemDriver.H"
 #include "RefineDriver.H"
 #include "MeshGenDriver.H"
@@ -18,6 +22,10 @@
 #include "meshingParams.H"
 %}
 
+%shared_ptr(TransferBase)
+%shared_ptr(FETransfer)
+%shared_ptr(CreateTransferObject)
+%shared_ptr(CreateShared)
 
 %template(vectorString) std::vector<std::string>;
 %template(doubleV) std::vector<double>;
@@ -26,16 +34,17 @@
 %template(cellMap) std::map<int, std::vector<double>>;
 %template(meshBaseV) std::vector<meshBase *>;
 
-
 %ignore CreateUnique;
-%include "meshBase.H"
 
+%include "meshBase.H"
 
 %include "vtkMesh.H"
 
-
 int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
+%include "TransferBase.H"
+
+%include "FETransfer.H"
 
 %include "NemDriver.H"
 
@@ -72,7 +81,6 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
     %}
 };
-
 
 %include "TransferDriver.H"
 

@@ -1,4 +1,5 @@
 #include "vtkMesh.H"
+#include "TransferDriver.H"
 
 #include <sstream>
 
@@ -198,9 +199,11 @@ vtkMesh::vtkMesh(const std::string &fname)
       setFileName(fname);
       numCells = dataSet->GetNumberOfCells();
       numPoints = dataSet->GetNumberOfPoints();
-      vtkMesh vtkMesh_tmp(vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname)),
+      vtkMesh* vtkMesh_tmp = new vtkMesh(vtkDataSet::SafeDownCast(ReadALegacyVTKFile(fname)),
                           fname);
-      vtkMesh_tmp.transfer(this, "Consistent Interpolation");
+      // vtkMesh_tmp.transfer(this, "Consistent Interpolation");
+      auto transfer = TransferDriver::CreateTransferObject(vtkMesh_tmp, this, "Consistent Interpolation");
+      transfer->run(vtkMesh_tmp->getNewArrayNames());
       std::cout << "vtkMesh constructed" << std::endl;
     }
     else

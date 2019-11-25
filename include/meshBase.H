@@ -427,47 +427,6 @@ class NEMOSYS_EXPORT meshBase
     void setMetadata(vtkSmartPointer<vtkModelMetadata> _metadata){metadata = _metadata;}
     vtkSmartPointer<vtkModelMetadata> getMetadata(){return metadata;}
 
-
-  
-  // --- data transfer
-  public:
-
-    /** @brief transfer point data or cell data with given id from this mesh to
-            target.
-        @param target <>
-        @param method can be "Consistent Interpolation", "Mortar Element",
-            "RBF", etc. Only "Consistent Interpolation" has been implemented
-        @param arrayIDs <>
-        @param pointOrCell boolean that tells the method whether to transfer
-            point (False) or cell (True) data.
-        @return <>
-    **/
-    int transfer(meshBase *target, const std::string &method,
-                 const std::vector<int> &arrayIDs, bool pointOrCell = false);
-
-    /** @brief transfer point data or cell data with given id from this mesh to
-            target.
-        @param target <>
-        @param method can be "Consistent Interpolation", "Mortar Element",
-            "RBF", etc. Only "Consistent Interpolation" has been implemented
-        @param arrayNames <>
-        @param pointOrCell boolean that tells the method whether to transfer
-            point (False) or cell (True) data.
-        @return <>
-    **/
-    int transfer(meshBase *target,
-                 const std::string &method,
-                 const std::vector<std::string> &arrayNames,
-                 bool pointOrCell = false);
-
-    /** @brief transfer all point and cell data from this mesh to target
-        @param target <>
-        @param method can be "Consistent Interpolation", "Mortar Element",
-            "RBF", etc. Only "Consistent Interpolation" has been implemented
-        @return <>
-    **/
-    int transfer(meshBase *target, const std::string &method);
-
   // --- integration
   public:
     /** @brief integrate arrays in arrayIDs over the mesh.
@@ -766,6 +725,14 @@ class NEMOSYS_EXPORT meshBase
     /** @brief clear the new array names if set
     **/
     void unsetNewArrayNames() { newArrayNames.clear(); }
+
+    /** @brief get new array names for use in transfer
+     **/
+    std::vector<std::string> getNewArrayNames() { return newArrayNames; }
+
+    /** @brief given array names, return corresponding ids
+     **/
+    std::vector<int> getArrayIDs(std::vector<std::string> arrayNames, bool fromPointArrays = false);
 
     /** @brief Converts given hexahedral VTK dataset into tetrahedral mesh
                 and stores it into dataSet variable.
