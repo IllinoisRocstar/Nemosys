@@ -11,13 +11,13 @@
 
 TEST(rocPack, NumCellsPeriodicSpheres)
 {
-  auto* objrocPck = new NEM::GEO::rocPack("rocOut", "periodicGeom");
+  auto* objrocPck = new NEM::GEO::rocPack("rocOut", "periodicGeom.vtu");
   objrocPck->rocPack2Surf();
 
   if (objrocPck)
     delete objrocPck;
 
-  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtu" );
+  meshBase* cmp1 = meshBase::Create( "periodicGeom_oldMSH.vtu" );
   meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfCells() >= cmp2->getNumberOfCells()*0.90) &&
               (cmp1->getNumberOfCells() <= cmp2->getNumberOfCells()*1.1));
@@ -30,7 +30,7 @@ TEST(rocPack, NumCellsPeriodicSpheres)
 
 TEST(rocPack, NumNodesPeriodicSpheres)
 {  
-  meshBase* cmp1 = meshBase::Create( "periodicGeom.vtu" );
+  meshBase* cmp1 = meshBase::Create( "periodicGeom_oldMSH.vtu" );
   meshBase* cmp2 = meshBase::Create( "periodicGeom_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfPoints() >= cmp2->getNumberOfPoints()*0.90) &&
               (cmp1->getNumberOfPoints() <= cmp2->getNumberOfPoints()*1.1));
@@ -44,13 +44,13 @@ TEST(rocPack, NumNodesPeriodicSpheres)
 TEST(rocPack, NumCellsBoundaryPacks)
 {
   auto* objrocPck = 
-        new NEM::GEO::rocPack("rocOut2", "shapes");
+        new NEM::GEO::rocPack("rocOut2", "shapes.vtu");
   objrocPck->rocPack2Surf();
 
   if (objrocPck)
     delete objrocPck;
 
-  meshBase* cmp1 = meshBase::Create( "shapes.vtu" );
+  meshBase* cmp1 = meshBase::Create( "shapes_oldMSH.vtu" );
   meshBase* cmp2 = meshBase::Create( "shapes_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfCells() >= cmp2->getNumberOfCells()*0.90) &&
               (cmp1->getNumberOfCells() <= cmp2->getNumberOfCells()*1.1));
@@ -63,7 +63,7 @@ TEST(rocPack, NumCellsBoundaryPacks)
 
 TEST(rocPack, NumNodesBoundaryPacks)
 {  
-  meshBase* cmp1 = meshBase::Create( "shapes.vtu" );
+  meshBase* cmp1 = meshBase::Create( "shapes_oldMSH.vtu" );
   meshBase* cmp2 = meshBase::Create( "shapes_ref.vtu" );
   EXPECT_TRUE((cmp1->getNumberOfPoints() >= cmp2->getNumberOfPoints()*0.90) &&
               (cmp1->getNumberOfPoints() <= cmp2->getNumberOfPoints()*1.1));
