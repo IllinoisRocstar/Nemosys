@@ -241,7 +241,8 @@ PackMeshDriver::PackMeshDriver(
     const bool &enableMultiPhysGrps, const bool &wantGeometryOnly,
     const bool &createCohesive, const bool &enablePatches,
     const std::vector<double> &transferMesh, const bool &customDomain,
-    const std::vector<double> &domainBounds, const int& mshAlgorithm) {
+    const std::vector<double> &domainBounds, const int &mshAlgorithm,
+    const bool &enableDefaultOutput) {
   auto *objrocPck = new NEM::GEO::rocPack(ifname, ofname);
 
   if ((enable2PhysGrps) && (enableMultiPhysGrps)) {
@@ -259,6 +260,9 @@ PackMeshDriver::PackMeshDriver(
 
   objrocPck->translateAll(transferMesh[0], transferMesh[1], transferMesh[2]);
   objrocPck->setMeshingAlgorithm(mshAlgorithm);
+
+  if (enable2PhysGrps && createCohesive)
+    objrocPck->sanityCheckOn();
 
   if (customDomain)
     objrocPck->setCustomDomain(domainBounds);
@@ -287,6 +291,9 @@ PackMeshDriver::PackMeshDriver(
   if (enablePatches)
     objrocPck->enableSurfacePatches();
 
+  if (enableDefaultOutput)
+    objrocPck->enableDefOuts();
+
   if (setPeriodicMesh) {
     if (customDomain) {
       objrocPck->removeBoundaryVolumes();
@@ -300,7 +307,8 @@ PackMeshDriver::PackMeshDriver(
   }
 
   if (createCohesive)
-    objrocPck->createCohesiveElements(ofname + ".msh", "OutCohesive.vtu");
+    objrocPck->createCohesiveElements(ofname + "_oldMSH.msh",
+                                      "OutCohesive.vtu");
 
   if (objrocPck)
     delete objrocPck;
@@ -1527,13 +1535,13 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       bool customDomain = false;
 
       double meshSize =
-          inputjson["Meshing Parameters"].get_with_default("Mesh Size", 0);
-      int mshAlgorithm = 
+          inputjson["Meshing Parameters"].get_with_default("Mesh Size", 0.);
+      int mshAlgorithm =
           inputjson["Meshing Parameters"].get_with_default("Mesh Algorithm", 1);
       bool scaleVolumes = inputjson["Meshing Parameters"].get_with_default(
           "Scale Geometries", false);
       double scaleValue =
-          inputjson["Meshing Parameters"].get_with_default("Scale Value", 1);
+          inputjson["Meshing Parameters"].get_with_default("Scale Value", 1.);
       bool rmvBndryPacks = inputjson["Meshing Parameters"].get_with_default(
           "Remove geometries on boundary", false);
       bool enable2PhysGrps = inputjson["Meshing Parameters"].get_with_default(
@@ -1547,43 +1555,47 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Enable Patches", false);
       bool setPeriodicGeom = inputjson["Meshing Parameters"].get_with_default(
           "Set Periodic Geometry", false);
+      bool enableOutBool = inputjson["Meshing Parameters"].get_with_default(
+          "Enable Default Outputs", false);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
         if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_X"))
-        domainBounds[0] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_X"]
-                .as<double>();
+                "Initial_X"))
+          domainBounds[0] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_X"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_Y"))
-        domainBounds[1] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Y"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Initial_Y"))
+          domainBounds[1] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Y"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_Z"))
-        domainBounds[2] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Z"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Initial_Z"))
+          domainBounds[2] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Z"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_X"))
-        domainBounds[3] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_X"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_X"))
+          domainBounds[3] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_X"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_Y"))
-        domainBounds[4] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_Y"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_Y"))
+          domainBounds[4] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_Y"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_Z"))
-        domainBounds[5] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_Z"]
-                .as<double>();
-      }
-      else
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_Z"))
+          domainBounds[5] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_Z"]
+                  .as<double>();
+      } else
         customDomain = false;
 
       if (inputjson["Meshing Parameters"].contains("TransferMesh_X"))
@@ -1598,18 +1610,16 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
         transferMesh[2] =
             inputjson["Meshing Parameters"]["TransferMesh_Z"].as<double>();
 
-      
-
-      if (mshAlgorithm == 1 || mshAlgorithm == 2 || mshAlgorithm == 5 
-                || mshAlgorithm == 6 || mshAlgorithm == 7 || mshAlgorithm == 8
-                || mshAlgorithm == 9 ){
+      if (mshAlgorithm == 1 || mshAlgorithm == 2 || mshAlgorithm == 5 ||
+          mshAlgorithm == 6 || mshAlgorithm == 7 || mshAlgorithm == 8 ||
+          mshAlgorithm == 9) {
 
       } else {
-        std::cerr << "Valid choices for 2D meshing algorithm are "
-                  << " 1 (MeshAdapt), 2 (Automatic),  5 (Delunay), "
-                  << " 6 (Frontal Delunay), 7 (BAMG), 8 (Frontal Delunay for Quads)"
-                  << " 9 (Packing of Parallelograms)."
-                  << std::endl;
+        std::cerr
+            << "Valid choices for 2D meshing algorithm are "
+            << " 1 (MeshAdapt), 2 (Automatic),  5 (Delunay), "
+            << " 6 (Frontal Delunay), 7 (BAMG), 8 (Frontal Delunay for Quads)"
+            << " 9 (Packing of Parallelograms)." << std::endl;
         throw;
       }
 
@@ -1617,7 +1627,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           ifname, ofname, scaleVolumes, scaleValue, meshSize, rmvBndryPacks,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
-          transferMesh, customDomain, domainBounds, mshAlgorithm);
+          transferMesh, customDomain, domainBounds, mshAlgorithm,
+          enableOutBool);
       return pckmshdrvobj;
     } else {
       bool setPeriodicMesh = true;
@@ -1631,13 +1642,13 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       bool customDomain = false;
 
       double meshSize =
-          inputjson["Meshing Parameters"].get_with_default("Mesh Size", 0);
-      int mshAlgorithm = 
+          inputjson["Meshing Parameters"].get_with_default("Mesh Size", 0.);
+      int mshAlgorithm =
           inputjson["Meshing Parameters"].get_with_default("Mesh Algorithm", 1);
       bool scaleVolumes = inputjson["Meshing Parameters"].get_with_default(
           "Scale Geometries", false);
       double scaleValue =
-          inputjson["Meshing Parameters"].get_with_default("Scale Value", 1);
+          inputjson["Meshing Parameters"].get_with_default("Scale Value", 1.);
       bool rmvBndryPacks = inputjson["Meshing Parameters"].get_with_default(
           "Remove geometries on boundary", false);
       bool enable2PhysGrps = inputjson["Meshing Parameters"].get_with_default(
@@ -1651,43 +1662,47 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Enable Patches", false);
       bool setPeriodicGeom = inputjson["Meshing Parameters"].get_with_default(
           "Set Periodic Geometry", false);
-      
+      bool enableOutBool = inputjson["Meshing Parameters"].get_with_default(
+          "Enable Default Outputs", false);
+
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
         if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_X"))
-        domainBounds[0] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_X"]
-                .as<double>();
+                "Initial_X"))
+          domainBounds[0] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_X"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_Y"))
-        domainBounds[1] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Y"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Initial_Y"))
+          domainBounds[1] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Y"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
-              "Initial_Z"))
-        domainBounds[2] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Z"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Initial_Z"))
+          domainBounds[2] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Initial_Z"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_X"))
-        domainBounds[3] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_X"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_X"))
+          domainBounds[3] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_X"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_Y"))
-        domainBounds[4] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_Y"]
-                .as<double>();
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_Y"))
+          domainBounds[4] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_Y"]
+                  .as<double>();
 
-      if (inputjson["Meshing Parameters"]["Custom Domain"].contains("Length_Z"))
-        domainBounds[5] =
-            inputjson["Meshing Parameters"]["Custom Domain"]["Length_Z"]
-                .as<double>();
-      }
-      else
+        if (inputjson["Meshing Parameters"]["Custom Domain"].contains(
+                "Length_Z"))
+          domainBounds[5] =
+              inputjson["Meshing Parameters"]["Custom Domain"]["Length_Z"]
+                  .as<double>();
+      } else
         customDomain = false;
 
       if (inputjson["Meshing Parameters"].contains("TransferMesh_X"))
@@ -1702,13 +1717,14 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
         transferMesh[2] =
             inputjson["Meshing Parameters"]["TransferMesh_Z"].as<double>();
 
-      if (mshAlgorithm == 1 || mshAlgorithm == 4 || mshAlgorithm == 7 
-                || mshAlgorithm == 9 || mshAlgorithm == 10 ){
+      if (mshAlgorithm == 1 || mshAlgorithm == 4 || mshAlgorithm == 7 ||
+          mshAlgorithm == 9 || mshAlgorithm == 10) {
 
       } else {
-        std::cerr << "Valid choices for 3D meshing algorithm are "
-                  << " 1 (Delunay), 4 (Frontal), 7 (MMG3D), 9 (R-Tree), 10 (HXT)"
-                  << std::endl;
+        std::cerr
+            << "Valid choices for 3D meshing algorithm are "
+            << " 1 (Delunay), 4 (Frontal), 7 (MMG3D), 9 (R-Tree), 10 (HXT)"
+            << std::endl;
         throw;
       }
 
@@ -1716,7 +1732,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           ifname, ofname, scaleVolumes, scaleValue, meshSize, rmvBndryPacks,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
-          transferMesh, customDomain, domainBounds, mshAlgorithm);
+          transferMesh, customDomain, domainBounds, mshAlgorithm,
+          enableOutBool);
       return pckmshdrvobj;
     }
   } else {
