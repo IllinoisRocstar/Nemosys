@@ -170,11 +170,11 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     std::vector<double> getVrtYCrd();
     double getVrtZCrd(int vrtxId);
     std::vector<double> getVrtZCrd();
-    std::vector<int> getElementConnectivity(int elemId);
+    std::vector<cgsize_t> getElementConnectivity(int elemId);
 
     // other general purpose mesh query (such as virtual meshes)
     void getSectionNames(std::vector<std::string> &secNames);
-    void getSectionConn(std::string secName, std::vector<int> &conn, int &nElm);
+    void getSectionConn(std::string secName, std::vector<cgsize_t> &conn, int &nElm);
     vtkSmartPointer<vtkDataSet> getSectionMesh(std::string secName);
 
     // get solution information
@@ -255,8 +255,8 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     CGNS_ENUMT(TemperatureUnits_t) tempU;
     CGNS_ENUMT(AngleUnits_t) angleU;
     // grid ints
-    int rmin[3], rmax[3];
-    int cgCoreSize[9];
+    cgsize_t rmin[3], rmax[3];
+    cgsize_t cgCoreSize[9];
     int indexFile, indexBase;
     int indexZone, indexCoord;
     int indexSection;
@@ -275,7 +275,7 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     double timeLabel;
     // mesh data
     std::vector<double> xCrd, yCrd, zCrd;
-    std::vector<int> elemConn;
+    std::vector<cgsize_t> elemConn;
     // solution data
     bool solutionDataPopulated;
     int nSolution;

@@ -257,7 +257,10 @@ class TestPyNemosys(unittest.TestCase):
         # The test will check the number of cells and points and ensure they
         # are within a 0.5% tolerance.
 
-        divisor = 200  # 0.5% = 1 / 200
+        if os.name == 'nt':
+            divisor = 39  # 2.56% = 1 / 39
+        else:
+            divisor = 200  # 0.5% = 1 / 200
 
         refpoints = refMesh.getNumberOfPoints()
         refcells = refMesh.getNumberOfCells()
@@ -297,7 +300,10 @@ class TestPyNemosys(unittest.TestCase):
         # The test will check the number of cells and points and ensure they
         # are within a 0.5% tolerance.
 
-        divisor = 200  # 0.5% = 1 / 200
+        if os.name == 'nt':
+            divisor = 39  # 2.56% = 1 / 39
+        else:
+            divisor = 200  # 0.5% = 1 / 200
 
         refpoints = refMesh.getNumberOfPoints()
         refcells = refMesh.getNumberOfCells()

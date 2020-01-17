@@ -1,5 +1,5 @@
 test:ubuntu16:
-  image: ilrocstar/nemosys-test-img:v3
+  image: ilrocstar/nemosys-test-img:v4-merc
   tags:
     - linux
   script:
@@ -9,7 +9,7 @@ test:ubuntu16:
     - >
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
+      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/netgen"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=ON
@@ -25,15 +25,16 @@ test:ubuntu16:
       -DENABLE_CFMSH=ON
       -DENABLE_CGNS=ON
       -DENABLE_HDF5=ON
+      -DENABLE_OPENCASCADE=OFF
       -DSIMMETRIX_LIB_DIR=/Nemosys/12.0-190512/lib/x64_rhel7_gcc48
     - make -j$(nproc)
     - make install
     - ctest --output-on-failure
 
 test:ubuntu18:
-  image: ilrocstar/nemosys-test-img-ubuntu18:v2-merc
+  image: ilrocstar/nemosys-test-img-ubuntu18:v5-merc
   tags:
-    - mercury1
+    - nemosys
   script:
     - mkdir build && cd build
     - CC=mpicc
@@ -41,7 +42,7 @@ test:ubuntu18:
     - >
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/opencascade;/Nemosys-Deps/netgen"
+      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/opencascade/;/Nemosys-Deps/gmsh/;/Nemosys-Deps/netgen/;/Nemosys-Deps/vtk/;/opt/openfoam7/;"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=ON
@@ -57,13 +58,13 @@ test:ubuntu18:
       -DENABLE_CFMSH=ON
       -DENABLE_CGNS=ON
       -DENABLE_HDF5=ON
-      -DSIMMETRIX_LIB_DIR=/Nemosys/12.0-190512/lib/x64_rhel7_gcc48
+      -DENABLE_OPENCASCADE=OFF
     - make -j$(nproc)
     - make install
     - ctest --output-on-failure
 
 test:win10:
-  image: ilrocstar/nemosys-test-img-win:v1
+  image: ilrocstar/nemosys-test-img-win:v2
   tags:
     - windows
   script:
@@ -78,7 +79,8 @@ test:win10:
       -G "Ninja"
       -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\gmsh;C:\Nemosys\hdf5\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\simmetrix;C:\Nemosys\vtk;C:\Nemosys\zlib"
-      -DCMAKE_INSTALL_PREFIX=../install
+      -DZLIB_ROOT="C:\Nemosys\zlib"
+      -DCMAKE_INSTALL_PREFIX="C:\install"
       -DCMAKE_BUILD_TYPE=Release
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=OFF
@@ -90,14 +92,37 @@ test:win10:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_SIMMETRIX=ON
+      -DENABLE_SIMMETRIX=OFF
       -DENABLE_CFMSH=OFF
       -DENABLE_OPENCASCADE=OFF
       -DENABLE_CGNS=ON
       -DENABLE_HDF5=ON
-      -DSIMMETRIX_LIB_DIR="C:\Nemosys\simmetrix\12.0-190622\lib\x86_win_vc14_shared"
+      -DSIMMETRIX_LIB_DIR="C:\Nemosys\simmetrix\12.0-190622\lib\x64_win_vc14_shared"
       -DPYTHON_EXECUTABLE="C:\Python\python.exe"
       -DSWIG_EXECUTABLE="C:\Nemosys\swigwin-3.0.12\swig.exe"
     - ninja -j ${Env:NUMBER_OF_PROCESSORS}
     - ninja install
     - ctest --output-on-failure
+
+test:centos7:
+  image: ilrocstar/nemosys-centos7:v3
+  tags:
+    - nemosys
+  script:
+    - mkdir build && cd build
+    - >
+      cmake3 ..
+      -DCMAKE_BUILD_TYPE=Release
+      -DCMAKE_INSTALL_PREFIX="../Install"
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_EXODUS=ON
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON=ON
+      -DENABLE_CFMSH=ON
+      -DBoost_INCLUDE_DIR=/usr/include/boost169/
+      -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
+      -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
+      -DENABLE_OPENCASCADE=OFF
+    - make -j$(nproc)
+    - make install
+    - ctest3 --output-on-failure

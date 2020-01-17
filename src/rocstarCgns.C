@@ -239,7 +239,7 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t> rmtElemConn = cgObj->getElementConnectivity(iElem);
     // just adding all elements
     elmDataMask.push_back(true);
     nNewElem++;
@@ -248,7 +248,7 @@ void rocstarCgns::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx)
   }
   std::cout << "Found " << nNewElem << " new elements.\n";
    
-  // switching conncetivity table to global
+  // switching connectivity table to global
   for (int iIdx=0; iIdx<newElemConn.size(); iIdx++){
     newElemConn[iIdx] = newVrtIdx[newElemConn[iIdx]-1];
   }
@@ -387,7 +387,7 @@ void rocstarCgns::stitchMe(rocstarCgns* cgObj)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t> rmtElemConn = cgObj->getElementConnectivity(iElem);
     
     // just adding all elements
     elmDataMask.push_back(true);
@@ -430,7 +430,7 @@ int rocstarCgns::getNZone(int indx)
 std::string rocstarCgns::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(cgObj->getIndexFile(), 
                cgObj->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -440,7 +440,7 @@ std::string rocstarCgns::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 std::string rocstarCgns::getZoneName(int cgIdx, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(myCgObjs[cgIdx]->getIndexFile(), 
                myCgObjs[cgIdx]->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -514,9 +514,9 @@ std::vector<double> rocstarCgns::getZoneCoords(cgnsAnalyzer* cgObj, int zoneIdx,
   return(crds);
 }
 
-std::vector<int> rocstarCgns::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
+std::vector<cgsize_t> rocstarCgns::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
 {
-  std::vector<int> conn;
+  std::vector<cgsize_t> conn;
   int secidx = 1;
   char secname[33];
   CGNS_ENUMT(ElementType_t) et;

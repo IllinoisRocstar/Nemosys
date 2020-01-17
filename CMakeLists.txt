@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 46)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_PATCH_VERSION 2)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -67,6 +67,9 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# Installation Directories
+include(GNUInstallDirs)
 
 # Setting options ##############################################################
 
@@ -186,7 +189,7 @@ else()
 endif()
 get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
 if(WIN32) # Remove the .lib suffix
-  string(REGEX REPLACE "\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+  string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
   set(VTK_COMMON_CORE_LIB ":${VTK_COMMON_CORE_LIB}")
@@ -228,7 +231,7 @@ if(ENABLE_CGNS)
   find_file(CGNS_HDR cgnslib.h)
   get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
   get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
-  list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH})
+  list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH} ${CGNS_LIB_PATH}/../bin)
   list(APPEND WRAPPER_INCLUDE_DIRS ${CGNS_INCPATH})
   message(STATUS "cgns include path ${CGNS_INCPATH}")
   message(STATUS "cgns libs ${CGNS_LIB}")
@@ -299,7 +302,7 @@ if(ENABLE_NETGEN)
     find_package(ZLIB REQUIRED) # Find zlib headers since Netgen doesn't
     include_directories(${ZLIB_INCLUDE_DIRS})
     get_filename_component(ZLIB_LIB_PATH ${ZLIB_LIBRARIES} PATH)
-    list(APPEND LIBRARY_DIRS ${ZLIB_LIB_PATH})
+    list(APPEND LIBRARY_DIRS ${ZLIB_LIB_PATH} ${ZLIB_LIB_PATH}/../bin)
     list(APPEND WRAPPER_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
     message(STATUS "zlib include path ${ZLIB_INCLUDE_DIRS}")
     message(STATUS "zlib libs ${ZLIB_LIBRARIES}")
@@ -596,6 +599,9 @@ if(ENABLE_EPIC)
 endif()
 
 if(ENABLE_SIMMETRIX)
+  if(NOT ENABLE_CGNS)
+      MESSAGE(FATAL_ERROR "If enabling simmetrix, you MUST enable cgns as well.")
+  endif(NOT ENABLE_CGNS)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Drivers/RemeshDriver.C
 
@@ -642,7 +648,7 @@ add_library(r8 ${R8_SRCS})
 target_include_directories(r8
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include/nemosys>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nemosys>
 )
 
 # Build interp library
@@ -655,7 +661,7 @@ target_link_libraries(interp
 target_include_directories(interp
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include/nemosys>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nemosys>
 )
 
 # Build Nemosys library
@@ -672,7 +678,7 @@ target_link_libraries(Nemosys
 target_include_directories(Nemosys
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include/nemosys>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nemosys>
 )
 target_include_directories(Nemosys SYSTEM
     PUBLIC
@@ -844,23 +850,23 @@ set_target_properties(Nemosys PROPERTIES VERSION ${NEMOSYS_VERSION}
 
 # Headers
 install(FILES ${r8_INC_FILES} ${interp_INC_FILES} ${Nemosys_INC_FILES}
-    DESTINATION include/nemosys)
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys)
 
 # Libraries
 install(TARGETS r8 interp Nemosys
     EXPORT Nemosys
-    RUNTIME DESTINATION bin
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 # Export Nemosys as a CMake package
 install(FILES NemosysConfig.cmake
-    DESTINATION lib/cmake/Nemosys)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Nemosys)
 install(EXPORT Nemosys
     NAMESPACE Nemosys::
-    DESTINATION lib/cmake/Nemosys)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Nemosys)
 
 # Setting utility files ########################################################
 
@@ -954,7 +960,7 @@ if(ENABLE_BUILD_UTILS)
     target_link_libraries(dtkTutorial Nemosys
         ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
     install(TARGETS dtkTutorial
-        RUNTIME DESTINATION bin
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif()
@@ -963,13 +969,13 @@ endif()
 # Install utilities ############################################################
 
 install(TARGETS nemosysRun
-    RUNTIME DESTINATION bin
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 if(ENABLE_BUILD_UTILS)
   install(TARGETS xmlDump
-      RUNTIME DESTINATION bin
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
       GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -980,14 +986,14 @@ if(ENABLE_BUILD_UTILS)
                     rocRemesh
                     rocSurfRemesh
                     mshTransfer
-        RUNTIME DESTINATION bin
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif()
 
   if(ENABLE_DTK)
     install(TARGETS dtkTutorial
-        RUNTIME DESTINATION bin
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
   endif()
@@ -1018,7 +1024,7 @@ if(BUILD_DOCUMENTATION)
       DEPENDS Nemosys ${doxy_extra_files}
       COMMENT "Generating documentation")
   add_custom_target(docs DEPENDS ${documentation})
-  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION share)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION ${CMAKE_INSTALL_DATAROOTDIR})
 endif()
 
 # Perform testing ##############################################################

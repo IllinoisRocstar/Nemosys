@@ -30,14 +30,14 @@ COPY . /home/TPLs/
 RUN yum install /home/TPLs/gmsh-4.5.1-Linux64.rpm -y
 RUN yum install /home/TPLs/openfoam7-7.20190902-Linux.rpm -y
 RUN yum install /home/TPLs/VTK-7.1.0-Linux.rpm -y
-RUN yum install /home/TPLs/netgen-6.1-dev-Linux.rpm -y
+RUN yum install /home/TPLs/netgen-6.2-20011-Linux.rpm -y
 
 RUN echo "source /opt/OpenFOAM-7/etc/bashrc" >> /etc/skel/.bashrc
 
+ENV BASH_ENV "/etc/skel/.bashrc"
+
 RUN useradd -U --shell /bin/bash -m -k /etc/skel -d /home/user -u 35553 -c "Build Account" build
 USER build
-
-ENV BASH_ENV "/etc/skel/.bashrc"
 
 WORKDIR /home/user/
 ENTRYPOINT /bin/bash

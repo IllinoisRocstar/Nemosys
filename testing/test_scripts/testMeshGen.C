@@ -37,12 +37,27 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
   // The test will check the number of cells and points and ensure they
   // are within a 0.5% tolerance.
 
+#ifdef _WIN32
+  nemId_t divisor = 39;  // 2.56 % = 1 / 39
+#else
   nemId_t divisor = 200;  // 0.5% = 1 / 200
+#endif
 
   nemId_t refpoints = refMesh->getNumberOfPoints();
   nemId_t refcells = refMesh->getNumberOfCells();
   nemId_t newpoints = newMesh->getNumberOfPoints();
   nemId_t newcells = newMesh->getNumberOfCells();
+
+    std::cout << "refpoints = " << refpoints << std::endl;
+    std::cout << "refcells  = " << refcells  << std::endl;
+    std::cout << "newPoints = " << newpoints << std::endl;
+    std::cout << "newcells  = " << newcells  << std::endl;
+    std::cout << "Percent difference in points = " << 100.0 *
+        (std::abs(static_cast<double>(refpoints) - static_cast<double>(newpoints))
+            / static_cast<double>(refpoints)) << std::endl;
+    std::cout << "Percent difference in cells = " << 100.0 *
+              (std::abs(static_cast<double>(refcells) - static_cast<double>(newcells))
+               / static_cast<double>(refcells)) << std::endl;
 
   return !(refpoints - refpoints / divisor <= newpoints &&
            newpoints <= refpoints + refpoints / divisor &&

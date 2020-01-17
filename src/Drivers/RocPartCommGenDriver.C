@@ -1495,22 +1495,23 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       coords = patchOfPartitionWithVirtualMesh->getVertCrds();
 
       std::vector<nemId_t> cgConnReal_nemId_t(it->second->getConnectivities());
-      // FIXME: Narrowing conversion from nemId_t to int.
-      std::vector<int> cgConnReal(cgConnReal_nemId_t.begin(),
+      // FIXME: Narrowing conversion from nemId_t to cgsize_t, which is int
+      /// by default, long int if CGNS is built with 64-bit explicitly enabled
+      std::vector<cgsize_t> cgConnReal(cgConnReal_nemId_t.begin(),
                                   cgConnReal_nemId_t.end());
-      for (int &tmpit : cgConnReal)
+      for (auto &tmpit : cgConnReal)
         tmpit += 1;
 
       // define virtual connectivities and 1-base indexing
       std::vector<nemId_t> cgConnVirtual_nemId_t(
           patchOfPartitionWithVirtualMesh->getConnectivities());
       // FIXME: Narrowing conversion from nemId_t to int.
-      std::vector<int> cgConnVirtual(cgConnVirtual_nemId_t.begin(),
+      std::vector<cgsize_t> cgConnVirtual(cgConnVirtual_nemId_t.begin(),
                                      cgConnVirtual_nemId_t.end());
 
       cgConnVirtual.erase(cgConnVirtual.begin(),
                           cgConnVirtual.begin() + cgConnReal.size());
-      for (int &tmpit : cgConnVirtual)
+      for (auto &tmpit : cgConnVirtual)
         tmpit += 1;
 
       // swap ordering of triangles
@@ -1771,7 +1772,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       std::map<int, int> new2Old;
 
       // sort local and global real connectivities
-      std::vector<int> cgConnRealTmp;
+      std::vector<cgsize_t> cgConnRealTmp;
       std::vector<int> cgConnRealGlobal1Tmp;
       std::vector<int> cgConnRealGlobal2Tmp;
       std::vector<int> cgConnRealGlobal3Tmp;
@@ -1809,7 +1810,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       }
 
       // sort local and global virtual connectivities
-      std::vector<int> cgConnVirtualTmp;
+      std::vector<cgsize_t> cgConnVirtualTmp;
       std::vector<int> cgConnVirtualGlobal1Tmp;
       std::vector<int> cgConnVirtualGlobal2Tmp;
       std::vector<int> cgConnVirtualGlobal3Tmp;
@@ -2305,21 +2306,21 @@ void RocPartCommGenDriver::writeVolCgns(const std::string &prefix,
   // define real connectivities and 1-base indexing
   std::vector<nemId_t> cgConnReal_nemId_t(partitions[proc]->getConnectivities());
   // FIXME: Narrowing conversion from nemId_t to int.
-  std::vector<int> cgConnReal(cgConnReal_nemId_t.begin(),
+  std::vector<cgsize_t> cgConnReal(cgConnReal_nemId_t.begin(),
                               cgConnReal_nemId_t.end());
-  for (int &it : cgConnReal)
+  for (auto &it : cgConnReal)
     it += 1;
 
   // define virtual connectivities and 1-base indexing
   std::vector<nemId_t> cgConnVirtual_nemId_t(
       partitionWithVirtualMesh->getConnectivities());
   // FIXME: Narrowing conversion from nemId_t to int.
-  std::vector<int> cgConnVirtual(cgConnVirtual_nemId_t.begin(),
+  std::vector<cgsize_t> cgConnVirtual(cgConnVirtual_nemId_t.begin(),
                                  cgConnVirtual_nemId_t.end());
 
   cgConnVirtual.erase(cgConnVirtual.begin(),
                       cgConnVirtual.begin() + cgConnReal.size());
-  for (int &it : cgConnVirtual)
+  for (auto &it : cgConnVirtual)
     it += 1;
 
   writer->setSection(":T4:real", CGNS_ENUMV(TETRA_4), cgConnReal);
@@ -3255,8 +3256,8 @@ void RocPartCommGenDriver::dimWriter(int proc,
 
 // Write surface information for Rocstar dimension file
 void RocPartCommGenDriver::dimSurfWriter(int proc,
-                                         const std::vector<int> &cgConnReal,
-                                         const std::vector<int> &cgConnVirtual,
+                                         const std::vector<cgsize_t> &cgConnReal,
+                                         const std::vector<cgsize_t> &cgConnVirtual,
                                          int patchNo)
 {
   // Write com file for this proc
@@ -3523,10 +3524,10 @@ void RocPartCommGenDriver::txtWriter() const
 }
 
 
-void RocPartCommGenDriver::swapTriOrdering(std::vector<int> &connVec) const
+void RocPartCommGenDriver::swapTriOrdering(std::vector<cgsize_t> &connVec) const
 {
   // Change ordering from counter-clockwise to clockwise convention
-  std::vector<int> connVecTmp;
+  std::vector<cgsize_t> connVecTmp;
   int ind = 1;
   int tmpInd = -1;
   for (auto itr = connVec.begin(); itr != connVec.end(); ++itr)

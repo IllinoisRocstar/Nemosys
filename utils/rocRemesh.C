@@ -287,10 +287,12 @@ int main(int argc, char* argv[])
      cgWrtObj->setGridXYZ(mPart->getCrds(iCg, MAd::M_getVrtXCrds(mesh)), 
 			  mPart->getCrds(iCg, MAd::M_getVrtYCrds(mesh)), 
 			  mPart->getCrds(iCg, MAd::M_getVrtZCrds(mesh)));
-     // define connctivity
+     // define connectivity
+     std::vector<int> mPartConn_int(mPart->getConns(iCg));
+     std::vector<cgsize_t> mPartConn_cgType(mPartConn_int.begin(), mPartConn_int.end());
      cgWrtObj->setSection(cgObj1->getSectionName(), 
 			  (CGNS_ENUMT(ElementType_t)) cgObj1->getElementType(),
-			  mPart->getConns(iCg));
+			  mPartConn_cgType);
      // define vertex and cell data 
      std::map<std::string, CGNS_ENUMT(GridLocation_t)> slnNLMap = cgObj1->getSolutionNameLocMap();
      for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
