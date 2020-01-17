@@ -946,7 +946,7 @@ void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t > rmtElemConn = cgObj->getElementConnectivity(iElem);
     
     // just adding all elements
     elmDataMask.push_back(true);
@@ -1101,7 +1101,7 @@ void gridTransfer::stitchMe(gridTransfer* cgObj)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t> rmtElemConn = cgObj->getElementConnectivity(iElem);
     
     // just adding all elements
     elmDataMask.push_back(true);
@@ -1144,7 +1144,7 @@ int gridTransfer::getNZone(int indx)
 std::string gridTransfer::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(cgObj->getIndexFile(), 
                cgObj->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -1154,7 +1154,7 @@ std::string gridTransfer::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 std::string gridTransfer::getZoneName(int cgIdx, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(nowCgObjs[cgIdx]->getIndexFile(), 
                nowCgObjs[cgIdx]->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -1228,9 +1228,9 @@ std::vector<double> gridTransfer::getZoneCoords(cgnsAnalyzer* cgObj, int zoneIdx
   return(crds);
 }
 
-std::vector<int> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
+std::vector<cgsize_t> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
 {
-  std::vector<int> conn;
+  std::vector<cgsize_t> conn;
   int secidx = 1;
   char secname[33];
   CGNS_ENUMT(ElementType_t) et;

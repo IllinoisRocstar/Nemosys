@@ -49,3 +49,5 @@ compile_commands.json
 .vs
 # Code Analysis
 *.tmp
+
+*build*/

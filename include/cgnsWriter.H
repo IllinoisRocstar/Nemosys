@@ -75,7 +75,7 @@ class NEMOSYS_EXPORT cgnsWriter {
     void setVolCellFacesNumber(int nVolCellFaces);
     void setPconnGhostDescriptor(int ghostDescriptor);
     void
-    setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<int>::v1d elmConn);
+    setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<cgsize_t>::v1d elmConn);
     void setGlobalSection(std::string sName, CGNS_ENUMT(ElementType_t) st,
                           vect<int>::v1d elmConn);
     void setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst);
@@ -156,7 +156,7 @@ class NEMOSYS_EXPORT cgnsWriter {
     vect<std::string>::v1d gsectionNames;
     vect<CGNS_ENUMT(ElementType_t)>::v1d sectionTypes;
     vect<CGNS_ENUMT(ElementType_t)>::v1d gsectionTypes;
-    vect<int>::v2d elmConns;
+    vect<cgsize_t>::v2d elmConns;
     vect<int>::v2d gelmConns;
     vect<int>::v1d nCells;
     vect<int>::v1d gnCells;

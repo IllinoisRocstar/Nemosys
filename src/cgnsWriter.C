@@ -301,7 +301,7 @@ int cgnsWriter::getNSections()
 }
 
 // Set local patch sections
-void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<int>::v1d elmConn)
+void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<cgsize_t>::v1d elmConn)
 {
   nSection++;
   sectionNames.push_back(sName);
@@ -986,7 +986,7 @@ void cgnsWriter::writeZoneToFile()
     int nBdy = 0;
     if (!sectionNames[iSec].compare("Empty:t3:virtual"))
     {
-      int tmp_arr[3] = {0, 0, 0};
+      cgsize_t tmp_arr[3] = {0, 0, 0};
       if (cg_section_write(indexFile, indexBase, indexZone, (sectionNames[iSec]).c_str(),
                            sectionTypes[iSec], elm_start, elm_end, nBdy, 
                            &tmp_arr[0], &indexSection)) cg_error_exit();

@@ -100,13 +100,13 @@ namespace MAd {
   // -------------------------------------------------------------------
   void GmshModel::importFromModel()
   {
-    std::set<GRegion*, GEntityLessThan>::iterator rit = model->firstRegion();
+    std::set<GRegion*, GEntityPtrLessThan*>::iterator rit = model->firstRegion();
     for (; rit != model->lastRegion(); rit++) getRegionByTag((*rit)->tag());
-    std::set<GFace*, GEntityLessThan>::iterator fit = model->firstFace();
+    std::set<GFace*, GEntityPtrLessThan*>::iterator fit = model->firstFace();
     for (; fit != model->lastFace(); fit++) getFaceByTag((*fit)->tag());
-    std::set<GEdge*, GEntityLessThan>::iterator eit = model->firstEdge();
+    std::set<GEdge*, GEntityPtrLessThan*>::iterator eit = model->firstEdge();
     for (; eit != model->lastEdge(); eit++) getEdgeByTag((*eit)->tag());
-    std::set<GVertex*, GEntityLessThan>::iterator vit = model->firstVertex();
+    std::set<GVertex*, GEntityPtrLessThan*>::iterator vit = model->firstVertex();
     for (; vit != model->lastVertex(); vit++) getVertexByTag((*vit)->tag());
   }
 

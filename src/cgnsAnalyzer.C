@@ -262,7 +262,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   std::cout << "Total number of rind nodes = " << cgRindNodeIds.size() << "\n";
 
   // reading coordinates
-  int one = 1;
+  cgsize_t one = 1;
   if (zoneType == CGNS_ENUMV(Unstructured))
   {
     // reading coordinates X
@@ -314,7 +314,8 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
   // reading connectivity only if CG_Unstructured
   if (zoneType == CGNS_ENUMV(Unstructured))
   {
-    int indexSection, eBeg, eEnd, nBdry, parentFlag;
+    int indexSection, nBdry, parentFlag;
+    cgsize_t eBeg, eEnd;
     char sectionname[33];
     if (cg_nsections(indexFile, indexBase, indexZone, &nSection) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error();
@@ -628,9 +629,9 @@ std::vector<double> cgnsAnalyzer::getVrtZCrd()
     connectivity of the element.
   
 */
-std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
+std::vector<cgsize_t> cgnsAnalyzer::getElementConnectivity(int elemId)
 {
-  std::vector<int> elmConn;
+  std::vector<cgsize_t> elmConn;
   int nNdeElm = 0;
   if (elemId > nElem)
   {
@@ -675,7 +676,8 @@ std::vector<int> cgnsAnalyzer::getElementConnectivity(int elemId)
 void cgnsAnalyzer::getSectionNames(std::vector<std::string> &names)
 {
   // reading section names 
-  int eBeg, eEnd, nBdry, parentFlag;
+  int nBdry, parentFlag;
+  cgsize_t eBeg, eEnd;
   CGNS_ENUMT(ElementType_t) secTyp;
   char sectionname[33];
   if (cg_nsections(indexFile, indexBase, indexZone, &nSection) != CG_OK)
@@ -709,7 +711,8 @@ CGNS_ENUMT(ElementType_t) cgnsAnalyzer::getSectionType(std::string secName)
   int iSec = it-secNames.begin();
 
   // reading section info 
-  int eBeg, eEnd, nBdry, parentFlag;
+  int nBdry, parentFlag;
+  cgsize_t eBeg, eEnd;
   CGNS_ENUMT(ElementType_t) secTyp;
   char sectionname[33];
   if (cg_section_read(indexFile, indexBase, indexZone, iSec, sectionname, 
@@ -718,7 +721,7 @@ CGNS_ENUMT(ElementType_t) cgnsAnalyzer::getSectionType(std::string secName)
   return secTyp;
 }
 
-void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<int>& conn, int& nElm)
+void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<cgsize_t>& conn, int& nElm)
 {
     std::vector<std::string> secNames;
     getSectionNames(secNames);
@@ -730,7 +733,8 @@ void cgnsAnalyzer::getSectionConn(std::string secName, std::vector<int>& conn, i
         return;
     }
     // reading connectivities
-    int eBeg, eEnd, nBdry, parentFlag, nVrtxElem;
+    int nBdry, parentFlag, nVrtxElem;
+    cgsize_t eBeg, eEnd;
     char sectionname[33];
     CGNS_ENUMT(ElementType_t) secTyp;
     int iSec = it-secNames.begin()+1;
@@ -776,8 +780,8 @@ vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
     if (cg_rind_read(rdata))
         cg_error_exit();
     int nRindNde = rdata[1];
-    int one=1;
-    int rmax = nVertex + nRindNde;
+    cgsize_t one=1;
+    cgsize_t rmax = nVertex + nRindNde;
     // reading all coordinates
     std::vector<double> xCrdR, yCrdR, zCrdR;
     xCrdR.resize(rmax, 0);
@@ -793,7 +797,7 @@ vtkSmartPointer<vtkDataSet> cgnsAnalyzer::getSectionMesh(std::string secName)
                       "CoordinateZ", CGNS_ENUMV(RealDouble), &one, &rmax, &zCrdR[0]) != CG_OK)
       std::cerr << "Error in load, " << cg_get_error() << std::endl;
     int nElmSec;
-    std::vector<int> connSec;
+    std::vector<cgsize_t> connSec;
     getSectionConn(secName, connSec, nElmSec);
     CGNS_ENUMT(ElementType_t) secTyp = getSectionType(secName);
 
@@ -1135,7 +1139,7 @@ solution_type_t cgnsAnalyzer::getSolutionData(std::string sName, std::vector<dou
                     &dt, fieldName) != CG_OK)
     std::cerr << "Error in reading solution, " << cg_get_error() << std::endl;
   // reading actual data from the file
-  int one = 1;
+  cgsize_t one = 1;
   dataType = solutionGridLocation[slnCntr];
   if (isUnstructured)
   {
@@ -1397,7 +1401,7 @@ void cgnsAnalyzer::exportToVTKMesh()
     for (int i = 0; i < nElem; ++i)
     {
       vtkSmartPointer<vtkIdList> vtkElmIds = vtkSmartPointer<vtkIdList>::New();
-      std::vector<int> cgnsElmIds(getElementConnectivity(i));
+      std::vector<cgsize_t> cgnsElmIds(getElementConnectivity(i));
       vtkElmIds->SetNumberOfIds(cgnsElmIds.size());
       for (int j = 0; j < cgnsElmIds.size(); ++j)
       {
@@ -1854,7 +1858,7 @@ void cgnsAnalyzer::stitchMesh(cgnsAnalyzer* inCg, bool withFields)
   int nNewElem = 0;
   for (int iElem = 0; iElem < inCg->getNElement(); ++iElem)
   {
-    std::vector<int> rmtElemConn = inCg->getElementConnectivity(iElem);
+    std::vector<cgsize_t> rmtElemConn = inCg->getElementConnectivity(iElem);
 
     // just adding all elements
     elmDataMask.push_back(true);
@@ -2101,7 +2105,7 @@ void cgnsAnalyzer::cleanRind()
      throw;
    }
    // remove rind elements
-   std::vector<int> newElemConn;
+   std::vector<cgsize_t> newElemConn;
    for (int iElm=0; iElm <nElem; iElm++)
    {
      if (isCgRindCell(iElm+1))
