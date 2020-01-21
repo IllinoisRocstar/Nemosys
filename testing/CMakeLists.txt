@@ -226,8 +226,16 @@ NEM_add_test(qHull QHull "")
 # Disable in Win due to CI/CD's Gmsh lacking OpenCASCADE support.
 if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
 NEM_add_test(nucMesh NucMesh NucMeshTest
-    atr_example_arrays.json
-    atr_example_REF.msh
+    simple_circles_test.json
+    simple_circles_test_REF.msh
+    concentric_circles_test.json
+    concentric_circles_test_REF.msh
+    concentric_circles_test_2.json
+    concentric_circles_test_2_REF.msh
+    simple_polygons_test.json
+    simple_polygons_test_REF.msh
+    concentric_polygons_test.json
+    concentric_polygons_test_REF.msh
 )
 
 NEM_add_test(RocPackPeriodic RocPackPeriodic rocPackPeriodicTest

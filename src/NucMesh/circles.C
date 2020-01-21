@@ -14,7 +14,8 @@ namespace GEO {
   Arguments:  center point,
               radii for each circle,
               mesh type for each circle
-              number of elements if structured (radial, circum), region name */
+              number of elements if structured (radial, circum),
+              region name */
 
 namespace occ = gmsh::model::occ;
 namespace mesh = gmsh::model::mesh;
@@ -23,11 +24,11 @@ circles::circles(std::vector<double> cen, std::vector<double> rad,
                  std::vector<std::string> mtype,
                  std::vector<std::pair<int, int>> el,
                  std::vector<std::string> name) {
-  _center = std::move(cen);      // Center of circle
-  _radii = std::move(rad);       // Radii for concentric circles
-  _meshType = std::move(mtype);  // Mesh type for each layer/circle
-  _elems = std::move(el);        // Number of element for transfinite
-  _names = std::move(name);      // Physical group names (Region names)
+  _center = std::move(cen);     // Center of circle
+  _radii = std::move(rad);      // Radii for concentric circles
+  _meshType = std::move(mtype); // Mesh type for each layer/circle
+  _elems = std::move(el);       // Number of element for transfinite
+  _names = std::move(name);     // Physical group names (Region names)
 }
 
 void circles::draw() {
@@ -47,24 +48,20 @@ void circles::draw() {
   // loop through radii to create other points
   int j = 1;
   for (const auto &i : _radii) {
-    std::vector<double> rad = {_center[0] - i, _center[1], _center[2]};
-    occ::addPoint(rad[0], rad[1], rad[2], 0, p + j);
+    occ::addPoint(_center[0] - i, _center[1], _center[2], 0, p + j);
     j++;
-
-    rad = {_center[0] + i, _center[1], _center[2]};
-    occ::addPoint(rad[0], rad[1], rad[2], 0, p + j);
+    occ::addPoint(_center[0] + i, _center[1], _center[2], 0, p + j);
     j++;
   }
   // calling sync to add points
   occ::synchronize();
-  // std::cout << "Points" << std::endl;
 
   //----------- Create Lines/Arcs ------------//
   //------------------------------------------//
 
-  int numLines = 4 * _radii.size() - 2;  // number of lines
-  int i = 1;                             // index of Line points
-  int q = 1;                             // index of Circle points
+  int numLines = 4 * _radii.size() - 2; // number of lines
+  int i = 1;                            // index of Line points
+  int q = 1;                            // index of Circle points
 
   // Get max Line ID
   int l = getMaxID(1) + 1;
@@ -103,7 +100,7 @@ void circles::draw() {
 
   // Line Loop ID identifier, to be defined...
   int ll;
-  int nSurf = (_radii.size() - 1) * 2;  // number of surfaces
+  int nSurf = (_radii.size() - 1) * 2; // number of surfaces
   std::vector<int> lineTags;
 
   // If only 2 lines, make a disk
@@ -135,12 +132,14 @@ void circles::draw() {
     h = numLines - 1;
     for (int i = nSurf / 2; i < nSurf; i++) {
       if (i < nSurf / 2 + 2) {
-        lineTags = {l + j, l + h - 1, l + j + 2, l + h};
+        // lineTags = {l + j, l + h - 1, l + j + 2, l + h};
+        lineTags = {l + j, l + h, l + j + 2, l + h - 1};
         occ::addCurveLoop(lineTags, ll + i);
         j = j + 4;
         h--;
       } else {
-        lineTags = {l + j, l + h - 2, l + j + 2, l + h};
+        // lineTags = {l + j, l + h - 2, l + j + 2, l + h};
+        lineTags = {l + j, l + h, l + j + 2, l + h - 2};
         occ::addCurveLoop(lineTags, ll + i);
         j = j + 4;
         h = h - 2;
@@ -165,14 +164,14 @@ void circles::draw() {
 
   // Inner surfaces
   i = 0;
-  occ::addSurfaceFilling(ll + i + nSurf, s + i);
+  occ::addPlaneSurface({ll + i + nSurf}, s + i);
   _surfaces.push_back(s + i);
 
   // All other surfaces
   for (int i = 1; i < nSurf / 2 + 1; i++) {
-    occ::addSurfaceFilling(ll + i - 1, s + i);
+    occ::addPlaneSurface({ll + i - 1}, s + i);
     _surfaces.push_back(s + i);
-    occ::addSurfaceFilling(ll + i + nSurf / 2 - 1, s + i + nSurf / 2);
+    occ::addPlaneSurface({ll + i + nSurf / 2 - 1}, s + i + nSurf / 2);
     _surfaces.push_back(s + i + nSurf / 2);
   }
 
@@ -188,14 +187,13 @@ void circles::draw() {
 // Applies the mesh type (tri,quad,struct) to surfaces
 void circles::applyMeshType() {
   // Gather all the lines of the circles for meshing
-  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
+  std::vector<std::vector<std::pair<int, int>>> allLines; // lines of circles
   std::vector<std::pair<int, int>> circleLines;
 
   std::vector<std::pair<int, int>> v = {{2, _surfaces[0]}};
 
   // Get the boundary (lines) of the _center surface
   gmsh::model::getBoundary(v, circleLines, false, false, false);
-
   allLines.push_back(circleLines);
   circleLines.clear();
 
@@ -205,9 +203,7 @@ void circles::applyMeshType() {
                                            {2, _surfaces[i + 1]}};
 
     gmsh::model::getBoundary(v2, circleLines, false, false, false);
-
     allLines.push_back(circleLines);
-
     circleLines.clear();
   }
 
@@ -221,19 +217,10 @@ void circles::applyMeshType() {
       // declare containers for meshing lines
       std::vector<int> circum, radial;
 
-      // Radial lines
+      for (int j = 0; j < allLines[i].size(); j = j + 2)
+        radial.push_back(allLines[i][j].second);
       for (int j = 1; j < allLines[i].size(); j = j + 2)
-        if (j < allLines[i].size() / 2)
-          radial.push_back(allLines[i][j].second);
-        else
-          radial.push_back(allLines[i][j - 1].second);
-
-      // circumferential lines
-      for (int j = 0; j < allLines[i].size() - 1; j = j + 2)
-        if (j < allLines[i].size() / 2)
-          circum.push_back(allLines[i][j].second);
-        else
-          circum.push_back(allLines[i][j + 1].second);
+        circum.push_back(allLines[i][j].second);
 
       for (const auto &j : radial)
         mesh::setTransfiniteCurve(j, _elems[i].first + 1);
@@ -262,15 +249,14 @@ void circles::applyMeshType() {
       //--------------------------------------//
       continue;
     } else {
-      std::cout << "Mesh Type not recognized. Using Triangles." << std::endl;
+      std::cout << "Warning: Mesh Type not recognized. Using Triangles."
+                << std::endl;
     }
   }
 }
 
 std::map<int, int> circles::getPhysSurf(std::map<std::string, int> phystag_map,
                                         std::map<int, int> physSurf_map) {
-  //------------Physical Groups------------//
-  //---------------------------------------//
   int physTag;
   if (!_names.empty()) {
     for (int i = 0; i < _names.size(); ++i) {
@@ -290,7 +276,6 @@ std::map<int, int> circles::getPhysSurf(std::map<std::string, int> phystag_map,
       }
     }
   }
-  // occ::synchronize();
   return physSurf_map;
 }
 
@@ -317,5 +302,5 @@ int circles::getMaxID(int dim) {
   }
 }
 
-}  // namespace GEO
-}  // namespace NEM
+} // namespace GEO
+} // namespace NEM
