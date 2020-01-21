@@ -1,15 +1,16 @@
 #ifndef NEMOSYS_NUCMESHDRIVER_H_
 #define NEMOSYS_NUCMESHDRIVER_H_
 
-#include "nemosys_export.h"
+#include "AuxiliaryFunctions.H"
 #include "NemDriver.H"
+#include "nemosys_export.h"
 #include "shape.H"
 
 /**
  * @brief Driver class to parse input JSON file and create mixed-element meshes.
  */
 class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
- public:
+public:
   /**
    * @brief Constructs the geometry and generates mesh from input JSON
    * @param shapes Geometry and Mesh JSON object from input JSON file
@@ -25,12 +26,18 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
    */
   static NucMeshDriver *readJSON(const jsoncons::json &inputjson);
 
- public:
+public:
+  /**
+ * @brief Parses the Geometry and Mesh data of JSON
+ * @param shapes Geometry and Mesh JSON object
+ */
+  void parseGeomAndMesh(jsoncons::json shapes);
+
   /**
    * @brief Parses the global options data of JSON
    * @param opts Global Options JSON object
    */
-  static void parseOptions(jsoncons::json opts);
+  void parseOptions(jsoncons::json opts);
 
   /**
    * @brief Parses the saved objects data of JSON
@@ -39,10 +46,21 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
   void parseSavedObjects(jsoncons::json savedObj);
 
   /**
+   * @brief Augments the shapes radii so that the meshed area is conserved
+   * @param obj JSON object
+   * @param shapetype The shape type (circle,polygon) being evaluated
+   * @param tolerance The iterative solver tolerance
+   */
+  jsoncons::json correctMeshArea(jsoncons::json obj, std::string shapetype,
+                                 double tolerance = 1e-8);
+
+  /**
    * @brief Parses circle data of JSON and constructs Circles
    * @param circ Circle JSON object
+   * @param conserving Boolean for whether mesh conservation is being done for
+   * that circle
    */
-  void makeCircles(jsoncons::json circ);
+  void makeCircles(jsoncons::json circ, bool conserving = false);
 
   /**
    * @brief Parses polygon data of JSON and constructs Polygon
@@ -57,7 +75,7 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
    */
   void makeArray(jsoncons::json arr);
 
- private:
+private:
   std::map<int, NEM::GEO::shape *>
       shape_map; /**< map for shape index and shape
                   * @note used for identifying surface ids
@@ -74,6 +92,17 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
       savedobj_map; /**< map for Saved Objects declared in input JSON file
                      * @note contents of map are Alias, Shape Type, and Shape
                      * JSON object */
+  bool extrude;     /**< bool to construct 3D mesh */
+  bool gui;         /**< bool to open Gmsh gui */
+  std::vector<int> layers;     /** vector of 3D mesh layers */
+  std::vector<double> heights; /** vector of 3D mesh layer heights */
+
+  double paused_time; /** accumulates the paused time while GUI is open */
+
+  /**
+  * @brief Opens the Gmsh GUI
+  */
+  void openGUI();
 };
 
-#endif  // NEMOSYS_NUCMESHDRIVER_H_
+#endif // NEMOSYS_NUCMESHDRIVER_H_

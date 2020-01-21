@@ -246,6 +246,11 @@ class NEMOSYS_EXPORT exoMesh {
     return _sdeSetNames;
   };
 
+  /**
+   * Returns problem dimension
+   */
+  int getDimension() const { return _numDim; }
+
   // fast modification
  public:
 
@@ -256,6 +261,14 @@ class NEMOSYS_EXPORT exoMesh {
    */
   void setBlockName(int idx, const std::string &name) {
     _elmBlks[idx].name = name;
+  }
+
+  /**
+   * Sets/changes the problem dimensionality
+   * @param dim dimension of problem 2D/3D
+   */
+  void setDimension(int dim) {
+    _numDim = dim;
   }
 
   // adding nodes, element blocks, node sets, and side sets
@@ -433,6 +446,9 @@ class NEMOSYS_EXPORT exoMesh {
 
   // EXODUS data
  private:
+  // Dimension
+  int _numDim;
+
   // Nodes
   int _numNdes;
   std::vector<double> _xCrds;

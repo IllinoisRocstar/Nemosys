@@ -134,7 +134,8 @@ int elmNumSrf(elementType tag) {
 //////////////////////////////////
 
 exoMesh::exoMesh()
-    : _numNdes(0),
+    : _numDim(3),
+      _numNdes(0),
       _numElms(0),
       _fid(-1),
       _api_v(0.0),
@@ -146,7 +147,8 @@ exoMesh::exoMesh()
       _isVerbose(false) {}
 
 exoMesh::exoMesh(std::string ifname)
-    : _numNdes(0),
+    : _numDim(3),
+      _numNdes(0),
       _numElms(0),
       _fid(-1),
       _api_v(0.0),
@@ -186,7 +188,7 @@ void exoMesh::write() {
   _isOpen = true;
 
   // initializing exodus database
-  _exErr = ex_put_init(_fid, "NEMoSys ExodusII database", 3, _numNdes, _numElms,
+  _exErr = ex_put_init(_fid, "NEMoSys ExodusII database", _numDim, _numNdes, _numElms,
                        _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
   wrnErrMsg(_exErr, "Problem initializing EXODUS II database");
 
@@ -197,7 +199,7 @@ void exoMesh::write() {
   // writing element blocks
   for (const auto &ieb : _elmBlks) {
     _exErr = ex_put_elem_block(_fid, ieb.id, elmTypeStr(ieb.eTpe).c_str(),
-                               ieb.nElm, ieb.ndePerElm, 1);
+                               ieb.nElm, ieb.ndePerElm, 0);
     wrnErrMsg(_exErr, "Problem writing element block parameters.");
     /*
     int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
@@ -375,6 +377,7 @@ void exoMesh::exoPopulate(bool updElmLst) {
 void exoMesh::report() const {
   std::cout << " ----- Exodus II Database Report ----- \n";
   std::cout << "Database: " << _ifname << "\n";
+  std::cout << "Dimension: " << _numDim << "\n";
   std::cout << "Nodes: " << _numNdes << "\n";
   std::cout << "Elements: " << _numElms << "\n";
   std::cout << "Element blocks: " << getNumberOfElementBlocks() << "\n";
@@ -626,6 +629,7 @@ void exoMesh::reset() {
   _elmBlks.clear();
   _sdeSets.clear();
   _fid = 0;
+  _numDim = 3;
   _numNdes = 0;
   _numElms = 0;
   _xCrds.clear();

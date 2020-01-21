@@ -1,0 +1,45 @@
+{
+	"Program Type": "NucMesh Generation",
+	"Output File Name": "simple_circles_test",
+	"Geometry and Mesh": 
+	[
+		{
+			"Global Options":
+			[
+				{
+				"Open GUI": false,
+				"3D": false,
+				"Number of Layers": [1],
+				"Heights": [3],
+				"Min Mesh Size": 0.1,
+				"Max Mesh Size": 0.25,
+				"Meshing Algorithm": "Frontal Quads",
+				"Recombine Algorithm": "Blossom Full-Quad",
+				"Mesh Smoothing": 1,
+				"Extend from Boundary": true
+				}
+			]
+		},
+		{
+			"Circles":
+			[
+				{
+					"Center": [0.0, 0.0 ,0.0],
+					"Radii": [1.0],
+					"Mesh Type": ["T"],
+					"Number of Elems": [[0,0]],
+					"Region Names": ["A"],
+					"Visible": true
+				},
+				{
+					"Center": [2.5, 0.0 ,0.0],
+					"Radii": [1.0],
+					"Mesh Type": ["Q"],
+					"Number of Elems": [[0,0]],
+					"Region Names": ["B"],
+					"Visible": true
+				}
+			]
+		}
+	]
+}

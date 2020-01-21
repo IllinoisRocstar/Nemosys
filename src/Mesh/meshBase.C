@@ -492,6 +492,9 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
   std::vector<std::vector<double>> cellPhysGrpIds;
   std::vector<std::string> pointDataNames;
   std::vector<std::string> cellDataNames;
+  std::vector<std::string> fieldDataNames;
+  std::vector<std::string> fieldData;
+  
 
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -632,12 +635,29 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
             // insert connectivities for cell into cellIds container
             vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
           }
-          // insert connectivities for tet elements into dataSet
+          // insert connectivities for hex elements into dataSet
           dataSet_tmp->InsertNextCell(VTK_HEXAHEDRON, vtkCellIds);
+        } else if (type == 6) {
+          int tmp;
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
+          }
+          for (int j = 0; j < 6; ++j) {
+            ss >> tmp;
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
+          }
+          // insert connectivities for wedge/prism elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_WEDGE, vtkCellIds);
         } else {
           if (warning) {
             std::cout << "Warning: Only triangular, quadrilateral, "
-                         "tetrahedral, and hexahedral elements are supported, "
+                         "tetrahedral, hexahedral, and wedge elements are supported, "
                       << "everything else is ignored! " << std::endl;
             warning = false;
             // exit(1);
@@ -789,7 +809,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname)
   for (int i = 0; i < cellData.size(); ++i)
     vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
 
-  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
+  //vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   //vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
