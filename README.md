@@ -136,7 +136,8 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
         -DENABLE_TESTING=ON \
         -DBUILD_SHARED_LIBS=ON \
         -DENABLE_EXODUS=ON \
-        -DENABLE_PYTHON_BINDINGS=ON
+        -DENABLE_PYTHON_BINDINGS=ON \
+        -DCMAKE_BUILD_TYPE=Release 
 $ make -j$(nproc) (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
 ```
@@ -174,6 +175,7 @@ $ cmake .. \
         -DBUILD_MODULE_Draw=OFF \
         -DBUILD_MODULE_Visualization=OFF \
         -DBUILD_MODULE_ApplicationFramework=OFF
+        -DBUILD_LIBRARY_TYPE=STATIC
 $ make -j$(nproc)
 $ make install
 ```
@@ -192,8 +194,9 @@ $ cd build
 $ cmake .. \
         -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/gmsh \
         -DCMAKE_PREFIX_PATH=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
-        -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
-        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=OFF
+        -DENABLE_BUILD_LIB=OFF -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
+        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \ 
+        -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON
 $ make lib shared -j$(nproc)
 $ make install -j$(nproc)
 ```
