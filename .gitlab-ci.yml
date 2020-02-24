@@ -9,7 +9,7 @@ test:ubuntu16:
     - >
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/Nemosys-Deps/netgen"
+      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/opt/netgen"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=ON
