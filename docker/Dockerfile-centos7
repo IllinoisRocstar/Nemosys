@@ -8,29 +8,37 @@ RUN yum groupinstall -y "Development Tools"
 
 # Compilers and build tools.
 RUN yum install -y cmake3 gcc-c++.x86_64 make freetype-devel.x86_64 fltk-devel.x86_64
-RUN yum install -y cgnslib-devel hdf5-devel hdf-devel.x86_64 boost169-devel.x86_64
+RUN yum install -y hdf5-devel hdf-devel.x86_64 boost169-devel.x86_64
 RUN yum install metis-devel.x86_64 lapack-devel exodusii-devel.x86_64 -y
-RUN yum install libXmu-devel libXi-devel.x86_64 -y
+RUN yum install libXmu-devel libXi-devel.x86_64 python3-devel.x86_64 -y 
+RUN yum remove swig -y 
+RUN yum install swig3.x86_64 rh-python36-python-pip.noarch -y
 
-# need these three for building opencascade - Make sure to build static
-# RUN yum install tcl-devel.x86_64 -y
-# RUN yum install tk-devel.x86_64 -y
-# RUN yum install mesa-libGL-devel.x86_64 mesa-libGL.x86_64 -y
+# Run setuptools upgrade twice in case of "distribute" switch
+RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade setuptools
+RUN pip3 install --upgrade setuptools
+
+# Enable gcc-7 compilers 
 RUN yum install centos-release-scl scl-utils -y
 RUN yum install devtoolset-7 -y
-# RUN echo "scl enable devtoolset-7 bash" >> /etc/skel/.bashrc
 RUN echo "source /opt/rh/devtoolset-7/enable" >> /etc/skel/.bashrc
 
+# load OpenMPI module
 RUN yum install openmpi-devel -y
 RUN echo "source /etc/profile.d/modules.sh" >> /etc/skel/.bashrc
 RUN echo "module load mpi/openmpi-x86_64" >> /etc/skel/.bashrc
 
 COPY . /home/TPLs/
 
+# Install previously built packages
 RUN yum install /home/TPLs/gmsh-4.5.1-Linux64.rpm -y
 RUN yum install /home/TPLs/openfoam7-7.20190902-Linux.rpm -y
 RUN yum install /home/TPLs/VTK-7.1.0-Linux.rpm -y
 RUN yum install /home/TPLs/netgen-6.2-20011-Linux.rpm -y
+# Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
+# results in a namespace collision
+RUN yum install /home/TPLs/cgns-3.3-develop-Linux.rpm -y
 
 RUN echo "source /opt/OpenFOAM-7/etc/bashrc" >> /etc/skel/.bashrc
 

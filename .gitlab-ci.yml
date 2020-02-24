@@ -115,14 +115,24 @@ test:centos7:
       -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_INSTALL_PREFIX="../Install"
       -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=OFF
+      -DENABLE_DTK=OFF
       -DENABLE_EXODUS=ON
       -DENABLE_EPIC=ON
-      -DENABLE_PYTHON=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_SIMMETRIX=OFF
       -DENABLE_CFMSH=ON
+      -DENABLE_OPENCASCADE=OFF
+      -DENABLE_HDF5=ON
+      -DENABLE_CGNS=ON
+      -DPYTHON_EXECUTABLE=/usr/bin/python3.6
       -DBoost_INCLUDE_DIR=/usr/include/boost169/
       -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
       -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
-      -DENABLE_OPENCASCADE=OFF
     - make -j$(nproc)
     - make install
     - ctest3 --output-on-failure
