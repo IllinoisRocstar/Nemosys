@@ -1,0 +1,44 @@
+
+set scaling = 2.762297;
+
+#!/usr/bin/env pack -D
+
+set packing_fraction = 0.5;
+
+import "../shapes/hmx"
+import "../shapes/petn"
+import "../shapes/icosidodecahedron"
+shape pellet { cylinder { 0.2 0.9 } }
+
+boundary { box 1.0 1.0 1.0 periodic }
+
+
+pellet {
+	translate <-0.19386971, -0.39463383, -0.16200666>
+	rotate <-0.48042938,  0.75570697, -0.44507810>  -54.15240479
+	scale 0.36201760 color 0.152900 0.491100 0.784300 tag 0
+}
+
+hmx {
+	translate <-0.36041608, -0.01273307,  0.11924756>
+	rotate <-0.75513238, -0.58978081, -0.28624046>  -84.27218628
+	scale 0.36201760 color 0.152900 0.491100 0.784300 tag 0
+}
+
+petn {
+	translate < 0.14834991, -0.01310025,  0.48582548>
+	rotate <-0.33504868, -0.56505162, -0.75396222> -131.91114807
+	scale 0.36201760 color 0.152900 0.491100 0.784300 tag 0
+}
+
+icosidodecahedron {
+	translate <-0.06389940, -0.49632126,  0.19844911>
+	rotate <-0.88979155, -0.23326156, -0.39224994> -131.53414917
+	scale 0.36201760 color 0.152900 0.491100 0.784300 tag 0
+}
+
+sphere {
+	translate < 0.41705152,  0.45102626, -0.28618532>
+	rotate < 0.06566200, -0.92287850, -0.37945190>  165.66972351
+	scale 0.36201760 color 0.152900 0.491100 0.784300 tag 0
+}

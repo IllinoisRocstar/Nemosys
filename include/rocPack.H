@@ -19,7 +19,8 @@ struct rocQuaternion {
 };
 
 /** @brief This class converts Rockpack output file into periodic geometry and
-           writes into STL, VTK, .MSH, and ExodusII file format. This class can
+           writes into STL, VTK, .MSH, and ExodusII file format. User can define other
+           supported extensions for output file. This class can
 also be used for generating 3D periodic tetrahedral mesh using periodic
            geometry. Currently the shapes supported are as follows.
 
@@ -47,7 +48,6 @@ also be used for generating 3D periodic tetrahedral mesh using periodic
 // 3. Cohesive elements needs to be extended to finite thickness. This should be
 //    fairly very easy once we have zero thickness method working flawlessly.
 //    Also, this method only works with just 2 physical groups enabled.
-// 4. Affine transfrom is not set up for anything other than box of 1 X 1 X 1.
 
 class NEMOSYS_EXPORT rocPack {
   // Constructors, Deconstructor, Access
@@ -78,7 +78,7 @@ public:
   **/
   void rocPack2Surf();
 
-  /** @brief This method creates cohesive elements using existing vtu file
+  /** @brief This method creates cohesive elements using existing vtu file.
       @param filename Input vtu file name
       @param output file name
   **/
@@ -86,11 +86,11 @@ public:
                               const std::string &outname);
 
   /** @brief rocPack2Periodic3D method converts Rocpack output file into
-             3D periodic mesh. Writes the output file in current path
+             3D periodic mesh. Writes the output file in current path.
   **/
   void rocPack2Periodic3D();
 
-  /** @brief Enables an option to remove volumes intersecting boundary
+  /** @brief Enables an option to remove volumes intersecting boundary.
    **/
   void removeBoundaryVolumes();
 
@@ -134,7 +134,11 @@ public:
    **/
   void enableSurfacePatches();
 
-  /** @brief Translates the whole geometry along user-defined parameters
+  /** @brief Enables physical group per shape
+  **/
+  void enablePhysicalGroupsPerShape();
+
+  /** @brief Translates the whole geometry along user-defined parameters.
       @param X Coordinate
       @param Y Coordinate
       @param Z Coordinate
@@ -162,6 +166,10 @@ public:
    **/
   void setRandomSurface(const int &surf);
 
+  /** @brief Enables cohesive elements
+  **/
+  void enableCohesiveElements();
+
   /** @brief This method is for internal testing purpose only. Compares spatial
              location of several periodic nodes in periodic mesh.
       @return Boolean for test
@@ -171,7 +179,7 @@ public:
   // rocPack2STL internal use only
 private:
   /** @brief This method parses Rocpack output file and collects data for
-             creation of pack geometries
+             creation of pack geometries.
   **/
   void rocParser();
 
@@ -235,7 +243,7 @@ private:
    **/
   void initialize();
 
-  /** @brief Makes geometry periodic
+  /** @brief Enforced periodicity on geometry
       @param rmbPacks boolean for removing boundary packs
   **/
   void makePeriodic(const bool rmbPacks);
@@ -331,6 +339,17 @@ private:
   **/
   void writePeriodicNodes();
 
+  /** @brief This method check if cohesive element face lies on any of the
+      periodic boundaries
+      @param getPt1 Point 1 of triangular face
+      @param getPt2 Point 2 of triangular face
+      @param getPt3 Point 3 of triangular face
+      @return true or false
+  **/
+  bool existsOnPeriodicBoundary(const std::vector<double> &getPt1,
+                                const std::vector<double> &getPt2,
+                                const std::vector<double> &getPt);
+
   // Basic shape methods
 private:
   /** @brief Creates sphere pack shapes
@@ -358,6 +377,10 @@ private:
    **/
   void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
                      const int cellType, std::vector<int> &vrtIds);
+
+  /** @brief Assigns nodes n0, nx, ny, nz for periodic equation file
+  **/
+  void assignPeriodicEqNodes();
 
   // Pointers and/or parameters
 private:
@@ -497,6 +520,18 @@ private:
    **/
   bool matchingCoords = false;
 
+  /** @brief X Nodes for testing
+   **/
+  bool matchingCoordsX = false;
+
+  /** @brief Y Nodes for testing
+   **/
+  bool matchingCoordsY = false;
+
+  /** @brief Z Nodes for testing
+   **/
+  bool matchingCoordsZ = false;
+
   /** @brief Shrink Scale
    **/
   double shrinkScale = 1.0;
@@ -553,14 +588,6 @@ private:
    **/
   std::vector<std::size_t> interfaceNodes;
 
-  /** @brief Vector for storing phys group tags
-   **/
-  std::vector<int> surrondingEntities;
-
-  /** @brief Vector for storing phys group tags
-   **/
-  std::vector<int> packEntities;
-
   /** @brief A boolean for user to enable assignement of surface patches
    **/
   bool assignSidePatches = false;
@@ -592,6 +619,86 @@ private:
   /** @brief Output control
    **/
   bool defOutputs = false;
+
+  /** @brief Boolean for physical group per shape
+  **/
+  bool physGrpPerShape = false;
+
+  /** @brief Map for storing shape names against volume
+      Sphere = 0
+      Ellipsoid = 1
+      Cylinder = 2
+      HMX = 3
+      PETN = 4
+      Icosidodecahedron = 5
+      Surrounding = 6
+  **/
+  //std::vector<std::pair<int,int>> storeShapeNames;
+  std::map<int,int> storeShapeNames;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> spherePhysicalGroup;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> cylindersPhysicalGroup;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> ellipsoidPhysicalGroup;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> hmxPhysicalGroup;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> petnPhysicalGroup;
+
+  /** @brief Arrays for group per shape
+  **/
+  std::vector<int> icosidodecahedronPhysicalGroup;
+
+  /** @brief Vector of all volumes for multi-physical groups
+  **/
+  std::vector<int> linkMultiPhysGrps;
+
+  /** @brief Stores all physical groups in index sized by total volumes
+  **/
+  std::vector<std::vector<int>> storeMultiPhysGrps;
+
+  /** @brief Group indices for multi groups (useful in cohesive elements)
+  **/
+  std::vector<int> multiGrpIndices;
+
+  /** @brief Store cells in surrounding for cohesive elements without
+             physical groups
+  **/
+  std::vector<int> geomElementIds;
+  
+  /** @brief Stores node ids n0,nx,ny,nz
+  **/
+  std::vector<int> eqRefNodes = std::vector<int>(4);
+
+  /** @brief Boolean to enable cohesive elements
+  **/
+  bool internalCohesiveBool = false;
+
+  /** @brief Storage vector for linking interface and duplicate nodes
+      Replaces new duplicated nodes at place of old interface points
+  **/
+  std::vector<int> ptsReplacer;
+
+  /** @brief Storage vector for identifying which slave nodes are interface
+      nodes
+  **/
+  std::vector<int> slaveInterfaceId;
+
+  /** @brief psudo-physical group vector for cohesive elements material
+      assignment
+  **/
+  std::vector<int> ptsCohesiveGrp;
 
   /** @brief Sanity Check
    **/

@@ -89,6 +89,7 @@ class PackMeshDriver : public NemDriver
       @param domainBounds User-defined domain size.
       @param mshAlgorithm Meshing algorithm of choice.
       @param enableDefaultOutput Enable default output formats
+      @param enablePhysGrpPerShape Enables physical group per shape
   **/
   PackMeshDriver(
       const std::string& ifname, const std::string& ofname,
@@ -99,7 +100,8 @@ class PackMeshDriver : public NemDriver
       const bool& wantGeometryOnly, const bool& createCohesive,
       const bool& enablePatches, const std::vector<double>& transferMesh,
       const bool& customDomain, const std::vector<double>& domainBounds,
-      const int& mshAlgorithm, const bool& enableDefaultOutput);
+      const int& mshAlgorithm, const bool& enableDefaultOutput,
+      const bool &enablePhysGrpPerShape);
 
   /** @brief PackMeshDriver standard destructor
   **/
