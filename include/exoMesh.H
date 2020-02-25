@@ -94,8 +94,10 @@ surfaceBCTag NEMOSYS_EXPORT bcTagNum(std::string &tag);
  * @param tag
  * @return
  */
+
 // TODO: documentation
 std::string NEMOSYS_EXPORT bcTagStr(int tag);
+
 /**
  * Convert string to EXODUS element type
  * @param tag string tag of an element type
@@ -353,7 +355,7 @@ class NEMOSYS_EXPORT exoMesh {
    */
   std::vector<int> lstElmInBlk(int blkIdx, const std::vector<int> &elmIds,
                                bool &allIn) const;
-
+  
   // augmentation and maintenance
  public:
   /**

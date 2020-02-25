@@ -8,6 +8,8 @@
 #include <vtkCellLocator.h>
 #include <vtkDataSet.h>
 #include <vtkIdTypeArray.h>
+#include <vtkIdList.h>
+#include <vtkModelMetadata.h>
 
 #include <vtkIdList.h>
 #include <vtkModelMetadata.h>
@@ -499,7 +501,8 @@ class NEMOSYS_EXPORT meshBase
                     double edge_scale,
                     const std::string &ofname,
                     bool transferData,
-                    double sizeFactor = 1.);
+                    double sizeFactor = 1.,
+                    bool constrainBoundary = false);
 
     /** @brief perform sizefield-based h-refinement.
         @param method <>
@@ -529,7 +532,8 @@ class NEMOSYS_EXPORT meshBase
     void refineMesh(const std::string &method,
                     double edge_scale,
                     const std::string &ofname,
-                    bool transferData);
+                    bool transferData,
+                    bool constrainBoundary = false);
 
     /** @brief <>
         @param method <>
@@ -726,6 +730,9 @@ class NEMOSYS_EXPORT meshBase
     **/
     void unsetNewArrayNames() { newArrayNames.clear(); }
 
+    // remove all quad elements by naive conversion to tris
+    meshBase* convertQuads();
+   
     /** @brief get new array names for use in transfer
      **/
     std::vector<std::string> getNewArrayNames() { return newArrayNames; }

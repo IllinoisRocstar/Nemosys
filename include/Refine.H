@@ -23,7 +23,7 @@ class NEMOSYS_EXPORT Refine
 
   // methods
   public:
-    void run(bool transferData);
+    void run(bool transferData, bool bndryConstraint = false);
 
   private:
     meshBase *mesh; // mesh to be refined
@@ -32,7 +32,9 @@ class NEMOSYS_EXPORT Refine
     MAd::PWLSField *pwlSF; // piecewise linear size field
     MAd::MeshAdapter *adapter; // adapter
     std::string ofname;
-
+    MAd::pGEntity bnd;
+    bool bndrConst;
+ 
   // helpers
   private:
     void initUniform(double edge_scale);

@@ -12,7 +12,7 @@ test:ubuntu16:
       -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/opt/netgen"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
-      -DENABLE_MPI=ON
+      -DENABLE_MPI=OFF
       -DENABLE_DTK=OFF
       -DENABLE_EXODUS=ON
       -DENABLE_EPIC=ON
@@ -45,7 +45,7 @@ test:ubuntu18:
       -DCMAKE_PREFIX_PATH="/Nemosys-Deps/opencascade/;/Nemosys-Deps/gmsh/;/Nemosys-Deps/netgen/;/Nemosys-Deps/vtk/;/opt/openfoam7/;"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
-      -DENABLE_MPI=ON
+      -DENABLE_MPI=OFF
       -DENABLE_DTK=OFF
       -DENABLE_EXODUS=ON
       -DENABLE_EPIC=ON

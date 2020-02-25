@@ -47,84 +47,131 @@ elementType v2eEMap(VTKCellType vt) {
 
 surfaceBCTag bcTagNum(std::string &tag) {
   nemAux::toLower(tag);
-  if (tag == "fixed") return surfaceBCTag::FIXED;
-  if (tag == "symmx") return surfaceBCTag::SYMMX;
-  if (tag == "symmy") return surfaceBCTag::SYMMY;
-  if (tag == "symmz") return surfaceBCTag::SYMMZ;
+  if (tag == "fixed")
+    return surfaceBCTag::FIXED;
+  if (tag == "symmx")
+    return surfaceBCTag::SYMMX;
+  if (tag == "symmy")
+    return surfaceBCTag::SYMMY;
+  if (tag == "symmz")
+    return surfaceBCTag::SYMMZ;
   std::cerr << "Unknown surface tag " << tag << std::endl;
   throw;
 }
 
 std::string bcTagStr(int tag) {
-  if (tag == FIXED) return "FIXED";
-  if (tag == SYMMX) return "SYMMX";
-  if (tag == SYMMY) return "SYMMY";
-  if (tag == SYMMZ) return "SYMMZ";
+  if (tag == FIXED)
+    return "FIXED";
+  if (tag == SYMMX)
+    return "SYMMX";
+  if (tag == SYMMY)
+    return "SYMMY";
+  if (tag == SYMMZ)
+    return "SYMMZ";
   std::cerr << "Unknown surface tag " << tag << std::endl;
   throw;
 }
 
 elementType elmTypeNum(std::string tag) {
   nemAux::toLower(tag);
-  if (tag == "triangle") return elementType::TRIANGLE;
-  if (tag == "tri") return elementType::TRIANGLE;
-  if (tag == "trishell3") return elementType::TRIANGLE;
+  if (tag == "triangle")
+    return elementType::TRIANGLE;
+  if (tag == "tri")
+    return elementType::TRIANGLE;
+  if (tag == "trishell3")
+    return elementType::TRIANGLE;
 
-  if (tag == "quadrilateral") return elementType::QUAD;
-  if (tag == "quad") return elementType::QUAD;
-  if (tag == "shell4") return elementType::QUAD;
+  if (tag == "quadrilateral")
+    return elementType::QUAD;
+  if (tag == "quad")
+    return elementType::QUAD;
+  if (tag == "shell4")
+    return elementType::QUAD;
 
-  if (tag == "tetrahedron") return elementType::TETRA;
-  if (tag == "tetrahedral") return elementType::TETRA;
-  if (tag == "tetra") return elementType::TETRA;
-  if (tag == "tetra4") return elementType::TETRA;
+  if (tag == "tetrahedron")
+    return elementType::TETRA;
+  if (tag == "tetrahedral")
+    return elementType::TETRA;
+  if (tag == "tetra")
+    return elementType::TETRA;
+  if (tag == "tetra4")
+    return elementType::TETRA;
 
-  if (tag == "hexahedron") return elementType::HEX;
-  if (tag == "hexahedral") return elementType::HEX;
-  if (tag == "brick") return elementType::HEX;
-  if (tag == "hex") return elementType::HEX;
-  if (tag == "hex8") return elementType::HEX;
+  if (tag == "hexahedron")
+    return elementType::HEX;
+  if (tag == "hexahedral")
+    return elementType::HEX;
+  if (tag == "brick")
+    return elementType::HEX;
+  if (tag == "hex")
+    return elementType::HEX;
+  if (tag == "hex8")
+    return elementType::HEX;
 
-  if (tag == "wedge") return elementType::WEDGE;
-  if (tag == "prismatic") return elementType::WEDGE;
-  if (tag == "prism") return elementType::WEDGE;
+  if (tag == "wedge")
+    return elementType::WEDGE;
+  if (tag == "prismatic")
+    return elementType::WEDGE;
+  if (tag == "prism")
+    return elementType::WEDGE;
 
   std::cout << "Warning : Element type " << tag << " may be unsupported.\n";
   return elementType::OTHER;
 }
 
 std::string elmTypeStr(elementType et) {
-  if (et == elementType::QUAD) return "QUAD";
-  if (et == elementType::TRIANGLE) return "TRIANGLE";
-  if (et == elementType::QUAD) return "QUAD";
-  if (et == elementType::TETRA) return "TETRA";
-  if (et == elementType::HEX) return "HEX";
-  if (et == elementType::WEDGE) return "WEDGE";
+  if (et == elementType::QUAD)
+    return "QUAD";
+  if (et == elementType::TRIANGLE)
+    return "TRIANGLE";
+  if (et == elementType::QUAD)
+    return "QUAD";
+  if (et == elementType::TETRA)
+    return "TETRA";
+  if (et == elementType::HEX)
+    return "HEX";
+  if (et == elementType::WEDGE)
+    return "WEDGE";
   return "OTHER";
 }
 
 int elmNumNde(elementType tag, int order) {
-  if (tag == elementType::TRIANGLE && order == 1) return 3;
-  if (tag == elementType::TRIANGLE && order == 2) return 6;
-  if (tag == elementType::QUAD && order == 1) return 4;
-  if (tag == elementType::QUAD && order == 2) return 9;
-  if (tag == elementType::TETRA && order == 1) return 4;
-  if (tag == elementType::TETRA && order == 2) return 10;
-  if (tag == elementType::HEX && order == 1) return 8;
-  if (tag == elementType::HEX && order == 2) return 21;
-  if (tag == elementType::WEDGE && order == 1) return 6;
-  if (tag == elementType::WEDGE && order == 2) return 16;
+  if (tag == elementType::TRIANGLE && order == 1)
+    return 3;
+  if (tag == elementType::TRIANGLE && order == 2)
+    return 6;
+  if (tag == elementType::QUAD && order == 1)
+    return 4;
+  if (tag == elementType::QUAD && order == 2)
+    return 9;
+  if (tag == elementType::TETRA && order == 1)
+    return 4;
+  if (tag == elementType::TETRA && order == 2)
+    return 10;
+  if (tag == elementType::HEX && order == 1)
+    return 8;
+  if (tag == elementType::HEX && order == 2)
+    return 21;
+  if (tag == elementType::WEDGE && order == 1)
+    return 6;
+  if (tag == elementType::WEDGE && order == 2)
+    return 16;
   std::cerr << "Unknown element/order combination " << tag << " " << order
             << "\n";
   throw;
 }
 
 int elmNumSrf(elementType tag) {
-  if (tag == elementType::TRIANGLE) return 3;
-  if (tag == elementType::QUAD) return 4;
-  if (tag == elementType::TETRA) return 4;
-  if (tag == elementType::HEX) return 8;
-  if (tag == elementType::WEDGE) return 5;
+  if (tag == elementType::TRIANGLE)
+    return 3;
+  if (tag == elementType::QUAD)
+    return 4;
+  if (tag == elementType::TETRA)
+    return 4;
+  if (tag == elementType::HEX)
+    return 8;
+  if (tag == elementType::WEDGE)
+    return 5;
   std::cerr << "Unknown element type " << tag << "\n";
   throw;
 }
@@ -161,7 +208,8 @@ exoMesh::exoMesh(std::string ifname)
       _isVerbose(false) {}
 
 exoMesh::~exoMesh() {
-  if (_isOpen) ex_close(_fid);
+  if (_isOpen)
+    ex_close(_fid);
 }
 
 void wrnErrMsg(int errCode, const std::string &msg) {
@@ -188,8 +236,9 @@ void exoMesh::write() {
   _isOpen = true;
 
   // initializing exodus database
-  _exErr = ex_put_init(_fid, "NEMoSys ExodusII database", _numDim, _numNdes, _numElms,
-                       _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
+  _exErr =
+      ex_put_init(_fid, "NEMoSys ExodusII database", _numDim, _numNdes,
+                  _numElms, _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
   wrnErrMsg(_exErr, "Problem initializing EXODUS II database");
 
   // writing node coordinates
@@ -284,19 +333,22 @@ void exoMesh::exoPopulate(bool updElmLst) {
   // removing empty element blocks
   std::vector<elmBlkType> nebs;
   for (auto &&ieb : _elmBlks)
-    if (ieb.nElm > 0) nebs.emplace_back(std::move(ieb));
+    if (ieb.nElm > 0)
+      nebs.emplace_back(std::move(ieb));
   _elmBlks = nebs;
 
   // removing empty node sets
   std::vector<ndeSetType> nnss;
   for (auto &&ins : _ndeSets)
-    if (ins.nNde > 0) nnss.emplace_back(std::move(ins));
+    if (ins.nNde > 0)
+      nnss.emplace_back(std::move(ins));
   _ndeSets = nnss;
 
   // removing empty side sets
   std::vector<sdeSetType> nsss;
   for (auto &&iss : _sdeSets)
-    if (iss.nSde > 0) nsss.emplace_back(std::move(iss));
+    if (iss.nSde > 0)
+      nsss.emplace_back(std::move(iss));
   _sdeSets = nsss;
 
   // updating element blocks
@@ -369,7 +421,8 @@ void exoMesh::exoPopulate(bool updElmLst) {
       std::cerr << "WARNING: Malformed side set " << iss.name << ".\n";
   }
 
-  if (_isVerbose) report();
+  if (_isVerbose)
+    report();
 
   _isPopulated = true;
 }
@@ -445,7 +498,8 @@ void exoMesh::removeByElmIdLst(int blkIdx, const std::vector<int> &idLst) {
         stays = false;
         break;
       }
-    if (!stays) continue;
+    if (!stays)
+      continue;
 
     neb.nElm++;
     neb.elmIds.emplace_back(eid);
@@ -466,7 +520,8 @@ void exoMesh::addElmBlkByElmIdLst(const std::string &name,
   }
 
   // preparing database
-  if (!_isPopulated) exoPopulate(false);
+  if (!_isPopulated)
+    exoPopulate(false);
 
   _isPopulated = false;
   // create element block
@@ -479,7 +534,8 @@ void exoMesh::addElmBlkByElmIdLst(const std::string &name,
 
   // int blkIdx = findElmBlkIdxByElmId(lst[0]); // faster but less accurate
   int blkIdx = findElmBlkIdxByElmIdLst(lst);  // slower, more accurate
-  if (blkIdx == -1) wrnErrMsg(-1, "Elements ids are not registered.");
+  if (blkIdx == -1)
+    wrnErrMsg(-1, "Elements ids are not registered.");
   // std::cout << "Block Indx = " << blkIdx << std::endl;
 
   // now adjust the list and remove elements that are not owned by this block
@@ -510,7 +566,8 @@ void exoMesh::addElmBlkByElmIdLst(const std::string &name,
 void exoMesh::addNdeSetByNdeIdLst(const std::string &name,
                                   const std::vector<int> &idLst) {
   // preparing database
-  if (!_isPopulated) exoPopulate(false);
+  if (!_isPopulated)
+    exoPopulate(false);
 
   _isPopulated = false;
   // create and add new node set
@@ -545,14 +602,16 @@ void exoMesh::snapNdeCrdsZero(double tol) {
       _zCrds[i] = 0.0;
       chk = true;
     }
-    if (chk) nPnt++;
+    if (chk)
+      nPnt++;
   }
 
   std::cout << "Number of points snapped : " << nPnt << std::endl;
 }
 
 void exoMesh::removeElmBlkByName(const std::string &blkName) {
-  if (blkName.empty()) return;
+  if (blkName.empty())
+    return;
 
   std::vector<elmBlkType> nebs;
   for (const auto &ieb : _elmBlks)
@@ -569,7 +628,8 @@ int exoMesh::findElmBlkIdxByElmId(int elmId) const {
   int blkIdx = 0;
   for (const auto &ieb : _elmBlks) {
     for (const auto &eid : ieb.elmIds)
-      if (eid == elmId) return blkIdx;
+      if (eid == elmId)
+        return blkIdx;
 
     blkIdx++;
   }
@@ -577,7 +637,8 @@ int exoMesh::findElmBlkIdxByElmId(int elmId) const {
 }
 
 int exoMesh::findElmBlkIdxByElmIdLst(const std::vector<int> &elmIds) const {
-  if (elmIds.empty()) return -1;
+  if (elmIds.empty())
+    return -1;
 
   int blkIdx = -1;
   int intfCnt = 0;
@@ -642,7 +703,8 @@ void exoMesh::reset() {
 }
 
 void exoMesh::read(const std::string &ifname) {
-  if (!ifname.empty()) _ifname = ifname;
+  if (!ifname.empty())
+    _ifname = ifname;
 
   // before reading all internal data base will be reset
   reset();
@@ -681,7 +743,8 @@ void exoMesh::read(const std::string &ifname) {
   _exErr = ex_inquire(_fid, EX_INQ_DIM, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
   std::cout << "Number of coordinate dimensions is " << idum << std::endl;
-  if (idum != 3) wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
+  if (idum != 3)
+    wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
 
   _exErr = ex_inquire(_fid, EX_INQ_NODES, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
@@ -744,7 +807,8 @@ void exoMesh::read(const std::string &ifname) {
     wrnErrMsg(_exErr, "Problem reading element block names.\n");
     blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
                    blk_name.end());
-    // std::cout << blk_id << " " << blk_name << std::endl;
+    std::cout << "debugging" << std::endl;
+    std::cout << blk_id << " " << blk_name << std::endl;
     _elmBlkNames.push_back(blk_name);
   }
 
@@ -871,7 +935,8 @@ void exoMesh::mergeNodes(double tol) {
     qryPnt[1] = _yCrds[iNde];
     qryPnt[2] = _zCrds[iNde];
     kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
-    if (dists[1] <= tol) dupNdeMap[nnIdx[0] + 1] = nnIdx[1] + 1;
+    if (dists[1] <= tol)
+      dupNdeMap[nnIdx[0] + 1] = nnIdx[1] + 1;
   }
   std::cout << "Found " << dupNdeMap.size() << " duplicate nodes.\n";
 
@@ -973,12 +1038,11 @@ void exoMesh::mergeNodes(double tol) {
 }
 
 void exoMesh::scaleNodes(double sc) {
-    using namespace nemAux;
-    _xCrds=sc*_xCrds;
-    _yCrds=sc*_yCrds;
-    _zCrds=sc*_zCrds;
+  using namespace nemAux;
+  _xCrds = sc * _xCrds;
+  _yCrds = sc * _yCrds;
+  _zCrds = sc * _zCrds;
 }
-
 
 void exoMesh::stitch(const exoMesh &otherMesh) {
   // Append nodes.
@@ -1019,22 +1083,19 @@ void exoMesh::stitch(const exoMesh &otherMesh) {
   exoPopulate(true);
 }
 
-elementType exoMesh::getElmBlkType(std::string ebName) const 
-{
-    auto eb=_elmBlks.begin();
-    for (;eb!=_elmBlks.end(); eb++)
-        if (eb->name == ebName)
-            return (eb->eTpe);
+elementType exoMesh::getElmBlkType(std::string ebName) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->name == ebName)
+      return (eb->eTpe);
 
-    // warning if the element block name is not registered
-    if (eb == _elmBlks.end())
-        std::cerr << "Warning: There is no element block with name "
-            << ebName 
-            << std::endl; 
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with name " << ebName
+              << std::endl;
 
-    return(NEM::MSH::EXOMesh::elementType::OTHER);
+  return (NEM::MSH::EXOMesh::elementType::OTHER);
 }
-
 
 }  // namespace EXOMesh
 }  // namespace MSH

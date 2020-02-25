@@ -362,6 +362,237 @@ ConversionDriver *ConversionDriver::readJSON(const std::string &ifname) {
 }
 
 #ifdef HAVE_EXODUSII
+void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
+                              const int &ndeIdOffset, const int &elmIdOffset,
+                              int &ins, int &ieb, int &iss, std::string mshName,
+                              const bool &usePhys, int &ndeIdOffset_local,
+                              int &elmIdOffset_local,
+                              const bool &makeFreeSurfSS,
+                              const bool &splitTopBotSS,
+                              std::vector<std::string> sideSetNames) {
+  // add nodes to database
+  for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
+    em->addNde(mb->getPoint(iNde));
+
+  // node coordinate to one nodeSet
+  NEM::MSH::EXOMesh::ndeSetType ns;
+  ns.id = ++ins;
+  ns.nNde = mb->getNumberOfPoints();
+  ns.name = mshName;
+  ns.ndeIdOffset = ndeIdOffset;
+  for (int iNde = 0; iNde < ns.nNde; iNde++) {
+    ns.ndeIds.emplace_back(iNde + 1);
+  }
+  em->addNdeSet(ns);
+  ndeIdOffset_local += ns.nNde;
+
+  // add element blocks
+
+  // Element bucket where they will be sorted.
+  // Outer layer: Specifies grouping, such as physical groups. The 0th index
+  // is reserved for elements without a group.
+  // Inner layer: Sorted by element type. The 0th index is reserved for
+  // unsupported elements. The current support respects the ordering of the
+  // NEM::MSH::EXOMesh::elementType enum:
+  //     OTHER, TRIANGLE, QUAD, TETRA, HEX
+  std::map<int, std::map<NEM::MSH::EXOMesh::elementType, std::vector<int>>>
+      elmBucket;
+  // map for VTK to EXO element ids
+  std::map<int, int> v2e_elemID_map;
+
+  std::vector<double> grpIds(mb->getNumberOfCells(), 0.0);
+  if (usePhys)
+    mb->getCellDataArray("PhysGrpId", grpIds);
+
+  for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
+    VTKCellType vtkType =
+        static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm));
+    NEM::MSH::EXOMesh::elementType exoType =
+        NEM::MSH::EXOMesh::v2eEMap(vtkType);
+    elmBucket[grpIds[iElm]][exoType].emplace_back(iElm);
+    // set the dimension of Exo database based on present elements
+    bool is3D = false;
+    if (!is3D) {
+      if (exoType == NEM::MSH::EXOMesh::elementType::TETRA ||
+          exoType == NEM::MSH::EXOMesh::elementType::WEDGE ||
+          exoType == NEM::MSH::EXOMesh::elementType::HEX) {
+        is3D = true;
+        em->setDimension(3);
+      }
+    }
+  }
+
+  // sanity check
+  int numUnsupported = 0;
+  for (const auto &elmGroup : elmBucket)
+    if (elmGroup.second.count(NEM::MSH::EXOMesh::elementType::OTHER) != 0)
+      numUnsupported +=
+          elmGroup.second.at(NEM::MSH::EXOMesh::elementType::OTHER).size();
+  if (numUnsupported > 0) {
+    std::cerr << "WARNING: Detected " << numUnsupported
+              << " unsupported elements.\n";
+    throw;
+  }
+
+  // for each group and supported type, if existent, add an element block
+  for (const auto &elmGroup : elmBucket) {
+    for (const auto &elmIds : elmGroup.second) {
+      if (elmIds.second.empty())
+        continue;  // skip if empty
+
+      NEM::MSH::EXOMesh::elmBlkType eb;
+      eb.id = ++ieb;
+      eb.ndeIdOffset = ndeIdOffset;
+      eb.nElm = elmIds.second.size();
+
+      // populate VTK to EXO element id map for side set implementation
+      for (int i = 0; i < elmIds.second.size(); ++i) {
+        int vtkId = elmIds.second[i];
+        int exoId = i + elmIdOffset_local + 1;
+        v2e_elemID_map.insert(std::pair<int, int>(vtkId, exoId));
+      }
+
+      if (usePhys)
+        eb.name = mshName + "_PhysGrp_" + std::to_string(ieb);
+      else
+        eb.name = mshName + "_" + std::to_string(ieb);
+
+      switch (elmIds.first) {
+        case NEM::MSH::EXOMesh::elementType::TRIANGLE:
+          std::cout << "Number of triangular elements = " << eb.nElm << "\n";
+          eb.ndePerElm = 3;
+          eb.eTpe = NEM::MSH::EXOMesh::elementType::TRIANGLE;
+          break;
+        case NEM::MSH::EXOMesh::elementType::QUAD:
+          std::cout << "Number of quadrilateral elements = " << eb.nElm << "\n";
+          eb.ndePerElm = 4;
+          eb.eTpe = NEM::MSH::EXOMesh::elementType::QUAD;
+          break;
+        case NEM::MSH::EXOMesh::elementType::TETRA:
+          std::cout << "Number of tetrahedral elements = " << eb.nElm << "\n";
+          eb.ndePerElm = 4;
+          eb.eTpe = NEM::MSH::EXOMesh::elementType::TETRA;
+          break;
+        case NEM::MSH::EXOMesh::elementType::HEX:
+          std::cout << "Number of hexahedral elements = " << eb.nElm << "\n";
+          eb.ndePerElm = 8;
+          eb.eTpe = NEM::MSH::EXOMesh::elementType::HEX;
+          break;
+        case NEM::MSH::EXOMesh::elementType::WEDGE:
+          std::cout << "Number of wedge elements = " << eb.nElm << "\n";
+          eb.ndePerElm = 6;
+          eb.eTpe = NEM::MSH::EXOMesh::elementType::WEDGE;
+          break;
+        case NEM::MSH::EXOMesh::elementType::OTHER:
+        default:
+          std::cerr << "WARNING: Processing unsupported element. Previous "
+                       "sanity check failed!\n";
+          throw;
+      }
+
+      eb.conn.reserve(eb.nElm * eb.ndePerElm);
+      vtkIdList *nids = vtkIdList::New();
+      for (const auto &iElm : elmIds.second) {
+        mb->getDataSet()->GetCellPoints(iElm, nids);
+        for (int in = 0; in < eb.ndePerElm; ++in) {
+          // offset node ids by 1
+          eb.conn.emplace_back(nids->GetId(in) + 1);
+        }
+      }
+
+      std::cout << "Min node index = "
+                << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
+                << "Max node index = "
+                << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
+      std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
+
+      em->addElmBlk(eb);
+      elmIdOffset_local += eb.nElm;
+    }
+  }
+
+  // add side set of the external surface(s) (free surface)
+  if (makeFreeSurfSS) {
+    freeSurfaceSideSet(mb, em, elmIdOffset, v2e_elemID_map, splitTopBotSS,
+                       sideSetNames);
+  }
+
+  // add side sets
+  if (mb->getMetadata()) {
+    // get side set metadata
+    vtkSmartPointer<vtkModelMetadata> metadata = mb->getMetadata();
+    vtkSmartPointer<vtkStringArray> sdeSetNames = metadata->GetSideSetNames();
+    int *sdeSetElmLst = metadata->GetSideSetElementList();
+    int *sdeSetSdeLst = metadata->GetSideSetSideList();
+    int *sdeSetSze = metadata->GetSideSetSize();
+
+    for (int iSS = 0; iSS < metadata->GetNumberOfSideSets(); iSS++) {
+      NEM::MSH::EXOMesh::sdeSetType ss;
+      ss.id = ++iss;
+      ss.name = sdeSetNames->GetValue(iSS);
+      ss.nSde = sdeSetSze[iSS];
+      ss.elmIds.assign(sdeSetElmLst, sdeSetElmLst + sdeSetSze[iSS]);
+      ss.sdeIds.assign(sdeSetSdeLst, sdeSetSdeLst + sdeSetSze[iSS]);
+      ss.elmIdOffset = elmIdOffset;
+      em->addSdeSet(ss);
+
+      // Advance pointer for reading next side set.
+      sdeSetElmLst += sdeSetSze[iSS];
+      sdeSetSdeLst += sdeSetSze[iSS];
+    }
+  }
+}
+void ConversionDriver::genExo(std::vector<meshBase *> meshes,
+                              const std::string &fname) {
+  bool usePhys = false;
+  bool makeFreeSurfSS = false;
+  bool splitTopBotSS = false;
+  std::vector<std::string> sideSetNames;
+
+  std::cout << "Warning: this method does not support physical groups."
+            << std::endl;
+  std::cout << "Warning: this method does not support post-processing."
+            << std::endl;
+
+  int nMsh = meshes.size();
+
+  // sanity check
+  if (nMsh == 0) {
+    std::cerr << "Error: At least one mesh should be provided!\n";
+    exit(-1);
+  }
+
+  // starting conversion operation
+  auto em = new NEM::MSH::EXOMesh::exoMesh(fname);
+
+  // reading meshes
+  int ndeIdOffset = 0;
+  int elmIdOffset = 0;
+  int ins = 0;
+  int ieb = 0;
+  int iss = 0;
+  int ndeIdOffset_local = 0;
+  int elmIdOffset_local = 0;
+
+  std::string mshName;
+
+  for (auto itrMsh = meshes.begin(); itrMsh != meshes.end(); itrMsh++) {
+    mshName = (*itrMsh)->getFileName();
+    genExo(*itrMsh, em, ndeIdOffset, elmIdOffset, ins, ieb, iss, mshName,
+           usePhys, ndeIdOffset_local, elmIdOffset_local, makeFreeSurfSS,
+           splitTopBotSS, sideSetNames);
+  }
+
+  // writing the file
+  em->write();
+  em->report();
+
+  em->mergeNodes();
+
+  // clean up
+  delete em;
+}
+
 void ConversionDriver::genExo(const jsoncons::json &opts,
                               const std::string &fname) {
   int nMsh = opts.get_with_default("Number of Mesh", 0);
@@ -369,12 +600,12 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
 
   // sanity check
   if (nMsh == 0) {
-    std::cerr << "Error: At least one mesh should be provided!" << std::endl;
+    std::cerr << "Error: At least one mesh should be provided!\n";
     exit(-1);
   }
 
   // starting conversion operation
-  auto *em = new NEM::MSH::EXOMesh::exoMesh(fname);
+  auto em = new NEM::MSH::EXOMesh::exoMesh(fname);
 
   // reading meshes
   int ieb = 0;          // Element Block counter.
@@ -389,14 +620,17 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
     bool usePhys = mshOpts[iMsh].get_with_default("Use Physical Groups", false);
 
     // Bool for making side set from the free surface (exterior surface)
-    bool makeFreeSurfSS = mshOpts[iMsh].get_with_default("Free Surface Side Set", false);
-    bool splitTopBotSS = mshOpts[iMsh].get_with_default("Split Top and Bottom", false);
+    bool makeFreeSurfSS =
+        mshOpts[iMsh].get_with_default("Free Surface Side Set", false);
+    bool splitTopBotSS =
+        mshOpts[iMsh].get_with_default("Split Top and Bottom", false);
     std::vector<std::string> sideSetNames;
     if (mshOpts[iMsh].contains("Side Set Names")) {
       int ssNameSize = mshOpts[iMsh]["Side Set Names"].size();
       if (ssNameSize != 0) {
         for (int i = 0; i < ssNameSize; ++i) {
-          sideSetNames.push_back(mshOpts[iMsh]["Side Set Names"][i].as_string());
+          sideSetNames.push_back(
+              mshOpts[iMsh]["Side Set Names"][i].as_string());
         }
       }
     }
@@ -440,185 +674,17 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
       continue;
     }
 
+    // reading input mesh
     meshBase *mb = meshBase::Create(mshFName);
-    // mb->write("exo_inp_mesh_" + std::to_string(iMsh) + ".vtu");
+    // mb->write("exo_inp_mesh_"+std::to_string(iMsh)+".vtu");
 
     // adding information to exodusII object
     int ndeIdOffset_local = 0;
     int elmIdOffset_local = 0;
 
-    // add nodes to database
-    for (nemId_t iNde = 0; iNde < mb->getNumberOfPoints(); ++iNde)
-      em->addNde(mb->getPoint(iNde));
-
-    // node coordinate to one nodeSet
-    NEM::MSH::EXOMesh::ndeSetType ns;
-    ns.id = ++ins;
-    ns.nNde = mb->getNumberOfPoints();
-    ns.name = mshName;
-    ns.ndeIdOffset = ndeIdOffset;
-    for (int iNde = 0; iNde < ns.nNde; iNde++) {
-      ns.ndeIds.emplace_back(iNde + 1);
-    }
-    em->addNdeSet(ns);
-    ndeIdOffset_local += ns.nNde;
-
-    // add element blocks
-
-    // Element bucket where they will be sorted.
-    // Outer layer: Specifies grouping, such as physical groups. The 0th index
-    // is reserved for elements without a group.
-    // Inner layer: Sorted by element type. The 0th index is reserved for
-    // unsupported elements. The current support respects the ordering of the
-    // NEM::MSH::EXOMesh::elementType enum:
-    //     OTHER, TRIANGLE, QUAD, TETRA, HEX
-    std::map<int, std::map<NEM::MSH::EXOMesh::elementType, std::vector<int>>>
-        elmBucket;
-    // map for VTK to EXO element ids
-    std::map<int, int> v2e_elemID_map;
-
-    std::vector<double> grpIds(mb->getNumberOfCells(), 0.0);
-    if (usePhys) mb->getCellDataArray("PhysGrpId", grpIds);
-
-    for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
-      VTKCellType vtkType =
-          static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm));
-      NEM::MSH::EXOMesh::elementType exoType =
-          NEM::MSH::EXOMesh::v2eEMap(vtkType);
-      elmBucket[grpIds[iElm]][exoType].emplace_back(iElm);
-
-      // set the dimension of Exo database based on present elements
-      bool is3D = false;
-      if (!is3D) {
-        if (exoType == NEM::MSH::EXOMesh::elementType::TETRA ||
-            exoType == NEM::MSH::EXOMesh::elementType::WEDGE || 
-            exoType == NEM::MSH::EXOMesh::elementType::HEX) {
-          is3D = true;
-          em->setDimension(3);
-        }
-      }
-    }
-
-    // sanity check
-    int numUnsupported = 0;
-    for (const auto &elmGroup : elmBucket)
-      if (elmGroup.second.count(NEM::MSH::EXOMesh::elementType::OTHER) != 0)
-        numUnsupported +=
-            elmGroup.second.at(NEM::MSH::EXOMesh::elementType::OTHER).size();
-    if (numUnsupported > 0) {
-      std::cerr << "WARNING: Detected " << numUnsupported
-                << " unsupported elements.\n";
-      throw;
-    }
-
-    // for each group and supported type, if existent, add an element block
-    for (const auto &elmGroup : elmBucket) {
-      for (const auto &elmIds : elmGroup.second) {
-        if (elmIds.second.empty()) continue;  // skip if empty
-
-        NEM::MSH::EXOMesh::elmBlkType eb;
-        eb.id = ++ieb;
-        eb.ndeIdOffset = ndeIdOffset;
-        eb.nElm = elmIds.second.size();
-
-        // populate VTK to EXO element id map for side set implementation
-        for (int i = 0; i < elmIds.second.size(); ++i) {
-          int vtkId = elmIds.second[i];
-          int exoId = i + elmIdOffset_local + 1;
-          v2e_elemID_map.insert(std::pair<int, int>( vtkId, exoId ));
-        }
-        
-
-        if (usePhys)
-          eb.name = mshName + "_PhysGrp_" + std::to_string(ieb);
-        else
-          eb.name = mshName + "_" + std::to_string(ieb);
-
-        switch (elmIds.first) {
-          case NEM::MSH::EXOMesh::elementType::TRIANGLE:
-            std::cout << "Number of triangular elements = " << eb.nElm << "\n";
-            eb.ndePerElm = 3;
-            eb.eTpe = NEM::MSH::EXOMesh::elementType::TRIANGLE;
-            break;
-          case NEM::MSH::EXOMesh::elementType::QUAD:
-            std::cout << "Number of quadrilateral elements = " << eb.nElm
-                      << "\n";
-            eb.ndePerElm = 4;
-            eb.eTpe = NEM::MSH::EXOMesh::elementType::QUAD;
-            break;
-          case NEM::MSH::EXOMesh::elementType::TETRA:
-            std::cout << "Number of tetrahedral elements = " << eb.nElm << "\n";
-            eb.ndePerElm = 4;
-            eb.eTpe = NEM::MSH::EXOMesh::elementType::TETRA;
-            break;
-          case NEM::MSH::EXOMesh::elementType::HEX:
-            std::cout << "Number of hexahedral elements = " << eb.nElm << "\n";
-            eb.ndePerElm = 8;
-            eb.eTpe = NEM::MSH::EXOMesh::elementType::HEX;
-            break; 
-          case NEM::MSH::EXOMesh::elementType::WEDGE:
-          	std::cout << "Number of wedge elements = " << eb.nElm << "\n";
-            eb.ndePerElm = 6;
-            eb.eTpe = NEM::MSH::EXOMesh::elementType::WEDGE; 
-            break;
-          case NEM::MSH::EXOMesh::elementType::OTHER:
-          default:
-            std::cerr << "WARNING: Processing unsupported element. Previous "
-                         "sanity check failed!\n";
-            throw;
-        }
-
-        eb.conn.reserve(eb.nElm * eb.ndePerElm);
-        vtkIdList *nids = vtkIdList::New();
-        for (const auto &iElm : elmIds.second) {
-          mb->getDataSet()->GetCellPoints(iElm, nids);
-          for (int in = 0; in < eb.ndePerElm; ++in) {
-            // offset node ids by 1
-            eb.conn.emplace_back(nids->GetId(in) + 1);
-          }
-        }
-
-        std::cout << "Min node index = "
-                  << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
-                  << "Max node index = "
-                  << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
-        std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
-
-        em->addElmBlk(eb);
-        elmIdOffset_local += eb.nElm;
-      }
-    }
-
-    // add side set of the external surface(s) (free surface)
-    if (makeFreeSurfSS) {
-      freeSurfaceSideSet(mb, em, elmIdOffset, 
-        v2e_elemID_map, splitTopBotSS, sideSetNames);
-    }
-
-    // add side sets
-    if (mb->getMetadata()) {
-      // get side set metadata
-      vtkSmartPointer<vtkModelMetadata> metadata = mb->getMetadata();
-      vtkSmartPointer<vtkStringArray> sdeSetNames = metadata->GetSideSetNames();
-      int *sdeSetElmLst = metadata->GetSideSetElementList();
-      int *sdeSetSdeLst = metadata->GetSideSetSideList();
-      int *sdeSetSze = metadata->GetSideSetSize();
-
-      for (int iSS = 0; iSS < metadata->GetNumberOfSideSets(); iSS++) {
-        NEM::MSH::EXOMesh::sdeSetType ss;
-        ss.id = ++iss;
-        ss.name = sdeSetNames->GetValue(iSS);
-        ss.nSde = sdeSetSze[iSS];
-        ss.elmIds.assign(sdeSetElmLst, sdeSetElmLst + sdeSetSze[iSS]);
-        ss.sdeIds.assign(sdeSetSdeLst, sdeSetSdeLst + sdeSetSze[iSS]);
-        ss.elmIdOffset = elmIdOffset;
-        em->addSdeSet(ss);
-
-        // Advance pointer for reading next side set.
-        sdeSetElmLst += sdeSetSze[iSS];
-        sdeSetSdeLst += sdeSetSze[iSS];
-      }
-    }
+    genExo(mb, em, ndeIdOffset, elmIdOffset, ins, ieb, iss, mshName, usePhys,
+           ndeIdOffset_local, elmIdOffset_local, makeFreeSurfSS, splitTopBotSS,
+           sideSetNames);
 
     // offsetting starting ids for next file
     ndeIdOffset += ndeIdOffset_local;
@@ -653,6 +719,7 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
     }
 
     // writing augmented exo file
+    std::cout << "writing exodus file" << std::endl;
     em->write();
     em->report();
   }
@@ -661,32 +728,26 @@ void ConversionDriver::genExo(const jsoncons::json &opts,
   delete em;
 }
 
-void ConversionDriver::freeSurfaceSideSet(const meshBase *mb, 
-                                          NEM::MSH::EXOMesh::exoMesh *em,
-                                          int elmIdOffset,
-                                          std::map<int, int> v2e_elemID_map,
-                                          bool splitTopBotSS, 
-                                          std::vector<std::string> sideSetNames) {
+void ConversionDriver::freeSurfaceSideSet(
+    const meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em, int elmIdOffset,
+    std::map<int, int> v2e_elemID_map, bool splitTopBotSS,
+    std::vector<std::string> sideSetNames) {
   std::cout << "Creating side set from free surface." << std::endl;
 
   std::vector<std::pair<int, int>> freeSurfCellEdge;
   std::vector<std::pair<int, int>> hexFreeSurfCellFace;
   std::vector<std::pair<int, int>> wedgeFreeSurfCellFace;
   std::vector<std::pair<int, int>> tetraFreeSurfCellFace;
-  std::vector<int> elementIds1, elementIds2, elementIds3, 
-    sideIds1, sideIds2, sideIds3;
+  std::vector<int> elementIds1, elementIds2, elementIds3, sideIds1, sideIds2,
+      sideIds3;
   std::vector<std::vector<int>> splitElemIds, splitSideIds;
 
   // Maps for VTK to EXO face id conversion for hex and wedge
-  std::map<int, int> v2e_hexFace_map = {
-    {1,4}, {2,2}, {3,1}, {4,3}, {5,5}, {6,6}
-  };
+  std::map<int, int> v2e_hexFace_map = {{1, 4}, {2, 2}, {3, 1},
+                                        {4, 3}, {5, 5}, {6, 6}};
   std::map<int, int> v2e_wedgeFace_map = {
-    {1,4}, {2,5}, {3,1}, {4,2}, {5,3}
-  };
-  std::map<int, int> v2e_tetraFace_map = {
-    {1,1}, {2,2}, {3,3}, {4,4}
-  };
+      {1, 4}, {2, 5}, {3, 1}, {4, 2}, {5, 3}};
+  std::map<int, int> v2e_tetraFace_map = {{1, 1}, {2, 2}, {3, 3}, {4, 4}};
 
   // acquiring dataset
   vtkSmartPointer<vtkDataSet> ds = mb->getDataSet();
@@ -700,7 +761,7 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
   for (int cell_i = 0; cell_i < nCl; cell_i++) {
     vtkCell *vc = ds->GetCell(cell_i);
     if (vc->GetCellDimension() == 2) {
-      //for 2D cells
+      // for 2D cells
       int ne = vc->GetNumberOfEdges();
       for (int edge_i = 0; edge_i < ne; edge_i++) {
         vtkCell *ve = vc->GetEdge(edge_i);
@@ -711,16 +772,14 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
         // getting neighbour list
         vtkSmartPointer<vtkIdList> cidl = vtkSmartPointer<vtkIdList>::New();
         ds->GetCellNeighbors(cell_i, pidl, cidl);
-        if (cidl->GetNumberOfIds() == 0)
-        {
+        if (cidl->GetNumberOfIds() == 0) {
           adjPair.first = cell_i;
           adjPair.second = edge_i + 1;
           freeSurfCellEdge.push_back(adjPair);
         }
       }
-    }
-    else if (vc->GetCellDimension() == 3) {
-      //for 3D cells
+    } else if (vc->GetCellDimension() == 3) {
+      // for 3D cells
       int nfc = vc->GetNumberOfFaces();
       for (int face_i = 0; face_i < nfc; face_i++) {
         vtkCell *vf = vc->GetFace(face_i);
@@ -741,9 +800,11 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
           if (nfc == 4) {
             tetraFreeSurfCellFace.push_back(adjPair);
             if (splitTopBotSS && tetWarning == false) {
-              std::cerr << "Warning: Tetrahedral element found on free surface.\n"
-              << "         Cannot split top and bottom into separate side sets.\n"
-              << "         Creating single side set." << std::endl;
+              std::cerr
+                  << "Warning: Tetrahedral element found on free surface.\n"
+                  << "         Cannot split top and bottom into separate side "
+                     "sets.\n"
+                  << "         Creating single side set." << std::endl;
               splitTopBotSS = false;
               tetWarning = true;
             }
@@ -758,23 +819,20 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
     // Hexahedra
     for (int i = 0; i < hexFreeSurfCellFace.size(); i++) {
       int exoId = v2e_elemID_map[hexFreeSurfCellFace[i].first];
-      int sId   = v2e_hexFace_map[hexFreeSurfCellFace[i].second];
+      int sId = v2e_hexFace_map[hexFreeSurfCellFace[i].second];
 
       if (splitTopBotSS) {
         if (sId == 5) {
           elementIds2.push_back(exoId);
           sideIds2.push_back(sId);
-        }
-        else if (sId == 6) {
+        } else if (sId == 6) {
           elementIds3.push_back(exoId);
           sideIds3.push_back(sId);
-        }
-        else {
+        } else {
           elementIds1.push_back(exoId);
           sideIds1.push_back(sId);
         }
-      }
-      else {
+      } else {
         elementIds1.push_back(exoId);
         sideIds1.push_back(sId);
       }
@@ -782,23 +840,20 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
     // Wedges
     for (int i = 0; i < wedgeFreeSurfCellFace.size(); i++) {
       int exoId = v2e_elemID_map[wedgeFreeSurfCellFace[i].first];
-      int sId   = v2e_wedgeFace_map[wedgeFreeSurfCellFace[i].second];
+      int sId = v2e_wedgeFace_map[wedgeFreeSurfCellFace[i].second];
 
       if (splitTopBotSS) {
         if (sId == 4) {
           elementIds2.push_back(exoId);
           sideIds2.push_back(sId);
-        }
-        else if (sId == 5) {
+        } else if (sId == 5) {
           elementIds3.push_back(exoId);
           sideIds3.push_back(sId);
-        }
-        else {
+        } else {
           elementIds1.push_back(exoId);
           sideIds1.push_back(sId);
         }
-      }
-      else {
+      } else {
         elementIds1.push_back(exoId);
         sideIds1.push_back(sId);
       }
@@ -806,7 +861,7 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
     // Tetrahedra
     for (int i = 0; i < tetraFreeSurfCellFace.size(); i++) {
       int exoId = v2e_elemID_map[tetraFreeSurfCellFace[i].first];
-      int sId   = v2e_tetraFace_map[tetraFreeSurfCellFace[i].second];
+      int sId = v2e_tetraFace_map[tetraFreeSurfCellFace[i].second];
       elementIds1.push_back(exoId);
       sideIds1.push_back(sId);
     }
@@ -822,38 +877,35 @@ void ConversionDriver::freeSurfaceSideSet(const meshBase *mb,
     }
   }
 
-
   if (splitTopBotSS && em->getDimension() == 3) {
-    splitElemIds = {elementIds1,elementIds2,elementIds3};
-    splitSideIds = {sideIds1,sideIds2,sideIds3};
-  }
-  else {
+    splitElemIds = {elementIds1, elementIds2, elementIds3};
+    splitSideIds = {sideIds1, sideIds2, sideIds3};
+  } else {
     splitElemIds = {elementIds1};
     splitSideIds = {sideIds1};
   }
-
 
   for (int i = 0; i < splitElemIds.size(); ++i) {
     NEM::MSH::EXOMesh::sdeSetType ss;
 
     // TODO: fix names, still not working correctly
     if (sideSetNames.size() == 1 && splitElemIds.size() == 1) {
-      ss.name = sideSetNames[i]; 
+      ss.name = sideSetNames[i];
     }
     if (sideSetNames.size() == 0) {
       std::cout << "side set names size is zero" << std::endl;
-      ss.name = "side_set_000000" + std::to_string(i+1);
+      ss.name = "side_set_000000" + std::to_string(i + 1);
     }
     if (sideSetNames.size() > 0 && sideSetNames.size() < 3 && splitTopBotSS) {
-      std::cerr << "Error: Expected 3 'Side Set Names', found " <<
-         sideSetNames.size() << std::endl;
+      std::cerr << "Error: Expected 3 'Side Set Names', found "
+                << sideSetNames.size() << std::endl;
       exit(1);
     }
     if (sideSetNames.size() == 3) {
       ss.name = sideSetNames[i];
     }
 
-    //ss.id = ++iss;
+    // ss.id = ++iss;
     ss.id = i + 1;
     ss.nSde = (int)splitSideIds[i].size();
     ss.elmIds = splitElemIds[i];
