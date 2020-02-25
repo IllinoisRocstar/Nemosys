@@ -242,11 +242,13 @@ PackMeshDriver::PackMeshDriver(
     const bool &createCohesive, const bool &enablePatches,
     const std::vector<double> &transferMesh, const bool &customDomain,
     const std::vector<double> &domainBounds, const int &mshAlgorithm,
-    const bool &enableDefaultOutput) {
+    const bool &enableDefaultOutput, const bool &enablePhysGrpPerShape) {
   auto *objrocPck = new NEM::GEO::rocPack(ifname, ofname);
 
-  if ((enable2PhysGrps) && (enableMultiPhysGrps)) {
-    std::cerr << "Please select only one of the option for physical groups"
+  if (((enable2PhysGrps) && (enableMultiPhysGrps)) ||
+       (enablePhysGrpPerShape) && (enable2PhysGrps) ||
+       (enablePhysGrpPerShape) && (enableMultiPhysGrps)) {
+    std::cerr << "Please select only one of the options for physical groups"
               << std::endl;
     throw;
   }
@@ -261,8 +263,10 @@ PackMeshDriver::PackMeshDriver(
   objrocPck->translateAll(transferMesh[0], transferMesh[1], transferMesh[2]);
   objrocPck->setMeshingAlgorithm(mshAlgorithm);
 
-  if (enable2PhysGrps && createCohesive)
+  if (createCohesive) {
     objrocPck->sanityCheckOn();
+    objrocPck->enableCohesiveElements();
+  }
 
   if (customDomain)
     objrocPck->setCustomDomain(domainBounds);
@@ -288,6 +292,9 @@ PackMeshDriver::PackMeshDriver(
   if (enable2PhysGrps)
     objrocPck->enableTwoPhysGrps();
 
+  if (enablePhysGrpPerShape)
+    objrocPck->enablePhysicalGroupsPerShape();
+
   if (enablePatches)
     objrocPck->enableSurfacePatches();
 
@@ -305,10 +312,6 @@ PackMeshDriver::PackMeshDriver(
       objrocPck->rocPack2Periodic3D();
     }
   }
-
-  if (createCohesive)
-    objrocPck->createCohesiveElements(ofname + "_oldMSH.msh",
-                                      "OutCohesive.vtu");
 
   if (objrocPck)
     delete objrocPck;
@@ -1557,6 +1560,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Set Periodic Geometry", false);
       bool enableOutBool = inputjson["Meshing Parameters"].get_with_default(
           "Enable Default Outputs", false);
+      bool enablePhysGrpPerShape = inputjson["Meshing Parameters"].get_with_default(
+          "Enable physical group per shape", false);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1628,7 +1633,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm,
-          enableOutBool);
+          enableOutBool, enablePhysGrpPerShape);
       return pckmshdrvobj;
     } else {
       bool setPeriodicMesh = true;
@@ -1664,6 +1669,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Set Periodic Geometry", false);
       bool enableOutBool = inputjson["Meshing Parameters"].get_with_default(
           "Enable Default Outputs", false);
+      bool enablePhysGrpPerShape = inputjson["Meshing Parameters"].get_with_default(
+          "Enable physical group per shape", false);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1733,7 +1740,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm,
-          enableOutBool);
+          enableOutBool, enablePhysGrpPerShape);
       return pckmshdrvobj;
     }
   } else {

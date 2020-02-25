@@ -78,8 +78,13 @@ TEST(rocPack, NumNodesBoundaryPacks)
 TEST(rocPack, PeriodicMesh)
 {
   auto* objrocPck = 
-        new NEM::GEO::rocPack("rocOut_Mesh", "meshPeriodic3D");
+        new NEM::GEO::rocPack("rocOut_Mesh", "meshPeriodic3D.vtu");
   objrocPck->setPeriodicGeometry();
+  objrocPck->sanityCheckOn();
+  objrocPck->enableCohesiveElements();
+  objrocPck->shrinkVolumes(0.8);
+  objrocPck->setMeshSize(0.08);
+  objrocPck->enableTwoPhysGrps();
   objrocPck->setPeriodicMesh();
   objrocPck->rocPack2Periodic3D();
   objrocPck->setNodeLocations(15,30,55);

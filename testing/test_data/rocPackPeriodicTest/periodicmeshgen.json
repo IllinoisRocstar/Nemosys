@@ -1,0 +1,40 @@
+[
+        {
+            "Program Type": "Pack Mesh Generation",
+            "Mesh Generation Engine": "packmesh",
+            "Mesh Type": "tetrahedral",
+            "Mesh File Options": 
+            {
+                "Input Rocpack File": "rocOut_Mesh",
+                "Output Mesh File": "meshPeriodic3D.vtu"
+            },
+            "Meshing Parameters":
+            {
+                "Scale Geometries?": false,                 // Optional (Default->false)
+                "Scale Value": 1,                           // Optional (Default->1)
+                "Remove geometries on boundary": false,     // Optional (Default->false)
+                "Mesh Algorithm": 1,
+                "Set Periodic Geometry": true,             // Optional (Default->false)
+                "Mesh Size": 0.07,                          // Optional (Default->0.1)
+                "Enable two physical groups": false,        // Optional (Default->false)
+                "Enable multi physical groups": false,      // Optional (Default->false)
+                "Enable physical group per shape": false,    // Optional (Default->false)
+                "Create cohesive elements": false,          // Optional (Default->false)
+                "Enable Patches": false,                    // Optional (Default->false)
+                "Enable Default Outputs": false,            // Optional (Default->false)
+                "TransferMesh_X": 0,                        // Optional (Default->0)
+                "TransferMesh_Y": 0,                        // Optional (Default->0)
+                "TransferMesh_Z": 0                         // Optional (Default->0)
+                /*"Custom Domain":                          // Optional (All parameters)
+                {
+                    "Initial_X": -0.5,
+                    "Initial_Y": -0.5,
+                    "Initial_Z": -0.5,
+                    "Length_X": 1.0,
+                    "Length_Y": 1.0,
+                    "Length_Z": 1.0
+                }*/
+
+            }
+        }
+]
