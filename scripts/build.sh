@@ -8,7 +8,7 @@
 
 set -x
 
-NEMOSYS_DEPS_BUILD_DIR=/tmp/nemosys_build
+NEMOSYS_DEPS_BUILD_DIR=$3/tmp/nemosys_build
 NEMOSYS_TARBALL_PATH=$1
 NEMOSYS_DEPS_INSTALL_PATH=$2
 

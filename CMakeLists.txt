@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 46)
-set(NEMOSYS_PATCH_VERSION 2)
+set(NEMOSYS_MINOR_VERSION 47)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -245,7 +245,7 @@ if(ENABLE_HDF5)
     NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
     list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
     list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
+    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
     message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
     set(HAVE_HDF5 TRUE)
     set(HAVE_HDF5_CONFIG TRUE)
@@ -435,17 +435,6 @@ endif()
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Turn on default warnings as errors.
-if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-  # Update if necessary
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wpedantic")
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wold-style-cast \
-  #-Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof")
-elseif(MSVC)
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
-  string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-endif()
-
 # Find contrib libraries #######################################################
 
 # Find MAdLib and ANN
@@ -564,7 +553,7 @@ set(NEMOSYS_SRCS
 #   src/Transfer/ConservativeVolumeTransfer.C
 
     src/StlToVtk.C
-    src/vtkAnalyzer.C
+    src/IO/vtkAnalyzer.C
 )
 
 # Optional source files
@@ -576,10 +565,19 @@ if(HAVE_CGNS)
 
       src/MeshPartitioning/meshStitcher.C
 
-      src/cgnsAnalyzer.C
-      src/cgnsWriter.C
+      src/IO/cgnsAnalyzer.C
+      src/IO/cgnsWriter.C
       src/gridTransfer.C
-      src/rocstarCgns.C
+      src/IO/rocstarCgns.C
+  )
+endif()
+
+if(HAVE_HDF5)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/ProteusDriver.C
+
+      src/IO/hdf5Reader.C
+      src/IO/proteusHdf5.C
   )
 endif()
 
@@ -666,6 +664,12 @@ target_include_directories(interp
 
 # Build Nemosys library
 add_library(Nemosys ${NEMOSYS_SRCS})
+# /* Work around to disable warnings coming from contrib headers.
+foreach(lib jsoncons ANN MAdLib)
+  get_target_property(${lib}_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
+  target_include_directories(Nemosys SYSTEM PUBLIC ${${lib}_include_dirs})
+endforeach()
+# */
 target_link_libraries(Nemosys
     PUBLIC
         interp
@@ -697,6 +701,7 @@ if(HAVE_CGNS)
 endif()
 
 if(HAVE_HDF5)
+  target_compile_definitions(Nemosys PRIVATE HAVE_HDF5)
   if(HAVE_HDF5_CONFIG)
     if(BUILD_SHARED_LIBS)
       target_link_libraries(Nemosys
@@ -713,6 +718,7 @@ if(HAVE_HDF5)
     endif()
   else()
     target_link_libraries(Nemosys PUBLIC ${HDF5_LIBRARIES})
+    target_include_directories(Nemosys SYSTEM PUBLIC ${HDF5_INCLUDE_DIR})
   endif()
 endif()
 
@@ -821,6 +827,37 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
         IMPACT::SurfX
         IMPACT::SimOUT)
   target_compile_definitions(Nemosys PUBLIC HAVE_IMPACT)
+endif()
+
+# Set warning level ############################################################
+
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  # Update if necessary
+  target_compile_options(Nemosys PUBLIC -Wpedantic)
+  target_compile_options(Nemosys PUBLIC -Wall -Wno-sign-compare)
+  target_compile_options(Nemosys PUBLIC -Wextra -Wno-unused-parameter)
+  target_compile_options(Nemosys PUBLIC -Woverloaded-virtual -Wnon-virtual-dtor)
+  target_compile_options(Nemosys PUBLIC -Wstrict-null-sentinel -Wredundant-decls)
+  target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
+
+  # Stretch goals
+  #target_compile_options(Nemosys PUBLIC -Wshadow)
+  #target_compile_options(Nemosys PUBLIC -Wold-style-cast)
+  #target_compile_options(Nemosys PUBLIC -Wsign-compare -Wunused-parameter)
+
+  # Maybe
+  #target_compile_options(Nemosys PUBLIC -Wmissing-declarations)
+  #target_compile_options(Nemosys PUBLIC -Wsign-promo -Wsuggest-override
+  #    -Wsuggest-final-types -Wsuggest-final-methods -Wfloat-equal
+  #    -Wuseless-cast -Wzero-as-null-pointer-constant -Wpadded)
+
+  # Requires high gcc
+  #target_compile_options(Nemosys PUBLIC -Wredundant-tags -Wmismatched-tags
+  #    -Wextra-semi -Warith-conversion
+  #    -Wmultiple-inheritance -Wvirtual-inheritance)
+elseif(MSVC)
+#  target_compile_options(Nemosys PUBLIC /permissive-)
+  string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
 # Generate export header #######################################################

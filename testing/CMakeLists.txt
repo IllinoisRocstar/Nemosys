@@ -123,6 +123,10 @@ if(ENABLE_CFMSH)
   NEM_add_test_executable(PackMesh)
 endif()
 
+if(HAVE_HDF5)
+NEM_add_test_executable(Proteus)
+endif()
+
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
   NEM_add_test_executable(ConservativeVolumeTransfer)
 endif()
@@ -311,4 +315,15 @@ if(ENABLE_PYTHON_BINDINGS)
             ${PYTHON_EXECUTABLE} setup.py test
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../python)
   endif()
+endif()
+
+if(HAVE_HDF5)
+# Proteus testing
+NEM_add_test(proteus Proteus proteus
+    bench02.json
+    bench02_SN.vtu
+    bench02_SN_gold.vtu 
+    bench02_SN.exo
+    bench02_SN_gold.exo
+)
 endif()

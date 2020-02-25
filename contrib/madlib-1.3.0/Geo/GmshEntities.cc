@@ -80,7 +80,9 @@ namespace MAd {
   // -------------------------------------------------------------------
   std::vector<GmshGEdge*> GmshGFace::edges() const
   {
+    std::cout << "1" << std::endl;
     std::vector<GmshGEdge*> res;
+    //std::cout << "2" << std::endl;
     std::vector<GEdge*> lst = gf->edges();
     std::vector<GEdge*>::const_iterator it = lst.begin();
     for (; it != lst.end(); it++ ){
