@@ -28,9 +28,9 @@ int genTest(const char *jsonF, const char *newName, const char *goldName) {
   return diffMesh(goldMesh.get(), newMesh.get());
 }
 
-// TEST(RefinementDriverTest, RefineValue) {
-//  EXPECT_EQ(0, genTest(refineValueJSON, refineValueVTU, refineValueGoldVTU));
-//}
+TEST(RefinementDriverTest, RefineValue) {
+  EXPECT_EQ(0, genTest(refineValueJSON, refineValueVTU, refineValueGoldVTU));
+}
 
 TEST(RefinementDriverTest, RefineUniform) {
   EXPECT_EQ(0,
