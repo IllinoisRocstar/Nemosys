@@ -209,12 +209,15 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       if (cfmparams.contains("BoundaryCellSize"))
         params->bndryCellSize =
             cfmparams["BoundaryCellSize"].as<double>();
+      if (cfmparams.contains("BoundaryCellSizeRefinementThickness"))
+        params->bndryCellSizeRefThk =
+            cfmparams["BoundaryCellSizeRefinementThickness"].as<double>();
       if (cfmparams.contains("KeepCellsIntersectingBoundary"))
         params->keepCellIB =
-            cfmparams["KeepCellsIntersectingBoundary"].as<double>();
+            cfmparams["KeepCellsIntersectingBoundary"].as<bool>();
       if (cfmparams.contains("CheckForGluedMesh"))
         params->chkGluMsh =
-            cfmparams["CheckForGluedMesh"].as<double>();
+            cfmparams["CheckForGluedMesh"].as<bool>();
       if (cfmparams.contains("AllowDisconnectedDomains"))
           params->_alwDiscDomains = 
               cfmparams["AllowDisconnectedDomains"].as<bool>();
@@ -226,7 +229,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       if (cfmparams.contains(cap))
       {
         params->_withBndLyr = true;
-        params->blNLyr = cfmparams[cap]["NLayers"].as<double>();
+        params->blNLyr = cfmparams[cap]["NLayers"].as<int>();
         params->blThkRto = cfmparams[cap]["ThicknessRatio"].as<double>();
         if (cfmparams[cap].contains("MaxFirstLayerThickness"))
           params->maxFrstLyrThk = cfmparams[cap]["MaxFirstLayerThickness"].as<double>();
@@ -316,6 +319,10 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
             refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
           else
             refPatch.aditRefLvls = -1;
+          if (jptch.contains("RefinementThickness"))
+            refPatch.refThickness = jptch["RefinementThickness"].as<double>();
+          else
+            refPatch.refThickness = -1;
           if (jptch.contains("CellSize"))
             refPatch.cellSize = jptch["CellSize"].as<double>();
           else

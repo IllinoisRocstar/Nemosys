@@ -21,7 +21,9 @@
 #ifdef HAVE_SIMMETRIX
 #include "RemeshDriver.H"
 #endif
-
+#ifdef HAVE_TEMPLATE_MESH
+#include "TemplateMeshDriver.H"
+#endif
 //------------------------------ Factory of Drivers
 //----------------------------------------//
 NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
@@ -69,6 +71,15 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
               << std::endl;
     exit(1);
 #endif // HAVE_CGNS
+  } else if (program_type == "Template Mesh Generation") {
+#ifdef HAVE_TEMPLATE_MESH
+    return TemplateMeshDriver::readJSON(inputjson);
+#else
+    std::cerr << "Program Type " << program_type
+              << " is not enabled. Build NEMoSys with template mesh capabilities."
+              << std::endl;
+    exit(1);
+#endif // HAVE_TEMPLATE_MESH
   } else if (!program_type.compare("Proteus")) {
 #ifdef HAVE_HDF5
     return ProteusDriver::readJSON(inputjson);

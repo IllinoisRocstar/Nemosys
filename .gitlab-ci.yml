@@ -105,7 +105,7 @@ test:win10:
     - ctest --output-on-failure
 
 test:centos7:
-  image: ilrocstar/nemosys-centos7:v3
+  image: ilrocstar/nemosys-centos7:v4
   tags:
     - nemosys
   script:
