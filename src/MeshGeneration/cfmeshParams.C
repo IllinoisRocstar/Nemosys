@@ -7,10 +7,11 @@ cfmeshParams::cfmeshParams()
   maxCellSize = -1.;
   minCellSize = -1.;
   bndryCellSize = -1.;
+  bndryCellSizeRefThk = -1.;
   maxFrstLyrThk = -1.;
   alwDiscont = false;
-  keepCellIB = -1;
-  chkGluMsh = -1;
+  keepCellIB = false;
+  chkGluMsh = false;
   blNLyr = 1;
   blThkRto = 1.0;
   srfEdgAng = 45.0;

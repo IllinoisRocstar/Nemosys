@@ -39,7 +39,7 @@ cfmeshGen::cfmeshGen()
   _params->maxFrstLyrThk = -1.;
   _params->_alwDiscDomains = false;
   _params->alwDiscont = false;
-  _params->keepCellIB = -1;
+  _params->keepCellIB = false;
   _params->chkGluMsh = -1;
   _params->_withBndLyr = false;
   _params->blNLyr = 2;
@@ -301,14 +301,18 @@ FoamFile\n\
         contText = contText + "\nboundaryCellSize " + 
         std::to_string(_params->bndryCellSize) + ";\n";
 
-    
-    if ((_params->keepCellIB)>0)
-        contText = contText + "\nkeepCellsIntersectingBounday " 
-        + std::to_string(_params->keepCellIB) + ";\n";
+    if ((_params->bndryCellSizeRefThk)>0)
+        contText = contText + "\nboundaryCellSizeRefinementThickness " + 
+        std::to_string(_params->bndryCellSizeRefThk) + ";\n";
 
-    if ((_params->chkGluMsh)>0)
-        contText = contText + "\ncheckForGluedMesh " 
-        + std::to_string(_params->chkGluMsh) + ";\n";
+    
+    if ((_params->keepCellIB) == true)
+        contText = contText + "\nkeepCellsIntersectingBoundary 1;\n"; 
+        //+ std::to_string(_params->keepCellIB) + ";\n";
+
+    if ((_params->chkGluMsh) == true)
+        contText = contText + "\ncheckForGluedMesh 1;\n"; 
+        //+ std::to_string(_params->chkGluMsh) + ";\n";
 
     if ((_params->_alwDiscDomains))
         contText = contText + "\nallowDisconnectedDomains 1;\n";
@@ -327,7 +331,7 @@ FoamFile\n\
             ( (_params->maxFrstLyrThk) > 0 ? "\n" : ("\tmaxFirstLayerThickness\t" + 
               std::to_string(_params->maxFrstLyrThk) + ";\n") );
         contText = contText + 
-            ( (_params->alwDiscont) ? ("\tAllowDiscontinuity\t1;\n") : "\n" );
+            ( (_params->alwDiscont) ? ("\tallowDiscontinuity\t1;\n") : "\n" );
         
         // boundary layer patches
         if (_params->_withBndLyrPtch)
@@ -335,17 +339,17 @@ FoamFile\n\
             contText = contText + "\tpatchBoundaryLayers\n\t{\n";
             for (auto pt=(_params->blPatches).begin(); pt!=(_params->blPatches).end(); pt++)
             {
-                contText = contText + "\t\t" + (pt->patchName) + "\n\t\t{\n";
+                contText = contText + "\t\t\"" + (pt->patchName) + "\"\n\t\t{\n";
                 if ( (pt->alwDiscont) == true)
                     contText = contText + "\t\t\tallowDiscontinuity\t1;\n";
                 if ( (pt->maxFrstLyrThk) > 0)
                     contText = contText + "\t\t\tmaxFirstLayerThickness\t"
                         + std::to_string((pt->maxFrstLyrThk)) + ";\n";
                 if ( (pt->blNLyr) > 0)
-                    contText = contText + "\t\t\tNLayers\t"
+                    contText = contText + "\t\t\tnLayers\t"
                         + std::to_string((pt->blNLyr)) + ";\n";
                 if ( (pt->blThkRto) > 0)
-                    contText = contText + "\t\t\tThicknessRatio\t"
+                    contText = contText + "\t\t\tthicknessRatio\t"
                         + std::to_string((pt->blThkRto)) + ";\n";
                 contText = contText + "\t\t}\n";
             }
@@ -379,6 +383,9 @@ FoamFile\n\
             if ( (pt->aditRefLvls) > 0)
                 contText = contText + "\t\tadditionalRefinementLevels\t"
                     + std::to_string((pt->aditRefLvls)) + ";\n";
+            if ( (pt->refThickness) > 0)
+                contText = contText + "\t\trefinementThickness\t"
+                    + std::to_string((pt->refThickness)) + ";\n";
             if ( (pt->cellSize) > 0)
                 contText = contText + "\t\tcellSize\t"
                     + std::to_string((pt->cellSize)) + ";\n";
@@ -399,7 +406,7 @@ FoamFile\n\
         {
             contText = contText + "\t\t\"" + (std::get<0>(*pt)) + "\"\n\t\t{\n";
             contText = contText + "\t\t\tnewName\t" + std::get<1>(*pt) + ";\n";
-            contText = contText + "\t\t\tnewType\t" + std::get<2>(*pt) + ";\n";
+            contText = contText + "\t\t\ttype\t" + std::get<2>(*pt) + ";\n";
             contText = contText + "\t\t}\n";
         }
         contText = contText + "\t\n}\n";

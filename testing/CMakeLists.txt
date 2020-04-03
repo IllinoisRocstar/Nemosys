@@ -127,6 +127,10 @@ if(HAVE_HDF5)
 NEM_add_test_executable(Proteus)
 endif()
 
+if(ENABLE_TEMPLATE_MESH)
+  NEM_add_test_executable(TemplateMesh)
+endif()
+
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
   NEM_add_test_executable(ConservativeVolumeTransfer)
 endif()
@@ -241,6 +245,13 @@ NEM_add_test(nucMesh NucMesh NucMeshTest
     concentric_polygons_test.json
     concentric_polygons_test_REF.msh
 )
+
+if(ENABLE_TEMPLATE_MESH)
+  NEM_add_test(templateMesh TemplateMesh TemplateMeshTest
+      test_spiral_tape.json
+      spiral_test_REF.msh
+  )
+endif()
 
 NEM_add_test(RocPackPeriodic RocPackPeriodic rocPackPeriodicTest
     rocOut

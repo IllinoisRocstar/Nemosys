@@ -435,7 +435,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
   bool warning = true;
 
   std::string line;
-  int numPoints, numCells, numPhysGrps;
+  int numPoints = 0, numCells = 0, numPhysGrps = 0;
   bool fndPhyGrp = false;
   std::vector<int> physGrpDims;
   std::map<int, std::string> physGrpIdName;
@@ -480,6 +480,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
     }
 
     if (line.find("$Nodes") != -1) {
+      std::cout << "NODES" << std::endl;
       getline(meshStream, line);
       std::stringstream ss(line);
       ss >> numPoints;
@@ -504,6 +505,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
     }
 
     if (line.find("$Elements") != -1) {
+      std::cout << "ELEMENTS" << std::endl;
       getline(meshStream, line);
       // std::cout << "line = " << line << std::endl;
       std::stringstream ss(line);
@@ -744,6 +746,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
   if (fndPhyGrp) {
     cellDataNames.push_back("PhysGrpId");
     cellData.push_back(cellPhysGrpIds);
+    std::cout << "PHYSGRPS" << std::endl;
   }
 
   vtkMesh *vtkmesh = new vtkMesh();
@@ -751,12 +754,26 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
   // vtkmesh->dataSet->DeepCopy(dataSet_tmp);
   vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
+  if (numCells == 0) 
+    std::cerr << "Warning: No cells were found in the mesh!\n";
+  std::cout << "NUM OF CELLS" << std::endl;
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
+  if (numPoints == 0) 
+    std::cerr << "Warning: No points were found in the mesh!\n";
+  std::cout << "NUM OF POINTS" << std::endl;
 
-  for (int i = 0; i < pointData.size(); ++i)
-    vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
-  for (int i = 0; i < cellData.size(); ++i)
-    vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
+  if (numPoints > 0) {
+    for (int i = 0; i < pointData.size(); ++i)
+      vtkmesh->setPointDataArray(&(pointDataNames[i])[0u], pointData[i]);
+    std::cout << "POINT DATA" << std::endl;
+  }
+  
+  if (numCells > 0) {
+    for (int i = 0; i < cellData.size(); ++i)
+      vtkmesh->setCellDataArray(&(cellDataNames[i])[0u], cellData[i]);
+  }
+  std::cout << "CELL DATA" << std::endl;
+
 
   // vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
   // vtkmesh->write();

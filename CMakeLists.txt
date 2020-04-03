@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 47)
-set(NEMOSYS_PATCH_VERSION 2)
+set(NEMOSYS_MINOR_VERSION 48)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -126,6 +126,7 @@ opt(METIS "Enable METIS partitioner" ${DEFAULT})
 opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
+opt(TEMPLATE_MESH "Enable meshing templates" ON)
 opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
 opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 
@@ -608,6 +609,13 @@ if(ENABLE_SIMMETRIX)
   )
 endif()
 
+if (ENABLE_TEMPLATE_MESH)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/TemplateMeshDriver.C
+  )
+endif()
+
+
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Mesh/foamMesh.C
@@ -776,6 +784,10 @@ if(ENABLE_SIMMETRIX)
   target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
 endif()
 
+if(ENABLE_TEMPLATE_MESH)
+  target_compile_definitions(Nemosys PUBLIC HAVE_TEMPLATE_MESH)
+endif()
+
 if(ENABLE_CFMSH)
   target_link_libraries(Nemosys
       # TODO: Add namespace to cfMesh to protect the symbol clash between
@@ -838,7 +850,9 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(Nemosys PUBLIC -Wextra -Wno-unused-parameter)
   target_compile_options(Nemosys PUBLIC -Woverloaded-virtual -Wnon-virtual-dtor)
   target_compile_options(Nemosys PUBLIC -Wstrict-null-sentinel -Wredundant-decls)
-  target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
+      target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
+  endif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
 
   # Stretch goals
   #target_compile_options(Nemosys PUBLIC -Wshadow)
