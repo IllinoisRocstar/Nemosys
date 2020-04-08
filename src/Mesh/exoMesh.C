@@ -181,7 +181,7 @@ int elmNumSrf(elementType tag) {
 //////////////////////////////////
 
 exoMesh::exoMesh()
-    : _numDim(3),
+    : _numDim(2),
       _numNdes(0),
       _numElms(0),
       _fid(-1),
@@ -194,7 +194,7 @@ exoMesh::exoMesh()
       _isVerbose(false) {}
 
 exoMesh::exoMesh(std::string ifname)
-    : _numDim(3),
+    : _numDim(2),
       _numNdes(0),
       _numElms(0),
       _fid(-1),
@@ -690,7 +690,7 @@ void exoMesh::reset() {
   _elmBlks.clear();
   _sdeSets.clear();
   _fid = 0;
-  _numDim = 3;
+  _numDim = 2;
   _numNdes = 0;
   _numElms = 0;
   _xCrds.clear();
@@ -720,7 +720,6 @@ void exoMesh::read(const std::string &ifname) {
   _isOpen = true;
   wrnErrMsg(_fid > 0 ? 0 : -1, "Problem opening file " + _ifname + "\n");
 
-  int dim;
   int numElmBlks;
   int numNdeSets;
   int numSdeSets;
@@ -742,9 +741,8 @@ void exoMesh::read(const std::string &ifname) {
 
   _exErr = ex_inquire(_fid, EX_INQ_DIM, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  _numDim = idum;
   std::cout << "Number of coordinate dimensions is " << idum << std::endl;
-  if (idum != 3)
-    wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
 
   _exErr = ex_inquire(_fid, EX_INQ_NODES, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
