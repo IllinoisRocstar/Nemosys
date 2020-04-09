@@ -65,7 +65,7 @@ namespace MAd {
         if(abs(move)==1) continue;
 
         int numed = V_numEdges(pv);
-        bool deleted = true;
+        //bool deleted = true;
         for(int i=0 ; i<numed ; i++) {
           pEdge ped = V_edge(pv,i);
           pVertex pother = E_otherVertex(ped,pv);
@@ -73,7 +73,7 @@ namespace MAd {
           int is = EN_getDataInt((pEntity) pother , tagMove,&movother);
 	
           if((!is) || (movother < 0)) {
-            deleted = false;
+            //deleted = false;
           }
         }
         //if(deleted) EN_attachDataInt((pEntity) pv , tagMove,10);         

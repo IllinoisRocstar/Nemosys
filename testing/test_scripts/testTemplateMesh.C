@@ -53,7 +53,7 @@ TEST(TemplateMesh, Spiral_Tape_Test) {
       quads = true;
     if (vtkType == VTK_HEXAHEDRON)
       hexs = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =

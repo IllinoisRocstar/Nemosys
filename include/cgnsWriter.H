@@ -28,11 +28,11 @@ class NEMOSYS_EXPORT cgnsWriter {
   public:
     cgnsWriter(std::string fname, std::string baseName, int cellDim,
                int physDim, int mode) :
-        myCgFileName(std::move(fname)), cellDim(cellDim), physDim(physDim),
-        baseName(std::move(baseName)), nBase(1), nZone(0), nSection(0),
-        gnSection(0),
-        nVrtx(0), nCell(0), nSlnFld(0), coordRind(0), virtElmRind(0),
-        nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
+        myCgFileName(std::move(fname)), baseName(std::move(baseName)),
+        cellDim(cellDim), physDim(physDim), nBase(1), nZone(0),
+        nVrtx(0), nCell(0),  nSection(0), gnSection(0),
+        coordRind(0), virtElmRind(0),
+        nSlnFld(0), nVrtxSln(0), nCellSln(0), nVrtxFld(0), nCellFld(0)
     {
       if (mode == 0) {
         if (cg_open(myCgFileName.c_str(), CG_MODE_WRITE,

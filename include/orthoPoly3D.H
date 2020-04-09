@@ -93,12 +93,12 @@ class NEMOSYS_EXPORT orthoPoly3D
     // compute coefficients for polynomial expansion of sampled function
     void computeA(const VectorXd &sigma);
     // evaluate the fitting polynomial at coord
-    const double operator()(const std::vector<double> &coord);
-    const double eval(const std::vector<double> &coord);
+    double operator()(const std::vector<double> &coord);
+    double eval(const std::vector<double> &coord);
 
     // return the status of the approximant object
     // 1 indicates approximant is available, 0 otherwise 
-    const bool status() const { return finished; }
+    bool status() const { return finished; }
 
     // reset coefficients to default state
     void resetA();

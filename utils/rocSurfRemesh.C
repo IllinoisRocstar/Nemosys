@@ -46,8 +46,8 @@ void getFaceCenters(MAd::pMesh msh, std::vector<double>& faceCntCrds);
 int main(int argc, char* argv[])
 {
   // check input
-  int nBCgFile = 0;
-  int nNICgFile = 0;
+  // int nBCgFile = 0;
+  // int nNICgFile = 0;
   
   std::string bCgFileName, niCgFileName;
   if (argc!=5) {
@@ -55,9 +55,9 @@ int main(int argc, char* argv[])
               << " n_b bCgFileName0 n_ni inCgFileName0" << std::endl;
     return 0;
   }
-  std::string::size_type sz;   // alias of size_t
-  nBCgFile = std::stoi(argv[1],&sz);
-  nNICgFile = std::stoi(argv[3],&sz);
+  // std::string::size_type sz;   // alias of size_t
+  // nBCgFile = std::stoi(argv[1],&sz);
+  // nNICgFile = std::stoi(argv[3],&sz);
   bCgFileName = argv[2];
   niCgFileName = argv[4];
 
@@ -321,7 +321,7 @@ int main(int argc, char* argv[])
 void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 {
    MAd::RIter ri = M_regionIter(msh);
-   int rCnt = 0;
+   // int rCnt = 0;
    while (MAd::pRegion pr = RIter_next(ri)) 
    {
      double xc[3];
@@ -345,7 +345,7 @@ void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 void getFaceCenters(MAd::pMesh msh, std::vector<double>& faceCntCrds)
 {
    MAd::FIter fi = M_faceIter(msh);
-   int fCnt = 0;
+   // int fCnt = 0;
    while (MAd::pFace pf = FIter_next(fi)) 
    {
      double xc[3];

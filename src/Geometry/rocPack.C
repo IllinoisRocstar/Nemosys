@@ -578,24 +578,24 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
     // If there are less than 25 total volumes, just use the whole tagged
     // boundary volumes, otherwise use the selected volumes from each side
-    // (left, right, up, etc..) 
+    // (left, right, up, etc..)
 
     double tol = 0.5;
     double edgeTol = 0.001;
     // double Xdim2 = 0;
     // double Ydim2 = 0;
     // double Zdim2 = 0;
-    
+
     // left
     std::vector<std::pair<int, int>> entityLeft;
-    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol, 
+    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol,
                                           boxPt[2] - tol, boxPt[0] + edgeTol,
                                           boxPt[1] + Ydim + tol,
                                           Zdim + boxPt[2] + tol, entityLeft,0);
 
     // Right
     std::vector<std::pair<int, int>> entityRight;
-    gmsh::model::getEntitiesInBoundingBox(Xdim + boxPt[0] - edgeTol, boxPt[1] - tol, 
+    gmsh::model::getEntitiesInBoundingBox(Xdim + boxPt[0] - edgeTol, boxPt[1] - tol,
                                           boxPt[2] - tol, Xdim + boxPt[0] + tol,
                                           Ydim + boxPt[1] + tol,
                                           Zdim + boxPt[2] + tol, entityRight,0);
@@ -609,9 +609,9 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
     // Down
     std::vector<std::pair<int, int>> entityDown;
-    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol, 
+    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol,
                                           boxPt[2] - tol, Xdim + boxPt[0] + tol,
-                                          boxPt[1] + edgeTol, Zdim + boxPt[2] + tol, 
+                                          boxPt[1] + edgeTol, Zdim + boxPt[2] + tol,
                                           entityDown, 0);
 
     // Back
@@ -626,7 +626,7 @@ void rocPack::makePeriodic(const bool rmbPacks) {
     gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol,
                                           Zdim + boxPt[2] - edgeTol,
                                           Xdim + boxPt[0] + tol,
-                                          Ydim + boxPt[1] + tol, 
+                                          Ydim + boxPt[1] + tol,
                                           Zdim + boxPt[2] + tol,
                                           entityFront, 0);
 
@@ -1825,7 +1825,7 @@ void rocPack::mapPeriodicSurfaces(
   gmsh::model::occ::synchronize();
 }
 
-std::vector<std::vector<std::pair<int, int>>> 
+std::vector<std::vector<std::pair<int, int>>>
 rocPack::getAllPoints(std::vector<std::pair<int, int>> surfaces) {
   std::vector<std::vector<std::pair<int, int>>> verts;
   verts.resize(surfaces.size());
@@ -2043,7 +2043,7 @@ void rocPack::writePeriodicNodes() {
         periodicEquation << "3" << std::endl;
         periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i] << ",3,1,"
         << eqRefNodes[1] << ",3,1" << std::endl;
-      } 
+      }
     }
   }
 
@@ -2260,7 +2260,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
       for (int j=0; j<tmpNodeTags.size(); j++)
         geomsNodeTags.push_back(tmpNodeTags[j]);
     }
-  } else if (((sntChk) && !(enablePhysGrp)) && ((sntChk) && !(physGrpPerShape)) 
+  } else if (((sntChk) && !(enablePhysGrp)) && ((sntChk) && !(physGrpPerShape))
          && ((sntChk) && !(just2Physgrps))) {
     std::vector<double> noUse;
     gmsh::model::mesh::getNodes(surrNodeTags,surrCoords,noUse,3,surroundingGrp,true,false);
@@ -2398,8 +2398,8 @@ void rocPack::createCohesiveElements(const std::string &filename,
 
   duration = (std::clock() - start ) / (double) CLOCKS_PER_SEC;
   std::cout << "Process Finished!" << std::endl;
-  std::cout << "Total " << interfaceNodes.size() 
-            << " Nodes duplicated in " << duration 
+  std::cout << "Total " << interfaceNodes.size()
+            << " Nodes duplicated in " << duration
             << " seconds!" << std::endl;
 
   dataSetCohesive->SetPoints(pointsViz);
@@ -2410,7 +2410,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
 
   // Once we have interface nodes and duplicated the nodes, Surrounding side
   // of surface cells needs to be replaced by new nodes.
-  // Find all cells containing interface nodes and rule out those in physical 
+  // Find all cells containing interface nodes and rule out those in physical
   // group surrounding.
   std::vector<int> cellIdentification;
 
@@ -2623,7 +2623,7 @@ void rocPack::assignPeriodicEqNodes() {
     std::vector<double> paramCoords;
 
     gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
-    
+
     if (coords[0] == boxPt[0])
       if (coords[1] == boxPt[1])
         if (coords[2] == boxPt[2])
@@ -2640,7 +2640,7 @@ void rocPack::assignPeriodicEqNodes() {
     std::vector<double> paramCoords;
 
     gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
-    
+
     if (coords[0] == boxPt[0]+Xdim) {
       if (coords[1] == boxPt[1]) {
         if (coords[2] == boxPt[2]) {
@@ -2659,7 +2659,7 @@ void rocPack::assignPeriodicEqNodes() {
     std::vector<double> paramCoords;
 
     gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
-    
+
     if (coords[0] == boxPt[0]) {
       if (coords[1] == boxPt[1]+Ydim) {
         if (coords[2] == boxPt[2]) {
@@ -2678,7 +2678,7 @@ void rocPack::assignPeriodicEqNodes() {
     std::vector<double> paramCoords;
 
     gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
-    
+
     if (coords[0] == boxPt[0]) {
       if (coords[1] == boxPt[1]) {
         if (coords[2] == boxPt[2]+Zdim) {

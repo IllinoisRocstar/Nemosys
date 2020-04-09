@@ -30,7 +30,9 @@ using std::endl;
 
 using namespace MAd;
 
+#ifdef PARALLEL
 static int PWLSFDE_tag = 86586745;
+#endif
 
 // -------------------------------------------------------------------
 void PWLinearSFCBFunction (pPList before, pPList after, void * data,

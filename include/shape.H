@@ -18,7 +18,7 @@ namespace GEO {
 class NEMOSYS_EXPORT shape {
  public:
   shape() = default;
-  ~shape() = default;
+  virtual ~shape() = default;
 
  public:
   /**

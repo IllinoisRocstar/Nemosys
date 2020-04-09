@@ -70,7 +70,7 @@ double HEX8W[] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
 
 GaussCubature::GaussCubature(meshBase *_nodeMesh)
-    : nodeMesh(_nodeMesh), totalComponents(0), numVolCells(0)
+    : nodeMesh(_nodeMesh), numVolCells(0), totalComponents(0)
 {
   nodeMesh->unsetCellDataArray("QuadratureOffSet");
   constructGaussMesh();
@@ -78,8 +78,8 @@ GaussCubature::GaussCubature(meshBase *_nodeMesh)
 
 GaussCubature::GaussCubature(meshBase *_nodeMesh,
                              const std::vector<int> &_arrayIDs)
-    : nodeMesh(_nodeMesh), arrayIDs(_arrayIDs), totalComponents(0),
-      numVolCells(0)
+    : nodeMesh(_nodeMesh), numVolCells(0), arrayIDs(_arrayIDs),
+      totalComponents(0)
 {
   nodeMesh->unsetCellDataArray("QuadratureOffSet");
   constructGaussMesh();
@@ -288,9 +288,10 @@ double GaussCubature::computeJacobian(vtkSmartPointer<vtkGenericCell> genCell,
 
 int GaussCubature::getOffset(int cellID) const
 {
-  double offsets[1];
-  nodeMesh->getDataSet()->GetCellData()->GetArray("QuadratureOffset")->GetTuple(
-      cellID, offsets);
+  vtkIdType offsets[1];
+  vtkIdTypeArray::FastDownCast(
+      nodeMesh->getDataSet()->GetCellData()->GetArray("QuadratureOffset"))
+      ->GetTypedTuple(cellID, offsets);
   return offsets[0];
 }
 

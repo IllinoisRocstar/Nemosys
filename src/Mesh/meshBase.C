@@ -181,7 +181,7 @@ meshBase *meshBase::generateMesh(const std::string &fname,
   meshGen *generator = meshGen::Create(fname, meshEngine, params);
   if (generator) {
     int status = generator->createMeshFromSTL(&fname[0u]);
-    meshBase *ret;
+    meshBase *ret = nullptr;
     if (!status) {
       if (meshEngine == "netgen") {
         std::string newname = nemAux::trim_fname(fname, ".vol");
@@ -201,8 +201,14 @@ meshBase *meshBase::generateMesh(const std::string &fname,
       }
     }
     delete generator;
-    generator = nullptr;
-    return ret;
+
+    if (ret) {
+      return ret;
+    } else {
+      std::cerr << "Mesh Engine " << meshEngine << " not recognized"
+                << std::endl;
+      exit(1);
+    }
   } else {
     std::cerr << "Could not create mesh generator" << std::endl;
     exit(1);
@@ -511,7 +517,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
       std::stringstream ss(line);
       ss >> numCells;
       int id, type, numTags;
-      double tmp2[1];
+      // double tmp2[1];
       // allocate space for cell connectivities
       dataSet_tmp->Allocate(numCells);
       for (int i = 0; i < numCells; ++i) {
@@ -1030,8 +1036,8 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
   dataSet_tmp->Allocate(numVolCells);
   // read element blocks
   for (int iEB = 1; iEB <= numElmBlk; iEB++) {
-    int num_el_in_blk, num_nod_per_el, num_attr, *connect;
-    float *attrib;
+    int num_el_in_blk, num_nod_per_el, num_attr /*, *connect*/;
+    // float *attrib;
     char elem_type[MAX_STR_LENGTH + 1];
     // read element block parameters
     _exErr = ex_get_elem_block(fid, iEB, elem_type, &num_el_in_blk,
@@ -1451,7 +1457,7 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
         (nFacesPerCellMax < numFaces ? numFaces : nFacesPerCellMax);
     for (int j = 0; j < numFaces; ++j) {
       vtkCell *face = genCell1->GetFace(j);
-      bool shared = false;
+      // bool shared = false;
       vtkIdType numVerts = face->GetNumberOfPoints();
       nVerticesPerFaceMax =
           (nVerticesPerFaceMax < numVerts ? numVerts : nVerticesPerFaceMax);

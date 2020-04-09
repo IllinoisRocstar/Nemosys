@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <random>
 #include <string>
 #include <utility>
 #include <vector>
@@ -108,7 +109,7 @@ inline std::vector<std::string> glob(const std::string &_src_dir,
 
 // compute 2 norm of vec
 template <typename T>
-inline T l2_Norm(const std::vector<T> &x);
+T l2_Norm(const std::vector<T> &x);
 // computes reciprocal of argument
 template <typename T>
 T reciprocal(T x);
@@ -117,33 +118,32 @@ template <typename T>
 void reciprocal_vec(std::vector<T> &x);
 // checks if vector has zeros
 template <typename T>
-inline bool hasZero(const std::vector<T> &x);
+bool hasZero(const std::vector<T> &x);
 // find minmax of vector, excluding inf
 template <typename T>
-inline std::vector<T> getMinMax(const std::vector<T> &x);
+std::vector<T> getMinMax(const std::vector<T> &x);
 // scales x from range [xmin, xmax] to within range [ymin, ymax]
 // if x is inf, the scaled value will be ymax
 template <typename T>
-inline T scale_to_range(T x, const std::vector<T> &xminmax,
-                        const std::vector<T> &yminmax);
+T scale_to_range(T x, const std::vector<T> &xminmax,
+                 const std::vector<T> &yminmax);
 // IN PLACE, scales each number in vector in range [xmin, xmax] to [ymin, ymax]
 template <typename T>
-inline void scale_vec_to_range(std::vector<T> &x, const std::vector<T> &xminmax,
-                               const std::vector<T> &yminmax);
+void scale_vec_to_range(std::vector<T> &x, const std::vector<T> &xminmax,
+                        const std::vector<T> &yminmax);
 // get average and stdev of values
 template <typename T>
-inline std::vector<T> getMeanStdev(const std::vector<T> &x);
+std::vector<T> getMeanStdev(const std::vector<T> &x);
 // generates boolean array with 1 if value >= tol, 0 otherwise
 template <typename T>
-inline std::vector<bool> cellsToRefine(const std::vector<T> &values, T tol);
+std::vector<bool> cellsToRefine(const std::vector<T> &values, T tol);
 // generates boolean array with 1 if value >= mean+/-dev, 0 otherwise
 template <typename T>
-inline std::vector<bool> cellsToRefineStdev(const std::vector<T> &values,
-                                            T mean, T dev);
+std::vector<bool> cellsToRefineStdev(const std::vector<T> &values, T mean,
+                                     T dev);
 // return selects cells if their value is above some threshold of the maximum
 template <typename T>
-inline std::vector<bool> cellsToRefineMaxdev(const std::vector<T> &values,
-                                             T dev);
+std::vector<bool> cellsToRefineMaxdev(const std::vector<T> &values, T dev);
 // string trimming for consistent file names
 inline std::string trim_fname(const std::string &name, const std::string &ext);
 // find file extension
@@ -178,6 +178,8 @@ bool isInBBox(const std::vector<T> &crd, const std::vector<T> &bb);
 // get a vector of the keys from a map (which are sorted)
 template <typename A, typename B>
 std::vector<A> getSortedKeys(const std::map<A, B> &mapObj);
+// generate a random string of given length
+inline std::string getRandomString(int length);
 //----------------------------------------------------------------------------//
 
 //-------------------Auxiliary Function Implementations-----------------------//
@@ -380,7 +382,7 @@ std::string trim_fname(const std::string &fname, const std::string &ext) {
 }
 
 // find file extension
-inline std::string find_ext(const std::string &fname) {
+std::string find_ext(const std::string &fname) {
   std::string::size_type last = fname.find_last_of('.');
   if (last != std::string::npos) {
     return fname.substr(last);
@@ -391,28 +393,27 @@ inline std::string find_ext(const std::string &fname) {
 }
 
 // IN PLACE, to lower
-inline void toLower(std::string &str) {
+void toLower(std::string &str) {
   std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 }
 
 // IN PLACE, to upper
-inline void toUpper(std::string &str) {
+void toUpper(std::string &str) {
   std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 }
 
 // return from beginning to the location of str
-inline std::string findToStr(const std::string &str, const std::string &ptrn) {
+std::string findToStr(const std::string &str, const std::string &ptrn) {
   return str.substr(0, str.find_first_of(ptrn));
 }
 
 // return from the location of str
-inline std::string findFromStr(const std::string &str,
-                               const std::string &ptrn) {
+std::string findFromStr(const std::string &str, const std::string &ptrn) {
   return str.substr(str.find_first_of(ptrn) + 1, std::string::npos);
 }
 
 // returns current time as string
-inline std::string getTimeStr() {
+std::string getTimeStr() {
   time_t rawTime;
   struct tm *timeInfo;
   char buffer[80];
@@ -427,7 +428,7 @@ inline std::string getTimeStr() {
 }
 
 // find file name
-inline std::string find_name(const std::string &fname) {
+std::string find_name(const std::string &fname) {
   std::string::size_type first = fname.find_last_of('/');
   std::string::size_type last = fname.find_last_of('.');
   if (first != std::string::npos && last != std::string::npos) {
@@ -483,6 +484,19 @@ std::vector<A> getSortedKeys(const std::map<A, B> &mapObj) {
     std::cerr << "Map is empty! No sorted keys to return." << std::endl;
     exit(1);
   }
+}
+
+// generate a random string of given length
+std::string getRandomString(int length) {
+  const char *alp = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  std::random_device rd;
+  std::default_random_engine dre(rd());
+  std::uniform_int_distribution<int> uid(0, strlen(alp) - 1);
+
+  std::string out;
+  for (int i = 0; i < length; ++i) out += alp[uid(dre)];
+
+  return out;
 }
 
 // check if name conatins _exp

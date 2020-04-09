@@ -1095,7 +1095,7 @@ RocPartCommGenDriver::createPartitionEdgeTable(int iPart) const
   eTab->Initialize();
   eTab->Reset();
   eTab->InitEdgeInsertion(partitions[iPart]->getNumberOfPoints());
-  int test;
+  // int test;
 
   // loop through all cells of the partition
   for (nemId_t ic = 0; ic < partitions[iPart]->getNumberOfCells(); ic++)
@@ -1107,7 +1107,7 @@ RocPartCommGenDriver::createPartitionEdgeTable(int iPart) const
     // only works for tets for now
     for (auto iid1 = cellPntIdCrd.begin(); iid1 != cellPntIdCrd.end(); iid1++)
       for (auto iid2 = std::next(iid1, 1); iid2 != cellPntIdCrd.end(); iid2++)
-        test = eTab->InsertEdge(iid1->first, iid2->first);
+        /*test = */eTab->InsertEdge(iid1->first, iid2->first);
   }
   return eTab;
 }
@@ -1612,10 +1612,10 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       std::vector<double> coordsZTmp;
 
       // global and local ids
-      int gId, lId;
+      int /*gId, */lId;
       for (auto itr = glob2Loc.begin(); itr != glob2Loc.end(); ++itr)
       {
-        gId = itr->first;
+        // gId = itr->first;
         lId = itr->second;
         coordsXTmp.push_back(coords[0][lId - 1]);
         coordsYTmp.push_back(coords[1][lId - 1]);
@@ -1814,8 +1814,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
       std::vector<int> cgConnVirtualGlobal1Tmp;
       std::vector<int> cgConnVirtualGlobal2Tmp;
       std::vector<int> cgConnVirtualGlobal3Tmp;
-      int oldGid;
-      int newGid;
+      // int oldGid;
+      // int newGid;
 
       if (numVirtualCells)
       {
@@ -1934,7 +1934,8 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me)
         patchNos->GetTuple(0, patchNo);
 
         // write real and virtual patch information to Rocstar dimension file
-        this->dimSurfWriter(me + 1, cgConnReal, cgConnVirtual, patchNo[0]);
+        this->dimSurfWriter(me + 1, cgConnReal, cgConnVirtual,
+                            static_cast<int>(patchNo[0]));
 
         vtkSmartPointer<vtkDataArray> bcflags =
             patchOfPartitionWithRealMesh->getDataSet()->GetCellData()->GetArray(
@@ -2790,7 +2791,7 @@ void RocPartCommGenDriver::mapWriter() const
 void RocPartCommGenDriver::cmpWriter(int proc, int nCells) const
 {
   // Get number of partitions
-  int nPart = this->partitions.size();
+  // int nPart = this->partitions.size();
 
   // Write cell mapping file
   std::string procStr = std::to_string(proc);
@@ -2834,7 +2835,7 @@ void RocPartCommGenDriver::cmpWriter(int proc, int nCells) const
 void RocPartCommGenDriver::comWriter(int proc) const
 {
   // Get number of partitions
-  int nPart = this->partitions.size();
+  // int nPart = this->partitions.size();
 
   // Set number of borders for each proc
   //int nBorders[partitions.size()];
@@ -3573,6 +3574,9 @@ std::string RocPartCommGenDriver::getPatchType(int patchNo) const
   {
     return "ifluid_ni";
   }
+  std::cerr << "Error: Can't get patch type for patch number " << patchNo
+            << std::endl;
+  exit(1);
 }
 
 

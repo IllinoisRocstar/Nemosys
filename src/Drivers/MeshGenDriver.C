@@ -34,8 +34,7 @@ MeshGenDriver::MeshGenDriver(const std::string &ifname,
 
 std::shared_ptr<meshBase> MeshGenDriver::getNewMesh() const
 {
-  if (mesh)
-    return mesh;
+  return mesh ? mesh : nullptr;
 }
 
 MeshGenDriver::~MeshGenDriver()

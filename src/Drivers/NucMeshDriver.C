@@ -126,13 +126,17 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   for (const auto &itr : phystag_map) {
     std::vector<int> s; // vector of surfaces
     std::string name;   // regions name
-    int tag;            // physical group tag
+    int tag = -1;       // physical group tag
     for (const auto &itr2 : physSurf_map) {
       if (itr2.second == itr.second) {
         tag = itr2.second;
         name = itr.first;
         s.push_back(itr2.first);
       }
+    }
+    if (tag == -1) {
+      std::cerr << "Error: Physical group cannot be applied." << std::endl;
+      exit(-1);
     }
     if (!s.empty()) {
       gmsh::model::addPhysicalGroup(2, s, tag);
@@ -541,14 +545,10 @@ void NucMeshDriver::parseSavedObjects(jsoncons::json savedObj) {
     // If meshed area conservation is required and visible, change the radii
     if (it.contains("Conserve Area") && it["Conserve Area"] == true) {
       for (const auto &c : it["Circles"].array_range()) {
-        if (c.contains("Visible"))
-          if (c["Visible"] == false)
-            visible = false;
-          else
-            visible = true;
+        if (c.contains("Visible")) visible = !(c["Visible"] == false);
       }
       jsoncons::json j;
-      if (visible == true) {
+      if (visible) {
         double tolerance = 1e-8;
         if (it.contains("Tolerance"))
           tolerance = it["Tolerance"].as_double();
@@ -582,12 +582,17 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
   gmsh::model::add("Preserve");
 
   std::vector<double> radii;
-  double lastRadius, area;
+  double lastRadius = 0.0, area;
   int nRad;
 
   if (shapetype == "Circles" || shapetype == "Circle") {
     if (obj[0].contains("Radii")) {
       nRad = obj[0]["Radii"].size();
+      if (nRad <= 0) {
+        std::cerr << "Error: No 'Radii' values found for aliased object."
+                  << std::endl;
+        exit(-1);
+      }
       for (int i = 0; i < nRad; ++i) {
         radii.push_back(obj[0]["Radii"][i].as_double());
         lastRadius = obj[0]["Radii"][i].as_double();
@@ -606,7 +611,7 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
       r_b.push_back(radii[i] * 1.5);
     }
     area = M_PI * lastRadius * lastRadius;
-    double A_b, A_c;
+    double /*A_b, */A_c;
     int iter = 0;
 
     while (residual > eps) {
@@ -630,6 +635,9 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
         std::vector<int> numElements;
         gmsh::view::getListData(viewTags[0], dataTypes, numElements, data);
         A_c = data[0][3];
+      } else {
+        std::cerr << "Error: View data not found." << std::endl;
+        exit(-1);
       }
       viewTags.clear();
       gmsh::clear();
@@ -1503,8 +1511,13 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     }
 
     double radius;
-    if (arr.contains("Radius"))
-      radius = arr["Radius"].as_double(); // array radius
+    if (arr.contains("Radius")) {
+      radius = arr["Radius"].as_double();  // array radius
+    } else {
+      std::cerr << "Error: No 'Radius' found for array parameters."
+                << std::endl;
+      exit(-1);
+    }
 
     int n = 0; // number of array elements
     if (arr.contains("N"))
@@ -1535,7 +1548,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       }
     }
 
-    double start;
+    double start = 0.0;
     if (arr.contains("Start Angle")) {
       start = arr["Start Angle"].as_double(); // start angle
       if (start > 360.0) {
@@ -1545,7 +1558,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
         exit(-1);
       }
     }
-    double arc;
+    double arc = 360.0;
     if (arr.contains("Arc")) {
       arc = arr["Arc"].as_double(); // arc angle
       if (arc > 360.0) {
@@ -1559,7 +1572,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     jsoncons::json circ, poly;
     int half = n / 2;
     double ang = 60.0 * M_PI / 180.0;
-    double xOff, yOff;
+    double xOff = 0.0, yOff = 0.0;
     // If Circles are used and visible, offset to edge of circle
     jsoncons::json s = arr["Shapes"]; // the array of shapes
     for (const auto &shapes : s.array_range()) {
@@ -1589,7 +1602,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       a = 30 * M_PI / 180.0; // rad
     }
 
-    double r, theta;
+    double /*r, */theta;
     for (int row = 0; row < n; row++) {
       int cols = n - std::abs(row - half);
       for (int col = 0; col < cols; col++) {
@@ -1597,7 +1610,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
         double y = (yOff * (row - half));
 
         // convert x,y to polar coordinates
-        r = std::sqrt(x * x + y * y);
+        // r = std::sqrt(x * x + y * y);
         if (std::abs(x) > 1e-8) {
           if (x < 0 && y < 0)
             theta = std::atan(y / x) + M_PI;

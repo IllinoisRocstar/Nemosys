@@ -1,0 +1,196 @@
+<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">
+  <UnstructuredGrid>
+    <Piece NumberOfPoints="27" NumberOfCells="8">
+      <PointData Scalars="scalars">
+        <DataArray type="Float32" Name="scalars" format="ascii">
+          -0.4 -0.4 -0.4 -0.4 -1 -0.4 -0.4 -0.4 -0.4 
+          0.4 1 0.4 1 0.4 1 0.4 1 0.4 
+          0.4 0.4 0.4 0.4 1 0.4 0.4 0.4 0.4 
+        </DataArray>
+
+        <DataArray type="Float32" Name="mytest" format="ascii">
+          -13.0
+          -12.0
+          -11.0
+          -10.0
+          -9.0
+          -8.0
+          -7.0
+          -6.0
+          -5.0
+          -4.0
+          -3.0
+          -2.0
+          -1.0
+          0.0
+          1.0
+          2.0
+          3.0
+          4.0
+          5.0
+          6.0
+          7.0
+          8.0
+          9.0
+          10.0
+          11.0
+          12.0
+          13.0
+        </DataArray>
+
+        <DataArray type="Float32" Name="xRamp" format="ascii">
+          0 0 0 0 0 0 0 0 0 
+          0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 0.4 
+          0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 0.8 
+        </DataArray>
+
+        <DataArray type="Float32" Name="yRamp" format="ascii">
+          0.1 0.1 0.1 0.5 0.5 0.5 0.9 0.9 0.9 
+          0.1 0.1 0.1 0.5 0.5 0.5 0.9 0.9 0.9 
+          0.1 0.1 0.1 0.5 0.5 0.5 0.9 0.9 0.9 
+        </DataArray>
+
+        <DataArray type="Float32" Name="zRamp" format="ascii">
+          0.2 0.6 1 0.2 0.6 1 0.2 0.6 1 
+          0.2 0.6 1 0.2 0.6 1 0.2 0.6 1 
+          0.2 0.6 1 0.2 0.6 1 0.2 0.6 1 
+        </DataArray>
+
+        <DataArray type="Float32" Name="outVect" NumberOfComponents="3" format="ascii">
+          -1 -1 -1 
+          -1 -1 0 
+          -1 -1 1 
+          -1 0 -1 
+          -1 0 0 
+          -1 0 1 
+          -1 1 -1 
+          -1 1 0 
+          -1 1 1 
+          0 -1 -1 
+          0 -1 0 
+          0 -1 1 
+          0 0 -1 
+          0 0 0 
+          0 0 1 
+          0 1 -1 
+          0 1 0 
+          0 1 1 
+          1 -1 -1 
+          1 -1 0 
+          1 -1 1 
+          1 0 -1 
+          1 0 0 
+          1 0 1 
+          1 1 -1 
+          1 1 0 
+          1 1 1 
+        </DataArray>
+
+        <DataArray type="Float32" Name="vect2" NumberOfComponents="3" format="ascii">
+          -1 -1 0 
+          -1 -1 1 
+          -1 -1 2 
+          -1 0 -1 
+          -1 0 0 
+          -1 0 1 
+          -1 1 -2 
+          -1 1 -1
+          -1 1 0
+          0 -1 0 
+          0 -1 1 
+          0 -1 2 
+          0 0 -1 
+          0 0 0 
+          0 0 1 
+          0 1 -2 
+          0 1 -1
+          0 1 0 
+          1 -1 0 
+          1 -1 1 
+          1 -1 2 
+          1 0 -1 
+          1 0 0 
+          1 0 1 
+          1 1 -2 
+          1 1 -1
+          1 1 0
+        </DataArray>
+
+      </PointData>
+
+      <CellData Scalars="scalars">
+
+        <DataArray type="Float32" Name="scalars" format="ascii">
+          0 0.4 0.4 0 0.4 0 0 0.4 
+        </DataArray>
+
+        <DataArray type="Float32" Name="cRamp1" format="ascii">
+          0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 
+        </DataArray>
+
+        <DataArray type="Float32" Name="cRamp2" format="ascii">
+          8.1 7.2 6.3 5.4 4.5 3.6 2.7 1.8 
+        </DataArray>
+
+        <DataArray type="Float32" Name="cVects" NumberOfComponents="3" format="ascii">
+          -1 -1 -1 
+          -1 -1 1 
+          -1 1 -1 
+          -1 1 1 
+           1 -1 -1 
+           1 -1 1 
+           1 1 -1 1 1 1 
+        </DataArray>
+
+        <DataArray type="Float32" Name="cv2" NumberOfComponents="3" format="ascii">
+          0 -2 -1 0 -2 1 0 2 -1 
+          -1 2 1 2 -1 -2 1 -2 1 
+          2 2 -1 2 2 1 
+        </DataArray>
+
+      </CellData>
+
+      <Points>
+
+        <DataArray type="Float32" NumberOfComponents="3" format="ascii">
+          0 0 0 0 0 1 0 0 2 
+          0 1 0 0 1 1 0 1 2 
+          0 2 0 0 2 1 0 2 2 
+          1 0 0 1 0 1 1 0 2 
+          1 1 0 1 1 1 1 1 2 
+          1 2 0 1 2 1 1 2 2 
+          2 0 0 2 0 1 2 0 2 
+          2 1 0 2 1 1 2 1 2 
+          2 2 0 2 2 1 2 2 2 
+        </DataArray>
+
+      </Points>
+
+      <Cells>
+
+        <DataArray type="Int32" Name="connectivity" format="ascii">
+          0 9 3 12 1 10 4 13 
+          1 10 4 13 2 11 5 14 
+          3 12 6 15 4 13 7 16 
+          4 13 7 16 5 14 8 17 
+          9 18 12 21 10 19 13 22 
+          10 19 13 22 11 20 14 23 
+          12 21 15 24 13 22 16 25 
+          13 22 16 25 14 23 17 26 
+        </DataArray>
+
+	    <DataArray type="Int32" Name="offsets" format="ascii">
+          8 16 24 32 40 48 56 64
+        </DataArray>
+
+	    <DataArray type="UInt8" Name="types" format="ascii">
+          11 11 11 11 11 11 11 11		
+        </DataArray>
+
+      </Cells>
+
+    </Piece>
+
+  </UnstructuredGrid>
+
+</VTKFile>

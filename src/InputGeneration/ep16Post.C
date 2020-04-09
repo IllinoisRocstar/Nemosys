@@ -61,13 +61,13 @@ int ep16Post::readJSON()
   std::cout << "Post-porcessing EP16-csc output files." << std::endl;
 
   // reading mandatory fields
-  int nTask;
+  // int nTask;
   if (!_jstrm.contains("Number of Task"))
   {
     std::cerr << "Number of Task field is not defined.\n";
     return(-1);
   }
-  nTask = _jstrm["Number of Task"].as<int>();
+  // nTask = _jstrm["Number of Task"].as<int>();
   if (!_jstrm.contains("Task"))
   {
     std::cerr << "Task field is not defined.\n";
@@ -77,7 +77,7 @@ int ep16Post::readJSON()
   // processing tasks
   if (_jstrm["Task"].is_array())
   {
-    int ret;
+    int ret = 0;
     std::string task;
     for (const auto &jtask : _jstrm["Task"].array_range())
     {

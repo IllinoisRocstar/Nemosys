@@ -576,21 +576,21 @@ ReadALegacyVTKFile(const std::string &fileName)
   while (getline(meshStream, line))
   {
     if (!readHeader)
-      if (readHeader = readLegacyVTKHeader(line))
+      if ((readHeader = readLegacyVTKHeader(line)))
         std::cout << "read header" << std::endl;
 
     if (!readFieldData)
-      if (readFieldData = readLegacyVTKFieldData(meshStream, line, dataSet_tmp))
+      if ((readFieldData = readLegacyVTKFieldData(meshStream, line, dataSet_tmp)))
         std::cout << "read field data" << std::endl;
 
     if (!readPoints)
-      if (readPoints = readLegacyVTKPoints(meshStream, line, numPoints, points,
-                                           dataSet_tmp))
+      if ((readPoints = readLegacyVTKPoints(meshStream, line, numPoints, points,
+                                            dataSet_tmp)))
         std::cout << "read points" << std::endl;
 
     if (!readCells)
-      if (readCells = readLegacyVTKCells(meshStream, line, numCells, vtkCellIds,
-                                         dataSet_tmp))
+      if ((readCells = readLegacyVTKCells(meshStream, line, numCells, vtkCellIds,
+                                          dataSet_tmp)))
         std::cout << "read cells" << std::endl;
 
     // call functions based on which data appears first in file
@@ -605,26 +605,26 @@ ReadALegacyVTKFile(const std::string &fileName)
     if (cellDataFirst)
     {
       if (!readCellData) // boolean telling us if there is point data
-        if (readCellData = readLegacyVTKData(meshStream, line, numCells, false,
-                                             hasPointData, dataSet_tmp))
+        if ((readCellData = readLegacyVTKData(meshStream, line, numCells, false,
+                                              hasPointData, dataSet_tmp)))
           std::cout << "read cell data" << std::endl;
 
       if (!readPointData && hasPointData)
-        if (readPointData = readLegacyVTKData(meshStream, line, numPoints, true,
-                                              hasCellData, dataSet_tmp))
+        if ((readPointData = readLegacyVTKData(meshStream, line, numPoints, true,
+                                               hasCellData, dataSet_tmp)))
           std::cout << "read point data" << std::endl;
     }
     // read point data and then cell data if it exists
     else if (pointDataFirst)
     {
       if (!readPointData)
-        if (readPointData = readLegacyVTKData(meshStream, line, numPoints, true,
-                                              hasCellData, dataSet_tmp))
+        if ((readPointData = readLegacyVTKData(meshStream, line, numPoints, true,
+                                               hasCellData, dataSet_tmp)))
           std::cout << "read point data" << std::endl;
 
       if (!readCellData && hasCellData)
-        if (readCellData = readLegacyVTKData(meshStream, line, numCells, false,
-                                             hasPointData, dataSet_tmp))
+        if ((readCellData = readLegacyVTKData(meshStream, line, numCells, false,
+                                              hasPointData, dataSet_tmp)))
           std::cout << "read cell data" << std::endl;
     }
   }
@@ -683,7 +683,7 @@ ReadDegenerateVTKFile(const std::string &fileName)
       std::string tmp;
       ss >> tmp >> numCells >> cellListSize;
       int cellId = 0;
-      int realCellId = 0;
+      // int realCellId = 0;
       vtkCellIds.resize(numCells);
       while (cellId < numCells && getline(meshStream, line))
       {
@@ -691,7 +691,7 @@ ReadDegenerateVTKFile(const std::string &fileName)
         {
           std::istringstream ss(line);
           int numId;
-          double id;
+          int id;
           ss >> numId;
           vtkCellIds[cellId] = vtkSmartPointer<vtkIdList>::New();
           vtkCellIds[cellId]->SetNumberOfIds(numId);

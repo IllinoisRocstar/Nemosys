@@ -12,7 +12,7 @@ class NEMOSYS_EXPORT meshSrch : public meshBase {
   // constructors and destructors
  public:
   meshSrch() = delete;
-  explicit meshSrch(meshBase *mb) : upd_vcl(true), meshBase(*mb) {}
+  explicit meshSrch(meshBase *mb) : meshBase(*mb), upd_vcl(true) {}
 
   static meshSrch *Create(meshBase *mb) {
     auto *ms = new meshSrch(mb);
@@ -99,6 +99,7 @@ class NEMOSYS_EXPORT meshSrch : public meshBase {
   }
 
   void read(const std::string &fname = std::string()) override {}
+  using meshBase::write;
   void write(const std::string &fname) const override {}
 
   // internal management

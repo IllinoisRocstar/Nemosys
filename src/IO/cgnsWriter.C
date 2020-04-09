@@ -654,6 +654,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CGNS
     }
     os << min << ", " << max;
   }
+  /*
   int nItr = 0;
   if (is->second == CGNS_ENUMV(Vertex))
   {
@@ -661,6 +662,7 @@ void cgnsWriter::writeSolutionField(std::string fname, std::string ndeName, CGNS
   } else {
     nItr = nCell;
   }
+  */
 
   // writing range descriptor
   std::string range = os.str();
@@ -744,7 +746,7 @@ void cgnsWriter::writeGridToFile()
 {
   // dummy variables
   std::ostringstream os;
-  double min, max;
+  // double min, max;
   std::string str;
 
   // writing base data
@@ -781,7 +783,7 @@ void cgnsWriter::writeWinToFile()
   os << std::to_string(intVal) << ", " << std::to_string(intVal);
   str = os.str();
   if (cg_descriptor_write("Range", str.c_str())) cg_error_exit(); 
-  float dimUnits[5] = {0, 0, 0, 0, 0};
+  // float dimUnits[5] = {0, 0, 0, 0, 0};
   if (cg_exponents_write(CGNS_ENUMV(RealSingle), &ifluidDimMap["zoomFact"][0])) cg_error_exit();
   if (cg_descriptor_write("Units", ifluidUnitsMap["zoomFact"].c_str())) cg_error_exit();
   if (cg_descriptor_write("Ghost", "0")) cg_error_exit();
@@ -862,7 +864,7 @@ void cgnsWriter::writeZoneToFile()
   }
 
   // write coordinates + range, dimensional exponent, units
-  float dimUnits[5] = {0, 1, 0, 0, 0};
+  // float dimUnits[5] = {0, 1, 0, 0, 0};
 
   float* exponents;
   std::string units;
@@ -978,7 +980,7 @@ void cgnsWriter::writeZoneToFile()
   // write Sections (real and virtual cells)
   int elm_start;
   int elm_end;
-  int nBdy;
+  // int nBdy;
   for (int iSec=0; iSec<nSection; iSec++)
   {
     elm_start = (iSec == 0 ? 1 : elm_start+nCells[iSec-1]);
@@ -1115,7 +1117,7 @@ void cgnsWriter::writeZoneToFile()
   {
     // write blank Pane Data
     tmpDim[0] = 1;
-    int pconn[1] = {0};
+    // int pconn[1] = {0};
     int ridge[1] = {0};
 
     if (cg_goto(indexFile, indexBase, "Zone_t", indexZone, paneName.c_str(), 0,"end")) cg_error_exit();
@@ -1155,7 +1157,7 @@ void cgnsWriter::writeZoneToFile()
     {
       elm_end = gnCells[igSec];
     }
-    nBdy = 0;
+    // nBdy = 0;
 
     if (gsectionNames[igSec] == "t3g:virtual#1of3" || 
         gsectionNames[igSec] == "t3g:virtual#2of3" ||

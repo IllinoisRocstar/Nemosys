@@ -321,7 +321,7 @@ double dnrm2 ( int n, double x[], int incx )
   double norm;
   double scale;
   double ssq;
-  double value;
+  //double value;
 
   if ( n < 1 || incx < 1 )
   {
@@ -808,7 +808,7 @@ int dsvdc ( double a[], int lda, int m, int n, double s[], double e[],
   int mm;
   int mm1;
   int mn;
-  int mp1;
+  //int mp1;
   int nct;
   int nctp1;
   int ncu;
@@ -1111,7 +1111,7 @@ int dsvdc ( double a[], int lda, int m, int n, double s[], double e[],
     }
     else
     {
-      mp1 = mn + 1;
+      //mp1 = mn + 1;
 
       for ( lls = l+1; lls <= mn+1; lls++ )
       {
@@ -1727,7 +1727,7 @@ double *r8mat_solve_svd ( int m, int n, double a[], double b[] )
   int ldu;
   int ldv;
   int job;
-  int lwork;
+  //int lwork;
   double *s;
   double *sp;
   double *sdiag;

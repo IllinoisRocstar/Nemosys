@@ -1583,7 +1583,7 @@ double *legendre_zeros ( int order )
   double dp;
   double dpn;
   double e1;
-  double fx;
+  //double fx;
   double h;
   int i;
   int iback;
@@ -1659,8 +1659,8 @@ double *legendre_zeros ( int order )
 
     xtab[mp1mi-1] = xtemp;
 
-    fx = d1 - h * e1 * ( pk + 0.5 * h * ( dpn + h / 3.0 
-      * ( d2pn + 0.25 * h * ( d3pn + 0.2 * h * d4pn ) ) ) );
+    //fx = d1 - h * e1 * ( pk + 0.5 * h * ( dpn + h / 3.0
+    //  * ( d2pn + 0.25 * h * ( d3pn + 0.2 * h * d4pn ) ) ) );
   }
 
   if ( ( order % 2 ) == 1 )
@@ -15020,7 +15020,7 @@ double *r8mat_house_pre ( int n, double a[], int row, int col )
   double *h;
   int i;
   double *v;
-  double *w;
+  //double *w;
 //
 //  Extract the COL-th column of A.
 //
@@ -18532,7 +18532,7 @@ double *r8mat_orth_uniform_new ( int n, int &seed )
   int i;
   int j;
   double *v;
-  double *x;
+  //double *x;
 //
 //  Start with Q = the identity matrix.
 //
@@ -23206,7 +23206,7 @@ void r8poly_print ( int n, double a[], string title )
 {
   int i;
   double mag;
-  int n2;
+  //int n2;
   char plus_minus;
 
   if ( 0 < title.length ( ) )
@@ -37935,7 +37935,7 @@ int *r8vec_sort_insert_index_a ( int n, double a[] )
   int i;
   int *indx;
   int j;
-  int k;
+  //int k;
   double x;
 
   if ( n < 1 )
@@ -39222,13 +39222,13 @@ int r8vec_split ( int n, double a[], double split )
 //
 {
   int i;
-  int i1;
+  //int i1;
   int i2;
   int i3;
   int isplit;
   int j1;
   int j2;
-  int j3;
+  //int j3;
   double temp;
 //
 //  Partition the vector into A1, A2, A3, where
@@ -39236,14 +39236,14 @@ int r8vec_split ( int n, double a[], double split )
 //    A2 = A(I2:J2) holds untested values,
 //    A3 = A(I3:J3) holds values > SPLIT.
 //
-  i1 = 1;
+  //i1 = 1;
   j1 = 0;
 
   i2 = 1;
   j2 = n;
 
   i3 = n+1;
-  j3 = n;
+  //j3 = n;
 //
 //  Pick the next item from A2, and move it into A1 or A3.
 //  Adjust indices appropriately.
@@ -41976,13 +41976,13 @@ void timestamp ( )
 
   static char time_buffer[TIME_SIZE];
   const struct std::tm *tm_ptr;
-  size_t len;
+  //size_t len;
   std::time_t now;
 
   now = std::time ( NULL );
   tm_ptr = std::localtime ( &now );
 
-  len = std::strftime ( time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm_ptr );
+  /*len = */std::strftime ( time_buffer, TIME_SIZE, "%d %B %Y %I:%M:%S %p", tm_ptr );
 
   std::cout << time_buffer << "\n";
 

@@ -245,9 +245,9 @@ PackMeshDriver::PackMeshDriver(
     const bool &enableDefaultOutput, const bool &enablePhysGrpPerShape) {
   auto *objrocPck = new NEM::GEO::rocPack(ifname, ofname);
 
-  if (((enable2PhysGrps) && (enableMultiPhysGrps)) ||
-       (enablePhysGrpPerShape) && (enable2PhysGrps) ||
-       (enablePhysGrpPerShape) && (enableMultiPhysGrps)) {
+  if ((enable2PhysGrps && enableMultiPhysGrps) ||
+      (enablePhysGrpPerShape && enable2PhysGrps) ||
+      (enablePhysGrpPerShape && enableMultiPhysGrps)) {
     std::cerr << "Please select only one of the options for physical groups"
               << std::endl;
     throw;
@@ -334,8 +334,6 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
   }
 #endif
 
-  bool useRocPack = false;
-
   if (meshType == "tetrahedral") {
     std::string ifname =
         inputjson["Mesh File Options"].contains("Input Rocpack File")
@@ -380,6 +378,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
   }
 #ifdef HAVE_CFMSH
   else if (meshType == "hexahedral") {
+    bool useRocPack = false;
+
     std::string ifname =
         inputjson["Mesh File Options"].contains("Input Rocpack File")
             ? inputjson["Mesh File Options"]["Input Rocpack File"]

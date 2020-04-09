@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
 void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 {
    MAd::RIter ri = M_regionIter(msh);
-   int rCnt = 0;
+   // int rCnt = 0;
    while (MAd::pRegion pr = RIter_next(ri)) 
    {
      double xc[3];

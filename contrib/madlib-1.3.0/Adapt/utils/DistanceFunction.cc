@@ -672,8 +672,8 @@ namespace MAd {
           }
         PList_delete(rVerts);
 
-        double ijac[3][3], detj;
-        detj = R_invJacobian(pr,ijac);
+        double ijac[3][3]/*, detj*/;
+        //detj = R_invJacobian(pr,ijac);
 
         void * del;
         if ( EN_getDataPtr((pEntity)pr,rGradId,&del) && del ) delete [] (double*)del;
@@ -1388,7 +1388,7 @@ namespace MAd {
     double xyz[nbNodes][3];
     double dist[nbNodes], invjac[3][3], jac[3][3], detJ;
     double fGrad[3];
-    double Grads[4][3];
+    //double Grads[4][3];
     int iF = 0;
     for (fIt = faces.begin(); fIt != faces.end(); fIt++) {
          F_coordP1(*fIt, xyz);
@@ -1425,10 +1425,12 @@ namespace MAd {
         fGrad[0] = 0.; fGrad[1] = 0.; fGrad[2] = 0.;
         for (int j=0;j<nbNodes;j++){
           for ( int iC=0; iC<3; iC++) {
-            Grads[j][iC] = 
+ /*
+            Grads[j][iC] =
               invjac[iC][0] * gradShpFct[j][0] + 
               invjac[iC][1] * gradShpFct[j][1] + 
               invjac[iC][2] * gradShpFct[j][2];
+*/
             fGrad[iC] += dist[j] * gradShpFct[j][iC];
           }
         }
@@ -1573,7 +1575,7 @@ namespace MAd {
     pEdge pe;
     pVertex v0, v1;
     double curv0, curv1, maxDiff, diff;
-    double xyz[2][3];
+    //double xyz[2][3];
     
     bool mod = true;
     while ( mod )

@@ -126,7 +126,7 @@ void COBALT::cobalt::write() const
     for (int j = 0; j < numFaces; ++j)
     {
       vtkCell *face = genCell1->GetFace(j);
-      bool shared = false;
+      // bool shared = false;
       vtkIdType numVerts = face->GetNumberOfPoints();
       nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts
                              ? numVerts

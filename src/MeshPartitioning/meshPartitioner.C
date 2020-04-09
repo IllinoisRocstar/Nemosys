@@ -382,8 +382,8 @@ std::vector<double> meshPartitioner::getPartedElm() const
 void meshPartitioner::setPartedElm(const std::vector<double> &prtElm)
 {
   int minp, maxp;
-  minp = *std::min_element(prtElm.begin(), prtElm.end());
-  maxp = *std::max_element(prtElm.begin(), prtElm.end());
+  minp = (int)*std::min_element(prtElm.begin(), prtElm.end());
+  maxp = (int)*std::max_element(prtElm.begin(), prtElm.end());
   setNPartition(maxp - minp + 1);
   epart.insert(epart.begin(), prtElm.begin(), prtElm.end());
   buildPartitions();

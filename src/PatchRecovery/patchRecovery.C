@@ -113,7 +113,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     newPntData[i]->SetNumberOfTuples(numPoints);
   }
 
-  int totPatchPoints = 0;
+  // int totPatchPoints = 0;
   // looping over all points, looping over patches per point
   for (int i = 0; i < numPoints; ++i) //FIXME
   {
