@@ -126,7 +126,7 @@ TEST(NucMesh, Simple_Circles_Test) {
       tris = true;
     if (vtkType == VTK_QUAD)
       quads = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =
@@ -158,7 +158,7 @@ TEST(NucMesh, Concentric_Circles_Test) {
       tris = true;
     if (vtkType == VTK_QUAD)
       quads = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =
@@ -190,7 +190,7 @@ TEST(NucMesh, Concentric_Circles_Test_2) {
       tris = true;
     if (vtkType == VTK_QUAD)
       quads = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =
@@ -222,7 +222,7 @@ TEST(NucMesh, Simple_Polygons_Test) {
       tris = true;
     if (vtkType == VTK_QUAD)
       quads = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =
@@ -254,7 +254,7 @@ TEST(NucMesh, Concentric_Polygons_Test) {
       tris = true;
     if (vtkType == VTK_QUAD)
       quads = true;
-    physGrp_set.insert(grpIds[iElm]);
+    physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
   std::unique_ptr<meshBase> refMesh =

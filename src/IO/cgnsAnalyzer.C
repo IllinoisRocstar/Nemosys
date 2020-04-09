@@ -89,8 +89,8 @@ void solutionData::rmvDataIdx(const std::vector<int> &rmvIdx)
 void cgnsAnalyzer::loadGrid(int verb)
 {
   // cgns related variables
-  int i, j, k;
-  char basename[33], zonename[33];
+  // int i, j, k;
+  char basename[33]/*, zonename[33]*/;
 
   // open CGNS file for read
   if (cg_open(cgFileName.c_str(), CG_MODE_MODIFY, &indexFile)) cg_error_exit();
@@ -121,7 +121,7 @@ void cgnsAnalyzer::loadGrid(int verb)
   baseItrName = bitername;
   if (nTStep != 1)
     std::cerr << "More than one time step is not supported.\n";
-  int nArrays;
+  // int nArrays;
   std::cout << baseItrName << std::endl;
   if (cg_goto(indexFile, indexBase, bitername, 0, "end")) cg_error_exit();
   if (cg_array_read_as(1, CGNS_ENUMV(RealDouble), &timeLabel)) cg_error_exit();
@@ -370,7 +370,7 @@ void cgnsAnalyzer::loadZone(int zIdx, int verb)
     sectionType = CGNS_ENUMV(HEXA_8);
     elemConn.resize(8*nElem, -1);
     int iElm;
-    int bs,d1,d2,d3,d4,d5;
+    int bs,d1,d2,d3,d4/*,d5*/;
     iElm = 0;
     bs = 0;
     d4 = cgCoreSize[1]*cgCoreSize[0];
@@ -1773,7 +1773,7 @@ std::vector<double> cgnsAnalyzer::getElmCntCoords(MAd::pMesh msh)
 {
   std::vector<double> elmCntCrds;
   MAd::RIter ri = M_regionIter(msh);
-  int rCnt = 0;
+  // int rCnt = 0;
   while (MAd::pRegion pr = RIter_next(ri))
   {
     double xc[3];

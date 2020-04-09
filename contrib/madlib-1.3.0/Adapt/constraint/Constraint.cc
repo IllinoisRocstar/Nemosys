@@ -390,7 +390,7 @@ namespace MAd {
             const std::vector<std::pair<std::vector<int> , pVertex> > *recup = (std::vector<std::pair<std::vector<int> , pVertex> > *) temp_ptr1;
             const std::vector<std::pair<std::vector<int> , pVertex> > *recup2 = (std::vector<std::pair<std::vector<int> , pVertex> > *) temp_ptr2;
             //int nump = EN_id(p2);
-            int nfound = 0; 
+            //int nfound = 0;
             unsigned int k=0;
             int exist=-1;
             for(k=0; k<(*recup).size() ; k++) {
@@ -410,7 +410,7 @@ namespace MAd {
                   if(transfo1[kt] != transfo2[kt]) break;
                 }
                 if(kt!=transfo1.size()) continue;
-                nfound = 1;
+                //nfound = 1;
                 pVertex n2 = (*recup2)[kk].second;   
                 if ( E_exist(n1,n2) || E_exist(n2,n1) ) { 
                   exist = 1;

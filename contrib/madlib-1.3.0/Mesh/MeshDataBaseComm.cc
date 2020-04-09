@@ -143,8 +143,8 @@ namespace MAd {
     
     pMeshDataId tagData = MD_lookupMeshDataId("RemotePoint");
     EIter eit = M_edgeIter(m);
-    pEdge pe;  
-    while (pe = EIter_next(eit)) {
+    pEdge pe;
+    while ((pe = EIter_next(eit))) {
 
       void* tmpptr = NULL;
       if (EN_getDataPtr(pe,tagData,&tmpptr)) {
@@ -156,11 +156,15 @@ namespace MAd {
         for (;cIter!=connections->end();++cIter) {
           
           int iProc = cIter->first;
+#ifdef PARALLEL
           pEdge remote = cIter->second;
+#endif
           int sizebuf = 0;
           void *buf = de.sendData ((pEntity) pe, iProc, sizebuf );
+#ifdef PARALLEL
           size_t sendSize = sizebuf + sizeof(pEntity*);
-  
+#endif
+
           if (iProc == myrank) de.receiveData ((pEntity) cIter->second,myrank,buf);
           else {
 #ifdef PARALLEL
@@ -232,7 +236,7 @@ namespace MAd {
     pMeshDataId tagData = MD_lookupMeshDataId("RemotePoint");
     FIter fit = M_faceIter(m);
     pFace pf;  
-    while (pf = FIter_next(fit)) {
+    while ((pf = FIter_next(fit))) {
 
       void* tmpptr = NULL;
       if (EN_getDataPtr((pEntity) pf,tagData,&tmpptr)) {
@@ -244,14 +248,18 @@ namespace MAd {
         for (;cIter!=connections->end();++cIter) {
           
           int iProc = cIter->first;
+#ifdef PARALLEL
           pFace remote = cIter->second;
+#endif
           int sizebuf = 0;
           void *buf = de.sendData ((pEntity) pf, iProc, sizebuf );
+#ifdef PARALLEL
           size_t sendSize = sizebuf + sizeof(pEntity*);
-  
+#endif
+
           if (iProc == myrank) de.receiveData ((pEntity) cIter->second,myrank,buf);
           else {
-            
+
 #ifdef PARALLEL
             char *msg = (char*)AP_alloc(iProc,de.tag(),sendSize);
             memcpy(&msg[0],&remote,sizeof(pEntity));

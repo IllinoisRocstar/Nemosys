@@ -52,8 +52,6 @@ Refine::~Refine() {
     MadMesh = nullptr;
   }
 
-  remove("backgroundSF.msh");
-
   std::cout << "Refine destroyed" << std::endl;
 }
 

@@ -365,6 +365,7 @@ double* vtkAnalyzer::getPointCoords(int pntId)
      pntCoords = dataSet->GetPoint(pntId);
    } else {
      std::cerr << "Point ID is out of range!" << std::endl;
+     exit(1);
    }
    return pntCoords;
 }
@@ -588,7 +589,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         double V = youngs_dom_default/(2*G) - 1;
       // correcting for negative 0 output
         outputStream << std::left << std::setw(16) << youngs_dom_default 
-                     << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+                     << std::left << std::setw(16) << (V == 0.0 ? fabs(V): V) << std::endl;
       } 
       // if E not given, get from G and V
       else if (youngs_dom_default == -1) {
@@ -646,7 +647,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
           double V = youngs_dom_default/(2*G) - 1;
         // correcting for negative 0 output
           outputStream << std::left << std::setw(16) << youngs_dom_default 
-                       << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+                       << std::left << std::setw(16) << (V == 0.0 ? fabs(V): V) << std::endl;
         } 
         // if E not given, get from G and V
         else if (youngs_dom_default == -1) {
@@ -701,7 +702,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         point.push_back(PlaneCellCenters[i*nDim+1]);
         point.push_back(PlaneCellCenters[i*nDim+2]);
         for (k = 0; k < spheres.size(); ++k) {
-          if(in_sphere=spheres[k].in_sphere(point)) {
+          in_sphere = spheres[k].in_sphere(point);
+          if(in_sphere) {
             break;
           }
         }
@@ -743,7 +745,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
         double V = youngs_dom_default/(2*G) - 1;
         // correcting for negative 0 output
         outputStream << std::left << std::setw(16) << youngs_dom_default
-                     << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+                     << std::left << std::setw(16) << (V == 0.0 ? fabs(V): V) << std::endl;
         }
         // if E not given, get from G and V
         else if (youngs_dom_default == -1) {
@@ -810,7 +812,8 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
           point.push_back(PlaneCellCenters[i*nDim+1]);
           point.push_back(PlaneCellCenters[i*nDim+2]);
           for (k = 0; k < spheres.size(); ++k) {
-            if(in_sphere=spheres[k].in_sphere(point)) {
+            in_sphere = spheres[k].in_sphere(point);
+            if(in_sphere) {
               break;
             }
           }
@@ -855,7 +858,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
             double V = youngs_dom_default/(2*G) - 1;
           // correcting for negative 0 output
             outputStream << std::left << std::setw(16) << youngs_dom_default 
-                         << std::left << std::setw(16) << (V == 0.0 ? abs(V): V) << std::endl;
+                         << std::left << std::setw(16) << (V == 0.0 ? fabs(V): V) << std::endl;
           } 
           // if E not given, get from G and V
           else if (youngs_dom_default == -1) {
@@ -938,7 +941,7 @@ int vtkAnalyzer::getPointDataArray(int id, std::vector<std::vector<double> > &pn
 {
    // TODO: This function is slow
    // check data exists
-  vtkDoubleArray* data;
+  // vtkDoubleArray* data;
   if (!pointData)
     pointData = dataSet->GetPointData();
    // populate user's array
@@ -975,7 +978,7 @@ int vtkAnalyzer::getCellDataArray(int id, std::vector<std::vector<double> > &cll
 {
    // TODO: This function is slow
    // check data exists
-   vtkDoubleArray* data;
+   // vtkDoubleArray* data;
    if (!cellData)
     cellData = dataSet->GetCellData();
    // populate user's array

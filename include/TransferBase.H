@@ -52,8 +52,8 @@ class NEMOSYS_EXPORT TransferBase
 
   protected:
     meshBase *source;
-    vtkSmartPointer<vtkCellLocator> srcCellLocator; // search structure 
     meshBase *target;
+    vtkSmartPointer<vtkCellLocator> srcCellLocator; // search structure
     vtkSmartPointer<vtkCellLocator> trgCellLocator;
     bool checkQual;
     bool continuous; // switch on / off weighted averaging for cell transfer

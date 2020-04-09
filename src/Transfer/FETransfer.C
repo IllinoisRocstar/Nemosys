@@ -220,6 +220,7 @@ FETransfer::transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell,
               << std::endl;
     exit(1);
   }
+  return 0;
 }
 
 
@@ -414,7 +415,7 @@ int FETransfer::transferCellData(int i, vtkSmartPointer<vtkGenericCell> genCell,
     // passed to evaluate position if called
     double pcoords[3];
     // parameters for interpolation
-    int pntId;
+    // int pntId;
     int result;
     auto *weights = new double[genCell->GetNumberOfPoints()];
     result = genCell->EvaluatePosition(x, nullptr, subId, pcoords, minDist2,

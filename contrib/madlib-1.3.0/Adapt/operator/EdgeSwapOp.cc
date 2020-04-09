@@ -267,7 +267,7 @@ namespace MAd
       {
         // find worst element shape of this configuration
         double worst_shape = MAdBIG;    // assume the shape is always between 0.0 and 1.0
-        bool   valid;
+        bool   valid = false;
         for( int j=0; j < swap_config.nb_tri_triangulation(); j++ )
           {
             int t = swap_config.triangulation(i,j);  // test triangle t

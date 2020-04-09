@@ -139,7 +139,7 @@ namespace MAd {
   
 
     // --- call callback functions ---
-    pPList emptyList;
+    pPList emptyList = PList_new();
     pPList delEn = PList_new();
     void * delTmp = NULL;
     while ( pFace face = (pFace) PList_next(delF,&delTmp) ) PList_append(delEn,(pEntity)face);

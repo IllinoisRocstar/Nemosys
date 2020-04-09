@@ -1215,11 +1215,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   int MeshAdapter::runOneIter()
   {
-    MAdResourceManager& tm = MAdResourceManagerSgl::instance();
-
     // --- constrain parallel interfaces ---
 #ifdef PARALLEL
-    { 
+    MAdResourceManager& tm = MAdResourceManagerSgl::instance();
+
+    {
       double t0= tm.getTime();
       UpdateParallelConstraint(mesh);
       double dt = tm.getTime() - t0;

@@ -53,10 +53,10 @@ namespace MAd {
   }
 
   void MDB_Mesh::deleteTheHighOrderPoint(std::set < MDB_Point *, PointLessThan >::iterator it){
-    MDB_Point *pt;
+    //MDB_Point *pt;
     if (it != points.end())
       {
-        pt = *it;
+        //pt = *it;
         points.erase(it);
         nbPoints--;
       }
@@ -1814,7 +1814,7 @@ namespace MAd {
           e3->g = pf->g;
           pEdge e4 = F_edge (pf,3);
           if (e4 ) e4->g = pf->g;
-          //vertices         
+          //vertices
           pVertex v1 = F_vertex(pf, 0);
           v1->g = pf->g;
           pVertex v2 = F_vertex(pf, 1);
@@ -1827,7 +1827,7 @@ namespace MAd {
           }
         }
       }
-      std::cout << "Found " << nBndFace << " boundary faces.\n";  
+      std::cout << "Found " << nBndFace << " boundary faces.\n";
       FIter_delete(fit);
     }
     // TW
@@ -1846,15 +1846,15 @@ namespace MAd {
           // and all of its vertices
           nBndEdge++;
           pe->g = bndGEntity;
-          //vertices         
+          //vertices
           pVertex v1 = E_vertex (pe,0);
           v1->g = pe->g;
           pVertex v2 = E_vertex (pe,1);
           v2->g = pe->g;
         }
       }
-      
-      std::cout << "Found " << nBndEdge << " boundary edges.\n";  
+
+      std::cout << "Found " << nBndEdge << " boundary edges.\n";
       EIter_delete(eit);
     }
   }
@@ -1972,7 +1972,7 @@ namespace MAd {
       int nBndFace = 0;
       while ((pf = FIter_next(fit)))
       {
-         if (pf->getNbRegions() < 2) 
+         if (pf->getNbRegions() < 2)
          {
            // applying given entity to the boundary face
            // and all of its edges and all its vertices
@@ -1990,14 +1990,14 @@ namespace MAd {
            if (myReg->iD == 0)
            {
              // this means we have  new region after
-             // mesh adaptation we number the new ones with 
+             // mesh adaptation we number the new ones with
              // negative numbers
              myReg->iD = -nNewRegion++;
            }
            regIds.push_back(myReg->iD);
-  
+
            //std::cout << "My reg id = " << myReg->iD << std::endl;
-           //vertices         
+           //vertices
            pVertex v1 = F_vertex(pf, 0);
            pVertex v2 = F_vertex(pf, 1);
            pVertex v3 = F_vertex(pf, 2);
@@ -2011,33 +2011,33 @@ namespace MAd {
            if (bndVrtxIds.find(v1->iD) == bndVrtxIds.end())
            {
              bndVrtxIds.insert(v1->iD);
-             skinMesh->add_point(v1->iD, v1->X, v1->Y, v1->Z); 
+             skinMesh->add_point(v1->iD, v1->X, v1->Y, v1->Z);
              nBndVrtx+=1;
            }
            if (bndVrtxIds.find(v2->iD) == bndVrtxIds.end())
            {
              bndVrtxIds.insert(v2->iD);
-             skinMesh->add_point(v2->iD, v2->X, v2->Y, v2->Z); 
+             skinMesh->add_point(v2->iD, v2->X, v2->Y, v2->Z);
              nBndVrtx+=1;
            }
            if (bndVrtxIds.find(v3->iD) == bndVrtxIds.end())
            {
              bndVrtxIds.insert(v3->iD);
-             skinMesh->add_point(v3->iD, v3->X, v3->Y, v3->Z); 
+             skinMesh->add_point(v3->iD, v3->X, v3->Y, v3->Z);
              nBndVrtx+=1;
            }
            // ading triangle
            MAd::pGEntity fGeom = (MAd::pGEntity) MAd::GM_faceByTag(skinMesh->model, 0);
            skinMesh->add_triangle(v1->iD, v2->iD, v3->iD, fGeom);
-  
+
          }
       }
       skinMesh->classify_unclassified_entities();
-      skinMesh->destroyStandAloneEntities();    
-      std::cout << nBndVrtx << " boundary vertices added to the mesh.\n";  
-      std::cout << nBndFace << " boundary faces added to the mesh.\n";  
+      skinMesh->destroyStandAloneEntities();
+      std::cout << nBndVrtx << " boundary vertices added to the mesh.\n";
+      std::cout << nBndFace << " boundary faces added to the mesh.\n";
       FIter_delete(fit);
-  
+
       // going through all regions to find corresponding region index for ids
       // since mesh might have updated this needs to be checked everytime
       RIter rit = M_regionIter(this);
@@ -2050,7 +2050,7 @@ namespace MAd {
         old2new[pr->iD] = iReg++;
       }
       RIter_delete(rit);
-      // converting region ids from old to new   
+      // converting region ids from old to new
       for (int it=0; it<regIds.size(); it++)
         regIds[it] = old2new[regIds[it]];
     }
@@ -2082,16 +2082,16 @@ namespace MAd {
            //if (myReg->iD == 0)
            //{
            //  // this means we have  new region after
-           //  // mesh adaptation we number the new ones with 
+           //  // mesh adaptation we number the new ones with
            //  // negative numbers
            // std::cout << "nnr = " << nNewRegion << std::endl;
            //  myReg->iD = -nNewRegion++;
            //}
            //std::cout << "id = " << myReg->iD << std::endl;
            //regIds.push_back(myReg->iD);
-  
+
            //std::cout << "My reg id = " << myReg->iD << std::endl;
-           //vertices         
+           //vertices
            pVertex v1 = E_vertex(pe, 0);
            pVertex v2 = E_vertex(pe, 1);
            if (pe->getNbHighOrderPoints()>0)
@@ -2104,27 +2104,27 @@ namespace MAd {
            if (bndVrtxIds.find(v1->iD) == bndVrtxIds.end())
            {
              bndVrtxIds.insert(v1->iD);
-             skinMesh->add_point(v1->iD, v1->X, v1->Y, v1->Z); 
+             skinMesh->add_point(v1->iD, v1->X, v1->Y, v1->Z);
              nBndVrtx+=1;
            }
            if (bndVrtxIds.find(v2->iD) == bndVrtxIds.end())
            {
              bndVrtxIds.insert(v2->iD);
-             skinMesh->add_point(v2->iD, v2->X, v2->Y, v2->Z); 
+             skinMesh->add_point(v2->iD, v2->X, v2->Y, v2->Z);
              nBndVrtx+=1;
            }
            // adding edge
            MAd::pGEntity fGeom = (MAd::pGEntity) MAd::GM_faceByTag(skinMesh->model, 0);
            skinMesh->add_edge(v1->iD, v2->iD, fGeom);
-  
+
          }
       }
       skinMesh->classify_unclassified_entities();
-      skinMesh->destroyStandAloneEntities();    
-      std::cout << nBndVrtx << " boundary vertices added to the mesh.\n";  
-      std::cout << nBndEdge << " boundary edges added to the mesh.\n";  
+      skinMesh->destroyStandAloneEntities();
+      std::cout << nBndVrtx << " boundary vertices added to the mesh.\n";
+      std::cout << nBndEdge << " boundary edges added to the mesh.\n";
       EIter_delete(eit);
-  
+
       // going through all regions to find corresponding region index for ids
       // since mesh might have updated this needs to be checked everytime
       RIter rit = M_regionIter(this);
@@ -2137,7 +2137,7 @@ namespace MAd {
         old2new[pr->iD] = iReg++;
       }
       RIter_delete(rit);
-      // converting region ids from old to new   
+      // converting region ids from old to new
       for (int it=0; it<regIds.size(); it++)
         regIds[it] = old2new[regIds[it]];
     }

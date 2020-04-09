@@ -154,7 +154,7 @@ void gmshMesh::read(const std::string &fname) {
     std::cerr << "WARNING: " << numUnsupportedElements
               << " unsupported Gmsh elements detected of the following types:";
     for (const auto &unsupportedType : unsupportedTypesList) {
-      std::cerr << " \"" << typeName << "\"";
+      std::cerr << " \"" << unsupportedType << "\"";
     }
     std::cerr << std::endl;
   }

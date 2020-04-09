@@ -71,20 +71,23 @@ TEST_F(CubatureTest, InterpolateToGauss)
 // test integration methods
 TEST_F(CubatureTest, integrateOverAllCells)
 {
-  std::vector<std::vector<double>> totalIntegralData(cuby->integrateOverAllCells());
-  std::vector<std::vector<double>> refTotalIntegralData 
-    = {{28385.234}, {12718.489}, {10811986}, {0.00042734, -5.754033e-08, -5.99377e-08}};
+  std::vector<std::vector<double>> totalIntegralData(
+      cuby->integrateOverAllCells());
+  std::vector<std::vector<double>> refTotalIntegralData = {
+      {28385.23446875294},
+      {12718.489406555998},
+      {10811985.874199742},
+      {0.00042734000024760349, -5.7540334078832547e-08,
+       -5.9937717104360543e-08}};
 
-  for (int i = 0; i < totalIntegralData.size(); ++i)
-  {
-    for (int j = 0; j < totalIntegralData[i].size(); ++j)
-    {
-      EXPECT_FLOAT_EQ(totalIntegralData[i][j],refTotalIntegralData[i][j]);
+  for (int i = 0; i < totalIntegralData.size(); ++i) {
+    for (int j = 0; j < totalIntegralData[i].size(); ++j) {
+      EXPECT_DOUBLE_EQ(totalIntegralData[i][j], refTotalIntegralData[i][j]);
     }
   }
-  
+
   std::unique_ptr<meshBase> integralMesh = meshBase::CreateUnique(refInt);
-  EXPECT_EQ(0,diffMesh(cuby->getNodeMesh(),integralMesh.get())); 
+  EXPECT_EQ(0, diffMesh(cuby->getNodeMesh(), integralMesh.get()));
 }
 
 TEST(CubatureHexTest, integrateOverHex)
@@ -93,7 +96,7 @@ TEST(CubatureHexTest, integrateOverHex)
   std::vector<int> arrayIDs = {0};
   std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(hex.get(),arrayIDs); 
   std::vector<std::vector<double>> totalIntegralData(cubeObj->integrateOverAllCells());
-  EXPECT_FLOAT_EQ(totalIntegralData[0][0],0.0178032529762904);
+  EXPECT_DOUBLE_EQ(totalIntegralData[0][0],0.01780325297629036);
   //std::cout << setprecision(15) << totalIntegralData[0][0] << std::endl;
   //double p = 0.577350269189626;
   //std::vector<double> gp1 = {-p,-p,-p};

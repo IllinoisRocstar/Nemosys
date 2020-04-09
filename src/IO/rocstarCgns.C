@@ -15,7 +15,7 @@ cgnsAnalyzer(fname), myCgFName(fname),_burn(0)
 }
 
 rocstarCgns::rocstarCgns(const std::vector<std::string>& fnames)
-  : cgnsAnalyzer(fnames[0]), cgFNames(fnames),_burn(0)
+  : cgnsAnalyzer(fnames[0]), _burn(0), cgFNames(fnames)
 {
   std::size_t _loc = fnames[0].find_last_of("_");
   baseCgFName = fnames[0].substr(0,_loc+1);

@@ -99,7 +99,7 @@ void circles::draw() {
   //-------------------------------------------//
 
   // Line Loop ID identifier, to be defined...
-  int ll;
+  int ll = -1;
   int nSurf = (_radii.size() - 1) * 2; // number of surfaces
   std::vector<int> lineTags;
 

@@ -20,6 +20,9 @@
 #include "jsoncons/json.hpp"
 #include "meshGen.H"
 #include "meshingParams.H"
+
+#include "vtkGeoMesh.H"
+#include "gmshGeoMesh.H"
 %}
 
 %shared_ptr(TransferBase)
@@ -39,6 +42,10 @@
 %include "meshBase.H"
 
 %include "vtkMesh.H"
+
+
+%include "vtkGeoMesh.H"
+%include "gmshGeoMesh.H"
 
 int diffMesh(meshBase *mesh1, meshBase *mesh2);
 

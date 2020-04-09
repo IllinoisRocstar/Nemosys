@@ -312,7 +312,7 @@ namespace MAd {
     v2dd pCrds;
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = MAd::V_point(pv);
       pCrd.push_back(pp->X);
@@ -329,7 +329,7 @@ namespace MAd {
     std::vector<double> pCrd;
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = MAd::V_point(pv);
       pCrd.push_back(pp->X);
@@ -343,7 +343,7 @@ namespace MAd {
     std::vector<double> pCrd;
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = MAd::V_point(pv);
       pCrd.push_back(pp->Y);
@@ -357,7 +357,7 @@ namespace MAd {
     std::vector<double> pCrd;
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = MAd::V_point(pv);
       pCrd.push_back(pp->Z);
@@ -371,7 +371,7 @@ namespace MAd {
     std::vector<int> pIdx;
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = V_point(pv);
       pIdx.push_back(V_id(pp));
@@ -386,7 +386,7 @@ namespace MAd {
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
     int nPnt = 1; // assume first point id is 1
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = V_point(pv);
       pMap[nPnt++] = V_id(pp);
@@ -401,7 +401,7 @@ namespace MAd {
     VIter vit = M_vertexIter(mesh);
     pVertex pv;
     int nPnt = 1; // assume first point id is 1
-    while (pv = VIter_next(vit))
+    while ((pv = VIter_next(vit)))
     {
       pPoint pp = V_point(pv);
       pMap[V_id(pp)] = nPnt++;
@@ -420,7 +420,7 @@ namespace MAd {
     {
        RIter rit = M_regionIter(mesh);
        pRegion pr;
-       while (pr = RIter_next(rit))
+       while ((pr = RIter_next(rit)))
        {
 	 pPList ppl = R_vertices(pr);
 	 void* temp = NULL;
@@ -432,7 +432,7 @@ namespace MAd {
     } else if (M_numTriangles(mesh) > 0) {
        FIter fit = M_faceIter(mesh);
        pFace pf;
-       while (pf = FIter_next(fit))
+       while ((pf = FIter_next(fit)))
        {
 	 pPList ppl = F_vertices(pf);
 	 void* temp = NULL;
@@ -2167,7 +2167,7 @@ namespace MAd {
   //! Returns a list of the vertices of edge pe \ingroup edge
   pPList E_vertices(const pEdge pe)
   {
-    pPList vList;
+    pPList vList = PList_new();
     PList_append(vList,pe->p1);
     PList_append(vList,pe->p2);
     return vList;

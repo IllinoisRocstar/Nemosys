@@ -44,7 +44,7 @@ class NEMOSYS_EXPORT meshBase
   // --- constructors and destructors
   public:
     meshBase()
-        : dataSet(nullptr), numPoints(0), numCells(0),
+        : numPoints(0), numCells(0), dataSet(nullptr),
           hasSizeField(false), checkQuality(false), continuous(false), order(1),
           metadata(nullptr)
     {
@@ -757,10 +757,6 @@ class NEMOSYS_EXPORT meshBase
     **/
     nemId_t numCells;
 
-    /** @brief set to true if sizeField attached to dataSet
-    **/
-    bool hasSizeField;
-
     /** @brief mesh points, topology and data
     **/
     vtkSmartPointer<vtkDataSet> dataSet;
@@ -768,6 +764,10 @@ class NEMOSYS_EXPORT meshBase
     /** @brief name of mesh file
     **/
     std::string filename;
+
+    /** @brief set to true if sizeField attached to dataSet
+    **/
+    bool hasSizeField;
 
     /** @brief check transfer quality when on
     **/

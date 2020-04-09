@@ -43,7 +43,7 @@ class NEMOSYS_EXPORT solutionData
 
   public:
     solutionData(std::string sName, solution_type_t inDataType)
-        : dataName(std::move(sName)), dataType(inDataType), nData(0), nDim(0) {}
+        : dataName(std::move(sName)), nDim(0), nData(0), dataType(inDataType) {}
 
     ~solutionData() = default;
 
@@ -88,10 +88,11 @@ class NEMOSYS_EXPORT cgnsAnalyzer
         cgFileName(std::move(fname)), isUnstructured(false),
         zoneType(CGNS_ENUMV(ZoneTypeNull)),
         indexFile(-1), indexBase(-1), indexZone(-1), indexCoord(-1),
-        nVertex(0), nRindNdeStr(0), nElem(0), cellDim(0), physDim(0),
+        cellDim(0), physDim(0), nVertex(0), nRindNdeStr(0), nElem(0),
         nVrtxElem(0),
-        solutionDataPopulated(false), searchEps(1e-9),
+        solutionDataPopulated(false),
         kdTree(nullptr), kdTreeElem(nullptr), vrtxCrd(nullptr), vrtxIdx(nullptr),
+        searchEps(1e-9),
         isMltZone(false), vtkMesh(nullptr), _verb(verb), _rindOff(false)
     {
       cgRindCellIds.clear();
@@ -140,7 +141,7 @@ class NEMOSYS_EXPORT cgnsAnalyzer
     int getCellDim();
     std::string getFileName();
     std::string getBaseName();
-    virtual std::string getZoneName();
+    std::string getZoneName();
     std::string getZoneName(int nCgFile);
     std::string getSectionName();
     std::string getBaseItrName();

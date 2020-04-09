@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 48)
+set(NEMOSYS_MINOR_VERSION 49)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -117,6 +117,8 @@ opt(TESTING "Enable testing" ${DEFAULT})
 opt(BUILD_UTILS "Build utilities" OFF)
 opt(PYTHON_BINDINGS "Enable Python bindings" OFF)
 opt(CFMSH "Enable cfMesh Meshing engine" OFF)
+opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
+opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 opt(CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
 opt(DTK "Enable DTK extensions" OFF)
 opt(EXODUS "Enable EXODUS II extensions" OFF)
@@ -124,11 +126,10 @@ opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
 opt(METIS "Enable METIS partitioner" ${DEFAULT})
 opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
+opt(OMEGAH "Enable Omega_h mesh adaptivity" ${DEFAULT})
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
-opt(TEMPLATE_MESH "Enable meshing templates" ON)
-opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
-opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
+opt(TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
 
 # Check for option interdependencies ###########################################
 
@@ -166,6 +167,7 @@ if(ENABLE_MPI)
   endif(MPI_EXTRA_LIBRARY)
   # Needed for mpich 2
   add_definitions("-DMPICH_IGNORE_CXX_SEEK")
+  set(Omega_h_USE_MPI ON)
 endif()
 
 # Find VTK
@@ -463,6 +465,11 @@ if(ENABLE_CONSRV_VOLUME_TRANSFER)
   # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
 endif()
 
+if(ENABLE_OMEGAH)
+  add_subdirectory(contrib/omega_h-9.31.2)
+  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
+endif()
+
 # Setting library files ########################################################
 # TODO: clean up the unnecessary modules such as R8
 
@@ -513,13 +520,20 @@ set(NEMOSYS_SRCS
 
     src/Integration/Cubature.C
 
+    src/IO/vtkAnalyzer.C
+
     src/Math/kmeans.C
 
     src/Mesh/meshBase.C
+    src/Mesh/geoMeshBase.C
+    src/Mesh/geoMeshBase_reconstructGeo.C
+    src/Mesh/geoMeshFactory.C
     src/Mesh/cobalt.C
     src/Mesh/gmshMesh.C
+    src/Mesh/gmshGeoMesh.C
     src/Mesh/patran.C
     src/Mesh/pntMesh.C
+    src/Mesh/vtkGeoMesh.C
     src/Mesh/vtkMesh.C
 
     src/MeshGeneration/meshGen.C
@@ -554,7 +568,6 @@ set(NEMOSYS_SRCS
 #   src/Transfer/ConservativeVolumeTransfer.C
 
     src/StlToVtk.C
-    src/IO/vtkAnalyzer.C
 )
 
 # Optional source files
@@ -564,12 +577,13 @@ if(HAVE_CGNS)
       # src/Drivers/RocPrepDriver.C
       # src/Drivers/RocRestartDriver.C
 
-      src/MeshPartitioning/meshStitcher.C
-
       src/IO/cgnsAnalyzer.C
       src/IO/cgnsWriter.C
-      src/gridTransfer.C
       src/IO/rocstarCgns.C
+
+      src/MeshPartitioning/meshStitcher.C
+
+      src/gridTransfer.C
   )
 endif()
 
@@ -609,12 +623,11 @@ if(ENABLE_SIMMETRIX)
   )
 endif()
 
-if (ENABLE_TEMPLATE_MESH)
+if(ENABLE_TEMPLATE_MESH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Drivers/TemplateMeshDriver.C
   )
 endif()
-
 
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
@@ -644,6 +657,12 @@ endif()
 if(ENABLE_CONSRV_SURFACE_TRANSFER)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Transfer/ConservativeSurfaceTransfer.C
+  )
+endif()
+
+if(ENABLE_OMEGAH)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Mesh/oshGeoMesh.C
   )
 endif()
 
@@ -841,6 +860,11 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
   target_compile_definitions(Nemosys PUBLIC HAVE_IMPACT)
 endif()
 
+if(ENABLE_OMEGAH)
+  target_link_libraries(Nemosys PUBLIC omega_h)
+  target_compile_definitions(Nemosys PRIVATE HAVE_OMEGAH)
+endif()
+
 # Set warning level ############################################################
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -850,19 +874,20 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   target_compile_options(Nemosys PUBLIC -Wextra -Wno-unused-parameter)
   target_compile_options(Nemosys PUBLIC -Woverloaded-virtual -Wnon-virtual-dtor)
   target_compile_options(Nemosys PUBLIC -Wstrict-null-sentinel -Wredundant-decls)
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
-      target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
-  endif (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
+    target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
+  endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
 
   # Stretch goals
   #target_compile_options(Nemosys PUBLIC -Wshadow)
+  #target_compile_options(Nemosys PUBLIC -Wfloat-equal)
   #target_compile_options(Nemosys PUBLIC -Wold-style-cast)
   #target_compile_options(Nemosys PUBLIC -Wsign-compare -Wunused-parameter)
 
   # Maybe
   #target_compile_options(Nemosys PUBLIC -Wmissing-declarations)
   #target_compile_options(Nemosys PUBLIC -Wsign-promo -Wsuggest-override
-  #    -Wsuggest-final-types -Wsuggest-final-methods -Wfloat-equal
+  #    -Wsuggest-final-types -Wsuggest-final-methods
   #    -Wuseless-cast -Wzero-as-null-pointer-constant -Wpadded)
 
   # Requires high gcc
@@ -870,7 +895,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   #    -Wextra-semi -Warith-conversion
   #    -Wmultiple-inheritance -Wvirtual-inheritance)
 elseif(MSVC)
-#  target_compile_options(Nemosys PUBLIC /permissive-)
+  #target_compile_options(Nemosys PUBLIC /permissive-)
   string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 endif()
 
@@ -882,10 +907,12 @@ generate_export_header(r8)
 list(APPEND ${Nemosys_INC_FILES} Nemosys_export.h)
 list(APPEND ${interp_INC_FILES} interp_export.h)
 list(APPEND ${r8_INC_FILES} r8_export.h)
-file(COPY ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h
-          ${CMAKE_CURRENT_BINARY_DIR}/interp_export.h
-          ${CMAKE_CURRENT_BINARY_DIR}/r8_export.h
-    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(Nemosys PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_include_directories(interp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_include_directories(r8 PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 # Set soname version ###########################################################
 

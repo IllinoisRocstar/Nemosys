@@ -232,9 +232,9 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(srcmsh);
 
     // create PATRAN object from meshBase
-    auto *pat = new PATRAN::patran(myMesh, srcmsh, trgmsh, faceTypeMap,
-                                   nodeTypeMap, nodeStructuralMap,
-                                   nodeMeshMotionMap, nodeThermalMap, nppVec);
+    PATRAN::patran(myMesh, srcmsh, trgmsh, faceTypeMap, nodeTypeMap,
+                   nodeStructuralMap, nodeMeshMotionMap, nodeThermalMap,
+                   nppVec);
     // pat->write();
   } else if (method == "VTK->FOAM") {
 #ifdef HAVE_CFMSH
@@ -409,7 +409,7 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
         static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm));
     NEM::MSH::EXOMesh::elementType exoType =
         NEM::MSH::EXOMesh::v2eEMap(vtkType);
-    elmBucket[grpIds[iElm]][exoType].emplace_back(iElm);
+    elmBucket[static_cast<int>(grpIds[iElm])][exoType].emplace_back(iElm);
     // set the dimension of Exo database based on present elements
     bool is3D = false;
     if (!is3D) {

@@ -221,7 +221,7 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
     for (int j = 0; j < numFaces; ++j)
     {
       vtkCell *faceObj = genCell1->GetFace(j);
-      bool shared = false;
+      // bool shared = false;
       vtkIdType numVerts = faceObj->GetNumberOfPoints();
       nVerticesPerFaceMax = (nVerticesPerFaceMax < numVerts
                              ? numVerts
@@ -282,7 +282,8 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
         for (vtkIdType iFaceNode = 0;
              iFaceNode < facePtIds->GetNumberOfIds(); iFaceNode++)
         {
-          boundaryNodeId2PatchNo[facePtIds->GetId(iFaceNode)].push_back(patchNo[0]);
+          boundaryNodeId2PatchNo[facePtIds->GetId(iFaceNode)].push_back(
+              static_cast<int>(patchNo[0]));
         }
 
         // Write header card
@@ -321,7 +322,7 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
         // Write data card 2
         // card number
         char buffer[17];
-        snprintf(buffer, 17, "%16.9E", (double) faceTypeMap[patchNo[0]]);
+        snprintf(buffer, 17, "%16.9E", (double) faceTypeMap[static_cast<int>(patchNo[0])]);
         outputStream << buffer;
 
         outputStream << std::endl;
@@ -372,12 +373,12 @@ void PATRAN::patran::write8(std::ofstream &outputStream)
       patchNoVec.push_back(patchItr);
 
     // sort patches
-    int outFlag = 0;
+    // int outFlag = 0;
     int patchVal = -1;
     for (auto patchItr = patchNoVec.begin();
          patchItr != patchNoVec.end() - 1; ++patchItr)
     {
-      int firstVal = *patchItr;
+      // int firstVal = *patchItr;
       if (patchVal == -1)
         patchVal = *patchItr;
       else

@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.48.0
+Version 0.49.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -39,16 +39,18 @@ in the notes section.
 | ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
 | ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM                |
 | ENABLE_CGNS            | Enable CGNS extensions          | OFF     | Requires CGNS                    |
+| ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT         |
+| ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI              |
 | ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 | ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II               |
 | ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
 | ENABLE_HDF5            | Enable HDF5 extensions          | OFF     | Requires HDF5                    |
 | ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
 | ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
+| ENABLE_OMEGAH          | Enable Omega_h mesh adaptivity  | ON      |                                  |
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
-| ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT |
-| ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI |
+| ENABLE_TEMPLATE_MESH   | Enable meshing templates        | ON      |                                  |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
