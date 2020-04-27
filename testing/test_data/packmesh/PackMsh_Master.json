@@ -4,6 +4,7 @@
     "Surrounding Reference File": "geom_surrounding_mesh_ref.vtu",
     "Program Type": "Pack Mesh Generation",
     "Mesh Generation Engine": "packmesh",
+    "Mesh Type": "hexahedral",
     "Mesh File Options": {
       "Input Geometry File": "packs.stl",
       "Output Pack Mesh File": "geom_pack_mesh.vtu",
@@ -22,58 +23,83 @@
         "AllowDisconnectedDomains": 1
       },
       "snappyHexMesh Parameters": {
-        "Castellated Mesh": 1,
-        "Snapping": 1,
-        "Layer Addition": 0,
-        "CellZones": 1, // Keep 1 for pack meshing
-        "RegionRefine": 0,
-        "SurfaceRefine": 0,
-        "InputPatchName": "domain100", // do not change
-        "SurfPatchName": "domain100", // do not change
-        "maxLocalCells": 2000000,
-        "maxGlobalCells": 4000000,
-        "minRefCells": 0,
-        "nCellsBetweenLevels": 3,
-        "surfaceRefinementLvlMin": 0,
-        "surfaceRefinementLvlMax": 0,
-        "resolveFeatureAngle": 60,
-        "locationInMeshX": 0, // should be in surrounding only
-        "locationInMeshY": 0, // should be in surrounding only
-        "locationInMeshZ": 0, // should be in surrounding only
-        "allowFreeStandingZoneFaces": 1,
-        "nSmoothPatch": 4,
-        "tolerance": 0.5,
-        "snapSolveIter": 200,
-        "snapRelaxIter": 6,
-        "relativeSizes": 1,
-        "expansionRatio": 1.3,
-        "finalLayerThickness": 1.0,
-        "minThickness": 0.1,
-        "nGrow": 0,
-        "featureAngle": 30,
-        "nRelaxIter": 3,
-        "nSmoothSurfaceNormals": 1,
-        "nSmoothNormals": 3,
-        "nSmoothThickness": 2,
-        "maxFaceThicknessRatio": 0.5,
-        "maxThicknessToMedialRatio": 1.0,
-        "minMedialAxisAngle": 90,
-        "nBufferCellsNoExtrude": 0,
-        "nLayerIter": 50,
-        "maxNonOrtho": 65,
-        "maxBoundarySkewness": 20,
-        "maxInternalSkewness": 4,
-        "maxConcave": 80,
-        "minVol": 1e-13,
-        "minTetQuality": 1e-15,
-        "minArea": -1,
-        "minTwist": 0.02,
-        "minFaceWeight": 0.05,
-        "minVolRatio": 0.01,
-        "minDeterminant": 0.001,
-        "minTriangleTwist": -1,
-        "qcnSmoothScale": 5,
-        "errorReduction": 0.75,
+        "Castellated Mesh": true,
+        "Snapping": true,
+        "Layer Addition": false,
+
+        "Geometry Definition": {
+            "Enable Multi Patches": false,
+            "InputPatchName": "domain100"
+        },
+
+        "Castellated Mesh Controls": {
+            "CellZones": true,
+            "RegionRefine": false,
+            "SurfaceRefine": false,
+            "maxLocalCells": 2000000,
+            "maxGlobalCells": 4000000,
+            "minRefCells": 0,
+            "nCellsBetweenLevels": 3,
+            "surfaceRefinementLvlMin": 0,
+            "surfaceRefinementLvlMax": 0,
+            "resolveFeatureAngle": 60,
+            "GeneralGapLevelIncrement": 1,
+            "gapLevelIncrement": 2,
+            "planarAngle": 30,
+            "locationInMeshX": 0,
+            "locationInMeshY": 0,
+            "locationInMeshZ": 0,
+            "allowFreeStandingZoneFaces": true
+        },
+
+        "Snapping Controls": {
+            "nSmoothPatch": 4,
+            "tolerance": 0.5,
+            "snapSolveIter": 200,
+            "snapRelaxIter": 6,
+            "nFeatureSnapIter":0,
+            "implicitFeatureSnap":false,
+            "explicitFeatureSnap":false,
+            "multiRegionFeatureSnap":false
+        },
+
+        "Mesh Layers Controls": {
+            "relativeSizes": true,
+            "expansionRatio": 1.3,
+            "finalLayerThickness": 1.0,
+            "minThickness": 0.1,
+            "nGrow": 0,
+            "featureAngle": 30,
+            "maxFaceThicknessRatio": 0.5,
+            "nSmoothSurfaceNormals": 1,
+            "nSmoothThickness": 2,
+            "minMedialAxisAngle": 90,
+            "maxThicknessToMedialRatio": 1.0,
+            "nSmoothNormals": 3,
+            "slipFeatureAngle": 30,
+            "nRelaxIter": 3,
+            "nBufferCellsNoExtrude": 0,
+            "nLayerIter": 50,
+            "nRelaxedIter": 20
+        },
+
+         "Mesh Quality Controls": {
+            "maxNonOrtho": 65,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 4,
+            "maxConcave": 80,
+            "minVol": 1e-13,
+            "minTetQuality": 1e-15,
+            "minArea": -1,
+            "minTwist": 0.02,
+            "minFaceWeight": 0.05,
+            "minVolRatio": 0.01,
+            "minDeterminant": 0.001,
+            "minTriangleTwist": -1,
+            "qcnSmoothScale": 5,
+            "errorReduction": 0.75
+        },
+
         "mergeTolerance": 1e-06
       },
       "blockMesh Parameters": {
