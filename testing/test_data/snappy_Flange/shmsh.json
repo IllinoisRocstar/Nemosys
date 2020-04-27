@@ -11,77 +11,106 @@
     },
     "Meshing Parameters": {
       "snappyHexMesh Parameters": {
-        "Castellated Mesh": 1,
-        "Snapping": 1,
-        "Layer Addition": 0,
-        "CellZones": 0,
-        "RegionRefine": 1,
-        "SurfaceRefine": 1,
-        "InputPatchName": "flange",
-        "SurfPatchName": "flange",
-        "maxLocalCells": 100000,
-        "maxGlobalCells": 2000000,
-        "minRefCells": 0,
-        "nCellsBetweenLevels": 1,
-        "surfaceRefinementLvlMin": 2,
-        "surfaceRefinementLvlMax": 2,
-        "resolveFeatureAngle": 30,
-        "locationInMeshX": -9.23149e-05,
-        "locationInMeshY": -0.0025,
-        "locationInMeshZ": -0.0025,
-        "allowFreeStandingZoneFaces": 1,
-        "nSmoothPatch": 3,
-        "tolerance": 1.0,
-        "snapSolveIter": 300,
-        "snapRelaxIter": 5,
-        "relativeSizes": 1,
-        "expansionRatio": 1.0,
-        "finalLayerThickness": 0.3,
-        "minThickness": 0.25,
-        "nGrow": 0,
-        "featureAngle": 30,
-        "nRelaxIter": 5,
-        "nSmoothSurfaceNormals": 1,
-        "nSmoothNormals": 3,
-        "nSmoothThickness": 10,
-        "maxFaceThicknessRatio": 0.5,
-        "maxThicknessToMedialRatio": 0.3,
-        "minMedialAxisAngle": 90,
-        "nBufferCellsNoExtrude": 0,
-        "nLayerIter": 50,
-        "maxNonOrtho": 65,
-        "maxBoundarySkewness": 20,
-        "maxInternalSkewness": 4,
-        "maxConcave": 80,
-        "minVol": 1e-20,
-        "minTetQuality": 1e-30,
-        "minArea": -1,
-        "minTwist": 0.02,
-        "minFaceWeight": 0.02,
-        "minVolRatio": 0.01,
-        "minDeterminant": 0.001,
-        "minTriangleTwist": -1,
-        "qcnSmoothScale": 4,
-        "errorReduction": 0.75,
-        "mergeTolerance": 1e-06,
-        "GeomRefinementRegions": [
-          {
-            "PatchName": "refineHole",
-            "searchableShape": "searchableSphere",
-            "shapeParams1": "centre (0 0 -0.012)",
-            "Radius": 0.003,
-            "Mode": "inside",
-            "MinLevel": 1e15,
-            "MaxLevel": 3
-          }
-        ],
-        "SurfaceRefinementRegions": [
-          {
-            "PatchName": "flange",
-            "MinLevel": 2,
-            "MaxLevel": 2
-          }
-        ]
+        "Castellated Mesh": true,
+        "Snapping": true,
+        "Layer Addition": false,
+
+        "Geometry Definition": {
+            "Enable Multi Patches": false,
+            "InputPatchName": "flange", // Optional and only used if whole STL is one solid
+            "Custom Patches": [
+                {
+                    "Custom Patch Name": "refineBox",
+                    "Searchable Shape": "searchableBox",
+                    "minimum bound": "(-35 -35 -35)",
+                    "maximum bound": "(-50 35 52)"
+                },
+                {
+                    "Custom Patch Name": "refineHole",
+                    "Searchable Shape": "searchableSphere",
+                    "Center": "(0 0 -0.012)",
+                    "Radius": 0.003
+                }
+            ]
+        },
+
+        "Castellated Mesh Controls": {
+            "CellZones": false,
+            "RegionRefine": true,
+            "SurfaceRefine": true,
+            "maxLocalCells": 1000000,
+            "maxGlobalCells": 10000000,
+            "minRefCells": 0,
+            "nCellsBetweenLevels": 1,
+            "surfaceRefinementLvlMin": 2,
+            "surfaceRefinementLvlMax": 2,
+            "resolveFeatureAngle": 30,
+            "GeneralGapLevelIncrement": 1,
+            "gapLevelIncrement": 2,
+            "planarAngle": 30,
+            "locationInMeshX": -9.23149e-05,
+            "locationInMeshY": -0.0025,
+            "locationInMeshZ": -0.0025,
+            "allowFreeStandingZoneFaces": true,
+            "GeomRefinementRegions": [
+                {
+                    "Patch Name": "refineHole",
+                    "Mode": "inside",
+                    "MinLevel": 1e15,
+                    "MaxLevel": 3
+                }
+            ]
+        },
+
+        "Snapping Controls": {
+            "nSmoothPatch": 3,
+            "tolerance": 1.0,
+            "snapSolveIter": 300,
+            "snapRelaxIter": 5,
+            "nFeatureSnapIter":0,
+            "implicitFeatureSnap":false,
+            "explicitFeatureSnap":false,
+            "multiRegionFeatureSnap":false
+        },
+
+        "Mesh Layers Controls": {
+            "relativeSizes": true,
+            "expansionRatio": 1.0,
+            "finalLayerThickness": 0.3,
+            "minThickness": 0.25,
+            "nGrow": 0,
+            "featureAngle": 30,
+            "maxFaceThicknessRatio": 0.5,
+            "nSmoothSurfaceNormals": 1,
+            "nSmoothThickness": 10,
+            "minMedialAxisAngle": 90,
+            "maxThicknessToMedialRatio": 0.3,
+            "nSmoothNormals": 3,
+            "slipFeatureAngle": 30,
+            "nRelaxIter": 5,
+            "nBufferCellsNoExtrude": 0,
+            "nLayerIter": 50,
+            "nRelaxedIter": 20
+        },
+        
+        "Mesh Quality Controls": {
+            "maxNonOrtho": 65,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 4,
+            "maxConcave": 80,
+            "minVol": 1e-20,
+            "minTetQuality": 1e-30,
+            "minArea": -1,
+            "minTwist": 0.02,
+            "minFaceWeight": 0.02,
+            "minVolRatio": 0.01,
+            "minDeterminant": 0.001,
+            "minTriangleTwist": -1,
+            "qcnSmoothScale": 4,
+            "errorReduction": 0.75
+        },
+
+        "mergeTolerance": 1e-06
       }
     }
   }
