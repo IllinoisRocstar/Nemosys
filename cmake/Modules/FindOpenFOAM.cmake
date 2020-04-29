@@ -202,6 +202,13 @@ set(OPNF_INC_DIR
     ${OPNF_INST_DIR}/applications/utilities/postProcessing/dataConversion/foamToVTK/foamToVTK/lnInclude
     ${OPNF_INST_DIR}/src/edgeMesh/lnInclude
     ${OPNF_INST_DIR}/src/mesh/blockMesh/lnInclude
+    ${OPNF_INST_DIR}/src/TurbulenceModels/turbulenceModels/lnInclude
+    ${OPNF_INST_DIR}/src/TurbulenceModels/incompressible/lnInclude
+    ${OPNF_INST_DIR}/src/transportModels
+    ${OPNF_INST_DIR}/src/transportModels/incompressible/singlePhaseTransportModel
+    ${OPNF_INST_DIR}/src/sampling/lnInclude
+    ${OPNF_INST_DIR}/src/dynamicFvMesh/lnInclude
+    ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
 )
 
 # OpenFOAM has custom compiler definitions. All sourced from the OpenFOAM env.

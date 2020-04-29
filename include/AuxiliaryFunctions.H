@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <memory>
 
 #ifdef HAVE_GLOB_H
 #  include <glob.h>
@@ -180,6 +181,8 @@ template <typename A, typename B>
 std::vector<A> getSortedKeys(const std::map<A, B> &mapObj);
 // generate a random string of given length
 inline std::string getRandomString(int length);
+// converts string to character
+inline std::shared_ptr<char> strToChar(const std::string &strng);
 //----------------------------------------------------------------------------//
 
 //-------------------Auxiliary Function Implementations-----------------------//
@@ -272,6 +275,13 @@ std::vector<T> hadamard(const std::vector<T> &x, const std::vector<T> &y) {
 template <typename T>
 T reciprocal(T x) {
   return 1 / x;
+}
+
+// converts string to character for std::atof function
+std::shared_ptr<char> strToChar(const std::string &strng) {
+  std::shared_ptr<char> tab(new char [strng.length()+1], std::default_delete<char[]>());
+  std::strcpy(tab.get(), strng.c_str());
+  return tab;
 }
 
 // IN PLACE, computes reciprocal of vector elements
