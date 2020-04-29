@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 49)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_MINOR_VERSION 50)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -130,8 +130,13 @@ opt(OMEGAH "Enable Omega_h mesh adaptivity" ${DEFAULT})
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 opt(TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
+opt(MLAMR "Enable machine learning module in AMR" OFF)
 
 # Check for option interdependencies ###########################################
+
+if(ENABLE_MLAMR)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
 if(WIN32)
   if(ENABLE_CONSRV_SURFACE_TRANSFER)
@@ -395,17 +400,24 @@ if(ENABLE_CFMSH)
         meshTools finiteVolume foamToVTK dynamicMesh lagrangian
         fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
         genericPatchFields
-        edgeMesh)
+        edgeMesh dynamicMesh topoChangerFvMesh dynamicFvMesh sampling
+        fvOptions incompressibleTransportModels incompressibleTurbulenceModels
+        turbulenceModels)
   else()
     # 5.x and 6.x series
     find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
         meshTools finiteVolume foamToVTK dynamicMesh lagrangian
         fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
-        genericPatchFields)
+        genericPatchFields dynamicMesh topoChangerFvMesh dynamicFvMesh sampling
+        fvOptions incompressibleTransportModels incompressibleTurbulenceModels
+        turbulenceModels)
   endif()
 
   message(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
   message(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
+
+  list(APPEND LIBRARY_DIRS ${OPNF_LIBRARY_DIRS})
+  list(APPEND WRAPPER_INCLUDE_DIRS ${OPNF_INCLUDE_DIRS})
 
   find_package(OpenMP REQUIRED)
 
@@ -645,6 +657,8 @@ if(ENABLE_CFMSH)
       src/MeshManipulationFoam/mergePolyMesh.C
 
       src/MeshQuality/cfmshQualityParams.C
+
+      src/Refinement/AMRFoam.C
   )
 endif()
 
@@ -844,6 +858,17 @@ if(ENABLE_CFMSH)
     set(OF_VERSION 7)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
   endif()
+endif()
+
+if(ENABLE_MLAMR)
+  #set(CMAKE_CXX_STANDARD 14)
+  target_compile_definitions(Nemosys PUBLIC
+      MLAMR)
+  find_package(frugally-deep CONFIG REQUIRED)
+  list(APPEND WRAPPER_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include)
+  message(STATUS "frugally-deep include ${PACKAGE_PREFIX_DIR}/include")
+  target_include_directories(Nemosys SYSTEM
+      PUBLIC ${PACKAGE_PREFIX_DIR}/include)
 endif()
 
 if(ENABLE_CONSRV_VOLUME_TRANSFER)

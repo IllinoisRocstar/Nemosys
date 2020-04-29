@@ -213,7 +213,11 @@ NEM_add_test(refinement Refinement RefinementTest
     refine_uniform.json
     refined_beam_uniform.vtu
     gold_refined_beam_uniform.vtu
+    refine_AMR.json
+    Airfoil_InputMesh.vtu
+    fdeep_model.json
     )
+
 
 NEM_add_test(autoVerif AutoVerification AutoVerificationTest
     finer.vtu

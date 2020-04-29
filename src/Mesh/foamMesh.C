@@ -756,3 +756,19 @@ void foamMesh::write(const std::string &fname) const
   mesh.write();
 }
 
+void foamMesh::readAMR(const Foam::Time& runTime)
+{
+  _fmesh = new Foam::fvMesh
+  (
+    Foam::IOobject
+    (
+      Foam::fvMesh::defaultRegion,
+      runTime.timeName(),
+      runTime,
+      Foam::IOobject::MUST_READ
+    )
+  );
+
+  genMshDB();
+}
+

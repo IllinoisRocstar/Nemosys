@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.49.1
+Version 0.50.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -51,6 +51,7 @@ in the notes section.
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
 | ENABLE_TEMPLATE_MESH   | Enable meshing templates        | ON      |                                  |
+| ENABLE_MLAMR           | Enable machine learning based AMR | OFF | Requires Frugally-deep library     |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
@@ -66,6 +67,27 @@ environment is loaded, enable cfMesh build by adding this line to the cmake
 command:
 ```
 -DENABLE_CFMSH=ON
+```
+
+### Enabling machine learning based AMR ###
+NEMoSys adaptive mesh refinement module for CFD is now equipped with machine
+learning support. This module allows users to use trained machine learning
+models for adaptive mesh refinement. To enable this capability, the NEMoSys 
+should be compiled with `ENABLE_MLAMR=ON`.
+
+User will also need a header only library 
+[frugally-deep](https://github.com/Dobiasd/frugally-deep), which loads python 
+trained ML models in C++. User will need to provide installation path for this
+library using `-DCMAKE_PREFIX_PATH` flag along with other dependecies of 
+NEMoSys. frugally-deep library also requires Tensorflow 2.1.0 installed.
+```
+-DENABLE_MLAMR=ON
+-DCMAKE_PREFIX_PATH="\
+${NEMOSYS_DEPS_INSTALL_PATH}/opencascade;\
+${NEMOSYS_DEPS_INSTALL_PATH}/gmsh;\
+${NEMOSYS_DEPS_INSTALL_PATH}/vtk;\
+${NEMOSYS_DEPS_INSTALL_PATH}/netgen; \
+/Install/path/to/frugally-deep" \
 ```
 
 ### Enabling Simmetrix (UNSUPPORTED) ###
