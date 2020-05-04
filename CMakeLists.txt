@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 50)
+set(NEMOSYS_MINOR_VERSION 51)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -551,6 +551,8 @@ set(NEMOSYS_SRCS
     src/MeshGeneration/meshGen.C
     src/MeshGeneration/netgenGen.C
     src/MeshGeneration/netgenParams.C
+    src/MeshGeneration/gmshGen.C
+    src/MeshGeneration/gmshParams.C
 
     src/MeshPartitioning/meshPartitioner.C
 
