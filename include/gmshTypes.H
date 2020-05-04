@@ -6,7 +6,18 @@
  *
  * Useful regex when adding in bulk: (?<=MSH_\w*)\W*(?=[0-9]*$)
  */
-
+enum GMSH_ALGO_TYPES {
+  // Surface and Volume meshing algorithms
+  ALGO_SURF_MESHADAPT = 1,
+  ALGO_SURF_AUTO = 2,
+  ALGO_SURF_DELAUNAY = 5,
+  ALGO_SURF_FRONTAL = 6,
+  ALGO_SURF_FRONTALQUAD = 8,
+  ALGO_SURF_POP = 9,
+  ALGO_VOL_DELAUNAY = 1,
+  ALGO_VOL_FRONTAL = 4,
+  ALGO_VOL_HXT = 10
+};
 enum GMSH_MSH_TYPES {
   // Element types in .msh file format (numbers should not be changed)
   MSH_LIN_2 = 1,

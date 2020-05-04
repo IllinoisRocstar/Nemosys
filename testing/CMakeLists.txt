@@ -110,6 +110,7 @@ NEM_add_test_executable(KMeans)
 NEM_add_test_executable(QHull)
 NEM_add_test_executable(RocPackPeriodic)
 NEM_add_test_executable(NucMesh)
+NEM_add_test_executable(GmshMeshGen)
 
 NEM_add_test_executable(GeoMeshFactory)
 NEM_add_test_executable(GeoMeshBase)
@@ -205,6 +206,11 @@ NEM_add_test(meshGen MeshGen MeshGenTest
     geom.json
     hingeGeomRef.vtu
     )
+
+NEM_add_test(gmshMeshGen GmshMeshGen gmshMeshGenTest
+    box_test.json
+    box_test_REF.vtu
+)
 
 NEM_add_test(refinement Refinement RefinementTest
     refine_value.json

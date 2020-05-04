@@ -1,5 +1,6 @@
 #include "MeshGenDriver.H"
 
+#include "gmshParams.H"
 #include "netgenParams.H"
 #ifdef HAVE_SIMMETRIX
 #  include "simmetrixParams.H"
@@ -23,13 +24,13 @@ MeshGenDriver::MeshGenDriver(const std::string &ifname,
                              const std::string &meshEngine,
                              meshingParams *_params,
                              const std::string &ofname) {
+  std::cout << "MeshGenDriver created" << std::endl;
   params = _params;
   mesh = meshBase::CreateShared(
       meshBase::generateMesh(ifname, meshEngine, params));
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();
-  std::cout << "MeshGenDriver created" << std::endl;
 }
 
 std::shared_ptr<meshBase> MeshGenDriver::getNewMesh() const {
@@ -110,6 +111,139 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       if (ngparams.contains("refine_without_geometry_adaptation"))
         params->refine_without_geom =
             ngparams["refine_without_geometry_adaptation"].as<bool>();
+
+      auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+      return mshgndrvobj;
+    }
+  } else if (meshEngine == "gmsh") {
+    std::cout << "Gmsh mesh engine selected" << std::endl;
+
+    std::string defaults;
+    if (inputjson.contains("Meshing Parameters")) {
+      if (inputjson["Meshing Parameters"].contains("Gmsh Parameters")) {
+        defaults =
+            inputjson["Meshing Parameters"]["Gmsh Parameters"].as_string();
+      } else {
+        std::cerr << "Error: 'Gmsh Parameters' not found in JSON" << std::endl;
+        exit(-1);
+      }
+    } else {
+      std::cerr << "Error: 'Meshing Parameters' not found in JSON" << std::endl;
+      exit(-1);
+    }
+    if (defaults == "default") {
+      auto *params = new NEM::GEN::gmshParams();
+      auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+    } else {
+      jsoncons::json gparams =
+          inputjson["Meshing Parameters"]["Gmsh Parameters"];
+
+      auto params = new NEM::GEN::gmshParams();
+
+      // Get the output file name for later
+      std::string ofname =
+          inputjson["Mesh File Options"]["Output Mesh File"].as_string();
+      params->ofname = ofname;
+
+      if (gparams.contains("minSize"))
+        params->minSize = gparams["minSize"].as_double();
+      if (gparams.contains("maxSize"))
+        params->maxSize = gparams["maxSize"].as_double();
+      if (gparams.contains("surfaceAlgorithm"))
+        params->algo2D = gparams["surfaceAlgorithm"].as_string();
+      if (gparams.contains("volumeAlgorithm"))
+        params->algo3D = gparams["volumeAlgorithm"].as_string();
+      if (gparams.contains("extendSizeFromBoundary"))
+        params->extSizeFromBoundary =
+            gparams["extendSizeFromBoundary"].as<bool>();
+      if (gparams.contains("sizeFromCurvature"))
+        params->sizeFromCurvature = gparams["sizeFromCurvature"].as<bool>();
+      if (gparams.contains("minElementsPer2Pi"))
+        params->minElePer2Pi = gparams["minElementsPer2Pi"].as<int>();
+      if (gparams.contains("optimize"))
+        params->optimize = gparams["optimize"].as<bool>();
+      if (gparams.contains("optimizeThreshold"))
+        params->optimizeThreshold = gparams["optimizeThreshold"].as_double();
+
+      // Size Fields parsing
+      std::string cap = "SizeFields";
+      if (gparams.contains(cap)) {
+        std::cout << "Parsing SizeFields ...";
+        params->mSizeField = true;
+        for (const auto &sf : gparams[cap].array_range()) {
+          // Instantiate volSizeField struct object
+          NEM::GEN::volSizeField sizeField;
+
+          // Get the size field Type
+          if (sf.contains("Type"))
+            sizeField.type = sf["Type"].as_string();
+          else {
+            std::cerr << "Error: Keyword 'Type' for Size Field not found."
+                      << std::endl;
+            throw;
+          }
+
+          // Get the size field ID
+          if (sf.contains("ID"))
+            sizeField.id = sf["ID"].as<int>();
+          else {
+            std::cerr << "Error: Keyword 'ID' for Size Field not found."
+                      << std::endl;
+            throw;
+          }
+
+          // Get the size field Params
+          if (sf.contains("Params")) {
+            std::string key;
+            double val;
+            std::pair<std::string, double> p;
+
+            for (const auto &prm : sf["Params"].object_range()) {
+              key = std::string(prm.key());
+
+              // Check what type of data each object has
+              if (prm.value().is_array()) {
+                if (prm.value()[0].is_string()) {
+                  std::pair<std::string, std::vector<std::string>> p_strg;
+                  p_strg.first = key;
+                  for (int i = 0; i < prm.value().size(); i++) {
+                    p_strg.second.push_back(prm.value()[i].as_string());
+                    // std::cout << prm.value()[i].as_string() << std::endl;
+                  }
+                  sizeField.strg_list_params.push_back(p_strg);
+                } else {
+                  std::pair<std::string, std::vector<double>> p_num;
+                  p_num.first = key;
+                  for (int i = 0; i < prm.value().size(); i++) {
+                    p_num.second.push_back(prm.value()[i].as_double());
+                    // std::cout << prm.value()[i].as<int>() << std::endl;
+                  }
+                  sizeField.num_list_params.push_back(p_num);
+                }
+              } else {
+                val = prm.value().as_double();
+                p = {key, val};
+                sizeField.params.push_back(p);
+              }
+            }
+            (params->sizeFields).push_back(sizeField);
+          } else {
+            std::cerr << "Error: Size Field of Type " << sizeField.type
+                      << " and ID " << sizeField.id
+                      << " has no 'Params' keyword" << std::endl;
+            throw;
+          }
+        }
+      }
+      // Background Field specification
+      if (gparams.contains("BackgroundField")) {
+        params->bgField = gparams["BackgroundField"].as<int>();
+      } else if (params->mSizeField && !gparams.contains("BackgroundField") &&
+                 gparams[cap].size() > 1) {
+        std::cout << "Warning: Mesh Background Field not specified."
+                  << " Using size field with highest ID." << std::endl;
+      }
+      std::cout << " Done." << std::endl;
 
       auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;

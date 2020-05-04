@@ -63,8 +63,7 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   parseGeomAndMesh(shapes);
   Tgeom.stop();
   std::cout << gui << std::endl;
-  if (gui)
-    gmsh::fltk::initialize();
+  if (gui) gmsh::fltk::initialize();
 
   //--------------------------------------------------------------------//
   // Perform Boolean Fragments
@@ -80,8 +79,8 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   gmsh::model::occ::synchronize();
 
   int oldID, newID;
-  std::pair<int, int> oldNew;                  // holds the old/new id pair
-  std::vector<std::pair<int, int>> oldNew_vec; // vector for id pair
+  std::pair<int, int> oldNew;                   // holds the old/new id pair
+  std::vector<std::pair<int, int>> oldNew_vec;  // vector for id pair
 
   //--------------------------------------------------------------------//
   // Gather surface ids that have changed for Boolean Fragments
@@ -124,9 +123,9 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   // Make physical groups for surfaces
   //--------------------------------------------------------------------//
   for (const auto &itr : phystag_map) {
-    std::vector<int> s; // vector of surfaces
-    std::string name;   // regions name
-    int tag = -1;       // physical group tag
+    std::vector<int> s;  // vector of surfaces
+    std::string name;    // regions name
+    int tag = -1;        // physical group tag
     for (const auto &itr2 : physSurf_map) {
       if (itr2.second == itr.second) {
         tag = itr2.second;
@@ -307,8 +306,7 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   //  gmsh::model::mesh::field::setAsBackgroundMesh(3);
   //  gmsh::model::occ::synchronize();
 
-  if (gui)
-    openGUI();
+  if (gui) openGUI();
 
   std::cout << "Meshing...\n" << std::endl;
   Tmesh.start();
@@ -357,8 +355,7 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
             << std::endl;
 
   // gmsh::fltk::run();
-  if (gui)
-    openGUI();
+  if (gui) openGUI();
   gmsh::finalize();
 }
 
@@ -369,29 +366,23 @@ void NucMeshDriver::parseGeomAndMesh(jsoncons::json shapes) {
   // Loop through Geometry and Mesh to get shapes
   std::cout << "Geometry and Mesh" << std::endl;
   for (const auto &obj : shapes.array_range()) {
-    if (obj.contains("Global Options"))
-      parseOptions(obj["Global Options"]);
+    if (obj.contains("Global Options")) parseOptions(obj["Global Options"]);
 
-    if (obj.contains("Saved Objects"))
-      parseSavedObjects(obj["Saved Objects"]);
+    if (obj.contains("Saved Objects")) parseSavedObjects(obj["Saved Objects"]);
 
     if (obj.contains("Visible"))
-      if (obj["Visible"] == false)
-        continue;
+      if (obj["Visible"] == false) continue;
 
     if (obj.contains("Show"))
-      if (obj["Show"] == false)
-        continue;
+      if (obj["Show"] == false) continue;
 
     if (obj.contains("Name"))
       std::cout << "Creating '" << obj["Name"].as_string() << "'" << std::endl;
     // if (obj.contains("Include")) parseGeomAndMesh(obj["Include"]);
 
-    if (obj.contains("Circles"))
-      makeCircles(obj["Circles"]);
+    if (obj.contains("Circles")) makeCircles(obj["Circles"]);
 
-    if (obj.contains("Circle"))
-      makeCircles(obj["Circle"]);
+    if (obj.contains("Circle")) makeCircles(obj["Circle"]);
 
     if (obj.contains("Hexagon") || obj.contains("Polygon")) {
       if (obj.contains("Hexagon"))
@@ -400,11 +391,9 @@ void NucMeshDriver::parseGeomAndMesh(jsoncons::json shapes) {
         makePolygons(obj["Polygon"]);
     }
     if (obj.contains("BREAK"))
-      if (obj["BREAK"] == true)
-        openGUI();
+      if (obj["BREAK"] == true) openGUI();
 
-    if (obj.contains("Array"))
-      makeArray(obj);
+    if (obj.contains("Array")) makeArray(obj);
   }
 }
 //********************************************************************//
@@ -413,8 +402,7 @@ void NucMeshDriver::parseGeomAndMesh(jsoncons::json shapes) {
 void NucMeshDriver::parseOptions(jsoncons::json opts) {
   // Iterate through options
   for (const auto &it : opts.array_range()) {
-    if (it.contains("Open GUI"))
-      gui = it["Open GUI"].as_bool();
+    if (it.contains("Open GUI")) gui = it["Open GUI"].as_bool();
     if (it.contains("3D")) {
       extrude = it["3D"].as_bool();
       if (extrude == true) {
@@ -473,7 +461,7 @@ void NucMeshDriver::parseOptions(jsoncons::json opts) {
 
     if (it.contains("Meshing Algorithm")) {
       std::string algo = it["Meshing Algorithm"].as<std::string>();
-      int a = 6; // default: "Frontal"
+      int a = 6;  // default: "Frontal"
       if (algo == "Frontal")
         a = 6;
       else if (algo == "MeshAdapt")
@@ -490,7 +478,7 @@ void NucMeshDriver::parseOptions(jsoncons::json opts) {
     }
     if (it.contains("Recombine Algorithm")) {
       std::string combine = it["Recombine Algorithm"].as<std::string>();
-      int a = 1; // default: "Blossom"
+      int a = 1;  // default: "Blossom"
       if (combine == "Simple")
         a = 0;
       else if (combine == "Blossom")
@@ -507,8 +495,7 @@ void NucMeshDriver::parseOptions(jsoncons::json opts) {
     if (it.contains("Extend from Boundary")) {
       bool extend_from_bnd = it["Extend from Boundary"].as_bool();
       int e = 1;
-      if (!extend_from_bnd)
-        e = 0;
+      if (!extend_from_bnd) e = 0;
       gmsh::option::setNumber("Mesh.CharacteristicLengthExtendFromBoundary", e);
     }
   }
@@ -534,12 +521,9 @@ void NucMeshDriver::parseSavedObjects(jsoncons::json savedObj) {
       exit(-1);
     }
 
-    if (it.contains("Circles"))
-      shapetype = "Circles";
-    if (it.contains("Circle"))
-      shapetype = "Circle";
-    if (it.contains("Polygon"))
-      shapetype = "Polygon";
+    if (it.contains("Circles")) shapetype = "Circles";
+    if (it.contains("Circle")) shapetype = "Circle";
+    if (it.contains("Polygon")) shapetype = "Polygon";
 
     bool visible = true;
     // If meshed area conservation is required and visible, change the radii
@@ -550,8 +534,7 @@ void NucMeshDriver::parseSavedObjects(jsoncons::json savedObj) {
       jsoncons::json j;
       if (visible) {
         double tolerance = 1e-8;
-        if (it.contains("Tolerance"))
-          tolerance = it["Tolerance"].as_double();
+        if (it.contains("Tolerance")) tolerance = it["Tolerance"].as_double();
         j = correctMeshArea(it[shapetype], shapetype, tolerance);
       } else
         j = it[shapetype];
@@ -611,7 +594,7 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
       r_b.push_back(radii[i] * 1.5);
     }
     area = M_PI * lastRadius * lastRadius;
-    double /*A_b, */A_c;
+    double /*A_b, */ A_c;
     int iter = 0;
 
     while (residual > eps) {
@@ -925,8 +908,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
         elems.clear();
       }
       if (it.contains("BREAK")) {
-        if (it["BREAK"] == true)
-          openGUI();
+        if (it["BREAK"] == true) openGUI();
       }
     }
   }
@@ -1172,8 +1154,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
         }
       }
       if (it.contains("BREAK")) {
-        if (it["BREAK"] == true)
-          openGUI();
+        if (it["BREAK"] == true) openGUI();
       }
     }
   }
@@ -1187,8 +1168,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
 
   if (arrType == "Rectangular")
     std::cout << "Rectangular Array declared" << std::endl;
-  if (arrType == "Polar")
-    std::cout << "Polar Array declared" << std::endl;
+  if (arrType == "Polar") std::cout << "Polar Array declared" << std::endl;
   if (arrType == "Hexagonal")
     std::cout << "Hexagonal Array declared" << std::endl;
 
@@ -1204,7 +1184,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     double dx = arr["DX"].as<double>();
     double dy = arr["DY"].as<double>();
 
-    jsoncons::json s = arr["Shapes"]; // the array of shapes
+    jsoncons::json s = arr["Shapes"];  // the array of shapes
     jsoncons::json circ, poly;
 
     std::vector<double> cent, c_cen;
@@ -1284,7 +1264,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
   //------------------------------------------------//
   if (arrType == "Polar") {
     // get polar array parameters
-    std::vector<double> center; // center of array
+    std::vector<double> center;  // center of array
     if (arr.contains("Center")) {
       center.push_back(arr["Center"][0].as_double());
       center.push_back(arr["Center"][1].as_double());
@@ -1301,19 +1281,18 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       center[1] = center[1] + center[3] * std::sin(angle);
     }
 
-    double radius = arr["Radius"].as_double(); // array radius
-    int n = 0;                                 // number of array elements
-    if (arr.contains("N"))
-      n = arr["N"].as<int>();
+    double radius = arr["Radius"].as_double();  // array radius
+    int n = 0;                                  // number of array elements
+    if (arr.contains("N")) n = arr["N"].as<int>();
 
-    double start = arr["Start Angle"].as_double(); // start angle
+    double start = arr["Start Angle"].as_double();  // start angle
     if (start > 360.0) {
       std::cerr << "Error: 'Start Angle' in polar array is greater than 360.0 "
                    "degrees."
                 << std::endl;
       exit(-1);
     }
-    double arc = arr["Arc"].as_double(); // arc angle
+    double arc = arr["Arc"].as_double();  // arc angle
     if (arc > 360.0) {
       std::cerr << "Error: 'Arc' in polar array is greater than 360.0 degrees. "
                    "Limiting 'Arc' to 360.0 degrees."
@@ -1321,18 +1300,17 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       arc = 360.0;
     }
 
-    int nPat = 0; // number of pattern repeats
-    if (arr.contains("N Patterns"))
-      nPat = arr["N Patterns"].as<int>();
+    int nPat = 0;  // number of pattern repeats
+    if (arr.contains("N Patterns")) nPat = arr["N Patterns"].as<int>();
 
-    std::vector<int> pattern_vec; // pattern vector
+    std::vector<int> pattern_vec;  // pattern vector
     if (arr.contains("Pattern"))
       for (int j = 0; j < nPat; ++j)
         for (int i = 0; i < arr["Pattern"].size(); ++i)
           if (arr["Pattern"][i].as<int>() > 0)
             pattern_vec.push_back(arr["Pattern"][i].as<int>());
 
-    bool rotWithArray = false; // rotate with array bool
+    bool rotWithArray = false;  // rotate with array bool
     if (arr.contains("Rotate with Array")) {
       rotWithArray = arr["Rotate with Array"].as<bool>();
       if (rotWithArray)
@@ -1342,7 +1320,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     // map containing array pattern items and corresponding angles
     std::map<int, std::vector<double>> item_map;
 
-    double inc; // angle increment
+    double inc;  // angle increment
     if (n != 0 && nPat == 0) {
       inc = (arc) / n;
       // create vector of angles
@@ -1374,7 +1352,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       exit(1);
     }
 
-    jsoncons::json s = arr["Shapes"]; // the array of shapes
+    jsoncons::json s = arr["Shapes"];  // the array of shapes
     jsoncons::json circ, poly;
 
     std::vector<double> c_cen;
@@ -1492,7 +1470,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     std::vector<double> cent, c_cen;
     std::vector<std::vector<double>> orig_center;
 
-    std::vector<double> arr_center; // center of array
+    std::vector<double> arr_center;  // center of array
     // get hexagonal array parameters
     if (arr.contains("Center")) {
       arr_center.push_back(arr["Center"][0].as_double());
@@ -1519,9 +1497,8 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
       exit(-1);
     }
 
-    int n = 0; // number of array elements
-    if (arr.contains("N"))
-      n = arr["N"].as<int>();
+    int n = 0;  // number of array elements
+    if (arr.contains("N")) n = arr["N"].as<int>();
 
     int type;
     if (arr.contains("Type"))
@@ -1533,7 +1510,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     }
     double padding = 0;
     if (arr.contains("Padding"))
-      padding = arr["Padding"].as_double(); // padding
+      padding = arr["Padding"].as_double();  // padding
     else {
       std::string name;
       if (arr.contains("Name")) {
@@ -1550,7 +1527,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
 
     double start = 0.0;
     if (arr.contains("Start Angle")) {
-      start = arr["Start Angle"].as_double(); // start angle
+      start = arr["Start Angle"].as_double();  // start angle
       if (start > 360.0) {
         std::cerr << "\nError: 'Start Angle' in hexagonal array is greater "
                      "than 360.0 degrees.\n"
@@ -1560,7 +1537,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     }
     double arc = 360.0;
     if (arr.contains("Arc")) {
-      arc = arr["Arc"].as_double(); // arc angle
+      arc = arr["Arc"].as_double();  // arc angle
       if (arc > 360.0) {
         std::cerr << "Error: 'Arc' in hexagonal array is greater than 360.0 "
                      "degrees. Limiting 'Arc' to 360.0 degrees."
@@ -1574,11 +1551,10 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     double ang = 60.0 * M_PI / 180.0;
     double xOff = 0.0, yOff = 0.0;
     // If Circles are used and visible, offset to edge of circle
-    jsoncons::json s = arr["Shapes"]; // the array of shapes
+    jsoncons::json s = arr["Shapes"];  // the array of shapes
     for (const auto &shapes : s.array_range()) {
       if (shapes.contains("BREAK"))
-        if (shapes["BREAK"] == true)
-          openGUI();
+        if (shapes["BREAK"] == true) openGUI();
       if (shapes.contains("Circles")) {
         circ = shapes["Circles"];
         for (const auto &it : circ.array_range()) {
@@ -1599,10 +1575,10 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
 
     double a = 0.0;
     if (type == 2) {
-      a = 30 * M_PI / 180.0; // rad
+      a = 30 * M_PI / 180.0;  // rad
     }
 
-    double /*r, */theta;
+    double /*r, */ theta;
     for (int row = 0; row < n; row++) {
       int cols = n - std::abs(row - half);
       for (int col = 0; col < cols; col++) {
@@ -1612,18 +1588,12 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
         // convert x,y to polar coordinates
         // r = std::sqrt(x * x + y * y);
         if (std::abs(x) > 1e-8) {
-          if (x < 0 && y < 0)
-            theta = std::atan(y / x) + M_PI;
-          if (x < 0 && y > 0)
-            theta = std::atan(y / x) + M_PI;
-          if (x > 0 && y < 0)
-            theta = std::atan(y / x) + 2 * M_PI;
-          if (x > 0 && y > 0)
-            theta = std::atan(y / x);
-          if (y == 0 && x < 0)
-            theta = M_PI;
-          if (y == 0 && x > 0)
-            theta = 0.0;
+          if (x < 0 && y < 0) theta = std::atan(y / x) + M_PI;
+          if (x < 0 && y > 0) theta = std::atan(y / x) + M_PI;
+          if (x > 0 && y < 0) theta = std::atan(y / x) + 2 * M_PI;
+          if (x > 0 && y > 0) theta = std::atan(y / x);
+          if (y == 0 && x < 0) theta = M_PI;
+          if (y == 0 && x > 0) theta = 0.0;
         } else if (x == 0 && y > 0)
           theta = M_PI / 2;
         else if (x == 0 && y < 0)
@@ -1729,8 +1699,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
     }
   }
   if (arr.contains("BREAK"))
-    if (arr["BREAK"] == true)
-      openGUI();
+    if (arr["BREAK"] == true) openGUI();
 }
 
 //********************************************************************//
