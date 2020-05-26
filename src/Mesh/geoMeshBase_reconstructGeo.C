@@ -215,7 +215,9 @@ void geoMeshBase::computeDiscreteGeoFromMsh(vtkUnstructuredGrid *dataSet,
 
     // Run all the filters.
     cf->Update();
-    vtkSmartPointer<vtkUnstructuredGrid> ug = cf->GetOutput();
+
+    // bypass API based on VTK version
+    vtkSmartPointer<vtkUnstructuredGrid> ug = vtkUnstructuredGrid::SafeDownCast(cf->GetOutput());
 
     // Get the coloring array from the connectivity filter, (1) convert it to
     // vtkIntArray for interface filter and (2) add an offset to keep region

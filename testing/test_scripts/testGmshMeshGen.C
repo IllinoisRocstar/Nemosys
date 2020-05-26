@@ -55,7 +55,7 @@ TEST(gmshMeshGenTest, Box_Test) {
 #ifdef _WIN32
   int d = 50;
 #else
-  int d = 200;
+  int d = 100;
 #endif
 
   if (refNodes - refNodes / d <= newNodes &&

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 51)
-set(NEMOSYS_PATCH_VERSION 0)
+set(NEMOSYS_PATCH_VERSION 1)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -177,7 +177,11 @@ endif()
 
 # Find VTK
 # v7.1.0 required for node set and side set name support in vtkModelMetadata
-find_package(VTK 7.1.0 REQUIRED)
+find_package(VTK 7.1.0)
+if (NOT VTK_FOUND)
+  message(STATUS "Searching for VTK 8.2.0 again...")
+  find_package(VTK 8.2.0 REQUIRED)
+endif()
 # UseVTK.cmake file does not correctly set VTK headers as external.
 #include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
@@ -1024,7 +1028,7 @@ target_link_libraries(nemosysRun Nemosys)
 
 if(ENABLE_BUILD_UTILS)
   # Building xmlDump utility
-  add_executable(xmlDump MACOSX_BUNDLE ${XMLDUMP_SRCS})
+  add_executable(xmlDump ${XMLDUMP_SRCS})
   target_link_libraries(xmlDump Nemosys)
   if(NOT VTK_LIBRARIES)
     target_link_libraries(xmlDump vtkHybrid vtkWidgets)

@@ -1,5 +1,6 @@
 #include <fstream>
 
+#include <cstdlib>
 #include <gtest.h>
 #include <vtkCell.h>
 
@@ -133,7 +134,9 @@ TEST(NucMesh, Simple_Circles_Test) {
       meshBase::CreateUnique(simple_circles_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == true && quads == true &&
+  double diffNNde = std::abs(numNodes1-numNodes2)/numNodes2*100.0;
+
+  if (diffNNde<2.0 && tris == true && quads == true &&
       physGrp_set.size() == 2)
     ret1 = 0;
   else
@@ -165,7 +168,9 @@ TEST(NucMesh, Concentric_Circles_Test) {
       meshBase::CreateUnique(concentric_circles_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == true && quads == true &&
+  double diffNNde = std::abs(numNodes1-numNodes2)/numNodes2*100.0;
+
+  if (diffNNde<2.0 && tris == true && quads == true &&
       physGrp_set.size() == 6)
     ret1 = 0;
   else
@@ -197,7 +202,9 @@ TEST(NucMesh, Concentric_Circles_Test_2) {
       meshBase::CreateUnique(concentric_circles_test_2_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == true && quads == true &&
+  double diffNNde = std::abs(numNodes1-numNodes2)/numNodes2*100.0;
+
+  if (diffNNde<2.0 && tris == true && quads == true &&
       physGrp_set.size() == 6)
     ret1 = 0;
   else
@@ -229,7 +236,9 @@ TEST(NucMesh, Simple_Polygons_Test) {
       meshBase::CreateUnique(simple_polygons_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == true && quads == true &&
+  double diffNNde = std::abs(numNodes1-numNodes2)/numNodes2*100.0;
+
+  if (diffNNde<2.0 && tris == true && quads == true &&
       physGrp_set.size() == 9)
     ret1 = 0;
   else
@@ -261,7 +270,9 @@ TEST(NucMesh, Concentric_Polygons_Test) {
       meshBase::CreateUnique(concentric_polygons_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == true && quads == true &&
+  double diffNNde = std::abs(numNodes1-numNodes2)/numNodes2*100.0;
+
+  if (diffNNde<2.0 && tris == true && quads == true &&
       physGrp_set.size() == 9)
     ret1 = 0;
   else
