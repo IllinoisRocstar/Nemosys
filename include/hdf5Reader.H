@@ -100,6 +100,8 @@ class hdf5Reader {
       error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
       error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
       error.printError();
 #endif
@@ -129,6 +131,8 @@ class hdf5Reader {
 #if H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 8 && H5_VERS_RELEASE >= 20
       error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
+      error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
       error.printErrorStack();
 #else
       error.printError();
@@ -173,6 +177,8 @@ class hdf5Reader {
       error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
       error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
       error.printError();
 #endif
@@ -181,6 +187,8 @@ class hdf5Reader {
 #if H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 8 && H5_VERS_RELEASE >= 20
       error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
+      error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
       error.printErrorStack();
 #else
       error.printError();

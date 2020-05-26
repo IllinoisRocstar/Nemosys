@@ -60,7 +60,7 @@ TEST(TemplateMesh, Spiral_Tape_Test) {
       meshBase::CreateUnique(spiral_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (numNodes1 == numNodes2 && tris == false && quads == true
+  if (std::abs(numNodes1 - numNodes2) < 0.05*numNodes2 && tris == false && quads == true
       && hexs == true && physGrp_set.size() == 5)
     ret1 = 0;
   else

@@ -22,6 +22,8 @@ int hdf5Reader::openFile() {
     error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
     error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
     error.printError();
 #endif
@@ -41,6 +43,8 @@ int hdf5Reader::closeFile() {
     error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
     error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
     error.printError();
 #endif
@@ -63,6 +67,8 @@ int hdf5Reader::readTopDataSet(std::string dsetName, std::string &buffer) {
     error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
     error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
     error.printError();
 #endif
@@ -87,6 +93,8 @@ int hdf5Reader::readDataSet(DataSet dset, std::string &buffer) {
     error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
     error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
     error.printError();
 #endif
@@ -105,6 +113,8 @@ int hdf5Reader::readGroup(std::string groupName, Group &group) {
     error.printErrorStack();
 #elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 10 && H5_VERS_RELEASE >= 2
     error.printErrorStack();
+#elif H5_VERS_MAJOR >= 1 && H5_VERS_MINOR >= 11 && H5_VERS_RELEASE >= 0
+      error.printErrorStack();
 #else
     error.printError();
 #endif
