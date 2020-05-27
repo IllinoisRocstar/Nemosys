@@ -1,10 +1,10 @@
 #ifndef ROCPACK_H
 #define ROCPACK_H
 
-#include "meshBase.H"
-#include "nemosys_export.h"
-
 #include <string>
+
+#include "nemosys_export.h"
+#include "meshBase.H"
 
 namespace NEM {
 
@@ -19,10 +19,10 @@ struct rocQuaternion {
 };
 
 /** @brief This class converts Rockpack output file into periodic geometry and
-           writes into STL, VTK, .MSH, and ExodusII file format. User can define other
-           supported extensions for output file. This class can
-also be used for generating 3D periodic tetrahedral mesh using periodic
-           geometry. Currently the shapes supported are as follows.
+           writes into STL, VTK, .MSH, and ExodusII file format. User can define
+other supported extensions for output file. This class can also be used for
+generating 3D periodic tetrahedral mesh using periodic geometry. Currently the
+shapes supported are as follows.
 
            - Shapes
               -# Sphere
@@ -41,17 +41,14 @@ also be used for generating 3D periodic tetrahedral mesh using periodic
 // 1. Boolean(OCC) is not working with ellipsoid volumes created by GEO
 //    methods. Find a way to make them periodic using some other boolean
 //    methods.
-// 2. createCohesiveElement method needs attention. Finding proper set of
-// interface
-//    node is important. One idea is to take all surrounding nodes or take
-//    geometry mesh nodes and substract periodic nodes from that.
-// 3. Cohesive elements needs to be extended to finite thickness. This should be
+// 2. Cohesive elements needs to be extended to finite thickness. This should be
 //    fairly very easy once we have zero thickness method working flawlessly.
 //    Also, this method only works with just 2 physical groups enabled.
+// 3.
 
 class NEMOSYS_EXPORT rocPack {
   // Constructors, Deconstructor, Access
-public:
+ public:
   /** @brief rocPack default constructor. Options for periodic geometry
              and removing boundary packs are off by default. To enable these
              options, user can specify following keywords anywhere in RocPack
@@ -135,7 +132,7 @@ public:
   void enableSurfacePatches();
 
   /** @brief Enables physical group per shape
-  **/
+   **/
   void enablePhysicalGroupsPerShape();
 
   /** @brief Translates the whole geometry along user-defined parameters.
@@ -167,7 +164,7 @@ public:
   void setRandomSurface(const int &surf);
 
   /** @brief Enables cohesive elements
-  **/
+   **/
   void enableCohesiveElements();
 
   /** @brief This method is for internal testing purpose only. Compares spatial
@@ -176,8 +173,31 @@ public:
   **/
   bool getTestResult();
 
+  /** @brief Assigns refinement levels to mesh
+      @param refineLvl Refinement level defined by user
+  **/
+  void assignRefinement(const int &refineLvl);
+
+  /** @brief Assigns limiting filters for geometry sizes
+      @param upperThreshold Upper limit for filtering
+      @param lowerThreshold Lower limit for filtering
+  **/
+  void applyFilter(const double &upperThreshold, const double &lowerThreshold);
+
+  /** @brief Sets program for size preservation instead of volume fraction
+   **/
+  void setSizePreservation();
+
+  /** @brief To generate calculix simulation input file
+   **/
+  void inputFileGenerator();
+
+  /** @brief Calculates cell volumes from final mesh
+   **/
+  void calculateCellVols(const int &numNodes, const int &numElems);
+
   // rocPack2STL internal use only
-private:
+ private:
   /** @brief This method parses Rocpack output file and collects data for
              creation of pack geometries.
   **/
@@ -198,28 +218,12 @@ private:
   void geomToVolFrac();
 
   // rocParser Internal methods
-private:
+ private:
   /** @brief Finds particular word in file stream
       @param word Word that user wants to find
       @return line containing that word in file
   **/
   std::string findWord(const std::string &word);
-
-  /** @brief Tokenizes string into words and stores them into a vector.
-      @param String which needs to be tokenized
-      @param Delimiter
-      @return A vector of token strings
-  **/
-  std::vector<std::string> Tokenize(const std::string &lineIn,
-                                    const char &delim);
-
-  /** @brief Tokenizes string into words and stores them into a vector.
-      @param String which needs to be tokenized
-      @param Vector of delimiters
-      @return A vector of token strings
-  **/
-  std::vector<std::string> Tokenize(const std::string &lineIn,
-                                    const std::string &delims);
 
   /** @brief Reads the current line and returns the translate, rotate, and
              scale data for the pack shape
@@ -231,14 +235,8 @@ private:
   std::vector<std::string> getShapeData(const int &iter, const std::string &a,
                                         const std::vector<std::string> &L);
 
-  /** @brief Converts parsed string to double
-      @param strng String to convert
-      @return Char array
-  **/
-  char *strToChar(const std::string &strng);
-
   // rocToGeom and geomToSurface Internal methods
-private:
+ private:
   /** @brief Initializes GMSH for workflow
    **/
   void initialize();
@@ -304,7 +302,7 @@ private:
   void tagBoundaryPacks();
 
   // Internal methods for 3D periodic mesh module
-private:
+ private:
   /** @brief This method maps surfaces in X,Y, and Z direction which are
              periodic and then enforces that into gmsh model
       @param prevTags Currently existing model entities
@@ -319,8 +317,8 @@ private:
       @param surfaces A vector pair of surface tags
       @return Vector of vertices.
   **/
-  std::vector<std::vector<std::pair<int, int>>>
-  getAllPoints(std::vector<std::pair<int, int>> surfaces);
+  std::vector<std::vector<std::pair<int, int>>> getAllPoints(
+      std::vector<std::pair<int, int>> surfaces);
 
   /** @brief This method find which surfaces are periodic on opposite sides
       @param vertsOneSide Vertices on one side
@@ -351,7 +349,7 @@ private:
                                 const std::vector<double> &getPt);
 
   // Basic shape methods
-private:
+ private:
   /** @brief Creates sphere pack shapes
       @param n Index for pack number
 **/
@@ -379,11 +377,11 @@ private:
                      const int cellType, std::vector<int> &vrtIds);
 
   /** @brief Assigns nodes n0, nx, ny, nz for periodic equation file
-  **/
+   **/
   void assignPeriodicEqNodes();
 
   // Pointers and/or parameters
-private:
+ private:
   /** @brief rocPack output file name
    **/
   std::string InFile;
@@ -550,7 +548,7 @@ private:
 
   /** @brief Mesh Size
    **/
-  double meshSz = 0.1;
+  double meshSz = -1;
 
   /** @brief Enable Physical Grouping in Final Mesh
    **/
@@ -621,7 +619,7 @@ private:
   bool defOutputs = false;
 
   /** @brief Boolean for physical group per shape
-  **/
+   **/
   bool physGrpPerShape = false;
 
   /** @brief Map for storing shape names against volume
@@ -633,56 +631,56 @@ private:
       Icosidodecahedron = 5
       Surrounding = 6
   **/
-  //std::vector<std::pair<int,int>> storeShapeNames;
-  std::map<int,int> storeShapeNames;
+  // std::vector<std::pair<int,int>> storeShapeNames;
+  std::map<int, int> storeShapeNames;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> spherePhysicalGroup;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> cylindersPhysicalGroup;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> ellipsoidPhysicalGroup;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> hmxPhysicalGroup;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> petnPhysicalGroup;
 
   /** @brief Arrays for group per shape
-  **/
+   **/
   std::vector<int> icosidodecahedronPhysicalGroup;
 
   /** @brief Vector of all volumes for multi-physical groups
-  **/
+   **/
   std::vector<int> linkMultiPhysGrps;
 
   /** @brief Stores all physical groups in index sized by total volumes
-  **/
+   **/
   std::vector<std::vector<int>> storeMultiPhysGrps;
 
   /** @brief Group indices for multi groups (useful in cohesive elements)
-  **/
+   **/
   std::vector<int> multiGrpIndices;
 
   /** @brief Store cells in surrounding for cohesive elements without
              physical groups
   **/
   std::vector<int> geomElementIds;
-  
+
   /** @brief Stores node ids n0,nx,ny,nz
-  **/
+   **/
   std::vector<int> eqRefNodes = std::vector<int>(4);
 
   /** @brief Boolean to enable cohesive elements
-  **/
+   **/
   bool internalCohesiveBool = false;
 
   /** @brief Storage vector for linking interface and duplicate nodes
@@ -703,10 +701,42 @@ private:
   /** @brief Sanity Check
    **/
   bool sntChk = false;
+
+  /** @brief Total numer of points in mesh
+   **/
+  int nptsMsh = 0;
+
+  /** @brief Global scale for all pack geometries
+   **/
+  double globalScaling = 1;
+
+  /** @brief mesh refinement iterations
+   **/
+  int refineIter = 0;
+
+  /** @brief Upper limit for filtering
+   **/
+  double filterAbove = 0.0;
+
+  /** @brief Lower limit for filtering
+   **/
+  double filterBelow = 0.0;
+
+  /** @brief Boolean for filter
+   **/
+  bool filterOn = false;
+
+  /** @brief Vector for identification of removed geometries
+   **/
+  std::vector<int> filteredGeoms;
+
+  /** @brief Boolean for size preservation
+   **/
+  bool enableSizePreserve = false;
 };
 
-} // namespace GEO
+}  // namespace GEO
 
-} // namespace NEM
+}  // namespace NEM
 
 #endif

@@ -1,24 +1,27 @@
 #define _USE_MATH_DEFINES
 
-#include "meshBase.H"
 #include <ANN/ANN.h>
-#include <Eigen/Geometry>
-#include <chrono>
-#include <fstream>
+#include <AuxiliaryFunctions.H>
 #include <hmxShape.H>
 #include <icosidodecahedronShape.H>
-#include <iostream>
-#include <map>
 #include <petnShape.H>
 #include <rocPack.H>
 #include <rocPackShape.H>
-#include <sstream>
 #include <stdlib.h>
-#include <string>
-#include <vector>
 #include <vtkCell.h>
 #include <vtkCell3D.h>
 #include <vtkMesh.H>
+
+#include <Eigen/Geometry>
+#include <chrono>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "meshBase.H"
 
 // GMSH Header
 #include <gmsh.h>
@@ -61,8 +64,7 @@ void rocPack::rocPack2Periodic3D() {
   geomToPeriodic3D();
 
   // Creates cohesive elements if specified
-  if (internalCohesiveBool)
-    createCohesiveElements(OutFile,OutFile);
+  if (internalCohesiveBool) createCohesiveElements(OutFile, OutFile);
 
   // Writes periodic mesh maps to CSV files
   writePeriodicNodes();
@@ -89,8 +91,15 @@ void rocPack::smoothSurfaces(const int smoothingParam) {
   enableSmoothing = true;
 }
 
-void rocPack::setMeshSize(const double size) {
-  meshSz = size;
+void rocPack::setMeshSize(const double size) { meshSz = size; }
+
+void rocPack::assignRefinement(const int &refineLvl) { refineIter = refineLvl; }
+
+void rocPack::applyFilter(const double &upperThreshold,
+                          const double &lowerThreshold) {
+  filterOn = true;
+  filterAbove = upperThreshold;
+  filterBelow = lowerThreshold;
 }
 
 void rocPack::enablePhysicalGrps() { enablePhysGrp = true; }
@@ -98,6 +107,8 @@ void rocPack::enablePhysicalGrps() { enablePhysGrp = true; }
 void rocPack::enableTwoPhysGrps() { just2Physgrps = true; }
 
 void rocPack::enableSurfacePatches() { assignSidePatches = true; }
+
+void rocPack::setSizePreservation() { enableSizePreserve = true; }
 
 void rocPack::initialize() {
   gmsh::initialize();
@@ -118,40 +129,52 @@ void rocPack::rocParser() {
       // Getting box dimensions
       std::vector<std::string> rocTokens;
       std::string line = findWord("boundary");
-      rocTokens = Tokenize(line, ' ');
+      rocTokens = nemAux::Tokenize(line, ' ');
       if (rocTokens[6] != "periodic") {
         std::cerr << "Please select output file with periodic geometries!"
                   << std::endl;
         throw;
       }
 
-      Xdim = std::atof(strToChar(rocTokens[3]));
-      Ydim = std::atof(strToChar(rocTokens[4]));
-      Zdim = std::atof(strToChar(rocTokens[5]));
+      Xdim = std::atof(nemAux::strToChar(rocTokens[3]).get());
+      Ydim = std::atof(nemAux::strToChar(rocTokens[4]).get());
+      Zdim = std::atof(nemAux::strToChar(rocTokens[5]).get());
       boxPt.push_back((-Xdim / 2) + xUDF);
       boxPt.push_back((-Ydim / 2) + yUDF);
       boxPt.push_back((-Zdim / 2) + zUDF);
     }
 
     // Stores all lines in file to myLines
-    std::string linesOut;             // Temporary string for multiple uses
-    std::vector<std::string> myLines; // Stores whole file line by line
-    while (std::getline(rocOut, linesOut))
-      myLines.push_back(linesOut);
+    std::string linesOut;              // Temporary string for multiple uses
+    std::vector<std::string> myLines;  // Stores whole file line by line
+    while (std::getline(rocOut, linesOut)) myLines.push_back(linesOut);
 
     // Checking for user-specified options
     for (int i = 0; i < myLines.size(); i++) {
-      if (myLines[i].find("SetPeriodicity") != std::string::npos)
-        if (myLines[i].find("true") != std::string::npos ||
-            myLines[i].find("True") != std::string::npos ||
-            myLines[i].find("TRUE") != std::string::npos)
+      nemAux::toLower(myLines[i]);
+
+      if (myLines[i].find("setperiodicity") != std::string::npos)
+        if (myLines[i].find("true") != std::string::npos)
           enablePeriodicity = true;
 
-      if (myLines[i].find("RemoveBoundaryPacks") != std::string::npos)
-        if (myLines[i].find("true") != std::string::npos ||
-            myLines[i].find("True") != std::string::npos ||
-            myLines[i].find("TRUE") != std::string::npos)
+      if (myLines[i].find("removeboundarypacks") != std::string::npos)
+        if (myLines[i].find("true") != std::string::npos)
           removeBoundaryPacks = true;
+
+      if (myLines[i].find("set scaling") != std::string::npos) {
+        std::vector<std::string> glbSclTkns;
+        glbSclTkns = nemAux::Tokenize(myLines[i], "=;");
+        globalScaling = std::atof(nemAux::strToChar(glbSclTkns[1]).get());
+      }
+    }
+
+    if (enableSizePreserve) {
+      Xdim = Xdim * globalScaling;
+      Ydim = Ydim * globalScaling;
+      Zdim = Zdim * globalScaling;
+      boxPt[0] = boxPt[0] * globalScaling;
+      boxPt[1] = boxPt[1] * globalScaling;
+      boxPt[2] = boxPt[2] * globalScaling;
     }
 
     if (periodic3D == true && enablePeriodicity == false) {
@@ -172,7 +195,7 @@ void rocPack::rocParser() {
                  myLines[i].find("#import") == std::string::npos) {
         nCrystals++;
         std::vector<std::string> importStr;
-        importStr = Tokenize(myLines[i], "//\"");
+        importStr = nemAux::Tokenize(myLines[i], "//\"");
         crystalNames.push_back(importStr[2]);
       } else {
         // Nothing
@@ -183,7 +206,7 @@ void rocPack::rocParser() {
       verts.resize(nCrystals);
       faces.resize(nCrystals);
       for (int i = 0; i < nCrystals; i++) {
-        rocPackShape *getData = rocPackShape::getShape(crystalNames[i]);
+        auto getData = rocPackShape::getShape(crystalNames[i]);
         verts[i] = getData->getVertices();
         faces[i] = getData->getFaces();
       }
@@ -194,21 +217,21 @@ void rocPack::rocParser() {
     for (int i = 0; i < myLines.size(); i++) {
       if (myLines[i].find("shape ") != std::string::npos) {
         std::vector<std::string> baseShapes;
-        baseShapes = Tokenize(myLines[i], "         ");
+        baseShapes = nemAux::Tokenize(myLines[i], "         ");
         shapeNames.push_back(baseShapes[3]);
         uniqueNames.push_back(baseShapes[1]);
 
         if (baseShapes[3] == "cylinder") {
           cylParams.resize(2);
-          cylParams[0] = std::atof(strToChar(baseShapes[5]));
-          cylParams[1] = std::atof(strToChar(baseShapes[6]));
+          cylParams[0] = std::atof(nemAux::strToChar(baseShapes[5]).get());
+          cylParams[1] = std::atof(nemAux::strToChar(baseShapes[6]).get());
         }
 
         if (baseShapes[3] == "ellipsoid") {
           ellipsoidRad.resize(3);
-          ellipsoidRad[0] = std::atof(strToChar(baseShapes[5]));
-          ellipsoidRad[1] = std::atof(strToChar(baseShapes[6]));
-          ellipsoidRad[2] = std::atof(strToChar(baseShapes[7]));
+          ellipsoidRad[0] = std::atof(nemAux::strToChar(baseShapes[5]).get());
+          ellipsoidRad[1] = std::atof(nemAux::strToChar(baseShapes[6]).get());
+          ellipsoidRad[2] = std::atof(nemAux::strToChar(baseShapes[7]).get());
           ellipsoidPresent = true;
         }
       } else {
@@ -227,14 +250,13 @@ void rocPack::rocParser() {
     int numPacks = 0;
     int iter = 0;
     for (int i = 0; i < myLines.size(); i++) {
-      if (myLines[i].find("translate") != std::string::npos)
-        numPacks++;
+      if (myLines[i].find("translate") != std::string::npos) numPacks++;
       if (myLines[i].find("translate") != std::string::npos && iter == 0)
         iter = i;
       else {
       }
     }
-    iter = iter - 1; // Start parsing from "iter"
+    iter = iter - 1;  // Start parsing from "iter"
 
     // Pack shape data storage initialization
     // Getting pack data
@@ -273,23 +295,49 @@ void rocPack::rocParser() {
       // Translate Parameters
       trnsltDataTokens = getShapeData(i + 1, translateStr, myLines);
 
-      for (int j = 0; j < 3; j++)
-        translateParams[h][j] =
-            std::atof(strToChar(trnsltDataTokens[j + 1])) + udfTranslate[j];
+      if (enableSizePreserve) {
+        for (int j = 0; j < 3; j++)
+          translateParams[h][j] =
+              (std::atof(nemAux::strToChar(trnsltDataTokens[j + 1]).get()) *
+               globalScaling) +
+              udfTranslate[j];
+      } else {
+        for (int j = 0; j < 3; j++)
+          translateParams[h][j] =
+              std::atof(nemAux::strToChar(trnsltDataTokens[j + 1]).get()) +
+              udfTranslate[j];
+      }
 
       trnsltDataTokens.clear();
 
       // Rotate Parameters
       rttDataTokens = getShapeData(i + 2, rotateStr, myLines);
 
-      for (int j = 0; j < 4; j++)
-        rotateParams[h][j] = std::atof(strToChar(rttDataTokens[j + 1]));
+      if (enableSizePreserve) {
+        for (int j = 0; j < 4; j++)
+          rotateParams[h][j] =
+              std::atof(nemAux::strToChar(rttDataTokens[j + 1]).get()) *
+              globalScaling;
+      } else {
+        for (int j = 0; j < 4; j++)
+          rotateParams[h][j] =
+              std::atof(nemAux::strToChar(rttDataTokens[j + 1]).get());
+      }
 
       rttDataTokens.clear();
 
-      // Scale Parameters
       scaleDataTokens = getShapeData(i + 3, scaleStr, myLines);
-      scaleOfPack[h] = std::atof(strToChar(scaleDataTokens[1]))*shrinkScale;
+
+      // Scale Parameters
+      if (enableSizePreserve)
+        scaleOfPack[h] =
+            std::atof(nemAux::strToChar(scaleDataTokens[1]).get()) *
+            shrinkScale * globalScaling;
+      else
+        scaleOfPack[h] =
+            std::atof(nemAux::strToChar(scaleDataTokens[1]).get()) *
+            shrinkScale;
+
       scaleDataTokens.clear();
 
       i = i + 5;
@@ -308,26 +356,44 @@ void rocPack::rocToGeom() {
   // Starting Gmsh commands
   initialize();
 
-  for (int i = 0; i < nameOfPcks.size(); i++) {
-    if (nameOfPcks[i] == "sphere") {
-      makeSphere(i);
-    }
+  filteredGeoms.resize(scaleOfPack.size());
+  for (int i = 0; i < filteredGeoms.size(); i++) filteredGeoms[i] = 1;
 
-    if (uniqueNames.size() > 0) {
-      for (int j = 0; j < uniqueNames.size(); j++) {
-        if (nameOfPcks[i] == uniqueNames[j] && shapeNames[j] == "ellipsoid")
-          makeEllipsoid(i);
-        else if (nameOfPcks[i] == uniqueNames[j] && shapeNames[j] == "cylinder")
-          makeCylinder(i);
-        else {
+  if (filterOn) {
+    // Finding mean of scales
+    double mean = 0;
+    for (int i = 0; i < scaleOfPack.size(); i++) mean += scaleOfPack[i];
+
+    mean = mean / scaleOfPack.size();
+
+    for (int i = 0; i < scaleOfPack.size(); i++)
+      if ((scaleOfPack[i] > mean * filterAbove) ||
+          (scaleOfPack[i] < mean * filterBelow))
+        filteredGeoms[i] = 0;
+  }
+
+  for (int i = 0; i < nameOfPcks.size(); i++) {
+    if (filteredGeoms[i] == 1) {
+      if (nameOfPcks[i] == "sphere") {
+        makeSphere(i);
+      }
+
+      if (uniqueNames.size() > 0) {
+        for (int j = 0; j < uniqueNames.size(); j++) {
+          if (nameOfPcks[i] == uniqueNames[j] && shapeNames[j] == "ellipsoid")
+            makeEllipsoid(i);
+          else if (nameOfPcks[i] == uniqueNames[j] &&
+                   shapeNames[j] == "cylinder")
+            makeCylinder(i);
+          else {
+          }
         }
       }
-    }
 
-    if (crystalNames.size() > 0) {
-      for (int k = 0; k < crystalNames.size(); k++)
-        if (crystalNames[k] == nameOfPcks[i])
-          makeCrystalShape(i, k);
+      if (crystalNames.size() > 0) {
+        for (int k = 0; k < crystalNames.size(); k++)
+          if (crystalNames[k] == nameOfPcks[i]) makeCrystalShape(i, k);
+      }
     }
   }
 
@@ -365,11 +431,10 @@ void rocPack::geomToSurf() {
 
   std::vector<std::pair<int, int>> tagsPts;
   gmsh::model::getEntities(tagsPts, 0);
-  gmsh::model::mesh::setSize(tagsPts, meshSz);
+  if (meshSz != -1) gmsh::model::mesh::setSize(tagsPts, meshSz);
   gmsh::option::setNumber("Mesh.Algorithm", meshingAlgorithm);
   gmsh::model::mesh::generate(2);
-  gmsh::model::mesh::refine();
-  gmsh::model::mesh::refine();
+  for (int i = 0; i < refineIter; i++) gmsh::model::mesh::refine();
   gmsh::model::mesh::removeDuplicateNodes();
 
   if (OutFile.find(".stl") != std::string::npos)
@@ -408,7 +473,8 @@ void rocPack::geomToPeriodic3D() {
 
   std::vector<std::pair<int, int>> tagsPts;
   gmsh::model::getEntities(tagsPts, 0);
-  gmsh::model::mesh::setSize(tagsPts, meshSz);
+
+  if (meshSz != -1) gmsh::model::mesh::setSize(tagsPts, meshSz);
 
   if ((enablePhysGrp) || (just2Physgrps) || (physGrpPerShape))
     gmsh::option::setNumber("Mesh.StlOneSolidPerSurface", 2);
@@ -416,6 +482,7 @@ void rocPack::geomToPeriodic3D() {
   gmsh::option::setNumber("Mesh.Algorithm3D", meshingAlgorithm);
   gmsh::option::setNumber("Mesh.SaveGroupsOfNodes", 1);
   gmsh::model::mesh::generate(3);
+  for (int i = 0; i < refineIter; i++) gmsh::model::mesh::refine();
   gmsh::model::mesh::removeDuplicateNodes();
 
   if (OutFile.find(".stl") != std::string::npos)
@@ -462,10 +529,10 @@ void rocPack::geomToVTK(const std::string &writeFile) {
   gmsh::option::setNumber("Mesh.MshFileVersion", 2.2);
   geomToMsh(rawname);
   meshBase *mb = meshBase::exportGmshToVtk(rawname);
+  nptsMsh = mb->getNumberOfPoints();
   mb->write(rawname);
 
-  if (mb)
-    delete mb;
+  if (mb) delete mb;
 }
 
 void rocPack::geomToMsh(const std::string &writeFile) {
@@ -475,15 +542,14 @@ void rocPack::geomToMsh(const std::string &writeFile) {
 
 void rocPack::makePeriodic(const bool rmbPacks) {
   if (rmbPacks == false) {
-
     // To get processor clocktime
     std::clock_t start;
     double duration;
     start = std::clock();
 
-    std::vector<int> xTranslate;
-    std::vector<int> yTranslate;
-    std::vector<int> zTranslate;
+    std::vector<double> xTranslate;
+    std::vector<double> yTranslate;
+    std::vector<double> zTranslate;
 
     xTranslate.push_back(Xdim);   // 0 -> X+
     yTranslate.push_back(0);      // 0 -> X+
@@ -572,7 +638,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
     yTranslate.push_back(0);      //// 25 -> Z-
     zTranslate.push_back(-Zdim);  //// 25 -> Z-
 
-    /*// Need some implementation of picking up boundary shapes using get Entities
+    /*// Need some implementation of picking up boundary shapes using get
+   Entities
     // in bounding box command and translate only those. Aim to get points in a
     // bounding box and iteratively find parent entity.
 
@@ -595,31 +662,29 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
     // Right
     std::vector<std::pair<int, int>> entityRight;
-    gmsh::model::getEntitiesInBoundingBox(Xdim + boxPt[0] - edgeTol, boxPt[1] - tol,
-                                          boxPt[2] - tol, Xdim + boxPt[0] + tol,
-                                          Ydim + boxPt[1] + tol,
-                                          Zdim + boxPt[2] + tol, entityRight,0);
+    gmsh::model::getEntitiesInBoundingBox(Xdim + boxPt[0] - edgeTol, boxPt[1] -
+   tol, boxPt[2] - tol, Xdim + boxPt[0] + tol, Ydim + boxPt[1] + tol, Zdim +
+   boxPt[2] + tol, entityRight,0);
 
     // Up
     std::vector<std::pair<int, int>> entityUp;
-    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, Ydim + boxPt[1] - edgeTol,
-                                          boxPt[2] - tol, Xdim + boxPt[0] + tol,
-                                          Ydim + boxPt[1] + tol,
-                                          Zdim + boxPt[2] + tol, entityUp, 0);
+    gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, Ydim + boxPt[1] -
+   edgeTol, boxPt[2] - tol, Xdim + boxPt[0] + tol, Ydim + boxPt[1] + tol, Zdim +
+   boxPt[2] + tol, entityUp, 0);
 
     // Down
     std::vector<std::pair<int, int>> entityDown;
     gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol,
                                           boxPt[2] - tol, Xdim + boxPt[0] + tol,
-                                          boxPt[1] + edgeTol, Zdim + boxPt[2] + tol,
-                                          entityDown, 0);
+                                          boxPt[1] + edgeTol, Zdim + boxPt[2] +
+   tol, entityDown, 0);
 
     // Back
     std::vector<std::pair<int, int>> entityBack;
     gmsh::model::getEntitiesInBoundingBox(boxPt[0] - tol, boxPt[1] - tol,
                                           boxPt[2] - tol, Xdim + boxPt[0] + tol,
-                                          Ydim + boxPt[1] + tol, boxPt[2] + edgeTol,
-                                          entityBack, 0);
+                                          Ydim + boxPt[1] + tol, boxPt[2] +
+   edgeTol, entityBack, 0);
 
     //Front
     std::vector<std::pair<int, int>> entityFront;
@@ -811,8 +876,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(leftShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
 
@@ -821,8 +886,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(rightShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
 
@@ -831,8 +896,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(UpShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
 
@@ -841,8 +906,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(DownShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
 
@@ -851,8 +916,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(backShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
 
@@ -861,8 +926,8 @@ void rocPack::makePeriodic(const bool rmbPacks) {
       for (int h=0; h<indTra.size(); h++) {
         std::vector<std::pair<int, int>> tagsCopy;
         gmsh::model::occ::copy(frontShapes, tagsCopy);
-        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]], yTranslate[indTra[h]],
-                                    zTranslate[indTra[h]]);
+        gmsh::model::occ::translate(tagsCopy, xTranslate[indTra[h]],
+   yTranslate[indTra[h]], zTranslate[indTra[h]]);
       }
     }
     gmsh::model::occ::synchronize();*/
@@ -871,7 +936,7 @@ void rocPack::makePeriodic(const bool rmbPacks) {
     std::vector<int> indexVols;
     std::vector<int> indexShapes;
     if (physGrpPerShape) {
-      for (int g=0; g<bndryPackTags.size(); g++) {
+      for (int g = 0; g < bndryPackTags.size(); g++) {
         std::map<int, int>::iterator itrMp = storeShapeNames.begin();
         itrMp = storeShapeNames.find(bndryPackTags[g].second);
 
@@ -884,10 +949,10 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
     std::vector<int> tmpVec;
     if ((enablePhysGrp) || (internalCohesiveBool)) {
-      linkMultiPhysGrps.resize(26*bndryPackTags.size()+nameOfPcks.size());
-      for (int i=0; i<nameOfPcks.size(); i++) {
-        tmpVec.push_back(i+1);
-        linkMultiPhysGrps[i] = i+1;
+      linkMultiPhysGrps.resize(26 * bndryPackTags.size() + nameOfPcks.size());
+      for (int i = 0; i < nameOfPcks.size(); i++) {
+        tmpVec.push_back(i + 1);
+        linkMultiPhysGrps[i] = i + 1;
       }
     }
 
@@ -902,12 +967,13 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
       // Links shape type with volume number
       if (physGrpPerShape)
-        for (int g=0; g<indexVols.size(); g++)
+        for (int g = 0; g < indexVols.size(); g++)
           storeShapeNames[tagsCopy[indexVols[g]].second] = indexShapes[g];
 
       if ((enablePhysGrp) || (internalCohesiveBool))
-        for (int g=0; g<bndryPackTags.size(); g++)
-          linkMultiPhysGrps[tagsCopy[g].second-1] = tmpVec[bndryPackTags[g].second-1];
+        for (int g = 0; g < bndryPackTags.size(); g++)
+          linkMultiPhysGrps[tagsCopy[g].second - 1] =
+              tmpVec[bndryPackTags[g].second - 1];
 
       if (h % 3 == 0) {
         std::cerr.precision(3);
@@ -934,22 +1000,19 @@ void rocPack::makePeriodic(const bool rmbPacks) {
     gmsh::model::occ::synchronize();
 
     if (physGrpPerShape) {
-      for (int mp=0; mp<outBoolean.size(); mp++) {
+      for (int mp = 0; mp < outBoolean.size(); mp++) {
         std::map<int, int>::iterator itrMp = storeShapeNames.begin();
 
         itrMp = storeShapeNames.find(outBoolean[mp].second);
 
         if (itrMp != storeShapeNames.end()) {
-          if (itrMp->second == 0)
-            spherePhysicalGroup.push_back(itrMp->first);
+          if (itrMp->second == 0) spherePhysicalGroup.push_back(itrMp->first);
           if (itrMp->second == 1)
             ellipsoidPhysicalGroup.push_back(itrMp->first);
           if (itrMp->second == 2)
             cylindersPhysicalGroup.push_back(itrMp->first);
-          if (itrMp->second == 3)
-            hmxPhysicalGroup.push_back(itrMp->first);
-          if (itrMp->second == 4)
-            petnPhysicalGroup.push_back(itrMp->first);
+          if (itrMp->second == 3) hmxPhysicalGroup.push_back(itrMp->first);
+          if (itrMp->second == 4) petnPhysicalGroup.push_back(itrMp->first);
           if (itrMp->second == 5)
             icosidodecahedronPhysicalGroup.push_back(itrMp->first);
         }
@@ -958,10 +1021,10 @@ void rocPack::makePeriodic(const bool rmbPacks) {
 
     if ((enablePhysGrp) || (internalCohesiveBool)) {
       // storeMultiPhysGrps
-      for (int k=0; k<tmpVec.size(); k++) {
+      for (int k = 0; k < tmpVec.size(); k++) {
         std::vector<int> oneVols;
-        for (int j=0; j<outBoolean.size(); j++) {
-          if (tmpVec[k] == linkMultiPhysGrps[outBoolean[j].second-1]) {
+        for (int j = 0; j < outBoolean.size(); j++) {
+          if (tmpVec[k] == linkMultiPhysGrps[outBoolean[j].second - 1]) {
             oneVols.push_back(outBoolean[j].second);
           }
         }
@@ -983,51 +1046,13 @@ std::string rocPack::findWord(const std::string &word) {
   std::ifstream input(InFile);
   std::string line;
   while (std::getline(input, line))
-    if (line.find(word) == 0)
-      return line;
+    if (line.find(word) == 0) return line;
   return "";
 }
 
-// Tokenized string in a string vector
-std::vector<std::string> rocPack::Tokenize(const std::string &lineIn,
-                                           const char &delim) {
-  std::vector<std::string> rocTokens;
-
-  std::string intermediate;
-  std::stringstream checkStr(lineIn);
-
-  // Tokenizing
-  while (std::getline(checkStr, intermediate, delim)) {
-    rocTokens.push_back(intermediate);
-  }
-  return rocTokens;
-}
-
-std::vector<std::string> rocPack::Tokenize(const std::string &lineIn,
-                                           const std::string &delims) {
-  std::vector<std::string> rocTokens;
-  std::vector<char> delimStr;
-  delimStr.reserve(delims.size());
-
-  for (int i = 0; i < delims.size(); i++)
-    delimStr.push_back(delims[i]);
-
-  std::string intermediate;
-  std::stringstream checkStr(lineIn);
-
-  // Tokenizing
-  int iter = 0;
-  while (std::getline(checkStr, intermediate, delimStr[iter])) {
-    rocTokens.push_back(intermediate);
-    iter++;
-  }
-  return rocTokens;
-}
-
-std::vector<std::string>
-rocPack::getShapeData(const int &iter, const std::string &a,
-                      const std::vector<std::string> &L) {
-  std::vector<std::string> LTokens = Tokenize(L[iter], a);
+std::vector<std::string> rocPack::getShapeData(
+    const int &iter, const std::string &a, const std::vector<std::string> &L) {
+  std::vector<std::string> LTokens = nemAux::Tokenize(L[iter], a);
   return LTokens;
 }
 
@@ -1036,9 +1061,7 @@ void rocPack::makeSphere(const int &n) {
   int newVol =
       gmsh::model::occ::addSphere(translateParams[n][0], translateParams[n][1],
                                   translateParams[n][2], sphereRad);
-
-  if (physGrpPerShape)
-    storeShapeNames[newVol] = 0;
+  if (physGrpPerShape) storeShapeNames[newVol] = 0;
 
   gmsh::model::occ::synchronize();
 }
@@ -1200,8 +1223,7 @@ void rocPack::makeEllipsoid(const int &n) {
   int newVol = gmsh::model::geo::addVolume(tmpCurveLoop);
   gmsh::model::geo::synchronize();
 
-  if (physGrpPerShape)
-      storeShapeNames[newVol] = 1;
+  if (physGrpPerShape) storeShapeNames[newVol] = 1;
 
   gmsh::model::geo::synchronize();
 }
@@ -1303,10 +1325,9 @@ void rocPack::makeCylinder(const int &n) {
                             rotatedTranslationAxis[1],
                             rotatedTranslationAxis[2], outVols);
 
-  for (int i=0; i<outVols.size(); i++)
+  for (int i = 0; i < outVols.size(); i++)
     if (outVols[i].first == 3)
-      if (physGrpPerShape)
-        storeShapeNames[outVols[i].second] = 2;
+      if (physGrpPerShape) storeShapeNames[outVols[i].second] = 2;
 
   gmsh::model::occ::synchronize();
 }
@@ -1362,8 +1383,7 @@ void rocPack::makeCrystalShape(const int &n, const int &index) {
 
       it = lineMap.find(std::make_pair(a, b));
 
-      if (it == lineMap.end())
-        it = lineMap.find(std::make_pair(b, a));
+      if (it == lineMap.end()) it = lineMap.find(std::make_pair(b, a));
 
       if (it == lineMap.end()) {
         lines[i][j] = gmsh::model::occ::addLine(a, b);
@@ -1391,16 +1411,12 @@ void rocPack::makeCrystalShape(const int &n, const int &index) {
   surfLoopTags[0] = surfLoop;
   int newVol = gmsh::model::occ::addVolume(surfLoopTags);
 
-
   if (physGrpPerShape) {
-    if (nameOfPcks[n] == "hmx")
-      storeShapeNames[newVol] = 3;
+    if (nameOfPcks[n] == "hmx") storeShapeNames[newVol] = 3;
 
-    if (nameOfPcks[n] == "petn")
-      storeShapeNames[newVol] = 4;
+    if (nameOfPcks[n] == "petn") storeShapeNames[newVol] = 4;
 
-    if (nameOfPcks[n] == "icosidodecahedron")
-      storeShapeNames[newVol] = 5;
+    if (nameOfPcks[n] == "icosidodecahedron") storeShapeNames[newVol] = 5;
   }
 
   gmsh::model::occ::synchronize();
@@ -1413,8 +1429,7 @@ void rocPack::normalizeVerts() {
     for (int i = 0; i < verts[k].size(); i++) {
       double norm = sqrt(pow(verts[k][i][0], 2) + pow(verts[k][i][1], 2) +
                          pow(verts[k][i][2], 2));
-      if (norm > maxNorm)
-        maxNorm = norm;
+      if (norm > maxNorm) maxNorm = norm;
     }
 
     for (int i = 0; i < verts[k].size(); i++) {
@@ -1440,11 +1455,9 @@ void rocPack::tagBoundaryPacks() {
 
   gmsh::model::getEntities(tagsAll, 3);
 
-  for (auto iter : tagsWithinBoundary)
-    insidePacks.push_back(iter.second);
+  for (auto iter : tagsWithinBoundary) insidePacks.push_back(iter.second);
 
-  for (auto iter2 : tagsAll)
-    allPacks.push_back(iter2.second);
+  for (auto iter2 : tagsAll) allPacks.push_back(iter2.second);
 
   for (int i = 0; i < allPacks.size(); i++) {
     int ht = 0;
@@ -1454,8 +1467,7 @@ void rocPack::tagBoundaryPacks() {
         break;
       }
 
-    if (ht == 0)
-      bndryPackVols.push_back(allPacks[i]);
+    if (ht == 0) bndryPackVols.push_back(allPacks[i]);
   }
 
   if ((tagsWithinBoundary.size() == 0 && sntChk) && (removeBoundaryPacks)) {
@@ -1471,13 +1483,6 @@ void rocPack::tagBoundaryPacks() {
   // Converting volumes into pair
   for (int i = 0; i < bndryPackVols.size(); i++)
     bndryPackTags.push_back(std::make_pair(3, bndryPackVols[i]));
-}
-
-char *rocPack::strToChar(const std::string &strng) {
-  char *tab = new char[strng.length() + 1];
-  std::strcpy(tab, strng.c_str());
-
-  return tab;
 }
 
 std::vector<double> rocPack::rotateByQuaternion(const rocQuaternion &q,
@@ -1502,8 +1507,8 @@ std::vector<double> rocPack::rotateByQuaternion(const rocQuaternion &q,
 }
 
 rocQuaternion rocPack::toQuaternion(const std::vector<double> &r) {
-  rocQuaternion q;                            // Declaring Quaternion
-  double angle = r[3] * 3.141592653589 / 180; // Declaring Angle in Radians
+  rocQuaternion q;                             // Declaring Quaternion
+  double angle = r[3] * 3.141592653589 / 180;  // Declaring Angle in Radians
 
   q.x = r[0] * sin(angle / 2);
   q.y = r[1] * sin(angle / 2);
@@ -1515,7 +1520,6 @@ rocQuaternion rocPack::toQuaternion(const std::vector<double> &r) {
 
 void rocPack::mapPeriodicSurfaces(
     const std::vector<std::pair<int, int>> &prevTags) {
-
   // Boolean Fragment
   gmsh::model::occ::synchronize();
   std::vector<std::pair<int, int>> tagsBox2;
@@ -1569,8 +1573,9 @@ void rocPack::mapPeriodicSurfaces(
     gmsh::model::setPhysicalName(2, Back, "Back");
   }
 
-  if (((enablePhysGrp) && (just2Physgrps)) || ((enablePhysGrp) && (physGrpPerShape))
-     || ((just2Physgrps) && (physGrpPerShape))) {
+  if (((enablePhysGrp) && (just2Physgrps)) ||
+      ((enablePhysGrp) && (physGrpPerShape)) ||
+      ((just2Physgrps) && (physGrpPerShape))) {
     std::cerr << "Please select only one option for physical group"
               << std::endl;
     throw;
@@ -1584,11 +1589,11 @@ void rocPack::mapPeriodicSurfaces(
     surroundingGrp = gmsh::model::addPhysicalGroup(3, vecTags);
     gmsh::model::setPhysicalName(3, surroundingGrp, "Surrounding");
 
-    for (int i=0; i<storeMultiPhysGrps.size(); i++) {
+    for (int i = 0; i < storeMultiPhysGrps.size(); i++) {
       std::vector<int> newTags;
       std::string name = "Vol" + std::to_string(i);
 
-      for (int j=0; j<storeMultiPhysGrps[i].size(); j++)
+      for (int j = 0; j < storeMultiPhysGrps[i].size(); j++)
         newTags.push_back(storeMultiPhysGrps[i][j]);
 
       int newGrp = gmsh::model::addPhysicalGroup(3, newTags);
@@ -1623,42 +1628,43 @@ void rocPack::mapPeriodicSurfaces(
     gmsh::model::setPhysicalName(3, surroundingGrp, "Surrounding");
 
     // Spheres
-    if (spherePhysicalGroup.size() > 0){
+    if (spherePhysicalGroup.size() > 0) {
       int newGrp = gmsh::model::addPhysicalGroup(3, spherePhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "Spheres");
     }
 
     // Cylinders
-    if (cylindersPhysicalGroup.size() > 0){
+    if (cylindersPhysicalGroup.size() > 0) {
       int newGrp = gmsh::model::addPhysicalGroup(3, cylindersPhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "Cylinders");
     }
 
     // Ellipsoids
-    if (ellipsoidPhysicalGroup.size() > 0){
+    if (ellipsoidPhysicalGroup.size() > 0) {
       int newGrp = gmsh::model::addPhysicalGroup(3, ellipsoidPhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "Ellipsoids");
     }
 
     // PETN
-    if (petnPhysicalGroup.size() > 0){
+    if (petnPhysicalGroup.size() > 0) {
       int newGrp = gmsh::model::addPhysicalGroup(3, petnPhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "PETN");
     }
 
     // Icosidodecahedron
-    if (icosidodecahedronPhysicalGroup.size() > 0){
-      int newGrp = gmsh::model::addPhysicalGroup(3, icosidodecahedronPhysicalGroup);
+    if (icosidodecahedronPhysicalGroup.size() > 0) {
+      int newGrp =
+          gmsh::model::addPhysicalGroup(3, icosidodecahedronPhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "Icosidodecahedron");
     }
 
     // HMX
-    if (hmxPhysicalGroup.size() > 0){
+    if (hmxPhysicalGroup.size() > 0) {
       int newGrp = gmsh::model::addPhysicalGroup(3, hmxPhysicalGroup);
       multiGrpIndices.push_back(newGrp);
       gmsh::model::setPhysicalName(3, newGrp, "HMX");
@@ -1761,12 +1767,12 @@ void rocPack::mapPeriodicSurfaces(
 
   std::vector<std::vector<double>> affineTransform;
   affineTransform.resize(3);
-  affineTransform[0].resize(16); // X
-  affineTransform[1].resize(16); // Y
-  affineTransform[2].resize(16); // Z
-  int xT = -1 * Xdim;
-  int yT = -1 * Ydim;
-  int zT = -1 * Zdim;
+  affineTransform[0].resize(16);  // X
+  affineTransform[1].resize(16);  // Y
+  affineTransform[2].resize(16);  // Z
+  double xT = -1 * Xdim;
+  double yT = -1 * Ydim;
+  double zT = -1 * Zdim;
 
   affineTransform[0][0] = 1;
   affineTransform[0][1] = 0;
@@ -1825,8 +1831,8 @@ void rocPack::mapPeriodicSurfaces(
   gmsh::model::occ::synchronize();
 }
 
-std::vector<std::vector<std::pair<int, int>>>
-rocPack::getAllPoints(std::vector<std::pair<int, int>> surfaces) {
+std::vector<std::vector<std::pair<int, int>>> rocPack::getAllPoints(
+    std::vector<std::pair<int, int>> surfaces) {
   std::vector<std::vector<std::pair<int, int>>> verts;
   verts.resize(surfaces.size());
   for (int j = 0; j < surfaces.size(); j++) {
@@ -1892,12 +1898,10 @@ std::vector<std::pair<int, int>> rocPack::getPeriodicSurfs(
 }
 
 void rocPack::writePeriodicNodes() {
-
   assignPeriodicEqNodes();
 
   // Change this method to write periodic equations.
-  std::cout << " - Writing periodic equation file"
-            << std::endl;
+  std::cout << " - Writing periodic equation file" << std::endl;
 
   // Getting all volumes
   std::vector<std::pair<int, int>> allVolumes;
@@ -1958,7 +1962,11 @@ void rocPack::writePeriodicNodes() {
 
   // Gathering node data
 
-  // Writing periodic.equ file (TODO: Do not include n0,nx,ny,nz as pairs in equations)
+  // Writing periodic.equ file (TODO: Do not include n0,nx,ny,nz as pairs in
+  // equations)
+  std::vector<int> doNotRepeat;
+  for (int i = 0; i < nptsMsh; i++) doNotRepeat.push_back(0);
+
   std::ofstream periodicEquation;
   periodicEquation.open("periodic.equ");
   periodicEquation << "**set definitions" << std::endl;
@@ -2010,39 +2018,45 @@ void rocPack::writePeriodicNodes() {
             matchingCoordsX = true;
     }
 
-    // Check slave nodes for any interface nodes and if found, add duplicate node
-    // spawned from that interface node and link against a duplicate node spawned
-    // from its opposite interface node.
+    // Check slave nodes for any interface nodes and if found, add duplicate
+    // node spawned from that interface node and link against a duplicate node
+    // spawned from its opposite interface node.
     std::vector<int> newMasterNodes;
     std::vector<int> newSlaveNodes;
     if (internalCohesiveBool) {
-      for (int i=0; i<masterNodes.size(); i++) {
-        if (slaveInterfaceId[masterNodes[i]-1] == 1) {
-          newMasterNodes.push_back(ptsReplacer[masterNodes[i]-1]);
-          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i]-1]);
+      for (int i = 0; i < masterNodes.size(); i++) {
+        if (slaveInterfaceId[masterNodes[i] - 1] == 1) {
+          newMasterNodes.push_back(ptsReplacer[masterNodes[i] - 1]);
+          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i] - 1]);
         }
       }
-      for (int i=0; i<newMasterNodes.size(); i++) {
+      for (int i = 0; i < newMasterNodes.size(); i++) {
         masterNodes.push_back(newMasterNodes[i]);
         slaveNodes.push_back(newSlaveNodes[i]);
       }
     }
 
     for (int i = 0; i < masterNodes.size(); i++) {
+      if ((slaveNodes[i] != eqRefNodes[0]) &&
+          (slaveNodes[i] != eqRefNodes[1]) &&
+          (slaveNodes[i] != eqRefNodes[2]) &&
+          (slaveNodes[i] != eqRefNodes[3])) {
+        if (doNotRepeat[slaveNodes[i] - 1] == 1) {
+          // Nothing
+        } else {
+          doNotRepeat[slaveNodes[i] - 1] = 1;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i]
+                           << ",1,1," << eqRefNodes[1] << ",1,1" << std::endl;
 
-      if ((slaveNodes[i] != eqRefNodes[0]) && (slaveNodes[i] != eqRefNodes[1])
-      &&  (slaveNodes[i] != eqRefNodes[2]) && (slaveNodes[i] != eqRefNodes[3])) {
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i] << ",1,1,"
-        << eqRefNodes[1] << ",1,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i]
+                           << ",2,1," << eqRefNodes[1] << ",2,1" << std::endl;
 
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i] << ",2,1,"
-        << eqRefNodes[1] << ",2,1" << std::endl;
-
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i] << ",3,1,"
-        << eqRefNodes[1] << ",3,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i]
+                           << ",3,1," << eqRefNodes[1] << ",3,1" << std::endl;
+        }
       }
     }
   }
@@ -2082,39 +2096,46 @@ void rocPack::writePeriodicNodes() {
             matchingCoordsY = true;
     }
 
-    // Check slave nodes for any interface nodes and if found, add duplicate node
-    // spawned from that interface node and link against a duplicate node spawned
-    // from its opposite interface node.
+    // Check slave nodes for any interface nodes and if found, add duplicate
+    // node spawned from that interface node and link against a duplicate node
+    // spawned from its opposite interface node.
     std::vector<int> newMasterNodes;
     std::vector<int> newSlaveNodes;
     if (internalCohesiveBool) {
-      for (int i=0; i<masterNodes.size(); i++) {
-        if (slaveInterfaceId[masterNodes[i]-1] == 1) {
-          newMasterNodes.push_back(ptsReplacer[masterNodes[i]-1]);
-          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i]-1]);
+      for (int i = 0; i < masterNodes.size(); i++) {
+        if (slaveInterfaceId[masterNodes[i] - 1] == 1) {
+          newMasterNodes.push_back(ptsReplacer[masterNodes[i] - 1]);
+          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i] - 1]);
         }
       }
 
-      for (int i=0; i<newMasterNodes.size(); i++) {
+      for (int i = 0; i < newMasterNodes.size(); i++) {
         masterNodes.push_back(newMasterNodes[i]);
         slaveNodes.push_back(newSlaveNodes[i]);
       }
     }
 
     for (int i = 0; i < masterNodes.size(); i++) {
-      if ((slaveNodes[i] != eqRefNodes[0]) && (slaveNodes[i] != eqRefNodes[1])
-      &&  (slaveNodes[i] != eqRefNodes[2]) && (slaveNodes[i] != eqRefNodes[3])) {
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i] << ",1,1,"
-        << eqRefNodes[2] << ",1,1" << std::endl;
+      if ((slaveNodes[i] != eqRefNodes[0]) &&
+          (slaveNodes[i] != eqRefNodes[1]) &&
+          (slaveNodes[i] != eqRefNodes[2]) &&
+          (slaveNodes[i] != eqRefNodes[3])) {
+        if (doNotRepeat[slaveNodes[i] - 1] == 1) {
+          // Nothing
+        } else {
+          doNotRepeat[slaveNodes[i] - 1] = 1;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i]
+                           << ",1,1," << eqRefNodes[2] << ",1,1" << std::endl;
 
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i] << ",2,1,"
-        << eqRefNodes[2] << ",2,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i]
+                           << ",2,1," << eqRefNodes[2] << ",2,1" << std::endl;
 
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i] << ",3,1,"
-        << eqRefNodes[2] << ",3,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i]
+                           << ",3,1," << eqRefNodes[2] << ",3,1" << std::endl;
+        }
       }
     }
   }
@@ -2154,39 +2175,45 @@ void rocPack::writePeriodicNodes() {
             matchingCoordsZ = true;
     }
 
-    // Check slave nodes for any interface nodes and if found, add duplicate node
-    // spawned from that interface node and link against a duplicate node spawned
-    // from its opposite interface node.
+    // Check slave nodes for any interface nodes and if found, add duplicate
+    // node spawned from that interface node and link against a duplicate node
+    // spawned from its opposite interface node.
     std::vector<int> newMasterNodes;
     std::vector<int> newSlaveNodes;
     if (internalCohesiveBool) {
-      for (int i=0; i<masterNodes.size(); i++) {
-        if (slaveInterfaceId[masterNodes[i]-1] == 1) {
-          newMasterNodes.push_back(ptsReplacer[masterNodes[i]-1]);
-          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i]-1]);
+      for (int i = 0; i < masterNodes.size(); i++) {
+        if (slaveInterfaceId[masterNodes[i] - 1] == 1) {
+          newMasterNodes.push_back(ptsReplacer[masterNodes[i] - 1]);
+          newSlaveNodes.push_back(ptsReplacer[slaveNodes[i] - 1]);
         }
       }
 
-      for (int i=0; i<newMasterNodes.size(); i++) {
+      for (int i = 0; i < newMasterNodes.size(); i++) {
         masterNodes.push_back(newMasterNodes[i]);
         slaveNodes.push_back(newSlaveNodes[i]);
       }
     }
 
     for (int i = 0; i < masterNodes.size(); i++) {
-      if ((slaveNodes[i] != eqRefNodes[0]) && (slaveNodes[i] != eqRefNodes[1])
-      &&  (slaveNodes[i] != eqRefNodes[2]) && (slaveNodes[i] != eqRefNodes[3])) {
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i] << ",1,1,"
-        << eqRefNodes[3] << ",1,1" << std::endl;
+      if ((slaveNodes[i] != eqRefNodes[0]) &&
+          (slaveNodes[i] != eqRefNodes[1]) &&
+          (slaveNodes[i] != eqRefNodes[2]) &&
+          (slaveNodes[i] != eqRefNodes[3])) {
+        if (doNotRepeat[slaveNodes[i] - 1] == 1) {
+        } else {
+          doNotRepeat[slaveNodes[i] - 1] = 1;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",1,-1," << masterNodes[i]
+                           << ",1,1," << eqRefNodes[3] << ",1,1" << std::endl;
 
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i] << ",2,1,"
-        << eqRefNodes[3] << ",2,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",2,-1," << masterNodes[i]
+                           << ",2,1," << eqRefNodes[3] << ",2,1" << std::endl;
 
-        periodicEquation << "3" << std::endl;
-        periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i] << ",3,1,"
-        << eqRefNodes[3] << ",3,1" << std::endl;
+          periodicEquation << "3" << std::endl;
+          periodicEquation << slaveNodes[i] << ",3,-1," << masterNodes[i]
+                           << ",3,1," << eqRefNodes[3] << ",3,1" << std::endl;
+        }
       }
     }
   }
@@ -2209,7 +2236,6 @@ bool rocPack::getTestResult() {
 }
 
 void rocPack::scaleVols(const int &vol, const int &index) {
-
   std::vector<std::pair<int, int>> tagsIndividual;
   tagsIndividual.push_back(std::make_pair(3, vol));
   gmsh::model::occ::dilate(tagsIndividual, translateParams[index][0],
@@ -2230,7 +2256,6 @@ void rocPack::performSmoothing() {
 
 void rocPack::createCohesiveElements(const std::string &filename,
                                      const std::string &outname) {
-
   // Pre-processing to get some important data
   if ((sntChk) && (just2Physgrps)) {
     gmsh::model::mesh::getNodesForPhysicalGroup(3, surroundingGrp, surrNodeTags,
@@ -2241,49 +2266,53 @@ void rocPack::createCohesiveElements(const std::string &filename,
     gmsh::model::mesh::getNodesForPhysicalGroup(3, surroundingGrp, surrNodeTags,
                                                 surrCoords);
 
-    for (int i=0; i<multiGrpIndices.size(); i++) {
+    for (int i = 0; i < multiGrpIndices.size(); i++) {
       std::vector<std::size_t> tmpNodeTags;
-      gmsh::model::mesh::getNodesForPhysicalGroup(3, multiGrpIndices[i], tmpNodeTags,
-                                                  geomsCoords);
-      for (int j=0; j<tmpNodeTags.size(); j++)
+      gmsh::model::mesh::getNodesForPhysicalGroup(3, multiGrpIndices[i],
+                                                  tmpNodeTags, geomsCoords);
+      for (int j = 0; j < tmpNodeTags.size(); j++)
         geomsNodeTags.push_back(tmpNodeTags[j]);
     }
   } else if ((sntChk) && (physGrpPerShape)) {
     gmsh::model::mesh::getNodesForPhysicalGroup(3, surroundingGrp, surrNodeTags,
                                                 surrCoords);
 
-    for (int i=0; i<multiGrpIndices.size(); i++) {
+    for (int i = 0; i < multiGrpIndices.size(); i++) {
       std::vector<std::size_t> tmpNodeTags;
-      gmsh::model::mesh::getNodesForPhysicalGroup(3, multiGrpIndices[i], tmpNodeTags,
-                                                  geomsCoords);
+      gmsh::model::mesh::getNodesForPhysicalGroup(3, multiGrpIndices[i],
+                                                  tmpNodeTags, geomsCoords);
 
-      for (int j=0; j<tmpNodeTags.size(); j++)
+      for (int j = 0; j < tmpNodeTags.size(); j++)
         geomsNodeTags.push_back(tmpNodeTags[j]);
     }
-  } else if (((sntChk) && !(enablePhysGrp)) && ((sntChk) && !(physGrpPerShape))
-         && ((sntChk) && !(just2Physgrps))) {
+  } else if (((sntChk) && !(enablePhysGrp)) &&
+             ((sntChk) && !(physGrpPerShape)) &&
+             ((sntChk) && !(just2Physgrps))) {
     std::vector<double> noUse;
-    gmsh::model::mesh::getNodes(surrNodeTags,surrCoords,noUse,3,surroundingGrp,true,false);
+    gmsh::model::mesh::getNodes(surrNodeTags, surrCoords, noUse, 3,
+                                surroundingGrp, true, false);
 
-    for (int i=0; i<multiGrpIndices.size(); i++) {
+    for (int i = 0; i < multiGrpIndices.size(); i++) {
       std::vector<std::size_t> tmpNodes;
-      gmsh::model::mesh::getNodes(tmpNodes,geomsCoords,noUse,3,multiGrpIndices[i],true,false);
+      gmsh::model::mesh::getNodes(tmpNodes, geomsCoords, noUse, 3,
+                                  multiGrpIndices[i], true, false);
 
-      for (int j=0; j<tmpNodes.size(); j++)
+      for (int j = 0; j < tmpNodes.size(); j++)
         geomsNodeTags.push_back(tmpNodes[j]);
     }
 
-    for (int k=0; k<multiGrpIndices.size(); k++) {
+    for (int k = 0; k < multiGrpIndices.size(); k++) {
       // Getting element tags in surrounding -> surrElementIds
       std::vector<int> elementTypes;
       std::vector<std::vector<std::size_t>> elementTags;
       std::vector<std::vector<std::size_t>> nodeTags;
 
-      gmsh::model::mesh::getElements(elementTypes,elementTags,nodeTags,3,multiGrpIndices[k]);
+      gmsh::model::mesh::getElements(elementTypes, elementTags, nodeTags, 3,
+                                     multiGrpIndices[k]);
 
-      for (int i=0; i<elementTags.size(); i++)
-        for (int j=0; j<elementTags[i].size(); j++)
-        geomElementIds.push_back(elementTags[0][j]);
+      for (int i = 0; i < elementTags.size(); i++)
+        for (int j = 0; j < elementTags[i].size(); j++)
+          geomElementIds.push_back(elementTags[0][j]);
     }
   } else {
     // Nothing
@@ -2308,30 +2337,29 @@ void rocPack::createCohesiveElements(const std::string &filename,
   int numPoints = dataSetSurr->GetNumberOfPoints();
 
   // Material assignment vector here
-  for (int i=0; i<numPoints; i++)
-    ptsCohesiveGrp.push_back(-1);
+  for (int i = 0; i < numPoints; i++) ptsCohesiveGrp.push_back(-1);
 
   // storeMultiPhysGrps is vector of vectors, storing volumes in each group
   int countParts = 100;
-  for (int i=0; i<storeMultiPhysGrps.size(); i++) {
+  for (int i = 0; i < storeMultiPhysGrps.size(); i++) {
     std::vector<std::size_t> storeNodes;
-    for (int j=0; j<storeMultiPhysGrps[i].size(); j++) {
+    for (int j = 0; j < storeMultiPhysGrps[i].size(); j++) {
       std::vector<std::size_t> getNodeTags;
       std::vector<double> notUseful;
       std::vector<double> notUseful2;
-      gmsh::model::mesh::getNodes(getNodeTags,notUseful,notUseful2,3,
-                                  storeMultiPhysGrps[i][j],true,false);
+      gmsh::model::mesh::getNodes(getNodeTags, notUseful, notUseful2, 3,
+                                  storeMultiPhysGrps[i][j], true, false);
 
-      for (int k=0; k<getNodeTags.size(); k++)
+      for (int k = 0; k < getNodeTags.size(); k++)
         storeNodes.push_back(getNodeTags[k]);
     }
 
-    for (int j=0; j<storeNodes.size(); j++) {
-      //if (ptsCohesiveGrp[storeNodes[j]-1] != -1) {
+    for (int j = 0; j < storeNodes.size(); j++) {
+      // if (ptsCohesiveGrp[storeNodes[j]-1] != -1) {
       //  std::cerr << "Exception at material assignement" << std::endl;
       //  throw;
       //} else {
-        ptsCohesiveGrp[storeNodes[j]-1] = countParts;
+      ptsCohesiveGrp[storeNodes[j] - 1] = countParts;
       //}
     }
     countParts++;
@@ -2342,8 +2370,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
   if ((just2Physgrps) || (enablePhysGrp) || (physGrpPerShape)) {
     mb->getCellDataArray("PhysGrpId", grpIds);
   } else {
-    for (int i=0; i<geomElementIds.size(); i++)
-      grpIds[i] = 2;
+    for (int i = 0; i < geomElementIds.size(); i++) grpIds[i] = 2;
   }
 
   std::vector<int> newPtIds;
@@ -2359,7 +2386,8 @@ void rocPack::createCohesiveElements(const std::string &filename,
 
   // Provides means of identifying if the node at given index is new duplicate.
   std::vector<int> ptsInterfaceID;
-  // Replaces duplicate nodes at their indexes with their surrounding counterparts
+  // Replaces duplicate nodes at their indexes with their surrounding
+  // counterparts
   std::vector<int> traceBackToSurr;
   // new vector
   std::vector<int> identifyInterfaceNodes;
@@ -2379,34 +2407,34 @@ void rocPack::createCohesiveElements(const std::string &filename,
   double duration;
   start = std::clock();
 
-  // A faster method for finding interface nodes (0.031592 Seconds vs 813 Seconds for 61782 nodes)
-  for (int i=0; i<surrNodeTags.size(); i++)
-    identifyInterfaceNodes[surrNodeTags[i]-1] = 1;
+  // A faster method for finding interface nodes (0.031592 Seconds vs 813
+  // Seconds for 61782 nodes)
+  for (int i = 0; i < surrNodeTags.size(); i++)
+    identifyInterfaceNodes[surrNodeTags[i] - 1] = 1;
 
-  for (int i=0; i<geomsNodeTags.size(); i++) {
-    if (identifyInterfaceNodes[geomsNodeTags[i]-1] == 1) {
-      interfaceNodes.push_back(geomsNodeTags[i]-1);
+  for (int i = 0; i < geomsNodeTags.size(); i++) {
+    if (identifyInterfaceNodes[geomsNodeTags[i] - 1] == 1) {
+      interfaceNodes.push_back(geomsNodeTags[i] - 1);
       std::vector<double> getPt = std::vector<double>(3);
-      dataSetSurr->GetPoint(geomsNodeTags[i]-1, &getPt[0]);
+      dataSetSurr->GetPoint(geomsNodeTags[i] - 1, &getPt[0]);
       int newP = pointsViz->InsertNextPoint(getPt[0], getPt[1], getPt[2]);
       newPtIds.push_back(newP);
-      ptsReplacer[geomsNodeTags[i]-1] = newP;
-      traceBackToSurr.push_back(geomsNodeTags[i]-1);
-      slaveInterfaceId[geomsNodeTags[i]-1] = 1;
+      ptsReplacer[geomsNodeTags[i] - 1] = newP;
+      traceBackToSurr.push_back(geomsNodeTags[i] - 1);
+      slaveInterfaceId[geomsNodeTags[i] - 1] = 1;
     }
   }
 
-  duration = (std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  duration = (std::clock() - start) / (double)CLOCKS_PER_SEC;
   std::cout << "Process Finished!" << std::endl;
-  std::cout << "Total " << interfaceNodes.size()
-            << " Nodes duplicated in " << duration
-            << " seconds!" << std::endl;
+  std::cout << "Total " << interfaceNodes.size() << " Nodes duplicated in "
+            << duration << " seconds!" << std::endl;
 
   dataSetCohesive->SetPoints(pointsViz);
   dataSetViz->SetPoints(pointsViz);
 
   for (int i = 0; i < interfaceNodes.size(); i++)
-    ptsInterfaceID.push_back(1); // Updating points identification vector
+    ptsInterfaceID.push_back(1);  // Updating points identification vector
 
   // Once we have interface nodes and duplicated the nodes, Surrounding side
   // of surface cells needs to be replaced by new nodes.
@@ -2415,16 +2443,15 @@ void rocPack::createCohesiveElements(const std::string &filename,
   std::vector<int> cellIdentification;
 
   // Initialize with zero
-  for (int i=0; i<numCells; i++)
-    cellIdentification.push_back(0);
+  for (int i = 0; i < numCells; i++) cellIdentification.push_back(0);
 
-  // Finding all cells in microstructure group that atleast contains one interface
-  // node.
+  // Finding all cells in microstructure group that atleast contains one
+  // interface node.
   std::vector<int> pickCells;
-  for (int i=0; i<interfaceNodes.size(); i++) {
+  for (int i = 0; i < interfaceNodes.size(); i++) {
     vtkIdList *cells = vtkIdList::New();
     dataSetSurr->GetPointCells(interfaceNodes[i], cells);
-    for (int j=0; j<cells->GetNumberOfIds(); j++) {
+    for (int j = 0; j < cells->GetNumberOfIds(); j++) {
       if (grpIds[cells->GetId(j)] != surroundingGrp) {
         cellIdentification[cells->GetId(j)] = 1;
         pickCells.push_back(cells->GetId(j));
@@ -2432,7 +2459,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
     }
   }
   sort(pickCells.begin(), pickCells.end());
-  pickCells.erase(unique(pickCells.begin(),pickCells.end()),pickCells.end());
+  pickCells.erase(unique(pickCells.begin(), pickCells.end()), pickCells.end());
 
   // Now selected cells contain anywhere between 1 to 3 intefaceNodes that will
   // need replacement.
@@ -2446,16 +2473,14 @@ void rocPack::createCohesiveElements(const std::string &filename,
       vtkIdList *pts = cell->GetPointIds();
       std::vector<int> ptForCells;
       ptForCells.resize(4);
-      for (int j = 0; j < 4; j++)
-        ptForCells[j] = ptsReplacer[pts->GetId(j)];
+      for (int j = 0; j < 4; j++) ptForCells[j] = ptsReplacer[pts->GetId(j)];
       createVtkCell(dataSetCohesive, 10, ptForCells);
     } else {
       cell = dataSetSurr->GetCell(i);
       vtkIdList *pts = cell->GetPointIds();
       std::vector<int> ptForCells;
       ptForCells.resize(4);
-      for (int j = 0; j < 4; j++)
-        ptForCells[j] = pts->GetId(j);
+      for (int j = 0; j < 4; j++) ptForCells[j] = pts->GetId(j);
       createVtkCell(dataSetCohesive, 10, ptForCells);
     }
   }
@@ -2467,7 +2492,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
   std::vector<int> cellsNotPicked;
   int numOfCohElm = 0;
 
-  for (int i=0; i<pickCells.size(); i++) {
+  for (int i = 0; i < pickCells.size(); i++) {
     vtkCell *cell;
     cell = dataSetCohesive->GetCell(pickCells[i]);
     vtkIdList *pts = cell->GetPointIds();
@@ -2479,29 +2504,27 @@ void rocPack::createCohesiveElements(const std::string &filename,
       std::vector<int> tmpSeqStore;
       int *ptFaces = nullptr;
       cell3d->GetFacePoints(j, ptFaces);
-      for (int k=0; k<3; k++)
+      for (int k = 0; k < 3; k++)
         if (ptsInterfaceID[pts->GetId(ptFaces[k])] == 1)
           tmpSeqStore.push_back(pts->GetId(ptFaces[k]));
 
       if (tmpSeqStore.size() == 3)
-        for (int n = 0; n < 3; n++)
-          seqNodeMap.push_back(tmpSeqStore[n]);
+        for (int n = 0; n < 3; n++) seqNodeMap.push_back(tmpSeqStore[n]);
     }
   }
 
   // Update the material group array here.
   std::vector<double> groupId;
-  for (int i=0; i<grpIds.size(); i++)
-    groupId.push_back(grpIds[i]);
+  for (int i = 0; i < grpIds.size(); i++) groupId.push_back(grpIds[i]);
 
   // Create cohesive elements
   int add = 0;
-  for (int i = 0; i < (seqNodeMap.size()/3); i++) {
+  for (int i = 0; i < (seqNodeMap.size() / 3); i++) {
     std::vector<int> ptForCells;
     ptForCells.resize(6);
-    for (int j = 0; j < 3 ; j++) {
-      ptForCells[j] = seqNodeMap[j+add];
-      ptForCells[j+3] = traceBackToSurr[seqNodeMap[j+add]];
+    for (int j = 0; j < 3; j++) {
+      ptForCells[j] = seqNodeMap[j + add];
+      ptForCells[j + 3] = traceBackToSurr[seqNodeMap[j + add]];
     }
 
     // Search for periodic cohesive elements (existing on periodic boundaries)
@@ -2511,7 +2534,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
     dataSetCohesive->GetPoint(ptForCells[0], &getPt1[0]);
     dataSetCohesive->GetPoint(ptForCells[1], &getPt2[0]);
     dataSetCohesive->GetPoint(ptForCells[2], &getPt3[0]);
-    if (existsOnPeriodicBoundary(getPt1,getPt2,getPt3)) {
+    if (existsOnPeriodicBoundary(getPt1, getPt2, getPt3)) {
       // Do not create that element
     } else {
       if (ptsCohesiveGrp[ptForCells[3]] == ptsCohesiveGrp[ptForCells[4]])
@@ -2525,7 +2548,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
     add = add + 3;
   }
 
-  /*// Write cohesive elements in gmsh mesh
+  /*// Write cohesive elements in gmsh mesh (in development)
   std::vector<int> elementTypes;
   elementTypes.push_back(6);
   std::vector<std::vector<std::size_t>> elementTags;
@@ -2563,7 +2586,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
   vm->write();
 
   vtkMesh *vm2 = new vtkMesh(dataSetCohesive, rawname2);
-  vm2->setCellDataArray("PhysGrpId",groupId);
+  vm2->setCellDataArray("PhysGrpId", groupId);
   vm2->report();
   vm2->write();
 }
@@ -2612,36 +2635,37 @@ void rocPack::assignPeriodicEqNodes() {
   std::size_t cellTag;
   int cellType = 0;
   std::vector<std::size_t> nodeIds;
-  double u,v,w;
+  double u, v, w;
   int elemDim = -1;
 
-  gmsh::model::mesh::getElementByCoordinates(boxPt[0],boxPt[1],boxPt[2],cellTag,cellType,
-                                              nodeIds,u,v,w,elemDim,true);
+  gmsh::model::mesh::getElementByCoordinates(boxPt[0], boxPt[1], boxPt[2],
+                                             cellTag, cellType, nodeIds, u, v,
+                                             w, elemDim, true);
 
-  for (int i=0; i<nodeIds.size(); i++) {
+  for (int i = 0; i < nodeIds.size(); i++) {
     std::vector<double> coords;
     std::vector<double> paramCoords;
 
-    gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
+    gmsh::model::mesh::getNode(nodeIds[i], coords, paramCoords);
 
     if (coords[0] == boxPt[0])
       if (coords[1] == boxPt[1])
-        if (coords[2] == boxPt[2])
-          eqRefNodes[0] = nodeIds[i];
+        if (coords[2] == boxPt[2]) eqRefNodes[0] = nodeIds[i];
   }
 
   nodeIds.clear();
 
-  gmsh::model::mesh::getElementByCoordinates(boxPt[0]+Xdim,boxPt[1],boxPt[2],cellTag,cellType,
-                                              nodeIds,u,v,w,elemDim,true);
+  gmsh::model::mesh::getElementByCoordinates(boxPt[0] + Xdim, boxPt[1],
+                                             boxPt[2], cellTag, cellType,
+                                             nodeIds, u, v, w, elemDim, true);
 
-  for (int i=0; i<nodeIds.size(); i++) {
+  for (int i = 0; i < nodeIds.size(); i++) {
     std::vector<double> coords;
     std::vector<double> paramCoords;
 
-    gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
+    gmsh::model::mesh::getNode(nodeIds[i], coords, paramCoords);
 
-    if (coords[0] == boxPt[0]+Xdim) {
+    if (coords[0] == boxPt[0] + Xdim) {
       if (coords[1] == boxPt[1]) {
         if (coords[2] == boxPt[2]) {
           eqRefNodes[1] = nodeIds[i];
@@ -2652,16 +2676,17 @@ void rocPack::assignPeriodicEqNodes() {
   }
   nodeIds.clear();
 
-  gmsh::model::mesh::getElementByCoordinates(boxPt[0],boxPt[1]+Ydim,boxPt[2],cellTag,cellType,
-                                              nodeIds,u,v,w,elemDim,true);
-  for (int i=0; i<nodeIds.size(); i++) {
+  gmsh::model::mesh::getElementByCoordinates(boxPt[0], boxPt[1] + Ydim,
+                                             boxPt[2], cellTag, cellType,
+                                             nodeIds, u, v, w, elemDim, true);
+  for (int i = 0; i < nodeIds.size(); i++) {
     std::vector<double> coords;
     std::vector<double> paramCoords;
 
-    gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
+    gmsh::model::mesh::getNode(nodeIds[i], coords, paramCoords);
 
     if (coords[0] == boxPt[0]) {
-      if (coords[1] == boxPt[1]+Ydim) {
+      if (coords[1] == boxPt[1] + Ydim) {
         if (coords[2] == boxPt[2]) {
           eqRefNodes[2] = nodeIds[i];
           break;
@@ -2671,17 +2696,18 @@ void rocPack::assignPeriodicEqNodes() {
   }
   nodeIds.clear();
 
-  gmsh::model::mesh::getElementByCoordinates(boxPt[1],boxPt[2],boxPt[2]+Zdim,cellTag,cellType,
-                                              nodeIds,u,v,w,elemDim,true);
-  for (int i=0; i<nodeIds.size(); i++) {
+  gmsh::model::mesh::getElementByCoordinates(boxPt[1], boxPt[2],
+                                             boxPt[2] + Zdim, cellTag, cellType,
+                                             nodeIds, u, v, w, elemDim, true);
+  for (int i = 0; i < nodeIds.size(); i++) {
     std::vector<double> coords;
     std::vector<double> paramCoords;
 
-    gmsh::model::mesh::getNode(nodeIds[i],coords,paramCoords);
+    gmsh::model::mesh::getNode(nodeIds[i], coords, paramCoords);
 
     if (coords[0] == boxPt[0]) {
       if (coords[1] == boxPt[1]) {
-        if (coords[2] == boxPt[2]+Zdim) {
+        if (coords[2] == boxPt[2] + Zdim) {
           eqRefNodes[3] = nodeIds[i];
           break;
         }
@@ -2696,27 +2722,58 @@ bool rocPack::existsOnPeriodicBoundary(const std::vector<double> &getPt1,
                                        const std::vector<double> &getPt3) {
   // Check if all 3 points exist on any of these 6 surfaces
   // 1. X = boxPt[0]
-  if ((getPt1[0] == boxPt[0]) && (getPt2[0] == boxPt[0]) && (getPt3[0] == boxPt[0]))
+  if ((getPt1[0] == boxPt[0]) && (getPt2[0] == boxPt[0]) &&
+      (getPt3[0] == boxPt[0]))
     return true;
   // 2. X = boxPt[0] + Xdim
-  else if ((getPt1[0] == boxPt[0] + Xdim) && (getPt2[0] == boxPt[0] + Xdim) && (getPt3[0] == boxPt[0] + Xdim))
+  else if ((getPt1[0] == boxPt[0] + Xdim) && (getPt2[0] == boxPt[0] + Xdim) &&
+           (getPt3[0] == boxPt[0] + Xdim))
     return true;
   // 3. Y = boxPt[1]
-  else if ((getPt1[1] == boxPt[1]) && (getPt2[1] == boxPt[1]) && (getPt3[1] == boxPt[1]))
+  else if ((getPt1[1] == boxPt[1]) && (getPt2[1] == boxPt[1]) &&
+           (getPt3[1] == boxPt[1]))
     return true;
   // 4. Y = boxPt[1] + Ydim
-  else if ((getPt1[1] == boxPt[1] + Ydim) && (getPt2[1] == boxPt[1] + Ydim) && (getPt3[1] == boxPt[1] + Ydim))
+  else if ((getPt1[1] == boxPt[1] + Ydim) && (getPt2[1] == boxPt[1] + Ydim) &&
+           (getPt3[1] == boxPt[1] + Ydim))
     return true;
   // 5. Z = boxPt[2]
-  else if ((getPt1[2] == boxPt[2]) && (getPt2[2] == boxPt[2]) && (getPt3[2] == boxPt[2]))
+  else if ((getPt1[2] == boxPt[2]) && (getPt2[2] == boxPt[2]) &&
+           (getPt3[2] == boxPt[2]))
     return true;
   // 6. Z = boxPt[2] + Zdim
-  else if ((getPt1[2] == boxPt[2] + Zdim) && (getPt2[2] == boxPt[2] + Zdim) && (getPt3[2] == boxPt[2] + Zdim))
+  else if ((getPt1[2] == boxPt[2] + Zdim) && (getPt2[2] == boxPt[2] + Zdim) &&
+           (getPt3[2] == boxPt[2] + Zdim))
     return true;
   else
     return false;
 }
 
-} // namespace GEO
+void rocPack::inputFileGenerator() {
+  // Something
+}
 
-} // namespace NEM
+void rocPack::calculateCellVols(const int &numNodes, const int &numElems) {
+  std::vector<std::size_t> nodeTags;
+  std::vector<double> coordinates;
+  std::vector<double> paramCoords;
+
+  for (int i = 0; i < numNodes; i++) nodeTags.push_back(i + 1);
+
+  gmsh::model::mesh::getNodes(nodeTags, coordinates, paramCoords);
+
+  // Get elements (element type =4)
+  std::vector<int> elemType;
+  elemType.push_back(4);
+  std::vector<std::vector<std::size_t>> elemTags;
+  elemTags.resize(1);
+  std::vector<std::vector<std::size_t>> elemNodeTags;
+
+  for (int i = 0; i < numElems; i++) elemTags[0].push_back(i + 1);
+
+  gmsh::model::mesh::getElements(elemType, elemTags, elemNodeTags);
+}
+
+}  // namespace GEO
+
+}  // namespace NEM

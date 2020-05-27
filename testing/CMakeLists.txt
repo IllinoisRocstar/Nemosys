@@ -284,7 +284,7 @@ if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
       concentric_polygons_test_REF.msh
       )
 
-  nem_add_test(RocPackPeriodic RocPackPeriodic rocPackPeriodicTest
+  nem_add_test(rocPackPeriodic RocPackPeriodic rocPackPeriodic
       rocOut
       periodicGeom_ref.vtk
       )

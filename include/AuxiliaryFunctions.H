@@ -5,18 +5,21 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <random>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
 
 #ifdef HAVE_GLOB_H
 #  include <glob.h>
+
 #  include <cstring>
 #else
 #  include <boost/filesystem.hpp>
@@ -183,6 +186,11 @@ std::vector<A> getSortedKeys(const std::map<A, B> &mapObj);
 inline std::string getRandomString(int length);
 // converts string to character
 inline std::shared_ptr<char> strToChar(const std::string &strng);
+// decomposes string into tokens using single delimiter
+inline std::vector<std::string> Tokenize(const std::string &lineIn,
+                                         const char &delim);
+inline std::vector<std::string> Tokenize(const std::string &lineIn,
+                                         const std::string &delim);
 //----------------------------------------------------------------------------//
 
 //-------------------Auxiliary Function Implementations-----------------------//
@@ -279,9 +287,46 @@ T reciprocal(T x) {
 
 // converts string to character for std::atof function
 std::shared_ptr<char> strToChar(const std::string &strng) {
-  std::shared_ptr<char> tab(new char [strng.length()+1], std::default_delete<char[]>());
+  std::shared_ptr<char> tab(new char[strng.length() + 1],
+                            std::default_delete<char[]>());
   std::strcpy(tab.get(), strng.c_str());
   return tab;
+}
+
+// decomposes a string into tokens using single delimiter
+std::vector<std::string> Tokenize(const std::string &lineIn,
+                                  const char &delim) {
+  std::vector<std::string> rtrnTokens;
+
+  std::string intermediate;
+  std::stringstream checkStr(lineIn);
+
+  // Tokenizing
+  while (std::getline(checkStr, intermediate, delim)) {
+    rtrnTokens.push_back(intermediate);
+  }
+  return rtrnTokens;
+}
+
+// decomposes a string into tokens using string of delimiters
+std::vector<std::string> Tokenize(const std::string &lineIn,
+                                  const std::string &delim) {
+  std::vector<std::string> rtrnTokens;
+  std::vector<char> delimStr;
+  delimStr.reserve(delim.size());
+
+  for (int i = 0; i < delim.size(); i++) delimStr.push_back(delim[i]);
+
+  std::string intermediate;
+  std::stringstream checkStr(lineIn);
+
+  // Tokenizing
+  int iter = 0;
+  while (std::getline(checkStr, intermediate, delimStr[iter])) {
+    rtrnTokens.push_back(intermediate);
+    iter++;
+  }
+  return rtrnTokens;
 }
 
 // IN PLACE, computes reciprocal of vector elements

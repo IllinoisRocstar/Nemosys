@@ -1,5 +1,6 @@
 #ifdef HAVE_CFMSH
 #  include <boost/filesystem.hpp>
+
 #  include "MeshManipulationFoam.H"
 #  include "MeshManipulationFoamParams.H"
 #  include "MeshQuality.H"
@@ -27,6 +28,7 @@
 #include <vtkCellData.h>
 #include <vtkIdList.h>
 #include <vtkMesh.H>
+
 #include "ConversionDriver.H"
 
 // TODO
@@ -204,20 +206,7 @@ PackMeshDriver::PackMeshDriver(
   if (objBM) delete objBM;
   if (objSurrQ) delete objSurrQ;
   if (objPackQ) delete objPackQ;
-
   // End of workflow
-
-  // * * * * * *  IN DEVELOPMENT * * * * * * * * //
-  // Adds cohesive elements for hex and writes them in VTU file.
-  // objMsh->addCohesiveElements(1e-13, "FinalMeshZero.vtu");
-  // Adds artificial thickness elements for hex and writes them in VTU file.
-  // objMsh->addArtificialThicknessElements(1e-13, "FinalMeshArti.vtu", 1);
-  // objMsh->periodicMeshMapper("front", "back");
-  // objMsh->periodicGeomGen("packs.stl", "Box.stl");
-
-  // if (objMsh)
-  //  delete objMsh;
-  // * * * * * *  IN DEVELOPMENT * * * * * * * * //
 }
 #endif
 
@@ -230,7 +219,9 @@ PackMeshDriver::PackMeshDriver(
     const bool &createCohesive, const bool &enablePatches,
     const std::vector<double> &transferMesh, const bool &customDomain,
     const std::vector<double> &domainBounds, const int &mshAlgorithm,
-    const bool &enableDefaultOutput, const bool &enablePhysGrpPerShape) {
+    const bool &enableDefaultOutput, const bool &enablePhysGrpPerShape,
+    const int &refineLevel, const double &upperThreshold,
+    const double &lowerThreshold, const bool &preserveSize) {
   auto *objrocPck = new NEM::GEO::rocPack(ifname, ofname);
 
   if ((enable2PhysGrps && enableMultiPhysGrps) ||
@@ -248,6 +239,9 @@ PackMeshDriver::PackMeshDriver(
         << std::endl;
   }
 
+  if (upperThreshold > 0.0 || lowerThreshold > 0.0)
+    objrocPck->applyFilter(upperThreshold, lowerThreshold);
+
   objrocPck->translateAll(transferMesh[0], transferMesh[1], transferMesh[2]);
   objrocPck->setMeshingAlgorithm(mshAlgorithm);
 
@@ -255,6 +249,10 @@ PackMeshDriver::PackMeshDriver(
     objrocPck->sanityCheckOn();
     objrocPck->enableCohesiveElements();
   }
+
+  if (preserveSize) objrocPck->setSizePreservation();
+
+  if (refineLevel > 0) objrocPck->assignRefinement(refineLevel);
 
   if (customDomain) objrocPck->setCustomDomain(domainBounds);
 
@@ -266,6 +264,8 @@ PackMeshDriver::PackMeshDriver(
 
   if (setPeriodicGeom) objrocPck->setPeriodicGeometry();
 
+  if (enableDefaultOutput) objrocPck->enableDefOuts();
+
   if (wantGeometryOnly) objrocPck->rocPack2Surf();
 
   if (enableMultiPhysGrps) objrocPck->enablePhysicalGrps();
@@ -275,8 +275,6 @@ PackMeshDriver::PackMeshDriver(
   if (enablePhysGrpPerShape) objrocPck->enablePhysicalGroupsPerShape();
 
   if (enablePatches) objrocPck->enableSurfacePatches();
-
-  if (enableDefaultOutput) objrocPck->enableDefOuts();
 
   if (setPeriodicMesh) {
     if (customDomain) {
@@ -1801,6 +1799,14 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       bool enablePhysGrpPerShape =
           inputjson["Meshing Parameters"].get_with_default(
               "Enable physical group per shape", false);
+      bool preserveSize = inputjson["Meshing Parameters"].get_with_default(
+          "Enable Size Preservation", false);
+      int refineLevel = inputjson["Meshing Parameters"].get_with_default(
+          "Refinement Levels", 0);
+      double upperThreshold = inputjson["Meshing Parameters"].get_with_default(
+          "Upper Threshold", 0.);
+      double lowerThreshold = inputjson["Meshing Parameters"].get_with_default(
+          "Lower Threshold", 0.);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1871,7 +1877,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm, enableOutBool,
-          enablePhysGrpPerShape);
+          enablePhysGrpPerShape, refineLevel, upperThreshold, lowerThreshold,
+          preserveSize);
       return pckmshdrvobj;
     } else {
       bool setPeriodicMesh = true;
@@ -1910,6 +1917,14 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       bool enablePhysGrpPerShape =
           inputjson["Meshing Parameters"].get_with_default(
               "Enable physical group per shape", false);
+      bool preserveSize = inputjson["Meshing Parameters"].get_with_default(
+          "Enable Size Preservation", false);
+      int refineLevel = inputjson["Meshing Parameters"].get_with_default(
+          "Refinement Levels", 0);
+      double upperThreshold = inputjson["Meshing Parameters"].get_with_default(
+          "Upper Threshold", 0.);
+      double lowerThreshold = inputjson["Meshing Parameters"].get_with_default(
+          "Lower Threshold", 0.);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1978,7 +1993,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           setPeriodicGeom, setPeriodicMesh, enable2PhysGrps,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm, enableOutBool,
-          enablePhysGrpPerShape);
+          enablePhysGrpPerShape, refineLevel, upperThreshold, lowerThreshold,
+          preserveSize);
       return pckmshdrvobj;
     }
   } else {

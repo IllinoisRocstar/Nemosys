@@ -28,12 +28,12 @@ class MeshManipulationFoam;
   > * Geometry generation using RocPack output file.
   > * Generation of STL file for workflow downstream.
   > * Generation of background mesh for snappyHexMesh
-  > * Snapping of pack surfaces onto background volume mesh to create conformal interfaces.
-  > * Splitting multiple pack regions into different cellZones (volumes).
-  > * Merging all different volumes into two different foam mesh (1. Packs, 2. Surrounding)
-  > * Creating patch for Packs and Surrounding regions.
-  > * Conversion of foam mesh to VTK.
-  > * Provides mesh quality statistics to users in a text file.
+  > * Snapping of pack surfaces onto background volume mesh to create conformal
+interfaces. > * Splitting multiple pack regions into different cellZones
+(volumes). > * Merging all different volumes into two different foam mesh (1.
+Packs, 2. Surrounding) > * Creating patch for Packs and Surrounding regions. > *
+Conversion of foam mesh to VTK. > * Provides mesh quality statistics to users in
+a text file.
 
   Tetrahedral periodic meshing pipeline operates within rocPack class and uses
   Netgen mesh optimization for final mesh quality improvement if needed.
@@ -46,12 +46,10 @@ class MeshManipulationFoam;
   > * Exporting final mesh with or without optimization.
 
 **/
-class PackMeshDriver : public NemDriver
-{
-  public:
-
-  #ifdef HAVE_CFMSH
-  /** 
+class PackMeshDriver : public NemDriver {
+ public:
+#ifdef HAVE_CFMSH
+  /**
       @brief PackMeshDriver constructor for hexahedral meshing
       @param ifname Input surface file name
       @param _mparams MeshManipulationFoamParams object
@@ -62,14 +60,14 @@ class PackMeshDriver : public NemDriver
       @param useRocpack Boolean for using rocpack to generate an STL
       @param ofname2 Surrounding mesh output filename.extension
   **/
-  PackMeshDriver(
-      const std::string& ifname, MeshManipulationFoamParams* _mparams,
-      cfmeshParams* _cfparams, snappymeshParams* _snappyparams,
-      blockMeshParams* _bmparams, const std::string& ofname1,
-      const std::string& ofname2, const bool& useRocpack);
-  #endif
+  PackMeshDriver(const std::string &ifname,
+                 MeshManipulationFoamParams *_mparams, cfmeshParams *_cfparams,
+                 snappymeshParams *_snappyparams, blockMeshParams *_bmparams,
+                 const std::string &ofname1, const std::string &ofname2,
+                 const bool &useRocpack);
+#endif
 
-  /** 
+  /**
       @brief PackMeshDriver alternate constructor for tetrahedral meshing
       @param ifname Input file name (Output from Rocpack)
       @param ofname Output file name (.stl, .vtu, .msh are supported)
@@ -90,31 +88,39 @@ class PackMeshDriver : public NemDriver
       @param mshAlgorithm Meshing algorithm of choice.
       @param enableDefaultOutput Enable default output formats
       @param enablePhysGrpPerShape Enables physical group per shape
+      @param refineLevel Refinement applied to original mesh
+      @param upperThreshold Upper threshold for filtering (w.r.t mean)
+      @param lowerThreshold Lower threshold for filtering (w.r.t mean)
+      @param preserveSize Boolean for preserving pack sizes instead of
+             packing fraction
   **/
-  PackMeshDriver(
-      const std::string& ifname, const std::string& ofname,
-      const bool& scaleVolumes, const double& scaleValue,
-      const double& meshSize, const bool& rmvBndryPacks,
-      const bool& setPeriodicGeom, const bool& setPeriodicMesh,
-      const bool& enable2PhysGrps, const bool& enableMultiPhysGrps,
-      const bool& wantGeometryOnly, const bool& createCohesive,
-      const bool& enablePatches, const std::vector<double>& transferMesh,
-      const bool& customDomain, const std::vector<double>& domainBounds,
-      const int& mshAlgorithm, const bool& enableDefaultOutput,
-      const bool &enablePhysGrpPerShape);
+  PackMeshDriver(const std::string &ifname, const std::string &ofname,
+                 const bool &scaleVolumes, const double &scaleValue,
+                 const double &meshSize, const bool &rmvBndryPacks,
+                 const bool &setPeriodicGeom, const bool &setPeriodicMesh,
+                 const bool &enable2PhysGrps, const bool &enableMultiPhysGrps,
+                 const bool &wantGeometryOnly, const bool &createCohesive,
+                 const bool &enablePatches,
+                 const std::vector<double> &transferMesh,
+                 const bool &customDomain,
+                 const std::vector<double> &domainBounds,
+                 const int &mshAlgorithm, const bool &enableDefaultOutput,
+                 const bool &enablePhysGrpPerShape, const int &refineLevel,
+                 const double &upperThreshold, const double &lowerThreshold,
+                 const bool &preserveSize);
 
   /** @brief PackMeshDriver standard destructor
-  **/
+   **/
   ~PackMeshDriver();
-    
+
   // static factory method
   /** @brief reads JSON object
       @param inputjson JSON object created using user provided input file
   **/
-  static PackMeshDriver* readJSON(const jsoncons::json inputjson);
+  static PackMeshDriver *readJSON(const jsoncons::json inputjson);
 
-  #ifdef HAVE_CFMSH
-  /** @brief Input parsing module for hex mesh. Assigned user defined parameters 
+#ifdef HAVE_CFMSH
+  /** @brief Input parsing module for hex mesh. Assigned user defined parameters
              in input file to variables.
       @param ifname Input surface file name
       @param ofname1 Pack mesh output filename.extension
@@ -122,23 +128,23 @@ class PackMeshDriver : public NemDriver
       @param useRocpack Boolean for using rocpack to generate an STL
       @param inputjson JSON object created using user provided input file
   **/
-  static PackMeshDriver* readJSON(
-      const std::string& ifname, const std::string& ofname1, 
-      const std::string& ofname2, const bool useRocpack, 
-      const jsoncons::json inputjson);
-  #endif
+  static PackMeshDriver *readJSON(const std::string &ifname,
+                                  const std::string &ofname1,
+                                  const std::string &ofname2,
+                                  const bool useRocpack,
+                                  const jsoncons::json inputjson);
+#endif
 
   /** @brief Input parsing module for tetrahedral periodic/non-periodic mesh
       @param ifname Input file name
       @param ofname Output file name
       @param inputjson JSON object created using user provided input file
   **/
-  static PackMeshDriver* readJSON(
-      const std::string& ifname, const std::string& ofname,
-      const jsoncons::json inputjson);
+  static PackMeshDriver *readJSON(const std::string &ifname,
+                                  const std::string &ofname,
+                                  const jsoncons::json inputjson);
 
-  private:
-
+ private:
 };
 
 #endif
