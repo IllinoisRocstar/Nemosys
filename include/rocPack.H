@@ -188,13 +188,9 @@ class NEMOSYS_EXPORT rocPack {
    **/
   void setSizePreservation();
 
-  /** @brief To generate calculix simulation input file
+  /** @brief Sets element order
    **/
-  void inputFileGenerator();
-
-  /** @brief Calculates cell volumes from final mesh
-   **/
-  void calculateCellVols(const int &numNodes, const int &numElems);
+  void setElementOrder(const int &order);
 
   // rocPack2STL internal use only
  private:
@@ -272,6 +268,11 @@ class NEMOSYS_EXPORT rocPack {
       @param writeFile Output File Name
   **/
   void geomToMsh(const std::string &writeFile);
+
+  /** @brief Removes 2D elements from INP mesh file
+      @param modifyFile File name to modify
+  **/
+  void modifyInpMesh(const std::string &modifyFile);
 
   /** @brief Generates a Quaternion using Euler 3D rotation
              parameters
@@ -733,6 +734,10 @@ class NEMOSYS_EXPORT rocPack {
   /** @brief Boolean for size preservation
    **/
   bool enableSizePreserve = false;
+
+  /** @brief Sets mesh element order
+   **/
+  int elementOrder = 1;
 };
 
 }  // namespace GEO

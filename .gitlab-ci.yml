@@ -1,7 +1,7 @@
 test:ubuntu16:
   image: ilrocstar/nemosys-test-img:v4-merc
   tags:
-    - linux
+    - nemosys
   script:
     - mkdir build && cd build
     - CC=mpicc

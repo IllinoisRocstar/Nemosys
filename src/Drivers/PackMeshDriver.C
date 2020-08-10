@@ -221,7 +221,8 @@ PackMeshDriver::PackMeshDriver(
     const std::vector<double> &domainBounds, const int &mshAlgorithm,
     const bool &enableDefaultOutput, const bool &enablePhysGrpPerShape,
     const int &refineLevel, const double &upperThreshold,
-    const double &lowerThreshold, const bool &preserveSize) {
+    const double &lowerThreshold, const bool &preserveSize,
+    const int &elemOrder) {
   auto *objrocPck = new NEM::GEO::rocPack(ifname, ofname);
 
   if ((enable2PhysGrps && enableMultiPhysGrps) ||
@@ -244,6 +245,13 @@ PackMeshDriver::PackMeshDriver(
 
   objrocPck->translateAll(transferMesh[0], transferMesh[1], transferMesh[2]);
   objrocPck->setMeshingAlgorithm(mshAlgorithm);
+
+  if (elemOrder > 2 || elemOrder <= 0) {
+    std::cerr << "Only element orders 1 and 2 are supported!" << std::endl;
+    throw;
+  }
+
+  objrocPck->setElementOrder(elemOrder);
 
   if (createCohesive) {
     objrocPck->sanityCheckOn();
@@ -1807,6 +1815,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Upper Threshold", 0.);
       double lowerThreshold = inputjson["Meshing Parameters"].get_with_default(
           "Lower Threshold", 0.);
+      int elemOrder =
+          inputjson["Meshing Parameters"].get_with_default("Element Order", 1);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1878,7 +1888,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm, enableOutBool,
           enablePhysGrpPerShape, refineLevel, upperThreshold, lowerThreshold,
-          preserveSize);
+          preserveSize, elemOrder);
       return pckmshdrvobj;
     } else {
       bool setPeriodicMesh = true;
@@ -1925,6 +1935,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           "Upper Threshold", 0.);
       double lowerThreshold = inputjson["Meshing Parameters"].get_with_default(
           "Lower Threshold", 0.);
+      int elemOrder =
+          inputjson["Meshing Parameters"].get_with_default("Element Order", 1);
 
       if (inputjson["Meshing Parameters"].contains("Custom Domain")) {
         customDomain = true;
@@ -1994,7 +2006,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
           enableMultiPhysGrps, wantGeometryOnly, createCohesive, enablePatches,
           transferMesh, customDomain, domainBounds, mshAlgorithm, enableOutBool,
           enablePhysGrpPerShape, refineLevel, upperThreshold, lowerThreshold,
-          preserveSize);
+          preserveSize, elemOrder);
       return pckmshdrvobj;
     }
   } else {

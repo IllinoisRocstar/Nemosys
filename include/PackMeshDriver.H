@@ -93,6 +93,7 @@ class PackMeshDriver : public NemDriver {
       @param lowerThreshold Lower threshold for filtering (w.r.t mean)
       @param preserveSize Boolean for preserving pack sizes instead of
              packing fraction
+      @param elemOrder Element order selected by user
   **/
   PackMeshDriver(const std::string &ifname, const std::string &ofname,
                  const bool &scaleVolumes, const double &scaleValue,
@@ -107,7 +108,7 @@ class PackMeshDriver : public NemDriver {
                  const int &mshAlgorithm, const bool &enableDefaultOutput,
                  const bool &enablePhysGrpPerShape, const int &refineLevel,
                  const double &upperThreshold, const double &lowerThreshold,
-                 const bool &preserveSize);
+                 const bool &preserveSize, const int &elemOrder);
 
   /** @brief PackMeshDriver standard destructor
    **/
