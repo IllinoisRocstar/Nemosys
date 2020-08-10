@@ -611,11 +611,29 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
           }
           // insert connectivities for wedge/prism elements into dataSet
           dataSet_tmp->InsertNextCell(VTK_WEDGE, vtkCellIds);
+        } else if (type == 11) {
+          int tmp;
+          if (!fndPhyGrp) {
+            for (int j = 0; j < numTags; ++j) ss >> tmp;
+          } else {
+            std::vector<double> physGrpId(1);
+            ss >> physGrpId[0];
+            cellPhysGrpIds.push_back(physGrpId);
+            for (int j = 0; j < numTags - 1; ++j) ss >> tmp;
+          }
+          for (int j = 0; j < 10; ++j) {
+            ss >> tmp;
+            // insert connectivities for cell into cellIds container
+            vtkCellIds->InsertNextId(trueIndex[tmp]);  //-1);
+          }
+          // insert connectivities for tet elements into dataSet
+          dataSet_tmp->InsertNextCell(VTK_QUADRATIC_TETRA, vtkCellIds);
         } else {
           if (warning) {
             std::cout
                 << "Warning: Only triangular, quadrilateral, "
-                   "tetrahedral, hexahedral, and wedge elements are supported, "
+                   "tetrahedral, hexahedral, wedge, and quadratic tetrahedral"
+                   "elements are supported, "
                 << "everything else is ignored! " << std::endl;
             warning = false;
             // exit(1);

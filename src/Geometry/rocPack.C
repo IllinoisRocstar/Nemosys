@@ -110,12 +110,15 @@ void rocPack::enableSurfacePatches() { assignSidePatches = true; }
 
 void rocPack::setSizePreservation() { enableSizePreserve = true; }
 
+void rocPack::setElementOrder(const int &order) { elementOrder = order; }
+
 void rocPack::initialize() {
   gmsh::initialize();
   gmsh::model::add("Pack");
   gmsh::option::setNumber("General.NumThreads", 10);
   gmsh::option::setNumber("Geometry.OCCBooleanPreserveNumbering", 1);
   gmsh::option::setNumber("Geometry.OCCParallel", 1);
+  // if (elementOrder > 1) gmsh::option::setNumber("Mesh.HighOrderPeriodic", 2);
 }
 
 void rocPack::rocParser() {
@@ -410,15 +413,13 @@ void rocPack::rocToGeom() {
     // Nothing
   }
 
-  if (removeBoundaryPacks == true && periodic3D == true) {
-    std::vector<std::pair<int, int>> tagsInsidePacks;
-    gmsh::model::getEntities(tagsInsidePacks, 3);
-    mapPeriodicSurfaces(tagsInsidePacks);
-  }
-
   if (ellipsoidPresent == true || enablePeriodicity == false ||
       cstmDomain == true) {
     // Nothing
+  } else if (removeBoundaryPacks == true && periodic3D == true) {
+    std::vector<std::pair<int, int>> tagsInsidePacks;
+    gmsh::model::getEntities(tagsInsidePacks, 3);
+    mapPeriodicSurfaces(tagsInsidePacks);
   } else {
     std::cout << " - Ensuring periodicity of geometry ..." << std::endl;
     makePeriodic(removeBoundaryPacks);
@@ -482,8 +483,12 @@ void rocPack::geomToPeriodic3D() {
   gmsh::option::setNumber("Mesh.Algorithm3D", meshingAlgorithm);
   gmsh::option::setNumber("Mesh.SaveGroupsOfNodes", 1);
   gmsh::model::mesh::generate(3);
+  gmsh::model::mesh::setOrder(elementOrder);
   for (int i = 0; i < refineIter; i++) gmsh::model::mesh::refine();
   gmsh::model::mesh::removeDuplicateNodes();
+  double np = 0.0;
+  gmsh::option::getNumber("Mesh.NbNodes", np);
+  nptsMsh = static_cast<int>(np);
 
   if (OutFile.find(".stl") != std::string::npos)
     geomToSTL(OutFile);
@@ -502,6 +507,9 @@ void rocPack::geomToPeriodic3D() {
   } else {
     gmsh::write(OutFile);
   }
+
+  if ((OutFile.find(".inp") != std::string::npos) && (assignSidePatches))
+    modifyInpMesh(OutFile);
 
   if (defOutputs) {
     size_t lastindex = OutFile.find_last_of(".");
@@ -531,7 +539,6 @@ void rocPack::geomToVTK(const std::string &writeFile) {
   meshBase *mb = meshBase::exportGmshToVtk(rawname);
   nptsMsh = mb->getNumberOfPoints();
   mb->write(rawname);
-
   if (mb) delete mb;
 }
 
@@ -2749,29 +2756,67 @@ bool rocPack::existsOnPeriodicBoundary(const std::vector<double> &getPt1,
     return false;
 }
 
-void rocPack::inputFileGenerator() {
-  // Something
-}
+void rocPack::modifyInpMesh(const std::string &modifyFile) {
+  size_t lastindex = modifyFile.find_last_of(".");
+  std::string rawname = modifyFile.substr(0, lastindex);
+  std::string fname = rawname + ".inp";
+  std::vector<std::string> fileLines;
+  std::ifstream meshFile(fname);
+  if (meshFile.is_open()) {
+    // Get all lines from current file
+    std::string linesOut;
+    while (std::getline(meshFile, linesOut)) fileLines.push_back(linesOut);
 
-void rocPack::calculateCellVols(const int &numNodes, const int &numElems) {
-  std::vector<std::size_t> nodeTags;
-  std::vector<double> coordinates;
-  std::vector<double> paramCoords;
+    int start = 0;
+    int end = 0;
+    for (int i = 0; i < fileLines.size(); i++) {
+      if (fileLines[i].find("*ELEMENT, type=CPS3, ELSET=") == 0) {
+        start = i;
+        break;
+      }
+    }
 
-  for (int i = 0; i < numNodes; i++) nodeTags.push_back(i + 1);
+    for (int i = 0; i < fileLines.size(); i++) {
+      if (elementOrder == 1) {
+        if (fileLines[i].find("*ELEMENT, type=C3D4, ELSET=") == 0) {
+          end = i;
+          break;
+        } else if (elementOrder == 2) {
+          // Identify gmsh type for this
+        } else {
+          // Nothing
+        }
+      }
+    }
 
-  gmsh::model::mesh::getNodes(nodeTags, coordinates, paramCoords);
+    if (start == 0 || end == 0) {
+      // No surface elements in this mesh
+      // File will not be modified
+    } else {
+      // Remove part of file from vector
+      fileLines.erase(fileLines.begin() + start, fileLines.begin() + end);
 
-  // Get elements (element type =4)
-  std::vector<int> elemType;
-  elemType.push_back(4);
-  std::vector<std::vector<std::size_t>> elemTags;
-  elemTags.resize(1);
-  std::vector<std::vector<std::size_t>> elemNodeTags;
+      // Write to a separate file for now
+      std::ofstream outFile;
+      outFile.open("NewModifiedMesh.inp");
+      for (int i = 0; i < fileLines.size(); i++)
+        outFile << fileLines[i] << std::endl;
+      outFile.close();
 
-  for (int i = 0; i < numElems; i++) elemTags[0].push_back(i + 1);
-
-  gmsh::model::mesh::getElements(elemType, elemTags, elemNodeTags);
+      if (std::remove(fname.c_str()) == 0) {
+        if (std::rename("NewModifiedMesh.inp", fname.c_str()) != 0) {
+          std::cerr << "Could not rename file NewModifiedMesh.inp to " << fname
+                    << std::endl;
+          throw;
+        }
+      } else {
+        std::cerr << "Could not remove file " << fname << std::endl;
+      }
+    }
+  } else {
+    std::cerr << "Cannot open/find " << fname << " file!" << std::endl;
+    throw;
+  }
 }
 
 }  // namespace GEO
