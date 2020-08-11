@@ -129,18 +129,20 @@ Optional dependencies for additional functionality:
 * python-pip
 * swig
 
-Once these dependencies are installed, the easiest way to build the required
-third-party libraries is with the `build.sh` script. Assume
-`$NEMOSYS_PROJECT_PATH` is the path to NEMoSys, and `$NEMOSYS_INSTALL_PATH` is
-the desired installation location. Make sure to use absolute paths and execute
-the following:
-```
-$ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys/source
-$ NEMOSYS_DEPS_INSTALL_PATH=/full/path/to/dependency/install
-$ ${NEMOSYS_PROJECT_PATH}/scripts/build.sh \
-      ${NEMOSYS_PROJECT_PATH}/contrib/nemosys_tpls.tar.gz \
-      ${NEMOSYS_DEPS_INSTALL_PATH}
-```
+#### Note
+We no longer maintain the build script. The file and the archive of TPLs in `contribs` folder 
+are now deprecated. Instead, we publish the latest tested versions of TPLs used in the 
+project. The list includes following items:
+
+* Gmsh 4.5.1
+* Netgen v6.2-dev (commit hash a2f434ebbf)
+* OpenCASCADE 7.3.0
+* VTK 7.1.0
+* Boost 1.68.0
+* OpenFoam version 4, 5, 6, or 7
+
+Some of the TPLs need to be compiled in specific configurations. Directions for
+such TPLs are provided in the **Manually Build Third Party Libraries** section.
 
 ### Build NEMoSys ###
 Now, we can compile the NEMoSys library, create its Python bindings, and build
@@ -174,22 +176,12 @@ configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
 
 ### Manually Build Third Party Libraries ###
-If execution of `build.sh` fails, or you have already installed some of the
-dependencies, you can try building the remaining TPLs independently. Extract the
-whole archive as such:
-```
-$ cd ${NEMOSYS_PROJECT_PATH}
-$ tar zxf contrib/nemosys_tpls.tar.gz 
-$ cd nemosys_tpls
-```
+Throughout this section, we assume `NEMOSYS_DEPS_INSTALL_PATH` is
+pointing to the location of the installation of the TPLs.
 
 #### Building OpenCASCADE ####
-Unpack OpenCASCADE from the `nemosys_tpls` directory:
-```
-$ tar xzf opencascade-7.3.0.tgz
-$ cd opencascade-7.3.0
-```
-Build and install OpenCASCADE:
+Checkout proper version of OpenCASCADE, build and install the project by 
+running the following commands:
 ```
 $ mkdir build
 $ cd build
@@ -205,13 +197,8 @@ $ make install
 ```
 
 #### Building Gmsh ####
-Gmsh depends on OpenCASCADE.
-Once installed, unpack Gmsh from the `neomsys_tpls` directory:
-```
-$ tar xzf gmsh-gmsh_4_2_3.tar.gz
-$ cd gmsh-gmsh_4_2_3
-```
-Build and install Gmsh by running the following commands:
+Gmsh depends on OpenCASCADE. Checkout proper version of Gmsh, 
+build and install by running the following commands:
 ```
 $ mkdir build
 $ cd build
@@ -219,18 +206,14 @@ $ cmake .. \
         -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/gmsh \
         -DCMAKE_PREFIX_PATH=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
         -DENABLE_BUILD_LIB=OFF -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
-        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \ 
-        -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON
+        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \
+        -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON \
+        -DENABLE_OPENMP=ON
 $ make lib shared -j$(nproc)
 $ make install -j$(nproc)
 ```
 
 #### Building VTK ####
-Unpack VTK from the `neomsys_tpls` directory:
-```
-$ tar xzf vtk-7.1.0.tar.gz
-$ cd vtk-7.1.0
-```
 Build and install VTK by running the following commands:
 ```
 $ mkdir build
@@ -242,12 +225,7 @@ $ make install
 ```
 
 #### Building Netgen ####
-Unpack Netgen from the `nemosys_tpls` directory:
-```
-$ tar xzf netgen-meshter-git.tar.gz
-$ cd netgen-mesher-git
-```
-Build and install Netgen:
+Build and install Netgen by running the following commands:
 ```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
@@ -255,9 +233,6 @@ $ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
 $ make -j$(nproc)
 $ make install
 ```
-
-See the building NEMoSys section to proceed from this point and to complete the
-build.
 
 ## Windows Build Instructions ##
 The dependencies are similar to a UNIX build of NEMoSys with the addition of 
