@@ -16,5 +16,5 @@ void shape::updateSurfaces(const std::vector<std::pair<int, int>> &oldNew_vec) {
   }
 }
 
-} // namespace GEO
-} // namespace NEM
+}  // namespace GEO
+}  // namespace NEM

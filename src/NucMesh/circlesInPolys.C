@@ -1,8 +1,9 @@
 #define _USE_MATH_DEFINES
-#include "polygon.H"
+#include "circlesInPolys.H"
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <utility>
 
@@ -23,26 +24,29 @@ namespace GEO {
 namespace occ = gmsh::model::occ;
 namespace mesh = gmsh::model::mesh;
 
-polygon::polygon(int nsides, std::vector<double> cen, std::vector<double> rad,
-                 std::vector<std::string> mtype,
-                 std::vector<std::pair<int, int>> el,
-                 std::vector<std::string> name, double rot) {
-  _nSides = nsides;              // Number of sides
-  _center = std::move(cen);      // Center of circle
-  _radii = std::move(rad);       // Radii for concentric circles
-  _meshType = std::move(mtype);  // Mesh type for each layer/circle
-  _elems = std::move(el);        // Number of element for transfinite
-  _names = std::move(name);      // Physical group names (Region names)
-  _rotation = rot;               // Rotation angle (degrees)
+circlesInPolys::circlesInPolys(int nsides, std::vector<double> cen,
+                               std::vector<double> circle_rad,
+                               std::vector<double> poly_rad,
+                               std::vector<std::string> mtype,
+                               std::vector<std::pair<int, int>> el,
+                               std::vector<std::string> name, double rot) {
+  _nSides = nsides;                       // Number of sides
+  _center = std::move(cen);               // Center of circle
+  _circle_radii = std::move(circle_rad);  // Radii for concentric circles
+  _poly_radii = std::move(poly_rad);      // Radii for concentric polygon
+  _meshType = std::move(mtype);           // Mesh type for each layer/circle
+  _elems = std::move(el);                 // Number of element for transfinite
+  _names = std::move(name);               // Physical group names (Region names)
+  _rotation = rot;                        // Rotation angle (degrees)
 }
 
 // Draws the polygon
-void polygon::draw() {
+void circlesInPolys::draw() {
   //----------- Create Points ------------//
   //--------------------------------------//
-
   double incr = 360.0 / _nSides;                  // angle increment
   double defaultRot = -1.0 * (180 - incr) / 2.0;  // default rotation
+  int total = _circle_radii.size() + _poly_radii.size();
 
   // If _center vector has 5 args, use polar position
   if (_center.size() == 5) {
@@ -52,46 +56,74 @@ void polygon::draw() {
   }
 
   int p = getMaxID(0) + 1;
-  for (int i = 0; i < _radii.size(); ++i) {
+  // Create center point
+  occ::addPoint(_center[0], _center[1], _center[2], 0, p);
+
+  // Loop through circle radii first and create points
+  for (int i = 0; i < _circle_radii.size(); ++i) {
     int k = i * _nSides;
     for (int j = 0; j < _nSides; ++j) {
       double theta = (j * incr + _rotation + defaultRot) * M_PI / 180.0;
-      double a = _radii[i] * std::sin(theta);
-      double b = _radii[i] * std::cos(theta);
+      double a = _circle_radii[i] * std::sin(theta);
+      double b = _circle_radii[i] * std::cos(theta);
+      occ::addPoint(_center[0] + b, _center[1] + a, _center[2], 0,
+                    p + j + k + 1);
+    }
+  }
 
-      occ::addPoint(_center[0] + b, _center[1] + a, _center[2], 0, p + j + k);
+  int p1 = p + _nSides * _circle_radii.size() + 1;
+  // Then loop through polygon radii
+  for (int i = 0; i < _poly_radii.size(); ++i) {
+    int k = i * _nSides;
+    for (int j = 0; j < _nSides; ++j) {
+      double theta = (j * incr + _rotation + defaultRot) * M_PI / 180.0;
+      double a = _poly_radii[i] * std::sin(theta);
+      double b = _poly_radii[i] * std::cos(theta);
+      occ::addPoint(_center[0] + b, _center[1] + a, _center[2], 0, p1 + j + k);
     }
   }
   // calling sync to add points
   occ::synchronize();
 
-  //----------- Create Lines ------------//
-  //-------------------------------------//
+  //----------- Create Lines/Arcs ------------//
+  //------------------------------------------//
   // Get max line ID
   int l = getMaxID(1) + 1;
 
-  for (int i = 0; i < _radii.size(); ++i) {
+  // Make cicle arcs
+  for (int i = 0; i < _circle_radii.size(); ++i) {
+    int k = i * _nSides;
+    for (int j = 0; j < _nSides - 1; ++j) {
+      occ::addCircleArc(p + j + k + 1, p, p + k + j + 2, l + k + j);
+    }
+    occ::addCircleArc(p + _nSides + k, p, p + k + 1, l + _nSides - 1 + k);
+  }
+
+  // Make poly lines
+  int q = _nSides * _circle_radii.size();
+  for (int i = 0; i < _poly_radii.size(); ++i) {
     int k = i * _nSides;
     for (int j = 0; j < _nSides - 1; ++j)
-      occ::addLine(p + j + k, p + k + j + 1, l + k + j);
-    occ::addLine(p + _nSides - 1 + k, p + k, l + _nSides - 1 + k);
+      occ::addLine(q + p + j + k + 1, q + p + k + j + 2, q + l + k + j);
+    occ::addLine(q + p + _nSides + k, q + p + k + 1, q + l + _nSides - 1 + k);
   }
 
-  for (int i = 0; i < _radii.size() - 1; ++i) {
+  // Make radial lines
+  for (int i = 0; i < total - 1; ++i) {
     int k = i * _nSides;
-    int q = i * _nSides + _radii.size() * _nSides + 1;
-
+    int q = _nSides * (total + i) + 1;
     for (int j = 0; j < _nSides; ++j)
-      occ::addLine(p + j + k, p + k + j + _nSides, l + q + j - 1);
+      occ::addLine(p + j + k + 1, p + k + j + _nSides + 1, l + q + j - 1);
   }
+  occ::synchronize();
 
   //----------- Create Lines Loops ------------//
   //-------------------------------------------//
 
   // Line Loop ID, to be defined...
   int ll;
-  int n = _nSides;                      // Number of sides
-  int nSurf = _nSides * _radii.size();  // number of surfaces
+  int n = _nSides;              // Number of sides
+  int nSurf = _nSides * total;  // number of surfaces
 
   std::vector<int> lineTags;  // vector for line tags
   std::vector<int> loopTags;  // vector for line loop tags
@@ -106,7 +138,7 @@ void polygon::draw() {
   loopTags.push_back(ll);
 
   // Get all other loops
-  for (int i = 0; i < _radii.size() - 1; ++i) {
+  for (int i = 0; i < total - 1; ++i) {
     int k = i * n;
     for (int j = 0; j < n - 1; ++j) {
       lineTags = {l + j + k, l + j + nSurf + k, l + j + n + k,
@@ -126,7 +158,7 @@ void polygon::draw() {
   // Get max surfaces ID
   int s = getMaxID(2) + 1;
 
-  // container for polygon surface ID's
+  // container for circlesInPoly surface ID's
   _surfaces.clear();
 
   // Inner surfaces
@@ -135,7 +167,7 @@ void polygon::draw() {
   _surfaces.push_back(s + i);
 
   // All other surfaces
-  nSurf = (_radii.size() - 1) * _nSides;
+  nSurf = (total - 1) * _nSides;
   for (int i = 1; i < nSurf + 1; i++) {
     occ::addPlaneSurface({loopTags[i]}, s + i);
     _surfaces.push_back(s + i);
@@ -151,7 +183,7 @@ void polygon::draw() {
 }
 
 // Applies the mesh type (tri,quad,struct) to surfaces
-void polygon::applyMeshType() {
+void circlesInPolys::applyMeshType() {
   // Gather all the lines of the polys for meshing
   std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
   std::vector<std::pair<int, int>> circleLines;
@@ -188,6 +220,7 @@ void polygon::applyMeshType() {
       for (const auto &j : allLines[i]) {
         std::vector<double> pts1, pts2;
         gmsh::model::getBoundary({j}, out, false, false, false);
+
         gmsh::model::getValue(out[0].first, out[0].second, {}, pts1);
         gmsh::model::getValue(out[1].first, out[1].second, {}, pts2);
 
@@ -200,7 +233,6 @@ void polygon::applyMeshType() {
 
         double dist1 = sqrt(pow(a, 2) + pow(b, 2) + pow(c, 2));
         double dist2 = sqrt(pow(aa, 2) + pow(bb, 2) + pow(cc, 2));
-
         double diff = dist1 - dist2;
         double adiff = fabs(diff);
         double eps = 1e-9;
@@ -249,13 +281,14 @@ void polygon::applyMeshType() {
     //---------------------------------------//
     else if (_meshType[i] == "Tri" || _meshType[i] == "T") {
       continue;
-    } else
+    } else {
       std::cout << "Mesh Type not recognized. Using Triangles." << std::endl;
+    }
   }
 }
 
-std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
-                                        std::map<int, int> physSurf_map) {
+std::map<int, int> circlesInPolys::getPhysSurf(
+    std::map<std::string, int> phystag_map, std::map<int, int> physSurf_map) {
   //------------Physical Groups------------//
   //---------------------------------------//
   int physTag;
@@ -268,9 +301,8 @@ std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
           // Add new surface id to outSurfaces
           physSurf_map.insert(std::pair<int, int>(_surfaces[i], physTag));
         } else {
-          for (int j = (i - 1) * _nSides + 1; j < (i)*_nSides + 1; ++j) {
+          for (int j = (i - 1) * _nSides + 1; j < (i)*_nSides + 1; ++j)
             physSurf_map.insert(std::pair<int, int>(_surfaces[j], physTag));
-          }
         }
       } else
         std::cout << "physical tag not in phystag_map" << std::endl;
@@ -281,7 +313,7 @@ std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
 }
 
 // Returns the max ID/Tag of entity with dimension dim
-int polygon::getMaxID(int dim) {
+int circlesInPolys::getMaxID(int dim) {
   std::vector<std::pair<int, int>> retTags;
   gmsh::model::getEntities(retTags, dim);
   int max = 0;
@@ -295,8 +327,9 @@ int polygon::getMaxID(int dim) {
         continue;
     }
     return max;
-  } else
+  } else {
     return 0;
+  }
 }
 
 }  // namespace GEO

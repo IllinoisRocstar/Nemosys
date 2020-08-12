@@ -500,11 +500,12 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
         }
       }
 
-      std::cout << "Min node index = "
-                << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
-                << "Max node index = "
-                << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
-      std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
+      // DEBUG
+      // std::cout << "Min node index = "
+      //           << *min_element(eb.conn.begin(), eb.conn.end()) << "\n"
+      //           << "Max node index = "
+      //           << *max_element(eb.conn.begin(), eb.conn.end()) << "\n";
+      // std::cout << "Starting node offset = " << ndeIdOffset << std::endl;
 
       em->addElmBlk(eb);
       elmIdOffset_local += eb.nElm;
