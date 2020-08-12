@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 51)
-set(NEMOSYS_PATCH_VERSION 3)
+set(NEMOSYS_PATCH_VERSION 4)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -102,6 +102,7 @@ macro(NEM_get_imported_location OUT_VAR LIB_NAME OUT_VAR_PATH)
       get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
     else()
       get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
+      message(STATUS ${LIB_NAME})
     endif()
     if(OUT_LIB)
       list(APPEND ${OUT_VAR} ${OUT_LIB})
@@ -202,7 +203,11 @@ endif()
 get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
 if(WIN32) # Remove the .lib suffix
   string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+elseif (APPLE)
+  string(REGEX REPLACE "\\.dylib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+  string(REGEX REPLACE "lib" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
 endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
   set(VTK_COMMON_CORE_LIB ":${VTK_COMMON_CORE_LIB}")
 endif()

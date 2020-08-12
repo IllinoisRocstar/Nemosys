@@ -437,33 +437,29 @@ function(bob_config_header HEADER_PATH)
 ")
   if (${PROJECT_NAME}_KEY_BOOLS)
     foreach(KEY_BOOL IN LISTS ${PROJECT_NAME}_KEY_BOOLS)
-      if (${KEY_BOOL})
-        string(TOUPPER "${KEY_BOOL}" MACRO_NAME)
-        set(HEADER_CONTENT
+      string(TOUPPER "${KEY_BOOL}" MACRO_NAME)
+      set(${MACRO_NAME} "${${KEY_BOOL}}")
+      set(HEADER_CONTENT
 "${HEADER_CONTENT}
-#define ${MACRO_NAME}")
-      endif()
+#cmakedefine ${MACRO_NAME}")
     endforeach()
   endif()
   if (${PROJECT_NAME}_KEY_INTS)
     foreach(KEY_INT IN LISTS ${PROJECT_NAME}_KEY_INTS)
       string(TOUPPER "${KEY_INT}" MACRO_NAME)
+      set(${MACRO_NAME} "${${KEY_INT}}")
       set(HEADER_CONTENT
 "${HEADER_CONTENT}
-#define ${MACRO_NAME} ${${KEY_INT}}")
+#define ${MACRO_NAME} @${MACRO_NAME}@")
     endforeach()
   endif()
   if (${PROJECT_NAME}_KEY_STRINGS)
     foreach(KEY_STRING IN LISTS ${PROJECT_NAME}_KEY_STRINGS)
       string(TOUPPER "${KEY_STRING}" MACRO_NAME)
-      set(val "${${KEY_STRING}}")
-#escape escapes
-      string(REPLACE "\\" "\\\\" val "${val}")
-#escape quotes
-      string(REPLACE "\"" "\\\"" val "${val}")
+      set(${MACRO_NAME} "${${KEY_STRING}}")
       set(HEADER_CONTENT
 "${HEADER_CONTENT}
-#define ${MACRO_NAME} \"${val}\"")
+#define ${MACRO_NAME} \"@${MACRO_NAME}@\"")
     endforeach()
   endif()
   set(HEADER_CONTENT
@@ -471,7 +467,8 @@ function(bob_config_header HEADER_PATH)
 
 #endif
 ")
-  file(WRITE "${HEADER_PATH}" "${HEADER_CONTENT}")
+  file(WRITE "${HEADER_PATH}.in" "${HEADER_CONTENT}")
+  configure_file("${HEADER_PATH}.in" "${HEADER_PATH}" ESCAPE_QUOTES @ONLY)
 endfunction()
 
 function(bob_get_link_libs tgt var)
