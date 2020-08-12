@@ -1,5 +1,5 @@
-#ifndef NEMOSYS_POLYGON_H_
-#define NEMOSYS_POLYGON_H_
+#ifndef NEMOSYS_CIRCLESINPOLYS_H_
+#define NEMOSYS_CIRCLESINPOLYS_H_
 
 #include "nemosys_export.h"
 #include "shape.H"
@@ -10,21 +10,23 @@ namespace GEO {
 /**
  * @brief Class for constructing concentric polygons
  */
-class NEMOSYS_EXPORT polygon : public shape {
+class NEMOSYS_EXPORT circlesInPolys : public shape {
  public:
   /**
-   * @brief Constructs either a single polygon or concentric polygons.
+   * @brief Constructs concentric circles inside of a polygon.
    * @param center point
-   * @param radii of points
+   * @param radii of circle points
+   * @param radii of polygon points
    * @param mesh type
    * @param number of elements if structured (radial, circum)
    * @param region name
    * @param rotation angle (degrees)
    */
-  polygon(int nsides, std::vector<double> cen, std::vector<double> rad,
-          std::vector<std::string> mtype = {"Tri"},
-          std::vector<std::pair<int, int>> el = {{0, 0}},
-          std::vector<std::string> name = {}, double rot = 0.0);
+  circlesInPolys(int nsides, std::vector<double> cen,
+                 std::vector<double> circle_rad, std::vector<double> poly_rad,
+                 std::vector<std::string> mtype = {"Tri"},
+                 std::vector<std::pair<int, int>> el = {{0, 0}},
+                 std::vector<std::string> name = {}, double rot = 0.0);
 
   /**
    * @brief Draws or creates the polygon
@@ -56,4 +58,4 @@ class NEMOSYS_EXPORT polygon : public shape {
 }  // namespace GEO
 }  // namespace NEM
 
-#endif  // NEMOSYS_POLYGON_H_
+#endif  // NEMOSYS_CIRCLESINPOLYS_H_

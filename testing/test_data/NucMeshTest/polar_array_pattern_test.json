@@ -1,0 +1,166 @@
+{
+	"Program Type": "NucMesh Generation",
+	"Output File Name": "polar_array_pattern",
+	"Geometry and Mesh": 
+	[
+		{
+			"Global Options":
+			[
+				{
+				"Open GUI": false,
+				"3D": false,
+				"Number of Layers": [4],
+				"Heights": [3],
+				"Min Mesh Size": 0.001,
+				"Max Mesh Size": 0.3,
+				"Meshing Algorithm": "Frontal Quads",
+				"Recombine Algorithm": "Blossom",
+				"Mesh Smoothing Iters": 1,
+				"Extend from Boundary": true
+				}
+			]
+		},
+		{
+			"Saved Objects":
+			[
+				{
+					"Alias": "Circle 1",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
+					"Circles":
+					[
+						{
+						"Center":[0.0, 0.0, 0.0],
+						"Radii": [0.31, 0.37, 0.45, 0.6, 0.69, 0.88, 0.95],
+						"Mesh Type":    ["Q", "S", "S", "S", "S", "S", "S"],
+						"Number of Elems": [[0,0], [1,8], [1,8], [1,8], [1,8], [1,8], [1,8]],
+						"Region Names": ["B", "B", "E", "A", "B", "A", "B"],
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Alias": "Circle 2",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
+					"Circles":
+					[
+						{
+						"Center": [0.0, 0.0, 0.0],
+						"Radii": [0.62, 0.72, 0.87, 0.95],
+						"Mesh Type": ["Q", "S", "S", "S"],
+						"Number of Elems": [[0,0], [1,8], [1,8], [1,8]],
+						"Region Names": ["B", "F", "A", "B"],
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Alias": "Circle 3",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
+					"Circles":
+					[
+						{
+						"Center": [0.0, 0.0 ,0.0],
+						"Radii": [0.24, 0.65, 0.87, 0.95],
+						"Mesh Type": ["Q", "S", "S", "S"],
+						"Number of Elems": [[0,0], [2,8], [1,8], [1,8]],
+						"Region Names": ["A", "B", "A", "B"],
+						"Visible": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Visible": true,
+			"Circles": 
+			[
+				{
+				"Alias": "Circle 1",
+				"Visible": true
+				},
+				{
+				"Center": [0.0, 0.0, 0.0],
+				"Radii": [7.65],
+				"Mesh Type": ["T"],
+				"Number of Elems": [[0,0]],
+				"Region Names": ["G"],
+				"Visible": true
+				}
+			]
+		},
+		{
+			"Visible": true,
+			"Name": "Inner Ring",
+			"Array": "Polar",
+			"Center": [0,0,0],
+			"Radius": 3.0,
+			"N": 8,
+			"Start Angle": 0,
+			"Arc": 360,
+			"Rotate with Array": false,
+			"BREAK": false,
+			"Shapes":
+			[	
+				{
+					"Circles": 
+					[
+						{
+						"Item": 1,
+						"Alias": "Circle 2",
+						"Visible": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Visible": true,
+			"Name": "Outer Ring",
+			"Array": "Polar",
+			"Center": [0,0,0],
+			"Radius": 5.1,
+			"N": 0,
+			"Start Angle": 20,
+			"Arc": 360,
+			"Pattern": [1,2,3,3,3,2,3],
+			"N Patterns": 2,
+			"Rotate with Array": false,
+			"Shapes":
+			[	
+				{
+					"Circles": 
+					[
+						{
+						"Item": 1,
+						"Alias": "Circle 2",
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Circles": 
+					[
+						{
+						"Item": 2,
+						"Alias": "Circle 3",
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Circles": 
+					[
+						{
+						"Item": 3,
+						"Alias": "Circle 1",
+						"Visible": true
+						}
+					]
+				}
+			]
+		}
+	]
+}

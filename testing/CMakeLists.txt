@@ -282,6 +282,22 @@ if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
       simple_polygons_test_REF.msh
       concentric_polygons_test.json
       concentric_polygons_test_REF.msh
+      circlesInPolys_test.json
+      circlesInPolys_test_REF.msh
+      rectangular_array_pattern_test.json
+      rectangular_array_pattern_REF.msh
+      polar_array_pattern_test.json
+      polar_array_pattern_test_REF.msh
+      hex_array_pattern_test.json
+      hex_array_pattern_test_REF.msh
+      cartesian_array_test.json
+      cartesian_array_test_REF.msh
+      mesh_area_conservation_test.json
+      mesh_area_conservation_test_REF.msh
+      threeD_test.json
+      threeD_test_REF.msh
+      include_test.json
+      include_test_REF.msh
       )
 
   nem_add_test(rocPackPeriodic RocPackPeriodic rocPackPeriodic

@@ -568,6 +568,7 @@ set(NEMOSYS_SRCS
     src/MeshQuality/MeshQuality.C
 
     src/NucMesh/circles.C
+    src/NucMesh/circlesInPolys.C
     src/NucMesh/polygon.C
     src/NucMesh/shape.C
 

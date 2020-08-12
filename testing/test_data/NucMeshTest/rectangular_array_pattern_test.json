@@ -1,0 +1,124 @@
+{
+	"Program Type": "NucMesh Generation",
+	"Output File Name": "rectangular_array_pattern",
+	"Geometry and Mesh": 
+	[
+		{
+			"Global Options":
+			[
+				{
+				"OpenGUI": false,
+				"3D": false,
+				"Number of Layers": [4],
+				"Heights": [1],
+				"Min Mesh Size": 0.001,
+				"Max Mesh Size": 0.3,
+				"Meshing Algorithm": "Frontal",
+				"Recombine Algorithm": "Blossom",
+				"Mesh Smoothing": 1,
+				"Extend from Boundary": true
+				}
+			]
+		},
+		{
+			"Saved Objects":
+			[
+				{
+					"Alias": "Circle 2",
+					"Circles":
+					[
+						{
+						"Center": [0.0, 0.0, 0.0],
+						"Radii": [0.02, 0.2],
+						"Mesh Type": ["T", "S"],
+						"Number of Elems": [[0,0], [1,6]],
+						"Region Names": ["B", "F"],
+						"Visible": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Circles":
+			[
+				{
+				"Center": [0.0, 0.0 ,0.0],
+				"Radii": [7,7.2],
+				"Mesh Type": ["Q", "S"],
+				"Number of Elems": [[0,0], [1,20]],
+				"Region Names": ["A", "E"],
+				"Visible": false,
+				"BREAK":false
+				}
+			]
+		},
+		{
+			"Array": "Rectangular",
+			"NX": 5,
+			"NY": 5,
+			"DX": 1.1,
+			"DY": 1.1,
+			"Pattern": [0,2,2,2,2,
+									1,0,2,2,2,
+									1,1,0,2,2,
+									1,1,1,0,2,
+									1,1,1,1,0],
+			"Shapes":
+			[	
+				{
+					"Circles":
+					[
+						{
+						"Item": 1,
+						"Center": [-3.0, -5.0 ,0.0],
+						"Radii": [0.05,0.5],
+						"Mesh Type": ["T", "S"],
+						"Number of Elems": [[0,0], [1,20]],
+						"Region Names": ["A", "E"],
+						"Visible": true,
+						"BREAK":false
+						},
+						{
+						"Item": 0,
+						"Center": [-3.0, -5.0 ,0.0],
+						"Radii": [0.2,0.5],
+						"Mesh Type": ["T", "S"],
+						"Number of Elems": [[0,0], [1,20]],
+						"Region Names": ["C", "E"],
+						"Visible": false,
+						"BREAK":false
+						}
+					]
+				},
+				{
+					"Circles":
+					[
+						{
+						"Item": 2,
+						"Center": [-3.0, -5.0 ,0.0],
+						"Radii": [0.2,0.5],
+						"Mesh Type": ["T", "S"],
+						"Number of Elems": [[0,0], [1,20]],
+						"Region Names": ["C", "E"],
+						"Visible": true,
+						"BREAK":false
+						}
+					]
+				},
+				{
+					"Circles":
+					[
+						{
+						"Item": 3,
+						"Alias": "Circle 2",
+						"Center": [-3.0, -5.0 ,0.0],
+						"Visible": true,
+						"BREAK":false
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -24,11 +24,11 @@ circles::circles(std::vector<double> cen, std::vector<double> rad,
                  std::vector<std::string> mtype,
                  std::vector<std::pair<int, int>> el,
                  std::vector<std::string> name) {
-  _center = std::move(cen);     // Center of circle
-  _radii = std::move(rad);      // Radii for concentric circles
-  _meshType = std::move(mtype); // Mesh type for each layer/circle
-  _elems = std::move(el);       // Number of element for transfinite
-  _names = std::move(name);     // Physical group names (Region names)
+  _center = std::move(cen);      // Center of circle
+  _radii = std::move(rad);       // Radii for concentric circles
+  _meshType = std::move(mtype);  // Mesh type for each layer/circle
+  _elems = std::move(el);        // Number of element for transfinite
+  _names = std::move(name);      // Physical group names (Region names)
 }
 
 void circles::draw() {
@@ -59,9 +59,9 @@ void circles::draw() {
   //----------- Create Lines/Arcs ------------//
   //------------------------------------------//
 
-  int numLines = 4 * _radii.size() - 2; // number of lines
-  int i = 1;                            // index of Line points
-  int q = 1;                            // index of Circle points
+  int numLines = 4 * _radii.size() - 2;  // number of lines
+  int i = 1;                             // index of Line points
+  int q = 1;                             // index of Circle points
 
   // Get max Line ID
   int l = getMaxID(1) + 1;
@@ -100,7 +100,7 @@ void circles::draw() {
 
   // Line Loop ID identifier, to be defined...
   int ll = -1;
-  int nSurf = (_radii.size() - 1) * 2; // number of surfaces
+  int nSurf = (_radii.size() - 1) * 2;  // number of surfaces
   std::vector<int> lineTags;
 
   // If only 2 lines, make a disk
@@ -187,7 +187,7 @@ void circles::draw() {
 // Applies the mesh type (tri,quad,struct) to surfaces
 void circles::applyMeshType() {
   // Gather all the lines of the circles for meshing
-  std::vector<std::vector<std::pair<int, int>>> allLines; // lines of circles
+  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
   std::vector<std::pair<int, int>> circleLines;
 
   std::vector<std::pair<int, int>> v = {{2, _surfaces[0]}};
@@ -237,9 +237,9 @@ void circles::applyMeshType() {
     } else if (_meshType[i] == "Quad" || _meshType[i] == "Q") {
       //---------------Quad Mesh---------------//
       //---------------------------------------//
-      if (i == 0) {
+      if (i == 0)
         mesh::setRecombine(2, _surfaces[i]);
-      } else {
+      else {
         int j = i * 2 - 1;
         mesh::setRecombine(2, _surfaces[j]);
         mesh::setRecombine(2, _surfaces[j + 1]);
@@ -283,24 +283,21 @@ std::map<int, int> circles::getPhysSurf(std::map<std::string, int> phystag_map,
 int circles::getMaxID(int dim) {
   std::vector<std::pair<int, int>> retTags;
   gmsh::model::getEntities(retTags, dim);
-  // std::cout << "retTags size " << retTags.size() << std::endl;
   int max = 0;
   int tag;
   if (!retTags.empty()) {
     for (const auto &retTag : retTags) {
       tag = retTag.second;
-      // std::cout << "tag is " << tag << std::endl;
       if (tag > max)
         max = tag;
       else
         continue;
     }
-    // std::cout << "Max " << dim << " tag is " << max << std::endl;
     return max;
   } else {
     return 0;
   }
 }
 
-} // namespace GEO
-} // namespace NEM
+}  // namespace GEO
+}  // namespace NEM
