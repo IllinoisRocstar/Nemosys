@@ -941,9 +941,9 @@ include(GenerateExportHeader)
 generate_export_header(Nemosys)
 generate_export_header(interp)
 generate_export_header(r8)
-list(APPEND ${Nemosys_INC_FILES} Nemosys_export.h)
-list(APPEND ${interp_INC_FILES} interp_export.h)
-list(APPEND ${r8_INC_FILES} r8_export.h)
+list(APPEND Nemosys_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h)
+list(APPEND interp_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/interp_export.h)
+list(APPEND r8_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/r8_export.h)
 target_include_directories(Nemosys PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 target_include_directories(interp PUBLIC
