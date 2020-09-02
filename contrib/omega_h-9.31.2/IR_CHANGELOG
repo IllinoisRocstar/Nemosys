@@ -378,3 +378,35 @@ Remove orphaned files
 -src/amr_topo_test.cpp
 -src/find_unique_edges.cpp
 -src/gen_chartab.cpp
+
+Remove SHELL: Cmake prefix (not compatible with CMake < 3.12); prevent defining NDEBUG macro
+src/CMakeLists.txt:183
++    # -DNDEBUG causes an "unexpected number of captures" error when compiling
++    # Omega_h_coarsen_flip.cpp. Perhaps the error is related to why Omega_h
++    # does not let user set CMAKE_BUILD_TYPE if using bob_*_cxx_flags.
+src/CMakeLists.txt:184
+-        "SHELL:--compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type"
+-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
+-        --expt-extended-lambda)
++        --compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type
++        --Werror cross-execution-space-call,deprecated-declarations
++        --expt-extended-lambda
++        -UNDEBUG)
+src/CMakeLists.txt:189
+-    target_compile_options(omega_h PUBLIC
+-        "SHELL:--compiler-options /wd6294,/wd26451,/wd26439"
+-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
++    target_compile_options(omega_h PRIVATE
++        --compiler-options /wd6294,/wd26451,/wd26439
++        --Werror cross-execution-space-call,deprecated-declarations
+
+Allow Omega_h to initialize Kokkos without command line args
+src/Omega_h_library.cpp:112
+-    OMEGA_H_CHECK(argc != nullptr);
+-    OMEGA_H_CHECK(argv != nullptr);
+-    Kokkos::initialize(*argc, *argv);
++    if (argc != nullptr && argv != nullptr) {
++      Kokkos::initialize(*argc, *argv);
++    } else {
++      Kokkos::initialize();
++    }
