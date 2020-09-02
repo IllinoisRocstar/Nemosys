@@ -8,6 +8,32 @@
 namespace NEM {
 namespace MSH {
 
+class NEMOSYS_EXPORT OmegaHInterface {
+ public:
+  ~OmegaHInterface() = default;
+
+  /**@{*/
+  OmegaHInterface(const OmegaHInterface &) = delete;
+  OmegaHInterface &operator=(const OmegaHInterface &) = delete;
+  OmegaHInterface(OmegaHInterface &&) = delete;
+  OmegaHInterface &operator=(OmegaHInterface &&) = delete;
+  /**@}*/
+
+ public:
+  /**
+   * Initialize Omega_h. Will only create an Omega_h::Library on first call to
+   * method.
+   */
+  static std::shared_ptr<Omega_h::Library> GetLibrary();
+
+ private:
+  OmegaHInterface();
+
+ private:
+  static std::shared_ptr<OmegaHInterface> instance;
+  std::shared_ptr<Omega_h::Library> library;
+};
+
 class NEMOSYS_EXPORT oshGeoMesh : public geoMeshBase {
  public:
   static oshGeoMesh *Read(const std::string &fileName);
@@ -31,7 +57,6 @@ class NEMOSYS_EXPORT oshGeoMesh : public geoMeshBase {
                                 Omega_h::Library *lib);
 
  private:
-  Omega_h::Library _oshLibrary;
   Omega_h::Mesh _oshMesh;
 };
 

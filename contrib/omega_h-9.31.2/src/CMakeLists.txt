@@ -182,14 +182,18 @@ endif()
 
 if (Omega_h_USE_CUDA)
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    # -DNDEBUG causes an "unexpected number of captures" error when compiling
+    # Omega_h_coarsen_flip.cpp. Perhaps the error is related to why Omega_h
+    # does not let user set CMAKE_BUILD_TYPE if using bob_*_cxx_flags.
     target_compile_options(omega_h PRIVATE
-        "SHELL:--compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type"
-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
-        --expt-extended-lambda)
+        --compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type
+        --Werror cross-execution-space-call,deprecated-declarations
+        --expt-extended-lambda
+        -UNDEBUG)
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(omega_h PRIVATE
-        "SHELL:--compiler-options /wd6294,/wd26451,/wd26439"
-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
+        --compiler-options /wd6294,/wd26451,/wd26439
+        --Werror cross-execution-space-call,deprecated-declarations
         --expt-extended-lambda)
   endif()
 else()

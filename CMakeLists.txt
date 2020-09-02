@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.1)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 51)
-set(NEMOSYS_PATCH_VERSION 4)
+set(NEMOSYS_PATCH_VERSION 5)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -128,6 +128,8 @@ opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
 opt(METIS "Enable METIS partitioner" ${DEFAULT})
 opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OMEGAH "Enable Omega_h mesh adaptivity" ${DEFAULT})
+opt(OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
+with CUDA and linked dynamically)" OFF)
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 opt(TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
@@ -150,6 +152,15 @@ endif()
 
 if(ENABLE_CONSRV_VOLUME_TRANSFER AND NOT ENABLE_MPI)
   message(FATAL_ERROR "Conservative volume transfer requires MPI.")
+endif()
+
+if(ENABLE_OMEGAH_CUDA)
+  if(NOT ENABLE_OMEGAH)
+    message(FATAL_ERROR "Cannot use GPU acceleration for Omega_h without Omega_h")
+  endif()
+  if(MSVC)
+    message(FATAL_ERROR "MSVC and CUDA not supported")
+  endif()
 endif()
 
 # Check system configuration ###################################################
@@ -461,6 +472,20 @@ endif()
 
 # Find contrib libraries #######################################################
 
+# Find Omega_h
+if(ENABLE_OMEGAH)
+  if(ENABLE_OMEGAH_CUDA)
+    set(Omega_h_USE_CUDA ON CACHE INTERNAL "")
+    set(Omega_h_USE_Kokkos ON CACHE INTERNAL "")
+    # Note CUDA added as enabled language before contrib libraries are added
+    # so that they can use generator expressions to be sure C++ flags are
+    # passed to the host compiler.
+    enable_language(CUDA)
+  endif()
+  add_subdirectory(contrib/omega_h-9.31.2)
+  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
+endif()
+
 # Find MAdLib and ANN
 add_subdirectory(contrib/madlib-1.3.0) # includes ANN
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
@@ -484,11 +509,6 @@ endif()
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
   add_subdirectory(contrib/libsupermesh-1.0.1)
   # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
-endif()
-
-if(ENABLE_OMEGAH)
-  add_subdirectory(contrib/omega_h-9.31.2)
-  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
 endif()
 
 # Setting library files ########################################################
@@ -690,6 +710,10 @@ if(ENABLE_OMEGAH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Mesh/oshGeoMesh.C
   )
+  if(ENABLE_OMEGAH_CUDA)
+    set_source_files_properties(src/Mesh/oshGeoMesh.C src/Mesh/geoMeshFactory.C
+            PROPERTIES LANGUAGE CUDA)
+  endif()
 endif()
 
 # Building libraries ###########################################################
@@ -903,16 +927,25 @@ if(ENABLE_OMEGAH)
 endif()
 
 # Set warning level ############################################################
-
+get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+if(languages MATCHES CUDA)
+  set(conditional_cuda_flag "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>")
+else()
+  set(conditional_cuda_flag "")
+endif()
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
-  target_compile_options(Nemosys PUBLIC -Wpedantic)
-  target_compile_options(Nemosys PUBLIC -Wall -Wno-sign-compare)
-  target_compile_options(Nemosys PUBLIC -Wextra -Wno-unused-parameter)
-  target_compile_options(Nemosys PUBLIC -Woverloaded-virtual -Wnon-virtual-dtor)
-  target_compile_options(Nemosys PUBLIC -Wstrict-null-sentinel -Wredundant-decls)
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wpedantic")
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wall"
+          "${conditional_cuda_flag}-Wno-sign-compare")
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wextra"
+          "${conditional_cuda_flag}-Wno-unused-parameter")
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Woverloaded-virtual"
+          "${conditional_cuda_flag}-Wnon-virtual-dtor")
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wstrict-null-sentinel"
+          "${conditional_cuda_flag}-Wredundant-decls")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
-    target_compile_options(Nemosys PUBLIC -Wfloat-conversion)
+    target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wfloat-conversion")
   endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
 
   # Stretch goals
