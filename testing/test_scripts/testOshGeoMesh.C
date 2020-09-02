@@ -15,17 +15,15 @@ TEST(oshGeoMesh, ConstructorOmegaHMesh) {
 }
 
 TEST(oshGeoMesh, ConstructorOmegaHMeshValid) {
-  Omega_h::Library oshLibrary{};
-  Omega_h::Mesh oshMesh{&oshLibrary};
+  Omega_h::Mesh oshMesh{NEM::MSH::OmegaHInterface::GetLibrary().get()};
   Omega_h::build_box_internal(&oshMesh, OMEGA_H_HYPERCUBE, 1.0, 1.0, 1.0, 2, 2,
                               2);
   NEM::MSH::oshGeoMesh ogm{&oshMesh};
 }
 
 TEST(oshGeoMesh, ConstructorOmegaHMeshAndLib) {
-  Omega_h::Library oshLibrary{};
-  Omega_h::Mesh oshMesh{&oshLibrary};
-  NEM::MSH::oshGeoMesh ogm{&oshMesh, &oshLibrary};
+  Omega_h::Mesh oshMesh{NEM::MSH::OmegaHInterface::GetLibrary().get()};
+  NEM::MSH::oshGeoMesh ogm{&oshMesh};
 }
 
 /*

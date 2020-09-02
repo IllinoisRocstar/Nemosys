@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.51.4
+Version 0.51.5
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -48,6 +48,7 @@ in the notes section.
 | ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
 | ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
 | ENABLE_OMEGAH          | Enable Omega_h mesh adaptivity  | ON      |                                  |
+| ENABLE_OMEGAH_CUDA     | Enable GPU for Omega_h          | OFF     | Requires Kokkos                  |
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
 | ENABLE_TEMPLATE_MESH   | Enable meshing templates        | ON      |                                  |
@@ -89,6 +90,19 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/vtk;\
 ${NEMOSYS_DEPS_INSTALL_PATH}/netgen; \
 /Install/path/to/frugally-deep" \
 ```
+
+### Enabling CUDA for Omega_h ###
+Omega_h can be built with CUDA support using the Kokkos backend, assuming Kokkos
+is built with CUDA support. Currently, only Kokkos version 2 is supported.
+To enable this, make sure that the following flag is set:
+```
+-DENABLE_OMEGAH_CUDA=ON
+```
+and that `CMAKE_PREFIX_PATH` (or `$PATH`) contains
+`${NEMOSYS_DEPS_INSTALL_PATH}/kokkos/lib/CMake`. Note that both Kokkos and
+NEMoSys must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`), and that
+any code that requires the `oshGeoMesh.H` header must then also be compiled for
+CUDA.
 
 ### Enabling Simmetrix (UNSUPPORTED) ###
 **Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
@@ -140,6 +154,7 @@ project. The list includes following items:
 * VTK 7.1.0
 * Boost 1.68.0
 * OpenFoam version 4, 5, 6, or 7
+* Kokkos 2
 
 Some of the TPLs need to be compiled in specific configurations. Directions for
 such TPLs are provided in the **Manually Build Third Party Libraries** section.
@@ -233,6 +248,25 @@ $ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
 $ make -j$(nproc)
 $ make install
 ```
+
+#### Building Kokkos ####
+Build and install Kokkos version 2 with CUDA backend using the following:
+```
+$ cd build
+$ cmake ${KOKKOS_SRC} \
+$       -DCMAKE_CXX_COMPILER=${KOKKOS_SRC}/bin/nvcc_wrapper \
+$       -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/kokkos \
+$       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+$       -DCKOKKOS_ARCH=${CUDA_ARCH_CC} \
+$       -DKOKKOS_ENABLE_CUDA=ON \
+$       -DKOKKOS_ENABLE_CUDA_LAMBDA=ON \
+$       -DBUILD_SHARED_LIBS=ON
+$ make install
+```
+where `${KOKKOS_SRC}` is the source directory and `${CUDA_ARCH_CC}` refers to
+the architecture and compute capability of your GPU, from the list
+`Kepler30 Kepler32 Kepler35 Kepler37 Maxwell50 Maxwell52 Maxwell53 Pascal60
+Pascal61 Volta70 Volta72`.
 
 ## Windows Build Instructions ##
 The dependencies are similar to a UNIX build of NEMoSys with the addition of 

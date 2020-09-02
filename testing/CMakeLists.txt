@@ -8,6 +8,9 @@ if(WIN32)
   add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 endif()
 set(INSTALL_GTEST OFF)
+if(ENABLE_OMEGAH_CUDA)
+  set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+endif()
 add_subdirectory(lib/gtest-1.8.1)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
@@ -146,6 +149,9 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
 endif()
 if(ENABLE_OMEGAH)
   NEM_add_test_executable(OshGeoMesh)
+  if(ENABLE_OMEGAH_CUDA)
+    NEM_add_test_executable(OshGeoMeshCUDA)
+  endif()
 endif()
 
 # Define tests #################################################################
@@ -370,6 +376,14 @@ endif()
 if(ENABLE_OMEGAH)
   #NEM_add_test(oshGeoMesh OshGeoMesh OshGeoMeshTest)
   NEM_add_test(oshGeoMesh OshGeoMesh "")
+  if(ENABLE_OMEGAH_CUDA)
+    enable_language(CUDA)
+    NEM_add_test(oshGeoMeshCUDA OshGeoMeshCUDA "")
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/testOshGeoMesh.C
+            ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/testOshGeoMeshCUDA.C
+            PROPERTIES LANGUAGE CUDA)
+    target_link_libraries(runOshGeoMeshCUDATest nvidia-ml)
+  endif()
 endif()
 
 # Python wrapper testing

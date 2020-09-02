@@ -23,8 +23,17 @@
 namespace NEM {
 namespace MSH {
 
+std::shared_ptr<Omega_h::Library> OmegaHInterface::GetLibrary() {
+  return instance->library;
+}
+
+OmegaHInterface::OmegaHInterface()
+    : library(std::make_shared<Omega_h::Library>()) {};
+
+std::shared_ptr<OmegaHInterface> OmegaHInterface::instance{new OmegaHInterface};
+
 oshGeoMesh *oshGeoMesh::Read(const std::string &fileName) {
-  auto lib = std::make_shared<Omega_h::Library>();
+  auto lib = OmegaHInterface::GetLibrary();
 
   return oshGeoMesh::Read(fileName, lib.get());
 }
@@ -40,14 +49,15 @@ oshGeoMesh::oshGeoMesh()
     : oshGeoMesh(std::make_shared<Omega_h::Mesh>().get()) {}
 
 oshGeoMesh::oshGeoMesh(Omega_h::Mesh *oshMesh)
-    : oshGeoMesh(oshMesh, (oshMesh->library()
-                               ? oshMesh->library()
-                               : std::make_shared<Omega_h::Library>().get())) {}
+    : oshGeoMesh(oshMesh, oshMesh->library()) {}
 
 oshGeoMesh::oshGeoMesh(Omega_h::Mesh *oshMesh, Omega_h::Library *lib)
-    : geoMeshBase({osh2vtk(oshMesh), "", ""}), _oshLibrary(*lib), _oshMesh() {
+    : geoMeshBase({osh2vtk(oshMesh), "", ""}), _oshMesh() {
   _oshMesh = *oshMesh;
-  _oshMesh.set_library(&_oshLibrary);
+  if (!lib) {
+    lib = OmegaHInterface::GetLibrary().get();
+  }
+  _oshMesh.set_library(lib);
   std::cout << "oshGeoMesh constructed" << std::endl;
 }
 
