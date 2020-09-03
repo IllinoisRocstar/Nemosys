@@ -1207,6 +1207,8 @@ set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
+
+
 if(WIN32)
   set(CPACK_GENERATOR NSIS)
 else()
@@ -1249,6 +1251,21 @@ else()
     #set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS_POLICY "=")  # CMake 3.6
     #set(CPACK_DEBIAN_ARCHIVE_TYPE "gnutar")  # CMake 3.7
     #set(CPACK_DEBIAN_PACKAGE_EPOCH "")  # Cmake 3.10
+
+    set(CPACK_PACKAGE_RELOCATABLE FALSE)
+    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST
+      /etc/ld.so.conf.d
+      /etc
+      /usr/local/lib64
+      /usr/local
+      /usr/lib/cmake
+      /usr
+      /usr/lib
+      /usr/bin
+      /usr/include
+      /usr/lib64
+      /usr/lib64/cmake
+      /usr/lib64/pkgconfig)
   endif()
 endif()
 # Lists exe and text label used for Start Menu shortcuts

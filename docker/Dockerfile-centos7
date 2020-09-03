@@ -29,16 +29,21 @@ RUN yum install openmpi-devel -y
 RUN echo "source /etc/profile.d/modules.sh" >> /etc/skel/.bashrc
 RUN echo "module load mpi/openmpi-x86_64" >> /etc/skel/.bashrc
 
-COPY . /home/TPLs/
+RUN echo -e "[NEMoSys] \n\
+name=NEMoSys \n\
+baseurl=http://nemosys-rpm-repository.illinois.rocstar \n\
+enabled=1 \n\
+gpgcheck=0 \n\
+" >> /etc/yum.repos.d/nemosys.repo
 
 # Install previously built packages
-RUN yum install /home/TPLs/gmsh-4.5.1-Linux64.rpm -y
-RUN yum install /home/TPLs/openfoam7-7.20190902-Linux.rpm -y
-RUN yum install /home/TPLs/VTK-7.1.0-Linux.rpm -y
-RUN yum install /home/TPLs/netgen-6.2-20011-Linux.rpm -y
+RUN yum install gmsh -y
+RUN yum install openfoam7 -y
+RUN yum install vtk -y
+RUN yum install netgen -y
 # Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
 # results in a namespace collision
-RUN yum install /home/TPLs/cgns-3.3-develop-Linux.rpm -y
+RUN yum install cgns -y
 
 RUN echo "source /opt/OpenFOAM-7/etc/bashrc" >> /etc/skel/.bashrc
 
