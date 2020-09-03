@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update
+RUN apt-get update --fix-missing
 
 # Compilers and build tools.
 RUN apt-get -y install build-essential cmake gfortran libopenmpi-dev
@@ -35,18 +35,21 @@ RUN apt-get update
 RUN apt-get -y install openfoam7
 
 # Copy TPLs
-COPY . /Nemosys/TPLs
+#COPY . /Nemosys/TPLs
+RUN sh -c "wget -O - http://nemosys-repository.illinois.rocstar/nemosys-repository-pub.gpg | apt-key add -"
+RUN add-apt-repository "deb http://nemosys-repository.illinois.rocstar/ bionic main"
+RUN apt-get update
 
 # Install the previously built TPLs
-RUN apt-get -y install /Nemosys/TPLs/gmsh_4.5.1_amd64.deb
-RUN apt-get -y install /Nemosys/TPLs/VTK-7.1.0-Linux.deb
+RUN apt-get -y install gmsh
+RUN apt-get -y install vtk
 # a dependency of netgen wishes to be configure via the commandline, which is not possible
 # when building the image. Install the package in non-interactive mode so that it ignores
 # the prompts that the package requests.
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install /Nemosys/TPLs/netgen-6.2-20065_amd64.deb
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install netgen
 # Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
 # results in a namespace collision
-RUN apt-get install /Nemosys/TPLs/cgns_3.3-develop_amd64.deb -y
+RUN apt-get install cgns -y
 
 # Load OpenFOAM7 env variables
 RUN echo "source /opt/openfoam7/etc/bashrc" >> /etc/bashrc

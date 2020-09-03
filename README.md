@@ -355,3 +355,66 @@ WINDOWS:
 ```
 
 This will execute several tests found in `$NEMOSYS_PROJECT_PATH/testing`.
+
+## Repository Installation ##
+
+*Note* : This is for internal IR user only.
+You can install experimental built of the latest NEMoSys for Ubuntu 18 and CentOS7 using following directions.
+
+### Ubunte 18.04 LTS ###
+
+1- Install following packages/dependencies
+
+```
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common wget
+```
+2- Add repository
+```
+curl -fsSL http://nemosys-repository.illinois.rocstar/nemosys-repository-pub.gpg | sudo apt-key add -
+sudo add-apt-repository "deb http://nemosys-repository.illinois.rocstar/ bionic main"
+```
+3- Install OpenFoam
+```
+sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
+sudo add-apt-repository http://dl.openfoam.org/ubuntu
+```
+4- Install Nemosys
+```
+sudo apt-get install nemosys
+```
+5- Test installation
+```
+source /opt/openfoam7/etc/bachrc
+nemosysRun
+```
+you should see:
+```
+Usage: nemosysRun input.json
+```
+
+### CentOS 7 ###
+
+1- Add NEMoSys Repository
+```
+echo "[NEMoSys]
+name=NEMoSys
+baseurl=http://nemosys-rpm-repository.illinois.rocstar
+enabled=1
+gpgcheck=0
+" >> /etc/yum.repos.d/nemosys.repo
+```
+
+2- Install Nemosys
+```
+sudo yum install nemosys
+```
+3- Test installation
+```
+source /opt/openfoam7/etc/bachrc
+nemosysRun
+```
+you should see:
+```
+Usage: nemosysRun input.json
+```

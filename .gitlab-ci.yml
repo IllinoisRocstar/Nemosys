@@ -1,3 +1,7 @@
+stages:
+  - test
+  - deploy
+
 test:ubuntu16:
   image: ilrocstar/nemosys-test-img:v4-merc
   tags:
@@ -62,6 +66,31 @@ test:ubuntu18:
     - make -j$(nproc)
     - make install
     - ctest --output-on-failure
+    - cpack
+  artifacts:
+    paths:
+      - "/builds/Nemosys/Nemosys/build/*.deb"
+
+deploy:all:
+  stage: deploy
+  only:
+    - master@Nemosys/Nemosys
+  script: 
+    - apt-get install -y openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+
+    ##
+    ## Create the SSH directory and give it the right permissions
+    ##
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - scp -r /builds/Nemosys/Nemosys/build/*.deb nemosys@192.168.1.122:/home/nemosys/repo
+    - scp -r /builds/Nemosys/Nemosys/build/*.rpm nemosys@192.168.1.122:/home/nemosys/rpmrepo
+  dependencies:
+    - test:ubuntu18
+    - test:centos7
 
 test:win10:
   image: ilrocstar/nemosys-test-img-win:v2
@@ -136,3 +165,8 @@ test:centos7:
     - make -j$(nproc)
     - make install
     - ctest3 --output-on-failure
+    - cpack3 -G RPM
+    - ls /builds/Nemosys/Nemosys/build/
+  artifacts:
+    paths:
+      - "/builds/Nemosys/Nemosys/build/*.rpm"
