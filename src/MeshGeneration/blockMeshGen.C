@@ -325,9 +325,19 @@ FoamFile\n\
       finalY = newBB.max()[1];
       finalZ = newBB.max()[2];
 
+      std::vector<double> minPointsBox;
+      minPointsBox.push_back(newBB.min()[0]);
+      minPointsBox.push_back(newBB.min()[1]);
+      minPointsBox.push_back(newBB.min()[2]);
+      std::vector<double> maxPointsBox;
+      maxPointsBox.push_back(newBB.max()[0]);
+      maxPointsBox.push_back(newBB.max()[1]);
+      maxPointsBox.push_back(newBB.max()[2]);
+
+      _params->coordsBox = std::make_pair(minPointsBox,maxPointsBox);
+
       if (_params->_cellSizeDefined)
       {
-
         double xLength =
           std::sqrt(((_params->initX)-(finalX))*((_params->initX)-(finalX)));
         double yLength =
@@ -345,6 +355,16 @@ FoamFile\n\
       finalX = (_params->initX) + (_params->lenX);
       finalY = (_params->initY) + (_params->lenY);
       finalZ = (_params->initZ) + (_params->lenZ);
+
+      std::vector<double> minPointsBox;
+      minPointsBox.push_back(_params->initX);
+      minPointsBox.push_back(_params->initY);
+      minPointsBox.push_back(_params->initZ);
+      std::vector<double> maxPointsBox;
+      maxPointsBox.push_back(finalX);
+      maxPointsBox.push_back(finalY);
+      maxPointsBox.push_back(finalZ);
+      _params->coordsBox = std::make_pair(minPointsBox,maxPointsBox);
     }
 
     // Box data

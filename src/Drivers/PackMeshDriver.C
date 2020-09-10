@@ -7,8 +7,6 @@
 #  include "MeshQualityDriver.H"
 #  include "blockMeshGen.H"
 #  include "blockMeshParams.H"
-#  include "cfmeshGen.H"
-#  include "cfmeshParams.H"
 #  include "snappymeshGen.H"
 #  include "snappymeshParams.H"
 #endif
@@ -28,6 +26,7 @@
 #include <vtkCellData.h>
 #include <vtkIdList.h>
 #include <vtkMesh.H>
+#include <vtkGeoMesh.H>
 
 #include "ConversionDriver.H"
 
@@ -41,9 +40,10 @@
 // Standard constructor controls the pack meshing process.
 PackMeshDriver::PackMeshDriver(
     const std::string &ifname, MeshManipulationFoamParams *_mparams,
-    cfmeshParams *_cfparams, snappymeshParams *_snappyparams,
-    blockMeshParams *_bmparams, const std::string &ofname1,
-    const std::string &ofname2, const bool &useRocpack) {
+    snappymeshParams *_snappyparams,
+    blockMeshParams *_bmparams, const std::string &ofname_pack,
+    const std::string &ofname_surrndng, const std::string &ofname_merged,
+    const bool &useRocpack, const double &locAdjust) {
   std::cout << "PackMeshDriver constructed!" << std::endl;
 
   // Makes sure that constant and triSurface directories are present.
@@ -82,6 +82,7 @@ PackMeshDriver::PackMeshDriver(
     std::string hexOutSTL = ifname + ".stl";
     auto *objrocPck = new NEM::GEO::rocPack(ifname, hexOutSTL);
 
+    objrocPck->removeBoundaryVolumes();
     objrocPck->rocPack2Surf();
 
     if (objrocPck) delete objrocPck;
@@ -112,6 +113,17 @@ PackMeshDriver::PackMeshDriver(
   blockMeshGen *objBM = new blockMeshGen(_bmparams);
   objBM->createMeshFromSTL(nameFile);
 
+  // Updating location for next process
+  if (locAdjust > 0) {
+    _snappyparams->locMeshX = _bmparams->coordsBox.first[0] + 0.001 + locAdjust;
+    _snappyparams->locMeshY = _bmparams->coordsBox.first[1] + 0.001 + locAdjust;
+    _snappyparams->locMeshZ = _bmparams->coordsBox.first[2] + 0.001 + locAdjust;
+  } else {
+    _snappyparams->locMeshX = _bmparams->coordsBox.first[0] + 0.001;
+    _snappyparams->locMeshY = _bmparams->coordsBox.first[1] + 0.001;
+    _snappyparams->locMeshZ = _bmparams->coordsBox.first[2] + 0.001;
+  }
+
   // snappyHexMesh reads background mesh created using blockMesh and takes
   // surface file from foamToSurface utility to snap pack surface onto back-
   // ground mesh and creates different cellZones (i.e different solids). These
@@ -128,10 +140,11 @@ PackMeshDriver::PackMeshDriver(
   // in constant folder, it skips one number for the disconnected region it
   // encounters first. This number is taken out to provide as input to merge
   // mesh.
-  std::pair<int, int> dirStat = objMsh->splitMshRegions();
+  std::pair<std::vector<int>, std::string> dirStat = objMsh->splitMshRegions();
 
-  int skippedDir = dirStat.first;
-  int totalRegs = dirStat.second - 1;
+  int skippedDir = dirStat.first[0];
+  int totalRegs = dirStat.first[1] - 1;
+  std::string surroundingRegion = dirStat.second;
 
   // mergeMeshes will read master domain (defined by user) from constant folder
   // and start merging other domain to it untill all slave domains are attached
@@ -164,48 +177,54 @@ PackMeshDriver::PackMeshDriver(
   else
     regNme = "domain1";
 
-  if (totalRegs == 1) regNme = "domain100";
+  if (totalRegs == 1) regNme = _snappyparams->singleSolidPatch;
 
   meshBase *fm = new FOAM::foamMesh(readDB);
   fm->read(regNme);
-  vtkMesh *vm = new vtkMesh(fm->getDataSet(), ofname1);
+  vtkMesh *vm2 = new vtkMesh(fm->getDataSet(), ofname_pack);
+  std::vector<double> physIdPack 
+    = std::vector<double>(fm->getNumberOfCells(),1);
+  vm2->setCellDataArray("PhysGrpId",physIdPack);
+  vm2->write();
+
+  // Reads and converts surronding mesh
+  regNme = surroundingRegion;
+
+  if (totalRegs == 1) regNme = surroundingRegion;
+  meshBase *fm2 = new FOAM::foamMesh(readDB);
+  fm2->read(regNme);
+  std::vector<double> physIdSurrounding 
+    = std::vector<double>(fm2->getNumberOfCells(),0);
+  vtkMesh *vm3 = new vtkMesh(fm2->getDataSet(), ofname_surrndng);
+  vm3->setCellDataArray("PhysGrpId",physIdSurrounding);
+  vm3->write();
+
+  // Merge meshes and write
+  vtkMesh *vm = new vtkMesh(vm2->getDataSet(),ofname_merged);
+  vm->merge(vm3->getDataSet());
   vm->report();
   vm->write();
 
-  // Reads and converts surronding mesh
-  if (skippedDir == 1)
-    regNme = "domain1";
-  else
-    regNme = "domain0";
-
-  if (totalRegs == 1) regNme = "domain0";
-  meshBase *fm2 = new FOAM::foamMesh(readDB);
-  fm2->read(regNme);
-  vtkMesh *vm2 = new vtkMesh(fm2->getDataSet(), ofname2);
-  vm2->report();
-  vm2->write();
-
-  std::cout << "DirStat  is = " << skippedDir << std::endl;
-
-  // Outputs useful mesh quality parameters for users
-  std::string SurroundingName = "surroundingMeshQuality";
-  std::string Surroundingmesh = "geom_surrounding_mesh.vtu";
-  std::string PackName = "packMeshQuality";
-  std::string Packmesh = "geom_pack_mesh.vtu";
-  MeshQualityDriver *objSurrQ =
-      new MeshQualityDriver(Surroundingmesh, SurroundingName);
-  MeshQualityDriver *objPackQ = new MeshQualityDriver(Packmesh, PackName);
+  // // Outputs useful mesh quality parameters for users
+  // std::string SurroundingName = "surroundingMeshQuality";
+  // std::string Surroundingmesh = "geom_surrounding_mesh.vtu";
+  // std::string PackName = "packMeshQuality";
+  // std::string Packmesh = "geom_pack_mesh.vtu";
+  // MeshQualityDriver *objSurrQ =
+  //     new MeshQualityDriver(Surroundingmesh, SurroundingName);
+  // MeshQualityDriver *objPackQ = new MeshQualityDriver(Packmesh, PackName);
 
   // Cleaning up
   if (vm) delete vm;
   if (fm) delete fm;
   if (vm2) delete vm2;
+  if (vm3) delete vm3;
   if (fm2) delete fm2;
   if (objMsh) delete objMsh;
   if (objSHM) delete objSHM;
   if (objBM) delete objBM;
-  if (objSurrQ) delete objSurrQ;
-  if (objPackQ) delete objPackQ;
+  // if (objSurrQ) delete objSurrQ;
+  // if (objPackQ) delete objPackQ;
   // End of workflow
 }
 #endif
@@ -310,7 +329,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
 
 #ifndef HAVE_CFMSH
   if (meshType == "hexahedral") {
-    std::cerr << "Build NEMoSys with CFMSH=ON for hexahedral meshing!"
+    std::cerr << "Build NEMoSys with -DENABLE_CFMSH=ON for hexahedral meshing!"
               << std::endl;
     throw;
   }
@@ -362,6 +381,14 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
   else if (meshType == "hexahedral") {
     bool useRocPack = false;
 
+    if ((inputjson["Mesh File Options"].contains("Input Rocpack File")) && 
+       (inputjson["Mesh File Options"].contains("Input Geometry File"))) {
+      std::cerr << "Please define only on of the following options, not both!" 
+                << std::endl << " 1. \"Input Rocpack File\"" << std::endl
+                << " 2. \"Input Geometry File\"" << std::endl;
+      throw;
+    }
+
     std::string ifname =
         inputjson["Mesh File Options"].contains("Input Rocpack File")
             ? inputjson["Mesh File Options"]["Input Rocpack File"]
@@ -383,14 +410,21 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
       throw;
     }
 
-    std::string ofname1 =
+    std::string ofname_pack =
         inputjson["Mesh File Options"]["Output Pack Mesh File"]
             .as<std::string>();
-    std::string ofname2 =
+    std::string ofname_surrndng =
         inputjson["Mesh File Options"]["Output Surrounding Mesh File"]
             .as<std::string>();
 
-    return readJSON(ifname, ofname1, ofname2, useRocPack, inputjson);
+    std::string ofname_merged = 
+            inputjson["Mesh File Options"].contains("Output Combined Mesh File")
+                   ? inputjson["Mesh File Options"]["Output Combined Mesh File"]
+                         .as<std::string>()
+                   : "PackMesh.vtu";
+
+    return readJSON(ifname, ofname_pack, ofname_surrndng, ofname_merged, 
+                    useRocPack, inputjson);
   }
 #endif
   else {
@@ -403,174 +437,21 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
 // Reads JSON file parameters and catagorizes them into separate objects
 // for convenience in Pack Mesh workflow.
 PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
-                                         const std::string &ofname1,
-                                         const std::string &ofname2,
+                                         const std::string &ofname_pack,
+                                         const std::string &ofname_surrndng,
+                                         const std::string &ofname_merged,
                                          const bool useRocpack,
                                          const jsoncons::json inputjson) {
   std::string meshEngine =
       inputjson["Mesh Generation Engine"].as<std::string>();
 
   if (!meshEngine.compare("packmesh")) {
-    cfmeshParams *cfparams = new cfmeshParams();
-    std::string defaults1 =
-        inputjson["Meshing Parameters"]["CFMesh Parameters"].as<std::string>();
-
-    jsoncons::json cfmparams =
-        inputjson["Meshing Parameters"]["CFMesh Parameters"];
-
-    /*// required params here
-    // cad file
-    if (inputjson["Mesh File Options"].contains("Input Geometry File"))
-      cfparams->geomFilePath =
-      inputjson["Mesh File Options"]["Input Geometry File"].as<std::string>();
-    else
-    {
-      std::cerr << "A geometry file should be supplied.\n";
-      throw;
-    }*/
-
-    // mesh generator
-    if (cfmparams.contains("Generator"))
-      cfparams->generator = cfmparams["Generator"].as<std::string>();
-    else {
-      std::cerr << "A mesh generation method should be selected.\n";
-      std::cerr << "Options: cartesian2D tetMesh\n";
-      throw;
-    }
-
-    // rest of params are optional
-    if (cfmparams.contains("MaxCellSize"))
-      cfparams->maxCellSize = cfmparams["MaxCellSize"].as<double>();
-    if (cfmparams.contains("MinCellSize"))
-      cfparams->minCellSize = cfmparams["MinCellSize"].as<double>();
-    if (cfmparams.contains("BoundaryCellSize"))
-      cfparams->bndryCellSize = cfmparams["BoundaryCellSize"].as<double>();
-    if (cfmparams.contains("KeepCellsIntersectingBoundary"))
-      cfparams->keepCellIB =
-          cfmparams["KeepCellsIntersectingBoundary"].as<double>();
-    if (cfmparams.contains("CheckForGluedMesh"))
-      cfparams->chkGluMsh = cfmparams["CheckForGluedMesh"].as<double>();
-    if (cfmparams.contains("AllowDisconnectedDomains"))
-      cfparams->_alwDiscDomains =
-          cfmparams["AllowDisconnectedDomains"].as<bool>();
-
-    // optional capability
-    std::string cap = "BoundaryLayers";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withBndLyr = true;
-      cfparams->blNLyr = cfmparams[cap]["NLayers"].as<double>();
-      cfparams->blThkRto = cfmparams[cap]["ThicknessRatio"].as<double>();
-
-      if (cfmparams[cap].contains("MaxFirstLayerThickness"))
-        cfparams->maxFrstLyrThk =
-            cfmparams[cap]["MaxFirstLayerThickness"].as<double>();
-      if (cfmparams[cap].contains("AllowDiscontinuity"))
-        cfparams->alwDiscont = cfmparams[cap]["AllowDiscontinuity"].as<bool>();
-
-      // patch boundary layers
-      std::string subcap = "PatchBoundaryLayers";
-      if (cfmparams[cap].contains(subcap)) {
-        cfparams->_withBndLyrPtch = true;
-        for (auto jptch : cfmparams[cap][subcap].array_range()) {
-          cfmPtchBndLyr blPatch;
-          blPatch.patchName = jptch["PatchName"].as<std::string>();
-          if (jptch.contains("AllowDiscontinuity"))
-            blPatch.alwDiscont = jptch["AllowDiscontinuity"].as<bool>();
-          else
-            blPatch.alwDiscont = false;
-          if (jptch.contains("MaxFirstLayerThickness"))
-            blPatch.maxFrstLyrThk = jptch["MaxFirstLayerThickness"].as<int>();
-          else
-            blPatch.maxFrstLyrThk = -1;
-          if (jptch.contains("NLayers"))
-            blPatch.blNLyr = jptch["NLayers"].as<int>();
-          else
-            blPatch.blNLyr = -1;
-          if (jptch.contains("ThicknessRatio"))
-            blPatch.blThkRto = jptch["ThicknessRatio"].as<double>();
-          else
-            blPatch.blThkRto = -1.;
-
-          (cfparams->blPatches).push_back(blPatch);
-        }
-      }
-    }
-
-    // optional capability
-    cap = "SurfaceFeatureEdges";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withSrfEdg = true;
-      cfparams->srfEdgAng = cfmparams[cap]["Angle"].as<double>();
-    }
-
-    // optional capability
-    cap = "ObjectRefinements";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withObjRfn = true;
-      for (auto refObj : cfmparams[cap].array_range()) {
-        cfmObjRef objRef;
-        objRef.name = refObj["Name"].as<std::string>();
-        for (const auto &prm : refObj["Params"].object_range()) {
-          std::string key = std::string(prm.key());
-          std::string val = prm.value().as<std::string>();
-          objRef.params[key] = val;
-        }
-        (cfparams->objRefLst).push_back(objRef);
-      }
-    }
-
-    // optional capability
-    cap = "ImproveMeshQuality";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withMshQlt = true;
-      cfparams->qltNItr = cfmparams[cap]["NIterations"].as<int>();
-      cfparams->qltNLop = cfmparams[cap]["NLoops"].as<int>();
-      cfparams->qltQltThr = cfmparams[cap]["QualityThreshold"].as<double>();
-      cfparams->qltNSrfItr = cfmparams[cap]["NSurfaceIterations"].as<int>();
-      cfparams->qltConCelSet =
-          cfmparams[cap].get_with_default("ConstrainedCellsSet", "none");
-    }
-
-    // optional capability
-    cap = "LocalRefinement";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withLclRef = true;
-      for (auto jptch : cfmparams[cap].array_range()) {
-        cfmLclRefPatch refPatch;
-        refPatch.patchName = jptch["PatchName"].as<std::string>();
-        if (jptch.contains("AdditionalRefinementLevels"))
-          refPatch.aditRefLvls = jptch["AdditionalRefinementLevels"].as<int>();
-        else
-          refPatch.aditRefLvls = -1;
-        if (jptch.contains("CellSize"))
-          refPatch.cellSize = jptch["CellSize"].as<double>();
-        else
-          refPatch.cellSize = -1.;
-
-        (cfparams->refPatches).push_back(refPatch);
-      }
-    }
-
-    // optional capability
-    cap = "RenameBoundary";
-    if (cfmparams.contains(cap)) {
-      cfparams->_withRenBndry = true;
-      cfmRenBndry renBndry;
-      renBndry.defName = cfmparams[cap]["DefaultName"].as<std::string>();
-      renBndry.defType = cfmparams[cap]["DefaultType"].as<std::string>();
-      for (auto jnw : cfmparams[cap]["NewPatchNames"].array_range()) {
-        cfmNewPatch nwPatch = std::make_tuple(jnw["Name"].as<std::string>(),
-                                              jnw["NewName"].as<std::string>(),
-                                              jnw["NewType"].as<std::string>());
-        renBndry.newPatches.push_back(nwPatch);
-      }
-      (cfparams->renBndry) = renBndry;
-    }
-
+    // Snappy hex mesh params
     snappymeshParams *params = new snappymeshParams();
     std::string defaults =
         inputjson["Meshing Parameters"]["snappyHexMesh Parameters"]
             .as<std::string>();
+    double locAdjust = -1.0;
     if (!defaults.compare("default")) {
       // MeshGenDriver* mshgndrvobj =
       //     new MeshGenDriver(ifname, meshEngine, params, ofname);
@@ -578,12 +459,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
     } else {
       jsoncons::json shmparams =
           inputjson["Meshing Parameters"]["snappyHexMesh Parameters"];
-
+          
       jsoncons::json geomParams = shmparams["Geometry Definition"];
-      jsoncons::json castMeshParams = shmparams["Castellated Mesh Controls"];
-      jsoncons::json snapParams = shmparams["Snapping Controls"];
-      jsoncons::json layerParams = shmparams["Mesh Layers Controls"];
-      jsoncons::json qcMeshParams = shmparams["Mesh Quality Controls"];
 
       if (inputjson["Mesh File Options"].contains("Input Geometry File"))
         params->geomFileName =
@@ -754,6 +631,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       }
 
       // Castellated Mesh Controls Inputs
+      jsoncons::json castMeshParams = shmparams["Castellated Mesh Controls"];
+
       if (castMeshParams.contains("CellZones"))
         params->_withCellZones = castMeshParams["CellZones"].as<bool>();
       else {
@@ -784,6 +663,10 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       else {
         params->castMeshGpLvl = 1;
       }
+      if (castMeshParams.contains("locInMesh_adjust"))
+        locAdjust = castMeshParams["locInMesh_adjust"].as<double>();
+      else
+        locAdjust = -1.0;
       if (castMeshParams.contains("maxLocalCells"))
         params->maxLCells = castMeshParams["maxLocalCells"].as<int>();
       else {
@@ -832,23 +715,17 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       if (castMeshParams.contains("locationInMeshX"))
         params->locMeshX = castMeshParams["locationInMeshX"].as<double>();
       else {
-        std::cerr << "Location of a point in region you want to"
-                  << "keep cells is needed!" << std::endl;
-        throw;
+        params->locMeshX = -1;
       }
       if (castMeshParams.contains("locationInMeshY"))
         params->locMeshY = castMeshParams["locationInMeshY"].as<double>();
       else {
-        std::cerr << "Location of a point in region you want to"
-                  << "keep cells is needed!" << std::endl;
-        throw;
+        params->locMeshY = -1;
       }
       if (castMeshParams.contains("locationInMeshZ"))
         params->locMeshZ = castMeshParams["locationInMeshZ"].as<double>();
       else {
-        std::cerr << "Location of a point in region you want to"
-                  << "keep cells is needed!" << std::endl;
-        throw;
+        params->locMeshZ = -1;
       }
       if (castMeshParams.contains("allowFreeStandingZoneFaces"))
         params->_alwFreeZone =
@@ -860,8 +737,6 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       // Refinement Surfaces
       std::string cap3 = "SurfaceRefinementRegions";
       if (castMeshParams.contains(cap3)) {
-        // params->_withSurfRefReg = true;
-
         for (auto jptch3 : castMeshParams[cap3].array_range()) {
           shmSurfRefine surfRef;
 
@@ -898,8 +773,6 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       // Region Refinement
       std::string cap2 = "GeomRefinementRegions";
       if (shmparams.contains(cap2)) {
-        // params->_withGeomRefReg = true;
-
         for (auto jptch2 : shmparams[cap2].array_range()) {
           shmRegionRefine geomRef;
 
@@ -964,282 +837,294 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       }
 
       // Snapping Controls
-      if (snapParams.contains("nSmoothPatch"))
-        params->snapSmthPatch = snapParams["nSmoothPatch"].as<int>();
-      else {
-        params->snapSmthPatch = 4;
+      if (inputjson["Meshing Parameters"].contains("Snapping Controls")) {
+        jsoncons::json snapParams = shmparams["Snapping Controls"];
+      
+        if (snapParams.contains("nSmoothPatch"))
+          params->snapSmthPatch = snapParams["nSmoothPatch"].as<int>();
+        else {
+          params->snapSmthPatch = 4;
+        }
+        if (snapParams.contains("tolerance"))
+          params->snapTol = snapParams["tolerance"].as<double>();
+        else {
+          params->snapTol = 0.5;
+        }
+        if (snapParams.contains("snapSolveIter"))
+          params->solveSnapIter = snapParams["snapSolveIter"].as<int>();
+        else {
+          params->solveSnapIter = 200;
+        }
+        if (snapParams.contains("snapRelaxIter"))
+          params->relaxSnapIter = snapParams["snapRelaxIter"].as<int>();
+        else {
+          params->relaxSnapIter = 6;
+        }
+        if (snapParams.contains("nFeatureSnapIter"))
+          params->nFeatureSnapIter = snapParams["nFeatureSnapIter"].as<int>();
+        else
+          params->nFeatureSnapIter = 10;
+        if (snapParams.contains("implicitFeatureSnap"))
+          params->implicitFeatureSnap =
+              snapParams["implicitFeatureSnap"].as<bool>();
+        else
+          params->implicitFeatureSnap = false;
+        if (snapParams.contains("explicitFeatureSnap"))
+          params->explicitFeatureSnap =
+              snapParams["explicitFeatureSnap"].as<bool>();
+        else
+          params->explicitFeatureSnap = true;
+        if (snapParams.contains("multiRegionFeatureSnap"))
+          params->multiRegionFeatureSnap =
+              snapParams["multiRegionFeatureSnap"].as<bool>();
+        else
+          params->multiRegionFeatureSnap = false;
       }
-      if (snapParams.contains("tolerance"))
-        params->snapTol = snapParams["tolerance"].as<double>();
-      else {
-        params->snapTol = 0.5;
-      }
-      if (snapParams.contains("snapSolveIter"))
-        params->solveSnapIter = snapParams["snapSolveIter"].as<int>();
-      else {
-        params->solveSnapIter = 200;
-      }
-      if (snapParams.contains("snapRelaxIter"))
-        params->relaxSnapIter = snapParams["snapRelaxIter"].as<int>();
-      else {
-        params->relaxSnapIter = 6;
-      }
-      if (snapParams.contains("nFeatureSnapIter"))
-        params->nFeatureSnapIter = snapParams["nFeatureSnapIter"].as<int>();
-      else
-        params->nFeatureSnapIter = 10;
-      if (snapParams.contains("implicitFeatureSnap"))
-        params->implicitFeatureSnap =
-            snapParams["implicitFeatureSnap"].as<bool>();
-      else
-        params->implicitFeatureSnap = false;
-      if (snapParams.contains("explicitFeatureSnap"))
-        params->explicitFeatureSnap =
-            snapParams["explicitFeatureSnap"].as<bool>();
-      else
-        params->explicitFeatureSnap = true;
-      if (snapParams.contains("multiRegionFeatureSnap"))
-        params->multiRegionFeatureSnap =
-            snapParams["multiRegionFeatureSnap"].as<bool>();
-      else
-        params->multiRegionFeatureSnap = false;
 
       // Layer controls
-      if (layerParams.contains("relativeSizes"))
-        params->_relSize = layerParams["relativeSizes"].as<bool>();
-      else {
-        params->_relSize = 1;
-      }
-      if (layerParams.contains("expansionRatio"))
-        params->expRatio = layerParams["expansionRatio"].as<double>();
-      else {
-        params->expRatio = 1.3;
-      }
-      if (layerParams.contains("finalLayerThickness"))
-        params->finLThick = layerParams["finalLayerThickness"].as<double>();
-      else {
-        params->finLThick = 1.0;
-      }
-      if (layerParams.contains("minThickness"))
-        params->minThick = layerParams["minThickness"].as<double>();
-      else {
-        params->minThick = 0.1;
-      }
-      if (layerParams.contains("firstLayerThickness"))
-        params->firstLyrThickness =
-            layerParams["firstLayerThickness"].as<double>();
-      else
-        params->firstLyrThickness = -1.0;
-      if (layerParams.contains("thickness"))
-        params->thickness = layerParams["thickness"].as<double>();
-      else
-        params->thickness = -1.0;
-      if (layerParams.contains("nGrow"))
-        params->nGrow = layerParams["nGrow"].as<int>();
-      else {
-        params->nGrow = 0;
-      }
-      if (layerParams.contains("featureAngle"))
-        params->lyrFeatAngle = layerParams["featureAngle"].as<double>();
-      else {
-        params->lyrFeatAngle = 30;
-      }
-      if (layerParams.contains("nRelaxIter"))
-        params->lyrRelaxIter = layerParams["nRelaxIter"].as<int>();
-      else {
-        params->lyrRelaxIter = 3;
-      }
-      if (layerParams.contains("nSmoothSurfaceNormals"))
-        params->lyrSmthSurfNorm =
-            layerParams["nSmoothSurfaceNormals"].as<int>();
-      else {
-        params->lyrSmthSurfNorm = 1;
-      }
-      if (layerParams.contains("nSmoothNormals"))
-        params->lyrSmthNorm = layerParams["nSmoothNormals"].as<int>();
-      else {
-        params->lyrSmthNorm = 3;
-      }
-      if (layerParams.contains("nSmoothThickness"))
-        params->lyrSmthThick = layerParams["nSmoothThickness"].as<int>();
-      else {
-        params->lyrSmthThick = 2;
-      }
-      if (layerParams.contains("maxFaceThicknessRatio"))
-        params->lyrMaxFcTR = layerParams["maxFaceThicknessRatio"].as<double>();
-      else {
-        params->lyrMaxFcTR = 0.5;
-      }
-      if (layerParams.contains("maxThicknessToMedialRatio"))
-        params->lyrMaxThickTMR =
-            layerParams["maxThicknessToMedialRatio"].as<double>();
-      else {
-        params->lyrMaxThickTMR = 1.0;
-      }
-      if (layerParams.contains("minMedialAxisAngle"))
-        params->lyrMinMedAngl = layerParams["minMedialAxisAngle"].as<double>();
-      else {
-        params->lyrMinMedAngl = 90;
-      }
-      if (layerParams.contains("nBufferCellsNoExtrude"))
-        params->lyrBuffrCells = layerParams["nBufferCellsNoExtrude"].as<int>();
-      else {
-        params->lyrBuffrCells = 0;
-      }
-      if (layerParams.contains("nLayerIter"))
-        params->lyrIter = layerParams["nLayerIter"].as<int>();
-      else {
-        params->lyrIter = 50;
-      }
-      if (layerParams.contains("nRelaxedIter"))
-        params->nRelaxedIter = layerParams["nRelaxedIter"].as<int>();
-      else {
-        params->nRelaxedIter = 20;
-      }
-      if (layerParams.contains("slipFeatureAngle"))
-        params->slipFeatureAngle = layerParams["slipFeatureAngle"].as<int>();
-      else {
-        params->slipFeatureAngle = 20;
-      }
-      if (layerParams.contains("nMedialAxisIter"))
-        params->nMedialAxisIter = layerParams["nMedialAxisIter"].as<int>();
-      else
-        params->nMedialAxisIter = -1;
-      if (layerParams.contains("nSmoothDisplacement"))
-        params->nSmoothDisplacement =
-            layerParams["nSmoothDisplacement"].as<int>();
-      else
-        params->nSmoothDisplacement = -1;
+      if (inputjson["Meshing Parameters"].contains("Mesh Layers Controls")) {
+        jsoncons::json layerParams = shmparams["Mesh Layers Controls"];
+      
+        if (layerParams.contains("relativeSizes"))
+          params->_relSize = layerParams["relativeSizes"].as<bool>();
+        else {
+          params->_relSize = 1;
+        }
+        if (layerParams.contains("expansionRatio"))
+          params->expRatio = layerParams["expansionRatio"].as<double>();
+        else {
+          params->expRatio = 1.3;
+        }
+        if (layerParams.contains("finalLayerThickness"))
+          params->finLThick = layerParams["finalLayerThickness"].as<double>();
+        else {
+          params->finLThick = 1.0;
+        }
+        if (layerParams.contains("minThickness"))
+          params->minThick = layerParams["minThickness"].as<double>();
+        else {
+          params->minThick = 0.1;
+        }
+        if (layerParams.contains("firstLayerThickness"))
+          params->firstLyrThickness =
+              layerParams["firstLayerThickness"].as<double>();
+        else
+          params->firstLyrThickness = -1.0;
+        if (layerParams.contains("thickness"))
+          params->thickness = layerParams["thickness"].as<double>();
+        else
+          params->thickness = -1.0;
+        if (layerParams.contains("nGrow"))
+          params->nGrow = layerParams["nGrow"].as<int>();
+        else {
+          params->nGrow = 0;
+        }
+        if (layerParams.contains("featureAngle"))
+          params->lyrFeatAngle = layerParams["featureAngle"].as<double>();
+        else {
+          params->lyrFeatAngle = 30;
+        }
+        if (layerParams.contains("nRelaxIter"))
+          params->lyrRelaxIter = layerParams["nRelaxIter"].as<int>();
+        else {
+          params->lyrRelaxIter = 3;
+        }
+        if (layerParams.contains("nSmoothSurfaceNormals"))
+          params->lyrSmthSurfNorm =
+              layerParams["nSmoothSurfaceNormals"].as<int>();
+        else {
+          params->lyrSmthSurfNorm = 1;
+        }
+        if (layerParams.contains("nSmoothNormals"))
+          params->lyrSmthNorm = layerParams["nSmoothNormals"].as<int>();
+        else {
+          params->lyrSmthNorm = 3;
+        }
+        if (layerParams.contains("nSmoothThickness"))
+          params->lyrSmthThick = layerParams["nSmoothThickness"].as<int>();
+        else {
+          params->lyrSmthThick = 2;
+        }
+        if (layerParams.contains("maxFaceThicknessRatio"))
+          params->lyrMaxFcTR = layerParams["maxFaceThicknessRatio"].as<double>();
+        else {
+          params->lyrMaxFcTR = 0.5;
+        }
+        if (layerParams.contains("maxThicknessToMedialRatio"))
+          params->lyrMaxThickTMR =
+              layerParams["maxThicknessToMedialRatio"].as<double>();
+        else {
+          params->lyrMaxThickTMR = 1.0;
+        }
+        if (layerParams.contains("minMedialAxisAngle"))
+          params->lyrMinMedAngl = layerParams["minMedialAxisAngle"].as<double>();
+        else {
+          params->lyrMinMedAngl = 90;
+        }
+        if (layerParams.contains("nBufferCellsNoExtrude"))
+          params->lyrBuffrCells = layerParams["nBufferCellsNoExtrude"].as<int>();
+        else {
+          params->lyrBuffrCells = 0;
+        }
+        if (layerParams.contains("nLayerIter"))
+          params->lyrIter = layerParams["nLayerIter"].as<int>();
+        else {
+          params->lyrIter = 50;
+        }
+        if (layerParams.contains("nRelaxedIter"))
+          params->nRelaxedIter = layerParams["nRelaxedIter"].as<int>();
+        else {
+          params->nRelaxedIter = 20;
+        }
+        if (layerParams.contains("slipFeatureAngle"))
+          params->slipFeatureAngle = layerParams["slipFeatureAngle"].as<int>();
+        else {
+          params->slipFeatureAngle = 20;
+        }
+        if (layerParams.contains("nMedialAxisIter"))
+          params->nMedialAxisIter = layerParams["nMedialAxisIter"].as<int>();
+        else
+          params->nMedialAxisIter = -1;
+        if (layerParams.contains("nSmoothDisplacement"))
+          params->nSmoothDisplacement =
+              layerParams["nSmoothDisplacement"].as<int>();
+        else
+          params->nSmoothDisplacement = -1;
 
-      // Layers
-      std::string cap7 = "Layers";
-      if (layerParams.contains(cap7)) {
-        for (auto jptch3 : layerParams[cap7].array_range()) {
-          shmLayers lyrOne;
-          if (jptch3.contains("Patch Name"))
-            lyrOne.patchName = jptch3["File Name"].as<int>();
-          else {
-            std::cerr << "Please provide patch name for layers" << std::endl;
-            throw;
-          }
+        // Layers
+        std::string cap7 = "Layers";
+        if (layerParams.contains(cap7)) {
+          for (auto jptch3 : layerParams[cap7].array_range()) {
+            shmLayers lyrOne;
+            if (jptch3.contains("Patch Name"))
+              lyrOne.patchName = jptch3["File Name"].as<int>();
+            else {
+              std::cerr << "Please provide patch name for layers" << std::endl;
+              throw;
+            }
 
-          if (jptch3.contains("nSurfaceLayers"))
-            lyrOne.nSurfaceLayers = jptch3["nSurfaceLayers"].as<int>();
-          else {
-            lyrOne.nSurfaceLayers = 1;
-          }
+            if (jptch3.contains("nSurfaceLayers"))
+              lyrOne.nSurfaceLayers = jptch3["nSurfaceLayers"].as<int>();
+            else {
+              lyrOne.nSurfaceLayers = 1;
+            }
 
-          if (jptch3.contains("expansionRatio"))
-            lyrOne.expansionRatio = jptch3["expansionRatio"].as<int>();
-          else {
-            lyrOne.expansionRatio = 1;
-          }
+            if (jptch3.contains("expansionRatio"))
+              lyrOne.expansionRatio = jptch3["expansionRatio"].as<int>();
+            else {
+              lyrOne.expansionRatio = 1;
+            }
 
-          if (jptch3.contains("finalLayerThickness"))
-            lyrOne.finalLayerThickness =
-                jptch3["finalLayerThickness"].as<int>();
-          else {
-            lyrOne.finalLayerThickness = 1;
-          }
+            if (jptch3.contains("finalLayerThickness"))
+              lyrOne.finalLayerThickness =
+                  jptch3["finalLayerThickness"].as<int>();
+            else {
+              lyrOne.finalLayerThickness = 1;
+            }
 
-          if (jptch3.contains("firstLayerThickness"))
-            lyrOne.firstLyrThickness =
-                jptch3["firstLayerThickness"].as<double>();
-          else {
-            lyrOne.firstLyrThickness = -1.0;
-          }
+            if (jptch3.contains("firstLayerThickness"))
+              lyrOne.firstLyrThickness =
+                  jptch3["firstLayerThickness"].as<double>();
+            else {
+              lyrOne.firstLyrThickness = -1.0;
+            }
 
-          if (jptch3.contains("thickness"))
-            lyrOne.finalLayerThickness = jptch3["thickness"].as<double>();
-          else {
-            lyrOne.thickness = -1.0;
-          }
+            if (jptch3.contains("thickness"))
+              lyrOne.finalLayerThickness = jptch3["thickness"].as<double>();
+            else {
+              lyrOne.thickness = -1.0;
+            }
 
-          if (jptch3.contains("minThickness"))
-            lyrOne.minThickness = jptch3["minThickness"].as<int>();
-          else {
-            lyrOne.minThickness = 1;
+            if (jptch3.contains("minThickness"))
+              lyrOne.minThickness = jptch3["minThickness"].as<int>();
+            else {
+              lyrOne.minThickness = 1;
+            }
+            params->layerVec.push_back(lyrOne);
           }
-          params->layerVec.push_back(lyrOne);
         }
       }
 
       // Mesh Quality Controls
-      if (qcMeshParams.contains("maxNonOrtho"))
-        params->qcMaxNOrtho = qcMeshParams["maxNonOrtho"].as<int>();
-      else {
-        params->qcMaxNOrtho = 65;
-      }
-      if (qcMeshParams.contains("maxBoundarySkewness"))
-        params->qcMaxBndrySkew =
-            qcMeshParams["maxBoundarySkewness"].as<double>();
-      else {
-        params->qcMaxBndrySkew = 20;
-      }
-      if (qcMeshParams.contains("maxInternalSkewness"))
-        params->qcMaxIntSkew = qcMeshParams["maxInternalSkewness"].as<double>();
-      else {
-        params->qcMaxIntSkew = 4;
-      }
-      if (qcMeshParams.contains("maxConcave"))
-        params->qcMaxConc = qcMeshParams["maxConcave"].as<double>();
-      else {
-        params->qcMaxConc = 80;
-      }
-      if (qcMeshParams.contains("minVol"))
-        params->qcMinVol = qcMeshParams["minVol"].as<double>();
-      else {
-        params->qcMinVol = 1e-13;
-      }
-      if (qcMeshParams.contains("minTetQuality"))
-        params->qcMinTetQ = qcMeshParams["minTetQuality"].as<double>();
-      else {
-        params->qcMinTetQ = 1e-15;
-      }
-      if (qcMeshParams.contains("minArea"))
-        params->qcMinArea = qcMeshParams["minArea"].as<double>();
-      else {
-        params->qcMinArea = -1;
-      }
-      if (qcMeshParams.contains("minTwist"))
-        params->qcMinTwist = qcMeshParams["minTwist"].as<double>();
-      else {
-        params->qcMinTwist = 0.02;
-      }
-      if (qcMeshParams.contains("minFaceWeight"))
-        params->qcMinFaceW = qcMeshParams["minFaceWeight"].as<double>();
-      else {
-        params->qcMinFaceW = 0.05;
-      }
-      if (qcMeshParams.contains("minVolRatio"))
-        params->qcMinVolRto = qcMeshParams["minVolRatio"].as<double>();
-      else {
-        params->qcMinVolRto = 0.01;
-      }
-      if (qcMeshParams.contains("minDeterminant"))
-        params->qcMinDet = qcMeshParams["minDeterminant"].as<double>();
-      else {
-        params->qcMinDet = 0.001;
-      }
-      if (qcMeshParams.contains("minTriangleTwist"))
-        params->qcMinTrTwist = qcMeshParams["minTriangleTwist"].as<double>();
-      else {
-        params->qcMinTrTwist = -1;
-      }
-      if (qcMeshParams.contains("qcnSmoothScale"))
-        params->qcSmthScale = qcMeshParams["qcnSmoothScale"].as<int>();
-      else {
-        params->qcSmthScale = 5;
-      }
-      if (qcMeshParams.contains("errorReduction"))
-        params->qcErrRedctn = qcMeshParams["errorReduction"].as<double>();
-      else {
-        params->qcErrRedctn = 0.75;
-      }
-      if (shmparams.contains("mergeTolerance"))
-        params->mergeTol = shmparams["mergeTolerance"].as<double>();
-      else {
-        params->mergeTol = 1e-06;
+      if (inputjson["Meshing Parameters"].contains("Mesh Quality Controls")) {
+        jsoncons::json qcMeshParams = shmparams["Mesh Quality Controls"];
+
+        if (qcMeshParams.contains("maxNonOrtho"))
+          params->qcMaxNOrtho = qcMeshParams["maxNonOrtho"].as<int>();
+        else {
+          params->qcMaxNOrtho = 65;
+        }
+        if (qcMeshParams.contains("maxBoundarySkewness"))
+          params->qcMaxBndrySkew =
+              qcMeshParams["maxBoundarySkewness"].as<double>();
+        else {
+          params->qcMaxBndrySkew = 20;
+        }
+        if (qcMeshParams.contains("maxInternalSkewness"))
+          params->qcMaxIntSkew = qcMeshParams["maxInternalSkewness"].as<double>();
+        else {
+          params->qcMaxIntSkew = 4;
+        }
+        if (qcMeshParams.contains("maxConcave"))
+          params->qcMaxConc = qcMeshParams["maxConcave"].as<double>();
+        else {
+          params->qcMaxConc = 80;
+        }
+        if (qcMeshParams.contains("minVol"))
+          params->qcMinVol = qcMeshParams["minVol"].as<double>();
+        else {
+          params->qcMinVol = 1e-13;
+        }
+        if (qcMeshParams.contains("minTetQuality"))
+          params->qcMinTetQ = qcMeshParams["minTetQuality"].as<double>();
+        else {
+          params->qcMinTetQ = 1e-15;
+        }
+        if (qcMeshParams.contains("minArea"))
+          params->qcMinArea = qcMeshParams["minArea"].as<double>();
+        else {
+          params->qcMinArea = -1;
+        }
+        if (qcMeshParams.contains("minTwist"))
+          params->qcMinTwist = qcMeshParams["minTwist"].as<double>();
+        else {
+          params->qcMinTwist = 0.02;
+        }
+        if (qcMeshParams.contains("minFaceWeight"))
+          params->qcMinFaceW = qcMeshParams["minFaceWeight"].as<double>();
+        else {
+          params->qcMinFaceW = 0.05;
+        }
+        if (qcMeshParams.contains("minVolRatio"))
+          params->qcMinVolRto = qcMeshParams["minVolRatio"].as<double>();
+        else {
+          params->qcMinVolRto = 0.01;
+        }
+        if (qcMeshParams.contains("minDeterminant"))
+          params->qcMinDet = qcMeshParams["minDeterminant"].as<double>();
+        else {
+          params->qcMinDet = 0.001;
+        }
+        if (qcMeshParams.contains("minTriangleTwist"))
+          params->qcMinTrTwist = qcMeshParams["minTriangleTwist"].as<double>();
+        else {
+          params->qcMinTrTwist = -1;
+        }
+        if (qcMeshParams.contains("qcnSmoothScale"))
+          params->qcSmthScale = qcMeshParams["qcnSmoothScale"].as<int>();
+        else {
+          params->qcSmthScale = 5;
+        }
+        if (qcMeshParams.contains("errorReduction"))
+          params->qcErrRedctn = qcMeshParams["errorReduction"].as<double>();
+        else {
+          params->qcErrRedctn = 0.75;
+        }
+        if (shmparams.contains("mergeTolerance"))
+          params->mergeTol = shmparams["mergeTolerance"].as<double>();
+        else {
+          params->mergeTol = 1e-06;
+        }
       }
     }
 
@@ -1579,177 +1464,207 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
     }
 
     MeshManipulationFoamParams *mparams = new MeshManipulationFoamParams();
-    std::string defaults4 =
-        inputjson["Meshing Parameters"]["MeshManipulation Parameters"]
-            .as<std::string>();
+    // std::string defaults4 =
+    //     inputjson["Meshing Parameters"]["MeshManipulation Parameters"]
+    //         .as<std::string>();
 
-    jsoncons::json pmshparams =
-        inputjson["Meshing Parameters"]["MeshManipulation Parameters"];
+    jsoncons::json pmshparams;
+    if (inputjson["Meshing Parameters"].contains("MeshManipulation Parameters")) {
+      pmshparams = inputjson["Meshing Parameters"]["MeshManipulation Parameters"];
 
-    // Parameter parsing starts here
-    if (pmshparams.contains("Enable SurfLambdaMuSmooth"))
-      mparams->_doSurfaceLMSmth =
-          pmshparams["Enable SurfLambdaMuSmooth"].as<bool>();
-    if (pmshparams.contains("Enable splitMeshRegions"))
-      mparams->_doSplitMshRegs =
-          pmshparams["Enable splitMeshRegions"].as<bool>();
-    if (pmshparams.contains("Enable MergeMeshes"))
-      mparams->_doMergeMsh = pmshparams["Enable MergeMeshes"].as<bool>();
-    if (pmshparams.contains("Enable CreatePatch"))
-      mparams->_doCreatePtchs = pmshparams["Enable CreatePatch"].as<bool>();
-    if (pmshparams.contains("Enable foamToSurface"))
-      mparams->_doFoam2Surf = pmshparams["Enable foamToSurface"].as<bool>();
-    if (pmshparams.contains("Enable surfaceSplitByTopology"))
-      mparams->_doSurfSplit =
-          pmshparams["Enable surfaceSplitByTopology"].as<bool>();
+      // Parameter parsing starts here
+      if (pmshparams.contains("Enable SurfLambdaMuSmooth"))
+        mparams->_doSurfaceLMSmth =
+            pmshparams["Enable SurfLambdaMuSmooth"].as<bool>();
+      if (pmshparams.contains("Enable splitMeshRegions"))
+        mparams->_doSplitMshRegs =
+            pmshparams["Enable splitMeshRegions"].as<bool>();
+      if (pmshparams.contains("Enable MergeMeshes"))
+        mparams->_doMergeMsh = pmshparams["Enable MergeMeshes"].as<bool>();
+      if (pmshparams.contains("Enable CreatePatch"))
+        mparams->_doCreatePtchs = pmshparams["Enable CreatePatch"].as<bool>();
+      if (pmshparams.contains("Enable foamToSurface"))
+        mparams->_doFoam2Surf = pmshparams["Enable foamToSurface"].as<bool>();
+      if (pmshparams.contains("Enable surfaceSplitByTopology"))
+        mparams->_doSurfSplit =
+            pmshparams["Enable surfaceSplitByTopology"].as<bool>();
 
-    if (pmshparams.contains("SurfLambdaMuSmooth Parameters")) {
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
-              "AddFeatureFile?"))
-        mparams->_addFeatureFile =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["AddFeatureFile?"]
-                .as<bool>();
+      if (pmshparams.contains("SurfLambdaMuSmooth Parameters")) {
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
+                "AddFeatureFile?"))
+          mparams->_addFeatureFile =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["AddFeatureFile?"]
+                  .as<bool>();
 
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
-              "Input STL File"))
-        mparams->slmssurfaceFile =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["Input STL File"]
-                .as<std::string>();
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
+                "Input STL File"))
+          mparams->slmssurfaceFile =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["Input STL File"]
+                  .as<std::string>();
 
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
-              "Output STL File"))
-        mparams->slmsoutputFile =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["Output STL File"]
-                .as<std::string>();
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
+                "Output STL File"))
+          mparams->slmsoutputFile =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["Output STL File"]
+                  .as<std::string>();
 
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Lambda"))
-        mparams->lambda =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["Lambda"].as<double>();
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Lambda"))
+          mparams->lambda =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["Lambda"].as<double>();
 
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Mu"))
-        mparams->mu =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["Mu"].as<double>();
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains("Mu"))
+          mparams->mu =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["Mu"].as<double>();
 
-      if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
-              "Smoothing Interations"))
-        mparams->slmsIterations =
-            pmshparams["SurfLambdaMuSmooth Parameters"]["Smoothing Interations"]
-                .as<int>();
-    }
-
-    if (pmshparams.contains("splitMeshRegions Parameters")) {
-      if (pmshparams["splitMeshRegions Parameters"].contains("overwrite?"))
-        mparams->_overwriteMsh =
-            pmshparams["splitMeshRegions Parameters"]["overwrite?"].as<bool>();
-
-      if (pmshparams["splitMeshRegions Parameters"].contains("usecellZones?"))
-        mparams->_cellZones =
-            pmshparams["splitMeshRegions Parameters"]["usecellZones?"]
-                .as<bool>();
-    }
-
-    if (pmshparams.contains("mergeMeshes Parameters")) {
-      if (pmshparams["mergeMeshes Parameters"].contains("Master Region"))
-        mparams->masterCase =
-            pmshparams["mergeMeshes Parameters"]["Master Region"]
-                .as<std::string>();
-
-      if (pmshparams["mergeMeshes Parameters"].contains("Add Region"))
-        mparams->addCase = pmshparams["mergeMeshes Parameters"]["Add Region"]
-                               .as<std::string>();
-
-      if (pmshparams["mergeMeshes Parameters"].contains("overwrite?"))
-        mparams->_overwriteMergeMsh =
-            pmshparams["mergeMeshes Parameters"]["overwrite?"].as<bool>();
-
-      if (pmshparams["mergeMeshes Parameters"].contains("Master Region Path"))
-        mparams->masterCasePath =
-            pmshparams["mergeMeshes Parameters"]["Master Region Path"]
-                .as<std::string>();
-
-      if (pmshparams["mergeMeshes Parameters"].contains("Add Region Path"))
-        mparams->addCasePath =
-            pmshparams["mergeMeshes Parameters"]["Add Region Path"]
-                .as<std::string>();
-
-      if (pmshparams["mergeMeshes Parameters"].contains("Number of Domains"))
-        mparams->numDomains =
-            pmshparams["mergeMeshes Parameters"]["Number of Domains"].as<int>();
-      else {
-        mparams->numDomains = -1;
+        if (pmshparams["SurfLambdaMuSmooth Parameters"].contains(
+                "Smoothing Interations"))
+          mparams->slmsIterations =
+              pmshparams["SurfLambdaMuSmooth Parameters"]["Smoothing Interations"]
+                  .as<int>();
       }
-    }
 
-    if (pmshparams.contains("createPatch Parameters")) {
-      if (pmshparams["createPatch Parameters"].contains(
-              "Surrounding PatchName"))
-        mparams->surroundingName =
-            pmshparams["createPatch Parameters"]["Surrounding PatchName"]
-                .as<std::string>();
+      if (pmshparams.contains("splitMeshRegions Parameters")) {
+        if (pmshparams["splitMeshRegions Parameters"].contains("overwrite?"))
+          mparams->_overwriteMsh =
+              pmshparams["splitMeshRegions Parameters"]["overwrite?"].as<bool>();
+        else
+          mparams->_overwriteMsh = true;
 
-      if (pmshparams["createPatch Parameters"].contains("Packs PatchName"))
-        mparams->packsName =
-            pmshparams["createPatch Parameters"]["Packs PatchName"]
-                .as<std::string>();
-
-      if (pmshparams["createPatch Parameters"].contains(
-              "Surrounding PatchType"))
-        mparams->srrndngPatchType =
-            pmshparams["createPatch Parameters"]["Surrounding PatchType"]
-                .as<std::string>();
-
-      if (pmshparams["createPatch Parameters"].contains("Packs PatchType"))
-        mparams->packsPatchType =
-            pmshparams["createPatch Parameters"]["Packs PatchType"]
-                .as<std::string>();
-
-      if (pmshparams["createPatch Parameters"].contains("overwrite?"))
-        mparams->_overwritecpMsh =
-            pmshparams["createPatch Parameters"]["overwrite?"].as<bool>();
-
-      if (pmshparams["createPatch Parameters"].contains("Packs Path"))
-        mparams->pathPacks = pmshparams["createPatch Parameters"]["Packs Path"]
-                                 .as<std::string>();
-
-      if (pmshparams["createPatch Parameters"].contains("Surrounding Path"))
-        mparams->pathSurrounding =
-            pmshparams["createPatch Parameters"]["Surrounding Path"]
-                .as<std::string>();
-    }
-
-    if (pmshparams.contains("foamToSurface Parameters")) {
-      if (pmshparams["foamToSurface Parameters"].contains("Output File Path"))
-        mparams->outSurfName =
-            pmshparams["foamToSurface Parameters"]["Output File Path"]
-                .as<std::string>();
-    }
-
-    if (pmshparams.contains("surfaceSplitByTopology Parameters")) {
-      if (pmshparams["surfaceSplitByTopology Parameters"].contains(
-              "Input File"))
-        mparams->surfFile =
-            pmshparams["surfaceSplitByTopology Parameters"]["Input File"]
-                .as<std::string>();
-      else {
-        mparams->surfFile = cfparams->geomFilePath;
+        if (pmshparams["splitMeshRegions Parameters"].contains("usecellZones?"))
+          mparams->_cellZones =
+              pmshparams["splitMeshRegions Parameters"]["usecellZones?"]
+                  .as<bool>();
+        else
+          mparams->_cellZones = true;
+      } else {
+        mparams->_overwriteMsh = true;
+        mparams->_cellZones = true;
       }
-      if (pmshparams["surfaceSplitByTopology Parameters"].contains(
-              "Output File"))
-        mparams->outSurfFile =
-            pmshparams["surfaceSplitByTopology Parameters"]["Output File"]
-                .as<std::string>();
-      else {
-        mparams->outSurfFile = cfparams->geomFilePath;
+
+      mparams->addCase = params->singleSolidPatch;
+      mparams->masterCase = "domain1";  // Not Used
+      if (pmshparams.contains("mergeMeshes Parameters")) {
+        if (pmshparams["mergeMeshes Parameters"].contains("overwrite?"))
+          mparams->_overwriteMergeMsh =
+              pmshparams["mergeMeshes Parameters"]["overwrite?"].as<bool>();
+        else
+          mparams->_overwriteMergeMsh = true;
+
+        if (pmshparams["mergeMeshes Parameters"].contains("Master Region Path"))
+          mparams->masterCasePath =
+              pmshparams["mergeMeshes Parameters"]["Master Region Path"]
+                  .as<std::string>();
+        else
+          mparams->masterCasePath = ".";
+
+        if (pmshparams["mergeMeshes Parameters"].contains("Add Region Path"))
+          mparams->addCasePath =
+              pmshparams["mergeMeshes Parameters"]["Add Region Path"]
+                  .as<std::string>();
+        else
+          mparams->addCasePath = ".";
+      } else {
+        mparams->masterCase = "domain1";  // Not Used
+        mparams->addCase = params->singleSolidPatch;
+        mparams->_overwriteMergeMsh = true;
+        mparams->masterCasePath = ".";
+        mparams->addCasePath = ".";
+      }
+
+      if (pmshparams.contains("createPatch Parameters")) {
+        if (pmshparams["createPatch Parameters"].contains(
+                "Surrounding PatchName"))
+          mparams->surroundingName =
+              pmshparams["createPatch Parameters"]["Surrounding PatchName"]
+                  .as<std::string>();
+        else
+          mparams->surroundingName = "Soil";
+
+        if (pmshparams["createPatch Parameters"].contains("Packs PatchName"))
+          mparams->packsName =
+              pmshparams["createPatch Parameters"]["Packs PatchName"]
+                  .as<std::string>();
+        else
+          mparams->packsName = "Rocks";
+
+        if (pmshparams["createPatch Parameters"].contains(
+                "Surrounding PatchType"))
+          mparams->srrndngPatchType =
+              pmshparams["createPatch Parameters"]["Surrounding PatchType"]
+                  .as<std::string>();
+        else
+          mparams->srrndngPatchType = "wall";
+
+        if (pmshparams["createPatch Parameters"].contains("Packs PatchType"))
+          mparams->packsPatchType =
+              pmshparams["createPatch Parameters"]["Packs PatchType"]
+                  .as<std::string>();
+        else
+          mparams->packsPatchType = "wall";
+
+        if (pmshparams["createPatch Parameters"].contains("overwrite?"))
+          mparams->_overwritecpMsh =
+              pmshparams["createPatch Parameters"]["overwrite?"].as<bool>();
+        else
+          mparams->_overwritecpMsh = true;
+      } else {
+        mparams->surroundingName = "Soil";
+        mparams->packsName = "Rocks";
+        mparams->srrndngPatchType = "wall";
+        mparams->packsPatchType = "wall";
+        mparams->_overwritecpMsh = true;
+      }
+
+      if (pmshparams.contains("foamToSurface Parameters")) {
+        if (pmshparams["foamToSurface Parameters"].contains("Output File Path"))
+          mparams->outSurfName =
+              pmshparams["foamToSurface Parameters"]["Output File Path"]
+                  .as<std::string>();
+      }
+
+      if (pmshparams.contains("surfaceSplitByTopology Parameters")) {
+        if (pmshparams["surfaceSplitByTopology Parameters"].contains(
+                "Input File"))
+          mparams->surfFile =
+              pmshparams["surfaceSplitByTopology Parameters"]["Input File"]
+                  .as<std::string>();
+        else {
+          mparams->surfFile = params->geomFileName;
+        }
+        if (pmshparams["surfaceSplitByTopology Parameters"].contains(
+                "Output File"))
+          mparams->outSurfFile =
+              pmshparams["surfaceSplitByTopology Parameters"]["Output File"]
+                  .as<std::string>();
+        else {
+          mparams->outSurfFile = "SurfaceSplitOut.stl";
+        }
+      } else {
+        mparams->surfFile = params->geomFileName;
       }
     } else {
-      mparams->surfFile = cfparams->geomFilePath;
-      mparams->outSurfFile = cfparams->geomFilePath;
+      // All default options here?
+      mparams->_overwriteMsh = true;
+      mparams->_cellZones = true;
+      mparams->masterCase = "domain1";
+      mparams->addCase = params->singleSolidPatch;
+      mparams->_overwriteMergeMsh = true;
+      mparams->masterCasePath = ".";
+      mparams->addCasePath = ".";
+      mparams->surroundingName = "Soil";
+      mparams->packsName = "Rocks";
+      mparams->srrndngPatchType = "wall";
+      mparams->packsPatchType = "wall";
+      mparams->_overwritecpMsh = true;
+      mparams->surfFile = params->geomFileName;
+      mparams->outSurfFile = "SurfaceSplitOut.stl";
     }
 
     // Give all data to PackMesh Driver
     PackMeshDriver *pckmshdrvobj =
-        new PackMeshDriver(ifname, mparams, cfparams, params, bmparams, ofname1,
-                           ofname2, useRocpack);
+        new PackMeshDriver(ifname, mparams, params, bmparams, 
+                           ofname_pack, ofname_surrndng, ofname_merged, 
+                           useRocpack,locAdjust);
     return pckmshdrvobj;
   } else {
     std::cout << "Mesh generation engine " << meshEngine << " is not supported"

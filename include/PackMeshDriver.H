@@ -53,18 +53,21 @@ class PackMeshDriver : public NemDriver {
       @brief PackMeshDriver constructor for hexahedral meshing
       @param ifname Input surface file name
       @param _mparams MeshManipulationFoamParams object
-      @param _cfparams cfmeshParams object
       @param _snappyparams snappymeshParams object
       @param _bmparams blockMeshParams object
-      @param ofname1 Pack mesh output filename.extension
+      @param ofname_pack Pack mesh output filename.extension
+      @param ofname_surrndng Surrounding mesh output filename.extension
+      @param ofname_merged Combined mesh file name
       @param useRocpack Boolean for using rocpack to generate an STL
-      @param ofname2 Surrounding mesh output filename.extension
+      @param locAdjust Perturb location in mesh if snappy fails
   **/
   PackMeshDriver(const std::string &ifname,
-                 MeshManipulationFoamParams *_mparams, cfmeshParams *_cfparams,
+                 MeshManipulationFoamParams *_mparams,
                  snappymeshParams *_snappyparams, blockMeshParams *_bmparams,
-                 const std::string &ofname1, const std::string &ofname2,
-                 const bool &useRocpack);
+                 const std::string &ofname_pack, 
+                 const std::string &ofname_surrndng,
+                 const std::string &ofname_merged, const bool &useRocpack,
+                 const double &locAdjust);
 #endif
 
   /**
@@ -124,14 +127,16 @@ class PackMeshDriver : public NemDriver {
   /** @brief Input parsing module for hex mesh. Assigned user defined parameters
              in input file to variables.
       @param ifname Input surface file name
-      @param ofname1 Pack mesh output filename.extension
-      @param ofname2 Surrounding mesh output filename.extension
+      @param ofname_pack Pack mesh output filename.extension
+      @param ofname_surrndng Surrounding mesh output filename.extension
+      @param ofname_merged Combined mesh file name
       @param useRocpack Boolean for using rocpack to generate an STL
       @param inputjson JSON object created using user provided input file
   **/
   static PackMeshDriver *readJSON(const std::string &ifname,
-                                  const std::string &ofname1,
-                                  const std::string &ofname2,
+                                  const std::string &ofname_pack,
+                                  const std::string &ofname_surrndng,
+                                  const std::string &ofname_merged,
                                   const bool useRocpack,
                                   const jsoncons::json inputjson);
 #endif

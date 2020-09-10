@@ -110,7 +110,7 @@ class NEMOSYS_EXPORT MeshManipulationFoam {
       @param
       @return domain number skipped during splitting, Total disconnected regions
   **/
-  std::pair<int, int> splitMshRegions();  // SplitMeshRegions utility
+  std::pair<std::vector<int>, std::string> splitMshRegions();  // SplitMeshRegions utility
 
   /** @brief .
       @param dirStat domain number to skip (output from splitMshRegions)

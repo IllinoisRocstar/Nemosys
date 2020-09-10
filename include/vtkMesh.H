@@ -108,6 +108,8 @@ class NEMOSYS_EXPORT vtkMesh : public meshBase
   public:
     // abstract read method reserved for derived classes
     void read(const std::string &fname) override {}
+    // merge vtk mesh with current mesh
+    void merge(vtkSmartPointer<vtkDataSet> dataSet_new);
     // get point with id
     std::vector<double> getPoint(nemId_t id) const override;
     // get 3 vecs with x,y and z coords

@@ -35,6 +35,7 @@
 #include <vtkDataSetReader.h>
 #include <vtkXMLWriter.h>
 #include <vtksys/SystemTools.hxx>
+#include <vtkAppendFilter.h>
 
 #include "AuxiliaryFunctions.H"
 
@@ -1195,6 +1196,19 @@ void vtkMesh::unsetFieldDataArray(const std::string &name)
   dataSet->GetFieldData()->RemoveArray(name.c_str());
 }
 
+// Merges new dataset with existing dataset
+void vtkMesh::merge(vtkSmartPointer<vtkDataSet> dataSet_new) {
+  vtkSmartPointer<vtkAppendFilter> appendFilter =
+    vtkSmartPointer<vtkAppendFilter>::New();
+  appendFilter->AddInputData(dataSet);
+  appendFilter->AddInputData(dataSet_new);
+  appendFilter->MergePointsOn();
+  appendFilter->Update();
+  dataSet = vtkDataSet::SafeDownCast(appendFilter->GetOutput());
+
+  numCells = dataSet->GetNumberOfCells();
+  numPoints = dataSet->GetNumberOfPoints();
+}
 
 
 //void addLegacyVTKData(vtkDataArray* arr, const std::string& type, const bool pointOrCell,
