@@ -35,4 +35,8 @@ blockMeshParams::blockMeshParams() // contructor body
   sphrGradingY = 1; // Grading in each direction
   sphrGradingZ = 1; // Grading in each direction
 
+  std::vector<double> minPt = std::vector<double>(3,0.0);
+  std::vector<double> maxPt = std::vector<double>(3,0.0);
+  coordsBox = std::make_pair(minPt,maxPt);
+
 }

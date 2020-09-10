@@ -215,7 +215,7 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
   returned and used in mergeMeshes function so that it knows which directory is
   missing from constant folder.
 */
-std::pair<int, int> MeshManipulationFoam::splitMshRegions() {
+std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions() {
   int impVar;
   using namespace Foam;
 
@@ -666,7 +666,13 @@ std::pair<int, int> MeshManipulationFoam::splitMshRegions() {
 
   Info << "End\n" << endl;
 
-  return std::make_pair(impVar, nCellRegions);
+  label largestReg = findMax(regionSizes);
+  std::string largestRegMsh = regionNames[largestReg];
+  _mshMnipPrms->pathSurrounding = largestRegMsh;
+  std::vector<int> rtrnVec;
+  rtrnVec.push_back(impVar);
+  rtrnVec.push_back(nCellRegions);
+  return std::make_pair(rtrnVec,largestRegMsh);
 }
 
 /*
@@ -687,11 +693,13 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
 
   int ndoms;
 
-  if ((_mshMnipPrms->numDomains) == -1) {
-    ndoms = nDomains;
-  } else {
-    ndoms = (_mshMnipPrms->numDomains);
-  }
+  // if ((_mshMnipPrms->numDomains) == -1) {
+  //   ndoms = nDomains;
+  // } else {
+  //   ndoms = (_mshMnipPrms->numDomains);
+  // }
+
+  ndoms = nDomains;
 
   std::vector<std::string> addCases;
 
@@ -742,9 +750,11 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
       if (dirStat == 1)
         masterRegion = "domain2";
       else
-        masterRegion = (_mshMnipPrms->masterCase);
+        masterRegion = "domain1";
+        //masterRegion = (_mshMnipPrms->masterCase);
     } else
-      masterRegion = (_mshMnipPrms->masterCase);
+        masterRegion = "domain1";
+      //masterRegion = (_mshMnipPrms->masterCase);
 
     fileName addCase = (_mshMnipPrms->addCasePath);
     word addRegion = polyMesh::defaultRegion;
@@ -808,7 +818,7 @@ added in future.
 */
 void MeshManipulationFoam::createPatchDict(int dirStat) {
   // creating a base system directory
-  const char dir_path[] = "./system/domain0";
+  std::string dir_path = "./system/"+_mshMnipPrms->pathSurrounding;
   boost::filesystem::path dir(dir_path);
   try {
     boost::filesystem::create_directory(dir);
@@ -1016,7 +1026,7 @@ void MeshManipulationFoam::createPatch(int dirStat) {
   if (dirStat == 1)
     secondPtch = "domain2";
   else
-    secondPtch = _mshMnipPrms->pathPacks;
+    secondPtch = "domain1";
 
   std::string regnName;
 

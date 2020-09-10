@@ -14,7 +14,7 @@ snappymeshParams::snappymeshParams() {
   geomTolerance = 1e-05;  // Keep optional
   maxTreeDepth = 10;      // Keep optional
 
-  // // Castellated Mesh Controls
+  // Castellated Mesh Controls
   maxLCells = 2000000;  // max global cells
   maxGCells = 4000000;  // max local cells (on 1 processor)
   minRefCells = 0;      // minimum refinement level
