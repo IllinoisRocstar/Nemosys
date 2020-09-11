@@ -146,64 +146,96 @@ PackMeshDriver::PackMeshDriver(
   int totalRegs = dirStat.first[1] - 1;
   std::string surroundingRegion = dirStat.second;
 
+  // *************** Merge meshes using meshBase and write *******************//
+  // packRegNames is a vector containing all names of pack regions
+  std::vector<std::string> packRegNames = _mparams->pckRegionNames;
+
+  bool readDB = false;
+  // Create surrounding region database
+  meshBase *fm = new FOAM::foamMesh(readDB);
+  fm->read(surroundingRegion);
+  std::vector<double> physId 
+    = std::vector<double>(fm->getNumberOfCells(),0);
+  vtkMesh *vm = new vtkMesh(fm->getDataSet(), ofname_merged);
+  vm->setCellDataArray("PhysGrpId",physId);
+
+  // Loop through all pack particles and merge their databases into main
+  // database
+  for (int i=0; i<packRegNames.size(); i++) {
+    fm->read(packRegNames[i]);
+    std::vector<double> physIdLoop 
+      = std::vector<double>(fm->getNumberOfCells(),i+1);
+    vtkMesh *vm2 = new vtkMesh(fm->getDataSet(), ofname_merged);
+    vm2->setCellDataArray("PhysGrpId",physIdLoop);
+    vm2->write();
+    vm->merge(vm2->getDataSet());
+  }
+
+  // Write mesh and clean up objects
+  vm->write();
+  if (vm) delete vm;
+  if (fm) delete fm;
+  // *************** Merge meshes using meshBase and write *******************//
+
+  // *************** Merge meshes using OF and write ************************ //
+  // Use this method for writing pack and surrounding meshes separately. This
+  // uses mergeMeshes method from "src/MeshManipulation/MeshManipulationFoam.C".
+  // It also writes merged mesh at the end. Use this as a replacement for the
+  // method directly above (Merge meshes using meshBase).
+
   // mergeMeshes will read master domain (defined by user) from constant folder
   // and start merging other domain to it untill all slave domains are attached
   // to master domain. It loops through all domains in sequential manner and
   // skips the missing domain.* (also skipped by splitMeshRegions) to avoid
   // runtime error.
-  std::cout << "Total # of domains are = " << totalRegs << std::endl;
-  if (totalRegs == 1) {
-    // Nothing
-  } else {
-    objMsh->mergeMeshes(skippedDir, totalRegs);
-  }
+  // std::cout << "Total # of domains are = " << totalRegs << std::endl;
+  // if (totalRegs == 1) {
+  //   // Nothing
+  // } else {
+  //   objMsh->mergeMeshes(skippedDir, totalRegs);
+  // }
 
-  // createPatch utility reads domain mesh and createPatchDict to combine all
-  // different patches of multiple packs/surrounding into one patch
-  // respectively
-  if (totalRegs == 1) {
-    // Nothing
-  } else {
-    objMsh->createPatch(skippedDir);
-  }
+  // // Reads current mesh and write it to separate VTK/VTU files
+  // // Reads and converts pack mesh
+  // bool readDB = false;
+  // std::string regNme;
+  // if (skippedDir == 1)
+  //   regNme = "domain2";
+  // else
+  //   regNme = "domain1";
 
-  // Reads current mesh and write it to separate VTK/VTU files
-  bool readDB = false;
+  // if (totalRegs == 1) regNme = _snappyparams->singleSolidPatch;
 
-  // Reads and converts pack mesh
-  std::string regNme;
-  if (skippedDir == 1)
-    regNme = "domain2";
-  else
-    regNme = "domain1";
+  // meshBase *fm = new FOAM::foamMesh(readDB);
+  // fm->read(regNme);
+  // vtkMesh *vm2 = new vtkMesh(fm->getDataSet(), ofname_pack);
+  // std::vector<double> physIdPack 
+  //   = std::vector<double>(fm->getNumberOfCells(),1);
+  // vm2->setCellDataArray("PhysGrpId",physIdPack);
+  // vm2->write();
 
-  if (totalRegs == 1) regNme = _snappyparams->singleSolidPatch;
+  // // Reads and converts surronding mesh
+  // regNme = surroundingRegion;
 
-  meshBase *fm = new FOAM::foamMesh(readDB);
-  fm->read(regNme);
-  vtkMesh *vm2 = new vtkMesh(fm->getDataSet(), ofname_pack);
-  std::vector<double> physIdPack 
-    = std::vector<double>(fm->getNumberOfCells(),1);
-  vm2->setCellDataArray("PhysGrpId",physIdPack);
-  vm2->write();
+  // if (totalRegs == 1) regNme = surroundingRegion;
+  // meshBase *fm2 = new FOAM::foamMesh(readDB);
+  // fm2->read(regNme);
+  // std::vector<double> physIdSurrounding 
+  //   = std::vector<double>(fm2->getNumberOfCells(),0);
+  // vtkMesh *vm3 = new vtkMesh(fm2->getDataSet(), ofname_surrndng);
+  // vm3->setCellDataArray("PhysGrpId",physIdSurrounding);
+  // vm3->write();
 
-  // Reads and converts surronding mesh
-  regNme = surroundingRegion;
-
-  if (totalRegs == 1) regNme = surroundingRegion;
-  meshBase *fm2 = new FOAM::foamMesh(readDB);
-  fm2->read(regNme);
-  std::vector<double> physIdSurrounding 
-    = std::vector<double>(fm2->getNumberOfCells(),0);
-  vtkMesh *vm3 = new vtkMesh(fm2->getDataSet(), ofname_surrndng);
-  vm3->setCellDataArray("PhysGrpId",physIdSurrounding);
-  vm3->write();
-
-  // Merge meshes and write
-  vtkMesh *vm = new vtkMesh(vm2->getDataSet(),ofname_merged);
-  vm->merge(vm3->getDataSet());
-  vm->report();
-  vm->write();
+  // // Merge meshes and write
+  // vtkMesh *vm = new vtkMesh(vm2->getDataSet(),ofname_merged);
+  // vm->merge(vm3->getDataSet());
+  // vm->report();
+  // vm->write();
+  // if (vm) delete vm;
+  // if (fm) delete fm;
+  // if (vm2) delete vm2;
+  // if (fm2) delete fm2;
+  // if (vm3) delete vm3;
 
   // // Outputs useful mesh quality parameters for users
   // std::string SurroundingName = "surroundingMeshQuality";
@@ -213,18 +245,14 @@ PackMeshDriver::PackMeshDriver(
   // MeshQualityDriver *objSurrQ =
   //     new MeshQualityDriver(Surroundingmesh, SurroundingName);
   // MeshQualityDriver *objPackQ = new MeshQualityDriver(Packmesh, PackName);
+  // if (objSurrQ) delete objSurrQ;
+  // if (objPackQ) delete objPackQ;
+  // *************** Merge meshes using OF and write ************************ //
 
   // Cleaning up
-  if (vm) delete vm;
-  if (fm) delete fm;
-  if (vm2) delete vm2;
-  if (vm3) delete vm3;
-  if (fm2) delete fm2;
   if (objMsh) delete objMsh;
   if (objSHM) delete objSHM;
   if (objBM) delete objBM;
-  // if (objSurrQ) delete objSurrQ;
-  // if (objPackQ) delete objPackQ;
   // End of workflow
 }
 #endif

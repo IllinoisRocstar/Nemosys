@@ -669,6 +669,12 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
   label largestReg = findMax(regionSizes);
   std::string largestRegMsh = regionNames[largestReg];
   _mshMnipPrms->pathSurrounding = largestRegMsh;
+
+  // Iterate through wordlist regionNames
+  for (int i=0; i<regionNames.size(); i++)
+    if (regionNames[i] != largestRegMsh)
+      _mshMnipPrms->pckRegionNames.push_back(regionNames[i]);
+
   std::vector<int> rtrnVec;
   rtrnVec.push_back(impVar);
   rtrnVec.push_back(nCellRegions);

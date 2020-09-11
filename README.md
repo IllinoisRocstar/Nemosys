@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.51.6
+Version 0.51.7
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:

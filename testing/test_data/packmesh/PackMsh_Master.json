@@ -21,15 +21,14 @@
 
         "Geometry Definition": {                // Required
             "Enable Multi Patches": false,      // Required
-            "InputPatchName": "pebbles_pack"    // Required
+            "InputPatchName": "domain100"    // Required
         },
 
         "Castellated Mesh Controls": {
             "CellZones": true,                  // Required
             "RegionRefine": false,              // Required
             "SurfaceRefine": false,             // Required
-            
-            "locInMesh_adjust": -1,             // OPTIONAL
+
             "maxLocalCells": 2000000,           // OPTIONAL
             "maxGlobalCells": 4000000,          // OPTIONAL
             "minRefCells": 0,                   // OPTIONAL
@@ -98,9 +97,9 @@
         "Sphere Geometry": false,               // Required
         "Cylinder/Tapered_Cone Geometry": false,// Required
         "scaleToMeters": 1,                     // Required
-        "XdirectionCells": 20,                  // Required
-        "YdirectionCells": 20,                  // Required
-        "ZdirectionCells": 20,                  // Required
+        "XdirectionCells": 15,                  // Required
+        "YdirectionCells": 15,                  // Required
+        "ZdirectionCells": 15,                  // Required
         "Block Parameters": {                   // Required
           // "X1": -0.25,          // Required if not "Auto_Generate"
           // "Y1": -0.35,          // Required if not "Auto_Generate"
@@ -110,7 +109,7 @@
           // "LengthZ": 0.5,       // Required if not "Auto_Generate"
           "GradingXdir": 1,                     // OPTIONAL
           "GradingYdir": 1,                     // OPTIONAL
-          "GradingZdir": 1,                      // OPTIONAL
+          "GradingZdir": 1,                     // OPTIONAL
           "Auto_Generate": {       // Required if X1, Y1, Z1, & Lengths are not provided
             "Offset_XDir":0.15,    // Required if X1, Y1, Z1, & Lengths are not provided
             "Offset_YDir":0.15,    // Required if X1, Y1, Z1, & Lengths are not provided

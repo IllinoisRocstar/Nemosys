@@ -54,22 +54,22 @@ int generate(const char *jsonF) {
 // TEST macros
 TEST(PackMeshing, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 
-TEST(PackMeshing, NumberOfNodesnCellsPacks) {
-  if (ref) delete ref;
-  ref = meshBase::Create(inputjson["Pack Reference File"].as<std::string>());
-  meshBase *cmp1 = meshBase::Create("geom_pack_mesh.vtu");
-  EXPECT_TRUE((cmp1->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-              (cmp1->getNumberOfCells() == ref->getNumberOfCells()));
-}
+// TEST(PackMeshing, NumberOfNodesnCellsPacks) {
+//   if (ref) delete ref;
+//   ref = meshBase::Create(inputjson["Pack Reference File"].as<std::string>());
+//   meshBase *cmp1 = meshBase::Create("geom_pack_mesh.vtu");
+//   EXPECT_TRUE((cmp1->getNumberOfPoints() == ref->getNumberOfPoints()) &&
+//               (cmp1->getNumberOfCells() == ref->getNumberOfCells()));
+// }
 
-TEST(PackMeshing, NumberOfNodesNodesnCellsSurrounding) {
-  if (ref) delete ref;
-  ref = meshBase::Create(
-      inputjson["Surrounding Reference File"].as<std::string>());
-  meshBase *cmp2 = meshBase::Create("geom_surrounding_mesh.vtu");
-  EXPECT_TRUE((cmp2->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-              (cmp2->getNumberOfCells() == ref->getNumberOfCells()));
-}
+// TEST(PackMeshing, NumberOfNodesNodesnCellsSurrounding) {
+//   if (ref) delete ref;
+//   ref = meshBase::Create(
+//       inputjson["Surrounding Reference File"].as<std::string>());
+//   meshBase *cmp2 = meshBase::Create("geom_surrounding_mesh.vtu");
+//   EXPECT_TRUE((cmp2->getNumberOfPoints() == ref->getNumberOfPoints()) &&
+//               (cmp2->getNumberOfCells() == ref->getNumberOfCells()));
+// }
 
 TEST(PackMeshing, NumberOfNodesNodesnCellsMerged) {
   if (ref) delete ref;
