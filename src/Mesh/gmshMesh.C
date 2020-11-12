@@ -50,8 +50,6 @@ gmshMesh::gmshMesh(meshBase *mb) {
   dataSet = mb->getDataSet();
   numPoints = dataSet->GetNumberOfPoints();
   numCells = dataSet->GetNumberOfCells();
-  hasSizeField = false;
-  order = 1;
   std::cout << "Number of points: " << numPoints << std::endl;
   std::cout << "Number of cells: " << numCells << std::endl;
   std::cout << "gmshMesh constructed" << std::endl;
@@ -167,8 +165,6 @@ void gmshMesh::read(const std::string &fname) {
 
   numPoints = dataSet->GetNumberOfPoints();
   numCells = dataSet->GetNumberOfCells();
-  hasSizeField = false;
-  order = 1;
   std::cout << "Number of points: " << numPoints << std::endl;
   std::cout << "Number of cells: " << numCells << std::endl;
 }

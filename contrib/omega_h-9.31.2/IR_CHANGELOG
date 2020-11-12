@@ -410,3 +410,95 @@ src/Omega_h_library.cpp:112
 +    } else {
 +      Kokkos::initialize();
 +    }
+
+Remove duplicate definition of Omega_h::vtk:read_vtu(...)
+src/Omega_h_vtk.hpp:33
+-void read_vtu(std::istream& stream, CommPtr comm, Mesh* mesh);
+
+Fix issue where re-running cmake would force a full rebuild of Omega_h
+cmake/bob.cmake
+@@ -437,33 +437,29 @@ function(bob_config_header HEADER_PATH)
+ ")
+   if (${PROJECT_NAME}_KEY_BOOLS)
+     foreach(KEY_BOOL IN LISTS ${PROJECT_NAME}_KEY_BOOLS)
+-      if (${KEY_BOOL})
+         string(TOUPPER "${KEY_BOOL}" MACRO_NAME)
++        set(${MACRO_NAME} "${${KEY_BOOL}}")
+         set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME}")
+-      endif()
++#cmakedefine ${MACRO_NAME}")
+     endforeach()
+   endif()
+   if (${PROJECT_NAME}_KEY_INTS)
+     foreach(KEY_INT IN LISTS ${PROJECT_NAME}_KEY_INTS)
+       string(TOUPPER "${KEY_INT}" MACRO_NAME)
++      set(${MACRO_NAME} "${${KEY_INT}}")
+       set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME} ${${KEY_INT}}")
++#cmakedefine ${MACRO_NAME} @${MACRO_NAME}@")
+     endforeach()
+   endif()
+   if (${PROJECT_NAME}_KEY_STRINGS)
+     foreach(KEY_STRING IN LISTS ${PROJECT_NAME}_KEY_STRINGS)
+       string(TOUPPER "${KEY_STRING}" MACRO_NAME)
+-      set(val "${${KEY_STRING}}")
+-#escape escapes
+-      string(REPLACE "\\" "\\\\" val "${val}")
+-#escape quotes
+-      string(REPLACE "\"" "\\\"" val "${val}")
++      set(${MACRO_NAME} "${${KEY_STRING}}")
+       set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME} \"${val}\"")
++#cmakedefine ${MACRO_NAME} \"@${MACRO_NAME}@\"")
+     endforeach()
+   endif()
+   set(HEADER_CONTENT
+@@ -471,7 +467,8 @@ function(bob_config_header HEADER_PATH)
+
+ #endif
+ ")
+-  file(WRITE "${HEADER_PATH}" "${HEADER_CONTENT}")
++  file(WRITE "${HEADER_PATH}.in" "${HEADER_CONTENT}")
++  configure_file("${HEADER_PATH}.in" "${HEADER_PATH}" ESCAPE_QUOTES @ONLY)
+ endfunction()
+
+ function(bob_get_link_libs tgt var)
+
+Remove hard-coding of number of nodes per element when reading gmsh files, replace with element_degree
+src/Omega_h_class.cpp:185
+-  auto neq = eqv2v.size() / (ent_dim + 1);
++  auto neq = eqv2v.size() / element_degree(mesh->family(), ent_dim, VERT);
+src/Omega_h_gmsh.cpp:452
+-        Int neev = dim + 1;
++        Int neev = element_degree(family, dim, VERT);
+
+Add binary flag to fix writing .osh on Windows (see https://en.cppreference.com/w/cpp/io/c/FILE#Binary_and_text_modes)
+src/Omega_h_file.cpp:530
+-  std::ofstream file(filepath.c_str());
++  std::ofstream file(filepath.c_str(), std::ios::binary);
+
+Change install location of omega_h headers.
+cmake/bob.cmake
+@@ -400,7 +400,7 @@ endfunction(bob_target_includes)
+ function(bob_library_includes lib_name)
+   bob_target_includes("${lib_name}")
+   #ensure downstream users include installed headers
+-  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include>)
++  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include/omega_h>)
+ endfunction(bob_library_includes)
+
+ function(bob_export_target tgt_name)
+src/CMakeLists.txt
+@@ -346,7 +346,7 @@ if(Omega_h_USE_DOLFIN)
+   set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_dolfin.hpp)
+ endif()
+
+-install(FILES ${Omega_h_HEADERS} DESTINATION include)
++install(FILES ${Omega_h_HEADERS} DESTINATION include/omega_h)
+
+ if (Omega_h_USE_pybind11)
+   set(PYBIND11_SOURCES

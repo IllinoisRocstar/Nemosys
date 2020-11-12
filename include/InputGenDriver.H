@@ -6,15 +6,19 @@
 
 #include <string>
 
-class NEMOSYS_EXPORT InputGenDriver : public NemDriver
-{
-  public:
-    InputGenDriver(const std::string &srvName,
-                   const jsoncons::json &inputjson);
-    ~InputGenDriver() override;
+namespace NEM {
+namespace DRV {
 
-    static InputGenDriver *readJSON(const jsoncons::json &inputjson);
-    static InputGenDriver *readJSON(const std::string &ifname);
+class NEMOSYS_EXPORT InputGenDriver : public NemDriver {
+ public:
+  InputGenDriver(const std::string &srvName, const jsoncons::json &inputjson);
+  ~InputGenDriver() override;
+
+  static InputGenDriver *readJSON(const jsoncons::json &inputjson);
+  static InputGenDriver *readJSON(const std::string &ifname);
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif

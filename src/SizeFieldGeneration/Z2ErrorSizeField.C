@@ -1,65 +1,77 @@
 #include "Z2ErrorSizeField.H"
-#include "patchRecovery.H"
 
 #include <vtkCellData.h>
+#include <vtkCellIterator.h>
 
-Z2ErrorSizeField::Z2ErrorSizeField(meshBase *_mesh, int arrayID)
-{
-  initialize(_mesh, arrayID, 0, false, "Z2ErrorSF");
-  order = mesh->getOrder();
+#include "patchRecovery.H"
+
+namespace NEM {
+namespace ADP {
+
+Z2ErrorSizeField::Z2ErrorSizeField(vtkDataSet *_ds, int arrayID, int _order)
+    : SizeFieldBase(_ds, arrayID, 0.0, false, "Z2ErrorSF"), order(_order) {
   std::cout << "Z2ErrorSizeField constructed" << std::endl;
 }
 
-double Z2ErrorSizeField::computeNodalError(int arrayID) const
-{
+double Z2ErrorSizeField::computeNodalError(int arrayID) const {
   std::vector<int> arrayIDs(1);
   arrayIDs[0] = arrayID;
-  std::unique_ptr<PatchRecovery> recoverObj
-      = std::unique_ptr<PatchRecovery>(
-          new PatchRecovery(mesh, order, arrayIDs));
+  std::unique_ptr<PatchRecovery> recoverObj =
+      std::unique_ptr<PatchRecovery>(new PatchRecovery(ds, order, arrayIDs));
   return recoverObj->computeNodalError()[0][0];
 }
 
-void Z2ErrorSizeField::computeSizeField(int arrayID)
-{
-  double aveError = computeNodalError(arrayID) / mesh->getNumberOfCells();
+void Z2ErrorSizeField::computeSizeField(vtkDataArray *da) {
+  int arrayID;
+  ds->GetPointData()->GetArray(da->GetName(), arrayID);
+  double aveError = computeNodalError(arrayID) / ds->GetNumberOfCells();
 
-  std::string errorName = mesh->getDataSet()->GetPointData()->GetArrayName(
-      arrayID);
+  std::string errorName = da->GetName();
   errorName += "ErrorIntegral";
 
-  vtkSmartPointer<vtkDataArray> errorIntegrals
-      = mesh->getDataSet()->GetCellData()->GetArray(errorName.c_str());
-  vtkSmartPointer<vtkDataArray> nodeSizes
-      = mesh->getDataSet()->GetPointData()->GetArray("nodeSizes");
+  vtkSmartPointer<vtkDataArray> errorIntegrals =
+      ds->GetCellData()->GetArray(errorName.c_str());
+  vtkSmartPointer<vtkDataArray> nodeSizes =
+      ds->GetPointData()->GetArray("nodeSizes");
 
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  std::vector<double> sizeField;
+  sizeField.reserve(ds->GetNumberOfCells());
 
-  std::vector<double> sizeField(mesh->getNumberOfCells());
+  vtkCellIterator *it = ds->NewCellIterator();
+  vtkSmartPointer<vtkGenericCell> cell = vtkSmartPointer<vtkGenericCell>::New();
+  for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell()) {
+    double interpSize = 0.0;
+    it->GetCell(cell);
 
-  for (int i = 0; i < mesh->getNumberOfCells(); ++i)
-  {
-    double interpSize = 0;
-    mesh->getDataSet()->GetCell(i, genCell);
     double center[3];
-    auto *weights = new double[genCell->GetNumberOfPoints()];
+    auto *weights = new double[cell->GetNumberOfPoints()];
     int subId;    // dummy
     double x[3];  // dummy
-    genCell->GetParametricCenter(center);
-    genCell->EvaluateLocation(subId, center, x, weights);
-    for (int j = 0; j < genCell->GetNumberOfPoints(); ++j)
-    {
-      int pntID = genCell->GetPointId(j);
+    cell->GetParametricCenter(center);
+    cell->EvaluateLocation(subId, center, x, weights);
+
+    for (int j = 0; j < cell->GetNumberOfPoints(); ++j) {
+      int pntID = cell->GetPointId(j);
       double size[1];
       nodeSizes->GetTuple(pntID, size);
       interpSize += size[0] * weights[j];
     }
     delete[] weights;
+
     double error[1];
-    errorIntegrals->GetTuple(i, error);
-    sizeField[i] =
-        interpSize / (std::pow(error[0] / aveError, 1.0 / order)) * sizeFactor;
+    errorIntegrals->GetTuple(it->GetCellId(), error);
+    sizeField.emplace_back(
+        interpSize / (std::pow(error[0] / aveError, 1.0 / order)) * sizeFactor);
   }
-  mesh->setCellDataArray(sfname.c_str(), sizeField);
-  mesh->setSFBool(true);
+  it->Delete();
+
+  vtkSmartPointer<vtkDoubleArray> da2 = vtkSmartPointer<vtkDoubleArray>::New();
+  da2->SetName(sfname.c_str());
+  da2->SetNumberOfComponents(1);
+  for (vtkIdType i = 0; i < ds->GetNumberOfCells(); ++i)
+    da2->InsertNextTypedTuple(&sizeField[i]);
+  ds->GetCellData()->AddArray(da2);
 }
+
+}  // namespace ADP
+}  // namespace NEM

@@ -12,8 +12,10 @@ class cfmeshParams;
 class blockMeshParams;
 class snappymeshParams;
 class MeshManipulationFoam;
-
 #endif
+
+namespace NEM {
+namespace DRV {
 
 /**
   @brief This class drives the flow of pack meshing by using parameters provided
@@ -152,5 +154,8 @@ class PackMeshDriver : public NemDriver {
 
  private:
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif

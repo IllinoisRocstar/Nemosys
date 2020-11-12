@@ -170,8 +170,6 @@ void foamMesh::genMshDB()
     // Obtaining the mesh data and generating requested output file
     numPoints = dataSet->GetNumberOfPoints();
     numCells = dataSet->GetNumberOfCells();
-    hasSizeField = false;
-    order = 1;
     std::cout << "Number of points " << numPoints << std::endl;
     std::cout << "Number of cells "<< numCells << std::endl;
 }

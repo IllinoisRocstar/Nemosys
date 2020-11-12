@@ -47,6 +47,17 @@ ${SIMMETRIX_LIB_DIR};\
 $ENV{PATH}")
   set(TEST_ENV_LD_OPTIONS
       "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
+elseif(APPLE)
+  set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
+  # Note: Do not indent. The indentation whitespace is added to the variable!
+  set(TEST_ENV_LD_OPTIONS
+      "DYLD_FALLBACK_LIBRARY_PATH=${CMAKE_CURRENT_BINARY_DIR}:\
+${CMAKE_BINARY_DIR}:\
+${VTK_LIB_DIR}:\
+${GMSH_LIB_PATH}:\
+${NETGEN_LIBRARY_DIR}:\
+${OpenCASCADE_LIBRARY_DIR}:\
+$ENV{LD_LIBRARY_PATH}")
 else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   # Note: Do not indent. The indentation whitespace is added to the variable!
@@ -114,16 +125,23 @@ NEM_add_test_executable(QHull)
 NEM_add_test_executable(RocPackPeriodic)
 NEM_add_test_executable(NucMesh)
 NEM_add_test_executable(GmshMeshGen)
+NEM_add_test_executable(ExoMesh)
 
-NEM_add_test_executable(GeoMeshFactory)
 NEM_add_test_executable(GeoMeshBase)
-NEM_add_test_executable(VtkGeoMesh)
+NEM_add_test_executable(GeoMeshFactory)
+
+NEM_add_test_executable(ExoGeoMesh)
 NEM_add_test_executable(GmshGeoMesh)
+NEM_add_test_executable(OshGeoMesh)
+NEM_add_test_executable(VtkGeoMesh)
+
+NEM_add_test_executable(SrvBase)
+
+NEM_add_test_executable(OmegahRefineSrv)
+
+NEM_add_test_executable(OmegahRefineDriver)
 
 # custom-built tests
-if(ENABLE_EXODUS)
-  NEM_add_test_executable(ExoMesh)
-endif()
 if(ENABLE_EPIC)
   NEM_add_test_executable(Ep16Pre)
   NEM_add_test_executable(Ep16Post)
@@ -147,11 +165,8 @@ endif()
 if(ENABLE_CONSRV_SURFACE_TRANSFER)
   NEM_add_test_executable(ConservativeSurfaceTransfer)
 endif()
-if(ENABLE_OMEGAH)
-  NEM_add_test_executable(OshGeoMesh)
-  if(ENABLE_OMEGAH_CUDA)
-    NEM_add_test_executable(OshGeoMeshCUDA)
-  endif()
+if(ENABLE_OMEGAH_CUDA)
+  NEM_add_test_executable(OshGeoMeshCUDA)
 endif()
 
 # Define tests #################################################################
@@ -244,11 +259,19 @@ NEM_add_test(pntgen PNTGen PNTGenTest
     bench6.json bench6_conv_gold.pntmesh
     )
 
+NEM_add_test(exoMesh ExoMesh ExoMeshTest
+    hardenedUGbunker_soil2.g
+    pack.g
+    test_merge_in.g
+    test_merge_ref.g
+    )
+
 NEM_add_test(geoMeshBase GeoMeshBase "")
 NEM_add_test(geoMeshFactory GeoMeshFactory GeoMeshFactoryTest
     vox8.vtu
     cube41.msh
-    #cube2.osh
+    box0.osh
+    smallTestFile.exo
     )
 NEM_add_test(vtkGeoMesh VtkGeoMesh VtkGeoMeshTest
     unstructured_grid.vtk
@@ -260,6 +283,29 @@ NEM_add_test(gmshGeoMesh GmshGeoMesh GmshGeoMeshTest
     cube41.msh
     cube_UnnamedPhyGrp.msh
     cube_NamedPhyGrp.msh
+    )
+NEM_add_test(exoGeoMesh ExoGeoMesh ExoGeoMeshTest
+    hardenedUGbunker_soil2.g
+    pack.g
+    smallTestFile.exo
+    hasPointData.vtu
+    cube41.msh
+    )
+NEM_add_test(oshGeoMesh OshGeoMesh OshGeoMeshTest)
+
+NEM_add_test(srvBase SrvBase "")
+NEM_add_test(omegahRefineSrv OmegahRefineSrv OmegahRefineTest)
+
+NEM_add_test(omegahRefineDriver OmegahRefineDriver OmegahRefineTest
+    refine_value.json
+    refined_beam_value.vtu
+    gold_refined_beam_value.vtu
+    refine_uniform.json
+    refined_beam_uniform.vtu
+    gold_refined_beam_uniform.vtu
+    refine_value_hex.json
+    refined_test_27_5_0.vtu
+    refined_test_27_5_0.vtu
     )
 
 # Disable in Win due to CI/CD being 32-bit.
@@ -319,13 +365,6 @@ if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
   endif()
 endif() # Disable in Win
 
-if(ENABLE_EXODUS)
-  NEM_add_test(exoMesh ExoMesh ExoMeshTest
-      hardenedUGbunker_soil2.g pack.g
-      test_merge_in.g test_merge_ref.g
-      )
-endif()
-
 if(ENABLE_EPIC)
   NEM_add_test(ep16pre Ep16Pre ep16pre
       gmsh2exo.json bctest_ref.g
@@ -373,17 +412,14 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
       targets/plane_target.vtk)
 endif()
 
-if(ENABLE_OMEGAH)
-  #NEM_add_test(oshGeoMesh OshGeoMesh OshGeoMeshTest)
-  NEM_add_test(oshGeoMesh OshGeoMesh "")
-  if(ENABLE_OMEGAH_CUDA)
-    enable_language(CUDA)
-    NEM_add_test(oshGeoMeshCUDA OshGeoMeshCUDA "")
-    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/testOshGeoMesh.C
-            ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/testOshGeoMeshCUDA.C
-            PROPERTIES LANGUAGE CUDA)
-    target_link_libraries(runOshGeoMeshCUDATest nvidia-ml)
-  endif()
+if(ENABLE_OMEGAH_CUDA)
+  enable_language(CUDA)
+  NEM_add_test(oshGeoMeshCUDA OshGeoMeshCUDA "")
+  set_source_files_properties(${TEST_SCRIPTS}/testOshGeoMesh.C
+      ${TEST_SCRIPTS}/testOshGeoMeshCUDA.C
+      ${TEST_SCRIPTS}/testOmegahRefineSrv.C
+      PROPERTIES LANGUAGE CUDA)
+  target_link_libraries(runOshGeoMeshCUDATest nvidia-ml)
 endif()
 
 # Python wrapper testing

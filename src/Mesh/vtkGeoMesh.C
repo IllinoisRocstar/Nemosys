@@ -20,6 +20,8 @@
 namespace NEM {
 namespace MSH {
 
+vtkStandardNewMacro(vtkGeoMesh)
+
 vtkGeoMesh *vtkGeoMesh::Read(const std::string &fileName,
                              const std::string &geoArrayName) {
   vtkSmartPointer<vtkUnstructuredGrid> inUnstructuredGrid;
@@ -68,59 +70,61 @@ vtkGeoMesh::vtkGeoMesh()
 
 vtkGeoMesh::vtkGeoMesh(vtkUnstructuredGrid *inUnstructuredGrid,
                        const std::string &geoArrayName)
-    : geoMeshBase(vtk2GM(inUnstructuredGrid, geoArrayName)),
-      _vtkMesh(vtkSmartPointer<vtkUnstructuredGrid>::New()) {
-  _vtkMesh->DeepCopy(inUnstructuredGrid);
+    : geoMeshBase(vtk2GM(inUnstructuredGrid, geoArrayName)) {
   std::cout << "vtkGeoMesh constructed" << std::endl;
 }
+
+// vtkGeoMesh::vtkGeoMesh(geoMeshBase *inGmb) : geoMeshBase(inGmb),
+//                                            _vtkMesh() {
+//}
 
 vtkGeoMesh::~vtkGeoMesh() { std::cout << "vtkGeoMesh destructed" << std::endl; }
 
 void vtkGeoMesh::write(const std::string &fileName) {
-  _vtkMesh = GM2vtk(this->getGeoMesh());
+  auto mesh = getGeoMesh().mesh;
 
   std::string fileExt = nemAux::find_ext(fileName);
   if (fileExt == ".vtk") {  // Legacy type
     vtkSmartPointer<vtkGenericDataObjectWriter> writer =
         vtkSmartPointer<vtkGenericDataObjectWriter>::New();
     writer->SetFileName(fileName.c_str());
-    writer->SetInputData(_vtkMesh);
+    writer->SetInputData(mesh);
     writer->Write();
   } else {  // XML type
     vtkSmartPointer<vtkXMLDataSetWriter> writer =
         vtkSmartPointer<vtkXMLDataSetWriter>::New();
     writer->SetFileName(fileName.c_str());
-    writer->SetInputData(_vtkMesh);
+    writer->SetInputData(mesh);
     writer->Write();
   }
 }
 
-void vtkGeoMesh::report(std::ostream &out) const {}
+void vtkGeoMesh::report(std::ostream &out) const { geoMeshBase::report(out); }
 
-vtkUnstructuredGrid *vtkGeoMesh::GM2vtk(const GeoMesh &geoMesh) {
-  vtkUnstructuredGrid *vtkMesh = vtkUnstructuredGrid::New();
+void vtkGeoMesh::getVtkMesh(vtkUnstructuredGrid *dest) {
+  dest->DeepCopy(getGeoMesh().mesh);
+}
 
-  vtkMesh->DeepCopy(geoMesh.mesh);
-
-  return vtkMesh;
+void vtkGeoMesh::setVtkMesh(vtkUnstructuredGrid *vtkMesh) {
+  setGeoMesh(vtk2GM(vtkMesh));
 }
 
 geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
                                         const std::string &phyGrpArrayName) {
   std::string gmshMesh = "vtkGeoMesh_" + nemAux::getRandomString(6);
-  gmsh::initialize();
+  GmshInterface::Initialize();
   gmsh::model::add(gmshMesh);
   gmsh::model::setCurrent(gmshMesh);
 
-  if (!vtkMesh ||                           // No mesh
-      vtkMesh->GetNumberOfPoints() == 0 ||  // No points
+  if (!vtkMesh ||                                                 // No mesh
+      vtkMesh->GetNumberOfPoints() == 0 ||                        // No points
       !vtkMesh->GetCellData()->HasArray(phyGrpArrayName.c_str())  // No geometry
   )
-    return {vtkMesh, "", ""};
+    return {vtkMesh, "", "", nullptr};
 
   {  // Add geometric entities and physical groups
     std::set<std::pair<int, int>> dim_phyGrp;
-    vtkSmartPointer<vtkIntArray> phyGrpArray = vtkIntArray::FastDownCast(
+    auto phyGrpArray = vtkArrayDownCast<vtkDataArray>(
         vtkMesh->GetCellData()->GetArray(phyGrpArrayName.c_str()));
     vtkSmartPointer<vtkGenericCell> vtkGC =
         vtkSmartPointer<vtkGenericCell>::New();
@@ -129,7 +133,7 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
     for (vtkIdType i = 0; i < vtkMesh->GetNumberOfCells(); ++i) {
       vtkGC->SetCellType(vtkMesh->GetCellType(i));
       int dim = vtkGC->GetCellDimension();
-      int phyGrp = phyGrpArray->GetTypedComponent(i, 0);
+      int phyGrp = static_cast<int>(phyGrpArray->GetComponent(i, 0));
 
       dim_phyGrp.insert({dim, phyGrp});
     }
@@ -141,6 +145,7 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
     }
   }
 
+  /*
   {  // DEBUG
     gmsh::vectorpair dimTags;
     gmsh::model::getEntities(dimTags);
@@ -155,9 +160,12 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
                 << "  tag: " << dimTag.second << std::endl;
     }
   }
+  */
 
-  return {vtkMesh, gmshMesh, phyGrpArrayName};
+  return {vtkMesh, gmshMesh, phyGrpArrayName, nullptr};
 }
+
+void vtkGeoMesh::resetNative() {}
 
 }  // namespace MSH
 }  // namespace NEM

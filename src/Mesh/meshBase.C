@@ -1,20 +1,6 @@
-// Nemosys headers
-#include "AuxiliaryFunctions.H"
 #include "meshBase.H"
 
-#include "Cubature.H"
-#include "MeshQuality.H"
-#include "Refine.H"
-#include "SizeFieldGen.H"
-#include "meshGen.H"
-#include "meshPartitioner.H"
-#include "vtkMesh.H"
-
-#include "pntMesh.H"
-//#include <cobalt.H>
-//#include <patran.H>
-
-// VTK
+#include <exodusII.h>
 #include <vtkAppendFilter.h>
 #include <vtkCell.h>
 #include <vtkCellData.h>
@@ -31,16 +17,24 @@
 #include <vtkSelectionNode.h>
 #include <vtkUnstructuredGrid.h>
 
+//#include "cobalt.H"
+//#include "patran.H"
+#include "AuxiliaryFunctions.H"
+#include "Cubature.H"
+#include "MeshQuality.H"
+#include "Refine.H"
+#include "SizeFieldGen.H"
+#include "exoMesh.H"
+#include "meshGen.H"
+#include "meshPartitioner.H"
+#include "pntMesh.H"
+#include "vtkMesh.H"
+
 // netgen
 #ifdef HAVE_NGEN
 namespace nglib {
 #  include <nglib.h>
 }
-#endif
-
-#ifdef HAVE_EXODUSII
-#  include <exodusII.h>
-#  include "exoMesh.H"
 #endif
 
 // TODO: Stop using setPoint/CellDataArray in export methods
@@ -413,7 +407,7 @@ std::vector<std::shared_ptr<meshBase>> meshBase::partition(
 std::vector<std::vector<double>> meshBase::integrateOverMesh(
     const std::vector<int> &arrayIDs) {
   std::unique_ptr<GaussCubature> cubature =
-      GaussCubature::CreateUnique(this, arrayIDs);
+      GaussCubature::CreateUnique(dataSet, arrayIDs);
   return cubature->integrateOverAllCells();
 }
 
@@ -421,12 +415,13 @@ std::vector<std::vector<double>> meshBase::integrateOverMesh(
  **/
 void meshBase::generateSizeField(const std::string &method, int arrayID,
                                  double dev_mult, bool maxIsmin,
-                                 double sizeFactor) {
+                                 double sizeFactor, int order) {
   std::cout << "Size Factor = " << sizeFactor << std::endl;
-  std::unique_ptr<SizeFieldBase> sfobj = SizeFieldBase::CreateUnique(
-      this, method, arrayID, dev_mult, maxIsmin, sizeFactor);
+  std::unique_ptr<NEM::ADP::SizeFieldBase> sfobj =
+      NEM::ADP::SizeFieldBase::CreateUnique(dataSet, method, arrayID, dev_mult,
+                                            maxIsmin, sizeFactor, order);
   sfobj->setSizeFactor(sizeFactor);
-  sfobj->computeSizeField(arrayID);
+  sfobj->computeSizeField(dataSet->GetPointData()->GetArray(arrayID));
 }
 
 /**
@@ -940,7 +935,6 @@ meshBase *meshBase::exportPntToVtk(const std::string &fname) {
 /** exports exodusII to vtk format
  **/
 meshBase *meshBase::exportExoToVtk(const std::string &fname) {
-#ifdef HAVE_EXODUSII
   // opening the file
   int CPU_word_size, IO_word_size;
   int fid, _exErr;
@@ -1082,10 +1076,6 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
   NEM::MSH::EXOMesh::wrnErrMsg(_exErr, "Problem closing the exodusII file.");
 
   return vtkmesh;
-#else
-  std::cerr << "Error: Compile with Exodus II to use this." << std::endl;
-  exit(-1);
-#endif
 }
 
 /** convert to gmsh format without data
@@ -1575,9 +1565,10 @@ void meshBase::refineMesh(const std::string &method, int arrayID,
                           double dev_mult, bool maxIsmin, double edge_scale,
                           const std::string &ofname, bool transferData,
                           double sizeFactor, bool constrainBoundary) {
-  std::unique_ptr<Refine> refineobj = std::unique_ptr<Refine>(
-      new Refine(this, method, arrayID, dev_mult, maxIsmin, edge_scale, ofname,
-                 sizeFactor));
+  std::unique_ptr<NEM::ADP::Refine> refineobj =
+      std::unique_ptr<NEM::ADP::Refine>(
+          new NEM::ADP::Refine(this, method, arrayID, dev_mult, maxIsmin,
+                               edge_scale, ofname, sizeFactor));
   refineobj->run(transferData, constrainBoundary);
 }
 
@@ -1585,9 +1576,9 @@ void meshBase::refineMesh(const std::string &method, int arrayID,
  **/
 void meshBase::refineMesh(const std::string &method, int arrayID, int _order,
                           const std::string &ofname, bool transferData) {
-  setOrder(_order);
-  std::unique_ptr<Refine> refineobj = std::unique_ptr<Refine>(
-      new Refine(this, method, arrayID, 0, 0, 0, ofname));
+  std::unique_ptr<NEM::ADP::Refine> refineobj =
+      std::unique_ptr<NEM::ADP::Refine>(new NEM::ADP::Refine(
+          this, method, arrayID, 0.0, false, 0.0, ofname, 1.0, _order));
   refineobj->run(transferData);
 }
 

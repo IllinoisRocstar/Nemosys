@@ -1,6 +1,7 @@
 #include "Omega_h_class.hpp"
 
 #include "Omega_h_array_ops.hpp"
+#include "Omega_h_element.hpp"
 #include "Omega_h_for.hpp"
 #include "Omega_h_map.hpp"
 #include "Omega_h_mark.hpp"
@@ -181,7 +182,7 @@ void classify_equal_order(
     find_matches(mesh->family(), ent_dim, eqv2v, ev2v, v2e, &eq2e_w, &codes);
     eq2e = eq2e_w;
   }
-  auto neq = eqv2v.size() / (ent_dim + 1);
+  auto neq = eqv2v.size() / element_degree(mesh->family(), ent_dim, VERT);
   auto eq_class_dim = Read<I8>(neq, I8(ent_dim));
   auto class_dim =
       map_onto(eq_class_dim, eq2e, mesh->nents(ent_dim), I8(mesh->dim()), 1);

@@ -2,16 +2,19 @@
 #include "TemplateMeshDriver.H"
 
 //#include <cstdio>
-#include <fstream>
 #include <gmsh.h>
-#include <iomanip>
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <streambuf>
 #include <time.h>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <streambuf>
 
 #include "AuxiliaryFunctions.H"
+
+namespace NEM {
+namespace DRV {
 
 nemAux::Timer T;
 
@@ -19,8 +22,8 @@ TemplateMeshDriver::~TemplateMeshDriver() {
   std::cout << "TemplateMeshDriver destroyed" << std::endl;
 }
 
-TemplateMeshDriver *
-TemplateMeshDriver::readJSON(const jsoncons::json &inputjson) {
+TemplateMeshDriver *TemplateMeshDriver::readJSON(
+    const jsoncons::json &inputjson) {
   std::cout << "Reading Input JSON File." << std::endl;
 
   if (inputjson.contains("Template Name")) {
@@ -123,56 +126,49 @@ void TemplateMeshDriver::executeTemplate(std::string tplName,
 std::string TemplateMeshDriver::spiralTapePipe(jsoncons::json inputjson) {
   std::cout << "Reading Template Parameters" << std::endl;
 
-  double rx = 1;               // Ellipse radius x-dir
-  double ry = 1;               // Ellipse radius y-dir
-  double thickness = 0.05;     // Thickness of spiral tape in y-dir
-  double extrude_len = 3;      // Extrusion length
-  double n_turns = 0.5;        // Number of spiral turns
-  double width_percent = 0.85; // Percentage of x-dir diameter for tape width
-  double mSize_min = 0.048;    // Minimum mesh size, size a walls
-  double mSize_max = 0.1;      // Maximum mesh size, size in bulk
-  double dist_min = 0.05;      // Distance from walls with mSize_min
-  double dist_max = 0.2;       // Distance from walls with mSize_max
-  double bl_wall_n = 0.0038;   // Boundary layer mesh size normal to wall
-  double bl_far = 0.08;        // Mesh size away from wall
-  double bl_thickness = 0.02;  // Boundary layer mesh thickness
-  double ratio = 1.3;          // Mesh size ratio normal to wall
-  double extrude_layers = 20;  // Number of extruded elements during extrusion
+  double rx = 1;                // Ellipse radius x-dir
+  double ry = 1;                // Ellipse radius y-dir
+  double thickness = 0.05;      // Thickness of spiral tape in y-dir
+  double extrude_len = 3;       // Extrusion length
+  double n_turns = 0.5;         // Number of spiral turns
+  double width_percent = 0.85;  // Percentage of x-dir diameter for tape width
+  double mSize_min = 0.048;     // Minimum mesh size, size a walls
+  double mSize_max = 0.1;       // Maximum mesh size, size in bulk
+  double dist_min = 0.05;       // Distance from walls with mSize_min
+  double dist_max = 0.2;        // Distance from walls with mSize_max
+  double bl_wall_n = 0.0038;    // Boundary layer mesh size normal to wall
+  double bl_far = 0.08;         // Mesh size away from wall
+  double bl_thickness = 0.02;   // Boundary layer mesh thickness
+  double ratio = 1.3;           // Mesh size ratio normal to wall
+  double extrude_layers = 20;   // Number of extruded elements during extrusion
 
-  int element_order = 1;       // Finite element order
-  int fan_points = 3;          // Number of fan points in boundary layer at corners
+  int element_order = 1;  // Finite element order
+  int fan_points = 3;     // Number of fan points in boundary layer at corners
 
   if (inputjson.contains("Params")) {
     jsoncons::json params = inputjson["Params"];
-    if (params.contains("rx"))
-      rx = params["rx"].as_double();
-    if (params.contains("ry"))
-      ry = params["ry"].as_double();
+    if (params.contains("rx")) rx = params["rx"].as_double();
+    if (params.contains("ry")) ry = params["ry"].as_double();
     if (params.contains("thickness"))
       thickness = params["thickness"].as_double();
     if (params.contains("extrude_len"))
       extrude_len = params["extrude_len"].as_double();
-    if (params.contains("n_turns"))
-      n_turns = params["n_turns"].as_double();
+    if (params.contains("n_turns")) n_turns = params["n_turns"].as_double();
     if (params.contains("width_percent"))
       width_percent = params["width_percent"].as_double();
 
-    if (params.contains("dist_min"))
-      dist_min = params["dist_min"].as_double();
-    if (params.contains("dist_max"))
-      dist_max = params["dist_max"].as_double();
+    if (params.contains("dist_min")) dist_min = params["dist_min"].as_double();
+    if (params.contains("dist_max")) dist_max = params["dist_max"].as_double();
     if (params.contains("mSize_min"))
       mSize_min = params["mSize_min"].as_double();
     if (params.contains("mSize_max"))
       mSize_max = params["mSize_max"].as_double();
     if (params.contains("bl_wall_n"))
       bl_wall_n = params["bl_wall_n"].as_double();
-    if (params.contains("bl_far"))
-      bl_far = params["bl_far"].as_double();
+    if (params.contains("bl_far")) bl_far = params["bl_far"].as_double();
     if (params.contains("bl_thickness"))
       bl_thickness = params["bl_thickness"].as_double();
-    if (params.contains("ratio"))
-      ratio = params["ratio"].as_double();
+    if (params.contains("ratio")) ratio = params["ratio"].as_double();
     if (params.contains("fan_points"))
       fan_points = params["fan_points"].as<int>();
     if (params.contains("extrude_layers"))
@@ -290,3 +286,6 @@ void TemplateMeshDriver::encrypt(std::string inFile, std::string outFile) {
   o.close();
   line.clear();
 }
+
+}  // namespace DRV
+}  // namespace NEM

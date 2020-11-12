@@ -1,5 +1,5 @@
-#include <fstream>
 #include <stdio.h>
+#include <fstream>
 
 #include <gtest.h>
 #include <vtkCell.h>
@@ -22,13 +22,13 @@ std::string spiral_tape_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Template Name")) {
-    std::unique_ptr<NemDriver> nemdrvobj =
-        std::unique_ptr<NemDriver>(NemDriver::readJSON(inputjson));
+    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
+        std::unique_ptr<NEM::DRV::NemDriver>(
+            NEM::DRV::NemDriver::readJSON(inputjson));
   }
   std::string ifname = "spiral.msh";
   return ifname;
 }
-
 
 // TEST macros
 TEST(TemplateMesh, Spiral_Tape_Test) {
@@ -47,21 +47,17 @@ TEST(TemplateMesh, Spiral_Tape_Test) {
   for (int iElm = 0; iElm < mesh->getNumberOfCells(); iElm++) {
     VTKCellType vtkType =
         static_cast<VTKCellType>(mesh->getDataSet()->GetCellType(iElm));
-    if (vtkType == VTK_TRIANGLE)
-      tris = true;
-    if (vtkType == VTK_QUAD)
-      quads = true;
-    if (vtkType == VTK_HEXAHEDRON)
-      hexs = true;
+    if (vtkType == VTK_TRIANGLE) tris = true;
+    if (vtkType == VTK_QUAD) quads = true;
+    if (vtkType == VTK_HEXAHEDRON) hexs = true;
     physGrp_set.insert(static_cast<int>(grpIds[iElm]));
   }
 
-  std::unique_ptr<meshBase> refMesh =
-      meshBase::CreateUnique(spiral_test_REF);
+  std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(spiral_test_REF);
   numNodes2 = refMesh->getNumberOfPoints();
 
-  if (std::abs(numNodes1 - numNodes2) < 0.05*numNodes2 && tris == false && quads == true
-      && hexs == true && physGrp_set.size() == 5)
+  if (std::abs(numNodes1 - numNodes2) < 0.05 * numNodes2 && tris == false &&
+      quads == true && hexs == true && physGrp_set.size() == 5)
     ret1 = 0;
   else
     ret1 = 1;

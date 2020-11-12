@@ -1,19 +1,23 @@
-#include "AuxiliaryFunctions.H"
 #include "RefineDriver.H"
-#include "vtkMesh.H"
-
-#ifdef HAVE_CFMSH
-#include "AMRFoam.H"
-#include "MeshManipulationFoam.H"
-#include "foamMesh.H"
-#include "interpolatePointToCell.H"
-#endif
-#ifdef MLAMR
-#include <fdeep/fdeep.hpp>
-#endif
 
 #include <fstream>
 #include <iostream>
+
+#include "AuxiliaryFunctions.H"
+#include "omegahRefineDriver.H"
+#include "vtkMesh.H"
+#ifdef HAVE_CFMSH
+#  include "AMRFoam.H"
+#  include "MeshManipulationFoam.H"
+#  include "foamMesh.H"
+#  include "interpolatePointToCell.H"
+#endif
+#ifdef MLAMR
+#  include <fdeep/fdeep.hpp>
+#endif
+
+namespace NEM {
+namespace DRV {
 
 // -------------------------------- Refine Driver
 // -------------------------------------//
@@ -24,7 +28,7 @@ RefineDriver::RefineDriver(const std::string &_mesh, const std::string &method,
                            double sizeFactor) {
   std::cout << "RefineDriver created" << std::endl;
   std::cout << "Size Factor = " << sizeFactor << std::endl;
-  mesh = meshBase::Create(_mesh);
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(_mesh);
   std::cout << "\n";
   mesh->report();
   std::cout << "\n";
@@ -36,7 +40,7 @@ RefineDriver::RefineDriver(const std::string &_mesh, const std::string &method,
                            double edgescale, const std::string &ofname,
                            bool transferData) {
   std::cout << "RefineDriver created" << std::endl;
-  mesh = meshBase::Create(_mesh);
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(_mesh);
   std::cout << "\n";
   mesh->report();
   std::cout << "\n";
@@ -46,7 +50,7 @@ RefineDriver::RefineDriver(const std::string &_mesh, const std::string &method,
 RefineDriver::RefineDriver(const std::string &_mesh, const std::string &method,
                            const std::string &arrayName, int order,
                            const std::string &ofname, bool transferData) {
-  mesh = meshBase::Create(_mesh);
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(_mesh);
   std::cout << "\n";
   mesh->report();
   std::cout << "\n";
@@ -66,8 +70,7 @@ RefineDriver::RefineDriver(
     const int &nBufferLayers, int &maxCells, const std::string &refCriteria,
     const double &startT, const std::string &MLName) {
   std::cout << "RefineDriver created" << std::endl;
-  mesh = meshBase::Create(_mesh);
-  std::shared_ptr<meshBase> Mymesh = meshBase::CreateShared(_mesh);
+  std::shared_ptr<meshBase> mesh = meshBase::CreateShared(_mesh);
 
   // Initializes AMR workflow
   auto *mshManip = new MeshManipulationFoam();
@@ -88,7 +91,7 @@ RefineDriver::RefineDriver(
   nemAux::toLower(refCriName);
 
   // Reading mesh from vtk file.
-  FOAM::foamMesh *fm = new FOAM::foamMesh(Mymesh);
+  FOAM::foamMesh *fm = new FOAM::foamMesh(mesh);
   fm->write(ofname);
 
   Foam::polyMesh mesh1(Foam::IOobject(Foam::polyMesh::defaultRegion,
@@ -133,18 +136,17 @@ RefineDriver::RefineDriver(
       runTime++;
     }
     meshFieldXY.write();
-  }
-#ifdef MLAMR
-  else if (refCriName == "ml") {
+#  ifdef MLAMR
+  } else if (refCriName == "ml") {
     // Getting ML model input information
     std::vector<double> nonDimUGrad;
     std::vector<double> X;
     std::vector<double> Y;
     std::vector<double> Z;
-    Mymesh->getCellDataArray("nonDimUGrad", nonDimUGrad);
-    Mymesh->getCellDataArray("X", X);
-    Mymesh->getCellDataArray("Y", Y);
-    Mymesh->getCellDataArray("Z", Z);
+    mesh->getCellDataArray("nonDimUGrad", nonDimUGrad);
+    mesh->getCellDataArray("X", X);
+    mesh->getCellDataArray("Y", Y);
+    mesh->getCellDataArray("Z", Z);
 
     // Loading ML Model
     const auto model = fdeep::load_model(MLName);
@@ -169,9 +171,8 @@ RefineDriver::RefineDriver(
 
       runTime++;
     }
-  }
-#endif
-  else {
+#  endif
+  } else {
     std::cerr << "Please define refinement operator choice between "
               << "(\"Value\" or \"Gradient\" or \"ML\")"
               << " using \"Refinement Based On\" keyword" << std::endl;
@@ -194,11 +195,9 @@ RefineDriver::RefineDriver(
 
   std::cout << "End!" << std::endl;
 }
-
 #endif
 
 RefineDriver::~RefineDriver() {
-  delete mesh;
   std::cout << "RefineDriver destroyed" << std::endl;
 }
 
@@ -227,35 +226,34 @@ RefineDriver *RefineDriver::readJSON(const jsoncons::json &inputjson) {
         inputjson["Refinement Options"]["Shape Function Order"].as<int>();
     refdrvobj =
         new RefineDriver(_mesh, method, arrayName, order, ofname, transferData);
-  }
 #ifdef HAVE_CFMSH
-  else if (method == "FV") {
+  } else if (method == "FV") {
     int refineInterval =
         inputjson["Refinement Options"].contains("Refinement Interval")
             ? inputjson["Refinement Options"]["Refinement Interval"].as<int>()
-            : 1.0;
+            : 1;
     int maxRefinement =
         inputjson["Refinement Options"].contains("Maximum Refinement")
             ? inputjson["Refinement Options"]["Maximum Refinement"].as<int>()
-            : 1.0;
+            : 1;
     double lowerRefineLevel =
         inputjson["Refinement Options"].contains("Lower Refinement Level")
             ? inputjson["Refinement Options"]["Lower Refinement Level"]
                   .as<double>()
-            : -1;
+            : -1.0;
     double upperRefineLevel =
         inputjson["Refinement Options"].contains("Upper Refinement Level")
             ? inputjson["Refinement Options"]["Upper Refinement Level"]
                   .as<double>()
-            : -1;
+            : -1.0;
     double unrefineAbove =
         inputjson["Refinement Options"].contains("Unrefinement Above")
             ? inputjson["Refinement Options"]["Unrefinement Above"].as<double>()
-            : -1;
+            : -1.0;
     double unrefineBelow =
         inputjson["Refinement Options"].contains("Unrefinement Below")
             ? inputjson["Refinement Options"]["Unrefinement Below"].as<double>()
-            : -1;
+            : -1.0;
     bool writeFieldData =
         inputjson["Refinement Options"].contains("Write Field Data?")
             ? inputjson["Refinement Options"]["Write Field Data?"].as<bool>()
@@ -280,7 +278,7 @@ RefineDriver *RefineDriver::readJSON(const jsoncons::json &inputjson) {
     int nBufferLayers =
         inputjson["Refinement Options"].contains("Buffer Layers")
             ? inputjson["Refinement Options"]["Buffer Layers"].as<int>()
-            : 1.0;
+            : 1;
     int maxCells = inputjson["Refinement Options"].contains("Max Cells")
                        ? inputjson["Refinement Options"]["Max Cells"].as<int>()
                        : 500000;
@@ -297,7 +295,7 @@ RefineDriver *RefineDriver::readJSON(const jsoncons::json &inputjson) {
     double startT =
         inputjson["Refinement Options"].contains("Start Time")
             ? inputjson["Refinement Options"]["Start Time"].as<double>()
-            : 0;
+            : 0.0;
     std::string refCriteria =
         inputjson["Refinement Options"].contains("Refinement Operator")
             ? inputjson["Refinement Options"]["Refinement Operator"]
@@ -332,9 +330,10 @@ RefineDriver *RefineDriver::readJSON(const jsoncons::json &inputjson) {
         nBufferLayers, maxCells, refCriteria, startT, mlmodelname);
 
     return refdrvobj;
-  }
 #endif
-  else {
+  } else if (method == "Omega_h") {
+    refdrvobj = omegahRefineDriver::readJSON(inputjson);
+  } else {
     arrayName = inputjson["Refinement Options"]["Array Name"].as<std::string>();
     dev_mult =
         inputjson["Refinement Options"]["StdDev Multiplier"].as<double>();
@@ -374,3 +373,6 @@ RefineDriver *RefineDriver::readJSON(const std::string &ifname) {
     return RefineDriver::readJSON(inputjson);
   }
 }
+
+}  // namespace DRV
+}  // namespace NEM

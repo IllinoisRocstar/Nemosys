@@ -7,6 +7,9 @@
 #  include "cfmeshQualityParams.H"
 #endif
 
+namespace NEM {
+namespace DRV {
+
 MeshQualityDriver::MeshQualityDriver(const std::string &_mesh,
                                      const std::string &ofname) {
   // default constructor does standard check mesh process
@@ -67,3 +70,6 @@ MeshQualityDriver *MeshQualityDriver::readJSON(
   std::cerr << "Invalid engine specified: " << engine;
   exit(1);
 }
+
+}  // namespace DRV
+}  // namespace NEM

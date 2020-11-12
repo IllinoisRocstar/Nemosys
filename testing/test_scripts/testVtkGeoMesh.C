@@ -11,6 +11,7 @@
 std::string fileNameLegacyUG;
 std::string fileNameLegacyUnsupported;
 std::string fileNameXMLvtu;
+std::string fileNameHex;
 std::string fileNameXMLvtuGeo;
 
 TEST(vtkGeoMesh, ConstructorDefault) { NEM::MSH::vtkGeoMesh vgm{}; }
@@ -25,7 +26,7 @@ TEST(vtkGeoMesh, ConstructorVtkUnstructuredGridWithGeo) {
 
 TEST(vtkGeoMesh, FactoryReadLegacy) {
   NEM::MSH::vtkGeoMesh *vgm = NEM::MSH::vtkGeoMesh::Read(fileNameLegacyUG);
-  delete vgm;
+  vgm->Delete();
 }
 
 TEST(vtkGeoMeshDeathTest, FactoryReadLegacyUnsupported) {
@@ -35,7 +36,7 @@ TEST(vtkGeoMeshDeathTest, FactoryReadLegacyUnsupported) {
 
 TEST(vtkGeoMesh, FactoryReadXML) {
   NEM::MSH::vtkGeoMesh *vgm = NEM::MSH::vtkGeoMesh::Read(fileNameXMLvtu);
-  delete vgm;
+  vgm->Delete();
 }
 
 //TEST(vtkGeoMeshDeathTest, FactoryReadXMLUnsupported) {
@@ -49,8 +50,9 @@ TEST(vtkGeoMeshDeathTest, FactoryReadUnsupportedExtension) {
 }
 
 TEST(vtkGeoMesh, FactoryReadXMLWithGeo) {
-  NEM::MSH::vtkGeoMesh *vgm = NEM::MSH::vtkGeoMesh::Read(fileNameXMLvtuGeo);
-  delete vgm;
+  NEM::MSH::vtkGeoMesh *vgm = NEM::MSH::vtkGeoMesh::Read(fileNameXMLvtuGeo,
+                                                         "material");
+  vgm->Delete();
 }
 
 TEST(vtkGeoMesh, Write) {
@@ -86,7 +88,13 @@ TEST(vtkGeoMesh, Write) {
     EXPECT_TRUE(cell->GetPointIds()->GetId(i) == i);
   }
 
-  delete vgm2;
+  vgm2->Delete();
+}
+
+TEST(vtkGeoMesh, reconstructGeoHex) {
+  NEM::MSH::vtkGeoMesh *vgm = NEM::MSH::vtkGeoMesh::Read(fileNameHex);
+  vgm->reconstructGeo();
+  vgm->Delete();
 }
 
 //TEST(geoMeshBase, computeDiscreteGeoFromVTU) {
@@ -115,7 +123,7 @@ TEST(vtkGeoMesh, Write) {
 //  vgm = NEM::MSH::vtkGeoMesh::Read("burned/volumetric_0_remeshed.vtk");
 //  vgm->write("burned/volumetric_0_remeshed.vtu");
 //
-//  delete vgm;
+//  vgm->Delete();
 //}
 
 /*
@@ -178,7 +186,7 @@ TEST(geoMeshBase, packFromVTU) {
   vgm = NEM::MSH::vtkGeoMesh::Read(filename + "_remeshed.vtk");
   vgm->write(filename + "_remeshed.vtu");
 
-  delete vgm;
+  vgm->Delete();
 }
 */
 
@@ -188,7 +196,8 @@ int main(int argc, char *argv[]) {
   fileNameLegacyUG = argv[1];
   fileNameLegacyUnsupported = argv[2];
   fileNameXMLvtu = argv[3];
-  fileNameXMLvtuGeo = argv[3];
+  fileNameHex = argv[3];
+  fileNameXMLvtuGeo = argv[4];
 
   int res = RUN_ALL_TESTS();
 

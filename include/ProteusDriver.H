@@ -1,15 +1,18 @@
 #ifndef NEMOSYS_PROTEUSDRIVER_H_
 #define NEMOSYS_PROTEUSDRIVER_H_
 
-#include "NemDriver.H"
 #include "nemosys_export.h"
+#include "NemDriver.H"
 #include "proteusHdf5.H"
+
+namespace NEM {
+namespace DRV {
 
 /**
  * @brief Driver to parse input JSON file and read Proteus output.
  **/
 class NEMOSYS_EXPORT ProteusDriver : public NemDriver {
-public:
+ public:
   /**
    * @brief Converts Proteus HDF mesh to VTK/Exodus format using input JSON
    * @param fieldFName Proteus format HDF5 field filename
@@ -33,9 +36,12 @@ public:
    **/
   static ProteusDriver *readJSON(const jsoncons::json &inputjson);
 
-private:
+ private:
   std::shared_ptr<proteusHdf5>
       hdf5Obj; /**< hdf5 object used to store Proteus data */
 };
 
-#endif // NEMOSYS_PROTEUSDRIVER_H_
+}  // namespace DRV
+}  // namespace NEM
+
+#endif  // NEMOSYS_PROTEUSDRIVER_H_

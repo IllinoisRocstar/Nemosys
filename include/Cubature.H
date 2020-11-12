@@ -1,9 +1,10 @@
 #ifndef CUBATURE_H 
 #define CUBATURE_H
 
+#include <memory>
+
 // Nemosys headers
 #include "nemosys_export.h"
-#include "meshBase.H"
 
 // VTK
 #include <vtkGenericCell.h>
@@ -39,9 +40,8 @@ typedef std::vector<pntDataPair> pntDataPairVec;
 class NEMOSYS_EXPORT GaussCubature
 {
   public:
-    //GaussCubature(meshBase *_nodeMesh) : nodeMesh(_nodeMesh) { buildMap(); }
-    explicit GaussCubature(meshBase *_nodeMesh);
-    GaussCubature(meshBase *_nodeMesh, const std::vector<int> &arrayIDs);
+    explicit GaussCubature(vtkDataSet *_dataSet);
+    GaussCubature(vtkDataSet *_dataSet, const std::vector<int> &arrayIDs);
 
     ~GaussCubature() { delete[] dict; }
 
@@ -79,8 +79,8 @@ class NEMOSYS_EXPORT GaussCubature
 
   // access
   public:
-    // returns pointer to mesh object
-    meshBase *getNodeMesh() const { return nodeMesh; }
+    vtkDataSet *getDataSet() const { return dataSet; }
+
     vtkSmartPointer<vtkPolyData> getGaussMesh() const { return gaussMesh; }
     vtkQuadratureSchemeDefinition **getDict() const { return dict; }
     std::vector<int> getNumComponents() const { return numComponents; }
@@ -93,21 +93,21 @@ class NEMOSYS_EXPORT GaussCubature
 
   // factory constructors
   public:
-    static GaussCubature *Create(meshBase *nodeMesh);
-    static GaussCubature *Create(meshBase *nodeMesh,
+    static GaussCubature *Create(vtkDataSet *_dataSet);
+    static GaussCubature *Create(vtkDataSet *_dataSet,
                                  const std::vector<int> &arrayIDs);
-    static std::unique_ptr<GaussCubature> CreateUnique(meshBase *nodeMesh);
+    static std::unique_ptr<GaussCubature> CreateUnique(vtkDataSet *_dataSet);
     static std::unique_ptr<GaussCubature>
-    CreateUnique(meshBase *nodeMesh,
+    CreateUnique(vtkDataSet *_dataSet,
                  const std::vector<int> &arrayIDs);
-    static std::shared_ptr<GaussCubature> CreateShared(meshBase *nodeMesh);
+    static std::shared_ptr<GaussCubature> CreateShared(vtkDataSet *_dataSet);
     static std::shared_ptr<GaussCubature>
-    CreateShared(meshBase *nodeMesh,
+    CreateShared(vtkDataSet *_dataSet,
                  const std::vector<int> &arrayIDs);
 
   private:
     // we want gauss points of this mesh
-    meshBase *nodeMesh;
+    vtkSmartPointer<vtkDataSet> dataSet;
     // number of volume elements in node mesh
     int numVolCells;
     // we put the gauss points and interpolated data into this mesh

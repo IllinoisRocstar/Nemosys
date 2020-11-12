@@ -400,7 +400,7 @@ endfunction(bob_target_includes)
 function(bob_library_includes lib_name)
   bob_target_includes("${lib_name}")
   #ensure downstream users include installed headers
-  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include>)
+  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include/omega_h>)
 endfunction(bob_library_includes)
 
 function(bob_export_target tgt_name)

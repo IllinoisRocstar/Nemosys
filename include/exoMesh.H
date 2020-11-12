@@ -132,7 +132,7 @@ int NEMOSYS_EXPORT elmNumSrf(elementType et);
  * implementation relies on standard EXODUS II library provided in system 
  * repository.
  */
-class NEMOSYS_EXPORT exoMesh {
+class NEMOSYS_DEPRECATED_EXPORT exoMesh {
  public:
   exoMesh();
   /**

@@ -95,6 +95,7 @@ SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 2
 SpacesInAngles:  false
+StatementMacros: ['vtkTypeMacro', 'vtkStandardNewMacro', 'vtkAbstractTypeMacro']
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false

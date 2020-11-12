@@ -5,12 +5,15 @@
 
 #include "FETransfer.H"
 #ifdef HAVE_IMPACT
-#include "ConservativeSurfaceTransfer.H"
+#  include "ConservativeSurfaceTransfer.H"
 #endif
 #ifdef HAVE_SUPERMESH
-#include "ConservativeVolumeTransfer.H"
+#  include "ConservativeVolumeTransfer.H"
 #endif
 #include "AuxiliaryFunctions.H"
+
+namespace NEM {
+namespace DRV {
 
 //----------------------- Transfer Driver ------------------------------------//
 TransferDriver::TransferDriver(const std::string &srcmsh,
@@ -52,7 +55,8 @@ TransferDriver::TransferDriver(const std::string &srcmsh,
   source->setCheckQuality(checkQuality);
   // source->transfer(target, method, arrayNames);
   auto transfer = TransferDriver::CreateTransferObject(source, target, method);
-  transfer->transferPointData(source->getArrayIDs(arrayNames), source->getNewArrayNames());
+  transfer->transferPointData(source->getArrayIDs(arrayNames),
+                              source->getNewArrayNames());
   source->write("new.vtu");
   T.stop();
 
@@ -130,27 +134,22 @@ TransferDriver *TransferDriver::readJSON(const std::string &ifname) {
   }
 }
 
-std::shared_ptr<TransferBase> TransferDriver::CreateTransferObject(meshBase* srcmsh, meshBase* trgmsh, 
-                                                                   const std::string &method)
-{
-  if(method == "Consistent Interpolation")
-  {
+std::shared_ptr<TransferBase> TransferDriver::CreateTransferObject(
+    meshBase *srcmsh, meshBase *trgmsh, const std::string &method) {
+  if (method == "Consistent Interpolation") {
     return FETransfer::CreateShared(srcmsh, trgmsh);
   }
 #ifdef HAVE_IMPACT
-  else if(method == "Conservative Surface Transfer")
-  {
+  else if (method == "Conservative Surface Transfer") {
     return ConservativeSurfaceTransfer::CreateShared(srcmsh, trgmsh);
   }
 #endif
 #ifdef HAVE_SUPERMESH
-  else if(method == "Conservative Volume Transfer")
-  {
+  else if (method == "Conservative Volume Transfer") {
     return ConservativeVolumeTransfer::CreateShared(srcmsh, trgmsh);
   }
 #endif
-  else
-  {
+  else {
     std::cerr << "Method " << method << " is not supported." << std::endl;
     std::cerr << "Supported methods are : " << std::endl;
     std::cerr << "1) Consistent Interpolation" << std::endl;
@@ -163,3 +162,6 @@ std::shared_ptr<TransferBase> TransferDriver::CreateTransferObject(meshBase* src
     exit(1);
   }
 }
+
+}  // namespace DRV
+}  // namespace NEM

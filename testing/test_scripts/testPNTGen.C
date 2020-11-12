@@ -23,8 +23,9 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NemDriver> nemdrvobj =
-        std::unique_ptr<NemDriver>(NemDriver::readJSON(prog));
+    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
+        std::unique_ptr<NEM::DRV::NemDriver>(
+            NEM::DRV::NemDriver::readJSON(prog));
   }
 
   std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(refname);

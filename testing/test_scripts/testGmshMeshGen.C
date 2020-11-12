@@ -24,8 +24,9 @@ std::string box_test(const char *jsonF) {
   for (const auto &prog : inputjson.array_range()) {
     if (prog.contains("Mesh Generation Engine")) {
       std::cout << "Reading JSON array, Mesh Generation Engine" << std::endl;
-      std::unique_ptr<NemDriver> nemdrvobj =
-          std::unique_ptr<NemDriver>(NemDriver::readJSON(prog));
+      std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
+          std::unique_ptr<NEM::DRV::NemDriver>(
+              NEM::DRV::NemDriver::readJSON(prog));
     }
   }
 

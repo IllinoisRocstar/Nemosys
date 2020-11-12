@@ -17,6 +17,9 @@
 #include <tuple>
 #include <vector>
 
+namespace NEM {
+namespace DRV {
+
 // ----------------------------- MeshGen Driver
 // -----------------------------------//
 
@@ -134,6 +137,7 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
     if (defaults == "default") {
       auto *params = new NEM::GEN::gmshParams();
       auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
+      return mshgndrvobj;
     } else {
       jsoncons::json gparams =
           inputjson["Meshing Parameters"]["Gmsh Parameters"];
@@ -1519,3 +1523,6 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
     exit(1);
   }
 }
+
+}  // namespace DRV
+}  // namespace NEM
