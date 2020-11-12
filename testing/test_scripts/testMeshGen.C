@@ -23,8 +23,9 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NemDriver> nemdrvobj =
-        std::unique_ptr<NemDriver>(NemDriver::readJSON(prog));
+    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
+        std::unique_ptr<NEM::DRV::NemDriver>(
+            NEM::DRV::NemDriver::readJSON(prog));
   }
 
   std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(refname);
@@ -48,16 +49,20 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
   nemId_t newpoints = newMesh->getNumberOfPoints();
   nemId_t newcells = newMesh->getNumberOfCells();
 
-    std::cout << "refpoints = " << refpoints << std::endl;
-    std::cout << "refcells  = " << refcells  << std::endl;
-    std::cout << "newPoints = " << newpoints << std::endl;
-    std::cout << "newcells  = " << newcells  << std::endl;
-    std::cout << "Percent difference in points = " << 100.0 *
-        (std::abs(static_cast<double>(refpoints) - static_cast<double>(newpoints))
-            / static_cast<double>(refpoints)) << std::endl;
-    std::cout << "Percent difference in cells = " << 100.0 *
-              (std::abs(static_cast<double>(refcells) - static_cast<double>(newcells))
-               / static_cast<double>(refcells)) << std::endl;
+  std::cout << "refpoints = " << refpoints << std::endl;
+  std::cout << "refcells  = " << refcells << std::endl;
+  std::cout << "newPoints = " << newpoints << std::endl;
+  std::cout << "newcells  = " << newcells << std::endl;
+  std::cout << "Percent difference in points = "
+            << 100.0 * (std::abs(static_cast<double>(refpoints) -
+                                 static_cast<double>(newpoints)) /
+                        static_cast<double>(refpoints))
+            << std::endl;
+  std::cout << "Percent difference in cells = "
+            << 100.0 * (std::abs(static_cast<double>(refcells) -
+                                 static_cast<double>(newcells)) /
+                        static_cast<double>(refcells))
+            << std::endl;
 
   return !(refpoints - refpoints / divisor <= newpoints &&
            newpoints <= refpoints + refpoints / divisor &&

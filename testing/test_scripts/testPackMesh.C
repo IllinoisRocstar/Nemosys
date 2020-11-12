@@ -46,7 +46,7 @@ int generate(const char *jsonF) {
   inputjson = inputjson_tmp[0];
 
   // Call packmesh readjson
-  auto pckmshdrvObj = PackMeshDriver::readJSON(inputjson);
+  auto pckmshdrvObj = NEM::DRV::PackMeshDriver::readJSON(inputjson);
 
   return 0;
 }

@@ -13,19 +13,22 @@
 #include "NucMeshDriver.H"
 #include "PackMeshDriver.H"
 #ifdef HAVE_HDF5
-#include "ProteusDriver.H"
+#  include "ProteusDriver.H"
 #endif
 #ifdef HAVE_CGNS
-#include "RocPartCommGenDriver.H"
+#  include "RocPartCommGenDriver.H"
 #endif
 #ifdef HAVE_SIMMETRIX
-#include "RemeshDriver.H"
+#  include "RemeshDriver.H"
 #endif
 #ifdef HAVE_TEMPLATE_MESH
-#include "TemplateMeshDriver.H"
+#  include "TemplateMeshDriver.H"
 #endif
-//------------------------------ Factory of Drivers
-//----------------------------------------//
+
+namespace NEM {
+namespace DRV {
+
+//---------------------------- Factory of Drivers ----------------------------//
 NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
   std::string program_type = inputjson["Program Type"].as<std::string>();
   if (program_type == "Transfer") {
@@ -40,7 +43,7 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
     return ConversionDriver::readJSON(inputjson);
   } else if (program_type == "Input Generation") {
     return InputGenDriver::readJSON(inputjson);
-  } else if (!program_type.compare("NucMesh Generation")) {
+  } else if (program_type == "NucMesh Generation") {
     return NucMeshDriver::readJSON(inputjson);
   } else if (program_type == "Pack Mesh Generation") {
     return PackMeshDriver::readJSON(inputjson);
@@ -52,17 +55,14 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
               << " is not enabled. Build NEMoSys with Simmetrix capabilities."
               << std::endl;
     exit(1);
-#endif // HAVE_SIMMETRIX
-  }
-  // else if (program_type == "Post Rocstar Remeshing")
-  //{
-  //  return RocRestartDriver::readJSON(inputjson);
-  //}
-  // else if (program_type == "Rocstar Communication Generation")
-  //{
-  //  return RocPrepDriver::readJSON(inputjson);
-  //}
-  else if (program_type == "Rocstar Communication Generation") {
+#endif  // HAVE_SIMMETRIX
+    /*
+  } else if (program_type == "Post Rocstar Remeshing") {
+    return RocRestartDriver::readJSON(inputjson);
+  } else if (program_type == "Rocstar Communication Generation") {
+    return RocPrepDriver::readJSON(inputjson);
+    */
+  } else if (program_type == "Rocstar Communication Generation") {
 #ifdef HAVE_CGNS
     return RocPartCommGenDriver::readJSON(inputjson);
 #else
@@ -70,17 +70,18 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
               << " is not enabled. Build NEMoSys with CGNS capabilities."
               << std::endl;
     exit(1);
-#endif // HAVE_CGNS
+#endif  // HAVE_CGNS
   } else if (program_type == "Template Mesh Generation") {
 #ifdef HAVE_TEMPLATE_MESH
     return TemplateMeshDriver::readJSON(inputjson);
 #else
-    std::cerr << "Program Type " << program_type
-              << " is not enabled. Build NEMoSys with template mesh capabilities."
-              << std::endl;
+    std::cerr
+        << "Program Type " << program_type
+        << " is not enabled. Build NEMoSys with template mesh capabilities."
+        << std::endl;
     exit(1);
-#endif // HAVE_TEMPLATE_MESH
-  } else if (!program_type.compare("Proteus")) {
+#endif  // HAVE_TEMPLATE_MESH
+  } else if (program_type == "Proteus") {
 #ifdef HAVE_HDF5
     return ProteusDriver::readJSON(inputjson);
 #else
@@ -88,10 +89,13 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
               << " is not enabled. Build NEMoSys with HDF5 capabilities."
               << std::endl;
     exit(1);
-#endif // HAVE_HDF5
+#endif  // HAVE_HDF5
   } else {
     std::cerr << "Program Type " << program_type
               << " is not supported by NEMoSys." << std::endl;
     exit(1);
   }
 }
+
+}  // namespace DRV
+}  // namespace NEM

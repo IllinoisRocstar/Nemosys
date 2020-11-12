@@ -12,6 +12,4 @@ Plane Surface(6) = {5};
 tmp[] = Extrude {0,0.0,1} {
   Surface{6};
 };
-Physical Volume(1) = tmp[1];
-
-
+Physical Volume("Cube") = tmp[1];

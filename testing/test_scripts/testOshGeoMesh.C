@@ -1,11 +1,12 @@
 #include <gtest.h>
 
 #include "Omega_h_build.hpp"
-#include "Omega_h_file.hpp"
-#include "vtkXMLDataSetWriter.h"
-#include "vtkXMLGenericDataObjectReader.h"
 
+#include "diffMesh.H"
 #include "oshGeoMesh.H"
+#include "vtkGeoMesh.H"
+
+// Test cases for NEM::MSH::oshGeoMesh
 
 TEST(oshGeoMesh, ConstructorDefault) { NEM::MSH::oshGeoMesh ogm{}; }
 
@@ -15,15 +16,45 @@ TEST(oshGeoMesh, ConstructorOmegaHMesh) {
 }
 
 TEST(oshGeoMesh, ConstructorOmegaHMeshValid) {
-  Omega_h::Mesh oshMesh{NEM::MSH::OmegaHInterface::GetLibrary().get()};
-  Omega_h::build_box_internal(&oshMesh, OMEGA_H_HYPERCUBE, 1.0, 1.0, 1.0, 2, 2,
-                              2);
+  auto oshMesh =
+      Omega_h::build_box(NEM::MSH::OmegaHInterface::GetLibrary()->world(),
+                         OMEGA_H_HYPERCUBE, 1.0, 1.0, 1.0, 2, 2, 2);
   NEM::MSH::oshGeoMesh ogm{&oshMesh};
 }
 
 TEST(oshGeoMesh, ConstructorOmegaHMeshAndLib) {
   Omega_h::Mesh oshMesh{NEM::MSH::OmegaHInterface::GetLibrary().get()};
   NEM::MSH::oshGeoMesh ogm{&oshMesh};
+}
+
+TEST(oshGeoMesh, ReadOsh) {
+  auto mesh = vtkSmartPointer<NEM::MSH::oshGeoMesh>::Take(
+      NEM::MSH::oshGeoMesh::Read("box0.osh"));
+  EXPECT_EQ(8, mesh->getOshMesh().nelems());
+}
+
+TEST(oshGeoMesh, WriteOsh) {
+  auto oshMesh =
+      Omega_h::build_box(NEM::MSH::OmegaHInterface::GetLibrary()->world(),
+                         OMEGA_H_HYPERCUBE, 1.0, 1.0, 1.0, 2, 2, 2);
+  NEM::MSH::oshGeoMesh ogm{&oshMesh};
+  ogm.write("boxTestWrite.osh");
+  EXPECT_EQ(0, NEM::MSH::diffMesh(
+                   &ogm, vtkSmartPointer<NEM::MSH::oshGeoMesh>::Take(
+                             NEM::MSH::oshGeoMesh::Read("boxTestWrite.osh"))));
+}
+
+// Test GM2osh by calling takeGeoMesh test osh2GM by calling setOshMesh
+TEST(oshGeoMesh, GM2osh2GM) {
+  auto mesh = vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(
+      NEM::MSH::vtkGeoMesh::Read("two_mesh.vtu"));
+  mesh->reconstructGeo();
+  auto oshGM1 = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
+  oshGM1->takeGeoMesh(mesh);
+  auto oshGM2 = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
+  auto oshMeshCopy = oshGM1->getOshMesh();
+  oshGM2->setOshMesh(&oshMeshCopy);
+  EXPECT_EQ(0, NEM::MSH::diffMesh(oshGM1, oshGM2));
 }
 
 /*
@@ -42,7 +73,6 @@ TEST(oshGeoMesh, osh2vtk) {
 
   writer->Write();
 }
-
 TEST(oshGeoMesh, vtk2osh) {
   Omega_h::Library lib{};
   vtkSmartPointer<vtkUnstructuredGrid> ug =

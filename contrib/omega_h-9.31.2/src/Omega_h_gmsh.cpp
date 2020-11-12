@@ -449,7 +449,7 @@ void read_internal(std::istream& stream, Mesh* mesh) {
         for (Int j = 2; j < ntags; ++j) {
           stream >> tag;
         }
-        Int neev = dim + 1;
+        Int neev = element_degree(family, dim, VERT);
         LO node_number;
         for (Int j = 0; j < neev; ++j) {
           stream >> node_number;

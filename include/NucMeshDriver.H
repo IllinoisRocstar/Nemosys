@@ -6,6 +6,9 @@
 #include "NemDriver.H"
 #include "shape.H"
 
+namespace NEM {
+namespace DRV {
+
 /**
  * @brief Driver class to parse input JSON file and create mixed-element meshes.
  */
@@ -149,5 +152,8 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
    */
   void openGUI();
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_NUCMESHDRIVER_H_

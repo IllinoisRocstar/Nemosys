@@ -1,28 +1,27 @@
 #include <RefineDriver.H>
 #include <gtest.h>
 
-#ifdef HAVE_CFMSH
-#include "AMRFoam.H"
-#endif
-
-#ifdef MLAMR
-#include <fdeep/fdeep.hpp>
-
 #include "meshBase.H"
-#include "vtkMesh.H"
+
+#ifdef HAVE_CFMSH
+#  include "AMRFoam.H"
+#endif
+#ifdef MLAMR
+#  include <fdeep/fdeep.hpp>
+#  include "vtkMesh.H"
 #endif
 
-const char* refineValueJSON;
-const char* refineValueVTU;
-const char* refineValueGoldVTU;
-const char* refineUniformJSON;
-const char* refineUniformVTU;
-const char* refineUniformGoldVTU;
-const char* AMRValueJSON;
-const char* mlPredictVTU;
-const char* mlModelFile;
+const char *refineValueJSON;
+const char *refineValueVTU;
+const char *refineValueGoldVTU;
+const char *refineUniformJSON;
+const char *refineUniformVTU;
+const char *refineUniformGoldVTU;
+const char *AMRValueJSON;
+const char *mlPredictVTU;
+const char *mlModelFile;
 
-int genTest(const char* jsonF, const char* newName, const char* goldName) {
+int genTest(const char *jsonF, const char *newName, const char *goldName) {
   std::string fname(jsonF);
   std::ifstream inputStream(fname);
   if (!inputStream.good()) {
@@ -32,8 +31,9 @@ int genTest(const char* jsonF, const char* newName, const char* goldName) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<RefineDriver> refineDriver =
-      std::unique_ptr<RefineDriver>(RefineDriver::readJSON(inputjson));
+  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
+      std::unique_ptr<NEM::DRV::RefineDriver>(
+          NEM::DRV::RefineDriver::readJSON(inputjson));
 
   std::unique_ptr<meshBase> goldMesh = meshBase::CreateUnique(goldName);
   std::unique_ptr<meshBase> newMesh = meshBase::CreateUnique(newName);
@@ -43,7 +43,7 @@ int genTest(const char* jsonF, const char* newName, const char* goldName) {
 }
 
 #ifdef HAVE_CFMSH
-int AMRTest(const char* jsonF2) {
+int AMRTest(const char *jsonF2) {
   std::string fname(jsonF2);
   std::ifstream inputStream(fname);
   if (!inputStream.good()) {
@@ -53,8 +53,9 @@ int AMRTest(const char* jsonF2) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<RefineDriver> refineDriver =
-      std::unique_ptr<RefineDriver>(RefineDriver::readJSON(inputjson));
+  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
+      std::unique_ptr<NEM::DRV::RefineDriver>(
+          NEM::DRV::RefineDriver::readJSON(inputjson));
 
   std::unique_ptr<meshBase> genMesh = meshBase::CreateUnique("refined_AMR.vtu");
   std::unique_ptr<meshBase> refMesh =
@@ -84,7 +85,7 @@ int MLAMRTest(const std::string MLName, const std::string MeshName) {
 
   // Read incoming vtk mesh
   std::shared_ptr<meshBase> mb = meshBase::CreateShared(MeshName);
-  vtkMesh* vm = new vtkMesh(mb->getDataSet(), "outMesh.vtu");
+  vtkMesh *vm = new vtkMesh(mb->getDataSet(), "outMesh.vtu");
 
   // Get ML inputs and reference output
   std::vector<double> nonDimUGrad;
@@ -149,7 +150,7 @@ TEST(MachineLearningTest, ML_Predictions) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   assert(argc == 10);
   refineValueJSON = argv[1];

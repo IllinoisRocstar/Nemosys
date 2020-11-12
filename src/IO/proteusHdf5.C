@@ -110,7 +110,7 @@ proteusHdf5::proteusHdf5(std::string fname, std::string meshFname,
   // Transfer solution onto new mesh
   std::cout << "Performing solution transfer" << std::endl;
   // myMeshBase->transfer(myMeshBaseNoQuads, "Consistent Interpolation");
-  auto transfer = TransferDriver::CreateTransferObject(
+  auto transfer = NEM::DRV::TransferDriver::CreateTransferObject(
       myMeshBase, myMeshBaseNoQuads, "Consistent Interpolation");
   transfer->run();
 
@@ -195,7 +195,7 @@ proteusHdf5::proteusHdf5(std::string fname, std::string meshFname,
 
   refinedMeshBase->write();
 
-  ConversionDriver *convdrvobj = new ConversionDriver();
+  NEM::DRV::ConversionDriver *convdrvobj = new NEM::DRV::ConversionDriver();
   std::vector<meshBase *> mbVec;
   mbVec.push_back(refinedMeshBase);
   std::string exoName = exoMeshFName;

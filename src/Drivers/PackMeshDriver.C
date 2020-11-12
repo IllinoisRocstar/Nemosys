@@ -34,6 +34,9 @@
 // 1. Some implementation to improve mesh if mesh is not of desired
 //    quality.
 
+namespace NEM {
+namespace DRV {
+
 // ------------------------- Pack Mesh Driver -------------------------------//
 
 #ifdef HAVE_CFMSH
@@ -409,9 +412,9 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
   else if (meshType == "hexahedral") {
     bool useRocPack = false;
 
-    if ((inputjson["Mesh File Options"].contains("Input Rocpack File")) && 
+    if ((inputjson["Mesh File Options"].contains("Input Rocpack File")) &&
        (inputjson["Mesh File Options"].contains("Input Geometry File"))) {
-      std::cerr << "Please define only on of the following options, not both!" 
+      std::cerr << "Please define only on of the following options, not both!"
                 << std::endl << " 1. \"Input Rocpack File\"" << std::endl
                 << " 2. \"Input Geometry File\"" << std::endl;
       throw;
@@ -445,13 +448,13 @@ PackMeshDriver *PackMeshDriver::readJSON(const jsoncons::json inputjson) {
         inputjson["Mesh File Options"]["Output Surrounding Mesh File"]
             .as<std::string>();
 
-    std::string ofname_merged = 
+    std::string ofname_merged =
             inputjson["Mesh File Options"].contains("Output Combined Mesh File")
                    ? inputjson["Mesh File Options"]["Output Combined Mesh File"]
                          .as<std::string>()
                    : "PackMesh.vtu";
 
-    return readJSON(ifname, ofname_pack, ofname_surrndng, ofname_merged, 
+    return readJSON(ifname, ofname_pack, ofname_surrndng, ofname_merged,
                     useRocPack, inputjson);
   }
 #endif
@@ -487,7 +490,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
     } else {
       jsoncons::json shmparams =
           inputjson["Meshing Parameters"]["snappyHexMesh Parameters"];
-          
+
       jsoncons::json geomParams = shmparams["Geometry Definition"];
 
       if (inputjson["Mesh File Options"].contains("Input Geometry File"))
@@ -867,7 +870,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       // Snapping Controls
       if (inputjson["Meshing Parameters"].contains("Snapping Controls")) {
         jsoncons::json snapParams = shmparams["Snapping Controls"];
-      
+
         if (snapParams.contains("nSmoothPatch"))
           params->snapSmthPatch = snapParams["nSmoothPatch"].as<int>();
         else {
@@ -912,7 +915,7 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
       // Layer controls
       if (inputjson["Meshing Parameters"].contains("Mesh Layers Controls")) {
         jsoncons::json layerParams = shmparams["Mesh Layers Controls"];
-      
+
         if (layerParams.contains("relativeSizes"))
           params->_relSize = layerParams["relativeSizes"].as<bool>();
         else {
@@ -1690,8 +1693,8 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
 
     // Give all data to PackMesh Driver
     PackMeshDriver *pckmshdrvobj =
-        new PackMeshDriver(ifname, mparams, params, bmparams, 
-                           ofname_pack, ofname_surrndng, ofname_merged, 
+        new PackMeshDriver(ifname, mparams, params, bmparams,
+                           ofname_pack, ofname_surrndng, ofname_merged,
                            useRocpack,locAdjust);
     return pckmshdrvobj;
   } else {
@@ -1958,3 +1961,6 @@ PackMeshDriver *PackMeshDriver::readJSON(const std::string &ifname,
     exit(1);
   }
 }
+
+}  // namespace DRV
+}  // namespace NEM

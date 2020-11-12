@@ -1,15 +1,18 @@
 #ifndef NEMOSYS_TEMPLATEMESHDRIVER_H_
 #define NEMOSYS_TEMPLATEMESHDRIVER_H_
 
+#include "nemosys_export.h"
 #include "AuxiliaryFunctions.H"
 #include "NemDriver.H"
-#include "nemosys_export.h"
+
+namespace NEM {
+namespace DRV {
 
 /**
  * @brief Driver class to generate meshes according to a template.
  */
 class NEMOSYS_EXPORT TemplateMeshDriver : public NemDriver {
-public:
+ public:
   /**
    * @brief Generates mesh for template and parameters defined in JSON file
    * @param inputjson Input JSON file
@@ -25,7 +28,7 @@ public:
    */
   static TemplateMeshDriver *readJSON(const jsoncons::json &inputjson);
 
-private:
+ private:
   /**
    * @brief Executes the template file
    * @param tplName Template file to be executed
@@ -67,4 +70,7 @@ private:
   std::string params_name; /**< time stamped parameters file name */
 };
 
-#endif // NEMOSYS_TEMPLATEMESHDRIVER_H_
+}  // namespace DRV
+}  // namespace NEM
+
+#endif  // NEMOSYS_TEMPLATEMESHDRIVER_H_

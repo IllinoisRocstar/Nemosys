@@ -12,10 +12,12 @@
 #include <vtkAbstractArray.h>
 #include <vtkCellData.h>
 #include <vtkCellType.h>
+#include <vtkDataObject.h>
 #include <vtkFieldData.h>
 #include <vtkGenericCell.h>
 #include <vtkIdList.h>
 #include <vtkPointData.h>
+#include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 #include <vtkUnstructuredGrid.h>
 
@@ -68,51 +70,21 @@ class NEMOSYS_EXPORT GmshInterface {
  * geoMeshBase is an abstract class that specifies an interface for geometry
  * and mesh objects.
  */
-class NEMOSYS_EXPORT geoMeshBase {
- public:
-  /**
-   * Convert 2D vtk dataset into gmsh. Returns gmsh tag of 2D surface added.
-   *
-   * Will add nodes and elements. Supports only one 0D, 1D, and 2D element set
-   * at the time. Adding 3D elements will error.
-   *
-   * @param dataSet VTK unstructured grid
-   * @return gmsh tag of 2D entity added
-   */
-  static int vtkSurf2gmsh(vtkUnstructuredGrid *dataSet);
+class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
+  vtkAbstractTypeMacro(geoMeshBase, vtkDataObject)
 
+ public:
   /**
    * Query for conversion from vtk to gmsh
    * @param vtkType
-   * @return
+   * @return type given by @c GMSH_MSH_TYPES enum
    */
   static int getGmshTypeFromVTKType(int vtkType);
 
-  /**
-   * Compute discrete geometry from vtk mesh and name of geometry cell array
-   * @param dataSet VTK unstructured grid
-   * @param geoName name of geometry cell array
-   * @param angleThreshold dihedral angle (in radians) to detect surfaces
-   */
-  static void computeDiscreteGeoFromMsh(vtkUnstructuredGrid *dataSet,
-                                        const std::string &geoName,
-                                        double angleThreshold);
-
  public:
   geoMeshBase();
-
-  /**
-   * Disable copy. Allow move.
-   * @{
-   */
-  geoMeshBase(const geoMeshBase &) = delete;
-  geoMeshBase &operator=(const geoMeshBase &) = delete;
-
-  geoMeshBase(geoMeshBase &&) = default;
-  geoMeshBase &operator=(geoMeshBase &&) = default;
-  /**@}*/
-
-  virtual ~geoMeshBase();
+  ~geoMeshBase() override;
+  // Copy and move constructors/assignment operators deleted in vtkDataObject
 
  public:
   /**
@@ -120,7 +92,6 @@ class NEMOSYS_EXPORT geoMeshBase {
    * @param fileName file name
    */
   virtual void write(const std::string &fileName) = 0;
-
   /**
    * Print a report about the mesh
    * @param out stream
@@ -130,6 +101,17 @@ class NEMOSYS_EXPORT geoMeshBase {
     base.report(os);
     return os;
   }
+  /**
+   * Take the GeoMesh of another @c geoMeshBase. Note that @p otherGeoMesh will
+   * be left with an empty mesh.
+   * @param otherGeoMesh other geoMeshBase object; mesh will be left empty
+   */
+  virtual void takeGeoMesh(geoMeshBase *otherGeoMesh);
+  /**
+   * Construct the geometry from the mesh alone. Sets geometry, link, and side
+   * set. Does not alter the mesh.
+   */
+  virtual void reconstructGeo();
 
  public:
   /**
@@ -158,8 +140,6 @@ class NEMOSYS_EXPORT geoMeshBase {
   void setAngleThreshold(double angleThreshold) {
     _angleThreshold = angleThreshold;
   }
-
- public:
   /**
    * Get the number of points in mesh
    * @return number of points in mesh
@@ -197,6 +177,14 @@ class NEMOSYS_EXPORT geoMeshBase {
    */
   void getCell(nemId_t cellId, vtkGenericCell *cell) const {
     _geoMesh.mesh->GetCell(cellId, cell);
+  }
+  /**
+   * Get cell.
+   * @param cellId cell id
+   * @return cell
+   */
+  vtkCell *getCell(nemId_t cellId) const {
+    return _geoMesh.mesh->GetCell(cellId);
   }
   /**
    * Get cell bounds
@@ -241,63 +229,153 @@ class NEMOSYS_EXPORT geoMeshBase {
     _geoMesh.mesh->GetPointCells(ptId, cellIds);
   }
   /**
-   * TODO
-   * @param cellId
-   * @param ptIds
-   * @param cellIds
+   * Get list of cells sharing points @p ptIds excluding @p cellId.
+   * @param cellId id of cell to exclude
+   * @param ptIds point id
+   * @param cellIds list of cell ids
    */
   void getCellNeighbors(nemId_t cellId, vtkIdList *ptIds,
                         vtkIdList *cellIds) const {
     _geoMesh.mesh->GetCellNeighbors(cellId, ptIds, cellIds);
   }
-
- public:
   /**
-   * Get copy of point data array by name. Also returns array index.
+   * Get number of arrays in the point data.
+   * @return number of arrays in the point data
+   */
+  int getNumberOfPointDataArrays() const {
+    return _geoMesh.mesh->GetPointData()->GetNumberOfArrays();
+  }
+  /**
+   * Get copy of point data array by name. Optionally, get array index.
    * @param arrayName array name
    * @param array point data array
    * @param arrayIdx array index
    */
   void getPointDataArrayCopy(const std::string &arrayName,
-                             vtkAbstractArray *array, int *arrayIdx) const {
-    array->DeepCopy(_geoMesh.mesh->GetPointData()->GetAbstractArray(
-        arrayName.c_str(), *arrayIdx));
+                             vtkAbstractArray *array,
+                             int *arrayIdx = nullptr) const;
+  /**
+   * Create and return a copy of point data array by name. Optionally, get array
+   * index.
+   * @param arrayName array name
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getPointDataArrayCopy(
+      const std::string &arrayName, int *arrayIdx = nullptr) const;
+  /**
+   * Get copy of point data array by index.
+   * @param arrayIdx array index
+   * @param array point data array
+   */
+  void getPointDataArrayCopy(int arrayIdx, vtkAbstractArray *array) const;
+  /**
+   * Create and return a copy of point data array by index.
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getPointDataArrayCopy(int arrayIdx) const;
+  /**
+   * Get number of arrays in the cell data.
+   * @return number of arrays in the cell data
+   */
+  int getNumberOfCellDataArrays() const {
+    return _geoMesh.mesh->GetCellData()->GetNumberOfArrays();
   }
   /**
-   * Get copy of cell data array by name. Also returns array index.
+   * Get copy of cell data array by name. Optionally, get array index.
    * @param arrayName array name
    * @param array cell data array
    * @param arrayIdx array index
    */
   void getCellDataArrayCopy(const std::string &arrayName,
-                            vtkAbstractArray *array, int *arrayIdx) const {
-    array->DeepCopy(_geoMesh.mesh->GetCellData()->GetAbstractArray(
-        arrayName.c_str(), *arrayIdx));
+                            vtkAbstractArray *array,
+                            int *arrayIdx = nullptr) const;
+  /**
+   * Create and return a copy of cell data array by name. Optionally, get array
+   * index.
+   * @param arrayName array name
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getCellDataArrayCopy(
+      const std::string &arrayName, int *arrayIdx = nullptr) const;
+  /**
+   * Get copy of cell data array by index.
+   * @param arrayIdx array index
+   * @param array cell data array
+   */
+  void getCellDataArrayCopy(int arrayIdx, vtkAbstractArray *array) const;
+  /**
+   * Create and return a copy of cell data array by index.
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getCellDataArrayCopy(int arrayIdx) const;
+  /**
+   * Get number of arrays in the field data.
+   * @return number of arrays in the field data
+   */
+  int getNumberOfFieldDataArrays() const {
+    return _geoMesh.mesh->GetFieldData()->GetNumberOfArrays();
   }
   /**
-   * Get copy of field data array by name. Also returns array index.
+   * Get copy of field data array by name. Optionally, get array index.
    * @param arrayName array name
    * @param array field data array
    * @param arrayIdx array index
    */
   void getFieldDataArrayCopy(const std::string &arrayName,
-                             vtkAbstractArray *array, int *arrayIdx) const {
-    array->DeepCopy(_geoMesh.mesh->GetFieldData()->GetAbstractArray(
-        arrayName.c_str(), *arrayIdx));
-  }
+                             vtkAbstractArray *array,
+                             int *arrayIdx = nullptr) const;
+  /**
+   * Create and return a copy of field data array by name. Optionally, get array
+   * index.
+   * @param arrayName array name
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getFieldDataArrayCopy(
+      const std::string &arrayName, int *arrayIdx = nullptr) const;
+  /**
+   * Get copy of field data array by index.
+   * @param arrayIdx array index
+   * @param array field data array
+   */
+  void getFieldDataArrayCopy(int arrayIdx, vtkAbstractArray *array) const;
+  /**
+   * Create and return a copy of field data array by index.
+   * @param arrayIdx array index
+   * @return pointer to copy of array
+   */
+  vtkSmartPointer<vtkAbstractArray> getFieldDataArrayCopy(int arrayIdx) const;
 
  protected:
   struct GeoMesh {
-    vtkSmartPointer<vtkUnstructuredGrid> mesh;  ///< mesh
-    std::string geo;                            ///< name of gmsh model with geo
-
-    std::string link;  ///< name of vtk int array storing geometric entities
+    vtkSmartPointer<vtkUnstructuredGrid> mesh;
+    // name of gmsh model with geo
+    std::string geo;
+    // name of cell data array in mesh (and sideSet if sideSet not null) storing
+    // physical group (matching geo) for each cell
+    std::string link;
+    // boundaries of each region, represented by lower dimensional cells
+    // should have 3 cell data ("GeoEnt", "OrigCellIds", "CellFaceIds") and
+    // optionally "TwinIds"
+    vtkSmartPointer<vtkPolyData> sideSet;
   };
+
+  static constexpr auto GEO_ENT_DEFAULT_NAME = "GeoEnt";
+
+  static constexpr auto SIDE_SET_GEO_ENT_NAME = "GeoEnt";
+  // Set to match dataSetRegionSurfaceFilter
+  static constexpr auto SIDE_SET_ORIG_CELL_NAME = "OrigCellIds";
+  static constexpr auto SIDE_SET_CELL_FACE_NAME = "CellFaceIds";
+  static constexpr auto SIDE_SET_TWIN_NAME = "TwinIds";
 
  protected:
   /**
    * Construct geoMeshBase from a GeoMesh struct
-   * @param inGeoMesh a geo and mesh pair
+   * @param inGeoMesh a mesh, geo, link, and sideSet
    */
   explicit geoMeshBase(GeoMesh inGeoMesh);
 
@@ -380,9 +458,14 @@ class NEMOSYS_EXPORT geoMeshBase {
    * @note This is not a copy; Gmsh does not support cloning a model.
    */
   const GeoMesh &getGeoMesh() const { return _geoMesh; }
+  /**
+   * Set the underlying geometry object.
+   * @param geoMesh a mesh and geometry
+   */
+  void setGeoMesh(const geoMeshBase::GeoMesh &geoMesh) { _geoMesh = geoMesh; }
 
  private:
-  void reconstructGeo();
+  virtual void resetNative() = 0;
 
  private:
   GeoMesh _geoMesh;

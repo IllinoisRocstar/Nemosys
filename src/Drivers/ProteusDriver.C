@@ -2,6 +2,9 @@
 #include <meshBase.H>
 #include <proteusHdf5.H>
 
+namespace NEM {
+namespace DRV {
+
 ProteusDriver::ProteusDriver(const std::string &fieldFName,
                              const std::string &meshFName,
                              const std::string &edgeSidesetName,
@@ -32,3 +35,6 @@ ProteusDriver *ProteusDriver::readJSON(const jsoncons::json &inputjson) {
 ProteusDriver::~ProteusDriver() {
   std::cout << "ProteusDriver destroyed" << std::endl;
 }
+
+}  // namespace DRV
+}  // namespace NEM

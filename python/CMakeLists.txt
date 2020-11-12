@@ -13,6 +13,7 @@ set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
 file(COPY
         pyNemosys.i
         ${CMAKE_SOURCE_DIR}/include/meshBase.H
+        ${CMAKE_SOURCE_DIR}/include/diffMesh.H
         ${CMAKE_SOURCE_DIR}/include/vtkMesh.H
         ${CMAKE_SOURCE_DIR}/include/NemDriver.H
         ${CMAKE_SOURCE_DIR}/include/TransferDriver.H
@@ -25,9 +26,6 @@ file(COPY
         ${CMAKE_SOURCE_DIR}/include/OrderOfAccuracy.H
         ${CMAKE_SOURCE_DIR}/include/meshingParams.H
         ${CMAKE_SOURCE_DIR}/include/meshGen.H
-
-        ${CMAKE_SOURCE_DIR}/include/vtkGeoMesh.H
-        ${CMAKE_SOURCE_DIR}/include/gmshGeoMesh.H
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 get_target_property(WRAPPER_COMPILE_ARGS Nemosys COMPILE_DEFINITIONS)

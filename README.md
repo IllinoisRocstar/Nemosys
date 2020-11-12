@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.51.7
+Version 0.52.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -42,17 +42,15 @@ in the notes section.
 | ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT         |
 | ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI              |
 | ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
-| ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II               |
-| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
+| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     |                                  |
 | ENABLE_HDF5            | Enable HDF5 extensions          | OFF     | Requires HDF5                    |
 | ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
 | ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
-| ENABLE_OMEGAH          | Enable Omega_h mesh adaptivity  | ON      |                                  |
 | ENABLE_OMEGAH_CUDA     | Enable GPU for Omega_h          | OFF     | Requires Kokkos                  |
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
 | ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
 | ENABLE_TEMPLATE_MESH   | Enable meshing templates        | ON      |                                  |
-| ENABLE_MLAMR           | Enable machine learning based AMR | OFF | Requires Frugally-deep library     |
+| ENABLE_MLAMR           | Enable machine learning based AMR | OFF   | Requires Frugally-deep library   |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
@@ -100,9 +98,7 @@ To enable this, make sure that the following flag is set:
 ```
 and that `CMAKE_PREFIX_PATH` (or `$PATH`) contains
 `${NEMOSYS_DEPS_INSTALL_PATH}/kokkos/lib/CMake`. Note that both Kokkos and
-NEMoSys must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`), and that
-any code that requires the `oshGeoMesh.H` header must then also be compiled for
-CUDA.
+NEMoSys must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`).
 
 ### Enabling Simmetrix (UNSUPPORTED) ###
 **Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
@@ -133,10 +129,10 @@ You will need to `apt install` at least the following dependencies:
 * libjpeg-dev
 * libcgns-dev
 * libmetis-dev
+* libexodusii-dev
 
 Optional dependencies for additional functionality:
 
-* libexodusii-dev
 * python3.5-dev
 * python3-pip
 * python2.7-dev
@@ -176,7 +172,6 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
         -DENABLE_BUILD_UTILS=ON \
         -DENABLE_TESTING=ON \
         -DBUILD_SHARED_LIBS=ON \
-        -DENABLE_EXODUS=ON \
         -DENABLE_PYTHON_BINDINGS=ON \
         -DCMAKE_BUILD_TYPE=Release 
 $ make -j$(nproc) (or however many threads you'd like to use)

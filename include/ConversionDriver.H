@@ -5,10 +5,11 @@
 
 #include "nemosys_export.h"
 #include "NemDriver.H"
+#include "exoMesh.H"
 #include "meshBase.H"
-#ifdef HAVE_EXODUSII
-#  include "exoMesh.H"
-#endif
+
+namespace NEM {
+namespace DRV {
 
 class NEMOSYS_EXPORT ConversionDriver : public NemDriver {
  public:
@@ -21,7 +22,6 @@ class NEMOSYS_EXPORT ConversionDriver : public NemDriver {
   static ConversionDriver *readJSON(const jsoncons::json &inputjson);
   static ConversionDriver *readJSON(const std::string &ifname);
 
-#ifdef HAVE_EXODUSII
  public:
   static void genExo(std::vector<meshBase *> meshes, const std::string &fname);
 
@@ -56,10 +56,11 @@ class NEMOSYS_EXPORT ConversionDriver : public NemDriver {
                                  bool splitTopBotSS,
                                  std::vector<std::string> sideSetNames);
 
-#endif
-
  private:
   meshBase *source;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_CONVERSIONDRIVER_H_

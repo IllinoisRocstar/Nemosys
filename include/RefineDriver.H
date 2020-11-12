@@ -1,18 +1,18 @@
 #ifndef NEMOSYS_REFINEDRIVER_H_
 #define NEMOSYS_REFINEDRIVER_H_
 
-#include "NemDriver.H"
-#include "meshBase.H"
-#include "nemosys_export.h"
-
-#ifdef HAVE_CFMSH
-#include "AMRFoam.H"
-#endif
-
 #include <string>
+
+#include "nemosys_export.h"
+#include "NemDriver.H"
+
+namespace NEM {
+namespace DRV {
 
 class NEMOSYS_EXPORT RefineDriver : public NemDriver {
  public:
+  RefineDriver() = default;
+
   RefineDriver(const std::string &_mesh, const std::string &method,
                const std::string &arrayName, double dev_mult, bool maxIsmin,
                double edgescale, const std::string &ofname, bool transferData,
@@ -67,11 +67,9 @@ class NEMOSYS_EXPORT RefineDriver : public NemDriver {
   static RefineDriver *readJSON(const std::string &ifname);
 
   ~RefineDriver() override;
-
-  meshBase *getMesh() const { return mesh; }
-
- private:
-  meshBase *mesh;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_REFINEDRIVER_H_

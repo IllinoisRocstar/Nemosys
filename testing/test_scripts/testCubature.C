@@ -1,5 +1,7 @@
-#include <Cubature.H>
 #include <gtest.h>
+
+#include "Cubature.H"
+#include "meshBase.H"
 
 const char* nodeMesh;
 const char* refGauss;
@@ -19,8 +21,8 @@ class CubatureTest : public ::testing::Test
       //mesh = meshBase::Create(nodeMesh);
       //cuby = new GaussCubature(mesh,arrayIDs);
 
-			mesh = meshBase::CreateShared(nodeMesh);
-      cuby = GaussCubature::CreateShared(mesh.get(), arrayIDs);
+      mesh = meshBase::CreateShared(nodeMesh);
+      cuby = GaussCubature::CreateShared(mesh->getDataSet(), arrayIDs);
     }
   
     virtual ~CubatureTest()
@@ -49,7 +51,7 @@ TEST(CubatureContructors, ConstructWithoutArray)
   // load reference node mesh
   std::unique_ptr<meshBase> mesh1 = meshBase::CreateUnique(nodeMesh);
   // generate gauss point mesh
-  std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(mesh1.get()); 
+  std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(mesh1->getDataSet());
   cubeObj->writeGaussMesh("gaussTestNoData.vtp");
   // load generated mesh
   std::unique_ptr<meshBase> gaussMesh = meshBase::CreateUnique("gaussTestNoData.vtp");
@@ -87,14 +89,16 @@ TEST_F(CubatureTest, integrateOverAllCells)
   }
 
   std::unique_ptr<meshBase> integralMesh = meshBase::CreateUnique(refInt);
-  EXPECT_EQ(0, diffMesh(cuby->getNodeMesh(), integralMesh.get()));
+  std::unique_ptr<meshBase> cubatureMesh =
+      meshBase::CreateUnique(cuby->getDataSet(), "Cubature");
+  EXPECT_EQ(0, diffMesh(cubatureMesh.get(), integralMesh.get()));
 }
 
 TEST(CubatureHexTest, integrateOverHex)
 {
   std::unique_ptr<meshBase> hex = meshBase::CreateUnique(hexmesh);
   std::vector<int> arrayIDs = {0};
-  std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(hex.get(),arrayIDs); 
+  std::unique_ptr<GaussCubature> cubeObj = GaussCubature::CreateUnique(hex->getDataSet(),arrayIDs);
   std::vector<std::vector<double>> totalIntegralData(cubeObj->integrateOverAllCells());
   EXPECT_DOUBLE_EQ(totalIntegralData[0][0],0.01780325297629036);
   //std::cout << setprecision(15) << totalIntegralData[0][0] << std::endl;

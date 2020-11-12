@@ -11,22 +11,22 @@ pyNemosys = Extension(
     '_pyNemosys',
     sources='${WRAPPER_SOURCE_FILES}'.split(';'),
     include_dirs=list(filter(None, (
-            '${WRAPPER_INCLUDE_DIRS}'.split(';')
+        '${WRAPPER_INCLUDE_DIRS}'.split(';')
     ))),
     libraries=(
-            ['Nemosys',
-             '${VTK_COMMON_CORE_LIB}'
-             ]
+        ['Nemosys',
+         '${VTK_COMMON_CORE_LIB}'
+         ]
     ),
     library_dirs=(
-            ['${CMAKE_BINARY_DIR}',
-             '${VTK_LIB_DIR}',
-             '${VTK_LIB_DIR}/../lib'
-             ]
+        ['${CMAKE_BINARY_DIR}',
+         '${VTK_LIB_DIR}',
+         '${VTK_LIB_DIR}/../lib'
+         ]
     ),
     runtime_library_dirs=runtime_lib_dirs,
     swig_opts=list(filter(None, (
-            ['-c++', '-DNEMOSYS_EXPORT=']
+            ['-c++', '-DNEMOSYS_EXPORT=', '-DNEMOSYS_DEPRECATED_EXPORT=']
             + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
     ))),
     extra_compile_args=list(filter(None, (

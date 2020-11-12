@@ -527,7 +527,7 @@ void write(filesystem::path const& path, Mesh* mesh) {
   auto filepath = path;
   filepath /= std::to_string(mesh->comm()->rank());
   filepath += ".osh";
-  std::ofstream file(filepath.c_str());
+  std::ofstream file(filepath.c_str(), std::ios::binary);
   OMEGA_H_CHECK(file.is_open());
   write(file, mesh);
   write_nparts(path, mesh);

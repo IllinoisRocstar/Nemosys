@@ -30,7 +30,6 @@ std::streampos write_initial_pvd(
 void update_pvd(filesystem::path const& root_path, std::streampos* pos_inout,
     I64 step, Real time);
 
-void read_vtu(std::istream& stream, CommPtr comm, Mesh* mesh);
 void read_vtu_ents(std::istream& stream, Mesh* mesh);
 
 void read_pvtu(std::istream& stream, CommPtr comm, I32* npieces_out,

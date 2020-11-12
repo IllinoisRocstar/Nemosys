@@ -191,6 +191,9 @@ inline std::vector<std::string> Tokenize(const std::string &lineIn,
                                          const char &delim);
 inline std::vector<std::string> Tokenize(const std::string &lineIn,
                                          const std::string &delim);
+// get the least positive integer that is not in the map and at least min
+template <typename A, typename B>
+A leastUnusedKey(const std::map<A, B> &map, A min = 1);
 //----------------------------------------------------------------------------//
 
 //-------------------Auxiliary Function Implementations-----------------------//
@@ -557,6 +560,26 @@ std::string getRandomString(int length) {
 // check if name conatins _exp
 bool expCont(const std::string &_name, const std::string &_exp) {
   return (_name.find(_exp) != std::string::npos);
+}
+
+template <typename A, typename B>
+A leastUnusedKey(const std::map<A, B> &map, A min) {
+  A i = min;
+  auto it = map.begin();
+  if (min > 1) {
+    auto ub = map.upper_bound(min);
+    if (ub != it) {
+      it = --ub;
+    }
+  }
+  for (; it != map.end(); ++it) {
+    if (it->first == i) {
+      ++i;
+    } else {
+      return i;
+    }
+  }
+  return i;
 }
 
 // search for pattern and return vector of matches

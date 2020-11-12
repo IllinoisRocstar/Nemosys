@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.1)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 51)
-set(NEMOSYS_PATCH_VERSION 7)
+set(NEMOSYS_MINOR_VERSION 52)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -15,6 +15,7 @@ set(NEMOSYS_SHORT_LICENSE "GNU General Public License v2 or later (GPLv2+)")
 set(NEMOSYS_HOMEPAGE_URL "http://git.illinois.rocstar/Nemosys/Nemosys")
 set(NEMOSYS_AUTHOR
     "Masoud Safdari (lead)"
+    "Andrew Fu"
     "Alessandro Gondolo"
     "Sachin Natesh"
     "Akash Patel"
@@ -98,16 +99,19 @@ list(APPEND CMAKE_BUILD_TYPE_OPTIONS
 macro(NEM_get_imported_location OUT_VAR LIB_NAME OUT_VAR_PATH)
   foreach(buildtype IN LISTS CMAKE_BUILD_TYPE_OPTIONS)
     string(TOUPPER ${buildtype} BUILD_TYPE)
-    if(WIN32)
-      get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
-    else()
-      get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
-      message(STATUS ${LIB_NAME})
-    endif()
-    if(OUT_LIB)
-      list(APPEND ${OUT_VAR} ${OUT_LIB})
-      get_filename_component(LIBRARY_PATH ${OUT_LIB} PATH)
-      list(APPEND ${OUT_VAR_PATH} ${LIBRARY_PATH})
+    string(FIND ${LIB_NAME} "fopenmp" ISOMP)
+    if (NOT ISOMP EQUAL 1)
+      if(WIN32)
+        get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
+      else()
+        get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
+        message(STATUS ${LIB_NAME})
+      endif()
+      if(OUT_LIB)
+        list(APPEND ${OUT_VAR} ${OUT_LIB})
+        get_filename_component(LIBRARY_PATH ${OUT_LIB} PATH)
+        list(APPEND ${OUT_VAR_PATH} ${LIBRARY_PATH})
+      endif()
     endif()
   endforeach()
 endmacro()
@@ -122,12 +126,10 @@ opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
 opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 opt(CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
 opt(DTK "Enable DTK extensions" OFF)
-opt(EXODUS "Enable EXODUS II extensions" OFF)
 opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
 opt(METIS "Enable METIS partitioner" ${DEFAULT})
-opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
-opt(OMEGAH "Enable Omega_h mesh adaptivity" ${DEFAULT})
+opt(NETGEN "Enable Netgen meshing engine" ON)
 opt(OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
 with CUDA and linked dynamically)" OFF)
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
@@ -155,12 +157,9 @@ if(ENABLE_CONSRV_VOLUME_TRANSFER AND NOT ENABLE_MPI)
 endif()
 
 if(ENABLE_OMEGAH_CUDA)
-  if(NOT ENABLE_OMEGAH)
-    message(FATAL_ERROR "Cannot use GPU acceleration for Omega_h without Omega_h")
-  endif()
-  if(MSVC)
-    message(FATAL_ERROR "MSVC and CUDA not supported")
-  endif()
+    if(MSVC)
+        message(FATAL_ERROR "MSVC and CUDA not supported")
+    endif()
 endif()
 
 # Check system configuration ###################################################
@@ -211,12 +210,14 @@ else()
   # For VTK 6 and 8
   NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommonCore VTK_COMMON_CORE_LIB_PATH)
 endif()
-get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
-if(WIN32) # Remove the .lib suffix
-  string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
-elseif (APPLE)
-  string(REGEX REPLACE "\\.dylib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
-  string(REGEX REPLACE "lib" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+if (VTK_COMMON_CORE_LIB)
+  get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
+  if(WIN32) # Remove the .lib suffix
+    string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+  elseif (APPLE)
+    string(REGEX REPLACE "\\.dylib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+    string(REGEX REPLACE "lib" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
+  endif()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
@@ -233,6 +234,25 @@ list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
 list(APPEND WRAPPER_INCLUDE_DIRS ${GMSH_INCPATH})
 message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
+
+# Find ExodusII
+find_library(EXO_LIB NAMES exoIIv2 exodus exoIIv2c)
+find_file(EXO_HDR exodusII.h)
+get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
+get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
+list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
+list(APPEND WRAPPER_INCLUDE_DIRS ${EXO_INCPATH})
+message(STATUS "exodus include path ${EXO_INCPATH}")
+message(STATUS "exodus libs ${EXO_LIB}")
+
+# Find NetCDF
+if(WIN32)
+  find_package(netCDF REQUIRED)
+  list(APPEND LIBRARY_DIRS ${netCDF_LIB_DIR} ${netCDF_LIB_DIR}/../bin)
+  list(APPEND WRAPPER_INCLUDE_DIRS ${netCDF_INCLUDE_DIRS})
+  message(STATUS "netcdf include path ${netCDF_INCLUDE_DIR}")
+  message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
+endif()
 
 # Find OpenCascade (used by Gmsh if build without ENABLE_OCC_STATIC)
 if(ENABLE_OPENCASCADE)
@@ -334,27 +354,6 @@ if(ENABLE_NETGEN)
     list(APPEND WRAPPER_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
     message(STATUS "zlib include path ${ZLIB_INCLUDE_DIRS}")
     message(STATUS "zlib libs ${ZLIB_LIBRARIES}")
-  endif()
-endif()
-
-# Find ExodusII
-if(ENABLE_EXODUS)
-  find_library(EXO_LIB NAMES exoIIv2 exodus exoIIv2c)
-  find_file(EXO_HDR exodusII.h)
-  get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
-  get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
-  list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${EXO_INCPATH})
-  message(STATUS "exodus include path ${EXO_INCPATH}")
-  message(STATUS "exodus libs ${EXO_LIB}")
-
-  # Find NetCDF
-  if(WIN32)
-    find_package(netCDF REQUIRED)
-    list(APPEND LIBRARY_DIRS ${netCDF_LIB_DIR} ${netCDF_LIB_DIR}/../bin)
-    list(APPEND WRAPPER_INCLUDE_DIRS ${netCDF_INCLUDE_DIRS})
-    message(STATUS "netcdf include path ${netCDF_INCLUDE_DIR}")
-    message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
   endif()
 endif()
 
@@ -472,19 +471,19 @@ endif()
 
 # Find contrib libraries #######################################################
 
-# Find Omega_h
-if(ENABLE_OMEGAH)
-  if(ENABLE_OMEGAH_CUDA)
-    set(Omega_h_USE_CUDA ON CACHE INTERNAL "")
-    set(Omega_h_USE_Kokkos ON CACHE INTERNAL "")
-    # Note CUDA added as enabled language before contrib libraries are added
-    # so that they can use generator expressions to be sure C++ flags are
-    # passed to the host compiler.
-    enable_language(CUDA)
-  endif()
-  add_subdirectory(contrib/omega_h-9.31.2)
-  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
+# Note check for enabling CUDA before any other contrib libraries are added
+# so that they can check ENABLED_LANGUAGES and use generator expressions to be
+# sure C++ flags are passed to the host compiler and not nvcc.
+if(ENABLE_OMEGAH_CUDA)
+  set(Omega_h_USE_CUDA ON CACHE INTERNAL "")
+  set(Omega_h_USE_Kokkos ON CACHE INTERNAL "")
+  enable_language(CUDA)
+else()
+  set(Omega_h_USE_CUDA OFF CACHE INTERNAL "")
+  set(Omega_h_USE_Kokkos OFF CACHE INTERNAL "")
 endif()
+add_subdirectory(contrib/omega_h-9.31.2)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
 
 # Find MAdLib and ANN
 add_subdirectory(contrib/madlib-1.3.0) # includes ANN
@@ -544,6 +543,7 @@ set(NEMOSYS_SRCS
     src/Drivers/MeshGenDriver.C
     src/Drivers/MeshQualityDriver.C
     src/Drivers/NucMeshDriver.C
+    src/Drivers/omegahRefineDriver.C
     src/Drivers/RefineDriver.C
     src/Drivers/TransferDriver.C
     src/Drivers/PackMeshDriver.C
@@ -567,11 +567,14 @@ set(NEMOSYS_SRCS
 
     src/Mesh/meshBase.C
     src/Mesh/geoMeshBase.C
-    src/Mesh/geoMeshBase_reconstructGeo.C
+    src/Mesh/geoMeshBaseReconstructGeo.C
     src/Mesh/geoMeshFactory.C
     src/Mesh/cobalt.C
+    src/Mesh/exoMesh.C
+    src/Mesh/exoGeoMesh.C
     src/Mesh/gmshMesh.C
     src/Mesh/gmshGeoMesh.C
+    src/Mesh/oshGeoMesh.C
     src/Mesh/patran.C
     src/Mesh/pntMesh.C
     src/Mesh/vtkGeoMesh.C
@@ -582,6 +585,10 @@ set(NEMOSYS_SRCS
     src/MeshGeneration/netgenParams.C
     src/MeshGeneration/gmshGen.C
     src/MeshGeneration/gmshParams.C
+
+    src/MeshOperation/dataSetRegionSurfaceFilter.C
+    src/MeshOperation/mergeCells.C
+    src/MeshOperation/meshSrch.C
 
     src/MeshPartitioning/meshPartitioner.C
 
@@ -599,6 +606,9 @@ set(NEMOSYS_SRCS
 
     src/Refinement/Refine.C
 
+    src/Services/srvBase.C
+    src/Services/omegahRefineSrv.C
+
     src/SizeFieldGeneration/SizeFieldGen.C
     src/SizeFieldGeneration/GradSizeField.C
     src/SizeFieldGeneration/ValSizeField.C
@@ -611,6 +621,7 @@ set(NEMOSYS_SRCS
     src/Transfer/FETransfer.C
 #   src/Transfer/ConservativeVolumeTransfer.C
 
+    src/diffMesh.C
     src/StlToVtk.C
 )
 
@@ -637,14 +648,6 @@ if(HAVE_HDF5)
 
       src/IO/hdf5Reader.C
       src/IO/proteusHdf5.C
-  )
-endif()
-
-if(ENABLE_EXODUS)
-  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/Mesh/exoMesh.C
-
-      src/MeshOperation/meshSrch.C
   )
 endif()
 
@@ -706,14 +709,10 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
   )
 endif()
 
-if(ENABLE_OMEGAH)
-  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/Mesh/oshGeoMesh.C
-  )
-  if(ENABLE_OMEGAH_CUDA)
-    set_source_files_properties(src/Mesh/oshGeoMesh.C src/Mesh/geoMeshFactory.C
-            PROPERTIES LANGUAGE CUDA)
-  endif()
+if(ENABLE_OMEGAH_CUDA)
+  set_source_files_properties(src/Mesh/oshGeoMesh.C
+    src/Services/omegahRefineSrv.C
+    PROPERTIES LANGUAGE CUDA)
 endif()
 
 # Building libraries ###########################################################
@@ -752,9 +751,11 @@ target_link_libraries(Nemosys
         interp
         MAdLib
         jsoncons
+        omega_h
         ${VTK_LIBRARIES}
         ${GMSH_LIB}
         ${Boost_LIBRARIES}
+        ${EXO_LIB}
 )
 target_include_directories(Nemosys
     PUBLIC
@@ -765,11 +766,16 @@ target_include_directories(Nemosys SYSTEM
     PUBLIC
         ${VTK_INCLUDE_DIRS}
         ${GMSH_INCPATH}
+        ${EXO_INCPATH}
 )
 target_compile_definitions(Nemosys
     PUBLIC
         ${VTK_DEFINITIONS}
 )
+
+if(WIN32)
+  target_link_libraries(Nemosys PUBLIC netcdf)
+endif()
 
 if(HAVE_CGNS)
   target_link_libraries(Nemosys PUBLIC ${CGNS_LIB})
@@ -814,16 +820,6 @@ endif()
 
 if(ENABLE_MPI)
   target_link_libraries(Nemosys PUBLIC ${MPI_LIBRARIES})
-endif()
-
-if(ENABLE_EXODUS)
-  target_link_libraries(Nemosys PUBLIC ${EXO_LIB})
-  target_compile_definitions(Nemosys PUBLIC HAVE_EXODUSII)
-  target_include_directories(Nemosys SYSTEM PUBLIC ${EXO_INCPATH})
-
-  if(WIN32)
-    target_link_libraries(Nemosys PUBLIC netcdf)
-  endif()
 endif()
 
 if(ENABLE_EPIC)
@@ -921,18 +917,15 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
   target_compile_definitions(Nemosys PUBLIC HAVE_IMPACT)
 endif()
 
-if(ENABLE_OMEGAH)
-  target_link_libraries(Nemosys PUBLIC omega_h)
-  target_compile_definitions(Nemosys PRIVATE HAVE_OMEGAH)
-endif()
-
 # Set warning level ############################################################
+
 get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
 if(languages MATCHES CUDA)
   set(conditional_cuda_flag "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>")
 else()
   set(conditional_cuda_flag "")
 endif()
+
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wpedantic")

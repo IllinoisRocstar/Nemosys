@@ -346,7 +346,7 @@ if(Omega_h_USE_DOLFIN)
   set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_dolfin.hpp)
 endif()
 
-install(FILES ${Omega_h_HEADERS} DESTINATION include)
+install(FILES ${Omega_h_HEADERS} DESTINATION include/omega_h)
 
 if (Omega_h_USE_pybind11)
   set(PYBIND11_SOURCES

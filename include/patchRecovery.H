@@ -15,7 +15,7 @@
 class NEMOSYS_EXPORT PatchRecovery
 {
   public:
-    PatchRecovery(meshBase *nodeMesh, int _order,
+    PatchRecovery(vtkDataSet *_dataSet, int _order,
                   const std::vector<int> &arrayIDs);
 
     ~PatchRecovery() = default;

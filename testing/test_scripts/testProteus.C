@@ -22,8 +22,9 @@ int convert(const char *jsonF) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<ProteusDriver> nemdrvobj =
-        std::unique_ptr<ProteusDriver>(ProteusDriver::readJSON(prog));
+    std::unique_ptr<NEM::DRV::ProteusDriver> nemdrvobj =
+        std::unique_ptr<NEM::DRV::ProteusDriver>(
+            NEM::DRV::ProteusDriver::readJSON(prog));
   }
 
   return 0;

@@ -12,6 +12,9 @@
 
 #include <cgnslib.h>
 
+namespace NEM {
+namespace DRV {
+
 class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
  public:
   RocPartCommGenDriver(
@@ -279,5 +282,8 @@ class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
   // gets Patch type for each patch number
   std::string getPatchType(int patchNo) const;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_ROCPARTCOMMGENDRIVER_H_

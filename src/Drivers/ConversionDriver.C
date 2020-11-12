@@ -24,16 +24,18 @@
 
 #include "AuxiliaryFunctions.H"
 #include "cobalt.H"
+#include "meshSrch.H"
 #include "patran.H"
 #include "pntMesh.H"
 #include "vtkMesh.H"
-#ifdef HAVE_EXODUSII
-#  include "meshSrch.H"
-#endif
 #ifdef HAVE_CFMSH
 #  include "foamMesh.H"
 #  include "gmshMesh.H"
 #endif
+#include "geoMeshFactory.H"
+
+namespace NEM {
+namespace DRV {
 
 //----------------------- Conversion Driver
 //-----------------------------------------//
@@ -94,16 +96,10 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     pm->write(trgmsh);
     delete pm;
   } else if (method == "GMSH->EXO") {
-#ifdef HAVE_EXODUSII  // NEMoSys is compiled with exodus
     // reading vitals
     std::cout << "Converting to EXODUS II..." << std::endl;
     jsoncons::json opts = inputjson["Conversion Options"];
     genExo(opts, ofname);
-#else
-    std::cerr << "Error: Compile NEMoSys with ENABLE_EXODUS to use this option."
-              << std::endl;
-    exit(-1);
-#endif
   } else if (method == "FOAM->MSH") {
 #ifdef HAVE_CFMSH
     meshBase *fm = new FOAM::foamMesh();
@@ -284,6 +280,16 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     myMesh->convertHexToTetVTK(myMesh->getDataSet());
     myMesh->report();
     myMesh->write(ofname);
+  } else if (method == "SMART") {
+    // can't directly replace trgmsh since it is const
+    std::string outmsh = trgmsh;
+    if (outmsh.empty()) outmsh = ofname;
+
+    vtkSmartPointer<NEM::MSH::geoMeshBase> srcGM = NEM::MSH::Read(srcmsh);
+    vtkSmartPointer<NEM::MSH::geoMeshBase> trgGM = NEM::MSH::New(outmsh);
+
+    trgGM->takeGeoMesh(srcGM);
+    trgGM->write(outmsh);
   } else {
     std::cerr << "Error: Conversion method " << method
               << " is not a valid option." << std::endl;
@@ -361,7 +367,6 @@ ConversionDriver *ConversionDriver::readJSON(const std::string &ifname) {
   }
 }
 
-#ifdef HAVE_EXODUSII
 void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
                               const int &ndeIdOffset, const int &elmIdOffset,
                               int &ins, int &ieb, int &iss, std::string mshName,
@@ -401,8 +406,7 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
   std::map<int, int> v2e_elemID_map;
 
   std::vector<double> grpIds(mb->getNumberOfCells(), 0.0);
-  if (usePhys)
-    mb->getCellDataArray("PhysGrpId", grpIds);
+  if (usePhys) mb->getCellDataArray("PhysGrpId", grpIds);
 
   for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
     VTKCellType vtkType =
@@ -437,8 +441,7 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
   // for each group and supported type, if existent, add an element block
   for (const auto &elmGroup : elmBucket) {
     for (const auto &elmIds : elmGroup.second) {
-      if (elmIds.second.empty())
-        continue;  // skip if empty
+      if (elmIds.second.empty()) continue;  // skip if empty
 
       NEM::MSH::EXOMesh::elmBlkType eb;
       eb.id = ++ieb;
@@ -794,10 +797,8 @@ void ConversionDriver::freeSurfaceSideSet(
         if (cidl->GetNumberOfIds() == 0) {
           adjPair.first = cell_i;
           adjPair.second = face_i + 1;
-          if (nfc == 6)
-            hexFreeSurfCellFace.push_back(adjPair);
-          if (nfc == 5)
-            wedgeFreeSurfCellFace.push_back(adjPair);
+          if (nfc == 6) hexFreeSurfCellFace.push_back(adjPair);
+          if (nfc == 5) wedgeFreeSurfCellFace.push_back(adjPair);
           if (nfc == 4) {
             tetraFreeSurfCellFace.push_back(adjPair);
             if (splitTopBotSS && tetWarning == false) {
@@ -1107,4 +1108,5 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
   }
 }
 
-#endif  // HAVE_EXODUSII
+}  // namespace DRV
+}  // namespace NEM

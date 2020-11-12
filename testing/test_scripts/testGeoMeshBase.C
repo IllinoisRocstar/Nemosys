@@ -13,9 +13,15 @@ class testGeoMeshBase : public NEM::MSH::geoMeshBase {
 
   void write(const std::string &) override {}
   void report(std::ostream &) const override {}
+
+  void resetNative() override {}
 };
 
-TEST(geoMeshBase, ConstructorDefault) { testGeoMeshBase gmb{}; }
+TEST(geoMeshBase, ConstructorDefault) {
+//  auto *pgmb = new testGeoMeshBase{};
+  testGeoMeshBase gmb{};
+//  delete pgmb;
+}
 
 TEST(geoMeshBase, ConstructorDefaultGMSHValidity) {
   testGeoMeshBase gmb{};

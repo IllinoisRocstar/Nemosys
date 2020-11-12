@@ -10,6 +10,9 @@
 #include "circlesInPolys.H"
 #include "polygon.H"
 
+namespace NEM {
+namespace DRV {
+
 nemAux::Timer Tgeom, Tboolean, Textrude, Tmesh, Tpause, Tconserve;
 
 NucMeshDriver::~NucMeshDriver() {
@@ -39,9 +42,9 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
 
   std::cout << "NucMeshDriver created" << std::endl;
 
-  if (inputjson.contains("Output File Name"))
+  if (inputjson.contains("Output File Name")) {
     ofname = inputjson["Output File Name"].as_string();
-  else {
+  } else {
     std::cerr << "Error: 'Output File Name' keyword not found, expected after "
                  "'Program Type'"
               << std::endl;
@@ -2879,7 +2882,7 @@ void NucMeshDriver::openGUI() {
         skipAll = true;
         break;
       } else if (in == 0)
-        exit(0); 
+        exit(0);
       else {
         std::cout << "\nUnknown command, try again." << std::endl;
       }
@@ -2905,3 +2908,6 @@ double NucMeshDriver::checkInscribedCircle(std::vector<double> circle_radii,
   else
     return 1e20;
 }
+
+}  // namespace DRV
+}  // namespace NEM

@@ -39,13 +39,13 @@ class meshingParams;
         In general, smart pointer should be used and scoped when they can.
 **/
 
-class NEMOSYS_EXPORT meshBase
+class NEMOSYS_DEPRECATED_EXPORT meshBase
 {
   // --- constructors and destructors
   public:
     meshBase()
         : numPoints(0), numCells(0), dataSet(nullptr),
-          hasSizeField(false), checkQuality(false), continuous(false), order(1),
+          checkQuality(false), continuous(false),
           metadata(nullptr)
     {
       std::cout << "meshBase constructed" << std::endl;
@@ -439,29 +439,18 @@ class NEMOSYS_EXPORT meshBase
         integrateOverMesh(const std::vector<int> &arrayIDs);
 
   // --- size field generation
-  public:
+   public:
     /** @brief generate size field based on method and given a point data array.
         @param method (e.g., "gradient", "value", "error estimator")
         @param arrayID <>
         @param dev_mlt used to determine which cells to consider for refinement
         @param maxIsmin used to determine which cells to consider for refinement
         @param sizeFactor <>
+        @param order <>
     **/
-    void generateSizeField(const std::string &method,
-                           int arrayID,
-                           double dev_mlt,
-                           bool maxIsmin,
-                           double sizeFactor = 1.);
-
-    /** @brief set whether this mesh has a sizefield
-        @param q <>
-    **/
-    void setSFBool(bool q) { hasSizeField = q; }
-
-    /** @brief get this meshes' sizefield
-        @return <>
-    **/
-    bool getSFBool() const { return hasSizeField; }
+    void generateSizeField(const std::string &method, int arrayID,
+                           double dev_mlt, bool maxIsmin,
+                           double sizeFactor = 1.0, int order = 1);
 
     /** @brief check for named array in vtk and return its integer id.
         @param pointOrCell boolean that tells the method whether to transfer
@@ -469,17 +458,6 @@ class NEMOSYS_EXPORT meshBase
         @return <>
     **/
     int IsArrayName(const std::string &name, bool pointOrCell = false) const;
-
-    /** @brief set element shape function order
-            (default is 1 when meshBase is constructed)
-        @param _order <>
-    **/
-    void setOrder(int _order) { order = _order; }
-
-    /** @brief get the shape function order
-        @return <>
-    **/
-    int getOrder() const { return order; }
 
   // --- adaptive mesh refinement
   public:
@@ -765,10 +743,6 @@ class NEMOSYS_EXPORT meshBase
     **/
     std::string filename;
 
-    /** @brief set to true if sizeField attached to dataSet
-    **/
-    bool hasSizeField;
-
     /** @brief check transfer quality when on
     **/
     bool checkQuality;
@@ -777,11 +751,6 @@ class NEMOSYS_EXPORT meshBase
             (default is off)
     **/
     bool continuous;
-
-    /** @brief shape function order
-            (default is 1)
-    **/
-    int order;
 
     /** @brief new names to set for transferred data
     **/
