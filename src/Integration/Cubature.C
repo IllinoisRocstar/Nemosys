@@ -4,10 +4,17 @@
 #include <vtkMeshQuality.h>
 #include <vtkInformationQuadratureSchemeDefinitionVectorKey.h>
 #include <vtkCellData.h>
+#include <vtkCellTypes.h>
 #include <vtkInformation.h>
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkMesh.H> // for writeVTFile
 
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
+
+#include "AuxiliaryFunctions.H"
+#include <iostream>
 
 // Table 10.4 Quadrature for unit tetrahedra in http://me.rice.edu/~akin/Elsevier/Chap_10.pdf
 // OR
@@ -146,29 +153,25 @@ void GaussCubature::constructGaussMesh()
   }
 
   // Get the dictionary key     
-  vtkInformationQuadratureSchemeDefinitionVectorKey *key =
-      vtkQuadratureSchemeDefinition::DICTIONARY();
+  auto key = vtkQuadratureSchemeDefinition::DICTIONARY();
 
   // Get the cell types used by the data set
-  vtkSmartPointer<vtkCellTypes> cellTypes
-      = vtkSmartPointer<vtkCellTypes>::New();
+  auto cellTypes = vtkSmartPointer<vtkCellTypes>::New();
   dataSet->GetCellTypes(cellTypes);
   int nCellTypes = cellTypes->GetNumberOfTypes();
 
   // create offset array and store the dictionary within
-  vtkSmartPointer<vtkIdTypeArray> offsets
-      = vtkSmartPointer<vtkIdTypeArray>::New();
+  auto offsets = vtkSmartPointer<vtkIdTypeArray>::New();
   std::string basename = "QuadratureOffset";
   offsets->SetName(basename.c_str());
-  vtkSmartPointer<vtkInformation> info = vtkSmartPointer<vtkInformation>::New();
+  auto info = vtkSmartPointer<vtkInformation>::New();
   info = offsets->GetInformation();
 
   for (int typeId = 0; typeId < nCellTypes; ++typeId)
   {
     int cellType = cellTypes->GetCellType(typeId);
     // Initialize quadrature scheme definition for given cell type
-    vtkSmartPointer<vtkQuadratureSchemeDefinition> def
-        = vtkSmartPointer<vtkQuadratureSchemeDefinition>::New();
+    auto def = vtkSmartPointer<vtkQuadratureSchemeDefinition>::New();
     switch (cellType)
     {
       case VTK_TRIANGLE:
@@ -193,24 +196,68 @@ void GaussCubature::constructGaussMesh()
   int dictSize = key->Size(info);
   dict = new vtkQuadratureSchemeDefinition *[dictSize];
   key->GetRange(info, dict, 0, 0, dictSize);
-  offsets->SetNumberOfTuples(dataSet->GetNumberOfCells());
+  vtkIdType numCells = dataSet->GetNumberOfCells();
+
+  offsets->SetNumberOfTuples(numCells);
+
+#ifdef HAVE_OPENMP
+  std::vector<vtkIdType> chunkOffsets(omp_get_max_threads() + 1, 0);
+  #pragma omp parallel default(none) shared(numCells, chunkOffsets, offsets)
+  {
+    vtkIdType subOffset = 0;
+    auto genCell = vtkSmartPointer<vtkGenericCell>::New();
+
+    #pragma omp single
+    {
+      // GetCell method is thread safe when first called from single thread
+      dataSet->GetCell(0, genCell);
+    }
+
+    #pragma omp for schedule(static)
+    for (vtkIdType cellId = 0; cellId < numCells; ++cellId) {
+      offsets->SetValue(cellId, subOffset);
+
+      dataSet->GetCell(cellId, genCell);
+      int cellType = genCell->GetCellType();
+      if (cellType >= VTK_TETRA) numVolCells += 1;
+
+      vtkQuadratureSchemeDefinition *celldef = dict[cellType];
+      subOffset += celldef->GetNumberOfQuadraturePoints();
+    }
+
+    int tid = omp_get_thread_num();
+    chunkOffsets[tid + 1] = subOffset;
+    #pragma omp barrier
+    #pragma omp single
+    {
+      for (int i = 1; i < chunkOffsets.size(); ++i) {
+        chunkOffsets[i] = chunkOffsets[i] + chunkOffsets[i - 1];
+      }
+    }
+
+    #pragma omp for schedule(static)
+    for (vtkIdType cellId = 0; cellId < numCells; ++cellId) {
+      vtkIdType offset = chunkOffsets[tid] + offsets->GetValue(cellId);
+      offsets->SetValue(cellId, offset);
+    }
+  }
+#else
   vtkIdType offset = 0;
 
-  for (int cellid = 0;
-       cellid < dataSet->GetNumberOfCells(); ++cellid)
-  {
+  for (int cellid = 0; cellid < numCells; ++cellid) {
     offsets->SetValue(cellid, offset);
     int cellType = dataSet->GetCell(cellid)->GetCellType();
-    if (cellType >= VTK_TETRA)
+    if (cellType >= VTK_TETRA) {
       numVolCells += 1;
+    }
     vtkQuadratureSchemeDefinition *celldef = dict[cellType];
     offset += celldef->GetNumberOfQuadraturePoints();
   }
+#endif
 
   dataSet->GetCellData()->AddArray(offsets);
 
-  vtkSmartPointer<vtkQuadraturePointsGenerator> pointGen =
-      vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
+  auto pointGen = vtkSmartPointer<vtkQuadraturePointsGenerator>::New();
 
   pointGen->SetInputArrayToProcess
       (0, 0, 0,
@@ -420,12 +467,30 @@ void GaussCubature::interpolateToGaussPoints()
     numComponents[id] = numComponent;
     totalComponents += numComponent;
   }
+  int numCells = dataSet->GetNumberOfCells();
+#ifdef HAVE_OPENMP
+  #pragma omp parallel default(none) shared(numCells, das, daGausses)
+  {
+    vtkSmartPointer<vtkGenericCell> genCell =
+        vtkSmartPointer<vtkGenericCell>::New();
+    #pragma omp single
+    {
+      // GetCell method is thread safe when first called from single thread
+      dataSet->GetCell(0, genCell);
+    }
+    #pragma omp for schedule(static)
+    for (int i = 0; i < numCells; ++i) {
+      interpolateToGaussPointsAtCell(i, genCell, das, daGausses);
+    }
+  }
+#else
   // generic cell to store given cell in dataSet
   vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
   for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
   {
     interpolateToGaussPointsAtCell(i, genCell, das, daGausses);
   }
+#endif
   for (int id = 0; id < arrayIDs.size(); ++id)
   {
     gaussMesh->GetPointData()->AddArray(daGausses[id]);
@@ -434,10 +499,8 @@ void GaussCubature::interpolateToGaussPoints()
 
 
 void GaussCubature::interpolateToGaussPoints(
-    const std::vector<std::string> &newArrayNames)
-{
-  if (newArrayNames.empty())
-  {
+    const std::vector<std::string> &newArrayNames) {
+  if (newArrayNames.empty()) {
     std::cerr << "no arrays selected for interpolation" << std::endl;
     exit(1);
   }
@@ -445,12 +508,10 @@ void GaussCubature::interpolateToGaussPoints(
   std::vector<vtkSmartPointer<vtkDoubleArray>> daGausses(newArrayNames.size());
   std::vector<vtkSmartPointer<vtkDataArray>> das(newArrayNames.size());
   // initializing arrays storing interpolated data
-  for (int id = 0; id < newArrayNames.size(); ++id)
-  {
+  for (int id = 0; id < newArrayNames.size(); ++id) {
     // get desired point data array to be interpolated to gauss points
-    vtkSmartPointer<vtkDataArray> da
-        = dataSet->GetPointData()->GetArray(
-            &(newArrayNames[id])[0u]);
+    vtkSmartPointer<vtkDataArray> da =
+        dataSet->GetPointData()->GetArray(&(newArrayNames[id])[0u]);
     // get tuple length of given data
     int numComponent = da->GetNumberOfComponents();
     // declare data array to be populated with values at gauss points
@@ -462,18 +523,36 @@ void GaussCubature::interpolateToGaussPoints(
     das[id] = da;
     daGausses[id] = daGauss;
   }
-  // generic cell to store given cell in dataSet
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
+  int numCells = dataSet->GetNumberOfCells();
+#ifdef HAVE_OPENMP
+  #pragma omp parallel default(none) shared(numCells, das, daGausses)
   {
+    // generic cell to store given cell in dataSet
+    vtkSmartPointer<vtkGenericCell> genCell =
+        vtkSmartPointer<vtkGenericCell>::New();
+    #pragma omp single
+    {
+      // GetCell method is thread safe when first called from single thread
+      dataSet->GetCell(0, genCell);
+    }
+    #pragma omp for schedule(static)
+    for (int i = 0; i < numCells; ++i) {
+      interpolateToGaussPointsAtCell(i, genCell, das, daGausses);
+    }
+  }
+#else
+  // generic cell to store given cell in dataSet
+  vtkSmartPointer<vtkGenericCell> genCell =
+      vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i) {
     interpolateToGaussPointsAtCell(i, genCell, das, daGausses);
   }
+#endif
   for (int id = 0; id < arrayIDs.size(); ++id)
   {
     gaussMesh->GetPointData()->AddArray(daGausses[id]);
   }
 }
-
 
 void GaussCubature::integrateOverCell
     (int cellID,
@@ -486,40 +565,38 @@ void GaussCubature::integrateOverCell
   dataSet->GetCell(cellID, genCell);
   // getting cellType for looking up numGaussPoints in dictionary
   // as well as computing scaled Jacobian
-  int cellType = dataSet->GetCell(cellID)->GetCellType();
+  int cellType = genCell->GetCellType();
+
   // get number of gauss points in cell from dictionary
-  int numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
+  int numGaussPoints;
+  const double* quadWeights;
+  numGaussPoints = dict[cellType]->GetNumberOfQuadraturePoints();
+  quadWeights = dict[cellType]->GetQuadratureWeights();
+
   // computing Jacobian for integration
   double jacobian = computeJacobian(genCell, cellType);
   // get quadrature weights for this cell type
-  const double *quadWeights = dict[cellType]->GetQuadratureWeights();
   // get offset from nodeMesh for lookup of gauss points in polyData
   int offset = getOffset(cellID);
   // holds integrated data for each array
   std::vector<std::vector<double>> data(arrayIDs.size());
   // integration loop
-  for (int j = 0; j < integralData.size(); ++j)
-  {
+  for (int j = 0; j < integralData.size(); ++j) {
     int numComponent = integralData[j]->GetNumberOfComponents();
     data[j].resize(numComponent, 0.0);
-    auto *comps = new double[numComponent];
-    for (int i = 0; i < numGaussPoints; ++i)
-    {
+    auto comps = new double[numComponent];
+    for (int i = 0; i < numGaussPoints; ++i) {
       pd->GetArray(j)->GetTuple(offset + i, comps);
-      for (int k = 0; k < numComponent; ++k)
-      {
+      for (int k = 0; k < numComponent; ++k) {
         // TODO: generalize to support surface integration
-        if (genCell->GetCellDimension() == 3)
-        {
+        if (genCell->GetCellDimension() == 3) {
           data[j][k] += comps[k] * quadWeights[i];//*jacobian;
-        }
-        else
+        } else
           data[j][k] += 0.0;
       }
     }
     delete[] comps;
-    for (int k = 0; k < numComponent; ++k)
-    {
+    for (int k = 0; k < numComponent; ++k) {
       data[j][k] *= jacobian;
       totalIntegralData[j][k] += data[j][k];
     }
@@ -589,39 +666,68 @@ void GaussCubature::integrateOverCell
   }
 }
 
-
 std::vector<std::vector<double>> GaussCubature::integrateOverAllCells()
 {
+  int numCells = dataSet->GetNumberOfCells();
+
   if (gaussMesh->GetPointData()->GetNumberOfArrays() == 0)
   {
     interpolateToGaussPoints();
   }
 
   vtkSmartPointer<vtkPointData> pd = gaussMesh->GetPointData();
-  std::vector<vtkSmartPointer<vtkDoubleArray>> integralData(arrayIDs.size());
+  std::vector<vtkSmartPointer<vtkDoubleArray>> cellIntegralData(arrayIDs.size());
   std::vector<std::vector<double>> totalIntegralData(arrayIDs.size());
   for (int id = 0; id < arrayIDs.size(); ++id)
   {
     std::string arrName(
         dataSet->GetPointData()->GetArrayName(arrayIDs[id]));
     arrName.append("Integral");
-//    std::cout << arrName << std::endl;
     vtkSmartPointer<vtkDoubleArray> integralDatum = vtkSmartPointer<vtkDoubleArray>::New();
     integralDatum->SetName(&arrName[0u]);
     integralDatum->SetNumberOfComponents(numComponents[id]);
     integralDatum->SetNumberOfTuples(dataSet->GetNumberOfCells());
-    integralData[id] = integralDatum;
+    cellIntegralData[id] = integralDatum;
     totalIntegralData[id].resize(numComponents[id], 0);
   }
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
-  {
-    integrateOverCell(i, genCell, pd, integralData, totalIntegralData);
-  }
 
-  for (int id = 0; id < arrayIDs.size(); ++id)
+#ifdef HAVE_OPENMP
+  #pragma omp parallel default(none) shared(numCells, pd, cellIntegralData, totalIntegralData, cerr)
   {
-    dataSet->GetCellData()->AddArray(integralData[id]);
+    auto genCell = vtkSmartPointer<vtkGenericCell>::New();
+
+    #pragma omp single
+    {
+      // GetCell method is thread safe when first called from single thread
+      dataSet->GetCell(0, genCell);
+    }
+    auto partialIntegralData = totalIntegralData;
+
+    #pragma omp for schedule(static)
+    for (int i = 0; i < numCells; ++i) {
+      integrateOverCell(i, genCell, pd, cellIntegralData, partialIntegralData);
+    }
+
+    #pragma omp critical
+    {
+      // total integral data has same dimensions as cell integral data ...
+      // sum partial integrals
+      for (int id = 0; id < partialIntegralData.size(); ++id) {
+        for (int k = 0; k < partialIntegralData[id].size(); ++k) {
+          totalIntegralData[id][k] += partialIntegralData[id][k];
+        }
+      }
+    }
+  }
+#else
+  auto genCell = vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < numCells; ++i) {
+    integrateOverCell(i, genCell, pd, cellIntegralData, totalIntegralData);
+  }
+#endif
+
+  for (int id = 0; id < arrayIDs.size(); ++id) {
+    dataSet->GetCellData()->AddArray(cellIntegralData[id]);
   }
   return totalIntegralData;
 }
@@ -635,8 +741,7 @@ GaussCubature::integrateOverAllCells(
   interpolateToGaussPoints(newArrayNames);
 
   vtkSmartPointer<vtkPointData> pd = gaussMesh->GetPointData();
-  std::vector<vtkSmartPointer<vtkDoubleArray>> integralData(
-      newArrayNames.size());
+  std::vector<vtkSmartPointer<vtkDoubleArray>> cellIntegralData(newArrayNames.size());
   std::vector<std::vector<double>> totalIntegralData(newArrayNames.size());
   for (int id = 0; id < newArrayNames.size(); ++id)
   {
@@ -647,19 +752,50 @@ GaussCubature::integrateOverAllCells(
         &(newArrayNames[id])[0u])->GetNumberOfComponents();
     integralDatum->SetNumberOfComponents(numComponent);
     integralDatum->SetNumberOfTuples(dataSet->GetNumberOfCells());
-    integralData[id] = integralDatum;
+    cellIntegralData[id] = integralDatum;
     totalIntegralData[id].resize(numComponent, 0);
   }
-  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
+
+  int numCells = dataSet->GetNumberOfCells();
+
+#ifdef HAVE_OPENMP
+  #pragma omp parallel default(none) \
+  shared(numCells, pd, cellIntegralData, totalIntegralData, newArrayNames, computeRMSE)
   {
-    integrateOverCell(i, genCell, pd, integralData, totalIntegralData,
+    auto genCell = vtkSmartPointer<vtkGenericCell>::New();
+    #pragma omp single
+    {
+      // GetCell method is thread safe when first called from single thread
+      dataSet->GetCell(0, genCell);
+    }
+    auto partialIntegralData = totalIntegralData;
+    #pragma omp for schedule(static)
+    for (int i = 0; i < numCells; ++i) {
+      integrateOverCell(i, genCell, pd, cellIntegralData, partialIntegralData,
+                        newArrayNames, computeRMSE);
+    }
+    #pragma omp critical
+    {
+      // total integral data has same dimensions as cell integral data ...
+      // sum partial integrals
+      for(int id = 0; id < partialIntegralData.size(); ++id) {
+        for(int k = 0; k < partialIntegralData[id].size(); ++k) {
+          totalIntegralData[id][k] += partialIntegralData[id][k];
+        }
+      }
+    }
+  }
+#else
+  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
+  for (int i = 0; i < numCells; ++i) {
+    integrateOverCell(i, genCell, pd, cellIntegralData, totalIntegralData,
                       newArrayNames, computeRMSE);
   }
+#endif
 
   for (int id = 0; id < newArrayNames.size(); ++id)
   {
-    dataSet->GetCellData()->AddArray(integralData[id]);
+    dataSet->GetCellData()->AddArray(cellIntegralData[id]);
   }
   return totalIntegralData;
 }
@@ -675,130 +811,3 @@ void GaussCubature::writeGaussMesh(const char *name) const
     exit(1);
   }
 }
-
-//void GaussCubature::constructGaussMesh(const std::vector<int>& arrayIDs)
-//{
-//  // building poly data
-//  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-//  vtkSmartPointer<vtkCellArray> vertices = vtkSmartPointer<vtkCellArray>::New();
-//  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
-//  {
-//    std::vector<std::vector<double>> gaussPoints = getGaussPointsAtCell(i);
-//    for (int j = 0; j < gaussPoints.size(); ++j)
-//    {
-//      vtkIdType id[1];
-//      id[0] = points->InsertNextPoint(gaussPoints[j].data());
-//      vertices->InsertNextCell(1,id);
-//    }  
-//  }
-//  vtkSmartPointer<vtkPolyData> gaussMesh = vtkSmartPointer<vtkPolyData>::New();
-//  gaussMesh->SetPoints(points);
-//  gaussMesh->SetVerts(vertices);
-//  interpolateToGaussPoints(gaussMesh,arrayIDs);
-//  writeVTFile<vtkXMLPolyDataWriter> ("gaussTest.vtp",gaussMesh);   
-//}
-
-
-//  // allocate storate for polygons
-//  //  gaussMesh->Allocate();
-//  for (int i = 0; i < dataSet->GetNumberOfCells(); ++i)
-//  {
-//    //gaussMesh->InsertNextCell(VTK_POLYGON,polyCellIds); 
-//    polyPnt += interpolateToGaussPointsAtCell(i,genCell,das,daGausses,numComponents,polyPnt);
-//    //polyPnt += numGaussPoints;
-//  }
-//
-//int GaussCubature::getNumGaussPointsForCellType(int cellType)
-//{
-//  int numGaussPoints;
-//  switch(cellType)
-//  {
-//    case VTK_TRIANGLE:
-//    {
-//      numGaussPoints = 3;
-//      break;
-//    }
-//    case VTK_TETRA:
-//    { 
-//      numGaussPoints = 4;
-//      break;
-//    }
-//    default:
-//    {
-//      std::cerr << "Error: Cell type: " << cellType << "found "
-//                << "with no quadrature definition provided" << std::endl;
-//      exit(1);
-//    }
-//  }
-//  return numGaussPoints; 
-//}
-
-//void GaussCubature::buildMap()
-//{
-//  // building quadrature scheme map
-//  vtkSmartPointer<vtkCellTypes> cellTypes 
-//    = vtkSmartPointer<vtkCellTypes>::New();
-//  dataSet->GetCellTypes(cellTypes);
-//  int nCellTypes = cellTypes->GetNumberOfTypes(); 
-//  for (int i = 0; i < nCellTypes; ++i)
-//  {
-//    int cellType = cellTypes->GetCellType(i);
-//    nGaussForCellTMap[cellType] = getNumGaussPointsForCellType(cellType);
-//  }
-//}
-
-
-//std::vector<std::vector<double>> GaussCubature::getGaussPointsAtCell(int cellID)
-//{
-//  // get cell type for quadrature scheme definition
-//  int cellType = dataSet->GetCellType(cellID);
-//  // this vector holds the shape function evaluated at parametric coord of gauss point
-//  std::vector<double> shapeFuncAtGauss;
-//  std::vector<double>::iterator beg = shapeFuncAtGauss.begin();
-//  // dispatch number of gauss points by cell type
-//  int numGaussPoints;
-//  switch(cellType)
-//  {
-//    case VTK_TRIANGLE:
-//    {
-//      shapeFuncAtGauss.insert(beg, TRI3, TRI3+9);
-//      numGaussPoints = 3;
-//      break;
-//    }
-//    case VTK_TETRA:
-//    { 
-//      shapeFuncAtGauss.insert(beg, TET4, TET4+16); 
-//      numGaussPoints = 4;
-//      break;
-//    }
-//    default:
-//    {
-//      std::cerr << "Error: Cell type: " << cellType << "found "
-//                << "with no quadrature definition provided" << std::endl;
-//      exit(1);
-//    }
-//  }
-//
-//  vtkSmartPointer<vtkGenericCell> genCell = vtkSmartPointer<vtkGenericCell>::New();
-//  dataSet->GetCell(cellID,genCell);
-//  int numPointsInCell = genCell->GetNumberOfPoints();
-//  std::vector<std::vector<double>> gaussPoints;
-//  gaussPoints.resize(numGaussPoints);
-//  for (int j = 0; j < gaussPoints.size(); ++j)
-//  {
-//    gaussPoints[j].resize(3,0);
-//    for (int k = 0; k < numPointsInCell; ++k)
-//    {
-//      int pntID = genCell->GetPointId(k);
-//      double x[3];
-//      dataSet->GetPoint(pntID,x);
-//      for (int i = 0; i < 3; ++i)
-//      {
-//        gaussPoints[j][i] += shapeFuncAtGauss[j*numGaussPoints + k]*x[i]; 
-//      }
-//    }
-//  }
-//  return gaussPoints; 
-//}
-
-

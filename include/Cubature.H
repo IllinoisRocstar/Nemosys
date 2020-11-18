@@ -13,7 +13,6 @@
 #include <vtkDoubleArray.h>
 #include <vtkDataArray.h>
 #include <vtkQuadratureSchemeDefinition.h>
-
 // Eigen
 #include <Eigen/Dense>
 

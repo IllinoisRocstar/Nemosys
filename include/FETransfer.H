@@ -32,8 +32,6 @@ class NEMOSYS_EXPORT FETransfer : public TransferBase
       return std::shared_ptr<FETransfer>(FETransfer::Create(source, target));
     }
 
-
-
   // point data transfer
   public:
     /* Transfers point data with arrayID from source mesh to target
@@ -49,7 +47,7 @@ class NEMOSYS_EXPORT FETransfer : public TransferBase
     int transferPointData(const std::vector<int> &arrayIDs,
                           const std::vector<std::string> &newnames = std::vector<std::string>()) override;
 
-    int transferPointData(int i, vtkSmartPointer<vtkGenericCell> genCell,
+    int transferPointData(int pointId, vtkSmartPointer<vtkGenericCell> containingCell,
                           std::vector<vtkSmartPointer<vtkDoubleArray>> &dasSource,
                           std::vector<vtkSmartPointer<vtkDoubleArray>> &dasTarget,
                           bool flip);
@@ -63,7 +61,10 @@ class NEMOSYS_EXPORT FETransfer : public TransferBase
               - cell data is assumed to be prescribed at cell centers
         2)  Compute the centers of cell in the target mesh
         3)  Transfer the converted cell-point data from the source mesh
-            to the cell centers of the target mesh using the runPD methods*/
+            to the cell centers of the target mesh using the runPD methods
+
+            newnames[i] specifies the transferred array name in the target at arrayId[i]
+            */
     int transferCellData(const std::vector<int> &arrayIDs,
                          const std::vector<std::string> &newnames = std::vector<std::string>()) override;
 
@@ -73,6 +74,14 @@ class NEMOSYS_EXPORT FETransfer : public TransferBase
 
     // transfer all cell and point data from source to target
     int run(const std::vector<std::string>& newnames = std::vector<std::string>()) override;
+
+private:
+
+  // thread safe implementation using static point locator
+  void getClosestSourceCell(double x[3], bool flip,
+                            vtkIdType& id, vtkSmartPointer<vtkGenericCell> closestCell,
+                            double closestPoint[3], int& subId, double& minDist2, double*& weights);
+
 };
 
 #endif

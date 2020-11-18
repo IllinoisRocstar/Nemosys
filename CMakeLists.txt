@@ -1,12 +1,11 @@
-
 # TODO: Make this hierarchical
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.9)
 
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 52)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_PATCH_VERSION 2)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -42,6 +41,7 @@ set(PROJECT_NAME "NEMoSys version ${NEMOSYS_VERSION}")
 project(${PROJECT_NAME} CXX C)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Set project defaults #########################################################
@@ -97,23 +97,18 @@ list(APPEND CMAKE_BUILD_TYPE_OPTIONS
     "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 
 macro(NEM_get_imported_location OUT_VAR LIB_NAME OUT_VAR_PATH)
-  foreach(buildtype IN LISTS CMAKE_BUILD_TYPE_OPTIONS)
-    string(TOUPPER ${buildtype} BUILD_TYPE)
-    string(FIND ${LIB_NAME} "fopenmp" ISOMP)
-    if (NOT ISOMP EQUAL 1)
-      if(WIN32)
-        get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
-      else()
-        get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
-        message(STATUS ${LIB_NAME})
-      endif()
-      if(OUT_LIB)
-        list(APPEND ${OUT_VAR} ${OUT_LIB})
-        get_filename_component(LIBRARY_PATH ${OUT_LIB} PATH)
-        list(APPEND ${OUT_VAR_PATH} ${LIBRARY_PATH})
-      endif()
-    endif()
-  endforeach()
+  get_target_property(BUILD_TYPE ${LIB_NAME} IMPORTED_CONFIGURATIONS)
+  if(WIN32)
+    get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_IMPLIB_${BUILD_TYPE})
+  else()
+    get_target_property(OUT_LIB ${LIB_NAME} IMPORTED_LOCATION_${BUILD_TYPE})
+  endif()
+  if(OUT_LIB)
+    message(STATUS "${BUILD_TYPE}: ${OUT_LIB}")
+    list(APPEND ${OUT_VAR} ${OUT_LIB})
+    get_filename_component(LIBRARY_PATH ${OUT_LIB} PATH)
+    list(APPEND ${OUT_VAR_PATH} ${LIBRARY_PATH})
+  endif()
 endmacro()
 
 # set to ${DEFAULT} to use by DEFAULT
@@ -129,13 +124,14 @@ opt(DTK "Enable DTK extensions" OFF)
 opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
 opt(METIS "Enable METIS partitioner" ${DEFAULT})
-opt(NETGEN "Enable Netgen meshing engine" ON)
+opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
 with CUDA and linked dynamically)" OFF)
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
 opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 opt(TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
 opt(MLAMR "Enable machine learning module in AMR" OFF)
+opt(OPENMP "Enable OpenMP" ${DEFAULT})
 
 # Check for option interdependencies ###########################################
 
@@ -157,9 +153,13 @@ if(ENABLE_CONSRV_VOLUME_TRANSFER AND NOT ENABLE_MPI)
 endif()
 
 if(ENABLE_OMEGAH_CUDA)
-    if(MSVC)
-        message(FATAL_ERROR "MSVC and CUDA not supported")
-    endif()
+  if(MSVC)
+    message(FATAL_ERROR "MSVC and CUDA not supported")
+  endif()
+endif()
+
+if(ENABLE_CFMSH AND NOT ENABLE_OPENMP)
+  message(FATAL_ERROR "cfMesh requires OpenMP.")
 endif()
 
 # Check system configuration ###################################################
@@ -187,12 +187,9 @@ if(ENABLE_MPI)
 endif()
 
 # Find VTK
-# v7.1.0 required for node set and side set name support in vtkModelMetadata
-find_package(VTK 7.1.0)
-if (NOT VTK_FOUND)
-  message(STATUS "Searching for VTK 8.2.0 again...")
-  find_package(VTK 8.2.0 REQUIRED)
-endif()
+# v8.2.0 required for thread-safe point and cell locators
+find_package(VTK 8.2.0 REQUIRED)
+
 # UseVTK.cmake file does not correctly set VTK headers as external.
 #include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
@@ -201,16 +198,13 @@ list(APPEND WRAPPER_INCLUDE_DIRS ${VTK_INCLUDE_DIRS})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
-# Finding vtkCommonCore library to pass to Python for linking
-get_target_property(VTK_COMMON_CORE_ILL vtkCommonCore INTERFACE_LINK_LIBRARIES)
-if(VTK_COMMON_CORE_ILL)
-  # For VTK 7
-  NEM_get_imported_location(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_ILL} VTK_COMMON_CORE_LIB_PATH)
+# Finding vtkCommonCore library to pass to Python for linking (8.2.0)
+if(VTK_ENABLE_KITS)
+  NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommon VTK_COMMON_CORE_LIB_PATH)
 else()
-  # For VTK 6 and 8
   NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommonCore VTK_COMMON_CORE_LIB_PATH)
 endif()
-if (VTK_COMMON_CORE_LIB)
+if(VTK_COMMON_CORE_LIB)
   get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
   if(WIN32) # Remove the .lib suffix
     string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
@@ -293,7 +287,7 @@ if(ENABLE_HDF5)
     NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
     list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
     list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
-    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
+    message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
     message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
     set(HAVE_HDF5 TRUE)
     set(HAVE_HDF5_CONFIG TRUE)
@@ -437,15 +431,10 @@ if(ENABLE_CFMSH)
 
   list(APPEND LIBRARY_DIRS ${OPNF_LIBRARY_DIRS})
   list(APPEND WRAPPER_INCLUDE_DIRS ${OPNF_INCLUDE_DIRS})
+endif()
 
+if(ENABLE_OPENMP)
   find_package(OpenMP REQUIRED)
-
-  # CMake 3.13 required for target_link_options
-  set(CMAKE_EXE_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
-  set(CMAKE_MODULE_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
-  set(CMAKE_SHARED_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
-  set(CMAKE_STATIC_LINKER_FLAGS ${OpenMP_CXX_FLAGS})
-  # /CMake 3.13
 endif()
 
 if(ENABLE_CONSRV_SURFACE_TRANSFER)
@@ -538,6 +527,7 @@ set(INTERP_SRCS
 # TODO: Commented files are orphaned! Check if to delete or reinclude.
 set(NEMOSYS_SRCS
     src/Drivers/NemDriver.C
+    src/Drivers/AutoVerificationDriver.C
     src/Drivers/ConversionDriver.C
     src/Drivers/InputGenDriver.C
     src/Drivers/MeshGenDriver.C
@@ -615,7 +605,6 @@ set(NEMOSYS_SRCS
     src/SizeFieldGeneration/Z2ErrorSizeField.C
 
     src/SolutionVerification/OrderOfAccuracy.C
-#    src/SolutionVerification/RichardsonExtrapolation.C
 
     src/Transfer/TransferBase.C
     src/Transfer/FETransfer.C
@@ -822,6 +811,11 @@ if(ENABLE_MPI)
   target_link_libraries(Nemosys PUBLIC ${MPI_LIBRARIES})
 endif()
 
+if(ENABLE_OPENMP)
+  target_compile_definitions(Nemosys PUBLIC HAVE_OPENMP)
+  target_link_libraries(Nemosys PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 if(ENABLE_EPIC)
   target_compile_definitions(Nemosys PUBLIC HAVE_EPIC)
 endif()
@@ -915,6 +909,12 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
         IMPACT::SurfX
         IMPACT::SimOUT)
   target_compile_definitions(Nemosys PUBLIC HAVE_IMPACT)
+endif()
+
+if(ENABLE_OPENMP)
+  target_link_libraries(Nemosys
+      PUBLIC
+      OpenMP::OpenMP_CXX)
 endif()
 
 # Set warning level ############################################################
@@ -1197,13 +1197,14 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "")
 set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
 #set(CPACK_PACKAGE_INSTALL_DIRECTORY "") # Use default location.
 #set(CPACK_PACKAGE_ICON "") # image used by GUI installers
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
-
-
 if(WIN32)
-  set(CPACK_GENERATOR NSIS)
+  set(CPACK_GENERATOR "WIX")
+  set(CPACK_WIX_UPGRADE_GUID "EE40DAF2-CA3C-4013-AABE-D9485EF7E692")
+  set(CPACK_WIX_PRODUCT_ICON "${CMAKE_SOURCE_DIR}/nemosys_logo_color.png")
+  set(CPACK_WIX_CMAKE_PACKAGE_REGISTRY "Nemosys")
 else()
   if(CMAKE_VERSION VERSION_LESS 3.10)
     message(WARNING "CMake 3.10 or above is required to build a DEB package.")
@@ -1267,7 +1268,7 @@ endif()
 #set(CPACK_CREATE_DESKTOP_LINKS "")
 
 # WIN32 NOTE: - Run CPack from a MSVC environment as dumpbin is required
-#               for the fixup_bundle search of DLL dependecies.
+#               for the fixup_bundle search of DLL dependencies.
 #             - The system libraries pulled in are release DLLs.
 #               Do NOT package in Debug! THAT APPLIES TO DEPENDENCIES TOO!!
 include(CPack)

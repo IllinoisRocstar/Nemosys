@@ -2,40 +2,8 @@ stages:
   - test
   - deploy
 
-test:ubuntu16:
-  image: ilrocstar/nemosys-test-img:v4-merc
-  tags:
-    - nemosys
-  script:
-    - mkdir build && cd build
-    - CC=mpicc
-    - CXX=mpicxx
-    - >
-      cmake ..
-      -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/vtk;/Nemosys-Deps/gmsh;/opt/netgen"
-      -DCMAKE_INSTALL_PREFIX=../install
-      -DBUILD_SHARED_LIBS=ON
-      -DENABLE_MPI=OFF
-      -DENABLE_DTK=OFF
-      -DENABLE_EPIC=ON
-      -DENABLE_PYTHON_BINDINGS=ON
-      -DENABLE_TESTING=ON
-      -DENABLE_BUILD_UTILS=ON
-      -DENABLE_METIS=ON
-      -DENABLE_NETGEN=ON
-      -DENABLE_SIMMETRIX=OFF
-      -DENABLE_CFMSH=ON
-      -DENABLE_CGNS=ON
-      -DENABLE_HDF5=ON
-      -DENABLE_OPENCASCADE=OFF
-      -DSIMMETRIX_LIB_DIR=/Nemosys/12.0-190512/lib/x64_rhel7_gcc48
-    - make -j$(nproc)
-    - make install
-    - ctest --output-on-failure
-
 test:ubuntu18:
-  image: ilrocstar/nemosys-test-img-ubuntu18:v5-merc
+  image: ilrocstar/nemosys-test-img-ubuntu18:v6-merc
   tags:
     - nemosys
   script:
@@ -64,7 +32,7 @@ test:ubuntu18:
     - make -j$(nproc)
     - make install
     - ctest --output-on-failure
-    - cpack
+    - cpack -G DEB
   artifacts:
     paths:
       - "/builds/Nemosys/Nemosys/build/*.deb"
@@ -94,7 +62,7 @@ deploy:public:
   stage: deploy
   only:
     - public_repo_auto_deploy@Nemosys/Nemosys
-  script: 
+  script:
     - apt-get install -y openssh-client
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
@@ -112,7 +80,7 @@ deploy:public:
     - test:centos7
 
 test:win10:
-  image: ilrocstar/nemosys-test-img-win:v2
+  image: ilrocstar/nemosys-test-img-win:v3
   tags:
     - windows
   script:
@@ -150,9 +118,14 @@ test:win10:
     - ninja -j ${Env:NUMBER_OF_PROCESSORS}
     - ninja install
     - ctest --output-on-failure
+    - cpack -G WIX
+    - Copy-Item "*.msi" -Destination "$NEM_DIR"
+  artifacts:
+    paths:
+      - "*.msi"
 
 test:centos7:
-  image: ilrocstar/nemosys-centos7:v4
+  image: ilrocstar/nemosys-centos7:v5
   tags:
     - nemosys
   script:

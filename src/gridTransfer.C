@@ -144,14 +144,14 @@ void gridTransfer::gridHist()
   //ma->printStatistics(std::cout);
   
 
-  ofstream myfile;
+  std::ofstream myfile;
   myfile.open("histogram.dat");
   ma->printStatistics(myfile);
   myfile.close();
 
 
-  ifstream hist("histogram.dat");
-  ofstream out("hist.json");
+  std::ifstream hist("histogram.dat");
+  std::ofstream out("hist.json");
   std::string line;
   out << "[";
   while(std::getline(hist,line)){
@@ -725,7 +725,7 @@ void gridTransfer::convertToJSON(std::string gridName, std::string prefix, bool 
   //outJson["solution"]["pressure"] = fieldValues1;     
   //outJson["solution"]["temperature"] = fieldValues2;
 
-  ofstream of(fName);
+  std::ofstream of(fName);
   of << jsoncons::pretty_print(outJson);
   of.close();
 

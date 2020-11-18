@@ -4,13 +4,15 @@
 #include "nemosys_export.h"
 #include "meshBase.H"
 
+#include "vtkStaticPointLocator.h"
+#include "vtkStaticCellLocator.h"
+
 class NEMOSYS_EXPORT TransferBase
 {
   // constructors and destructors
   public:
     TransferBase()
         : source(nullptr), target(nullptr),
-          srcCellLocator(nullptr), trgCellLocator(nullptr),
           checkQual(false), continuous(false), c2cTrnsDistTol(1.e-6)
     {
       std::cout << "TransferBase constructed" << std::endl;
@@ -53,8 +55,15 @@ class NEMOSYS_EXPORT TransferBase
   protected:
     meshBase *source;
     meshBase *target;
-    vtkSmartPointer<vtkCellLocator> srcCellLocator; // search structure
-    vtkSmartPointer<vtkCellLocator> trgCellLocator;
+
+    // default locators, still used by transferCellData
+    vtkSmartPointer<vtkStaticCellLocator> srcCellLocator = nullptr;
+    vtkSmartPointer<vtkStaticCellLocator> trgCellLocator = nullptr;
+
+    // thread safe locators
+    vtkSmartPointer<vtkStaticPointLocator> srcPointLocator = nullptr;
+    vtkSmartPointer<vtkStaticPointLocator> trgPointLocator = nullptr;
+
     bool checkQual;
     bool continuous; // switch on / off weighted averaging for cell transfer
     double c2cTrnsDistTol;
@@ -65,6 +74,7 @@ class NEMOSYS_EXPORT TransferBase
     std::vector<int> getArrayIDs(const std::vector<std::string>& arrayNames, vtkFieldData* fieldData);
     // given array name and field data, returns index of array with given name (-1 if not found)
     int getDataArrayIndex(const std::string& arrayName, vtkFieldData* data);
+
 
 };
 

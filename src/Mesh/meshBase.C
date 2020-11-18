@@ -450,6 +450,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
 
   // declare points to be pushed into dataSet_tmp
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+  points->SetDataTypeToDouble();
   // declare dataSet_tmp which will be associated to output vtkMesh
   vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp =
       vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -491,7 +492,7 @@ meshBase *meshBase::exportGmshToVtk(const std::string &fname) {
       for (int i = 0; i < numPoints; ++i) {
         getline(meshStream, line);
         std::stringstream ss(line);
-        ss >> id >> x >> y >> z;
+        ss >> id >> std::setprecision(16) >> x >> y >> z;
         double point[3];
         point[0] = x;
         point[1] = y;
@@ -1299,8 +1300,10 @@ void meshBase::writeMSH(std::ofstream &outputStream,
   outputStream << "$Nodes" << std::endl << numPoints << std::endl;
   for (int i = 0; i < numPoints; ++i) {
     std::vector<double> pntcrds = getPoint(i);
-    outputStream << i + 1 << " " << pntcrds[0] << " " << pntcrds[1] << " "
-                 << pntcrds[2] << " " << std::endl;
+    outputStream << i + 1 << " ";
+    outputStream << std::setprecision(16)
+                 << pntcrds[0] << " " << pntcrds[1] << " " << pntcrds[2]
+                 << " " << std::endl;
   }
   outputStream << "$EndNodes" << std::endl;
 
@@ -1425,8 +1428,8 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
            sortNemId_tVec_compare>
       faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
-  vtkSmartPointer<vtkCellLocator> surfCellLocator =
-      surfWithPatches->buildLocator();
+  vtkSmartPointer<vtkStaticCellLocator> surfCellLocator =
+    surfWithPatches->buildStaticCellLocator();
   // maximum number of vertices per face (to be found in proceeding loop)
   int nVerticesPerFaceMax = 0;
   // maximum number of faces per cell (to be found in proceeding loop)
@@ -1626,12 +1629,19 @@ void meshBase::refineMesh(const std::string &method, double edge_scale,
 
 /**
  **/
-vtkSmartPointer<vtkCellLocator> meshBase::buildLocator() {
-  vtkSmartPointer<vtkCellLocator> cellLocator =
-      vtkSmartPointer<vtkCellLocator>::New();
+vtkSmartPointer<vtkStaticCellLocator> meshBase::buildStaticCellLocator() {
+  vtkSmartPointer<vtkStaticCellLocator> cellLocator =
+      vtkSmartPointer<vtkStaticCellLocator>::New();
   cellLocator->SetDataSet(dataSet);
   cellLocator->BuildLocator();
   return cellLocator;
+}
+
+vtkSmartPointer<vtkStaticPointLocator> meshBase::buildStaticPointLocator() {
+  auto pointLocator = vtkSmartPointer<vtkStaticPointLocator>::New();
+  pointLocator->SetDataSet(dataSet);
+  pointLocator->BuildLocator();
+  return pointLocator;
 }
 
 /**
@@ -1645,7 +1655,8 @@ void meshBase::checkMesh(const std::string &ofname) const {
 /**
  **/
 int diffMesh(meshBase *mesh1, meshBase *mesh2) {
-  double tol = 1e-6;
+  //double tol = 1e-14;
+  double tol = 3e-2;
 
   if (mesh1->getNumberOfPoints() != mesh2->getNumberOfPoints() ||
       mesh1->getNumberOfCells() != mesh2->getNumberOfCells()) {
@@ -1654,12 +1665,11 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     return 1;
   }
 
-  std::cout << mesh1->getNumberOfPoints() << std::endl;
   for (int i = 0; i < mesh1->getNumberOfPoints(); ++i) {
     std::vector<double> coord1 = mesh1->getPoint(i);
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j) {
-      if (std::fabs(coord1[j] - coord2[j]) > tol) {
+      if (std::fabs((coord1[j] - coord2[j])/coord2[j]) > tol) {
         std::cerr << "Meshes differ in point coordinates" << std::endl;
         std::cerr << "Index " << i << " Component " << j << std::endl;
         std::cerr << "Coord 1 " << std::setprecision(15) << coord1[j]
@@ -1680,7 +1690,7 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     }
     for (int j = 0; j < cell1.size(); ++j) {
       for (int k = 0; k < 3; ++k) {
-        if (std::fabs(cell1[j][k] - cell2[j][k]) > tol) {
+        if (std::fabs((cell1[j][k] - cell2[j][k])/cell2[j][k]) > tol) {
           std::cerr << "Meshes differ in cells" << std::endl;
           return 1;
         }
@@ -1704,8 +1714,11 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
 
   for (int i = 0; i < numArr1; ++i) {
     vtkDataArray *da1 = pd1->GetArray(i);
-    // vtkDataArray* da2 = pd2->GetArray(i);
+    std::cerr << "checking array " << da1->GetName() << std::endl;
     vtkDataArray *da2 = pd2->GetArray(pd1->GetArrayName(i));
+    double range[2];
+    double abs_error;
+    double rel_error;
     int numComponent = da1->GetNumberOfComponents();
     for (int j = 0; j < mesh1->getNumberOfPoints(); ++j) {
       double *comps1 = new double[numComponent];
@@ -1713,11 +1726,20 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
       da1->GetTuple(j, comps1);
       da2->GetTuple(j, comps2);
       for (int k = 0; k < numComponent; ++k) {
-        if (std::fabs(comps1[k] - comps2[k]) > tol) {
+        da1->GetRange(range, k);
+        abs_error = std::fabs(comps1[k] - comps2[k]);
+        double max_val = std::max(std::abs(range[0]), std::abs(range[1]));
+        rel_error = abs_error/std::max(1.0, max_val);
+        if (rel_error > tol) {
           std::cerr << "For point data array " << da1->GetName() << std::endl;
           std::cerr << "Meshes differ in point data values at point " << j
                     << " component " << k << std::endl;
-          std::cerr << comps1[k] << " " << comps2[k] << std::endl;
+          std::cerr << std::setprecision(15)
+                    << "Mesh 1 value : "
+                    << comps1[k] << std::endl;
+          std::cerr << std::setprecision(15)
+                    << "Mesh 2 value : "
+                    << comps2[k] << std::endl;
           return 1;
         }
       }

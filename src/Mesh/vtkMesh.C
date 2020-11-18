@@ -6,6 +6,7 @@
 #include <vtkAppendFilter.h>
 #include <vtkCellData.h>
 #include <vtkCellIterator.h>
+#include <vtkCellTypes.h>
 #include <vtkDataSetReader.h>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkDoubleArray.h>

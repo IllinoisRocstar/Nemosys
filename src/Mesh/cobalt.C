@@ -107,7 +107,7 @@ void COBALT::cobalt::write() const
            std::pair<nemId_t, nemId_t>,
            sortNemId_tVec_compare> faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
-  vtkSmartPointer<vtkCellLocator> surfCellLocator = surfMeshBase->buildLocator();
+  vtkSmartPointer<vtkStaticCellLocator> surfCellLocator = surfMeshBase->buildStaticCellLocator();
   // maximum number of vertices per face (to be found in proceeding loop)
   vtkIdType nVerticesPerFaceMax = 0;
   // maximum number of faces per cell (to be found in proceeding loop)

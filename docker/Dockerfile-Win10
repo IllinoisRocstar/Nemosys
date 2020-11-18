@@ -44,6 +44,11 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 COPY .\swigwin-3.0.12 $TPL_DIR\swigwin-3.0.12
 RUN setx /m PATH ('{0}\swigwin-3.0.12;{1}' -f ${Env:TPL_DIR}, ${Env:PATH})
 
+# WIX
+COPY .\wix311-binaries $TPL_DIR\wix311-binaries
+RUN setx /m WIX ('{0}\wix311-binaries' -f ${Env:TPL_DIR})
+
+
 ################################################################################
 # Intel ifortran redist
 ################################################################################
@@ -62,8 +67,8 @@ RUN setx /m PATH ('{0}\intel64_win\mpirt;{0}\intel64_win\compiler;{1}' -f ${Env:
 # https://github.com/docker-library/python/blob/master/3.7/windows/windowsservercore-1809/Dockerfile
 ################################################################################
 
-ENV PYTHON_VERSION 3.7.4
-ENV PYTHON_RELEASE 3.7.4
+ENV PYTHON_VERSION 3.7.9
+ENV PYTHON_RELEASE 3.7.9
 
 # URL for 64bit
 RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}-amd64.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
@@ -99,7 +104,7 @@ RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}-amd64.exe' -f $env
 	Write-Host 'Complete.';
 
 # if this is called "PIP_VERSION", pip explodes with "ValueError: invalid truth value '<VERSION>'"
-ENV PYTHON_PIP_VERSION 19.1.1
+ENV PYTHON_PIP_VERSION 20.2.4
 
 RUN Write-Host ('Installing pip=={0} ...' -f $env:PYTHON_PIP_VERSION); `
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `

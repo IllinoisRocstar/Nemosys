@@ -59,7 +59,6 @@ void netgenGen::set_mp(netgenParams* params)
   refine_with_geom               = params->refine_with_geom;
 }
 
-
 int netgenGen::createMeshFromSTL(const char *fname)
 {
   // Define pointer to STL Geometry

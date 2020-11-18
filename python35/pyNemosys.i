@@ -44,7 +44,7 @@ class meshBase
     virtual void unsetFieldDataArray(const char* name);
     virtual std::vector<double> getCellLengths();
     virtual std::vector<double> getCellCenter(int cellID);
-    vtkSmartPointer<vtkCellLocator> buildLocator();
+    vtkSmartPointer<vtkCellLocator> buildCellLocator();
     virtual void getIntegrationPointsAtCell(int cellID);int transfer(meshBase* target, std::string method,
                  const std::vector<int>& arrayIDs);
     int transfer(meshBase* target, std::string method,

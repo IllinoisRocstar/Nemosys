@@ -215,11 +215,10 @@ void hdf5Reader::exportToVTKMesh() {
 
   if (!vtkMesh) {
     // declare vtk dataset
-    vtkSmartPointer<vtkUnstructuredGrid> dataSet_tmp =
-        vtkSmartPointer<vtkUnstructuredGrid>::New();
+    auto dataSet_tmp = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
     // points to be pushed into dataSet
-    vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+    auto points = vtkSmartPointer<vtkPoints>::New();
     // set double precision points
     points->SetDataTypeToDouble();
 
@@ -244,7 +243,7 @@ void hdf5Reader::exportToVTKMesh() {
     // add the elements
     std::cout << "    adding VTK elements..." << std::endl;
     for (int i = 0; i < numElements; ++i) {
-      vtkSmartPointer<vtkIdList> vtkElmIds = vtkSmartPointer<vtkIdList>::New();
+      auto vtkElmIds = vtkSmartPointer<vtkIdList>::New();
       std::vector<int> elmIds(getElementConnectivity(i));
       vtkElmIds->SetNumberOfIds(elmIds.size());
       for (int j = 0; j < elmIds.size(); ++j) {
@@ -268,6 +267,8 @@ void hdf5Reader::exportToVTKMesh() {
           break;
       }
     }
+    // build links - element incidences
+    dataSet_tmp->BuildLinks();
     vtkMesh = dataSet_tmp;
   }
 }
