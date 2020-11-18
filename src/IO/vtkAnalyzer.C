@@ -922,7 +922,7 @@ void vtkAnalyzer::writeInterpData(const std::vector<std::vector<double>>& interp
 
 void vtkAnalyzer::writeCSV(char* fname, std::vector<double> slnVec)
 {
-   ofstream csvFile;
+   std::ofstream csvFile;
    csvFile.open(fname);
    csvFile << "x, y, z, T" << std::endl;
    for (int iPnt=0; iPnt<dataSet->GetNumberOfPoints(); iPnt++){

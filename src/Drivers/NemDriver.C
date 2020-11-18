@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 
+#include "AutoVerificationDriver.H"
 #include "ConversionDriver.H"
 #include "InputGenDriver.H"
 #include "MeshGenDriver.H"
@@ -39,6 +40,8 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
     return MeshGenDriver::readJSON(inputjson);
   } else if (program_type == "Mesh Quality") {
     return MeshQualityDriver::readJSON(inputjson);
+  } else if (program_type == "Verification") {
+    return AutoVerificationDriver::readJSON(inputjson);
   } else if (program_type == "Conversion") {
     return ConversionDriver::readJSON(inputjson);
   } else if (program_type == "Input Generation") {

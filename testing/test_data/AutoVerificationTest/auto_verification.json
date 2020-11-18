@@ -1,0 +1,13 @@
+{
+  "Program Type": "Verification",
+  "Mesh File Options": {
+    "Coarse Mesh File": "coarse.vtu",
+    "Fine Mesh File": "fine.vtu",
+    "Finer Mesh File": "finer.vtu"
+  },
+  "Verification Options": {
+    "Array IDs": [0],
+    "Transfer Type": "Consistent Interpolation",
+    "Threads": 2
+  }
+}

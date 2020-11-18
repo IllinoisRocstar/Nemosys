@@ -168,6 +168,9 @@ endif()
 if(ENABLE_OMEGAH_CUDA)
   NEM_add_test_executable(OshGeoMeshCUDA)
 endif()
+if(ENABLE_OPENMP)
+  NEM_add_test_executable(Scaling)
+endif()
 
 # Define tests #################################################################
 
@@ -251,6 +254,7 @@ NEM_add_test(autoVerif AutoVerification AutoVerificationTest
     fine.vtu
     coarse.vtu
     richardson.vtu
+    auto_verification.json
     )
 
 NEM_add_test(pntgen PNTGen PNTGenTest
@@ -446,4 +450,9 @@ if(HAVE_HDF5)
       bench02_SN.exo
       bench02_SN_gold.exo
       )
+endif()
+
+if(ENABLE_OPENMP)
+#  NEM_add_test(scaling Scaling ScalingTest
+#            fine.vtk finer.vtk finest.vtk)
 endif()

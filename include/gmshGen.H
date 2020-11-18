@@ -28,11 +28,8 @@ class gmshGen : public meshGen {
   /** @brief Creates mesh from input STEP file
       @param fname The input STEP file
   **/
-  int createMeshFromSTL(const char *fname);
+  int createMeshFromSTL(const char *fname) override;
 
-  /** @brief Creates mesh from input STEP file
-      @param fname The input STEP file
-  **/
   int createMeshFromSTEP(const char *fname);
 
  private:

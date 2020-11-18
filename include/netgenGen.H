@@ -7,7 +7,7 @@
 #ifdef HAVE_NGEN
 namespace nglib
 {
-  #include <nglib.h>
+  #include "nglib.h"
 }
 #endif
 
@@ -30,6 +30,7 @@ class NEMOSYS_EXPORT netgenGen : public meshGen
   // netgen mesh creation
   public:
     int createMeshFromSTL(const char *fname) override;
+
   private:
 #ifdef HAVE_NGEN
     nglib::Ng_Meshing_Parameters mp; // params for netgen meshing  

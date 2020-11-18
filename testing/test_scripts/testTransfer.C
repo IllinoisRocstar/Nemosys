@@ -4,6 +4,12 @@
 #include "TransferDriver.H"
 #include "meshBase.H"
 
+#include "AuxiliaryFunctions.H"
+
+#ifdef HAVE_OPENMP
+#  include <omp.h>
+#endif
+
 const char *pntSource;
 const char *cellSource;
 const char *targetF;
@@ -19,31 +25,28 @@ class TransferTest : public ::testing::Test {
 
   virtual ~TransferTest() {}
 
-  // Objects declared here can be used by all tests in the test case for
-  // orthoPoly.
   std::shared_ptr<meshBase> target;
 };
 
 TEST_F(TransferTest, pntDataTransfer) {
   std::shared_ptr<meshBase> source = meshBase::CreateShared(pntSource);
   std::string method("Consistent Interpolation");
-  // source.get()->transfer(target.get(),method);
   auto transfer = NEM::DRV::TransferDriver::CreateTransferObject(
       source.get(), target.get(), method);
   transfer->run();
   std::shared_ptr<meshBase> ref = meshBase::CreateShared(pntRef);
-  target.get()->write("test.vtu");
+  target.get()->write("pnt_target_vtk8.vtu");
   EXPECT_EQ(0, diffMesh(target.get(), ref.get()));
 }
 
 TEST_F(TransferTest, cellDataTransfer) {
   std::shared_ptr<meshBase> source = meshBase::CreateShared(cellSource);
   std::string method("Consistent Interpolation");
-  // source.get()->transfer(target.get(),method);
   auto transfer = NEM::DRV::TransferDriver::CreateTransferObject(
       source.get(), target.get(), method);
   transfer->run();
   std::shared_ptr<meshBase> ref = meshBase::CreateShared(cellRef);
+  target.get()->write("cell_target_vtk8.vtu");
   EXPECT_EQ(0, diffMesh(target.get(), ref.get()));
 }
 

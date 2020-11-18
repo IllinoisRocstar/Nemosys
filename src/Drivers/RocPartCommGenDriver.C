@@ -1056,8 +1056,8 @@ vtkSmartPointer<vtkPolyData> RocPartCommGenDriver::deleteInterPartitionSurface(
   vtkSmartPointer<vtkPolyData> partSurf = vtkPolyData::SafeDownCast(_partSurf);
 
   // build cell locator for full surface
-  vtkSmartPointer<vtkCellLocator> fullSurfCellLocator =
-      fullSurf->buildLocator();
+  vtkSmartPointer<vtkStaticCellLocator> fullSurfCellLocator =
+      fullSurf->buildStaticCellLocator();
 
   // build upward links from points to cells
   partSurf->BuildLinks();
@@ -2471,7 +2471,7 @@ void RocPartCommGenDriver::mapWriter() const {
 
   // Create mapping file
   std::string fname = prefixPath + this->caseName + ".map";
-  ofstream mapFile;
+  std::ofstream mapFile;
   mapFile.open(fname);
 
   // Write header
@@ -2514,7 +2514,7 @@ void RocPartCommGenDriver::cmpWriter(int proc, int nCells) const {
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
   std::string fname = prefixPath + this->caseName + ".cmp_" + procStrPadded;
-  ofstream cmpFile;
+  std::ofstream cmpFile;
   cmpFile.open(fname);
 
   // Write header
@@ -2564,7 +2564,7 @@ void RocPartCommGenDriver::comWriter(int proc) const {
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
   std::string fname = prefixPath + this->caseName + ".com_" + procStrPadded;
-  ofstream comFile;
+  std::ofstream comFile;
   comFile.open(fname);
 
   // Write header
@@ -2774,7 +2774,7 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
   std::string fname =
       prefixPath + this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
-  ofstream dimFile;
+  std::ofstream dimFile;
   dimFile.open(fname);
 
   // Write vertices
@@ -2985,7 +2985,7 @@ void RocPartCommGenDriver::dimSurfWriter(
   }
 
   // Write new lines to file
-  ofstream dimFile;
+  std::ofstream dimFile;
   dimFile.open(fname);
   for (auto itr = newLines.begin(); itr != newLines.end(); ++itr)
     dimFile << *itr << "\n";
@@ -3055,7 +3055,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc) const {
   }
 
   // Write new lines to file
-  ofstream dimFile;
+  std::ofstream dimFile;
   dimFile.open(fname);
   for (auto itr = newLines.begin(); itr != newLines.end(); ++itr) {
     dimFile << *itr << "\n";
@@ -3068,19 +3068,19 @@ void RocPartCommGenDriver::txtWriter() const {
   // Write txt files for fluid and ifluid
   std::string fname;
   fname = prefixPath + "fluid_in_" + this->base_t + ".txt";
-  ofstream fluid_in;
+  std::ofstream fluid_in;
   fluid_in.open(fname);
 
   fname = prefixPath + "ifluid_in_" + this->base_t + ".txt";
-  ofstream ifluid_in;
+  std::ofstream ifluid_in;
   ifluid_in.open(fname);
 
   fname = prefixPath + "burn_in_" + this->base_t + ".txt";
-  ofstream burn_in;
+  std::ofstream burn_in;
   burn_in.open(fname);
 
   fname = prefixPath + "iburn_in_" + this->base_t + ".txt";
-  ofstream iburn_in;
+  std::ofstream iburn_in;
   iburn_in.open(fname);
 
   // Get number of partitions
@@ -3252,7 +3252,7 @@ void RocPartCommGenDriver::dimSurfSort(int proc) const {
   }
 
   // Write new lines to file
-  ofstream dimFile;
+  std::ofstream dimFile;
   dimFile.open(fname);
   for (auto itr = myLines.begin(); itr != myLines.end(); ++itr) {
     dimFile << *itr << "\n";
