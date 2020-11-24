@@ -7,8 +7,12 @@
 
 OrderOfAccuracy::OrderOfAccuracy(meshBase *_f3, meshBase *_f2, meshBase *_f1,
                                  std::vector<int> _arrayIDs,
-                                 std::string transferType)
-    : f3(_f3), f2(_f2), f1(_f1), arrayIDs(std::move(_arrayIDs)) {
+                                 std::string transferType, double targetGCI)
+    : f3(_f3),
+      f2(_f2),
+      f1(_f1),
+      arrayIDs(std::move(_arrayIDs)),
+      targetGCI(targetGCI) {
   // set names for array from coarse mesh to be transferred to fine
   int numArr = arrayIDs.size();
 
