@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.52.2
+Version 0.52.3
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -147,7 +147,7 @@ project. The list includes following items:
 * Gmsh 4.5.1
 * Netgen v6.2-dev (commit hash a2f434ebbf)
 * OpenCASCADE 7.3.0
-* VTK 7.1.0
+* VTK 8.2.0
 * Boost 1.68.0
 * OpenFoam version 4, 5, 6, or 7
 * Kokkos 2
@@ -229,7 +229,9 @@ Build and install VTK by running the following commands:
 $ mkdir build
 $ cd build
 $ cmake .. \
-        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/vtk
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/vtk \
+        -DVTK_USE_SYSTEM_HDF5=ON \
+        -DVTK_USE_SYSTEM_NETCDF=ON
 $ make -j$(nproc)
 $ make install
 ```

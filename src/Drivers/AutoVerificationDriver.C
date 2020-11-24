@@ -6,17 +6,36 @@ namespace NEM {
 namespace DRV {
 AutoVerificationDriver::AutoVerificationDriver(
     meshBase *coarseMesh, meshBase *fineMesh, meshBase *finerMesh,
-    std::vector<int> arrayIDs, std::string transferType, int numThreads) {
+    std::vector<int> arrayIDs, std::string transferType, double targetGCI,
+    int numThreads) {
   std::cout << "AutoVerificationDriver created." << std::endl;
 #ifdef HAVE_OPENMP
   omp_set_num_threads(numThreads);
   std::cout << "Number of threads set to : " << numThreads << std::endl;
 #endif
   std::cout << "Running verification." << std::endl;
-  this->oac = std::make_shared<OrderOfAccuracy>(
-      OrderOfAccuracy(coarseMesh, fineMesh, finerMesh, arrayIDs, transferType));
+  this->oac = std::make_shared<OrderOfAccuracy>(OrderOfAccuracy(
+      coarseMesh, fineMesh, finerMesh, arrayIDs, transferType, targetGCI));
   std::cout << "Checking if in asymptotic range." << std::endl;
-  this->oac->checkAsymptoticRange();
+  std::cout << "Target GCI is set to : " << oac->getTargetGCI() << std::endl;
+  auto asymp = this->oac->checkAsymptoticRange();
+  bool inRange = true;
+  for (int i = 0; i < asymp.size(); ++i) {
+    for (int j = 0; j < asymp[0].size(); ++j) {
+      double gci = asymp[i][j];
+      if (gci > oac->getTargetGCI()) {
+        std::cout << "GCI of " << gci;
+        std::cout << " exceeds target GCI of " << targetGCI << std::endl;
+        std::cout << "at array " << i << ", component " << j << std::endl;
+        inRange = false;
+      }
+    }
+  }
+  if (inRange) {
+    std::cout << "Grid is in target asymptotic range." << std::endl;
+  } else {
+    std::cout << "Grid is not in target asymptotic range." << std::endl;
+  }
 }
 
 AutoVerificationDriver *AutoVerificationDriver::readJSON(
@@ -82,6 +101,12 @@ AutoVerificationDriver *AutoVerificationDriver::readJSON(
       verificationOptions.object_range().end()) {
     transferType = verificationOptions["Transfer Type"].as<std::string>();
   }
+  // optional
+  double targetGCI = 1.1;
+  if (verificationOptions.find("Target GCI") !=
+      verificationOptions.object_range().end()) {
+    targetGCI = verificationOptions["Target GCI"].as<double>();
+  }
 
   int numThreads = 1;
 #ifdef HAVE_OPENMP
@@ -99,7 +124,7 @@ AutoVerificationDriver *AutoVerificationDriver::readJSON(
 #endif
   return new AutoVerificationDriver(coarseMesh.get(), fineMesh.get(),
                                     finerMesh.get(), arrayIds, transferType,
-                                    numThreads);
+                                    targetGCI, numThreads);
 }
 }  // namespace DRV
 }  // namespace NEM
