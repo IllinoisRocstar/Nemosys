@@ -1,6 +1,7 @@
 #define _USE_MATH_DEFINES
 #include "polygon.H"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <utility>
@@ -40,7 +41,8 @@ void polygon::draw() {
   //----------- Create Points ------------//
   //--------------------------------------//
 
-  double incr = 360.0 / _nSides;  // angle increment
+  double incr = 360.0 / _nSides;                  // angle increment
+  double defaultRot = -1.0 * (180 - incr) / 2.0;  // default rotation
 
   // If _center vector has 5 args, use polar position
   if (_center.size() == 5) {
@@ -53,7 +55,7 @@ void polygon::draw() {
   for (int i = 0; i < _radii.size(); ++i) {
     int k = i * _nSides;
     for (int j = 0; j < _nSides; ++j) {
-      double theta = (j * incr + _rotation) * M_PI / 180.0;
+      double theta = (j * incr + _rotation + defaultRot) * M_PI / 180.0;
       double a = _radii[i] * std::sin(theta);
       double b = _radii[i] * std::cos(theta);
 
@@ -70,9 +72,8 @@ void polygon::draw() {
 
   for (int i = 0; i < _radii.size(); ++i) {
     int k = i * _nSides;
-    for (int j = 0; j < _nSides - 1; ++j) {
+    for (int j = 0; j < _nSides - 1; ++j)
       occ::addLine(p + j + k, p + k + j + 1, l + k + j);
-    }
     occ::addLine(p + _nSides - 1 + k, p + k, l + _nSides - 1 + k);
   }
 
@@ -80,9 +81,8 @@ void polygon::draw() {
     int k = i * _nSides;
     int q = i * _nSides + _radii.size() * _nSides + 1;
 
-    for (int j = 0; j < _nSides; ++j) {
+    for (int j = 0; j < _nSides; ++j)
       occ::addLine(p + j + k, p + k + j + _nSides, l + q + j - 1);
-    }
   }
 
   //----------- Create Lines Loops ------------//
@@ -100,6 +100,7 @@ void polygon::draw() {
   lineTags.reserve(n);
   for (int i = 0; i < n; ++i) lineTags.push_back(l + i);
 
+  std::reverse(lineTags.begin(), lineTags.end());
   // Automatically set the loop tag
   ll = occ::addCurveLoop(lineTags);
   loopTags.push_back(ll);
@@ -125,18 +126,18 @@ void polygon::draw() {
   // Get max surfaces ID
   int s = getMaxID(2) + 1;
 
-  // container for circle surface ID's
+  // container for polygon surface ID's
   _surfaces.clear();
 
   // Inner surfaces
   int i = 0;
-  occ::addSurfaceFilling(loopTags[i], s + i);
+  occ::addPlaneSurface({loopTags[i]}, s + i);
   _surfaces.push_back(s + i);
 
   // All other surfaces
   nSurf = (_radii.size() - 1) * _nSides;
   for (int i = 1; i < nSurf + 1; i++) {
-    occ::addSurfaceFilling(loopTags[i], s + i);
+    occ::addPlaneSurface({loopTags[i]}, s + i);
     _surfaces.push_back(s + i);
   }
 
@@ -187,7 +188,6 @@ void polygon::applyMeshType() {
       for (const auto &j : allLines[i]) {
         std::vector<double> pts1, pts2;
         gmsh::model::getBoundary({j}, out, false, false, false);
-
         gmsh::model::getValue(out[0].first, out[0].second, {}, pts1);
         gmsh::model::getValue(out[1].first, out[1].second, {}, pts2);
 
@@ -205,6 +205,14 @@ void polygon::applyMeshType() {
         double adiff = fabs(diff);
         double eps = 1e-9;
 
+        if (adiff > eps && adiff < 1e-4) {
+          std::cout << "Warning: Mesh type may not be applied correctly."
+                    << std::endl;
+          std::cout << "         Please use higher precision for shape Center "
+                       "and Radii."
+                    << std::endl;
+        }
+
         if (adiff < eps)
           circum.push_back(j.second);
         else
@@ -220,8 +228,6 @@ void polygon::applyMeshType() {
       for (int j = n * (i - 1) + 1; j < n * i + 1; ++j) {
         mesh::setTransfiniteSurface(_surfaces[j]);
         mesh::setRecombine(2, _surfaces[j]);
-        // std::cout << "polygon recombine surface " << surfaces[j] <<
-        // std::endl;
       }
 
       circum.clear();
@@ -232,24 +238,19 @@ void polygon::applyMeshType() {
     //---------------Quad Mesh---------------//
     //---------------------------------------//
     else if (_meshType[i] == "Quad" || _meshType[i] == "Q") {
-      // continue;
-      if (i == 0) {
+      if (i == 0)
         mesh::setRecombine(2, _surfaces[i]);
-      } else {
-        for (int j = n * (i - 1) + 1; j < n * i + 1; ++j) {
-          // std::cout << "polygon recombine surface " << surfaces[j] <<
-          // std::endl;
+      else {
+        for (int j = n * (i - 1) + 1; j < n * i + 1; ++j)
           mesh::setRecombine(2, _surfaces[j]);
-        }
       }
     }
     //---------------Tri Mesh---------------//
     //---------------------------------------//
     else if (_meshType[i] == "Tri" || _meshType[i] == "T") {
       continue;
-    } else {
+    } else
       std::cout << "Mesh Type not recognized. Using Triangles." << std::endl;
-    }
   }
 }
 
@@ -271,9 +272,8 @@ std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
             physSurf_map.insert(std::pair<int, int>(_surfaces[j], physTag));
           }
         }
-      } else {
+      } else
         std::cout << "physical tag not in phystag_map" << std::endl;
-      }
     }
   }
   return physSurf_map;
@@ -284,23 +284,19 @@ std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
 int polygon::getMaxID(int dim) {
   std::vector<std::pair<int, int>> retTags;
   gmsh::model::getEntities(retTags, dim);
-  // std::cout << "retTags size " << retTags.size() << std::endl;
   int max = 0;
   int tag;
   if (!retTags.empty()) {
     for (const auto &retTag : retTags) {
       tag = retTag.second;
-      // std::cout << "tag is " << tag << std::endl;
       if (tag > max)
         max = tag;
       else
         continue;
     }
-    // std::cout << "Max " << dim << " tag is " << max << std::endl;
     return max;
-  } else {
+  } else
     return 0;
-  }
 }
 
 }  // namespace GEO

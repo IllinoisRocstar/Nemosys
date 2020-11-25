@@ -56,6 +56,11 @@ class foamMesh : public meshBase
         @param fname File name to read the mesh from.
     **/
     void read(const std::string &fname) override;
+
+    /** @brief Reads fvMesh for adaptive mesh refinement process
+        @param runTime OpenFOAM Time class object
+    **/
+    void readAMR(const Foam::Time& runTime);
     
     /**
         @brief get point with id
@@ -129,6 +134,10 @@ class foamMesh : public meshBase
         @brief Extracts foam mesh surface using VTK data set.
     **/
     vtkSmartPointer<vtkDataSet> extractSurface() override;
+
+    /** @brief Return a polyMesh Object
+    **/
+    //Foam::polyMesh& getMsh();
 
     // --- internal methods
   private:

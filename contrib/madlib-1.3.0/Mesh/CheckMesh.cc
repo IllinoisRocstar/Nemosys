@@ -136,17 +136,14 @@ namespace MAd {
           // MS added
           if ( nRgn > 2 ) {
           // MS End
-            if ( ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,0) ) ) ||
-                 ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,1) ) ) ) {
-              flag = 0;
-              if (verbose) {
-                out << "Face classif on dim 3 used by regions classif on different entities\n";
-                F_info(pf,"",out);
-              }
+          if ( ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,0) ) ) || 
+               ( F_whatIn(pf) != (pGEntity)R_whatIn( F_region(pf,1) ) ) ) {
+            flag = 0;
+            if (verbose) {
+              out << "Face classif on dim 3 used by regions classif on different entities\n";
+              F_info(pf,"",out);
             }
-          // MS added
-          }
-          // MS End
+          } }
           break;
         }
         case 2: {

@@ -73,10 +73,10 @@ void removeRowT(const MatrixXd &matrix,
 }
 
 // default ctor
-orthoPoly3D::orthoPoly3D() : finished(false),
-                             opx(new orthoPoly1D()),
+orthoPoly3D::orthoPoly3D() : opx(new orthoPoly1D()),
                              opy(new orthoPoly1D()),
-                             opz(new orthoPoly1D())
+                             opz(new orthoPoly1D()),
+                             finished(false)
 {
   a.resize(0);
 }
@@ -118,7 +118,7 @@ orthoPoly3D::orthoPoly3D(int _order, const VectorXd &sigma,
 
 orthoPoly3D::orthoPoly3D(int _order,
                          const std::vector<std::vector<double>> &coords)
-    : finished(false), order(_order)
+    : order(_order), finished(false)
 {
   //int root(round(cbrt(coords.size())));
   //if (coords.size() != root * root * root &&
@@ -167,13 +167,13 @@ orthoPoly3D::orthoPoly3D(int _order,
 
 // move ctor
 orthoPoly3D::orthoPoly3D(orthoPoly3D &&op)
-    : finished(op.finished),
+    : order(op.order),
       opx(std::move(op.opx)),
       opy(std::move(op.opy)),
       opz(std::move(op.opz)),
       a(op.a),
       toRemove(op.toRemove),
-      order(op.order)
+      finished(op.finished)
 {
   op.Reset();
 }
@@ -272,7 +272,7 @@ void orthoPoly3D::resetA()
 }
 
 
-const double orthoPoly3D::eval(const std::vector<double> &coord)
+double orthoPoly3D::eval(const std::vector<double> &coord)
 {
   if (!finished)
   {
@@ -307,7 +307,7 @@ const double orthoPoly3D::eval(const std::vector<double> &coord)
 }
 
 // evaluate the fitting polynomial at coord
-const double orthoPoly3D::operator()(const std::vector<double> &coord)
+double orthoPoly3D::operator()(const std::vector<double> &coord)
 {
   return eval(coord);
 }

@@ -278,7 +278,7 @@ namespace MAd {
   void MeshAdapter::setConstraint(pEntity e) const
   {
     EN_constrain(e);
-  
+
     switch (EN_type(e)) {
     case 1:
       EN_constrain( (pEntity)E_vertex((pEdge)e,0) );
@@ -484,6 +484,16 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::splitEdge(pEdge edge, bool checkSize)
   {
+    if (debug)
+    {
+    std::cout << "======================================" << std::endl;
+    std::cout << "SPLITEDGE" << std::endl;
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+    }
+
+
     // set edge to split
     double reducSq = eSplitOp->setSplitEdge(edge);
 
@@ -522,6 +532,16 @@ namespace MAd {
   // -------------------------------------------------------------------
   void MeshAdapter::collapseEdgeBrute(pEdge edge)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "COLLAPSEEDGEBRUTE" << std::endl;
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+  }
+
       pVertex vDel = E_vertex(edge,0);
       pVertex vTgt = E_vertex(edge,1);
       if ( V_whatInType(vTgt) != 0 ) {
@@ -538,6 +558,16 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::collapseEdge(pEdge edge)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "COLLAPSEEDGE" << std::endl;
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+    }
+
     double shapes[2] = {-1.,-1.};
     int ok[2] = {0,0};
 
@@ -566,7 +596,14 @@ namespace MAd {
           }
         }
     }
-  
+    if (debug)
+    {
+    std::cout << "----------------" << std::endl;  
+    std::cout << "ok[0] = " << ok[0] << std::endl;
+    std::cout << "ok[1] = " << ok[1] << std::endl;
+    std::cout << "shapes[1] = " << shapes[1] << std::endl;
+  }
+
     // find the best direction
     int best = -1; double worst = -1.;
     if ( ok[0] ) { best = 0; worst = shapes[0]; }
@@ -581,15 +618,37 @@ namespace MAd {
       pVertex vTgt = E_vertex(edge,1-best);
       eCollapseOp->setCollapseEdge(edge,vDel,vTgt);
       eCollapseOp->apply();
+      if (debug){
+      std::cout << "performing collapse..." << std::endl;
+      }
       return true;
     }
-
+    if (debug)
+    {
+    std::cout << "not performing collapse..." << std::endl;
+    }
     return false;
   }
 
   // -------------------------------------------------------------------
   bool MeshAdapter::collapseFace(pFace face, pEdge edge)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "COLLAPSEFACE" << std::endl;
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+
+    std::cout << "face points: " << std::endl;
+    for (int iNode = 0; iNode < face->getNbNodes(); iNode++)
+    {
+      std::cout << "Coors = " << face->getNode(iNode)->X << ", " << face->getNode(iNode)->Y << ", " << face->getNode(iNode)->Z << std::endl;
+    }
+    }
+
     for( int ClpsOnvt = 1; ClpsOnvt >=0; ClpsOnvt-- )
       {
         fCollapseOp->reset(face, edge, ClpsOnvt);
@@ -611,6 +670,20 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::DSplitCollapseEdge(pRegion pr, pEdge edge1, pEdge edge2)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "DSPLITCOLLAPSEEDGE" << std::endl;
+    std::cout << "Edge1 points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge1->p1->X << ", " << edge1->p1->Y << ", " << edge1->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge1->p2->X << ", " << edge1->p2->Y << ", " << edge1->p2->Z << std::endl;
+    std::cout << "Edge2 points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge2->p1->X << ", " << edge2->p1->Y << ", " << edge2->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge2->p2->X << ", " << edge2->p2->Y << ", " << edge2->p2->Z << std::endl;
+  }
+
+
     descOp->setDESC(pr,edge1,edge2);
 
     // do the checks
@@ -628,6 +701,16 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::swapEdge(pEdge edge)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "SWAPEDGE" << std::endl;
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+  }
+
     eSwapOp->setSwapEdge(edge);
 
     // do the checks
@@ -645,6 +728,18 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::swapFace(pFace face)
   {
+    if (debug)
+    {
+        // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "SWAPFACE" << std::endl;
+    std::cout << "face points: " << std::endl;
+    for (int iNode = 0; iNode < face->getNbNodes(); iNode++)
+    {
+      std::cout << "Coors = " << face->getNode(iNode)->X << ", " << face->getNode(iNode)->Y << ", " << face->getNode(iNode)->Z << std::endl;
+    }
+    }
+
     fSwapOp->setSwapFace(face);
   
     // do the checks
@@ -662,12 +757,24 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::moveVertex (pVertex v, double dxyz[3])
   {
+    if (debug)
+    {
+    std::cout << "MOVEVERTEX" << std::endl;
+    std::cout << "v: x,y,z = " << v->X << ", " << v->Y << ", " << v->Z << std::endl;
+  }
     return vMoveOp->move(v,dxyz);
   }
 
   // -------------------------------------------------------------------
   bool MeshAdapter::removeRegion(pRegion region)
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "REMOVEREGION" << std::endl;
+  }
+
     rRegionOp->setRegion(region);
   
     // do the checks
@@ -685,6 +792,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   bool MeshAdapter::putVertex (pVertex v, double xyz[3])
   {
+    if (debug)
+    {
+    std::cout << "PUTVERTEX" << std::endl;
+    std::cout << "v: x,y,z = " << v->X << ", " << v->Y << ", " << v->Z << std::endl;
+  }
     double oriPos[3], dxyz[3];
     V_coord(v,oriPos);
     for (int i=0; i<3; i++) dxyz[i] = xyz[i] - oriPos[i];
@@ -820,6 +932,13 @@ namespace MAd {
   // -------------------------------------------------------------------
   int MeshAdapter::edgeSwapLoop()
   {
+    if (debug)
+    {
+    // tw note: here is important
+    std::cout << "======================================" << std::endl;
+    std::cout << "EDGESWAPLOOP" << std::endl;
+  }
+
     MAdResourceManager& tm = MAdResourceManagerSgl::instance();
     MAdStatistics&  stat = MAdStatisticsSgl ::instance();
 
@@ -832,6 +951,14 @@ namespace MAd {
     int i = 0;
     while( ( edge = EIter_next(ei) ) )
     {
+
+    if (debug)
+    {
+    std::cout << "Edge points: " << std::endl;
+    std::cout << "p1: x,y,z = " << edge->p1->X << ", " << edge->p1->Y << ", " << edge->p1->Z << std::endl;
+    std::cout << "p2: x,y,z = " << edge->p2->X << ", " << edge->p2->Y << ", " << edge->p2->Z << std::endl;
+  }
+
       if( i > ne ) break;
       i++;
   
@@ -876,12 +1003,30 @@ namespace MAd {
   // -------------------------------------------------------------------
   int MeshAdapter::faceSwapLoop() 
   {
+
+    if (debug)
+    {
+    std::cout << "======================================" << std::endl;
+    std::cout << "FACESWAPLOOP" << std::endl;
+  }
+
     int nfswap = 0;
     pFace face;
     FIter fi = M_faceIter(mesh);
     int nf = M_numFaces(mesh);
     int i = 0;
     while ( ( face = FIter_next(fi) ) ) {
+
+    if (debug)
+    {
+        // tw note: here is important
+    std::cout << "face points: " << std::endl;
+    for (int iNode = 0; iNode < face->getNbNodes(); iNode++)
+    {
+      std::cout << "Coors = " << face->getNode(iNode)->X << ", " << face->getNode(iNode)->Y << ", " << face->getNode(iNode)->Z << std::endl;
+    }
+  }
+
       if( i > nf ) break;
       i++;
 
@@ -1070,11 +1215,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   int MeshAdapter::runOneIter()
   {
-    MAdResourceManager& tm = MAdResourceManagerSgl::instance();
-
     // --- constrain parallel interfaces ---
 #ifdef PARALLEL
-    { 
+    MAdResourceManager& tm = MAdResourceManagerSgl::instance();
+
+    {
       double t0= tm.getTime();
       UpdateParallelConstraint(mesh);
       double dt = tm.getTime() - t0;
@@ -1115,7 +1260,7 @@ namespace MAd {
       }
 
     // --- Reposition the vertices ---
-//     LaplaceSmoothing(OPTIMAL);
+    //LaplaceSmoothing();
 //     LaplaceSmoothing(FAST);
 
 #ifdef PARALLEL
@@ -1172,6 +1317,12 @@ namespace MAd {
   // -------------------------------------------------------------------
   void MeshAdapter::uglyTheMesh(double avgQualThresh, int maxIt)
   {
+        if (debug)
+    {
+    std::cout << "======================================" << std::endl;
+    std::cout << "UGLYTHEMESH" << std::endl;
+  }
+
     MeshQualityManagerSgl::instance().evaluateStatistics();
     double meanQuality  = MeshQualityManagerSgl::instance().getMeanShape();
   
@@ -1481,10 +1632,12 @@ namespace MAd {
   // -------------------------------------------------------------------
   void MeshAdapter::writeVolumicCurvature(string fnb) const
   {
+    std::cout << __FILE__ << __LINE__ << std::endl;
     std::set<LocalSizeField*> localSF = SFManager->getLocalSizeFields();
     std::set<LocalSizeField*>::const_iterator it = localSF.begin();
     for (; it != localSF.end(); it++)
       {
+        std::cout << __FILE__ << __LINE__ << std::endl;
         string fullName = outPrefix + fnb + "_" + (*it)->getName() + ".pos";
         MAdGmshOutput(mesh, (const pSField) *it, fullName.c_str(),
                       OD_CURVATURE_DIV);

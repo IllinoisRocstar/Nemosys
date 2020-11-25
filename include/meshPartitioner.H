@@ -72,8 +72,10 @@ class NEMOSYS_EXPORT meshPartitioner
       elmConn.insert(elmConn.begin(), elemConn.begin(), elemConn.end());
     }
 
+    /* disable -- AEG
     // from CGNS object
     explicit meshPartitioner(cgnsAnalyzer *inCg);
+    */
     // from MAdMesh object
     explicit meshPartitioner(MAd::pMesh inMesh);
     // from meshBase object

@@ -1,0 +1,74 @@
+{
+	"Program Type": "NucMesh Generation",
+	"Output File Name": "mesh_area_conservation_test",
+	"Geometry and Mesh": 
+	[
+		{
+			"Global Options":
+			[
+				{
+				"Open GUI": false,
+				"3D": false,
+				"Number of Layers": [4],
+				"Heights": [3],
+				"Min Mesh Size": 0.7,
+				"Max Mesh Size": 0.5,
+				"Meshing Algorithm": "Frontal Quads",
+				"Recombine Algorithm": "Blossom",
+				"Mesh Smoothing": 1,
+				"Extend from Boundary": false
+				}
+			]
+		},
+		{
+			"Saved Objects":
+			[
+				{
+					"Alias": "Circle 1",
+					"Conserve Area": true,
+					"Tolerance": 1e-10,
+					"Circles":
+					[
+						{
+						"Center":[0.0, 0.0, 0.0],
+						"Radii": [0.5, 0.6, 2.0, 2.5],
+						"Mesh Type":    ["T","T","S","S"],
+						"Number of Elems": [[0,0],[0,0],[2,8], [2,8]],
+						"Region Names": ["A","B", "C"],
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Alias": "Circle 2",
+					"Conserve Area": true,
+					"Tolerance": 1e-10,
+					"Circles":
+					[
+						{
+						"Center":[4.0, 0.0, 0.0],
+						"Radii": [0.7],
+						"Mesh Type":    ["Q"],
+						"Number of Elems": [[0,0]],
+						"Region Names": ["D"],
+						"Visible": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Circles":
+			[
+				{
+					"Alias": "Circle 1",
+					"Visible": true
+				},
+				{
+					"Alias": "Circle 2",
+					"Visible": true
+				}
+			]
+		}
+	]
+}

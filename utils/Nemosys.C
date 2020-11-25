@@ -20,11 +20,11 @@ int main(int argc, char *argv[]) {
   inputStream >> inputjson;
   if (inputjson.is_array())
     for (const auto &prog : inputjson.array_range()) {
-      NemDriver *nemdrvobj = NemDriver::readJSON(prog);
+      NEM::DRV::NemDriver *nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
       delete nemdrvobj;
     }
   else {
-    NemDriver *nemdrvobj = NemDriver::readJSON(inputjson);
+    NEM::DRV::NemDriver *nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
     delete nemdrvobj;
   }
 

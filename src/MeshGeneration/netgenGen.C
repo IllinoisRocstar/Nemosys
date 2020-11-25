@@ -59,7 +59,6 @@ void netgenGen::set_mp(netgenParams* params)
   refine_with_geom               = params->refine_with_geom;
 }
 
-
 int netgenGen::createMeshFromSTL(const char *fname)
 {
   // Define pointer to STL Geometry
@@ -70,8 +69,19 @@ int netgenGen::createMeshFromSTL(const char *fname)
 
   int np, ne;
 
+  // Check that the STL file exists
+  std::ifstream inSTL(fname);
+  if (!inSTL.good()) {
+    std::cerr << "Error reading in STL file: " << fname << std::endl;
+    return 1;
+  }
+
   // Read in the STL File
   stl_geom = nglib::Ng_STL_LoadGeometry(fname);
+
+  // This object seems to always be defined. If the file does
+  // not exits, the process continues with no triangle facets
+  // loaded.
   if (!stl_geom)
   {
     std::cerr << "Error reading in STL File: " << fname << std::endl;

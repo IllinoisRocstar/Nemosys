@@ -1,0 +1,33 @@
+Info    : Running 'gmsh -3 -bin cube.3.geo' [Gmsh 2.8.5, 1 node, max. 1 thread]
+Info    : Started on Thu Feb  4 15:09:50 2016
+Info    : Reading 'cube.3.geo'...
+Info    : Done reading 'cube.3.geo'
+Info    : Meshing 1D...
+Info    : Meshing curve 1 (extruded)
+Info    : Meshing curve 2 (extruded)
+Info    : Meshing curve 3 (extruded)
+Info    : Meshing curve 4 (extruded)
+Info    : Meshing curve 7 (extruded)
+Info    : Meshing curve 8 (extruded)
+Info    : Meshing curve 9 (extruded)
+Info    : Meshing curve 10 (extruded)
+Info    : Meshing curve 12 (extruded)
+Info    : Meshing curve 13 (extruded)
+Info    : Meshing curve 17 (extruded)
+Info    : Meshing curve 21 (extruded)
+Info    : Done meshing 1D (0 s)
+Info    : Meshing 2D...
+Info    : Meshing surface 5 (extruded)
+Info    : Meshing surface 14 (extruded)
+Info    : Meshing surface 18 (extruded)
+Info    : Meshing surface 22 (extruded)
+Info    : Meshing surface 26 (extruded)
+Info    : Meshing surface 27 (extruded)
+Info    : Done meshing 2D (0.000640869 s)
+Info    : Meshing 3D...
+Info    : Meshing volume 1 (extruded)
+Info    : Done meshing 3D (0.002 s)
+Info    : 1331 vertices 1728 elements
+Info    : Writing 'cube.3.msh'...
+Info    : Done writing 'cube.3.msh'
+Info    : Stopped on Thu Feb  4 15:09:51 2016

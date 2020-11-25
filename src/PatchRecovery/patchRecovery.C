@@ -8,11 +8,11 @@
 //      the deformed mesh back to a rectilinear grid. Only then can we satisfy the 
 //      requirements for a tensor-product construction of multivariate orthogonal polynomials.
 
-PatchRecovery::PatchRecovery(meshBase *nodeMesh, int _order,
+PatchRecovery::PatchRecovery(vtkDataSet *_dataSet, int _order,
                              const std::vector<int> &arrayIDs)
     : order(_order)
 {
-  cubature = GaussCubature::CreateUnique(nodeMesh, arrayIDs);
+  cubature = GaussCubature::CreateUnique(_dataSet, arrayIDs);
 }
 
 
@@ -89,8 +89,8 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
 {
   std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;
   // getting node mesh from cubature
-  meshBase *nodeMesh = cubature->getNodeMesh();
-  int numPoints = nodeMesh->getNumberOfPoints();
+  vtkSmartPointer<vtkDataSet> dataSet = cubature->getDataSet();
+  int numPoints = dataSet->GetNumberOfPoints();
   // initializing id list for patch cells
   vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
   // getting cubature scheme dictionary for indexing
@@ -103,7 +103,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
   // initializing double arrays for new data
   for (int i = 0; i < numComponents.size(); ++i)
   {
-    std::string name = nodeMesh->getDataSet()->GetPointData()
+    std::string name = dataSet->GetPointData()
         ->GetArrayName(cubature->getArrayIDs()[i]);
     name += "New";
     newPntData[i] = vtkSmartPointer<vtkDoubleArray>::New();
@@ -112,17 +112,17 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     newPntData[i]->SetNumberOfTuples(numPoints);
   }
 
-  int totPatchPoints = 0;
+  // int totPatchPoints = 0;
   // looping over all points, looping over patches per point
   for (int i = 0; i < numPoints; ++i) //FIXME
   {
     // get ids of cells in patch of node
-    nodeMesh->getDataSet()->GetPointCells(i, patchCellIDs);
+    dataSet->GetPointCells(i, patchCellIDs);
     // get total number of gauss points in patch 
     int numPatchPoints = 0;
     for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
     {
-      int cellType = nodeMesh->getDataSet()->GetCell(
+      int cellType = dataSet->GetCell(
           patchCellIDs->GetId(k))->GetCellType();
       numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints();
     }
@@ -151,7 +151,8 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     }
 
     // get coordinate of node that generates patch
-    std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
+    std::vector<double> genNodeCoord(3);
+    dataSet->GetPoint(i, genNodeCoord.data());
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
     if (!ortho)
@@ -204,7 +205,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
   }
   for (int k = 0; k < numComponents.size(); ++k)
   {
-    nodeMesh->getDataSet()->GetPointData()->AddArray(newPntData[k]);
+    dataSet->GetPointData()->AddArray(newPntData[k]);
   }
 }
 
@@ -213,9 +214,9 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
 {
   std::cout << "WARNING: mesh is assumed to be properly numbered" << std::endl;
   // getting node mesh from cubature
-  meshBase *nodeMesh = cubature->getNodeMesh();
+  vtkSmartPointer<vtkDataSet> dataSet = cubature->getDataSet();
   std::vector<int> arrayIDs = cubature->getArrayIDs();
-  int numPoints = nodeMesh->getNumberOfPoints();
+  int numPoints = dataSet->GetNumberOfPoints();
   // initializing id list for patch cells
   vtkSmartPointer<vtkIdList> patchCellIDs = vtkSmartPointer<vtkIdList>::New();
   // getting cubature scheme dictionary for indexing
@@ -229,7 +230,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   std::vector<vtkSmartPointer<vtkDoubleArray>> errorPntData(
       numComponents.size());
   // reference point data
-  vtkSmartPointer<vtkPointData> pd = nodeMesh->getDataSet()->GetPointData();
+  vtkSmartPointer<vtkPointData> pd = dataSet->GetPointData();
 
   std::vector<std::string> errorNames(numComponents.size());
 
@@ -264,7 +265,7 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
   for (int i = 0; i < numPoints; ++i)
   {
     // get ids of cells in patch of node
-    nodeMesh->getDataSet()->GetPointCells(i, patchCellIDs);
+    dataSet->GetPointCells(i, patchCellIDs);
     // get total number of gauss points in patch and assign element size to 
     // patch generating node 
     int numPatchPoints = 0;
@@ -273,8 +274,8 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     for (int k = 0; k < patchCellIDs->GetNumberOfIds(); ++k)
     {
       // put current patch cell into genCell
-      nodeMesh->getDataSet()->GetCell(patchCellIDs->GetId(k), genCell);
-      int cellType = nodeMesh->getDataSet()->GetCell(
+      dataSet->GetCell(patchCellIDs->GetId(k), genCell);
+      int cellType = dataSet->GetCell(
           patchCellIDs->GetId(k))->GetCellType();
       numPatchPoints += dict[cellType]->GetNumberOfQuadraturePoints();
       //nodeSize += cbrt(
@@ -302,7 +303,8 @@ std::vector<std::vector<double>> PatchRecovery::computeNodalError()
     }
 
     // get coordinate of node that generates patch
-    std::vector<double> genNodeCoord = nodeMesh->getPoint(i);
+    std::vector<double> genNodeCoord(3);
+    dataSet->GetPoint(i, genNodeCoord.data());
     // regularizing coordinates for preconditioning of basis matrix
     regularizeCoords(coords, genNodeCoord);
     // construct polyApprox from coords

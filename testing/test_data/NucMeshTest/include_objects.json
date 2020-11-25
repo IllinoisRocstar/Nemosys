@@ -1,0 +1,32 @@
+[	
+	{
+		"Saved Objects":
+		[
+			{
+				"Alias": "Hex",
+				"Polygon":
+				[
+					{
+					"Number of Sides": 6,
+					"Center":[0.0, 0.0, 0.0],
+					"Radii": [0.2, 0.3],
+					"Mesh Type":    ["T", "S"],
+					"Number of Elems": [[0,0], [2,3]],
+					"Region Names": ["B", "C"],
+					"Rotation": 0,
+					"Visible": true
+					}
+				]
+			}
+		]
+	},
+	{
+			"Polygon": 
+			[
+				{
+				"Alias": "Hex",
+				"Visible": true
+				}
+			]
+	}
+]

@@ -252,22 +252,14 @@ TEST(blockMesh, Generation)
   EXPECT_EQ(0, generate(inp_json));
 }
 
-TEST(blockMesh, NumberOfNodes)
+TEST(blockMesh, NumberOfNodesnCells)
 {
   if (ref)
       delete ref;
   ref = meshBase::Create( inputjson["Reference File"].as<std::string>() );
-  EXPECT_EQ( mesh->getNumberOfPoints(), ref->getNumberOfPoints() );
+  EXPECT_TRUE((mesh->getNumberOfPoints() == ref->getNumberOfPoints()) &&
+              (mesh->getNumberOfCells() == ref->getNumberOfCells()));
 }
-
-TEST(blockMesh, NumberOfCells)
-{
-  if (ref)
-      delete ref;
-  ref = meshBase::Create( inputjson["Reference File"].as<std::string>() );
-  EXPECT_EQ( mesh->getNumberOfCells(), ref->getNumberOfCells() );
-}
-
 
 // test constructor
 int main(int argc, char** argv) {

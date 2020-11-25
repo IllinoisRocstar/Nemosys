@@ -157,7 +157,7 @@ namespace MAd {
         sscanf(str, "%d", &numElements);
 
         for(int i = 0; i < numElements; i++) {
-          int num, type, physical = 0, elementary = 0, partition = 0, numV;
+          int num, type, physical = 0, elementary = 0, /*partition = 0,*/ numV;
           if(version <= 1.0){
             fscanf(fp, "%d %d %d %d %d", &num, &type, &physical, &elementary, &numV);
           }
@@ -171,7 +171,7 @@ namespace MAd {
               fscanf(fp, "%d", &tag);       
               if(j == 0)      physical = tag;
               else if(j == 1) elementary = tag;
-              else if(j == 2) partition = tag;
+              //else if(j == 2) partition = tag;
               // ignore any other tags for now
             }
             if (type == 15) numV = 1;

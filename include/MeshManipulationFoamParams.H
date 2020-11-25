@@ -4,6 +4,7 @@
 #include "nemosys_export.h"
 
 #include <string>
+#include <vector>
 
 /** @brief MeshManipulationFoamParams defines basic parameters needed for
  *         utilities in MeshManipulationFoam class. These parameters are
@@ -165,6 +166,10 @@ class NEMOSYS_EXPORT MeshManipulationFoamParams {
   /** @brief Output surface file for surfSpltByTopology utility
    */
   std::string outSurfFile;  // Output surface file
+
+  /** @brief A vector containing all region names for packs
+  **/
+  std::vector<std::string> pckRegionNames;
 };
 
 #endif  // NEMOSYS_MESHMANIPULATIONFOAMPARAMS_H_

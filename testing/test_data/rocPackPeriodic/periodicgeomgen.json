@@ -1,0 +1,32 @@
+[
+        {
+            "Program Type": "Pack Mesh Generation",
+            "Mesh Generation Engine": "packmesh",
+            "Mesh Type": "geometry",
+            "Mesh File Options": 
+            {
+                "Input Rocpack File": "rocOut",
+                "Output Mesh File": "geomPeriodic3D.vtu"
+            },
+            "Meshing Parameters":
+            {
+                "Scale Geometries?": false,                 // Optional (Default->false)
+                "Scale Value": 1,                           // Optional (Default->1)
+                "Remove geometries on boundary": false,     // Optional (Default->false)
+                "Mesh Algorithm": 1,
+                "Set Periodic Geometry": true,             // Optional (Default->false)
+                "Mesh Size": 0.07,                          // Optional (Default->0.1)
+                "Enable Default Outputs": false             // Optional (Default->false)
+                /*"Custom Domain":                          // Optional (All parameters)
+                {
+                    "Initial_X": -0.5,
+                    "Initial_Y": -0.5,
+                    "Initial_Z": -0.5,
+                    "Length_X": 1.0,
+                    "Length_Y": 1.0,
+                    "Length_Z": 1.0
+                }*/
+
+            }
+        }
+]

@@ -27,7 +27,7 @@ void exportStlToVtk(std::string ifname)
   double tmp;
   int i = 1;
   std::vector<double> p1,p2,p3;
-  int j,k,l;
+  int j/*,k,l*/;
   j = -1;
   while(getline(stl,line))
   {

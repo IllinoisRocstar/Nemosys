@@ -170,8 +170,6 @@ void foamMesh::genMshDB()
     // Obtaining the mesh data and generating requested output file
     numPoints = dataSet->GetNumberOfPoints();
     numCells = dataSet->GetNumberOfCells();
-    hasSizeField = false;
-    order = 1;
     std::cout << "Number of points " << numPoints << std::endl;
     std::cout << "Number of cells "<< numCells << std::endl;
 }
@@ -754,5 +752,21 @@ void foamMesh::write(const std::string &fname) const
   std::cout << "Writing mesh for time 0" << std::endl;
 
   mesh.write();
+}
+
+void foamMesh::readAMR(const Foam::Time& runTime)
+{
+  _fmesh = new Foam::fvMesh
+  (
+    Foam::IOobject
+    (
+      Foam::fvMesh::defaultRegion,
+      runTime.timeName(),
+      runTime,
+      Foam::IOobject::MUST_READ
+    )
+  );
+
+  genMshDB();
 }
 

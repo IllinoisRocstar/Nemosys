@@ -1,0 +1,24 @@
+Info    : Running 'gmsh -3 -bin square.3.geo' [Gmsh 2.8.5, 1 node, max. 1 thread]
+Info    : Started on Thu Feb  4 15:09:59 2016
+Info    : Reading 'square.3.geo'...
+Info    : Done reading 'square.3.geo'
+Info    : Meshing 1D...
+Info    : Meshing curve 1 (Line)
+Info    : Meshing curve 2 (Line)
+Info    : Meshing curve 3 (Line)
+Info    : Meshing curve 4 (Line)
+Info    : Done meshing 1D (0.002 s)
+Info    : Meshing 2D...
+Info    : Meshing surface 6 (Plane, Delaunay)
+Info    : Blossom: 70 internal 16 closed
+Info    : BEFORE OPTIMIZATION :    26 quads     0 triangles    2 invalid quads    4 quads with Q < 0.1 Avg Q =  4.79849E-01 Min -6.66790E-02
+Info    : IN OPTIMIZATION :    20 quads     0 triangles    0 invalid quads    0 quads with Q < 0.1 Avg Q =  6.43124E-01 Min  4.57543E-01
+Info    : Blossom recombination algorithm completed (0.001 s)
+Info    : AFTER OPTIMIZATION :    20 quads     0 triangles    0 invalid quads    0 quads with Q < 0.1 Avg Q =  6.81834E-01 Min  5.00456E-01
+Info    : Done meshing 2D (0.00274301 s)
+Info    : Meshing 3D...
+Info    : Done meshing 3D (0 s)
+Info    : 29 vertices 40 elements
+Info    : Writing 'square.3.msh'...
+Info    : Done writing 'square.3.msh'
+Info    : Stopped on Thu Feb  4 15:09:59 2016

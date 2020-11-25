@@ -1,0 +1,10 @@
+{
+  "Program Type": "Refinement",
+  "Mesh File Options": {
+    "Input Mesh File": "unrefined_beam_tet.vtu",
+    "Output Mesh File": "refined_beam_uniform.vtu"
+  },
+  "Refinement Options": {
+    "Refinement Method": "Omega_h"
+  }
+}

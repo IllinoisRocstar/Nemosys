@@ -86,14 +86,14 @@ class NEMOSYS_EXPORT vtkAnalyzer
   public:
     // constructor stuff
     vtkAnalyzer(char *fName) :
-        xmlFileName(fName), numberOfPoints(0), numberOfCells(0),
-        numberOfPointData(0), numberOfCellData(0), dataSet(NULL),
-        pointData(NULL), cellData(NULL) {}
+        numberOfPoints(0), numberOfCells(0),
+        numberOfPointData(0), numberOfCellData(0), xmlFileName(fName),
+        dataSet(nullptr), pointData(nullptr), cellData(nullptr) {}
 
     vtkAnalyzer(vtkDataSet *_dataSet, char *fName) :
-        dataSet(_dataSet), xmlFileName(fName), numberOfPointData(0),
-        numberOfCellData(0), pointData(0), cellData(0)
-    {
+        numberOfPointData(0), numberOfCellData(0), xmlFileName(fName),
+        dataSet(_dataSet), pointData(nullptr), cellData(nullptr)
+  {
       numberOfPoints = dataSet->GetNumberOfPoints();
       numberOfCells = dataSet->GetNumberOfCells();
     };

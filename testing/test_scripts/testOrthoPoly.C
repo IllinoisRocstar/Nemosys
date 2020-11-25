@@ -146,8 +146,14 @@ TEST_F(orthoPolyTest, Constructors)
 TEST(InvalidOpDeathTest, evalWithNoInit)
 {
   orthoPoly3D test;
-  EXPECT_EXIT(  test({0,0,0}), ::testing::ExitedWithCode(1),
-                "Coefficients to basis have not been generated");
+  // Note that we allow abort with signal 6 because of issues with the
+  // interaction of GoogleTest, threading, and CUDA - specifically the
+  // destruction of the singleton NEM::MSH::OmegaHInterface causing Kokkos
+  // to throw a cudaErrorInitializationError.
+  EXPECT_EXIT(test({0, 0, 0}), [](int code) {
+        return ::testing::ExitedWithCode(1)(code)
+               || code % 128 == 6;
+      }, "Coefficients to basis have not been generated");
 }
 
 int main(int argc, char** argv) {

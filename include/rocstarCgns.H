@@ -46,7 +46,7 @@ class NEMOSYS_EXPORT rocstarCgns : public cgnsAnalyzer
     int getZoneNCell(cgnsAnalyzer *cgObj, int zoneIdx);
     std::vector<double>
     getZoneCoords(cgnsAnalyzer *cgObj, int zoneIdx, int dim);
-    std::vector<int> getZoneRealConn(cgnsAnalyzer *cgObj, int zoneIdx);
+    std::vector<cgsize_t> getZoneRealConn(cgnsAnalyzer *cgObj, int zoneIdx);
     int getZoneRealSecType(cgnsAnalyzer *cgObj, int zoneIdx);
 
     // pane data access

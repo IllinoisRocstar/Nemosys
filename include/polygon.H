@@ -13,7 +13,7 @@ namespace GEO {
 class NEMOSYS_EXPORT polygon : public shape {
  public:
   /**
-   * @brief Constructs either a single circle or concentric circles.
+   * @brief Constructs either a single polygon or concentric polygons.
    * @param center point
    * @param radii of points
    * @param mesh type

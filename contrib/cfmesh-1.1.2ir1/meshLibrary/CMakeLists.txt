@@ -344,6 +344,14 @@ utilities/workflowControls/workflowControls.C
 
 # Building library #############################################################
 
+# Prepend flags meant for host compiler
+get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+if(languages MATCHES CUDA)
+  set(cuda_host_flag "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=>")
+else()
+  set(cuda_host_flag "")
+endif()
+
 # Build cfMesh library
 add_library(cfmesh ${CFMESH_SRCS})
 target_include_directories(cfmesh
@@ -366,8 +374,8 @@ target_compile_options(cfmesh
         -Wno-invalid-offsetof
 
     PUBLIC
-        -ftemplate-depth-100
-        ${OpenMP_CXX_FLAGS}
+        "${cuda_host_flag}-ftemplate-depth-100"
+        "${cuda_host_flag}${OpenMP_CXX_FLAGS}"
 )
 target_compile_definitions(cfmesh
     PUBLIC

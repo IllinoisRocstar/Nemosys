@@ -243,7 +243,6 @@ namespace MAd {
   std::vector<pGEntity> GEN_closure(const pGEntity pGE)
   {
     std::vector<pGEntity> theList;
-
     int type = GEN_type(pGE);
     switch (type) {
     case 0: break;
@@ -256,8 +255,10 @@ namespace MAd {
       break;
     }
     case 2: {
+    std::cout << "c2" << std::endl;
       std::vector<pGEdge> eList = GF_edges((pGFace)pGE);
       std::vector<pGEdge>::const_iterator eIter = eList.begin();
+      int cnt = 0;
       for (; eIter != eList.end(); eIter++) {
         theList.push_back(*eIter);
       }
@@ -272,7 +273,6 @@ namespace MAd {
       break;
     }
     }
-
     return theList;
   }
 

@@ -276,21 +276,23 @@ int main(int argc, char* argv[])
      // define elementary information
      cgnsWriter* cgWrtObj = new cgnsWriter(fCgName, cgObj1->getBaseName(), 3, 3, 0);
      cgWrtObj->setUnits(cgObj1->getMassUnit(), cgObj1->getLengthUnit(),
-			cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
-			cgObj1->getAngleUnit());
+                        cgObj1->getTimeUnit(), cgObj1->getTemperatureUnit(),
+                        cgObj1->getAngleUnit());
      cgWrtObj->setBaseItrData(cgObj1->getBaseItrName(), cgObj1->getNTStep(), cgObj1->getTimeStep());
      cgWrtObj->setZoneItrData(cgObj1->getZoneItrName(), cgObj1->getGridCrdPntr(), cgObj1->getSolutionPntr());
      cgWrtObj->setZone(cgObj1->getZoneName(iCg), cgObj1->getZoneType());
      cgWrtObj->setNVrtx(mPart->getNNdePart(iCg));
      cgWrtObj->setNCell(mPart->getNElmPart(iCg));
      // define coordinates
-     cgWrtObj->setGridXYZ(mPart->getCrds(iCg, MAd::M_getVrtXCrds(mesh)), 
-			  mPart->getCrds(iCg, MAd::M_getVrtYCrds(mesh)), 
-			  mPart->getCrds(iCg, MAd::M_getVrtZCrds(mesh)));
-     // define connctivity
-     cgWrtObj->setSection(cgObj1->getSectionName(), 
-			  (CGNS_ENUMT(ElementType_t)) cgObj1->getElementType(),
-			  mPart->getConns(iCg));
+     cgWrtObj->setGridXYZ(mPart->getCrds(iCg, MAd::M_getVrtXCrds(mesh)),
+                          mPart->getCrds(iCg, MAd::M_getVrtYCrds(mesh)),
+                          mPart->getCrds(iCg, MAd::M_getVrtZCrds(mesh)));
+     // define connectivity
+     std::vector<int> mPartConn_int(mPart->getConns(iCg));
+     std::vector<cgsize_t> mPartConn_cgType(mPartConn_int.begin(), mPartConn_int.end());
+     cgWrtObj->setSection(cgObj1->getSectionName(),
+                          (CGNS_ENUMT(ElementType_t))cgObj1->getElementType(),
+                          mPartConn_cgType);
      // define vertex and cell data 
      std::map<std::string, CGNS_ENUMT(GridLocation_t)> slnNLMap = cgObj1->getSolutionNameLocMap();
      for (auto is=slnNLMap.begin(); is!=slnNLMap.end(); is++)
@@ -308,42 +310,42 @@ int main(int argc, char* argv[])
      for (auto is=slnMap.begin(); is!=slnMap.end(); is++)
      {
        std::pair<int,keyValueList> slnPair = is->second;
-       int slnIdx = slnPair.first;
+       // int slnIdx = slnPair.first;
        keyValueList fldLst = slnPair.second;
        for (auto ifl=fldLst.begin(); ifl!=fldLst.end(); ifl++)
        {
-	       iSol++;
-	       std::vector<double> stitPhysData;
-	       std::vector<double> partPhysData;
-	       int nData;
-	       if (gLoc[iSol] == CGNS_ENUMV(Vertex))
-	       {
-	         nData = mPart->getNNdePart(iCg);
-	         ma->getMeshData(ifl->second, &stitPhysData);
-	         partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
-	       } 
+         iSol++;
+         std::vector<double> stitPhysData;
+         std::vector<double> partPhysData;
+         int nData;
+         if (gLoc[iSol] == CGNS_ENUMV(Vertex))
+         {
+           nData = mPart->getNNdePart(iCg);
+           ma->getMeshData(ifl->second, &stitPhysData);
+           partPhysData = mPart->getNdeSlnScalar(iCg, stitPhysData);
+         }
          else 
          {
-	         nData = mPart->getNElmPart(iCg);
-	         std::vector<double> oldPhysData;
-	         int nDataT, nDimT;
-	         cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT, nDimT);
-	         int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart, oldPhysData, partPhysData);      
-                 //std::cout << "Minimum element = " 
-                 //          << *std::min_element(partPhysData.begin(), partPhysData.end())
-                 //          << "\n Maximum element = " 
-                 //          << *std::max_element(partPhysData.begin(), partPhysData.end())
-                 //          << std::endl;
-	       }
-	       std::cout << "Writing "
-	           << nData 
-	           << " to "
-	           << ifl->second
-	           << " located in "
-	           << slnName[iSol]
-	           << std::endl;
-	       // write to file
-	       cgWrtObj->writeSolutionField(ifl->second, slnName[iSol], CGNS_ENUMV(RealDouble), &partPhysData[0]);
+           nData = mPart->getNElmPart(iCg);
+           std::vector<double> oldPhysData;
+           int nDataT, nDimT;
+           cgObj1->getSolutionDataStitched(ifl->second, oldPhysData, nDataT,
+                                           nDimT);
+           int1->interpolate(mPart->getNElmPart(iCg), regCntCrdsPart,
+                             oldPhysData, partPhysData);
+           //std::cout << "Minimum element = "
+           //          << *std::min_element(partPhysData.begin(),
+           //          partPhysData.end())
+           //          << "\n Maximum element = "
+           //          << *std::max_element(partPhysData.begin(),
+           //          partPhysData.end())
+           //          << std::endl;
+         }
+         std::cout << "Writing " << nData << " to " << ifl->second
+                   << " located in " << slnName[iSol] << std::endl;
+         // write to file
+         cgWrtObj->writeSolutionField(ifl->second, slnName[iSol],
+                                      CGNS_ENUMV(RealDouble), &partPhysData[0]);
        }
      }
      delete cgWrtObj;
@@ -363,7 +365,7 @@ int main(int argc, char* argv[])
 void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 {
    MAd::RIter ri = M_regionIter(msh);
-   int rCnt = 0;
+   // int rCnt = 0;
    while (MAd::pRegion pr = RIter_next(ri)) 
    {
      double xc[3];

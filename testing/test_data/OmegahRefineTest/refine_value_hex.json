@@ -1,0 +1,19 @@
+{
+  "Program Type": "Refinement",
+  "Mesh File Options": {
+    "Input Mesh File": "test_27_5_0.vtu",
+    "Output Mesh File": "refined_test_27_5_0.vtu"
+  },
+  "Refinement Options": {
+    "Refinement Method": "Omega_h",
+    "Metric Sources": [
+      {
+        "Type": "Variation",
+        "Knob": 0.001,
+        "Tag Name": "U"
+      }
+    ],
+    "Max Is Min for Scaling": 1,
+    "Transfer Data": 1
+  }
+}

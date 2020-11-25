@@ -10,6 +10,11 @@
 #include "NemDriver.H"
 #include "meshBase.H"
 
+#include <cgnslib.h>
+
+namespace NEM {
+namespace DRV {
+
 class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
  public:
   RocPartCommGenDriver(
@@ -80,8 +85,8 @@ class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
   void dimWriter(int proc, std::shared_ptr<meshBase> realMB,
                  std::shared_ptr<meshBase> totalMB) const;
   // write surface information for dimensions file
-  void dimSurfWriter(int proc, const std::vector<int> &cgConnReal,
-                     const std::vector<int> &cgConnVirtual, int patchNo);
+  void dimSurfWriter(int proc, const std::vector<cgsize_t> &cgConnReal,
+                     const std::vector<cgsize_t> &cgConnVirtual, int patchNo);
   void dimSurfWriter(int proc) const;
   void dimSurfSort(int proc) const;
   // write processor mapping file
@@ -231,7 +236,7 @@ class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
   void mapOld2NewPointData(std::vector<double> &pointData,
                            const std::map<int, int> &new2Old) const;
   // function for re-ordering tri indices
-  void swapTriOrdering(std::vector<int> &connVec) const;
+  void swapTriOrdering(std::vector<cgsize_t> &connVec) const;
 
  private:
   // --- temporary vectors to assist with writing out pconn info to Rocstar
@@ -277,5 +282,8 @@ class NEMOSYS_EXPORT RocPartCommGenDriver : public NemDriver {
   // gets Patch type for each patch number
   std::string getPatchType(int patchNo) const;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_ROCPARTCOMMGENDRIVER_H_

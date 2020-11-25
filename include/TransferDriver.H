@@ -3,7 +3,11 @@
 
 #include "nemosys_export.h"
 #include "NemDriver.H"
+#include "TransferBase.H"
 #include "meshBase.H"
+
+namespace NEM {
+namespace DRV {
 
 class NEMOSYS_EXPORT TransferDriver : public NemDriver {
  public:
@@ -20,11 +24,19 @@ class NEMOSYS_EXPORT TransferDriver : public NemDriver {
   static TransferDriver *readJSON(const jsoncons::json &inputjson);
   static TransferDriver *readJSON(const std::string &ifname);
 
+  static std::shared_ptr<TransferBase> CreateTransferObject(
+      meshBase *srcmsh, meshBase *trgmsh, const std::string &method);
+
   ~TransferDriver() override;
 
  private:
   meshBase *source;
   meshBase *target;
+
+  std::shared_ptr<TransferBase> transfer;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_TRANSFERDRIVER_H_

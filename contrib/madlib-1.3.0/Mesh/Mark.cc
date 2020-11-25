@@ -627,7 +627,7 @@ namespace MAd {
       pVertex p0 = E_vertex(ped,0);
       pVertex p1 = E_vertex(ped,1);
       if(it==listedge.begin()) printf("the longest is %d %d\n",EN_id(p0),EN_id(p1));
-      pVertex pFix0,pFix1;
+      pVertex pFix0/*,pFix1*/;
       std::vector<int> vectnod;
       int find = 0; 	
       /*sommets periodics ?*/
@@ -693,7 +693,7 @@ namespace MAd {
     
                 /*on garde les deux points img*/
                 pFix0 = pImg0;
-                pFix1 = pImg1;
+                //pFix1 = pImg1;
                 /*rajout de la transfo avec laquelle bouger les points*/
                 for(unsigned int kt = 0 ; kt < transfo0.size(); kt++) {
                   vectnod.push_back(transfo0[kt]);
@@ -730,7 +730,7 @@ namespace MAd {
     
                   /*on garde les deux points img*/
                   pFix0 = pImg0;
-                  pFix1 = pImg1;
+                  //pFix1 = pImg1;
                   /*rajout de la transfo avec laquelle bouger les points*/
                   for(unsigned int kt = 0 ; kt < transfo0.size(); kt++) {
                     vectnod.push_back(transfo0[kt]);         
@@ -759,7 +759,7 @@ namespace MAd {
 
                   /*on garde les deux points img*/
                   pFix0 = p0;
-                  pFix1 = p1;
+                  //pFix1 = p1;
                   /*rajout de la transfo avec laquelle bouger les points*/
                   for(unsigned int kt = 0 ; kt < transfo0.size(); kt++) {
                     vectnod.push_back((-1)*transfo0[kt]);         
@@ -854,7 +854,7 @@ namespace MAd {
       /*les deux sommets de l'arete ped*/
       pVertex p0 = E_vertex(ped,0);
       pVertex p1 = E_vertex(ped,1);
-      pVertex pFix0,pFix1;
+      //pVertex pFix0,pFix1;
       std::vector<int> vectnod;
       int find = 0; 	
       /*sommets periodics ?*/
@@ -915,8 +915,8 @@ namespace MAd {
             EN_attachDataInt((pEntity) pImg1 ,tagMove, move);
 
             /*on garde les deux points img*/
-            pFix0 = pImg0;
-            pFix1 = pImg1;
+            //pFix0 = pImg0;
+            //pFix1 = pImg1;
 
             /*rajout de la transfo avec laquelle bouger les points*/
             for(unsigned int kt = 0 ; kt < transfo0.size(); kt++) {
@@ -970,7 +970,7 @@ namespace MAd {
       /*les deux sommets de l'arete ped*/
       pVertex p0 = E_vertex(ped,0);
       pVertex p1 = E_vertex(ped,1);
-      pVertex pFix0,pFix1;
+      //pVertex pFix0,pFix1;
       std::vector<int> vectnod;
       int find = 0;
 
@@ -1031,8 +1031,8 @@ namespace MAd {
             EN_attachDataInt((pEntity) pImg1 ,tagMove, move);
 
             /*on garde les deux points img*/
-            pFix0 = pImg0;
-            pFix1 = pImg1;
+            //pFix0 = pImg0;
+            //pFix1 = pImg1;
 
             /*rajout de la transfo avec laquelle bouger les points*/
             for(unsigned int kt = 0 ; kt < transfo0.size(); kt++) {

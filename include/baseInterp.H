@@ -20,8 +20,8 @@ class INTERP_EXPORT basicInterpolant {
 // public members
 public:
    basicInterpolant(int nDim, int nPnt, int nNib, std::vector<double>& pntCrds):
-   nDim(nDim), nPnt(nPnt), nNib(nNib), wCalced(false), treeExist(false),
-   w(NULL), pntNibIdx(NULL), kdTree(NULL)
+   nDim(nDim), nPnt(nPnt), nNib(nNib), w(NULL), wCalced(false),
+   pntNibIdx(NULL), treeExist(false), kdTree(NULL)
    {
      buildPointKDTree(pntCrds);
    };

@@ -56,8 +56,8 @@ class snappymeshGen : public meshGen
   public:
   /** @brief Creates mesh from input STL file
   **/
-  int createMeshFromSTL(const char* fname);
-  
+  int createMeshFromSTL(const char* fname) override;
+
   /** @brief Reads Foam mesh from polyMesh
   **/
   void readSnappyFoamMesh();
