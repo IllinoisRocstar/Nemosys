@@ -1,0 +1,56 @@
+FROM centos:7
+
+RUN yum update -y
+RUN yum upgrade -y
+
+RUN yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
+RUN yum groupinstall -y "Development Tools"
+
+# Compilers and build tools.
+RUN yum install -y cmake3 gcc-c++.x86_64 make freetype-devel.x86_64 fltk-devel.x86_64
+RUN yum install -y hdf5-devel hdf-devel.x86_64 boost169-devel.x86_64
+RUN yum install metis-devel.x86_64 lapack-devel exodusii-devel.x86_64 -y
+RUN yum install libXmu-devel libXi-devel.x86_64 python3-devel.x86_64 -y 
+RUN yum remove swig -y 
+RUN yum install swig3.x86_64 rh-python36-python-pip.noarch -y
+
+# Run setuptools upgrade twice in case of "distribute" switch
+RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade setuptools
+RUN pip3 install --upgrade setuptools
+
+# Enable gcc-7 compilers 
+RUN yum install centos-release-scl scl-utils -y
+RUN yum install devtoolset-7 -y
+RUN echo "source /opt/rh/devtoolset-7/enable" >> /etc/skel/.bashrc
+
+# load OpenMPI module
+RUN yum install openmpi-devel -y
+RUN echo "source /etc/profile.d/modules.sh" >> /etc/skel/.bashrc
+RUN echo "module load mpi/openmpi-x86_64" >> /etc/skel/.bashrc
+
+RUN echo -e "[NEMoSys] \n\
+name=NEMoSys \n\
+baseurl=http://nemosys-rpm-repository.illinois.rocstar \n\
+enabled=1 \n\
+gpgcheck=0 \n\
+" >> /etc/yum.repos.d/nemosys.repo
+
+# Install previously built packages
+RUN yum install gmsh -y
+RUN yum install openfoam7 -y
+RUN yum install vtk -y
+RUN yum install netgen -y
+# Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
+# results in a namespace collision
+RUN yum install cgns -y
+
+RUN echo "source /opt/OpenFOAM-7/etc/bashrc" >> /etc/skel/.bashrc
+
+ENV BASH_ENV "/etc/skel/.bashrc"
+
+RUN useradd -U --shell /bin/bash -m -k /etc/skel -d /home/user -u 35553 -c "Build Account" build
+USER build
+
+WORKDIR /home/user/
+ENTRYPOINT /bin/bash

@@ -2,8 +2,12 @@
 #define NEMOSYS_NUCMESHDRIVER_H_
 
 #include "nemosys_export.h"
+#include "AuxiliaryFunctions.H"
 #include "NemDriver.H"
 #include "shape.H"
+
+namespace NEM {
+namespace DRV {
 
 /**
  * @brief Driver class to parse input JSON file and create mixed-element meshes.
@@ -27,10 +31,16 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
 
  public:
   /**
+   * @brief Parses the Geometry and Mesh data of JSON
+   * @param shapes Geometry and Mesh JSON object
+   */
+  void parseGeomAndMesh(jsoncons::json shapes);
+
+  /**
    * @brief Parses the global options data of JSON
    * @param opts Global Options JSON object
    */
-  static void parseOptions(jsoncons::json opts);
+  void parseOptions(jsoncons::json opts);
 
   /**
    * @brief Parses the saved objects data of JSON
@@ -39,10 +49,29 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
   void parseSavedObjects(jsoncons::json savedObj);
 
   /**
+   * @brief Augments the shapes radii so that the meshed area is conserved
+   * @param obj JSON object
+   * @param shapetype The shape type (circle,polygon) being evaluated
+   * @param tolerance The iterative solver tolerance
+   */
+  jsoncons::json correctMeshArea(jsoncons::json obj, std::string shapetype,
+                                 double tolerance = 1e-8);
+
+  /**
    * @brief Parses circle data of JSON and constructs Circles
    * @param circ Circle JSON object
+   * @param conserving Boolean for whether mesh conservation is being done for
+   * that circle
    */
-  void makeCircles(jsoncons::json circ);
+  void makeCircles(jsoncons::json circ, bool conserving = false);
+
+  /**
+   * @brief Parses circleInPolys data of JSON and constructs CirclesInPolys
+   * @param circInPoly CircleInPoly JSON object
+   * @param conserving Boolean for whether mesh conservation is being done for
+   * that circle in the polygon
+   */
+  void makeCirclesInPolys(jsoncons::json circInPoly, bool conserving = false);
 
   /**
    * @brief Parses polygon data of JSON and constructs Polygon
@@ -56,6 +85,39 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
    * @param arr Array JSON object
    */
   void makeArray(jsoncons::json arr);
+
+  /**
+   * @brief Parses rectangular array data of JSON and constructs Array
+   * @param arr Rectangular array JSON object
+   */
+  void makeRectangularArray(jsoncons::json arr);
+
+  /**
+   * @brief Parses cartesian array data of JSON and constructs Array
+   * @param arr Cartesian array JSON object
+   */
+  void makeCartesianArray(jsoncons::json arr);
+
+  /**
+   * @brief Parses polar array data of JSON and constructs Array
+   * @param arr Polar array JSON object
+   */
+  void makePolarArray(jsoncons::json arr);
+
+  /**
+   * @brief Parses hexagonal array data of JSON and constructs Array
+   * @param arr Hexagonal array JSON object
+   */
+  void makeHexagonalArray(jsoncons::json arr);
+
+  /**
+   * @brief Checks that polygon radii are larger than last circle radius
+   * @param circle_radii Circle radii
+   * @param poly_radii Polygon radii
+   * @param nSides Number of polygon sides
+   */
+  double checkInscribedCircle(std::vector<double> circle_radii,
+                              std::vector<double> poly_radii, int nSides);
 
  private:
   std::map<int, NEM::GEO::shape *>
@@ -74,6 +136,24 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
       savedobj_map; /**< map for Saved Objects declared in input JSON file
                      * @note contents of map are Alias, Shape Type, and Shape
                      * JSON object */
+  bool extrude;     /**< bool to construct 3D mesh */
+  bool gui;         /**< bool to open Gmsh gui */
+  bool skipAll;     /**< bool to skip all break statements */
+  std::vector<int> layers;     /** vector of 3D mesh layers */
+  std::vector<double> heights; /** vector of 3D mesh layer heights */
+
+  double paused_time; /** accumulates the paused time while GUI is open */
+
+  int parsingCount; /** counter to make sure parseGeomAndMesh doesn't go to
+                       infinity */
+
+  /**
+   * @brief Opens the Gmsh GUI
+   */
+  void openGUI();
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_NUCMESHDRIVER_H_

@@ -1,0 +1,27 @@
+{
+  "Program Type": "Refinement",
+  "Mesh File Options": {
+    "Input Mesh File": "Cylinder.vtu",
+    "Output Mesh File": "refined_AMR.vtu"
+  },
+  "Refinement Options": {
+    "Transfer Data": 0,
+    "Input Field File": "IncomingField",
+    "Refinement Method": "FV",
+    "Refinement Operator": "Value",
+    "Refinement Interval": 1,
+    "Maximum Refinement": 1,
+    "Lower Refinement Level": 0.0,
+    "Upper Refinement Level": 9.0,
+    "Unrefinement Above": -1,
+    "Unrefinement Below": -1,
+    "Write Refinement Data?": 0,
+    "Write Field Data?": 0,
+    "Write Mesh?": 0,
+    "Start Time": 0,
+    "Time Step": 0.5,
+    "End Time": 1,
+    "Buffer Layers": 1,
+    "Max Cells": 100000
+  }
+}

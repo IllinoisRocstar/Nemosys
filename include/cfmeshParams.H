@@ -21,6 +21,7 @@ struct cfmLclRefPatch
   std::string patchName;    // patch name
   double cellSize;          // patch cell size
   int aditRefLvls;          // additional refinement levels
+  double refThickness;      // local refinement thickness
 };
 
 struct cfmPtchBndLyr
@@ -55,8 +56,9 @@ class cfmeshParams : public meshingParams
     double maxCellSize;         // maximum cell size
     double minCellSize;         // minimum cell size
     double bndryCellSize;       // boundary cell size
-    int keepCellIB;             // keep cells intersecting boundary
-    int chkGluMsh;              // check for glued mesh
+    double bndryCellSizeRefThk; // boundary cell size refinement thickness
+    bool keepCellIB;            // keep cells intersecting boundary
+    bool chkGluMsh;             // check for glued mesh
 
     // boundary layer
     bool _withBndLyr;

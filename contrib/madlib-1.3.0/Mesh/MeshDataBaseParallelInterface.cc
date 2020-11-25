@@ -738,9 +738,11 @@ namespace MAd {
   
   void createRemotePointLists (pMesh mesh, pMeshDataId tagVertex)
   {
+#ifdef PARALLEL
     int myrank = 0;
     int nbproc = 1;
-    
+#endif
+
     std::set<pVertex> bdryNodes;
     std::set<int>     bdryNodeId;
 
@@ -936,13 +938,13 @@ namespace MAd {
     for(int i=0; i<mysize; i++) sendcounts[i] = 0;
     
     pMeshDataId tagPeriodic = MD_lookupMeshDataId("PeriodicVertexID");
-    pMeshDataId tagTransfo  = MD_lookupMeshDataId("PeriodicTransformation");
+    //pMeshDataId tagTransfo  = MD_lookupMeshDataId("PeriodicTransformation");
   
     vit = M_vertexIter(mesh);
     while ( pVertex pv = VIter_next(vit) ) {
 
       std::vector<int> distProcTab;
-      int nbDistProc = V_listInterface(pv, &distProcTab);
+      //int nbDistProc = V_listInterface(pv, &distProcTab);
 
       std::set<int> distProcs;
       distProcs.insert(distProcTab.begin(),distProcTab.end());
@@ -1189,9 +1191,11 @@ namespace MAd {
   // -------------------------------------------------------------------
   /*! \brief Create edge correspondance and assure coherent orientation \ingroup parallel */ 
   void E_createInfoInterface(pMesh mesh, pMeshDataId tagEdge)
-  { 
-    
+  {
+
+#ifdef PARALLEL
     int nproc = 1;
+#endif
     int myrank = 0;
 
     size_t nbConnections = 0;
@@ -1421,8 +1425,10 @@ namespace MAd {
   
   void F_createInfoInterface(pMesh mesh, pMeshDataId tagFace)
   {
-    
+
+#ifdef PARALLEL
     int nproc  = 1;
+#endif
     int myrank = 0;
     size_t nbConnections = 0;
     

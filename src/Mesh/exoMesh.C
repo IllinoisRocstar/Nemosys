@@ -134,7 +134,8 @@ int elmNumSrf(elementType tag) {
 //////////////////////////////////
 
 exoMesh::exoMesh()
-    : _numNdes(0),
+    : _numDim(2),
+      _numNdes(0),
       _numElms(0),
       _fid(-1),
       _api_v(0.0),
@@ -146,7 +147,8 @@ exoMesh::exoMesh()
       _isVerbose(false) {}
 
 exoMesh::exoMesh(std::string ifname)
-    : _numNdes(0),
+    : _numDim(2),
+      _numNdes(0),
       _numElms(0),
       _fid(-1),
       _api_v(0.0),
@@ -186,8 +188,9 @@ void exoMesh::write() {
   _isOpen = true;
 
   // initializing exodus database
-  _exErr = ex_put_init(_fid, "NEMoSys ExodusII database", 3, _numNdes, _numElms,
-                       _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
+  _exErr =
+      ex_put_init(_fid, "NEMoSys ExodusII database", _numDim, _numNdes,
+                  _numElms, _elmBlks.size(), _ndeSets.size(), _sdeSets.size());
   wrnErrMsg(_exErr, "Problem initializing EXODUS II database");
 
   // writing node coordinates
@@ -197,7 +200,7 @@ void exoMesh::write() {
   // writing element blocks
   for (const auto &ieb : _elmBlks) {
     _exErr = ex_put_elem_block(_fid, ieb.id, elmTypeStr(ieb.eTpe).c_str(),
-                               ieb.nElm, ieb.ndePerElm, 1);
+                               ieb.nElm, ieb.ndePerElm, 0);
     wrnErrMsg(_exErr, "Problem writing element block parameters.");
     /*
     int elem_blk_id, num_elem_this_blk, num_nodes_per_elem, num_attr;
@@ -375,6 +378,7 @@ void exoMesh::exoPopulate(bool updElmLst) {
 void exoMesh::report() const {
   std::cout << " ----- Exodus II Database Report ----- \n";
   std::cout << "Database: " << _ifname << "\n";
+  std::cout << "Dimension: " << _numDim << "\n";
   std::cout << "Nodes: " << _numNdes << "\n";
   std::cout << "Elements: " << _numElms << "\n";
   std::cout << "Element blocks: " << getNumberOfElementBlocks() << "\n";
@@ -626,6 +630,7 @@ void exoMesh::reset() {
   _elmBlks.clear();
   _sdeSets.clear();
   _fid = 0;
+  _numDim = 2;
   _numNdes = 0;
   _numElms = 0;
   _xCrds.clear();
@@ -654,7 +659,6 @@ void exoMesh::read(const std::string &ifname) {
   _isOpen = true;
   wrnErrMsg(_fid > 0 ? 0 : -1, "Problem opening file " + _ifname + "\n");
 
-  int dim;
   int numElmBlks;
   int numNdeSets;
   int numSdeSets;
@@ -676,8 +680,8 @@ void exoMesh::read(const std::string &ifname) {
 
   _exErr = ex_inquire(_fid, EX_INQ_DIM, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
+  _numDim = idum;
   std::cout << "Number of coordinate dimensions is " << idum << std::endl;
-  if (idum != 3) wrnErrMsg(-1, "Only 3D mesh data is supported!\n");
 
   _exErr = ex_inquire(_fid, EX_INQ_NODES, &idum, &fdum, &cdum);
   wrnErrMsg(_exErr, "Problem reading file contents.\n");
@@ -740,7 +744,8 @@ void exoMesh::read(const std::string &ifname) {
     wrnErrMsg(_exErr, "Problem reading element block names.\n");
     blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
                    blk_name.end());
-    // std::cout << blk_id << " " << blk_name << std::endl;
+    std::cout << "debugging" << std::endl;
+    std::cout << blk_id << " " << blk_name << std::endl;
     _elmBlkNames.push_back(blk_name);
   }
 
@@ -968,6 +973,13 @@ void exoMesh::mergeNodes(double tol) {
   exoPopulate(true);
 }
 
+void exoMesh::scaleNodes(double sc) {
+  using namespace nemAux;
+  _xCrds = sc * _xCrds;
+  _yCrds = sc * _yCrds;
+  _zCrds = sc * _zCrds;
+}
+
 void exoMesh::stitch(const exoMesh &otherMesh) {
   // Append nodes.
   _xCrds.insert(_xCrds.end(), otherMesh._xCrds.begin(), otherMesh._xCrds.end());
@@ -1005,6 +1017,19 @@ void exoMesh::stitch(const exoMesh &otherMesh) {
 
   // Full update to the database. Also updates element count _numElms
   exoPopulate(true);
+}
+
+elementType exoMesh::getElmBlkType(std::string ebName) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->name == ebName) return (eb->eTpe);
+
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with name " << ebName
+              << std::endl;
+
+  return (NEM::MSH::EXOMesh::elementType::OTHER);
 }
 
 }  // namespace EXOMesh

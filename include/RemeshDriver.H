@@ -12,6 +12,9 @@
 #include "meshBase.H"
 #include "meshStitcher.H"
 
+namespace NEM {
+namespace DRV {
+
 class NEMOSYS_EXPORT RemeshDriver : public NemDriver {
  public:
   RemeshDriver(std::vector<std::string> fluidNames,
@@ -71,5 +74,8 @@ class NEMOSYS_EXPORT RemeshDriver : public NemDriver {
 inline std::vector<std::string> getCgFNames(const std::string &case_dir,
                                             const std::string &prefix,
                                             const std::string &base_t);
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_REMESHDRIVER_H_

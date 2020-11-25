@@ -43,7 +43,7 @@ double orthoPoly1D::EvaluateOrthogonal(int power, double xk) const
   double p1 = xk - a[0];
   if (power == 1)
     return p1;
-  double p2;
+  double p2 = std::numeric_limits<double>::quiet_NaN();
   for (int i = 1; i < power; ++i)
   {
     p2 = (xk - a[i]) * p1 - b[i - 1] * p0;

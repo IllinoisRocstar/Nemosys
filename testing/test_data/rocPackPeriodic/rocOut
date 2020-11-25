@@ -1,0 +1,29 @@
+
+set scaling = 1.041879;
+
+#!/usr/bin/env pack-ls -D
+
+set packing_fraction = 0.3;
+
+# create a pack with a thousand spheres
+
+boundary { box 1.0 1.0 1.0 periodic }
+
+
+sphere {
+	translate <-0.20102817, -0.00827694, -0.44490317>
+	rotate <-0.90605456, -0.25887209, -0.33473954> -102.77200317
+	scale 0.28794119 color 0.152900 0.491100 0.784300 tag 0
+}
+
+sphere {
+	translate <-0.23266336, -0.40691462,  0.11093560>
+	rotate <-0.05299959,  0.08511078, -0.99496090> -170.94989014
+	scale 0.28794119 color 0.152900 0.491100 0.784300 tag 0
+}
+
+sphere {
+	translate < 0.28845268,  0.48167646, -0.47652656>
+	rotate <-0.26823145,  0.37500647, -0.88736802>  -82.44610596
+	scale 0.28794119 color 0.152900 0.491100 0.784300 tag 0
+}

@@ -1,0 +1,37 @@
+$EPIC 2016 INPUT FILE
+$Generated on 04-12-2018 10:51:12 AM by NEMoSys
+$Short Form Description Card for ExodusII/CUBIT Data
+$CASE DESCRIPTION
+  902  100 Boundary conditions assignement test                                 
+$Run Card
+$ RUN UNIT  PAT DPLT      TMAX     CPMAX
+    1    1    3    31.0000e-040.0000e+00
+$Exodus II Description Card
+$NPNS NTNS NPES NTES CTCT CONV  SYM  TET       GAP
+    1    5    2    1    1    2    0    11.0000e-01
+$Array Size/Dimension Card
+$      MXN       MXL      MXMN      MXSN
+     19900     75770     19900     19900
+$Projectile Node Set Cards
+$NSET     XYZ
+    1     000
+$Target Node Set Cards
+$NSET     XYZ
+    2     000
+    3     111
+    4     111
+    5     111
+    6     111
+$Projectile Element/Particle Set Cards
+$LSET MATL TYPE SSET                                                  THICK/AREA
+    1  158    0    0                                                  0.0000e+00
+    2   53    0    0                                                  0.0000e+00
+$Target Element/Particle Set Cards
+$LSET MATL TYPE SSET                                                  THICK/AREA
+    3   14    0    0                                                  0.0000e+00
+$Projectile and Target Velocities Card
+$    PXVEL     PYVEL     PZVEL     TXVEL     TYVEL     TZVEL
+         0         0    -50000         0         0         0
+$Detonation Point Card
+$     XDET      YDET      ZDET
+         5      4.68      3.05

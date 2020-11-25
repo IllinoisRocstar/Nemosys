@@ -1,0 +1,504 @@
+Omega_h BUG: improper initialization of `HostRead<int>` in the `Comm` constructors causes `-O0` and `-Og` builds to fail when linking.
+src/Omega_h_comm.cpp:22
+- Comm::Comm() {
++ Comm::Comm() : host_srcs_(Read<I32>()), host_dsts_(Read<I32>()) {
+src/Omega_h_comm.cpp:46
+-    : library_(library_in) {
++    : library_(library_in), host_srcs_(Read<I32>()), host_dsts_(Read<I32>()) {
+src/Omega_h_comm.cpp:31
+-    : impl_(impl_in), library_(library_in) {}
++    : impl_(impl_in),
++      library_(library_in),
++      host_srcs_(Read<I32>()),
++      host_dsts_(Read<I32>()) {}
+
+Fix up pedantic errors
+src/Omega_h_expr.cpp:961
+-OMEGA_H_BINARY_OP(OrOp, eval_or(lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(AndOp, eval_and(lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(GtOp, gt(lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(LtOp, lt(lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(EqOp, eq(lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(AddOp, add(env.dim, lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(SubOp, sub(env.dim, lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(MulOp, mul(env.size, env.dim, lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(DivOp, div(env.dim, lhs_val, rhs_val));
+-OMEGA_H_BINARY_OP(PowOp, eval_pow(env.dim, lhs_val, rhs_val));
++OMEGA_H_BINARY_OP(OrOp, eval_or(lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(AndOp, eval_and(lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(GtOp, gt(lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(LtOp, lt(lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(EqOp, eq(lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(AddOp, add(env.dim, lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(SubOp, sub(env.dim, lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(MulOp, mul(env.size, env.dim, lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(DivOp, div(env.dim, lhs_val, rhs_val))
++OMEGA_H_BINARY_OP(PowOp, eval_pow(env.dim, lhs_val, rhs_val))
+src/Omega_h_hypercube.hpp:492
+-};
++}
+src/Omega_h_simplex.hpp:230
+-};
++}
+
+Make Omega_h compiler warnings private to omega_h library
+src/CMakeLists.txt:183
+-    target_compile_options(omega_h PUBLIC
++    target_compile_options(omega_h PRIVATE
+src/CMakeLists.txt:188
+-    target_compile_options(omega_h PUBLIC
++    target_compile_options(omega_h PRIVATE
+src/CMakeLists.txt:195
+-    target_compile_options(omega_h PUBLIC
++    target_compile_options(omega_h PRIVATE
+src/CMakeLists.txt:203
+-    target_compile_options(omega_h PUBLIC
++    target_compile_options(omega_h PRIVATE
+src/CMakeLists.txt:210
+-    target_compile_options(omega_h PUBLIC
++    target_compile_options(omega_h PRIVATE
+
+Add Omega_h::Mesh::is_valid method to check if mesh is valid.
+src/Omega_h_mesh.hpp:172
++ public:
++  bool is_valid() const;
+src/Omega_h_mesh.cpp:877
++bool Mesh::is_valid() const {
++  if (library_ == nullptr) return false;
++  if (dim_ == -1) return false;
++  if (nents_[VERT] == -1) return false;
++  if (nents_[dim_] == -1) return false;
++
++  return true;
++}
+
+Disable Omega_h minimum version requirement for CUDA support
+CMakeLists.txt:1
+-cmake_minimum_required(VERSION 3.7.0...${CMAKE_VERSION})
++#cmake_minimum_required(VERSION 3.8.0...${CMAKE_VERSION})
+
+Fix bug in bend_test to transfer orig_coords
+src/bend_test.cpp:33
+   AdaptOpts opts(&mesh);
++  opts.xfer_opts.type_map["orig_coords"] = OMEGA_H_LINEAR_INTERP;
+
+Add SOVERSION to Omega_h library
+src/CMakeLists.txt:171
++set_property(TARGET omega_h PROPERTY VERSION ${Omega_h_VERSION})
++set_property(TARGET omega_h PROPERTY SOVERSION ${Omega_h_VERSION_MAJOR})
+
+Combine .gitignore of Omega_h and Nemosys
+-.gitignore
+
+Remove examples and misc directories
+-misc
+-examples
+CMakeLists.txt:25
+-bob_option(Omega_h_EXAMPLES "Compile examples" OFF)
+CMakeLists.txt:108
+-if(Omega_h_EXAMPLES)
+-  find_program(GMSH_EXECUTABLE gmsh REQUIRED)
+-  add_subdirectory(example/field_on_square)
+-  add_subdirectory(example/castle)
+-  add_subdirectory(example/gradient)
+-  add_subdirectory(example/laplacian)
+-  if(Omega_h_USE_DOLFIN)
+-    set(SAVED_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+-    string(REPLACE " -Werror" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+-    add_subdirectory(example/fenics/cpp)
+-    set(CMAKE_CXX_FLAGS "${SAVED_CXX_FLAGS}")
+-  endif()
+-endif()
+
+Remove utilities
+-src/ascii_vtk2osh.cpp
+-src/exo2osh.cpp
+-src/meshb2osh.cpp
+-src/msh2osh.cpp
+-src/osh2exo.cpp
+-src/osh2meshb.cpp
+-src/osh2vtk.cpp
+-src/osh_adapt.cpp
+-src/osh_box.cpp
+-src/osh_calc.cpp
+-src/osh_eval_implied.cpp
+-src/osh_filesystem.cpp
+-src/osh_fix.cpp
+-src/osh_part.cpp
+-src/osh_read_solb.cpp
+-src/osh_reorder.cpp
+-src/osh_scale.cpp
+-src/oshdiff.cpp
+-src/ugawg_cone_cone.cpp
+-src/ugawg_parallel_adapt.cpp
+-src/ugawg_solution.cpp
+-src/ugawg_stats.cpp
+-src/vtkdiff.cpp
+src/CMakeLists.txt:260
+-macro(osh_add_util EXE_NAME)
+-  osh_add_exe(${EXE_NAME})
+-  bob_export_target(${EXE_NAME})
+-endmacro(osh_add_util)
+-
+-osh_add_util(msh2osh)
+-osh_add_util(osh2vtk)
+-osh_add_util(oshdiff)
+-osh_add_util(vtkdiff)
+-osh_add_util(osh_box)
+-osh_add_util(osh_part)
+-osh_add_util(osh_scale)
+-osh_add_util(osh_reorder)
+-osh_add_util(osh_fix)
+-osh_add_util(osh_eval_implied)
+-osh_add_util(osh_calc)
+-if(Omega_h_USE_libMeshb)
+-  osh_add_util(meshb2osh)
+-  osh_add_util(osh2meshb)
+-  osh_add_util(osh_read_solb)
+-  osh_add_util(ugawg_stats)
+-  osh_add_util(ugawg_cone_cone)
+-  osh_add_util(ugawg_parallel_adapt)
+-  if (Omega_h_USE_EGADS)
+-    osh_add_util(ugawg_solution)
+-  endif()
+-endif()
+-if(Omega_h_USE_SEACASExodus)
+-  osh_add_util(exo2osh)
+-  osh_add_util(osh2exo)
+-endif()
+-osh_add_util(osh_adapt)
+-osh_add_util(osh_filesystem)
+-osh_add_util(ascii_vtk2osh)
+-
+
+Remove tests
+-src/1d_test.cpp
+-src/2d_conserve_test.cpp
+-src/3d_conserve_test.cpp
+-src/advect2d_test.cpp
+-src/amr_mpi_test.cpp
+-src/amr_test.cpp
+-src/amr_test2.cpp
+-src/aniso_test.cpp
+-src/bend_test.cpp
+-src/coarsen_test.cpp
+-src/corner_test.cpp
+-src/curvature_test.cpp
+-src/cylinder_adapt_test.cpp
+-src/dolfin_test.cpp
+-src/egads_test.cpp
+-src/face_flux_test.cpp
+-src/hypercube_test.cpp
+-src/imr_cases.cpp
+-src/mpi_tests.cpp
+-src/r3d_test.cpp
+-src/random_test.cpp
+-src/refine_scale.cpp
+-src/ring_test.cpp
+-src/slope_test.cpp
+-src/test_degree.cpp
+-src/test_dihedral.cpp
+-src/ugawg_cylinder.cpp
+-src/ugawg_hsc.cpp
+-src/ugawg_linear.cpp
+-src/unit_array_algs.cpp
+-src/unit_io.cpp
+-src/unit_math.cpp
+-src/unit_mesh.cpp
+-src/unit_parser.cpp
+-src/wrap_test.cpp
+src/CMakeLists.txt:249
+-function(osh_add_exe EXE_NAME)
+-  if (Omega_h_USE_CUDA)
+-    set_source_files_properties(${EXE_NAME}.cpp PROPERTIES LANGUAGE CUDA)
+-  endif()
+-  add_executable(${EXE_NAME} ${EXE_NAME}.cpp)
+-  set_property(TARGET ${EXE_NAME} PROPERTY CXX_STANDARD "11")
+-  set_property(TARGET ${EXE_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+-  set_property(TARGET ${EXE_NAME} PROPERTY CXX_EXTENSIONS OFF)
+-  target_link_libraries(${EXE_NAME} PRIVATE omega_h)
+-endfunction(osh_add_exe)
+-
+-if(BUILD_TESTING)
+-  if(Omega_h_USE_MPI)
+-    get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+-    find_program(MPIRUN mpirun PATHS ${COMPILER_DIR}
+-        DOC "Location of the mpirun program")
+-    if(NOT MPIRUN)
+-      message(STATUS "USE_MPI and BUILD_TESTING but MPIRUN not found!")
+-    endif()
+-  endif()
+-
+-  function(test_func TEST_NAME NUM_PROCS)
+-    string(REPLACE " " ";" VALGRIND "${Omega_h_VALGRIND}")
+-    if(MPIRUN)
+-      set(TEST_STR ${MPIRUN} -np ${NUM_PROCS} ${VALGRIND} ${ARGN})
+-    else()
+-      if(NOT (${NUM_PROCS} EQUAL "1"))
+-        message(STATUS "test ${TEST_NAME} ignored because MPIRUN not found!")
+-        return()
+-      endif()
+-      set(TEST_STR ${VALGRIND} ${ARGN})
+-    endif()
+-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_STR})
+-  endfunction(test_func)
+-
+-  osh_add_exe(unit_math)
+-  set(TEST_EXES ${TEST_EXES} unit_math)
+-  test_func(run_unit_math 1 ./unit_math)
+-  osh_add_exe(unit_array_algs)
+-  set(TEST_EXES ${TEST_EXES} unit_array_algs)
+-  test_func(run_unit_array_algs 1 ./unit_array_algs)
+-  osh_add_exe(unit_mesh)
+-  set(TEST_EXES ${TEST_EXES} unit_mesh)
+-  test_func(run_unit_mesh 1 ./unit_mesh)
+-  osh_add_exe(unit_io)
+-  set(TEST_EXES ${TEST_EXES} unit_io)
+-  test_func(run_unit_io 1 ./unit_io)
+-  osh_add_exe(unit_parser)
+-  set(TEST_EXES ${TEST_EXES} unit_parser)
+-  test_func(run_unit_parser 1 ./unit_parser)
+-  osh_add_exe(r3d_test)
+-  test_func(run_test_r3d 1 ./r3d_test)
+-  osh_add_exe(mpi_tests)
+-  set(TEST_EXES ${TEST_EXES} mpi_tests)
+-  if(Omega_h_USE_MPI)
+-    test_func(run_mpi_tests 4 ./mpi_tests)
+-  else()
+-    test_func(run_mpi_tests 1 ./mpi_tests)
+-  endif()
+-  osh_add_exe(1d_test)
+-  test_func(serial_1d_test 1 ./1d_test)
+-  if(Omega_h_USE_MPI)
+-    test_func(parallel_1d_test 2 ./1d_test)
+-  endif()
+-  osh_add_exe(corner_test)
+-  test_func(run_corner_test 1 ./corner_test)
+-  osh_add_exe(coarsen_test)
+-  test_func(run_coarsen_test 1 ./coarsen_test)
+-
+-  osh_add_exe(face_flux_test)
+-  test_func(run_face_flux_test 1 ./face_flux_test)
+-
+-  osh_add_exe(2d_conserve_test)
+-  test_func(serial_2d_conserve 1 ./2d_conserve_test)
+-  if(Omega_h_USE_MPI)
+-    test_func(parallel_2d_conserve 2 ./2d_conserve_test)
+-  endif()
+-  osh_add_exe(warp_test)
+-  set(TEST_EXES ${TEST_EXES} warp_test)
+-  test_func(warp_test_serial 1 ./warp_test)
+-  if(Omega_h_USE_MPI)
+-    test_func(warp_test_parallel 2 ./warp_test)
+-  endif()
+-  osh_add_exe(3d_conserve_test)
+-  if(Omega_h_DATA)
+-    set(TEST_EXES ${TEST_EXES} 3d_conserve_test)
+-    test_func(serial_3d_conserve 1 ./3d_conserve_test
+-              ${Omega_h_DATA}/ball_in_cube.msh)
+-    if(Omega_h_USE_MPI)
+-      test_func(parallel_3d_conserve 2 ./3d_conserve_test
+-                ${Omega_h_DATA}/ball_in_cube.msh)
+-    endif()
+-  endif()
+-  osh_add_exe(ring_test)
+-  if(Omega_h_DATA)
+-    set(TEST_EXES ${TEST_EXES} ring_test)
+-    test_func(run_ring_test 1 ./ring_test ${Omega_h_DATA}/ring.msh)
+-  endif()
+-  osh_add_exe(aniso_test)
+-  test_func(run_aniso_test 1 ./aniso_test)
+-  osh_add_exe(imr_cases)
+-  osh_add_exe(curvature_test)
+-  if(Omega_h_DATA)
+-    set(TEST_EXES ${TEST_EXES} curvature_test)
+-    test_func(ring_curvature 1 ./curvature_test
+-              ${Omega_h_DATA} ring)
+-    test_func(ball_curvature 1 ./curvature_test
+-              ${Omega_h_DATA} ball)
+-    if(Omega_h_USE_MPI)
+-      test_func(parallel_ring_curvature 2 ./curvature_test
+-                ${Omega_h_DATA} ring)
+-      test_func(parallel_ball_curvature 2 ./curvature_test
+-                ${Omega_h_DATA} ball)
+-    endif()
+-  endif()
+-  osh_add_exe(bend_test)
+-  osh_add_exe(test_degree)
+-  osh_add_exe(test_dihedral)
+-  if(Omega_h_USE_libMeshb)
+-    osh_add_exe(ugawg_linear)
+-    if(Omega_h_USE_EGADS)
+-      osh_add_exe(ugawg_cylinder)
+-    endif()
+-    osh_add_exe(ugawg_hsc)
+-  endif()
+-  osh_add_exe(slope_test)
+-  if(Omega_h_USE_EGADS)
+-    osh_add_exe(egads_test)
+-  endif()
+-  osh_add_exe(advect2d_test)
+-  if(Omega_h_DATA)
+-    set(TEST_EXES ${TEST_EXES} advect2d_test)
+-    test_func(advect2d_serial 1 ./advect2d_test ${Omega_h_DATA}/advect2d.osh)
+-    if(Omega_h_USE_MPI)
+-      test_func(advect2d_parallel 2 ./advect2d_test ${Omega_h_DATA}/advect2d.osh)
+-    endif()
+-  endif()
+-  add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND}
+-      DEPENDS ${TEST_EXES})
+-  osh_add_exe(cylinder_adapt_test)
+-  if (Omega_h_DATA)
+-    test_func(cylinder_adapt_test 1 ./cylinder_adapt_test ${Omega_h_DATA}/cylinder.msh)
+-  endif()
+-  if (Omega_h_USE_DOLFIN)
+-    osh_add_exe(dolfin_test)
+-  endif()
+-  osh_add_exe(random_test)
+-  target_include_directories(random_test PRIVATE ${TPL_PATH})
+-  test_func(run_random_test 1 ./random_test)
+-  osh_add_exe(hypercube_test)
+-  osh_add_exe(amr_test)
+-  test_func(amr_test 1 ./amr_test)
+-  osh_add_exe(amr_test2)
+-  test_func(amr_test2 1 ./amr_test2)
+-  osh_add_exe(refine_scale)
+-  osh_add_exe(amr_mpi_test)
+-endif()
+-
+src/CMakeLists.txt:536
+-add_custom_target(test_install
+-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/osh_box 1 1 1 2 2 2 ${CMAKE_CURRENT_BINARY_DIR}/box.osh
+-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/osh_scale ${CMAKE_CURRENT_BINARY_DIR}/box.osh 100 ${CMAKE_CURRENT_BINARY_DIR}/box_100.osh
+-    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/osh2vtk ${CMAKE_CURRENT_BINARY_DIR}/box_100.osh ${CMAKE_CURRENT_BINARY_DIR}/box_100_vtk
+-    COMMENT "Test installed Omega_h utilities")
+-
+
+Remove orphaned files
+-src/amr_topo_test.cpp
+-src/find_unique_edges.cpp
+-src/gen_chartab.cpp
+
+Remove SHELL: Cmake prefix (not compatible with CMake < 3.12); prevent defining NDEBUG macro
+src/CMakeLists.txt:183
++    # -DNDEBUG causes an "unexpected number of captures" error when compiling
++    # Omega_h_coarsen_flip.cpp. Perhaps the error is related to why Omega_h
++    # does not let user set CMAKE_BUILD_TYPE if using bob_*_cxx_flags.
+src/CMakeLists.txt:184
+-        "SHELL:--compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type"
+-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
+-        --expt-extended-lambda)
++        --compiler-options -W,-Wall,-Wextra,-Werror,-Wno-noexcept-type
++        --Werror cross-execution-space-call,deprecated-declarations
++        --expt-extended-lambda
++        -UNDEBUG)
+src/CMakeLists.txt:189
+-    target_compile_options(omega_h PUBLIC
+-        "SHELL:--compiler-options /wd6294,/wd26451,/wd26439"
+-        "SHELL:--Werror cross-execution-space-call,deprecated-declarations"
++    target_compile_options(omega_h PRIVATE
++        --compiler-options /wd6294,/wd26451,/wd26439
++        --Werror cross-execution-space-call,deprecated-declarations
+
+Allow Omega_h to initialize Kokkos without command line args
+src/Omega_h_library.cpp:112
+-    OMEGA_H_CHECK(argc != nullptr);
+-    OMEGA_H_CHECK(argv != nullptr);
+-    Kokkos::initialize(*argc, *argv);
++    if (argc != nullptr && argv != nullptr) {
++      Kokkos::initialize(*argc, *argv);
++    } else {
++      Kokkos::initialize();
++    }
+
+Remove duplicate definition of Omega_h::vtk:read_vtu(...)
+src/Omega_h_vtk.hpp:33
+-void read_vtu(std::istream& stream, CommPtr comm, Mesh* mesh);
+
+Fix issue where re-running cmake would force a full rebuild of Omega_h
+cmake/bob.cmake
+@@ -437,33 +437,29 @@ function(bob_config_header HEADER_PATH)
+ ")
+   if (${PROJECT_NAME}_KEY_BOOLS)
+     foreach(KEY_BOOL IN LISTS ${PROJECT_NAME}_KEY_BOOLS)
+-      if (${KEY_BOOL})
+         string(TOUPPER "${KEY_BOOL}" MACRO_NAME)
++        set(${MACRO_NAME} "${${KEY_BOOL}}")
+         set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME}")
+-      endif()
++#cmakedefine ${MACRO_NAME}")
+     endforeach()
+   endif()
+   if (${PROJECT_NAME}_KEY_INTS)
+     foreach(KEY_INT IN LISTS ${PROJECT_NAME}_KEY_INTS)
+       string(TOUPPER "${KEY_INT}" MACRO_NAME)
++      set(${MACRO_NAME} "${${KEY_INT}}")
+       set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME} ${${KEY_INT}}")
++#cmakedefine ${MACRO_NAME} @${MACRO_NAME}@")
+     endforeach()
+   endif()
+   if (${PROJECT_NAME}_KEY_STRINGS)
+     foreach(KEY_STRING IN LISTS ${PROJECT_NAME}_KEY_STRINGS)
+       string(TOUPPER "${KEY_STRING}" MACRO_NAME)
+-      set(val "${${KEY_STRING}}")
+-#escape escapes
+-      string(REPLACE "\\" "\\\\" val "${val}")
+-#escape quotes
+-      string(REPLACE "\"" "\\\"" val "${val}")
++      set(${MACRO_NAME} "${${KEY_STRING}}")
+       set(HEADER_CONTENT
+ "${HEADER_CONTENT}
+-#define ${MACRO_NAME} \"${val}\"")
++#cmakedefine ${MACRO_NAME} \"@${MACRO_NAME}@\"")
+     endforeach()
+   endif()
+   set(HEADER_CONTENT
+@@ -471,7 +467,8 @@ function(bob_config_header HEADER_PATH)
+
+ #endif
+ ")
+-  file(WRITE "${HEADER_PATH}" "${HEADER_CONTENT}")
++  file(WRITE "${HEADER_PATH}.in" "${HEADER_CONTENT}")
++  configure_file("${HEADER_PATH}.in" "${HEADER_PATH}" ESCAPE_QUOTES @ONLY)
+ endfunction()
+
+ function(bob_get_link_libs tgt var)
+
+Remove hard-coding of number of nodes per element when reading gmsh files, replace with element_degree
+src/Omega_h_class.cpp:185
+-  auto neq = eqv2v.size() / (ent_dim + 1);
++  auto neq = eqv2v.size() / element_degree(mesh->family(), ent_dim, VERT);
+src/Omega_h_gmsh.cpp:452
+-        Int neev = dim + 1;
++        Int neev = element_degree(family, dim, VERT);
+
+Add binary flag to fix writing .osh on Windows (see https://en.cppreference.com/w/cpp/io/c/FILE#Binary_and_text_modes)
+src/Omega_h_file.cpp:530
+-  std::ofstream file(filepath.c_str());
++  std::ofstream file(filepath.c_str(), std::ios::binary);
+
+Change install location of omega_h headers.
+cmake/bob.cmake
+@@ -400,7 +400,7 @@ endfunction(bob_target_includes)
+ function(bob_library_includes lib_name)
+   bob_target_includes("${lib_name}")
+   #ensure downstream users include installed headers
+-  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include>)
++  target_include_directories(${lib_name} INTERFACE $<INSTALL_INTERFACE:include/omega_h>)
+ endfunction(bob_library_includes)
+
+ function(bob_export_target tgt_name)
+src/CMakeLists.txt
+@@ -346,7 +346,7 @@ if(Omega_h_USE_DOLFIN)
+   set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_dolfin.hpp)
+ endif()
+
+-install(FILES ${Omega_h_HEADERS} DESTINATION include)
++install(FILES ${Omega_h_HEADERS} DESTINATION include/omega_h)
+
+ if (Omega_h_USE_pybind11)
+   set(PYBIND11_SOURCES

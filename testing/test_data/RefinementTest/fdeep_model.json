@@ -1,0 +1,221 @@
+{
+  "architecture": {
+    "backend": "tensorflow",
+    "class_name": "Model",
+    "config": {
+      "input_layers": [
+        [
+          "input_1",
+          0,
+          0
+        ]
+      ],
+      "layers": [
+        {
+          "class_name": "InputLayer",
+          "config": {
+            "batch_input_shape": [
+              null,
+              4
+            ],
+            "dtype": "float32",
+            "name": "input_1",
+            "sparse": false
+          },
+          "inbound_nodes": [],
+          "name": "input_1"
+        },
+        {
+          "class_name": "Dense",
+          "config": {
+            "activation": "relu",
+            "activity_regularizer": null,
+            "batch_input_shape": [
+              null,
+              4
+            ],
+            "bias_constraint": null,
+            "bias_initializer": {
+              "class_name": "Zeros",
+              "config": {}
+            },
+            "bias_regularizer": null,
+            "dtype": "float32",
+            "kernel_constraint": null,
+            "kernel_initializer": {
+              "class_name": "GlorotUniform",
+              "config": {
+                "seed": null
+              }
+            },
+            "kernel_regularizer": null,
+            "name": "dense",
+            "trainable": true,
+            "units": 15,
+            "use_bias": true
+          },
+          "inbound_nodes": [
+            [
+              [
+                "input_1",
+                0,
+                0,
+                {}
+              ]
+            ]
+          ],
+          "name": "dense"
+        },
+        {
+          "class_name": "Dense",
+          "config": {
+            "activation": "relu",
+            "activity_regularizer": null,
+            "bias_constraint": null,
+            "bias_initializer": {
+              "class_name": "Zeros",
+              "config": {}
+            },
+            "bias_regularizer": null,
+            "dtype": "float32",
+            "kernel_constraint": null,
+            "kernel_initializer": {
+              "class_name": "GlorotUniform",
+              "config": {
+                "seed": null
+              }
+            },
+            "kernel_regularizer": null,
+            "name": "dense_1",
+            "trainable": true,
+            "units": 10,
+            "use_bias": true
+          },
+          "inbound_nodes": [
+            [
+              [
+                "dense",
+                0,
+                0,
+                {}
+              ]
+            ]
+          ],
+          "name": "dense_1"
+        },
+        {
+          "class_name": "Dense",
+          "config": {
+            "activation": "sigmoid",
+            "activity_regularizer": null,
+            "bias_constraint": null,
+            "bias_initializer": {
+              "class_name": "Constant",
+              "config": {
+                "value": [
+                  -0.8198338065809343
+                ]
+              }
+            },
+            "bias_regularizer": null,
+            "dtype": "float32",
+            "kernel_constraint": null,
+            "kernel_initializer": {
+              "class_name": "GlorotUniform",
+              "config": {
+                "seed": null
+              }
+            },
+            "kernel_regularizer": null,
+            "name": "dense_2",
+            "trainable": true,
+            "units": 1,
+            "use_bias": true
+          },
+          "inbound_nodes": [
+            [
+              [
+                "dense_1",
+                0,
+                0,
+                {}
+              ]
+            ]
+          ],
+          "name": "dense_2"
+        }
+      ],
+      "name": "sequential",
+      "output_layers": [
+        [
+          "dense_2",
+          0,
+          0
+        ]
+      ]
+    },
+    "keras_version": "2.2.4-tf"
+  },
+  "hash": "68bd8f7e020d344fa4cb66f95a242c7889b961a3cdb2c90ed2984a9297435a55",
+  "image_data_format": "channels_last",
+  "input_shapes": [
+    [
+      4
+    ]
+  ],
+  "output_shapes": [
+    [
+      1
+    ]
+  ],
+  "tests": [
+    {
+      "inputs": [
+        {
+          "shape": [
+            4
+          ],
+          "values": [
+            "nABYv/Oi2L7jbSw+UwKHPw=="
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "shape": [
+            1
+          ],
+          "values": [
+            "AACAPw=="
+          ]
+        }
+      ]
+    }
+  ],
+  "trainable_params": {
+    "dense": {
+      "bias": [
+        "AkfsPgAAAAAAAAAAAAAAAL6Nb73Clzg+bv2TvWw8aD1aVyi+5459PlM7mz5WpV09sgG6vNF2qbw8TLG+"
+      ],
+      "weights": [
+        "qh9lvoKNSb4BUAK/FhMPvonwmz1FVcu/GFiSPlGcaT/qQ2w/OYllvxFViz+kds6+hRYxPknCjT95mg/AvJimvjYvF76gUcc9EImzvvdocj3jVfe+kqCMP8qoPT8p+aI/3d1AwNrNir/+2nu+nXqzvVwJtr6RDQ1AzcswP5K9aL4N8NC+WagKv7q/e76h+6E+zcZUvXhtFT8bW9O9OeYnP7DPhT5D69U+/0VBPic+HT7J+Vi+nUeSQu9Str5UeoK9nB6mPlakFb3q6k3CwIWUwqQIgMJIbZBC+AgowiCCmMIwZm5Cwg+SQo7MlEI6j8DB"
+      ]
+    },
+    "dense_1": {
+      "bias": [
+        "niiXPiGB9j1a66K9T6yJPiH25D5MdhY+5YdzvZuFdT4AAAAArn7dPg=="
+      ],
+      "weights": [
+        "8jAqQI1jkL8/6NK+EBWpv7AYpL8JwC9AXomSvhP4DMBK6Y6+XbeovwVM5z4iM0s+7rlCPgytyz1IUQs9kq+jvusH+b7PHMc+9+vrvg7d5L7yw16+lIzBvU0hjr7ONEY+GGoWvTppYT68eWC+AI+VugKOk77ai20+k+KgPp4xyL6v4uQ+R/m5Pss0xj7EDxG+3Ya9Pg/Cpz7QKNu+QyzlPtVFl74Du1S8CGuivj6Rqb4WaHK+ae8GPsy23z336p2+tHUiviiilru1jDI/tE+sP5obiT11eVS/Vi/Xvqt+QkBsK/g9M7XZwLZqVT4hdz9AwEx3wHBASkAXIPW+CP1ZQK22TUCRwVPAtWk0PkuUUEB0D+C+IX9uQOy0477ew9g+/ykXvmftzD5aaBo/vRexPJGuRb32tdg/E7ndvr/Orz9E0gVARJXmv3PjqTz7AOy/l6AEwDwLAECLyqa+gTN4v7ypAL5jhSjAk76YPwFCQr9Ly589uCTqvno6/r6DufbAchkDPgweR8BeaLa+GXR4vn/WdcCNfCdAElB1PgGHOUDY9DRA/OFfwOm/7T7IDJlA1NhQvuxIfECBvLc/uXoGQPqpLr524dI/wchhP89D0z8g/OS+T4LfPGj8p70Vz5+/qw4FQbkgkMDgD7Y+cs6zwBQR1cCv0v9A0Jdyvgbz/8BWkwe+9ncXwcdALUAup7i/yU/ovkxBxb9tFtm/G6ogQItv8r6YcPS/qJRePdXWVMAy51HA/mYdv8p4pj7gVzO/aP4ovxARtcDncxQ+8l2hwLAw472supW/"
+      ]
+    },
+    "dense_2": {
+      "bias": [
+        "jZdjPw=="
+      ],
+      "weights": [
+        "nI2aQTkRjcFd658+poWfwbK55MESSlNB6kAyvLgkCsGDKzg/7j0hwg=="
+      ]
+    }
+  }
+}

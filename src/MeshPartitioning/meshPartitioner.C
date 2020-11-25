@@ -2,7 +2,9 @@
 
 #include "meshPartitioner.H"
 
+/* disable -- AEG
 #include "cgnsAnalyzer.H"
+*/
 #include "meshBase.H"
 
 #include <vtkCellTypes.h>
@@ -108,6 +110,7 @@ meshPartition::getElmSlnsVec(const std::vector<double> &slns, int nComp) const
 
 
 /* Implementation of partitioner class */
+/* disable -- AEG
 meshPartitioner::meshPartitioner(cgnsAnalyzer *inCg)
 {
   nNde = inCg->getNVertex();
@@ -132,6 +135,7 @@ meshPartitioner::meshPartitioner(cgnsAnalyzer *inCg)
       break;
   }
 }
+*/
 
 
 meshPartitioner::meshPartitioner(const meshBase *inMB)
@@ -378,8 +382,8 @@ std::vector<double> meshPartitioner::getPartedElm() const
 void meshPartitioner::setPartedElm(const std::vector<double> &prtElm)
 {
   int minp, maxp;
-  minp = *std::min_element(prtElm.begin(), prtElm.end());
-  maxp = *std::max_element(prtElm.begin(), prtElm.end());
+  minp = (int)*std::min_element(prtElm.begin(), prtElm.end());
+  maxp = (int)*std::max_element(prtElm.begin(), prtElm.end());
   setNPartition(maxp - minp + 1);
   epart.insert(epart.begin(), prtElm.begin(), prtElm.end());
   buildPartitions();

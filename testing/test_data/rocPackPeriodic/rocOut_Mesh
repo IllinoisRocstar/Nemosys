@@ -1,0 +1,23 @@
+
+set scaling = 2.651304;
+
+#!/usr/bin/env pack -D
+
+set packing_fraction = 0.4;
+
+import "../shapes/icosidodecahedron"
+
+boundary { box 1.0 1.0 1.0 periodic }
+
+
+sphere {
+	translate < 0.17071456,  0.40359575,  0.36691737>
+	rotate <-0.63413966,  0.27897367, -0.72113842>  179.75375366
+	scale 0.37717292 color 0.152900 0.491100 0.784300 tag 0
+}
+
+icosidodecahedron {
+	translate <-0.32754624, -0.11313826, -0.26739365>
+	rotate < 0.12759483, -0.33287156, -0.93429977> -170.57313538
+	scale 0.37717292 color 0.152900 0.491100 0.784300 tag 0
+}

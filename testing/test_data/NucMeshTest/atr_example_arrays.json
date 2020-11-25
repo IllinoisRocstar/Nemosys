@@ -1,18 +1,22 @@
 {
 	"Program Type": "NucMesh Generation",
 	"Output File Name": "atr_example",
-	"Extension": ".g",
-	"Dimension": 2,
 	"Geometry and Mesh": 
 	[
 		{
 			"Global Options":
 			[
 				{
+				"Open GUI": false,
+				"3D": false,
+				"Number of Layers": [4],
+				"Heights": [3],
 				"Min Mesh Size": 0.001,
-				"Max Mesh Size": 0.7,
+				"Max Mesh Size": 0.3,
 				"Meshing Algorithm": "Frontal Quads",
-				"Recombine Algorithm": "Blossom"
+				"Recombine Algorithm": "Blossom",
+				"Mesh Smoothing Iters": 1,
+				"Extend from Boundary": true
 				}
 			]
 		},
@@ -21,6 +25,8 @@
 			[
 				{
 					"Alias": "Circle 1",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
 					"Circles":
 					[
 						{
@@ -35,6 +41,8 @@
 				},
 				{
 					"Alias": "Circle 2",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
 					"Circles":
 					[
 						{
@@ -49,6 +57,8 @@
 				},
 				{
 					"Alias": "Circle 3",
+					"Conserve Area": false,
+					"Tolerance": 1e-10,
 					"Circle":
 					[
 						{
@@ -89,6 +99,7 @@
 			"Start Angle": 0,
 			"Arc": 360,
 			"Rotate with Array": false,
+			"BREAK": false,
 			"Shapes":
 			[	
 				{
@@ -148,5 +159,6 @@
 				}
 			]
 		}
-	]	
+	]
 }
+

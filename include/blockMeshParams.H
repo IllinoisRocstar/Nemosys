@@ -198,6 +198,10 @@ class blockMeshParams : public meshingParams
   **/
   std::vector<double> cylGrading = std::vector<double>(3);  //defines grading
 
+  /** @brief Pair of min and max box locations for autogenerate
+  **/
+  std::pair<std::vector<double>,std::vector<double>> coordsBox;
+
 };
 
 #endif

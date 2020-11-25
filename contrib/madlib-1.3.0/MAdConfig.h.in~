@@ -1,0 +1,119 @@
+/* MAdConfig.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Whether we run the compilation on a 64 bits architecture or not */
+#undef HAVE_64BIT_SIZE_T
+
+/* Whether we use BLAS or not */
+#undef HAVE_BLAS
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Whether we use Lapack or not */
+#undef HAVE_LAPACK
+
+/* Define to 1 if you have the `m' library (-lm). */
+#undef HAVE_LIBM
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <mpi.h> header file. */
+#undef HAVE_MPI_H
+
+/* Whether we use DLLs or not */
+#undef HAVE_NO_DLL
+
+/* Whether we use socklens or not */
+#undef HAVE_NO_SOCKLEN_T
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Whether we compile for parallel utilization or not */
+#undef PARALLEL
+
+/* The size of `size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Version number of package */
+#undef VERSION
+
+/* Whether we use the ANN library or not */
+#undef _HAVE_ANN_
+
+/* Whether we use BLAS or not */
+#undef _HAVE_BLAS_
+
+/* Whether we use GMM or not */
+#undef _HAVE_GMM_
+
+/* Whether we use Gmsh or not */
+#undef _HAVE_GMSH_
+
+/* Whether we use Mathex or not */
+#undef _HAVE_MATHEX_
+
+/* Whether we use Metis or not */
+#undef _HAVE_METIS_
+
+/* Whether we use MPI or not */
+#undef _HAVE_MPI_
+
+/* Whether we use OpenCascade or not */
+#undef _HAVE_OCC_
+
+/* Whether we use ParMetis or not */
+#undef _HAVE_PARMETIS_
+
+/* Whether we use the Cenaero parser or not */
+#undef _HAVE_PARSER_
+
+/* Whether we use PETSc or not */
+#undef _HAVE_PETSC_

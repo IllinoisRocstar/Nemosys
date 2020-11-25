@@ -5,11 +5,14 @@ Build.dat
 *.swp
 *.swo
 lnInclude/
-<<<<<<< HEAD
 *_export.h
-=======
-*.swp
->>>>>>> 0f5433623d3af39960d8d00e74efbd64f6261683
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+install_manifest.txt
+Makefile
+cmake_install.cmake
 
 # Prerequisites
 *.d
@@ -51,5 +54,6 @@ compile_commands.json
 *.ilk
 # Visual Studio directory
 .vs
+CMakeSettings.json
 # Code Analysis
 *.tmp

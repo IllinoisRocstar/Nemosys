@@ -19,9 +19,9 @@
 gridTransfer::gridTransfer(std::string srcFname, std::string trgFname) :
               cgnsAnalyzer(srcFname), 
               srcCgFName(srcFname), trgCgFName(trgFname),
+              isTransferred(false),
               srcModel(NULL), trgModel(NULL),
-              srcMesh(NULL), trgMesh(NULL),
-              isTransferred(false)
+              srcMesh(NULL), trgMesh(NULL)
 {
   // source CGNS file processing
   std::size_t _loc = srcCgFName.find_last_of("_");
@@ -144,14 +144,14 @@ void gridTransfer::gridHist()
   //ma->printStatistics(std::cout);
   
 
-  ofstream myfile;
+  std::ofstream myfile;
   myfile.open("histogram.dat");
   ma->printStatistics(myfile);
   myfile.close();
 
 
-  ifstream hist("histogram.dat");
-  ofstream out("hist.json");
+  std::ifstream hist("histogram.dat");
+  std::ofstream out("hist.json");
   std::string line;
   out << "[";
   while(std::getline(hist,line)){
@@ -222,25 +222,25 @@ void gridTransfer::transfer()
       std::cout << "Transfering nodal " << *is << std::endl;
       for (int iNde=0; iNde<trgCgObjs[0]->getNVertex(); iNde++)
       {
-  std::vector<double> vrtCrds, prms;
-  std::vector<int>  vrtIds;
-  vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
-  //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-  int elmIdx = getBaryCrds("src", vrtCrds, prms, vrtIds);
-  if (elmIdx < 0)
-  {
+        std::vector<double> vrtCrds, prms;
+        std::vector<int>  vrtIds;
+        vrtCrds = trgCgObjs[0]->getVertexCoords(iNde);
+        //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+        int elmIdx = getBaryCrds("src", vrtCrds, prms, vrtIds);
+        if (elmIdx < 0)
+        {
           badPnt++;
-    //std::cout << badPnt << std::endl;
-    std::vector<double> trgVrtData;
+          //std::cout << badPnt << std::endl;
+          std::vector<double> trgVrtData;
           interpNde.clearCache();
-    interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
-    trgSlnVec.push_back(trgVrtData[0]);
-  }
-  else
-    trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
-             prms[1]*srcSlnVec[vrtIds[1]] +
-             prms[2]*srcSlnVec[vrtIds[2]] +
-             prms[3]*srcSlnVec[vrtIds[3]] );
+          interpNde.interpolate(1, vrtCrds, srcSlnVec, trgVrtData);
+          trgSlnVec.push_back(trgVrtData[0]);
+        }
+        else
+          trgSlnVec.push_back( prms[0]*srcSlnVec[vrtIds[0]] +
+                               prms[1]*srcSlnVec[vrtIds[1]] +
+                               prms[2]*srcSlnVec[vrtIds[2]] +
+                               prms[3]*srcSlnVec[vrtIds[3]] );
       }
       inNData = trgCgObjs[0]->getNVertex();
       std::cout << "Finished transfering with " << badPnt << " bad nodes." << std::endl;
@@ -291,7 +291,7 @@ double gridTransfer::calcTransAcc(std::string slnName)
     std::vector<double> trgSlnVec;
     int badPnt=0;
     int outNData, outNDim;
-    int inNData = 0;
+    // int inNData = 0;
     getSolutionDataStitched(*is, origSrcSlnVec, outNData, outNDim);
     st = trgCgObjs[0]->getSolutionDataStitched(*is, trgSlnVec, outNData, outNDim);
     if (st == NODAL)
@@ -300,30 +300,30 @@ double gridTransfer::calcTransAcc(std::string slnName)
       //std::cout << "Checking nodal " << *is << std::endl;
       for (int iNde=0; iNde<getNVertex(); iNde++)
       {
-  std::vector<double> vrtCrds, prms;
-  std::vector<int>  vrtIds;
-  vrtCrds = getVertexCoords(iNde);
-  //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
-  int elmIdx = getBaryCrds("trg", vrtCrds, prms, vrtIds);
-  if (elmIdx < 0)
-  {
+        std::vector<double> vrtCrds, prms;
+        std::vector<int>  vrtIds;
+        vrtCrds = getVertexCoords(iNde);
+        //std::cout << vrtCrds[0] << " " << vrtCrds[1] << " " << vrtCrds[2] << std::endl;
+        int elmIdx = getBaryCrds("trg", vrtCrds, prms, vrtIds);
+        if (elmIdx < 0)
+        {
           badPnt++;
-    std::vector<double> srcVrtData;
+          std::vector<double> srcVrtData;
           interpNde.clearCache();
-    interpNde.interpolate(1, vrtCrds, trgSlnVec, srcVrtData);
+          interpNde.interpolate(1, vrtCrds, trgSlnVec, srcVrtData);
           //std::cout << "Nde: " << iNde
           //          << " orig = " << origSrcSlnVec[iNde]
           //          << " target projected interp = " << srcVrtData[0] 
           //          << " delta = " << fabs(srcVrtData[0] - origSrcSlnVec[iNde])
           //          << std::endl;
-    transAccuracy += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
-    transAccIntp += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+          transAccuracy += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
+          transAccIntp += pow(srcVrtData[0]-origSrcSlnVec[iNde],2);
           slnSum += fabs(origSrcSlnVec[iNde]);
-  } else {
-    double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
-             prms[1]*trgSlnVec[vrtIds[1]] +
-             prms[2]*trgSlnVec[vrtIds[2]] +
-             prms[3]*trgSlnVec[vrtIds[3]] ;
+        } else {
+          double srcVrtData =  prms[0]*trgSlnVec[vrtIds[0]] +
+                               prms[1]*trgSlnVec[vrtIds[1]] +
+                               prms[2]*trgSlnVec[vrtIds[2]] +
+                               prms[3]*trgSlnVec[vrtIds[3]] ;
           //std::cout << "Nde: " << iNde
           //          << " orig = " << origSrcSlnVec[iNde]
           //          << " target projected = " << srcVrtData 
@@ -500,19 +500,19 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
   convertToMsh(gridName);
   // then convert grid to vtk
   std::string fName;
-  MAd::pMesh wrtMesh;
+  // MAd::pMesh wrtMesh;
   GModel* wrtGModel;
   wrtGModel = new GModel("default"); 
 
   if (!strcmp(gridName.c_str(), "src"))
   {
-    wrtMesh = srcMesh;
+    // wrtMesh = srcMesh;
     fName = dist + "source.vtk";
     wrtGModel->readMSH("source.msh");
   } 
   else if (!strcmp(gridName.c_str(), "trg")) 
   {
-    wrtMesh = trgMesh;
+    // wrtMesh = trgMesh;
     fName = dist + "target.vtk";
     wrtGModel->readMSH("target.msh");
   } 
@@ -522,7 +522,7 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
     throw;
   }
   std::cout <<"Writing to vtk format -> " << fName << std::endl;
-  wrtGModel->writeVTK(fName.c_str(), false, true);
+  wrtGModel->writeVTK(fName, false, true);
   
   // writing solution data to the file
   if (withSolution)
@@ -543,13 +543,13 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
       // write all data into vtk file
       for (auto is=slnNameList.begin(); is<slnNameList.end(); is++)
       {
-  std::vector<double> physData;
-  getSolutionDataStitched(*is, physData, outNData, outNDim);
-  solution_type_t dt = getSolutionDataObj(*is)->getDataType();
-  if (dt == NODAL)      
-    wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
-  else if (dt == ELEMENTAL)
-    wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
+        std::vector<double> physData;
+        getSolutionDataStitched(*is, physData, outNData, outNDim);
+        solution_type_t dt = getSolutionDataObj(*is)->getDataType();
+        if (dt == NODAL)
+          wrtVTK->setPointDataArray((*is).c_str(), 1, physData);
+        else if (dt == ELEMENTAL)
+          wrtVTK->setCellDataArray((*is).c_str(), 1, physData);
       }
       wrtVTK->report();
       wrtVTK->write((char *)fName.c_str());
@@ -564,14 +564,13 @@ void gridTransfer::convertToVTK(std::string gridName, bool withSolution, std::st
       // write transfered data to vtk
       for (auto ia=appDataLst.begin(); ia!=appDataLst.end(); ia++)
       {
-  std::vector<double> trgSlnVec;
+        std::vector<double> trgSlnVec;
         int tmp;
-  solution_type_t dt = trgCgObjs[0]->getSolutionDataStitched(*ia, trgSlnVec, tmp, tmp);
-  if (dt == NODAL)
-    wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
-  else if (dt== ELEMENTAL)
-    wrtVTK->setCellDataArray((*ia).c_str(), 1, trgSlnVec);
-  
+        solution_type_t dt = trgCgObjs[0]->getSolutionDataStitched(*ia, trgSlnVec, tmp, tmp);
+        if (dt == NODAL)
+          wrtVTK->setPointDataArray((*ia).c_str(), 1, trgSlnVec);
+        else if (dt== ELEMENTAL)
+          wrtVTK->setCellDataArray((*ia).c_str(), 1, trgSlnVec);
       }
       wrtVTK->report();
       wrtVTK->write((char *)fName.c_str());
@@ -726,7 +725,7 @@ void gridTransfer::convertToJSON(std::string gridName, std::string prefix, bool 
   //outJson["solution"]["pressure"] = fieldValues1;     
   //outJson["solution"]["temperature"] = fieldValues2;
 
-  ofstream of(fName);
+  std::ofstream of(fName);
   of << jsoncons::pretty_print(outJson);
   of.close();
 
@@ -946,7 +945,7 @@ void gridTransfer::stitchMe(cgnsAnalyzer* cgObj, int zoneIdx, int verb)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t > rmtElemConn = cgObj->getElementConnectivity(iElem);
     
     // just adding all elements
     elmDataMask.push_back(true);
@@ -1101,7 +1100,7 @@ void gridTransfer::stitchMe(gridTransfer* cgObj)
   int nNewElem=0;
   for (int iElem=0; iElem<cgObj->getNElement(); iElem++)
   {
-    std::vector<int> rmtElemConn = cgObj->getElementConnectivity(iElem);
+    std::vector<cgsize_t> rmtElemConn = cgObj->getElementConnectivity(iElem);
     
     // just adding all elements
     elmDataMask.push_back(true);
@@ -1144,7 +1143,7 @@ int gridTransfer::getNZone(int indx)
 std::string gridTransfer::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(cgObj->getIndexFile(), 
                cgObj->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -1154,7 +1153,7 @@ std::string gridTransfer::getZoneName(cgnsAnalyzer* cgObj, int zoneIdx)
 std::string gridTransfer::getZoneName(int cgIdx, int zoneIdx)
 {
   char zonename[33];
-  int tmp[9];
+  cgsize_t tmp[9];
   if (cg_zone_read(nowCgObjs[cgIdx]->getIndexFile(), 
                nowCgObjs[cgIdx]->getIndexBase(), 
                zoneIdx, zonename, tmp)) cg_error_exit();
@@ -1228,9 +1227,9 @@ std::vector<double> gridTransfer::getZoneCoords(cgnsAnalyzer* cgObj, int zoneIdx
   return(crds);
 }
 
-std::vector<int> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
+std::vector<cgsize_t> gridTransfer::getZoneRealConn(cgnsAnalyzer* cgObj, int zoneIdx)
 {
-  std::vector<int> conn;
+  std::vector<cgsize_t> conn;
   int secidx = 1;
   char secname[33];
   CGNS_ENUMT(ElementType_t) et;

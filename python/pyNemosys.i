@@ -2,11 +2,15 @@
 %include "std_string.i"
 %include "std_vector.i"
 %include "std_map.i"
+%include "std_shared_ptr.i"
+
 %{
 #include "nemosys_export.h"
 #include "meshBase.H"
 #include "vtkMesh.H"
 #include "TransferDriver.H"
+#include "TransferBase.H"
+#include "FETransfer.H"
 #include "NemDriver.H"
 #include "RefineDriver.H"
 #include "MeshGenDriver.H"
@@ -18,6 +22,10 @@
 #include "meshingParams.H"
 %}
 
+%shared_ptr(TransferBase)
+%shared_ptr(FETransfer)
+%shared_ptr(CreateTransferObject)
+%shared_ptr(CreateShared)
 
 %template(vectorString) std::vector<std::string>;
 %template(doubleV) std::vector<double>;
@@ -26,28 +34,29 @@
 %template(cellMap) std::map<int, std::vector<double>>;
 %template(meshBaseV) std::vector<meshBase *>;
 
-
 %ignore CreateUnique;
-%include "meshBase.H"
 
+%include "meshBase.H"
 
 %include "vtkMesh.H"
 
-
 int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
+%include "TransferBase.H"
+
+%include "FETransfer.H"
 
 %include "NemDriver.H"
 
-%extend NemDriver {
+%extend NEM::DRV::NemDriver {
 
-    static NemDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::NemDriver *py_readJSON(const std::string &serialized_json,
                                   const std::string &ifname, bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return NemDriver::readJSON(inputjson);
+        return NEM::DRV::NemDriver::readJSON(inputjson);
       } else {
-        return NemDriver::readJSON(ifname);
+        return NEM::DRV::NemDriver::readJSON(ifname);
       }
     }
 
@@ -73,19 +82,18 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
     %}
 };
 
-
 %include "TransferDriver.H"
 
-%extend TransferDriver {
+%extend NEM::DRV::TransferDriver {
 
-    static TransferDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::TransferDriver *py_readJSON(const std::string &serialized_json,
                                        const std::string &ifname,
                                        bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return TransferDriver::readJSON(inputjson);
+        return NEM::DRV::TransferDriver::readJSON(inputjson);
       } else {
-        return TransferDriver::readJSON(ifname);
+        return NEM::DRV::TransferDriver::readJSON(ifname);
       }
     }
 
@@ -114,16 +122,16 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
 %include "RefineDriver.H"
 
-%extend RefineDriver {
+%extend NEM::DRV::RefineDriver {
 
-    static RefineDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::RefineDriver *py_readJSON(const std::string &serialized_json,
                                      const std::string &ifname,
                                      bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return RefineDriver::readJSON(inputjson);
+        return NEM::DRV::RefineDriver::readJSON(inputjson);
       } else {
-        return RefineDriver::readJSON(ifname);
+        return NEM::DRV::RefineDriver::readJSON(ifname);
       }
     }
 
@@ -152,14 +160,14 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
 %include "MeshGenDriver.H"
 
-%extend MeshGenDriver {
+%extend NEM::DRV::MeshGenDriver {
 
-    static MeshGenDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::MeshGenDriver *py_readJSON(const std::string &serialized_json,
                                       const std::string &ifname,
                                       bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return MeshGenDriver::readJSON(inputjson);
+        return NEM::DRV::MeshGenDriver::readJSON(inputjson);
       } else {
         return nullptr;
       }
@@ -191,14 +199,14 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
 %include "MeshQualityDriver.H"
 
-%extend MeshQualityDriver {
+%extend NEM::DRV::MeshQualityDriver {
 
-    static MeshQualityDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::MeshQualityDriver *py_readJSON(const std::string &serialized_json,
                                           const std::string &ifname,
                                           bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return MeshQualityDriver::readJSON(inputjson);
+        return NEM::DRV::MeshQualityDriver::readJSON(inputjson);
       } else {
         return nullptr;
       }
@@ -230,16 +238,16 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
 %include "ConversionDriver.H"
 
-%extend ConversionDriver {
+%extend NEM::DRV::ConversionDriver {
 
-    static ConversionDriver *py_readJSON(const std::string &serialized_json,
+    static NEM::DRV::ConversionDriver *py_readJSON(const std::string &serialized_json,
                                          const std::string &ifname,
                                          bool serialized) {
       if (serialized) {
         jsoncons::json inputjson = jsoncons::json::parse(serialized_json);
-        return ConversionDriver::readJSON(inputjson);
+        return NEM::DRV::ConversionDriver::readJSON(inputjson);
       } else {
-        return ConversionDriver::readJSON(ifname);
+        return NEM::DRV::ConversionDriver::readJSON(ifname);
       }
     }
 

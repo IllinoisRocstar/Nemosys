@@ -1,0 +1,143 @@
+{
+	"Program Type": "NucMesh Generation",
+	"Output File Name": "cartesian_array_test",
+	"Geometry and Mesh": 
+	[
+		{
+			"Global Options":
+			[
+				{
+				"OpenGUI": false,
+				"3D": false,
+				"Number of Layers": [4],
+				"Heights": [1],
+				"Min Mesh Size": 0.001,
+				"Max Mesh Size": 0.3,
+				"Meshing Algorithm": "Frontal",
+				"Recombine Algorithm": "Blossom",
+				"Mesh Smoothing": 1,
+				"Extend from Boundary": false
+				}
+			]
+		},
+		{
+			"Saved Objects":
+			[
+				{
+					"Alias": "Obj2",
+					"CirclesInPolys":
+					[
+						{
+						"Center":[-1.4142135, -1.4142135, 0.0],
+						"Circle Radii": [0.02, 0.21, 0.3],
+						"Number of Sides": 4,
+						"Polygon Radii": [0.5],
+						"Mesh Type":    ["T", "S", "S", "S"],
+						"Number of Elems": [[0,0], [2,7], [1,7], [2,7]],
+						"Region Names": ["A", "A", "D", "E"],
+						"Rotation": 0,
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Alias": "Obj3",
+					"CirclesInPolys":
+					[
+						{
+						"Center":[-1.4142135, -1.4142135, 0.0],
+						"Circle Radii": [0.02, 0.21, 0.28, 0.3],
+						"Number of Sides": 4,
+						"Polygon Radii": [0.5],
+						"Mesh Type":    ["T", "S", "S", "S", "S"],
+						"Number of Elems": [[0,0], [2,7], [2,7], [1,7], [2,7]],
+						"Region Names": ["A", "A", "B", "C", "E"],
+						"Rotation": 0,
+						"Visible": true
+						}
+					]
+				},
+				{
+					"Alias": "Square",
+					"Polygon":
+					[
+						{
+						"Center":[-1.4142135, -1.4142135, 0.0],
+						"Radii": [0.02, 0.5],
+						"Number of Sides": 4,
+						"Mesh Type":    ["T", "S"],
+						"Number of Elems": [[0,0], [3,7]],
+						"Region Names": ["E", "E"],
+						"Rotation": 0,
+						"Visible": true
+						}
+					]
+				}
+			]
+		},
+		{
+			"Array": "Cartesian",
+			"NX": 5,
+			"NY": 5,
+			"Center": [0,0,0],
+			"Radius": 0.5,
+			"Pattern": [1,2,2,2,1,
+									2,3,3,3,2,
+									2,3,1,3,2,
+									2,3,3,3,2,
+									3,2,2,2,3],
+			"Shapes":
+			[	
+				{
+					"Polygon":
+					[
+						{
+						"Item": 1,
+						"Alias": "Square",
+						"Visible": true,
+						"BREAK": false
+						}
+					]
+				},
+				{
+					"CirclesInPolys":
+					[
+						{
+						"Item": 2,
+						"Alias": "Obj2",
+						"Visible": true,
+						"BREAK": false
+						}
+					]
+				},
+				{
+					"CirclesInPolys":
+					[
+						{
+						"Item": 3,
+						"Alias": "Obj3",
+						"Visible": true,
+						"BREAK": false
+						}
+					]
+				}
+			]
+		},
+		{
+			"Polygon":
+			[
+				{
+				"Name": "OuterSquare",
+				"Center":[0.0, 0.0, 0.0],
+				"Radii": [2.75, 3.0],
+				"Number of Sides": 4,
+				"Mesh Type":    ["T", "S"],
+				"Number of Elems": [[0,0], [2,35]],
+				"Region Names": ["F", "G"],
+				"Rotation": 0,
+				"Visible": true
+				}
+			]
+		}
+	]
+}

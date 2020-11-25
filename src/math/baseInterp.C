@@ -263,9 +263,9 @@ void basicInterpolant::interpolate(int ni, std::vector<double>& xi,
     point.push_back(xi[iPnt*nDim+1]);
     point.push_back(xi[iPnt*nDim+2]);
     bool in_sphere = false;
-    for (int i = 0; i < spheres.size(); ++i) {
-      if (in_sphere=spheres[i].in_sphere(point))
-        break;
+    for (const auto &sphere : spheres) {
+      in_sphere = sphere.in_sphere(point);
+      if (in_sphere) break;
     }
     if (!in_sphere) {
       bool all_inclusions=true;

@@ -67,7 +67,7 @@ int elmNumNde(elementType et, int order);
 int elmNumSrf(elementType et);
 
 
-class NEMOSYS_EXPORT pntMesh
+class  NEMOSYS_DEPRECATED_EXPORT pntMesh
 {
   public:
     pntMesh();

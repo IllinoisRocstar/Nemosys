@@ -104,12 +104,12 @@ int main(int argc, char* argv[])
   // perparing for elemental quantity interpolation
   std::vector<double> regCntCrdsOld;
   getRegCenters(mesh, regCntCrdsOld);
-  basicInterpolant* intCell = new basicInterpolant(3, M_numRegions(mesh), 1, regCntCrdsOld);
+  /*basicInterpolant* intCell = new */basicInterpolant(3, M_numRegions(mesh), 1, regCntCrdsOld);
 
   // perparing for nodal quantity interpolation
   std::vector<double> vrtxCrdsOld;
   getVertxCoords(mesh, vrtxCrdsOld);
-  basicInterpolant* intNde = new basicInterpolant(3, M_numVertices(mesh), 4, vrtxCrdsOld);
+  /*basicInterpolant* intNde = new */basicInterpolant(3, M_numVertices(mesh), 4, vrtxCrdsOld);
 
   // defining addaptive refinement parameters
   MAd::PWLSField * sizeField = new MAd::PWLSField(mesh);
@@ -420,7 +420,7 @@ int main(int argc, char* argv[])
 void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 {
    MAd::RIter ri = M_regionIter(msh);
-   int rCnt = 0;
+   // int rCnt = 0;
    while (MAd::pRegion pr = RIter_next(ri)) 
    {
      double xc[3];
@@ -444,7 +444,7 @@ void getRegCenters(MAd::pMesh msh, std::vector<double>& regCntCrds)
 void getFaceCenters(MAd::pMesh msh, std::vector<double>& faceCntCrds)
 {
    MAd::FIter fi = M_faceIter(msh);
-   int fCnt = 0;
+   // int fCnt = 0;
    while (MAd::pFace pf = FIter_next(fi)) 
    {
      double xc[3];

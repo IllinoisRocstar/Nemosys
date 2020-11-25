@@ -18,7 +18,7 @@ namespace GEO {
 class NEMOSYS_EXPORT shape {
  public:
   shape() = default;
-  ~shape() = default;
+  virtual ~shape() = default;
 
  public:
   /**
@@ -49,6 +49,8 @@ class NEMOSYS_EXPORT shape {
  protected:
   std::vector<double> _center;        /**< center coordinate of shape */
   std::vector<double> _radii;         /**< radii for concentric shapes */
+  std::vector<double> _circle_radii;  /**< radii for concentric shapes */
+  std::vector<double> _poly_radii;    /**< radii for concentric shapes */
   std::vector<std::string> _meshType; /**< mesh type for each concentric ring */
   std::vector<std::pair<int, int>>
       _elems; /**< number of elements for each concentric ring

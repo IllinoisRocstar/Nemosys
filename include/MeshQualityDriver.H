@@ -7,6 +7,9 @@
 
 #include <string>
 
+namespace NEM {
+namespace DRV {
+
 class NEMOSYS_EXPORT MeshQualityDriver : public NemDriver {
  public:
   MeshQualityDriver() : mesh(nullptr) {}
@@ -18,5 +21,8 @@ class NEMOSYS_EXPORT MeshQualityDriver : public NemDriver {
  private:
   meshBase *mesh;
 };
+
+}  // namespace DRV
+}  // namespace NEM
 
 #endif  // NEMOSYS_MESHQUALITYDRIVER_H_

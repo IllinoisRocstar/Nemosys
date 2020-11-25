@@ -19,7 +19,7 @@
 class NEMOSYS_EXPORT ep16Prep : public inputGen {
   public:
     explicit ep16Prep(const jsoncons::json &inputjson)
-        : _shortForm(false), _mdb(nullptr), inputGen(inputjson) {};
+        : inputGen(inputjson), _shortForm(false), _mdb(nullptr) {};
 
     ~ep16Prep() override;
 

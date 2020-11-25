@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.43.0
+Version 0.52.3
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -34,17 +34,21 @@ in the notes section.
 
 | Option name            | Option description              | Default | Notes                            |
 |------------------------|---------------------------------|---------|----------------------------------|
-| ENABLE_TESTING         | Enable testing                  | ON      |                                  |
-| ENABLE_METIS           | Enable Metis interface          | ON      | Requires METIS                   |
-| ENABLE_NETGEN          | Enable Netgen interface         | ON      | Requires Netgen                  |
-| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
 | ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler            |
-| ENABLE_EXODUS          | Enable EXODUS II extensions     | OFF     | Requires Exodus II               |
-| ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     | Requires ENABLE_EXODUS           |
+| ENABLE_TESTING         | Enable testing                  | ON      |                                  |
+| ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
 | ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
-| ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
-| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM     |
+| ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM                |
+| ENABLE_CGNS            | Enable CGNS extensions          | OFF     | Requires CGNS                    |
+| ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT         |
+| ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI              |
 | ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
+| ENABLE_HDF5            | Enable HDF5 extensions          | OFF     | Requires HDF5                    |
+| ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
+| ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
+| ENABLE_OMEGAH_CUDA     | Enable GPU for Omega_h          | OFF     | Requires Kokkos                  |
+| ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
+| ENABLE_MLAMR           | Enable machine learning based AMR | OFF   | Requires Frugally-deep library   |
 
 ### Enabling cfMesh ###
 **cfMesh** is an open-source meshing engine implemented on top of **OpenFOAM**.
@@ -62,16 +66,37 @@ command:
 -DENABLE_CFMSH=ON
 ```
 
-### Enabling Simmetrix (UNSUPPORTED) ###
-**Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
-(http://www.simmetrix.com/). To enable NEMoSys interface to the Simmetrix,
-compile with `ENABLE_SIMMETRIX=ON` and set the location of the Simmetrix
-libraries (`${PATH_TO_SIMMETRIX_LIBS}`). Ensure the folder structure set
-by Simmetrix Inc. is maintained as it is used to find the headers
-automatically. On the command line, the additional CMake options are:
+### Enabling machine learning based AMR ###
+NEMoSys adaptive mesh refinement module for CFD is now equipped with machine
+learning support. This module allows users to use trained machine learning
+models for adaptive mesh refinement. To enable this capability, the NEMoSys 
+should be compiled with `ENABLE_MLAMR=ON`.
+
+User will also need a header only library 
+[frugally-deep](https://github.com/Dobiasd/frugally-deep), which loads python 
+trained ML models in C++. User will need to provide installation path for this
+library using `-DCMAKE_PREFIX_PATH` flag along with other dependecies of 
+NEMoSys. frugally-deep library also requires Tensorflow 2.1.0 installed.
 ```
--DENABLE_SIMMETRIX=ON -DSIMMETRIX_LIB_DIR=${PATH_TO_SIMMETRIX_LIBS}
+-DENABLE_MLAMR=ON
+-DCMAKE_PREFIX_PATH="\
+${NEMOSYS_DEPS_INSTALL_PATH}/opencascade;\
+${NEMOSYS_DEPS_INSTALL_PATH}/gmsh;\
+${NEMOSYS_DEPS_INSTALL_PATH}/vtk;\
+${NEMOSYS_DEPS_INSTALL_PATH}/netgen; \
+/Install/path/to/frugally-deep" \
 ```
+
+### Enabling CUDA for Omega_h ###
+Omega_h can be built with CUDA support using the Kokkos backend, assuming Kokkos
+is built with CUDA support. Currently, only Kokkos version 2 is supported.
+To enable this, make sure that the following flag is set:
+```
+-DENABLE_OMEGAH_CUDA=ON
+```
+and that `CMAKE_PREFIX_PATH` (or `$PATH`) contains
+`${NEMOSYS_DEPS_INSTALL_PATH}/kokkos/lib/CMake`. Note that both Kokkos and
+NEMoSys must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`).
 
 ## Unix Building Instructions ##
 ### Build Dependencies ###
@@ -91,31 +116,31 @@ You will need to `apt install` at least the following dependencies:
 * libjpeg-dev
 * libcgns-dev
 * libmetis-dev
+* libexodusii-dev
 
 Optional dependencies for additional functionality:
 
-* libexodusii-dev
 * python3.5-dev
 * python3-pip
 * python2.7-dev
 * python-pip
 * swig
 
-Once these dependencies are installed, the easiest way to build the required
-third-party libraries is with the `build.sh` script. Assume
-`$NEMOSYS_PROJECT_PATH` is the path to NEMoSys, and `$NEMOSYS_INSTALL_PATH` is
-the desired installation location. Make sure to use absolute paths and execute
-the following:
+#### Note
+We no longer maintain the build script. The file and the archive of TPLs in `contribs` folder 
+are now deprecated. Instead, we publish the latest tested versions of TPLs used in the 
+project. The list includes following items:
 
-** NOTE: please contact developers for obtaining a copy of `contrib\nemosys_tpls.tar.gz` **
+* Gmsh 4.5.1
+* Netgen v6.2-dev (commit hash a2f434ebbf)
+* OpenCASCADE 7.3.0
+* VTK 8.2.0
+* Boost 1.68.0
+* OpenFoam version 4, 5, 6, or 7
+* Kokkos 2
 
-```
-$ NEMOSYS_PROJECT_PATH=/full/path/to/Nemosys/source
-$ NEMOSYS_DEPS_INSTALL_PATH=/full/path/to/dependency/install
-$ ${NEMOSYS_PROJECT_PATH}/scripts/build.sh \
-      ${NEMOSYS_PROJECT_PATH}/contrib/nemosys_tpls.tar.gz \
-      ${NEMOSYS_DEPS_INSTALL_PATH}
-```
+Some of the TPLs need to be compiled in specific configurations. Directions for
+such TPLs are provided in the **Manually Build Third Party Libraries** section.
 
 ### Build NEMoSys ###
 Now, we can compile the NEMoSys library, create its Python bindings, and build
@@ -134,8 +159,8 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
         -DENABLE_BUILD_UTILS=ON \
         -DENABLE_TESTING=ON \
         -DBUILD_SHARED_LIBS=ON \
-        -DENABLE_EXODUS=ON \
-        -DENABLE_PYTHON_BINDINGS=ON
+        -DENABLE_PYTHON_BINDINGS=ON \
+        -DCMAKE_BUILD_TYPE=Release 
 $ make -j$(nproc) (or however many threads you'd like to use)
 $ make install (sudo if install location requires it)
 ```
@@ -148,22 +173,12 @@ configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
 
 ### Manually Build Third Party Libraries ###
-If execution of `build.sh` fails, or you have already installed some of the
-dependencies, you can try building the remaining TPLs independently. Extract the
-whole archive as such:
-```
-$ cd ${NEMOSYS_PROJECT_PATH}
-$ tar zxf contrib/nemosys_tpls.tar.gz 
-$ cd nemosys_tpls
-```
+Throughout this section, we assume `NEMOSYS_DEPS_INSTALL_PATH` is
+pointing to the location of the installation of the TPLs.
 
 #### Building OpenCASCADE ####
-Unpack OpenCASCADE from the `nemosys_tpls` directory:
-```
-$ tar xzf opencascade-7.3.0.tgz
-$ cd opencascade-7.3.0
-```
-Build and install OpenCASCADE:
+Checkout proper version of OpenCASCADE, build and install the project by 
+running the following commands:
 ```
 $ mkdir build
 $ cd build
@@ -173,53 +188,43 @@ $ cmake .. \
         -DBUILD_MODULE_Draw=OFF \
         -DBUILD_MODULE_Visualization=OFF \
         -DBUILD_MODULE_ApplicationFramework=OFF
+        -DBUILD_LIBRARY_TYPE=STATIC
 $ make -j$(nproc)
 $ make install
 ```
 
 #### Building Gmsh ####
-Gmsh depends on OpenCASCADE.
-Once installed, unpack Gmsh from the `neomsys_tpls` directory:
-```
-$ tar xzf gmsh-gmsh_4_2_3.tar.gz
-$ cd gmsh-gmsh_4_2_3
-```
-Build and install Gmsh by running the following commands:
+Gmsh depends on OpenCASCADE. Checkout proper version of Gmsh, 
+build and install by running the following commands:
 ```
 $ mkdir build
 $ cd build
 $ cmake .. \
         -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/gmsh \
         -DCMAKE_PREFIX_PATH=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
-        -DENABLE_BUILD_LIB=ON -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
-        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=OFF
+        -DENABLE_BUILD_LIB=OFF -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
+        -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \
+        -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON \
+        -DENABLE_OPENMP=ON
 $ make lib shared -j$(nproc)
 $ make install -j$(nproc)
 ```
 
 #### Building VTK ####
-Unpack VTK from the `neomsys_tpls` directory:
-```
-$ tar xzf vtk-7.1.0.tar.gz
-$ cd vtk-7.1.0
-```
 Build and install VTK by running the following commands:
 ```
 $ mkdir build
 $ cd build
 $ cmake .. \
-        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/vtk
+        -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/vtk \
+        -DVTK_USE_SYSTEM_HDF5=ON \
+        -DVTK_USE_SYSTEM_NETCDF=ON
 $ make -j$(nproc)
 $ make install
 ```
 
 #### Building Netgen ####
-Unpack Netgen from the `nemosys_tpls` directory:
-```
-$ tar xzf netgen-meshter-git.tar.gz
-$ cd netgen-mesher-git
-```
-Build and install Netgen:
+Build and install Netgen by running the following commands:
 ```
 $ mkdir build && cd build
 $ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
@@ -228,8 +233,24 @@ $ make -j$(nproc)
 $ make install
 ```
 
-See the building NEMoSys section to proceed from this point and to complete the
-build.
+#### Building Kokkos ####
+Build and install Kokkos version 2 with CUDA backend using the following:
+```
+$ cd build
+$ cmake ${KOKKOS_SRC} \
+$       -DCMAKE_CXX_COMPILER=${KOKKOS_SRC}/bin/nvcc_wrapper \
+$       -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/kokkos \
+$       -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+$       -DCKOKKOS_ARCH=${CUDA_ARCH_CC} \
+$       -DKOKKOS_ENABLE_CUDA=ON \
+$       -DKOKKOS_ENABLE_CUDA_LAMBDA=ON \
+$       -DBUILD_SHARED_LIBS=ON
+$ make install
+```
+where `${KOKKOS_SRC}` is the source directory and `${CUDA_ARCH_CC}` refers to
+the architecture and compute capability of your GPU, from the list
+`Kepler30 Kepler32 Kepler35 Kepler37 Maxwell50 Maxwell52 Maxwell53 Pascal60
+Pascal61 Volta70 Volta72`.
 
 ## Windows Build Instructions ##
 The dependencies are similar to a UNIX build of NEMoSys with the addition of 
@@ -242,7 +263,7 @@ matching the bitness (32 or 64) and the MSVC compiler version
 
 **boost**: https://sourceforge.net/projects/boost/files/boost-binaries/
 
-**netCDF** (only if Exodus/Epic support is enabled): https://www.unidata.ucar.edu/downloads/netcdf/index.jsp
+**netCDF**: https://www.unidata.ucar.edu/downloads/netcdf/index.jsp
 
 **SWIG** (only if Python bindings are enabled): http://swig.org/download.html
 
@@ -318,3 +339,66 @@ WINDOWS:
 ```
 
 This will execute several tests found in `$NEMOSYS_PROJECT_PATH/testing`.
+
+## Repository Installation ##
+
+*Note* : This is for internal IR user only.
+You can install experimental built of the latest NEMoSys for Ubuntu 18 and CentOS7 using following directions.
+
+### Ubunte 18.04 LTS ###
+
+1- Install following packages/dependencies
+
+```
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common wget
+```
+2- Add repository
+```
+curl -fsSL http://nemosys-repository.illinois.rocstar/nemosys-repository-pub.gpg | sudo apt-key add -
+sudo add-apt-repository "deb http://nemosys-repository.illinois.rocstar/ bionic main"
+```
+3- Install OpenFoam
+```
+sudo sh -c "wget -O - https://dl.openfoam.org/gpg.key | apt-key add -"
+sudo add-apt-repository http://dl.openfoam.org/ubuntu
+```
+4- Install Nemosys
+```
+sudo apt-get install nemosys
+```
+5- Test installation
+```
+source /opt/openfoam7/etc/bachrc
+nemosysRun
+```
+you should see:
+```
+Usage: nemosysRun input.json
+```
+
+### CentOS 7 ###
+
+1- Add NEMoSys Repository
+```
+echo "[NEMoSys]
+name=NEMoSys
+baseurl=http://nemosys-rpm-repository.illinois.rocstar
+enabled=1
+gpgcheck=0
+" >> /etc/yum.repos.d/nemosys.repo
+```
+
+2- Install Nemosys
+```
+sudo yum install nemosys
+```
+3- Test installation
+```
+source /opt/openfoam7/etc/bachrc
+nemosysRun
+```
+you should see:
+```
+Usage: nemosysRun input.json
+```

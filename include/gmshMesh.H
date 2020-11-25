@@ -57,9 +57,10 @@ class NEMOSYS_EXPORT gmshMesh : public meshBase {
     // intended to be used only for reading gmsh mesh files
     void read(const std::string &fname);    
     // write the mesh to file named fname
+    using meshBase::write;
     void write(const std::string &fname) const override;
-    void
-    write(const std::string &fname, double mshFileVersion, bool binary) const;
+    void write(const std::string &fname, double mshFileVersion,
+               bool binary) const;
 
   //   --- Gmsh data types
   private:

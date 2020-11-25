@@ -1,0 +1,88 @@
+[
+  {
+    "Reference File": "nothing",
+    "Program Type": "Mesh Generation",
+    "Mesh Generation Engine": "gmsh",
+    "Mesh File Options": {
+      "Input Geometry File": "./Box_Colors_Names_test.STEP",
+      "Output Mesh File": "./box_test.vtu"
+    },
+    "Meshing Parameters": {
+      "Gmsh Parameters": {
+        "minSize": 0.1,
+        "maxSize": 10.0,
+        "surfaceAlgorithm": "Delaunay",
+        "volumeAlgorithm": "Delaunay",
+        "extendSizeFromBoundary": true,
+        "sizeFromCurvature": false,
+        "minElementsPer2Pi": 6,
+        "optimize": false,
+        "optimizeThreshold": 0.3,
+        "BackgroundField": 1,
+        "SizeFields":
+        [
+          {
+            "Type": "Ball",
+            "ID": 1,
+            "Params":
+            {
+              "Radius": 12.0,
+              "Thickness": 12.0,
+              "VIn": 1.5,
+              "VOut": 10.0,
+              "XCenter": 0.0,
+              "YCenter": 0.0,
+              "ZCenter": 0.0
+            }
+          },
+          {
+            "Type": "Cylinder",
+            "ID": 2,
+            "Params":
+            {
+              "Radius": 12.0,
+              "VIn": 0.8,
+              "VOut": 5.0,
+              "XCenter": 15.0,
+              "YCenter": 0.0,
+              "ZCenter": 15.0,
+              "XAxis": 16,
+              "YAxis": 0,
+              "ZAxis": 0
+            }
+          },
+          {
+            "Type": "Distance",
+            "ID": 3,
+            "Params":
+            {
+              "EdgesList": [1,9],
+              "FacesList": [3],
+              "NNodesByEdge": 40
+            }
+          },
+          {
+            "Type": "Threshold",
+            "ID": 4,
+            "Params":
+            {
+              "DistMin": 2.0,
+              "DistMax": 10.0,
+              "LcMin": 0.5,
+              "LcMax": 7.0,
+              "IField": 3
+            }
+          },
+          {
+            "Type": "Min",
+            "ID": 5,
+            "Params":
+            {
+              "FieldsList": [1,2,4]
+            }
+          }          
+        ]
+      }
+    }
+  }
+]

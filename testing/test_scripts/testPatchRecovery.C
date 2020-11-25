@@ -1,6 +1,8 @@
-#include <patchRecovery.H>
 #include <gtest.h>
 #include <chrono>
+
+#include "patchRecovery.H"
+#include "meshBase.H"
 
 const char* nodeMesh;
 const char* recoveredMesh;
@@ -13,7 +15,7 @@ TEST(PatchRecoveryConstructor, ConstructWithArray)
   const std::vector<int> arrayIDs = {0,1,2,3,4,5,7};
   int order = 1;
   std::unique_ptr<PatchRecovery> recoverObj
-    = std::unique_ptr<PatchRecovery> (new PatchRecovery(mesh.get(),order,arrayIDs));
+    = std::unique_ptr<PatchRecovery> (new PatchRecovery(mesh->getDataSet(),order,arrayIDs));
   recoverObj->computeNodalError();
   mesh->write("errorTest.vtu");
 }

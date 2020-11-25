@@ -26,7 +26,7 @@ class RBFInterpolant {
 // public members
 public:
    RBFInterpolant(int dim, int nPnt, rbf_interp_t type, double r0):
-   dim(dim), nPnt(nPnt), type(type), wCalced(false), r0(r0)
+   dim(dim), nPnt(nPnt), type(type), r0(r0), wCalced(false)
    {};
    ~RBFInterpolant()
     {

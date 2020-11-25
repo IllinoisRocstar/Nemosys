@@ -1,44 +1,36 @@
 #include "Refine.H"
-#include "AuxiliaryFunctions.H"
 
-#include <vtkPointData.h>
 #include <vtkCellData.h>
+#include <vtkPointData.h>
 
-Refine::Refine(meshBase *_mesh, const std::string &method,
-               int arrayID, double dev_mult, bool maxIsmin, double edge_scale,
-               const std::string &_ofname, double sizeFactor)
-{
-  mesh = _mesh;
-  ofname = _ofname;
-  if (!mesh->getSFBool() && method != "uniform")
-  {
-    // creates sizeField and switches SFbool
-    mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin, sizeFactor);
-  }
-  if (method == "uniform")
-  {
-    initUniform(edge_scale);
-  }
-  if (mesh->getSFBool())
-  {
+#include "AuxiliaryFunctions.H"
+#include "TransferDriver.H"
+#include "gmshMesh.H"
+
+namespace NEM {
+namespace ADP {
+
+Refine::Refine(meshBase *_mesh, const std::string &method, int arrayID,
+               double dev_mult, bool maxIsmin, double edge_scale,
+               const std::string &_ofname, double sizeFactor, int order)
+    : mesh(_mesh), ofname(_ofname), bndrConst(false) {
+  if (method != "uniform") {
+    // creates sizeField
+    mesh->generateSizeField(method, arrayID, dev_mult, maxIsmin, sizeFactor,
+                            order);
     initAdaptive(arrayID, method);
-  }
-  else if (method != "uniform")
-  {
-    std::cerr << "Unable to generate size field for refinement" << std::endl;
-    exit(1);
+  } else if (method == "uniform") {
+    initUniform(edge_scale);
   }
 }
 
-Refine::~Refine()
-{
+Refine::~Refine() {
   // destructor for adapter also destroys size field
-  if (adapter)
-  {
+  if (adapter) {
     delete adapter;
     adapter = nullptr;
   }
-/*
+  /*
   if (bSF)
   {
     delete bSF;
@@ -51,23 +43,23 @@ Refine::~Refine()
     pwlSF = nullptr;
     std::cout << "here2" << std::endl;
   }
-*/
-  if (MadMesh)
-  {
+  */
+  if (MadMesh) {
     MAd::M_delete(MadMesh);
     MadMesh = nullptr;
   }
-  remove("converted.msh");
-  remove("backgroundSF.msh");
-  remove("refined.msh");
+
   std::cout << "Refine destroyed" << std::endl;
 }
 
-void Refine::initUniform(double edge_scale)
-{
+void Refine::initUniform(double edge_scale) {
   std::cout << "Uniform Refinement Selected" << std::endl;
-  mesh->writeMSH("converted.msh");
+
+  auto *gMesh = new gmshMesh(mesh);
+  gMesh->write("converted.msh", 2.0, false);
+
   MAd::pGModel gmodel = nullptr;
+
   MadMesh = MAd::M_new(gmodel);
   MAd::M_load(MadMesh, "converted.msh");
   classifyBoundaries();
@@ -81,23 +73,25 @@ void Refine::initUniform(double edge_scale)
   T.start();
   // instantiating adapter with linear sf
   adapter = new MAd::MeshAdapter(MadMesh, pwlSF);
+
+  // TJW
+  // option to constrain boundary edges when refining
+  if (bndrConst) adapter->setConstraint(bnd);
+
   T.stop();
   std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
   std::cout << "Refine constructed" << std::endl;
-  // for safety
-  mesh->setSFBool(false);
 }
 
-
-void Refine::initAdaptive(int arrayID, const std::string &method)
-{
+void Refine::initAdaptive(int arrayID, const std::string &method) {
   pwlSF = nullptr;
-  mesh->writeMSH("converted.msh");
+  auto *gMesh = new gmshMesh(mesh);
+  gMesh->write("converted.msh", 2.0, false);
+
   vtkCellData *cd = mesh->getDataSet()->GetCellData();
   int i = 0;
   std::string array_name;
-  if (cd)
-  {
+  if (cd) {
     array_name = mesh->getDataSet()->GetPointData()->GetArrayName(arrayID);
     if (method == "gradient")
       array_name.append("GradientSF");
@@ -105,20 +99,17 @@ void Refine::initAdaptive(int arrayID, const std::string &method)
       array_name.append("ValueSF");
     else if (method == "Z2 Error Estimator")
       array_name.append("Z2ErrorSF");
-    for (i = 0; i < cd->GetNumberOfArrays(); ++i)
-    {
-      if (array_name == cd->GetArrayName(i))
-        break;
+    for (i = 0; i < cd->GetNumberOfArrays(); ++i) {
+      if (array_name == cd->GetArrayName(i)) break;
     }
-    if (i == cd->GetNumberOfArrays())
-    {
+    if (i == cd->GetNumberOfArrays()) {
       std::cerr << "Error: Did not find " << array_name << " in cell data set"
                 << std::endl;
       exit(1);
     }
   }
   mesh->writeMSH("backgroundSF.msh", "cell", i, true);
-  mesh->unsetCellDataArray(array_name.c_str());
+  mesh->unsetCellDataArray(array_name);
 
   MAd::pGModel gmodel = nullptr;
   MadMesh = MAd::M_new(gmodel);
@@ -135,19 +126,19 @@ void Refine::initAdaptive(int arrayID, const std::string &method)
   // instantiating adapter with background sizeField
   adapter = new MAd::MeshAdapter(MadMesh, bSF);
   T.stop();
-  std::cout << "Time for adapter construction (ms): " << T.elapsed()
-            << "\n \n";
+  std::cout << "Time for adapter construction (ms): " << T.elapsed() << "\n \n";
   std::cout << "Refine constructed" << std::endl;
 }
 
-
-void Refine::run(bool transferData)
-{
-  if (!adapter)
-  {
+void Refine::run(bool transferData, bool bndryConstraint) {
+  if (!adapter) {
     std::cerr << "Adapter hasn't been constructed!" << std::endl;
     exit(1);
   }
+  // set boundary constraint flag
+  bndrConst = bndryConstraint;
+  // option to constrain boundary edges when refining
+  if (bndrConst) adapter->setConstraint(bnd);
   // Output situation before refinement
   std::cout << "Statistics before refinement: " << std::endl;
   adapter->printStatistics(std::cout);
@@ -161,8 +152,9 @@ void Refine::run(bool transferData)
   // running Laplacian smoothing
   std::cout << "Optimizing the mesh" << std::endl;
 
-  for (int i = 0; i < 1; ++i)
-  {
+  adapter->checkTheMesh(10);
+
+  for (int i = 0; i < 1; ++i) {
     adapter->LaplaceSmoothing();
     adapter->splitLongestEdges();
     adapter->removeSlivers();
@@ -181,13 +173,18 @@ void Refine::run(bool transferData)
   adapter->printStatistics(std::cout);
   // unclassifying boundary elements for proper output
   unClassifyBoundaries();
-  // writing refined mesh to file in msh format 
+  // writing refined mesh to file in msh format
   MAd::M_writeMsh(MadMesh, "refined.msh", 2);
-
   meshBase *refinedVTK = meshBase::exportGmshToVtk("refined.msh");
-  //mesh->setCheckQuality(1);
-  if (transferData)
-    mesh->transfer(refinedVTK, "Consistent Interpolation");
+
+  // mesh->setCheckQuality(1);
+
+  if (transferData) {
+    // mesh->transfer(refinedVTK, "Consistent Interpolation");
+    auto transfer = NEM::DRV::TransferDriver::CreateTransferObject(
+        mesh, refinedVTK, "Consistent Interpolation");
+    transfer->run(mesh->getNewArrayNames());
+  }
 
   refinedVTK->setFileName(ofname);
   refinedVTK->report();
@@ -196,19 +193,18 @@ void Refine::run(bool transferData)
   delete refinedVTK;
 }
 
-
-void Refine::classifyBoundaries()
-{
-  // finding and classifying boundary elements as 2d 
+void Refine::classifyBoundaries() {
+  // finding and classifying boundary elements as 2d
   MadMesh->classify_unclassified_entities();
   MadMesh->destroyStandAloneEntities();
-  auto bnd = (MAd::pGEntity) MAd::GM_faceByTag(MadMesh->model, 0);
+  bnd = (MAd::pGEntity)MAd::GM_faceByTag(MadMesh->model, 0);
   MadMesh->classify_grid_boundaries(bnd);
 }
 
-
-void Refine::unClassifyBoundaries()
-{
+void Refine::unClassifyBoundaries() {
   // unclassifying boundary elements for proper output
   MadMesh->unclassify_grid_boundaries();
 }
+
+}  // namespace ADP
+}  // namespace NEM

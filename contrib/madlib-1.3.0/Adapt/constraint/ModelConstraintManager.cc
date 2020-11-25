@@ -11,6 +11,7 @@
 // -------------------------------------------------------------------
 
 #include "ModelConstraintManager.h"
+#include <iostream>
 
 namespace MAd {
 
@@ -52,7 +53,9 @@ namespace MAd {
   
 #ifdef _HAVE_GMSH_
     // constrain lower geometrical levels
+    std::cout << "a" << std::endl;
     std::vector<pGEntity> subGE = GEN_closure(pGE);
+    std::cout << "b" << std::endl;
     std::vector<pGEntity>::const_iterator subIter = subGE.begin();
     for (; subIter != subGE.end(); subIter++) constrain(*subIter);
 #endif
