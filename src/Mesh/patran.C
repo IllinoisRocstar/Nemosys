@@ -11,6 +11,10 @@
 #include <vtkPoints.h>
 #include <vtkUnstructuredGrid.h>
 
+#include "AuxiliaryFunctions.H"
+
+using nemAux::operator-;
+
 //////////////////////////////////
 // patran class 
 //////////////////////////////////
@@ -205,9 +209,6 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
   // maximum number of faces per cell (to be found in proceeding loop)
   int nFacesPerCellMax = 0;
 
-  std::map<std::vector<nemId_t>,
-           std::pair<nemId_t, nemId_t>,
-           sortNemId_tVec_compare> faceMap;
   for (nemId_t i = 0; i < volMeshBase->getNumberOfCells(); ++i)
   {
     // get cell i 
@@ -218,6 +219,12 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
     nFacesPerCellMax = (nFacesPerCellMax < numFaces
                         ? numFaces
                         : nFacesPerCellMax);
+    auto surfPatchNoArr =
+        surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo");
+    if (!surfPatchNoArr) {
+      surfPatchNoArr =
+          surfMeshBase->getDataSet()->GetCellData()->GetArray("PhysGrpId");
+    }
     for (int j = 0; j < numFaces; ++j)
     {
       vtkCell *faceObj = genCell1->GetFace(j);
@@ -235,55 +242,48 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
       {
         facePntIds[k] = faceObj->GetPointId(k) + 1;
       }
-      if (sharedCellPtIds->GetNumberOfIds())
+      if (sharedCellPtIds->GetNumberOfIds() == 0)
       {
-        faceMap.insert(
-            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
-                facePntIds,
-                std::make_pair(
-                    i + 1,
-                    sharedCellPtIds->GetId(0) + 1
-                )
-            )
-        );
-      }
-      else
-      {
-        double p1[3], p2[3], p3[3];
-        faceObj->GetPoints()->GetPoint(0, p1);
-        faceObj->GetPoints()->GetPoint(1, p2);
-        faceObj->GetPoints()->GetPoint(2, p3);
-        double faceCenter[3];
-        for (nemId_t k = 0; k < numVerts; ++k)
-        {
-          faceCenter[k] = (p1[k] + p2[k] + p3[k]) / 3.0;
-        }
+        double bounds[6];
+        faceObj->GetBounds(bounds);
+        auto cellIds = vtkSmartPointer<vtkIdList>::New();
+        surfCellLocator->FindCellsWithinBounds(bounds, cellIds);
         vtkIdType closestCellId;
-        int subId;
-        double minDist2;
-        double closestPoint[3];
-        // find closest point and closest cell to faceCenter
-        surfCellLocator->FindClosestPoint(
-            faceCenter, closestPoint, genCell2, closestCellId, subId, minDist2);
-        double patchNo[1];
-        surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo")
-            ->GetTuple(closestCellId, patchNo);
-        faceMap.insert(
-            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
-                facePntIds,
-                std::make_pair(
-                    i + 1,
-                    -1 * patchNo[0]
-                )
-            )
-        );
+        if (cellIds->GetNumberOfIds() == 0) {
+          std::cerr << "No surface cell found." << std::endl;
+          continue;
+        } else {
+          closestCellId = cellIds->GetId(0);
+          if (cellIds->GetNumberOfIds() > 1) {
+            double p1[3], p2[3], p3[3];
+            faceObj->GetPoints()->GetPoint(0, p1);
+            faceObj->GetPoints()->GetPoint(1, p2);
+            faceObj->GetPoints()->GetPoint(2, p3);
+            std::vector<double> faceCenter(3);
+            for (vtkIdType k = 0; k < numVerts; ++k) {
+              faceCenter[k] = (p1[k] + p2[k] + p3[k]) / 3.0;
+            }
+            double minDist = nemAux::l2_Norm(
+                faceCenter - surfMeshBase->getCellCenter(cellIds->GetId(0)));
+            for (vtkIdType k = 1; k < cellIds->GetNumberOfIds(); ++k) {
+              auto candidateCellCenter =
+                  surfMeshBase->getCellCenter(cellIds->GetId(k));
+              auto dist = nemAux::l2_Norm(faceCenter - candidateCellCenter);
+              if (dist < minDist) {
+                minDist = dist;
+                closestCellId = cellIds->GetId(k);
+              }
+            }
+          }
+        }
+        double patchNo = surfPatchNoArr->GetComponent(closestCellId, 0);
 
         // Assign patch numbers to all nodes in the face
         for (vtkIdType iFaceNode = 0;
              iFaceNode < facePtIds->GetNumberOfIds(); iFaceNode++)
         {
           boundaryNodeId2PatchNo[facePtIds->GetId(iFaceNode)].push_back(
-              static_cast<int>(patchNo[0]));
+              static_cast<int>(patchNo));
         }
 
         // Write header card
@@ -322,7 +322,7 @@ void PATRAN::patran::write6(std::ofstream &outputStream)
         // Write data card 2
         // card number
         char buffer[17];
-        snprintf(buffer, 17, "%16.9E", (double) faceTypeMap[static_cast<int>(patchNo[0])]);
+        snprintf(buffer, 17, "%16.9E", (double) faceTypeMap[static_cast<int>(patchNo)]);
         outputStream << buffer;
 
         outputStream << std::endl;
@@ -422,7 +422,7 @@ void PATRAN::patran::write8(std::ofstream &outputStream)
     }
 
     outputStream << std::setw(6) << std::right
-                 << structuralFlag << thermalFlag << meshMotionFlag << "000";
+                 << structuralFlag + thermalFlag + meshMotionFlag + "000";
     outputStream << std::endl;
 
     // Write data card 2

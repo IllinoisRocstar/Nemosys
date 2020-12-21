@@ -45,7 +45,8 @@ compile_commands.json
 
 # Executables
 *.exe
-*.out
+# Keep Patran files, ignore executables
+a.out
 *.app
 
 ### Win32 build stuff

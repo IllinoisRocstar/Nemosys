@@ -1,0 +1,45 @@
+[
+  {
+    "Program Type": "Conversion",
+    "Mesh File Options": {
+      "Input Mesh Files": {
+        "Source Mesh": "fullsolid.vtu",
+        "Target Mesh": "fullsolid.out"
+      },
+      "Output Mesh File": ""
+    },
+    "Conversion Options": {
+      "Method": "VTK->PATRAN",
+      "BC Info": [
+        {"Patch Number": 2,
+          "BC Type": "Face",
+          "Rocfrac FSI Type": 1},
+        {"Patch Number": 3,
+          "BC Type": "Face",
+          "Rocfrac FSI Type": 2},
+        {"Patch Number": 12,
+          "BC Type": "Face",
+          "Rocfrac FSI Type": 0},
+        {"Patch Number": 2,
+          "BC Type": "Node",
+          "Structural": true,
+          "Mesh Motion": true,
+          "Thermal": false,
+          "RocfracControl Type": 1},
+        {"Patch Number": 3,
+          "BC Type": "Node",
+          "Structural": true,
+          "Mesh Motion": true,
+          "Thermal": false,
+          "RocfracControl Type": 2},
+        {"Patch Number": 12,
+          "BC Type": "Node",
+          "Structural": true,
+          "Mesh Motion": true,
+          "Thermal": false,
+          "RocfracControl Type": 3}
+      ],
+      "Node Patch Preference": [12, 2, 3]
+    }
+  }
+]
