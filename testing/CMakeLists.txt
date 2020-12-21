@@ -112,6 +112,8 @@ endmacro()
 
 NEM_add_test_executable(Cubature)
 NEM_add_test_executable(Conversion)
+NEM_add_test_executable(CobaltGen)
+NEM_add_test_executable(PatranGen)
 NEM_add_test_executable(OrthoPoly)
 NEM_add_test_executable(PatchRecovery)
 NEM_add_test_executable(Transfer)
@@ -204,6 +206,18 @@ NEM_add_test(conversion Conversion ConversionTest
     geom_pack_mesh_ref.vtu
     Building.vtu
     TetBuilding.vtu
+    )
+
+NEM_add_test(cobaltGen CobaltGen CobaltGenTest
+    vtk2cobalt.json
+    fullfluid.cgr
+    fullfluid_ref.cgr
+    )
+
+NEM_add_test(patranGen PatranGen PatranGenTest
+    vtk2patran.json
+    fullsolid.out
+    fullsolid_ref.out
     )
 
 NEM_add_test(orthoPoly OrthoPoly OrthoPolyTest F.txt)
