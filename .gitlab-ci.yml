@@ -34,6 +34,9 @@ test:ubuntu18:
     - ctest --output-on-failure
     - cpack -G DEB
   artifacts:
+    when: always
+    reports:
+      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
     paths:
       - "/builds/Nemosys/Nemosys/build/*.deb"
 
@@ -120,7 +123,11 @@ test:win10:
     - ctest --output-on-failure
     - cpack -G WIX
     - Copy-Item "*.msi" -Destination "$NEM_DIR"
+    - Copy-Item "testing\junit\*.xml" -Destination "$NEM_DIR"
   artifacts:
+    when: always
+    reports:
+      junit: "*.xml"
     paths:
       - "*.msi"
 
@@ -158,5 +165,8 @@ test:centos7:
     - cpack3 -G RPM
     - ls /builds/Nemosys/Nemosys/build/
   artifacts:
+    when: always
+    reports:
+      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
     paths:
       - "/builds/Nemosys/Nemosys/build/*.rpm"
