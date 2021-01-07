@@ -3,8 +3,10 @@
 
 #include "meshingParams.H"
 
+#include <map>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace NEM {
@@ -27,6 +29,27 @@ struct volSizeField {
   /**< Vector of pairs to store list of strings */
   std::vector<std::pair<std::string, std::vector<std::string>>>
       strg_list_params;
+};
+
+/**
+ @brief A struct for defining hexahedral transfinite volumes.
+ */
+struct TransfiniteBlock {
+  // specified gmsh id (tag) of volume to be treated as transfinite
+  size_t id;
+
+  // 3 direction vectors specifying axis of block (hexahedron)
+  double axis[3][3];
+
+  // number of vertices in each axial direction
+  int vert[3];
+
+  // each axis has either "Progression" or "Bump" type
+  // default is "Progression" with coef 1
+  std::string type[3] = { "Progression", "Progression", "Progression" };
+
+  // value used in "Progression" or "Bump" along given axis
+  double coef[3] = { 1.0, 1.0, 1.0 };
 };
 
 /**
@@ -88,9 +111,37 @@ class gmshParams : public meshingParams {
    **/
   bool mSizeField;
 
+  /** @brief Mesh color map bool
+   **/
+  bool mColorMap;
+
+  /** @brief Mesh transfinite volume bool
+   **/
+  bool mTransfiniteVolumes;
+
   /** @brief Size field ID to use as background field
    **/
   int bgField;
+
+  /**
+   * @brief Element order
+   */
+  int elementOrder;
+
+  /**
+   * @brief Subdivision algorithm 0: none, 1: all quads, 2: all hexas
+   */
+  int subdivisionAlg;
+
+  /**
+   * @brief Save all elements
+   */
+  bool saveAll;
+
+  /**
+   * @brief Whether to call boolean fragments on all volumes
+   */
+  bool fragmentAll;
 
   /** @brief Vector for volSizeField struct
    **/
@@ -99,6 +150,14 @@ class gmshParams : public meshingParams {
   /** @brief Vector of supported gmsh mesh file extensions
    **/
   std::set<std::string> meshExtensions;
+
+  /** @brief Map from RGB float tuple (cast to string) to physical name
+   **/
+  std::map<std::string, std::string> color2groupMap;
+
+  /** @brief Map from volume id to transfinite hexahedron information.
+   **/
+  std::map<size_t, TransfiniteBlock> transfiniteBlocks;
 };
 
 }  // namespace GEN

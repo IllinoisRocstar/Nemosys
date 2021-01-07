@@ -196,15 +196,11 @@ class NEMOSYS_DEPRECATED_EXPORT meshBase {
   **/
   static meshBase *exportExoToVtk(const std::string &fname);
 
-  /** @brief generate volume mesh from stl
-      @param fname name of mesh file
-      @param meshEngine <>
-      @param params <>
-      @return <>
-  **/
+  /*
   static meshBase *generateMesh(const std::string &fname,
                                 const std::string &meshEngine,
                                 meshingParams *params);
+  */
 
   /** @brief stitch together several meshBases
       @param mbObjs a vector of meshBase objects to stich together

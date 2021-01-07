@@ -20,13 +20,6 @@ class NEMOSYS_EXPORT meshGen {
     virtual ~meshGen()
     { std::cout << "Base mesh generator destroyed" << std::endl; }
 
-    // creates generator with default parameters
-    static meshGen *Create(const std::string &fname,
-                           const std::string &meshEngine);
-    // creates generater with specified parameters
-    static meshGen *Create(const std::string &fname,
-                           const std::string &meshEngine,
-                           meshingParams *params);
     virtual int createMeshFromSTL(const char *fname) = 0;
     vtkSmartPointer<vtkDataSet> getDataSet() const { return dataSet; }
 

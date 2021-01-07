@@ -161,58 +161,6 @@ std::unique_ptr<meshBase> meshBase::CreateUnique(const std::string &fname) {
 
 /** Caller must delete object after use.
  **/
-meshBase *meshBase::generateMesh(const std::string &fname,
-                                 const std::string &meshEngine,
-                                 meshingParams *params) {
-  // TODO: this method should change to incorporate STEP files
-  // if ((fname.find(".stl") == -1) && (fname.find(".fms") == -1)) {
-  //   std::cerr << "Only CAD files in STL or FMS format are supported"
-  //             << std::endl;
-  //   exit(1);
-  // }
-
-  meshGen *generator = meshGen::Create(fname, meshEngine, params);
-  if (generator) {
-    int status = generator->createMeshFromSTL(&fname[0u]);
-    meshBase *ret = nullptr;
-    if (!status) {
-      if (meshEngine == "netgen") {
-        std::string newname = nemAux::trim_fname(fname, ".vol");
-        ret = exportVolToVtk(newname);
-      } else if (meshEngine == "gmsh") {
-        std::string newname = nemAux::trim_fname(fname, ".msh");
-        ret = exportGmshToVtk(newname);
-      } else if (meshEngine == "simmetrix") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      } else if (meshEngine == "cfmesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      } else if (meshEngine == "snappyHexMesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      } else if (meshEngine == "blockMesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      }
-    }
-    delete generator;
-
-    if (ret) {
-      return ret;
-    } else {
-      std::cerr << "Mesh Engine " << meshEngine << " not recognized"
-                << std::endl;
-      exit(1);
-    }
-  } else {
-    std::cerr << "Could not create mesh generator" << std::endl;
-    exit(1);
-  }
-}
-
-/** Caller must delete object after use.
- **/
 meshBase *meshBase::stitchMB(const std::vector<meshBase *> &mbObjs) {
   if (!mbObjs.empty()) {
     vtkSmartPointer<vtkAppendFilter> appender =

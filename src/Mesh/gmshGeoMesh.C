@@ -41,6 +41,7 @@ gmshGeoMesh::gmshGeoMesh(const std::string &gmshMesh)
 }
 
 gmshGeoMesh::~gmshGeoMesh() {
+  GmshInterface::Finalize();
   std::cout << "gmshGeoMesh destructed" << std::endl;
 }
 
@@ -64,22 +65,44 @@ void gmshGeoMesh::report(std::ostream &out) const { geoMeshBase::report(out); }
 // TODO: use numV to sort into higher order elements.
 VTKCellType gmshGeoMesh::getVTKTypeFromGmshType(const std::string &gmshType) {
   std::string name = nemAux::findToStr(gmshType, " ");
-  std::string numV = nemAux::findFromStr(gmshType, " ");
+  int numV;
+  if(name == "Point") {
+    numV = 1;
+  } else {
+    numV = std::stoi(nemAux::findFromStr(gmshType, " "));
+  }
 
   if (name == "Point") {
     return VTK_VERTEX;
   } else if (name == "Line") {
-    return VTK_LINE;
+    switch(numV) {
+      case 3 : return VTK_QUADRATIC_EDGE;
+      default : return VTK_LINE;
+    }
   } else if (name == "Triangle") {
-    return VTK_TRIANGLE;
+    switch(numV) {
+      case 6 : return VTK_QUADRATIC_TRIANGLE;
+      default : return VTK_TRIANGLE;
+    }
   } else if (name == "Quadrilateral") {
-    return VTK_QUAD;
+    switch(numV) {
+      case 8 : return VTK_QUADRATIC_QUAD;
+      case 9 : return VTK_BIQUADRATIC_QUAD;
+      default : return VTK_QUAD;
+    }
   } else if (name == "Polygon") {
     return VTK_POLYGON;
   } else if (name == "Tetrahedron") {
-    return VTK_TETRA;
+    switch(numV) {
+      case 10 : return VTK_QUADRATIC_TETRA;
+      default : return VTK_TETRA;
+    }
   } else if (name == "Hexahedron") {
-    return VTK_HEXAHEDRON;
+    switch(numV) {
+      case 20 : return VTK_QUADRATIC_HEXAHEDRON;
+      case 27 : return VTK_TRIQUADRATIC_HEXAHEDRON;
+      default : return VTK_HEXAHEDRON;
+    }
   } else if (name == "Prism") {
     return VTK_WEDGE;
   } else if (name == "Pyramid") {

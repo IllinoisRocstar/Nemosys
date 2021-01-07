@@ -1,13 +1,25 @@
 #include "MeshGenDriver.H"
 
+#include "AuxiliaryFunctions.H"
+
+#include "gmshGen.H"
+#include "geoMeshFactory.H"
 #include "gmshParams.H"
-#include "netgenParams.H"
+
+#ifdef HAVE_NGEN
+#  include "netgenGen.H"
+#  include "netgenParams.H"
+#endif
 #ifdef HAVE_SIMMETRIX
+#  include "simmetrixGen.H"
 #  include "simmetrixParams.H"
 #endif
 #ifdef HAVE_CFMSH
+#  include "blockMeshGen.H"
 #  include "blockMeshParams.H"
+#  include "cfmeshGen.H"
 #  include "cfmeshParams.H"
+#  include "snappymeshGen.H"
 #  include "snappymeshParams.H"
 #endif
 
@@ -29,8 +41,83 @@ MeshGenDriver::MeshGenDriver(const std::string &ifname,
                              const std::string &ofname) {
   std::cout << "MeshGenDriver created" << std::endl;
   params = _params;
-  mesh = meshBase::CreateShared(
-      meshBase::generateMesh(ifname, meshEngine, params));
+
+  meshGen *generator = nullptr;
+
+  if (meshEngine == "netgen") {
+#ifdef HAVE_NGEN
+    generator = new netgenGen(dynamic_cast<netgenParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".vol");
+#else
+    std::cerr << "NETGEN is not enabled during build."
+              << " Build NEMoSys with ENABLE_NETGEN to use this method."
+              << std::endl;
+    exit(1);
+#endif
+  } else if (meshEngine == "gmsh") {
+    generator =
+        new NEM::GEN::gmshGen(dynamic_cast<NEM::GEN::gmshParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".msh");
+#ifdef HAVE_SIMMETRIX
+  } else if (meshEngine == "simmetrix") {
+    generator = new simmetrixGen(dynamic_cast<simmetrixParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".vtu");
+#endif
+#ifdef HAVE_CFMSH
+  } else if (meshEngine == "cfmesh") {
+    generator = new cfmeshGen(dynamic_cast<cfmeshParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".vtu");
+  } else if (meshEngine == "snappyHexMesh") {
+    generator = new snappymeshGen(dynamic_cast<snappymeshParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".vtu");
+  } else if (meshEngine == "blockMesh") {
+    generator = new blockMeshGen(dynamic_cast<blockMeshParams *>(params));
+    std::string newname = nemAux::trim_fname(ifname, ".vtu");
+#endif
+  } else {
+    std::cerr << meshEngine << " is not a supported meshing engine"
+              << std::endl;
+    exit(1);
+  }
+
+  if (!generator) {
+    std::cerr << "Meshing with engine " << meshEngine << " failed. Aborting."
+              << std::endl;
+    exit(1);
+  }
+
+  int status = generator->createMeshFromSTL(ifname.c_str());
+
+  if (status) {
+    std::cerr << "Mesh Engine " << meshEngine << " not recognized" << std::endl;
+    exit(1);
+  }
+
+  // output file type
+  std::string outputType = nemAux::find_ext(ofname);
+  std::shared_ptr<meshBase> mesh;
+  if (outputType == ".msh" && meshEngine == "gmsh") {
+    // createMeshFromSTL (in this case) outputs a .msh file by default
+    return;
+  }
+
+  // otherwise, resort to meshBase
+
+  if (meshEngine == "netgen") {
+    std::string newname = nemAux::trim_fname(ifname, ".vol");
+    mesh = meshBase::CreateShared(meshBase::exportVolToVtk(newname));
+  } else if (meshEngine == "gmsh") {
+    std::string newname = nemAux::trim_fname(ifname, ".msh");
+    // conversion from STL using gmsh engine writes a ".msh" file by default
+    if (outputType == ".msh") return;
+    mesh = meshBase::CreateShared(meshBase::exportGmshToVtk(newname));
+  } else {
+    // default
+    std::string newname = nemAux::trim_fname(ifname, ".vtu");
+    mesh = meshBase::CreateShared(
+        meshBase::Create(generator->getDataSet(), newname));
+  }
+
   mesh->setFileName(ofname);
   mesh->report();
   mesh->write();
@@ -168,6 +255,115 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
         params->optimize = gparams["optimize"].as<bool>();
       if (gparams.contains("optimizeThreshold"))
         params->optimizeThreshold = gparams["optimizeThreshold"].as_double();
+      if (gparams.contains("elementOrder"))
+        params->elementOrder = gparams["elementOrder"].as<int>();
+      if (gparams.contains("subdivisionAlgorithm"))
+        params->subdivisionAlg = gparams["subdivisionAlgorithm"].as<int>();
+      if (gparams.contains("saveAll"))
+        params->saveAll = gparams["saveAll"].as<bool>();
+      if (gparams.contains("fragment"))
+        params->fragmentAll = gparams["fragment"].as<bool>();
+
+      if (gparams.contains("ColorMap")) {
+        std::map<std::string, std::string> color2groupMap;
+        for (const auto &cm : gparams["ColorMap"].array_range()) {
+          std::string color;
+          std::string name;
+          if (cm.contains("Color")) {
+            int r, g, b;
+            r = cm["Color"].at(0).as<int>();
+            g = cm["Color"].at(1).as<int>();
+            b = cm["Color"].at(2).as<int>();
+            color = std::to_string(r) + "," + std::to_string(g) + "," +
+                    std::to_string(b);
+          } else {
+            std::cerr << "Error: Keyword 'Color' for Color Map not found."
+                      << std::endl;
+            throw;
+          }
+          if (cm.contains("Group")) {
+            name = cm["Group"].as<std::string>();
+          } else {
+            std::cerr << "Error: Keyword 'Group' for Color Map not found."
+                      << std::endl;
+            throw;
+          }
+          color2groupMap[color] = name;
+        }
+        params->mColorMap = true;
+        params->color2groupMap = color2groupMap;
+      }
+
+      if (gparams.contains("TransfiniteBlocks")) {
+        for (const auto &tb : gparams["TransfiniteBlocks"].array_range()) {
+          NEM::GEN::TransfiniteBlock block;
+          if (tb.contains("Volume")) {
+            block.id = tb["Volume"].as<int>();
+          } else {
+            std::cerr << "Error: Keyword 'id' for transfinite block not found."
+                      << std::endl;
+            throw;
+          }
+          if (tb.contains("Axis")) {
+            // normalize and store each direction vector
+            for (int i = 0; i < 3; ++i) {
+              double x = tb["Axis"].at(i).at(0).as<double>();
+              double y = tb["Axis"].at(i).at(1).as<double>();
+              double z = tb["Axis"].at(i).at(2).as<double>();
+              double axis_len = std::sqrt(x * x + y * y + z * z);
+              if (axis_len < 1e-3) {
+                std::cerr << "Axis " << i << " for block " << block.id
+                          << " is too small. Please prescribe an axis with length > 1e-3"
+                          << std::endl;
+                exit(1);
+              }
+              block.axis[i][0] = x / axis_len;
+              block.axis[i][1] = y / axis_len;
+              block.axis[i][2] = z / axis_len;
+            }
+          } else {
+            std::cerr
+                << "Error: Keyword 'axis' for transfinite block not found."
+                << std::endl;
+            throw;
+          }
+
+          auto setTransfiniteCurve = [&tb,
+                                      &block](const std::string &axis) -> void {
+            int idx = -1;
+            if (axis == "x") idx = 0;
+            if (axis == "y") idx = 1;
+            if (axis == "z") idx = 2;
+            if (idx == -1) {
+              std::cerr << "Invalid axis name '" << axis
+                        << "'. Valid axis names are : "
+                        << "'x', 'y', and 'z'. Aborting." << std::endl;
+              exit(1);
+            }
+            if (tb.contains(axis)) {
+              block.vert[idx] = tb[axis]["Vertices"].as<int>();
+              if (tb[axis].contains("Bump")) {
+                block.type[idx] = "Bump";
+                block.coef[idx] = tb[axis]["Bump"].as<double>();
+              } else if (tb[axis].contains("Progression")) {
+                block.type[idx] = "Progression";
+                block.coef[idx] = tb[axis]["Progression"].as<double>();
+              }
+            } else {
+              std::cerr << "Error : Keyword '" << axis
+                        << "' for transfinite block not found." << std::endl;
+              throw;
+            }
+          };
+
+          setTransfiniteCurve("x");
+          setTransfiniteCurve("y");
+          setTransfiniteCurve("z");
+
+          params->transfiniteBlocks[block.id] = block;
+        }
+        params->mTransfiniteVolumes = true;
+      }
 
       // Size Fields parsing
       std::string cap = "SizeFields";
@@ -249,8 +445,9 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
       std::cout << " Done." << std::endl;
 
-      auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
-      return mshgndrvobj;
+      auto* gmshGenerator =
+          new MeshGenDriver(ifname, meshEngine, params, ofname);
+      return gmshGenerator;
     }
   } else if (meshEngine == "simmetrix") {
 #ifndef HAVE_SIMMETRIX
@@ -1524,5 +1721,5 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
   }
 }
 
-}  // namespace DRV
-}  // namespace NEM
+} // namespace DRV
+} // namespace NEM

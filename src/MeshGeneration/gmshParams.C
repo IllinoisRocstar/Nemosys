@@ -30,7 +30,19 @@ gmshParams::gmshParams() {
 
   mSizeField = false;
 
+  mColorMap = false;
+
+  mTransfiniteVolumes = false;
+
   bgField = -1;
+
+  elementOrder = 1;
+
+  subdivisionAlg = 1;
+
+  saveAll = true;
+
+  fragmentAll = false;
 
   meshExtensions = {".inp", ".unv", ".p3d", ".stl", ".vtk", ".su2"};
 }

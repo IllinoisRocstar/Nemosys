@@ -248,6 +248,8 @@ NEM_add_test(meshGen MeshGen MeshGenTest
 NEM_add_test(gmshMeshGen GmshMeshGen gmshMeshGenTest
     box_test.json
     box_test_REF.vtu
+    pitzdaily_test.json
+    pitzdaily_test_REF.msh
 )
 
 NEM_add_test(refinement Refinement RefinementTest

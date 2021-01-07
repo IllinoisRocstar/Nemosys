@@ -1,3 +1,7 @@
+#if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
+#define _USE_MATH_DEFINES
+#endif
+
 #include <fstream>
 
 #include <gtest.h>
@@ -5,8 +9,11 @@
 
 #include "NemDriver.H"
 #include "meshBase.H"
+#include "geoMeshFactory.H"
 
 const char *box_test_json;
+const char *pitz_daily_test_json;
+const char *pitz_daily_test_REF;
 const char *box_test_REF;
 
 // Test implementations
@@ -35,8 +42,32 @@ std::string box_test(const char *jsonF) {
   return ifname;
 }
 
+TEST(gmshMeshGenTest, pitz_daily_Test) {
+  std::cout << "Running flow box test" << std::endl;
+  std::string fname(pitz_daily_test_json);
+  std::ifstream inputStream(fname);
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+  for (const auto &prog : inputjson.array_range()) {
+    if (prog.contains("Mesh Generation Engine")) {
+      std::cout << "Reading JSON array, Mesh Generation Engine" << std::endl;
+      std::shared_ptr<NEM::DRV::NemDriver> nemdrvobj =
+        std::shared_ptr<NEM::DRV::NemDriver>(NEM::DRV::NemDriver::readJSON(prog));
+    }
+  }
+
+  auto genPDMesh = std::shared_ptr<NEM::MSH::geoMeshBase>(NEM::MSH::Read("pitzdaily.msh"));
+  auto refPDMesh = std::shared_ptr<NEM::MSH::geoMeshBase>(NEM::MSH::Read(pitz_daily_test_REF));
+  EXPECT_NEAR(refPDMesh->getNumberOfPoints(),
+              genPDMesh->getNumberOfPoints(),
+              .1*refPDMesh->getNumberOfPoints());
+  EXPECT_NEAR(refPDMesh->getNumberOfCells(),
+              genPDMesh->getNumberOfCells(),
+              .1*refPDMesh->getNumberOfCells());
+}
 // TEST macros
 TEST(gmshMeshGenTest, Box_Test) {
+
   int newNodes = 0;
   int refNodes = 0;
   int ret1 = 0;
@@ -71,9 +102,12 @@ TEST(gmshMeshGenTest, Box_Test) {
 int main(int argc, char **argv) {
   // IO
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 3);
+  assert(argc == 5);
   box_test_json = argv[1];
   box_test_REF = argv[2];
+
+  pitz_daily_test_json = argv[3];
+  pitz_daily_test_REF = argv[4];
 
   if (!box_test_json) {
     std::cerr << "No input file defined" << std::endl;
