@@ -32,6 +32,12 @@ class gmshGen : public meshGen {
 
   int createMeshFromSTEP(const char *fname);
 
+ public:
+
+  /** @brief Get filename of generated .msh file
+   **/
+  const std::string &getMshFilename() const { return mshFname; }
+
  private:
   /** @brief Sets the global geometry and meshing options
    **/
@@ -49,9 +55,21 @@ class gmshGen : public meshGen {
    **/
   void meshSizeFields();
 
+  /** @brief Applies physical names based on color
+   **/
+  void applyColorNames();
+
+  /** @brief Applies transfinite settings to prescribed hexahedral volumes
+   **/
+  void applyTransfiniteVolumes();
+
   /** @brief gmshParams object Parameters
    **/
   gmshParams *meshParams;  // Gmsh Parameters
+
+  /** @brief Name of .msh file output by gmsh
+   */
+  std::string mshFname;
 };
 
 }  // namespace GEN

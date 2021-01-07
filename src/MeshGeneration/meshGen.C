@@ -20,6 +20,7 @@
 #  include "snappymeshParams.H"
 #endif
 
+/*
 meshGen *meshGen::Create(const std::string &fname,
                          const std::string &meshEngine) {
   if (meshEngine == "netgen") {
@@ -103,3 +104,4 @@ meshGen *meshGen::Create(const std::string &fname,
     exit(1);
   }
 }
+*/
