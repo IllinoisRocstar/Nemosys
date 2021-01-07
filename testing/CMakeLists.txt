@@ -102,7 +102,7 @@ endmacro()
 macro(NEM_add_test TEST_NAME TEST_EXE_NAME TEST_PWD)
   add_test(NAME ${TEST_NAME}Test
       COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      run${TEST_EXE_NAME}Test ${ARGN}
+      run${TEST_EXE_NAME}Test --gtest_output=xml:${CMAKE_CURRENT_BINARY_DIR}/junit/ ${ARGN}
       WORKING_DIRECTORY ${TEST_DATA}/${TEST_PWD}
       )
 endmacro()
