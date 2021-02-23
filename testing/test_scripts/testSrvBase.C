@@ -30,12 +30,11 @@ class testSrvBase : public NEM::SRV::srvBase {
  public:
   static testSrvBase *New();
 
+ protected:
   testSrvBase() {
     this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
   }
-
- protected:
   int RequestDataObject(vtkInformation *vtkNotUsed(request),
                         vtkInformationVector **vtkNotUsed(inputVector),
                         vtkInformationVector *outputVector) override {
@@ -89,8 +88,6 @@ class testSrvBase : public NEM::SRV::srvBase {
 
 vtkStandardNewMacro(testSrvBase)
 
-TEST(srvBase, ConstructorDefault) { testSrvBase sb{}; }
-
 TEST(srvBase, ExecuteVtkSmartPointer) {
   auto sb = vtkSmartPointer<testSrvBase>::New();
   auto in = vtkSmartPointer<testGeoMeshBase>::New();
@@ -113,14 +110,13 @@ TEST(srvBase, ExecuteVtkNewVtkDelete) {
 }
 
 TEST(srvBase, ExecuteNewVtkDelete) {
-  auto *sb = new testSrvBase;
+  vtkNew<testSrvBase> sb;
   auto *in = new testGeoMeshBase;
 
   sb->SetInputDataObject(in);
   sb->Update();
   testGeoMeshBase::SafeDownCast(sb->GetOutputDataObject(0));
 
-  sb->Delete();
   in->Delete();
 }
 

@@ -27,7 +27,7 @@ TEST(geoMeshFactory, ReadVTK) {
   delete vtk1;
 
   NEM::MSH::geoMeshBase *vtk2 =
-      NEM::MSH::Read(arg_vtkMesh, NEM::MSH::VTK_GEO_MESH);
+      NEM::MSH::Read(arg_vtkMesh, NEM::MSH::MeshType::VTK_GEO_MESH);
   EXPECT_TRUE(dynamic_cast<NEM::MSH::vtkGeoMesh *>(vtk2));
   delete vtk2;
 }
@@ -38,7 +38,7 @@ TEST(geoMeshFactory, ReadGMSH) {
   delete gmsh1;
 
   NEM::MSH::geoMeshBase *gmsh2 =
-      NEM::MSH::Read(arg_gmshMesh, NEM::MSH::GMSH_GEO_MESH);
+      NEM::MSH::Read(arg_gmshMesh, NEM::MSH::MeshType::GMSH_GEO_MESH);
   EXPECT_TRUE(dynamic_cast<NEM::MSH::gmshGeoMesh *>(gmsh2));
   delete gmsh2;
 }
@@ -49,7 +49,7 @@ TEST(geoMeshFactory, ReadOSH) {
   delete osh1;
 
   NEM::MSH::geoMeshBase *osh2 =
-      NEM::MSH::Read(arg_oshMesh, NEM::MSH::OSH_GEO_MESH);
+      NEM::MSH::Read(arg_oshMesh, NEM::MSH::MeshType::OSH_GEO_MESH);
   EXPECT_TRUE(dynamic_cast<NEM::MSH::oshGeoMesh *>(osh2));
   delete osh2;
 }
@@ -60,7 +60,7 @@ TEST(geoMeshFactory, ReadEXO) {
   delete exo1;
 
   NEM::MSH::geoMeshBase *exo2 =
-      NEM::MSH::Read(arg_exoMesh, NEM::MSH::EXO_GEO_MESH);
+      NEM::MSH::Read(arg_exoMesh, NEM::MSH::MeshType::EXO_GEO_MESH);
   EXPECT_TRUE(dynamic_cast<NEM::MSH::exoGeoMesh *>(exo2));
   delete exo2;
 }

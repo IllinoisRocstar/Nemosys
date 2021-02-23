@@ -1,10 +1,14 @@
 #include "srvBase.H"
 
+#include <vtkInformationExecutivePortKey.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
 #include "vtkGeoMesh.H"
+#include "gmshGeoMesh.H"
+#include "oshGeoMesh.H"
+#include "exoGeoMesh.H"
 
 /* TODO:
  * nemInformation
@@ -22,7 +26,6 @@ srvBase::srvBase() {
 }
 
 srvBase::~srvBase() {
-  this->ReferenceCount--;  // Prevents VTK warning regarding loose reference.
   std::cout << "srvBase destructed" << std::endl;
 }
 
@@ -51,10 +54,9 @@ int srvBase::ProcessRequest(vtkInformation *request,
   return this->Superclass::ProcessRequest(request, inputVector, outputVector);
 }
 
-int srvBase::RequestInformation(
-    vtkInformation *vtkNotUsed(request),
-    vtkInformationVector **vtkNotUsed(inputVector),
-    vtkInformationVector *vtkNotUsed(outputVector)) {
+int srvBase::RequestInformation(vtkInformation *request,
+                                vtkInformationVector **inputVector,
+                                vtkInformationVector *outputVector) {
   // do nothing let subclasses handle it
   return 1;
 }
@@ -65,15 +67,50 @@ NEM::MSH::geoMeshBase *srvBase::GetOutput(int port) {
   return NEM::MSH::geoMeshBase::SafeDownCast(this->GetOutputDataObject(port));
 }
 
-int srvBase::RequestDataObject(vtkInformation *vtkNotUsed(request),
-                               vtkInformationVector **vtkNotUsed(inputVector),
-                               vtkInformationVector *vtkNotUsed(outputVector)) {
-  return 0;
+int srvBase::RequestDataObject(vtkInformation *request,
+                               vtkInformationVector **inputVector,
+                               vtkInformationVector *outputVector) {
+  for (int i = 0; i < outputVector->GetNumberOfInformationObjects(); ++i) {
+    auto outInfo = outputVector->GetInformationObject(i);
+    auto outAlgInfo = this->GetOutputPortInformation(i);
+    if (!outAlgInfo->Has(vtkDataObject::DATA_TYPE_NAME())) {
+      return 0;
+    }
+    std::string typeName = outAlgInfo->Get(vtkDataObject::DATA_TYPE_NAME());
+    MSH::geoMeshBase *output = nullptr;
+    if (typeName == "vtkGeoMesh") {
+      output = MSH::vtkGeoMesh::New();
+    } else if (typeName == "gmshGeoMesh") {
+      output = MSH::gmshGeoMesh::New();
+    } else if (typeName == "oshGeoMesh") {
+      output = MSH::oshGeoMesh::New();
+    } else if (typeName == "exoGeoMesh") {
+      output = MSH::exoGeoMesh::New();
+    } else if (typeName == "geoMeshBase") {
+      if (i < this->GetNumberOfInputPorts() &&
+          inputVector[i]->GetNumberOfInformationObjects() > 0) {
+        auto inObj = inputVector[i]
+                ->GetInformationObject(0)
+                ->Get(vtkDataObject::DATA_OBJECT());
+        if (inObj) {
+          output = MSH::geoMeshBase::SafeDownCast(inObj->NewInstance());
+        }
+      }
+    }
+    if (!output) {
+      return 0;
+    }
+    outInfo->Set(vtkDataObject::DATA_OBJECT(), output);
+    output->FastDelete();
+    this->GetOutputPortInformation(i)->Set(
+        vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+  }
+  return 1;
 }
 
-int srvBase::RequestUpdateExtent(
-    vtkInformation *vtkNotUsed(request), vtkInformationVector **inputVector,
-    vtkInformationVector *vtkNotUsed(outputVector)) {
+int srvBase::RequestUpdateExtent(vtkInformation *request,
+                                 vtkInformationVector **inputVector,
+                                 vtkInformationVector *outputVector) {
   int numInputPorts = this->GetNumberOfInputPorts();
   for (int i = 0; i < numInputPorts; i++) {
     int numInputConnections = this->GetNumberOfInputConnections(i);
@@ -83,12 +120,6 @@ int srvBase::RequestUpdateExtent(
     }
   }
   return 1;
-}
-
-int srvBase::RequestData(vtkInformation *vtkNotUsed(request),
-                         vtkInformationVector **vtkNotUsed(inputVector),
-                         vtkInformationVector *vtkNotUsed(outputVector)) {
-  return 0;
 }
 
 }  // namespace SRV

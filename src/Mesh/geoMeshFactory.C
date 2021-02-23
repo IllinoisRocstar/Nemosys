@@ -14,14 +14,14 @@ MeshType MeshTypeFromFilename(const std::string &fileName) {
   std::string fileExt = nemAux::find_ext(fileName);
 
   if (fileExt == ".vtu" || fileExt == ".vtk") {
-    return VTK_GEO_MESH;
+    return MeshType::VTK_GEO_MESH;
   } else if (fileExt == ".msh" || fileExt == ".geo") {
-    return GMSH_GEO_MESH;
+    return MeshType::GMSH_GEO_MESH;
   } else if (fileExt == ".osh") {
-    return OSH_GEO_MESH;
+    return MeshType::OSH_GEO_MESH;
   } else if (fileExt == ".exo" || fileExt == ".e" || fileExt == ".gen" ||
              fileExt == ".g") {
-    return EXO_GEO_MESH;
+    return MeshType::EXO_GEO_MESH;
   } else {
     std::cerr << "File extension " << fileExt << " is not supported."
               << std::endl;
@@ -35,22 +35,20 @@ geoMeshBase *Read(const std::string &fileName) {
 
 geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
   switch (meshType) {
-    case VTK_GEO_MESH: return vtkGeoMesh::Read(fileName);
-    case GMSH_GEO_MESH: return gmshGeoMesh::Read(fileName);
-    case OSH_GEO_MESH: return oshGeoMesh::Read(fileName);
-    case EXO_GEO_MESH: return exoGeoMesh::Read(fileName);
+    case MeshType::VTK_GEO_MESH: return vtkGeoMesh::Read(fileName);
+    case MeshType::GMSH_GEO_MESH: return gmshGeoMesh::Read(fileName);
+    case MeshType::OSH_GEO_MESH: return oshGeoMesh::Read(fileName);
+    case MeshType::EXO_GEO_MESH: return exoGeoMesh::Read(fileName);
   }
-  return nullptr;  // should never reach here
 }
 
 geoMeshBase *New(MeshType meshType) {
   switch (meshType) {
-    case VTK_GEO_MESH: return vtkGeoMesh::New();
-    case GMSH_GEO_MESH: return gmshGeoMesh::New();
-    case OSH_GEO_MESH: return oshGeoMesh::New();
-    case EXO_GEO_MESH: return exoGeoMesh::New();
+    case MeshType::VTK_GEO_MESH: return vtkGeoMesh::New();
+    case MeshType::GMSH_GEO_MESH: return gmshGeoMesh::New();
+    case MeshType::OSH_GEO_MESH: return oshGeoMesh::New();
+    case MeshType::EXO_GEO_MESH: return exoGeoMesh::New();
   }
-  return nullptr;  // should never reach here
 }
 
 geoMeshBase *New(const std::string &fileName) {

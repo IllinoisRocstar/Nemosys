@@ -44,9 +44,6 @@ class NEMOSYS_EXPORT omegahRefineSrv : public srvBase {
   static omegahRefineSrv *New();
   vtkTypeMacro(omegahRefineSrv, srvBase)
 
-  omegahRefineSrv();
-  ~omegahRefineSrv() override;
-
   /** @defgroup metric Metric Input
    *  Metric Input Parameters
    *  @{
@@ -342,9 +339,9 @@ class NEMOSYS_EXPORT omegahRefineSrv : public srvBase {
   /** @} */  // end of transfer
 
  protected:
-  int RequestDataObject(vtkInformation *request,
-                        vtkInformationVector **inputVector,
-                        vtkInformationVector *outputVector) override;
+  omegahRefineSrv();
+  ~omegahRefineSrv() override;
+
   int RequestData(vtkInformation *request, vtkInformationVector **inputVector,
                   vtkInformationVector *outputVector) override;
 
