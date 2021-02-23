@@ -11,8 +11,7 @@ void shape::updateSurfaces(const std::vector<std::pair<int, int>> &oldNew_vec) {
     // loop through vector of old/new id pairs
     for (const auto &j : oldNew_vec)
       // if current id is equal to old id, change to new id
-      if (currID == j.first)
-        _surface = j.second;
+      if (currID == j.first) _surface = j.second;
   }
 }
 

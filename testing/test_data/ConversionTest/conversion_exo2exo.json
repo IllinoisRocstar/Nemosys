@@ -1,0 +1,25 @@
+[
+  {
+    "Program Type": "Conversion",
+    "Mesh File Options": {
+      "Input Mesh Files": "Custom",
+      "Output Mesh File": "./four_boxes_combined.e"
+    },
+    "Conversion Options": {
+      "Method": "EXO->EXO",
+      "Number of Mesh": 1,
+      "Mesh Data": [
+        {
+          "File": "./four_boxes_tetra.e",
+          "CombineBlocks": 
+          [
+            {
+              "BlockIDs": [1,2]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
+

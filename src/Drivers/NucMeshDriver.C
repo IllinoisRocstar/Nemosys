@@ -36,6 +36,7 @@ NucMeshDriver *NucMeshDriver::readJSON(const jsoncons::json &inputjson) {
 NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   id = 1;
   physTag = 1;
+  ssTag = 1;
   gui = false;
   skipAll = false;
   parsingCount = 0;
@@ -120,21 +121,29 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   // gmsh::fltk::run();
 
   //--------------------------------------------------------------------//
-  // Apply meshType and get physical surfaces
+  // Apply meshType and get physical surfaces and lines
   //--------------------------------------------------------------------//
   // iterate through shape_map to apply meshType and collect physical Surfs
   std::map<int, int> physSurf_map;
+  std::map<int, int> physLine_map;
   for (auto &&itr : shape_map) {
     itr.second->applyMeshType();
-    physSurf_map = itr.second->getPhysSurf(phystag_map, physSurf_map);
+    // Collect physical surfaces and lines in place
+    itr.second->getPhysSurf(phystag_map, physSurf_map);
+    itr.second->getPhysLine(sstag_map, physLine_map);
   }
 
-  // gmsh::fltk::run();
   std::cout << "Mesh type applied\n";
 
+  // for (auto &&itr : physLine_map) {
+  //   std::cout << "Line tag = " << itr.first << ", Physical tag = " <<
+  //   itr.second << std::endl;
+  // }
+  // gmsh::fltk::run();
   //--------------------------------------------------------------------//
   // Make physical groups for surfaces
   //--------------------------------------------------------------------//
+  int maxTag = 0;
   for (const auto &itr : phystag_map) {
     std::vector<int> s;  // vector of surfaces
     std::string name;    // regions name
@@ -142,12 +151,13 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
     for (const auto &itr2 : physSurf_map) {
       if (itr2.second == itr.second) {
         tag = itr2.second;
+        if (tag > maxTag) maxTag = tag;
         name = itr.first;
         s.push_back(itr2.first);
       }
     }
     if (tag == -1) {
-      std::cerr << "Error: Physical group cannot be applied." << std::endl;
+      std::cerr << "Error: 2D Physical group cannot be applied." << std::endl;
       throw;
     }
     if (!s.empty()) {
@@ -155,9 +165,44 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
       gmsh::model::setPhysicalName(2, tag, name);
     }
   }
-  std::cout << "2D Physical groups applied\n";
+  std::cout << "2D (Surface) Physical groups applied\n";
   gmsh::model::occ::synchronize();
+
+  //--------------------------------------------------------------------//
+  // Make physical groups for lines
+  //--------------------------------------------------------------------//
+  // std::cout << "sstag_map size = " << sstag_map.size() << std::endl;
+  // std::cout << "physLine_map size = " << physLine_map.size() << std::endl;
+
+  bool sidesets = sstag_map.size() > 0;
+
+  if (sidesets) {
+    for (const auto &itr : sstag_map) {
+      std::vector<int> s;  // vector of lines
+      std::string name;    // sideset name
+      int tag = -1;        // physical group tag
+      for (const auto &itr2 : physLine_map) {
+        // std::cout << "sstag " << itr.second << ", physLine " << itr2.second
+        // << std::endl;
+        if (itr2.second == itr.second) {
+          // std::cout << "map tag = " << itr2.second << ", maxTag = " << maxTag
+          // << std::endl;
+          tag = itr2.second + maxTag;
+          name = itr.first;
+          s.push_back(itr2.first);
+        }
+      }
+      if (!s.empty()) {
+        gmsh::model::addPhysicalGroup(1, s, tag);
+        gmsh::model::setPhysicalName(1, tag, name);
+      }
+    }
+    std::cout << "1D (Line) Physical groups applied\n";
+    gmsh::model::occ::synchronize();
+  }
+
   Tboolean.stop();
+  // gmsh::fltk::run();
 
   //--------------------------------------------------------------------//
   // Extrude Surfaces if '3D' option is set to true
@@ -165,9 +210,11 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   // Extrude surfaces based on Height
   if (extrude) {
     Textrude.start();
-    std::map<int, std::vector<int>> volPhysTag_map;
-    std::vector<std::pair<int, int>> entities, outEntities, volumes,
-        volSurfaces;
+    // Maps for 'extrapolating' physical groups to higher dimension entities
+    std::map<int, std::vector<int>> volPhysTag_map, surfPhysTag_map;
+    std::vector<std::pair<int, int>> entities, outEntities, volumes, surfaces,
+        volSurfaces, surfLines;
+
     std::vector<int> pTag;
     // Collect all surfaces
     gmsh::model::getEntities(entities, 2);
@@ -196,25 +243,24 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
     //--------------------------------------------------------------------//
     // Gather the volumes
     gmsh::model::getEntities(volumes, 3);
-    // Loop through volumes and get surfaces
+    // Loop through volumes
     for (int i = 0; i < (int)volumes.size(); ++i) {
       volSurfaces.clear();
+      // Get the surfaces of each volume
       gmsh::model::getBoundary({volumes[i]}, volSurfaces, false, false, false);
-      // Loop through surfaces and find physical tags
+      // Loop through surfaces
       for (int j = 0; j < (int)volSurfaces.size(); ++j) {
+        // Find physical groups
         gmsh::model::getPhysicalGroupsForEntity(volSurfaces[j].first,
                                                 volSurfaces[j].second, pTag);
         // If phys tag exists, populate vol phys tag map with tags and volumes
         if (pTag.size() > 0) {
           auto search = volPhysTag_map.find(pTag[0]);
-          if (search == volPhysTag_map.end()) {
+          if (search == volPhysTag_map.end())
             volPhysTag_map.insert(
                 std::pair<int, std::vector<int>>(pTag[0], {volumes[i].second}));
-            continue;
-          } else {
+          else
             search->second.push_back(volumes[i].second);
-            continue;
-          }
         }
       }
     }
@@ -222,6 +268,43 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
     entities.clear();
     outEntities.clear();
     volSurfaces.clear();
+    pTag.clear();
+
+    // If sidesets are desired
+    if (sidesets) {
+      gmsh::model::getEntities(surfaces, 2);
+      std::vector<int> usedTag;
+      // Loop through surfaces
+      for (auto &surface : surfaces) {
+        /* At this point, there currently exists 2D (surface)
+           physical groups defined from region names. Thus,
+           these surfaces need to be filtered out so they don't
+           get used since lines are shared b/w surfaces. */
+        gmsh::model::getPhysicalGroupsForEntity(surface.first, surface.second,
+                                                usedTag);
+        if (usedTag.size() != 0) continue;
+
+        surfLines.clear();
+        gmsh::model::getBoundary({surface}, surfLines, false, false, false);
+        for (auto &line : surfLines) {
+          gmsh::model::getPhysicalGroupsForEntity(line.first, line.second,
+                                                  pTag);
+          // If phys tag exists, populate surf phys tag map with tags and
+          // surfaces
+          if (pTag.size() > 0) {
+            auto search = surfPhysTag_map.find(pTag[0]);
+            if (search == surfPhysTag_map.end())
+              surfPhysTag_map.insert(
+                  std::pair<int, std::vector<int>>(pTag[0], {surface.second}));
+            else
+              search->second.push_back(surface.second);
+          }
+        }
+      }
+    }
+    surfaces.clear();
+    surfLines.clear();
+    pTag.clear();
 
     //--------------------------------------------------------------------//
     // Apply physical tags/names from original surfaces to corresponding
@@ -241,12 +324,32 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
     }
     std::cout << "3D Physical groups applied\n";
 
+    if (sidesets) {
+      // tag = 1;
+      for (const auto &itr : surfPhysTag_map) {
+        // Add physical group
+        gmsh::model::addPhysicalGroup(2, itr.second, tag);
+        // Get physical name for physical tag of surface
+        gmsh::model::getPhysicalName(1, itr.first, name);
+        // Set physical name of Volume
+        gmsh::model::setPhysicalName(2, tag, name);
+        tag++;
+      }
+      std::cout << "Sideset Physical groups applied\n";
+    }
+
     // Remove the surface physical tag
     for (const auto &itr : volPhysTag_map) {
       gmsh::model::removePhysicalGroups({{2, itr.first}});
     }
     std::cout << "2D Physical groups removed\n";
+    // Remove the line physical tag
+    for (const auto &itr : surfPhysTag_map) {
+      gmsh::model::removePhysicalGroups({{1, itr.first}});
+    }
+    std::cout << "1D Physical groups removed\n";
     gmsh::model::occ::synchronize();
+    // gmsh::fltk::run();
   } else {
     //--------------------------------------------------------------------//
     // For 2D/Surface case we need all the mesh normals to be pointing
@@ -589,7 +692,7 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
 
   std::vector<double> radii;
 
-  int nRad;
+  int nRad = 0;
   bool circPoly = false;
 
   // For CirclesInPolys objects, we need to only change the
@@ -748,7 +851,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
         std::string alias = it["Alias"].as_string();
 
         std::vector<double> orig_center, orig_radii;
-        std::vector<std::string> orig_meshType, orig_names;
+        std::vector<std::string> orig_meshType, orig_names, orig_ss;
         std::vector<std::pair<int, int>> orig_elems;
         double orig_rot;
         // Get the original alias data
@@ -767,8 +870,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
                 orig_center.push_back(j["Center"][4].as<double>());
               }
             }
-            if (j.contains("Rotation"))
-              orig_rot = j["Rotation"].as<double>();
+            if (j.contains("Rotation")) orig_rot = j["Rotation"].as<double>();
 
             if (j.contains("Radii")) {
               int nRad = j["Radii"].size();
@@ -793,6 +895,12 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
               int nNames = j["Region Names"].size();
               for (int i = 0; i < nNames; ++i) {
                 orig_names.push_back(j["Region Names"][i].as<std::string>());
+              }
+            }
+            if (j.contains("Sidesets")) {
+              int nSS = j["Sidesets"].size();
+              for (int i = 0; i < nSS; ++i) {
+                orig_ss.push_back(j["Sidesets"][i].as_string());
               }
             }
           }
@@ -870,6 +978,24 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
           }
         }
 
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of sideset names
+          int nSS = it["Sidesets"].size();
+          // Loop through sideset names
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
         auto search = savedobj_map.find(alias);
         if (search != savedobj_map.end()) {
           // the alias was found in map
@@ -888,6 +1014,8 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
                                                         elems);
             if (it.contains("Region Names"))
               search->second.second[0].insert_or_assign("Region Names", name);
+            if (it.contains("Sidesets"))
+              search->second.second[0].insert_or_assign("Sidesets", ss);
             makePolygons(search->second.second);
 
             // Reset the alias map back to original data
@@ -900,6 +1028,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
                                                       orig_elems);
             search->second.second[0].insert_or_assign("Region Names",
                                                       orig_names);
+            search->second.second[0].insert_or_assign("Sidesets", orig_ss);
             search->second.second[0].insert_or_assign("BREAK", false);
           }
         } else {
@@ -969,11 +1098,32 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
           }
         }
 
+        // Sidesets Bools
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of sideset bools
+          int nSS = it["Sidesets"].size();
+
+          // Loop through regions names
+
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
         // Get rotation angle
         auto rot = it["Rotation"].as<double>();
 
         NEM::GEO::shape *p =
-            new NEM::GEO::polygon(nsides, cen, rad, type, elems, name, rot);
+            new NEM::GEO::polygon(nsides, cen, rad, type, elems, name, ss, rot);
         p->draw();
 
         shape_map.insert(std::pair<int, NEM::GEO::shape *>(id, p));
@@ -1012,7 +1162,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
         std::string alias = it["Alias"].as_string();
 
         std::vector<double> orig_center, orig_radii;
-        std::vector<std::string> orig_meshType, orig_names;
+        std::vector<std::string> orig_meshType, orig_names, orig_ss;
         std::vector<std::pair<int, int>> orig_elems;
         double orig_rot;
         // Get the original alias data
@@ -1031,8 +1181,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
                 orig_center.push_back(j["Center"][4].as<double>());
               }
             }
-            if (j.contains("Rotation"))
-              orig_rot = j["Rotation"].as<double>();
+            if (j.contains("Rotation")) orig_rot = j["Rotation"].as<double>();
 
             if (j.contains("Radii")) {
               int nRad = j["Radii"].size();
@@ -1057,6 +1206,12 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
               int nNames = j["Region Names"].size();
               for (int i = 0; i < nNames; ++i) {
                 orig_names.push_back(j["Region Names"][i].as<std::string>());
+              }
+            }
+            if (j.contains("Sidesets")) {
+              int nSS = j["Sidesets"].size();
+              for (int i = 0; i < nSS; ++i) {
+                orig_ss.push_back(j["Sidesets"][i].as_string());
               }
             }
           }
@@ -1128,6 +1283,24 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
           }
         }
 
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of region names
+          int nSS = it["Sidesets"].size();
+          // Loop through regions names
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
         auto search = savedobj_map.find(alias);
         if (search != savedobj_map.end()) {
           // the alias was found in map
@@ -1144,6 +1317,8 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
                                                         elems);
             if (it.contains("Region Names"))
               search->second.second[0].insert_or_assign("Region Names", name);
+            if (it.contains("Sidesets"))
+              search->second.second[0].insert_or_assign("Sidesets", ss);
 
             makeCircles(search->second.second);
 
@@ -1157,6 +1332,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
                                                       orig_elems);
             search->second.second[0].insert_or_assign("Region Names",
                                                       orig_names);
+            search->second.second[0].insert_or_assign("Sidesets", orig_ss);
             search->second.second[0].insert_or_assign("BREAK", false);
           }
         } else {
@@ -1218,7 +1394,27 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
           }
         }
 
-        NEM::GEO::shape *c = new NEM::GEO::circles(cen, rad, type, elems, name);
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of sideset bools
+          int nSS = it["Sidesets"].size();
+
+          // Loop through regions names
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
+        NEM::GEO::shape *c =
+            new NEM::GEO::circles(cen, rad, type, elems, name, ss);
         c->draw();
 
         if (!conserving) {
@@ -1256,7 +1452,7 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
         std::string alias = it["Alias"].as_string();
 
         std::vector<double> orig_center, orig_circle_radii, orig_poly_radii;
-        std::vector<std::string> orig_meshType, orig_names;
+        std::vector<std::string> orig_meshType, orig_names, orig_ss;
         std::vector<std::pair<int, int>> orig_elems;
         double orig_rot;
         int orig_nsides;
@@ -1275,8 +1471,7 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
                 orig_center.push_back(j["Center"][4].as<double>());
               }
             }
-            if (j.contains("Rotation"))
-              orig_rot = j["Rotation"].as<double>();
+            if (j.contains("Rotation")) orig_rot = j["Rotation"].as<double>();
 
             if (j.contains("Number of Sides"))
               orig_nsides = j["Number of Sides"].as<int>();
@@ -1313,6 +1508,13 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
               int nNames = j["Region Names"].size();
               for (int i = 0; i < nNames; ++i) {
                 orig_names.push_back(j["Region Names"][i].as<std::string>());
+              }
+            }
+
+            if (j.contains("Sidesets")) {
+              int nSS = j["Sidesets"].size();
+              for (int i = 0; i < nSS; ++i) {
+                orig_ss.push_back(j["Sidesets"][i].as_string());
               }
             }
           }
@@ -1424,6 +1626,24 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
           }
         }
 
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of region names
+          int nSS = it["Sidesets"].size();
+          // Loop through regions names
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
         auto search = savedobj_map.find(alias);
         if (search != savedobj_map.end()) {
           // the alias was found in map
@@ -1448,6 +1668,8 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
                                                         elems);
             if (it.contains("Region Names"))
               search->second.second[0].insert_or_assign("Region Names", name);
+            if (it.contains("Sidesets"))
+              search->second.second[0].insert_or_assign("Sidesets", ss);
 
             makeCirclesInPolys(search->second.second);
 
@@ -1466,6 +1688,7 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
                                                       orig_elems);
             search->second.second[0].insert_or_assign("Region Names",
                                                       orig_names);
+            search->second.second[0].insert_or_assign("Sidesets", orig_ss);
             search->second.second[0].insert_or_assign("BREAK", false);
           }
         } else {
@@ -1547,11 +1770,30 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
           }
         }
 
+        std::vector<std::string> ss;
+        if (it.contains("Sidesets")) {
+          // Number of sideset bools
+          int nSS = it["Sidesets"].size();
+
+          // Loop through sideset bools
+          for (int i = 0; i < nSS; ++i) {
+            ss.push_back(it["Sidesets"][i].as_string());
+
+            // check if ss name is in physical name map
+            auto iter = sstag_map.find(ss[i]);
+            // if name is not in map, add it
+            if (iter == sstag_map.end()) {
+              sstag_map.insert({ss[i], ssTag});
+              ssTag++;
+            }
+          }
+        }
+
         // Get rotation angle
         auto rot = it["Rotation"].as<double>();
 
         NEM::GEO::shape *cp = new NEM::GEO::circlesInPolys(
-            nsides, cen, circle_rad, poly_rad, type, elems, name, rot);
+            nsides, cen, circle_rad, poly_rad, type, elems, name, ss, rot);
 
         cp->draw();
 

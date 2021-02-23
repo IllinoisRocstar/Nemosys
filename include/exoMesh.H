@@ -1,6 +1,7 @@
 #ifndef NEMOSYS_EXOMESH_H_
 #define NEMOSYS_EXOMESH_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,7 @@ struct NEMOSYS_EXPORT elmBlkType {
   std::vector<int> conn;  // written
   int ndeIdOffset;
   std::vector<int> elmIds;
+  std::map<int, std::vector<double>> ndeCoords;
 };
 
 /**
@@ -125,11 +127,11 @@ int NEMOSYS_EXPORT elmNumNde(elementType et, int order);
 int NEMOSYS_EXPORT elmNumSrf(elementType et);
 
 /**
- * @brief A complete I/O class for EXODUS II file format. 
+ * @brief A complete I/O class for EXODUS II file format.
  *
  * Methods for definition, addition, removal, and modification of the elements,
  * nodes, element blocks, node sets, and side sets are implemented. The
- * implementation relies on standard EXODUS II library provided in system 
+ * implementation relies on standard EXODUS II library provided in system
  * repository.
  */
 class NEMOSYS_DEPRECATED_EXPORT exoMesh {
@@ -186,10 +188,24 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   const std::string &getElmBlkName(int idx) const { return _elmBlks[idx].name; }
 
   /**
+   * Returns the name the element block for given element block ID
+   * @param id ID of block
+   */
+  const std::string getElmBlkNameById(int id) const;
+
+  /**
    * Returns the name the nodeset for given index
    * @param idx index of block
+   * @return string The name of nodeset
    */
   const std::string &getNdeSetName(int idx) const { return _ndeSets[idx].name; }
+
+  /**
+   * Returns the name the nodeset for given nodeset id
+   * @param id ID of nodeset
+   * @return string The name of nodeset
+   */
+  std::string getNdeSetNameById(int id) const;
 
   /**
    * Returns the name the sideset for given index
@@ -198,10 +214,28 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   const std::string &getSdeSetName(int idx) const { return _sdeSets[idx].name; }
 
   /**
+   * Returns the index for the element block for given id
+   * @param id Id of block
+   */
+  int getElmBlkIndex(int id) const;
+
+  /**
+   * Returns the index for the element block for given name
+   * @param id Id of block
+   */
+  int getElmBlkIndex(const std::string name) const;
+
+  /**
    * Returns the id for the element block for given index
    * @param idx index of block
    */
   int getElmBlkId(int idx) const { return _elmBlks[idx].id; }
+
+  /**
+   * Returns the id for the element block from element block name
+   * @param ebName name of block
+   */
+  int getElmBlkId(std::string ebName) const;
 
   /**
    * Returns the id for the nodeset for given index
@@ -210,10 +244,34 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   int getNdeSetId(int idx) const { return _ndeSets[idx].id; }
 
   /**
+   * Returns the id for the nodeset for nodeset name
+   * @param nsName name of nodeset
+   */
+  int getNdeSetId(const std::string &nsName) const;
+
+  /**
+   * Returns the index for the nodeset for nodeset name
+   * @param nsName name of nodeset
+   */
+  int getNdeSetIndex(const std::string &nsName) const;
+
+  /**
    * Returns the id for the sideset for given index
    * @param idx index of block
    */
   int getSdeSetId(int idx) const { return _sdeSets[idx].id; }
+
+  /**
+   * Returns the id for the sideset for sideset name
+   * @param ssName name of sideset
+   */
+  int getSdeSetId(const std::string &ssName) const;
+
+  /**
+   * Returns the index of the sideset for sideset name
+   * @param ssName name of sideset
+   */
+  int getSdeSetIndex(const std::string &ssName) const;
 
   /**
    * Returns the element type for the block
@@ -223,9 +281,74 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
 
   /**
    * Returns the element type for the block
+   * @param id ID of block
+   */
+  elementType getElmBlkTypeById(int id) const;
+
+  /**
+   * Returns the element type for the block
    * @param ebName name of the element block
    */
-  elementType getElmBlkType(std::string ebName) const;
+  elementType getElmBlkType(const std::string &ebName) const;
+
+  /**
+   * Returns the number of elements for the block
+   * @param idx index of block
+   */
+  int getNumElmsInBlk(int idx) const { return _elmBlks[idx].nElm; };
+
+  /**
+   * Returns the number of elements for the block
+   * @param ebName name of the element block
+   */
+  int getNumElmsInBlk(const std::string &ebName) const;
+
+  /**
+   * Returns the number of elements for the block
+   * @param id ID of the element block
+   */
+  int getNumElmsInBlkById(int id) const;
+
+  /**
+   * Returns the number of nodes for the nodeset
+   * @param idx index of nodeset
+   */
+  int getNumNdesInNdeSet(int idx) const { return _ndeSets[idx].nNde; };
+
+  /**
+   * Returns the number of nodes for the nodeset
+   * @param nsName name of nodeset
+   */
+  int getNumNdesInNdeSet(const std::string &nsName) const;
+
+  /**
+   * Returns the number of nodes for the nodeset
+   * @param id ID of nodeset
+   */
+  int getNumNdesInNdeSetById(int id) const;
+
+  /**
+   * Returns the number of sides for the sideset
+   * @param idx index of sideset
+   */
+  int getNumSdesInSdeSet(int idx) const { return _sdeSets[idx].nSde; };
+
+  /**
+   * Returns the number of sides for the sideset
+   * @param ssName name of sideset
+   */
+  int getNumSdesInSdeSet(const std::string &ssName) const;
+
+  /**
+   * Returns the number of sides for the sideset
+   * @param id ID of sideset
+   */
+  int getNumSdesInSdeSetById(int id) const;
+
+  /**
+   * Returns the IDs of registered element blocks
+   */
+  const std::vector<int> &getElmBlkIds() const { return _elmBlkIds; };
 
   /**
    * Returns the names of registered element blocks
@@ -255,7 +378,6 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
 
   // fast modification
  public:
-
   /**
    * Sets/changes block name
    * @param idx index of block
@@ -266,12 +388,58 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   }
 
   /**
+   * Sets/changes block name
+   * @param name of block
+   * @param newName new name of the block
+   */
+  void setBlockName(const std::string &name, const std::string &newName) {
+    int idx = getElmBlkIndex(name);
+    _elmBlks[idx].name = newName;
+  }
+
+  /**
+   * Sets/changes sideset name
+   * @param idx index of sideset
+   * @param name name of the sideset
+   */
+  void setSdeSetName(int idx, const std::string &name) {
+    _sdeSets[idx].name = name;
+  }
+
+  /**
+   * Sets/changes sideset name
+   * @param name name of sideset
+   * @param newName new name of the sideset
+   */
+  void setSdeSetName(const std::string &name, const std::string &newName) {
+    int idx = getSdeSetIndex(name);
+    _sdeSets[idx].name = newName;
+  }
+
+  /**
+   * Sets/changes nodeset name
+   * @param idx index of nodeset
+   * @param name name of the nodeset
+   */
+  void setNdeSetName(int idx, const std::string &name) {
+    _ndeSets[idx].name = name;
+  }
+
+  /**
+   * Sets/changes nodeset name
+   * @param name name of nodeset
+   * @param newName new name of the nodeset
+   */
+  void setNdeSetName(const std::string &name, const std::string &newName) {
+    int idx = getNdeSetIndex(name);
+    _ndeSets[idx].name = newName;
+  }
+
+  /**
    * Sets/changes the problem dimensionality
    * @param dim dimension of problem 2D/3D
    */
-  void setDimension(int dim) {
-    _numDim = dim;
-  }
+  void setDimension(int dim) { _numDim = dim; }
 
   // adding nodes, element blocks, node sets, and side sets
  public:
@@ -328,6 +496,13 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
    */
   void removeElmBlkByName(const std::string &blkName);
 
+  /**
+   * Remove an element block by ID
+   * @note Calls exoPopulate but does not reindex blocks
+   * @param id element block ID
+   */
+  void removeElmBlkById(int id);
+
   // finding element blocks
  public:
   /**
@@ -355,9 +530,24 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
    */
   std::vector<int> lstElmInBlk(int blkIdx, const std::vector<int> &elmIds,
                                bool &allIn) const;
-  
+
   // augmentation and maintenance
  public:
+  /**
+   * Combines element blocks into one block
+   * @note automatically augments sidesets between combined blocks
+   * @param blkIdLst vector of element block IDs
+   */
+  void combineElmBlks(const std::vector<int> &blkIdLst,
+                      const std::string &newName);
+
+  /**
+   * Updates sidesets from combining blocks
+   * @param old2NewElmIds map containing old and new
+   * element ids
+   */
+  void updateSidesets(const std::map<int, int> &old2NewElmIds);
+
   /**
    * Removes a list of elements from an element block
    * @param blkIdx element block index
@@ -365,7 +555,7 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
    */
   // TODO: Does NOT update side sets properly!
   void removeByElmIdLst(int blkIdx, const std::vector<int> &idLst);
-  
+
   /**
    * Creates a new element block and augments previous owners
    * @param name new element block name
@@ -393,7 +583,7 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   void mergeNodes(double tol = 1e-15);
 
   /**
-   * scales the nodal coordinates 
+   * scales the nodal coordinates
    * @param sc scale factor
    */
   void scaleNodes(double sc = 1.0);
@@ -446,6 +636,30 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   // populate quantities needed to write EXODUS file
   void exoPopulate(bool updElmLst = false);
 
+  /*
+   * Generic function to find duplicates elements in vector.
+   * It adds the duplicate elements and their duplication
+   * count in given map countMap
+   */
+  template <typename T>
+  std::map<T, int> findDuplicates(const std::vector<T> &vecOfElements) {
+    std::map<T, int> countMap;
+    // Iterate over the vector and store the frequency of each element in map
+    for (auto &elem : vecOfElements) {
+      auto result = countMap.insert(std::pair<T, int>(elem, 1));
+      if (result.second == false) result.first->second++;
+    }
+
+    // Remove the elements from Map which has 1 frequency count
+    for (auto it = countMap.begin(); it != countMap.end();) {
+      if (it->second == 1)
+        it = countMap.erase(it);
+      else
+        it++;
+    }
+    return countMap;
+  }
+
   // EXODUS data
  private:
   // Dimension
@@ -461,6 +675,7 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   int _numElms;
   elmBlks _elmBlks;
   std::vector<std::string> _elmBlkNames;
+  std::vector<int> _elmBlkIds;
 
   // Node Sets
   ndeSets _ndeSets;
@@ -483,7 +698,8 @@ class NEMOSYS_DEPRECATED_EXPORT exoMesh {
   bool _isPopulated;
   bool _isOpen;
   bool _isVerbose;
-  std::vector<std::vector<int>> glbConn;
+  bool _reindexBlks{true};
+  std::vector<std::vector<int>> glbConn;  // populated with read()
 };
 
 }  // namespace EXOMesh

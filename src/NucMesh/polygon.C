@@ -18,6 +18,7 @@ namespace GEO {
               mesh type,
               number of elements,
               region name,
+              bools to make sidesets
               rotation angle (degrees) */
 
 namespace occ = gmsh::model::occ;
@@ -26,13 +27,15 @@ namespace mesh = gmsh::model::mesh;
 polygon::polygon(int nsides, std::vector<double> cen, std::vector<double> rad,
                  std::vector<std::string> mtype,
                  std::vector<std::pair<int, int>> el,
-                 std::vector<std::string> name, double rot) {
+                 std::vector<std::string> name, std::vector<std::string> ss,
+                 double rot) {
   _nSides = nsides;              // Number of sides
   _center = std::move(cen);      // Center of circle
   _radii = std::move(rad);       // Radii for concentric circles
   _meshType = std::move(mtype);  // Mesh type for each layer/circle
   _elems = std::move(el);        // Number of element for transfinite
   _names = std::move(name);      // Physical group names (Region names)
+  _sideset = std::move(ss);      // Bools to make sidesets
   _rotation = rot;               // Rotation angle (degrees)
 }
 
@@ -153,27 +156,8 @@ void polygon::draw() {
 // Applies the mesh type (tri,quad,struct) to surfaces
 void polygon::applyMeshType() {
   // Gather all the lines of the polys for meshing
-  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
-  std::vector<std::pair<int, int>> circleLines;
-
-  std::vector<std::pair<int, int>> v = {{2, _surfaces[0]}};
-
-  // Get the boundary (lines) of the _center surface
-  gmsh::model::getBoundary(v, circleLines, true, false, false);
-
-  allLines.push_back(circleLines);
-  circleLines.clear();
-
-  // Get the lines for all other surfaces
-  for (int i = 1; i < _surfaces.size(); i = i + _nSides) {
-    std::vector<std::pair<int, int>> v2;
-    for (int j = i; j < i + _nSides; ++j) v2.emplace_back(2, _surfaces[j]);
-
-    gmsh::model::getBoundary(v2, circleLines, false, false, false);
-
-    allLines.push_back(circleLines);
-    circleLines.clear();
-  }
+  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of poly
+  allLines = getLines();
 
   // Apply _meshType: "Tri"=tris, "Quad"=quads, "Struct"=structured
   for (int i = 0; i < _meshType.size(); i++) {
@@ -254,10 +238,34 @@ void polygon::applyMeshType() {
   }
 }
 
-std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
-                                        std::map<int, int> physSurf_map) {
-  //------------Physical Groups------------//
-  //---------------------------------------//
+std::vector<std::vector<std::pair<int, int>>> polygon::getLines() const {
+  // Gather all the lines of the polys for meshing
+  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
+  std::vector<std::pair<int, int>> polyLines;
+
+  std::vector<std::pair<int, int>> v = {{2, _surfaces[0]}};
+
+  // Get the boundary (lines) of the _center surface
+  gmsh::model::getBoundary(v, polyLines, true, false, false);
+
+  allLines.push_back(polyLines);
+  polyLines.clear();
+
+  // Get the lines for all other surfaces
+  for (int i = 1; i < _surfaces.size(); i = i + _nSides) {
+    std::vector<std::pair<int, int>> v2;
+    for (int j = i; j < i + _nSides; ++j) v2.emplace_back(2, _surfaces[j]);
+
+    gmsh::model::getBoundary(v2, polyLines, false, false, false);
+
+    allLines.push_back(polyLines);
+    polyLines.clear();
+  }
+  return allLines;
+}
+
+void polygon::getPhysSurf(const std::map<std::string, int> &phystag_map,
+                          std::map<int, int> &physSurf_map) const {
   int physTag;
   if (!_names.empty()) {
     for (int i = 0; i < _names.size(); ++i) {
@@ -268,20 +276,42 @@ std::map<int, int> polygon::getPhysSurf(std::map<std::string, int> phystag_map,
           // Add new surface id to outSurfaces
           physSurf_map.insert(std::pair<int, int>(_surfaces[i], physTag));
         } else {
-          for (int j = (i - 1) * _nSides + 1; j < (i)*_nSides + 1; ++j) {
+          for (int j = (i - 1) * _nSides + 1; j < (i)*_nSides + 1; ++j)
             physSurf_map.insert(std::pair<int, int>(_surfaces[j], physTag));
-          }
         }
       } else
-        std::cout << "physical tag not in phystag_map" << std::endl;
+        std::cerr << "physical tag not in phystag_map" << std::endl;
     }
   }
-  return physSurf_map;
-  occ::synchronize();
+}
+
+void polygon::getPhysLine(const std::map<std::string, int> &sstag_map,
+                          std::map<int, int> &physLine_map) const {
+  std::vector<std::vector<std::pair<int, int>>> allLines;
+  allLines = getLines();
+
+  int ssTag;
+  if (!_sideset.empty()) {
+    for (int i = 0; i < _sideset.size(); ++i) {
+      auto it = sstag_map.find(_sideset[i]);
+      if (it != sstag_map.end()) {
+        ssTag = it->second;
+        if (i == 0 && _sideset[i] != "None") {
+          for (auto &lines : allLines[i])
+            physLine_map.insert(std::pair<int, int>(lines.second, ssTag));
+        }
+        if (i > 0 && _sideset[i] != "None") {
+          for (int j = 2; j < allLines[i].size(); j = j + 4)
+            physLine_map.insert(
+                std::pair<int, int>(allLines[i][j].second, ssTag));
+        }
+      }
+    }
+  }
 }
 
 // Returns the max ID/Tag of entity with dimension dim
-int polygon::getMaxID(int dim) {
+int polygon::getMaxID(int dim) const {
   std::vector<std::pair<int, int>> retTags;
   gmsh::model::getEntities(retTags, dim);
   int max = 0;
