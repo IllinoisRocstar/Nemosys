@@ -434,9 +434,9 @@ void cdgfmCreateSideSet(
 // geoName, with angleThreshold dihedral angle (in radians) to detect surfaces.
 // Also sets sideSet with lower dimensional entities on boundaries (incl between
 // different materials)
-void computeDiscreteGeoFromMsh(vtkUnstructuredGrid *dataSet,
-                               const std::string &geoName,
-                               double angleThreshold, vtkPolyData *sideSet) {
+vtkSmartPointer<vtkPolyData> computeDiscreteGeoFromMsh(
+    vtkUnstructuredGrid *dataSet, const std::string &geoName,
+    double angleThreshold) {
   //****************************************************************************
   // 1. Access the geo array and count number of phys groups
   //****************************************************************************
@@ -633,6 +633,7 @@ void computeDiscreteGeoFromMsh(vtkUnstructuredGrid *dataSet,
   //    which, if positive, holds the index of the twin across an interface.
   //****************************************************************************
 
+  auto sideSet = vtkSmartPointer<vtkPolyData>::New();
   cdgfmCreateSideSet(dataSet, dsrsf->GetOutput(), gmshElem2cellData, max_dim,
                      sideSet);
 
@@ -669,6 +670,7 @@ void computeDiscreteGeoFromMsh(vtkUnstructuredGrid *dataSet,
   dataSet->GetCellData()->RemoveArray("GlobalIds");
   dataSet->GetFieldData()->RemoveArray(dsrsf->GetMaterialIDsName());
   dataSet->GetFieldData()->RemoveArray(dsrsf->GetMaterialPropertiesName());
+  return sideSet;
 }
 
 }  // namespace
@@ -685,9 +687,8 @@ void geoMeshBase::reconstructGeo() {
   }
   gmsh::model::add(_geoMesh.geo);
   gmsh::model::setCurrent(_geoMesh.geo);
-  _geoMesh.sideSet = vtkSmartPointer<vtkPolyData>::New();
-  computeDiscreteGeoFromMsh(_geoMesh.mesh, _geoMesh.link, _angleThreshold,
-                            _geoMesh.sideSet);
+  _geoMesh.sideSet = SideSet{
+      computeDiscreteGeoFromMsh(_geoMesh.mesh, _geoMesh.link, _angleThreshold)};
 }
 
 }  // namespace MSH

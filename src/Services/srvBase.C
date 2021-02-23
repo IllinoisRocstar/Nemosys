@@ -9,6 +9,7 @@
 #include "gmshGeoMesh.H"
 #include "oshGeoMesh.H"
 #include "exoGeoMesh.H"
+#include "inpGeoMesh.H"
 
 /* TODO:
  * nemInformation
@@ -86,6 +87,8 @@ int srvBase::RequestDataObject(vtkInformation *request,
       output = MSH::oshGeoMesh::New();
     } else if (typeName == "exoGeoMesh") {
       output = MSH::exoGeoMesh::New();
+    } else if (typeName == "inpGeoMesh") {
+      output = MSH::inpGeoMesh::New();
     } else if (typeName == "geoMeshBase") {
       if (i < this->GetNumberOfInputPorts() &&
           inputVector[i]->GetNumberOfInformationObjects() > 0) {

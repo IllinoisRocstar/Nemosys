@@ -16,7 +16,8 @@ enum class NEMOSYS_EXPORT MeshType {
   VTK_GEO_MESH,  ///< Based on vtkUnstructuredGrid from VTK library.
   GMSH_GEO_MESH, ///< Mesh and geometry based on Gmsh's public API.
   OSH_GEO_MESH,  ///< Based on Omega_h::Mesh from Omega_h library.
-  EXO_GEO_MESH,   ///< Interface to EXODUS II library.
+  EXO_GEO_MESH,  ///< Interface to EXODUS II library.
+  INP_GEO_MESH,  ///< Abaqus/CalculiX mesh input format
 };
 
 /**

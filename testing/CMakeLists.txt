@@ -134,6 +134,7 @@ NEM_add_test_executable(GeoMeshFactory)
 
 NEM_add_test_executable(ExoGeoMesh)
 NEM_add_test_executable(GmshGeoMesh)
+NEM_add_test_executable(InpGeoMesh)
 NEM_add_test_executable(OshGeoMesh)
 NEM_add_test_executable(VtkGeoMesh)
 
@@ -307,6 +308,11 @@ NEM_add_test(gmshGeoMesh GmshGeoMesh GmshGeoMeshTest
     cube41.msh
     cube_UnnamedPhyGrp.msh
     cube_NamedPhyGrp.msh
+    )
+NEM_add_test(inpGeoMesh InpGeoMesh InpGeoMeshTest
+    panel_problem_1_gmsh_native_solid.msh
+    SOLID_Plate.inp
+    gold_SOLID_Plate.vtu
     )
 NEM_add_test(exoGeoMesh ExoGeoMesh ExoGeoMeshTest
     hardenedUGbunker_soil2.g

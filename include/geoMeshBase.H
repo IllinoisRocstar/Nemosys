@@ -351,26 +351,63 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
   vtkSmartPointer<vtkAbstractArray> getFieldDataArrayCopy(int arrayIdx) const;
 
  protected:
-  struct GeoMesh {
+  struct NEMOSYS_EXPORT SideSet {
+    SideSet(vtkPolyData *sideSet, vtkIntArray *geoEnt,
+            vtkIdTypeArray *origCell = nullptr, vtkIntArray *cellFace = nullptr,
+            vtkIdTypeArray *twin = nullptr);
+    SideSet() = default;
+    explicit SideSet(vtkPolyData *sides);
+    /**
+     * @brief Cells represent edges/faces of some GeoMesh.
+     */
+    vtkSmartPointer<vtkPolyData> sides{nullptr};
+
+    vtkSmartPointer<vtkIntArray> getGeoEntArr() const;
+    void setGeoEntArr(vtkIntArray *arr);
+    vtkSmartPointer<vtkIdTypeArray> getOrigCellArr() const;
+    void setOrigCellArr(vtkIdTypeArray *arr);
+    vtkSmartPointer<vtkIntArray> getCellFaceArr() const;
+    void setCellFaceArr(vtkIntArray *arr);
+    vtkSmartPointer<vtkIdTypeArray> getTwinArr() const;
+    void setTwinArr(vtkIdTypeArray *arr);
+
+   private:
+    static constexpr auto GEO_ENT_NAME = "GeoEnt";
+    // Set to match dataSetRegionSurfaceFilter
+    static constexpr auto ORIG_CELL_NAME = "OrigCellIds";
+    static constexpr auto CELL_FACE_NAME = "CellFaceIds";
+    static constexpr auto TWIN_NAME = "TwinIds";
+  };
+
+  struct NEMOSYS_EXPORT GeoMesh {
     vtkSmartPointer<vtkUnstructuredGrid> mesh;
     // name of gmsh model with geo
     std::string geo;
     // name of cell data array in mesh (and sideSet if sideSet not null) storing
     // physical group (matching geo) for each cell
     std::string link;
-    // boundaries of each region, represented by lower dimensional cells
-    // should have 3 cell data ("GeoEnt", "OrigCellIds", "CellFaceIds") and
-    // optionally "TwinIds"
-    vtkSmartPointer<vtkPolyData> sideSet;
+    // boundaries of regions, represented by lower dimensional cells
+    SideSet sideSet;
+
+    /**
+     * @brief For each edge/polygon in sideSet, find the corresponding mesh
+     * element in mesh.
+     * @details Does nothing if "OrigCellIds"/"CellFaceIds" arrays already
+     * present. Sets the sideSet's "OrigCellIds"/"CellFaceIds" arrays.
+     * Orientation of side only checked if multiple candidate original cells.
+     * Both "OrigCellIds" and "CellFaceIds" are set to -1 for any cells in the
+     * sideSet that can't be matched.
+     */
+    void findSide2OrigCell();
+    /**
+     * @brief Get dimension of mesh.
+     * @details All cells in mesh assumed to have same dimension.
+     * @return dimension of mesh
+     */
+    int getDimension() const;
   };
 
   static constexpr auto GEO_ENT_DEFAULT_NAME = "GeoEnt";
-
-  static constexpr auto SIDE_SET_GEO_ENT_NAME = "GeoEnt";
-  // Set to match dataSetRegionSurfaceFilter
-  static constexpr auto SIDE_SET_ORIG_CELL_NAME = "OrigCellIds";
-  static constexpr auto SIDE_SET_CELL_FACE_NAME = "CellFaceIds";
-  static constexpr auto SIDE_SET_TWIN_NAME = "TwinIds";
 
  protected:
   /**
@@ -462,7 +499,13 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
    * Set the underlying geometry object.
    * @param geoMesh a mesh and geometry
    */
-  void setGeoMesh(const geoMeshBase::GeoMesh &geoMesh) { _geoMesh = geoMesh; }
+  void setGeoMesh(const geoMeshBase::GeoMesh &geoMesh) {
+    assert(geoMesh.mesh->GetNumberOfCells() == 0 ||
+           geoMesh.mesh->GetNumberOfPoints() == 0 ||
+           geoMesh.sideSet.sides == nullptr ||
+           geoMesh.sideSet.sides->GetPoints() == geoMesh.mesh->GetPoints());
+    _geoMesh = geoMesh;
+  }
 
  private:
   virtual void resetNative() = 0;
