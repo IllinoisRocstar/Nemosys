@@ -12,11 +12,11 @@ namespace MSH {
  * Note: When adding a new format, extend the switch statements in the static
  * factory methods.
  */
-enum NEMOSYS_EXPORT MeshType {
+enum class NEMOSYS_EXPORT MeshType {
   VTK_GEO_MESH,  ///< Based on vtkUnstructuredGrid from VTK library.
   GMSH_GEO_MESH, ///< Mesh and geometry based on Gmsh's public API.
   OSH_GEO_MESH,  ///< Based on Omega_h::Mesh from Omega_h library.
-  EXO_GEO_MESH   ///< Interface to EXODUS II library.
+  EXO_GEO_MESH,   ///< Interface to EXODUS II library.
 };
 
 /**

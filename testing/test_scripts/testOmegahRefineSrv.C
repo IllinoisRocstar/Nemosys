@@ -4,6 +4,8 @@
 
 #include <geoMeshFactory.H>
 #include <vtkSmartPointer.h>
+#include <vtkExecutive.h>
+#include <vtkCommand.h>
 #include <Omega_h_build.hpp>
 
 #include "diffMesh.H"
@@ -12,16 +14,31 @@
 
 // Test cases for NEM::SRV::omegahRefineSrv
 
-TEST(omegahRefineSrv, ConstructorDefault) { NEM::SRV::omegahRefineSrv sb{}; }
+class ErrorObserver : public vtkCommand {
+ public:
+  static ErrorObserver *New() { return new ErrorObserver; }
+  void Execute(vtkObject *caller, unsigned long event,
+               void *calldata) override {
+    if (event == vtkCommand::ErrorEvent) {
+      error = true;
+      errorMsg = static_cast<const char *>(calldata);
+    }
+  }
+  bool error{false};
+  std::string errorMsg{};
+};
 
 TEST(omegahRefineSrv, ExecuteEmptyMesh) {
   auto sb = vtkSmartPointer<NEM::SRV::omegahRefineSrv>::New();
   auto in = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
-  auto out = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
+  vtkNew<ErrorObserver> observer;
 
   sb->SetInputDataObject(in);
+  sb->GetExecutive()->AddObserver(vtkCommand::AnyEvent, observer);
   sb->Update();
-  out = NEM::MSH::oshGeoMesh::SafeDownCast(sb->GetOutputDataObject(0));
+  EXPECT_TRUE(observer->error);
+  EXPECT_NE(NEM::MSH::oshGeoMesh::SafeDownCast(sb->GetOutputDataObject(0)),
+            nullptr);
 }
 
 TEST(omegahRefineSrv, Execute) {

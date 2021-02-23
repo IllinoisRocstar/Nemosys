@@ -6,10 +6,7 @@
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_class.hpp>
 
-#include "SizeFieldGen.H"
 #include "oshGeoMesh.H"
-
-#include <Omega_h_file.hpp>
 
 namespace NEM {
 namespace SRV {
@@ -63,27 +60,7 @@ int omegahRefineSrv::FillInputPortInformation(int vtkNotUsed(port),
 
 int omegahRefineSrv::FillOutputPortInformation(int vtkNotUsed(port),
                                                vtkInformation *info) {
-  info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "oshGeoMesh");
-  return 1;
-}
-
-int omegahRefineSrv::RequestDataObject(
-    vtkInformation *vtkNotUsed(request),
-    vtkInformationVector **vtkNotUsed(inputVector),
-    vtkInformationVector *outputVector) {
-  vtkInformation *outInfo = outputVector->GetInformationObject(0);
-  auto *output = dynamic_cast<MSH::oshGeoMesh *>(
-      outInfo->Get(vtkDataObject::DATA_OBJECT()));
-
-  if (!output) {
-    output = MSH::oshGeoMesh::New();
-    outInfo->Set(vtkDataObject::DATA_OBJECT(), output);
-    output->FastDelete();
-
-    this->GetOutputPortInformation(0)->Set(vtkDataObject::DATA_EXTENT_TYPE(),
-                                           output->GetExtentType());
-  }
-
+  info->Set(vtkDataObject::DATA_TYPE_NAME(), "oshGeoMesh");
   return 1;
 }
 
@@ -103,7 +80,7 @@ int omegahRefineSrv::RequestData(vtkInformation *request,
 
   Omega_h::Mesh oshOutput = input->getOshMesh();
 
-  if (!input->getOshMesh().is_valid()) return 1;
+  if (!input->getOshMesh().is_valid()) return 0;
 
   // Attempt to classify points and cells, in case not called previously
   Omega_h::finalize_classification(&oshOutput);

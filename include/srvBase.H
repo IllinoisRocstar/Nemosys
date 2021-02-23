@@ -23,9 +23,6 @@ class NEMOSYS_EXPORT srvBase : public vtkAlgorithm {
  public:
   vtkAbstractTypeMacro(srvBase, vtkAlgorithm)
 
-  srvBase();
-  ~srvBase() override;
-
  public:
   int ProcessRequest(vtkInformation *request, vtkInformationVector **inInfo,
                      vtkInformationVector *outInfo) override;
@@ -39,6 +36,9 @@ class NEMOSYS_EXPORT srvBase : public vtkAlgorithm {
   //@}
 
  protected:
+  srvBase();
+  ~srvBase() override;
+
   // convenience method
   virtual int RequestInformation(vtkInformation *request,
                                  vtkInformationVector **inputVector,
@@ -46,7 +46,6 @@ class NEMOSYS_EXPORT srvBase : public vtkAlgorithm {
 
   /**
    * This is called by the superclass.
-   * This is the method you should override.
    */
   virtual int RequestDataObject(vtkInformation *request,
                                 vtkInformationVector **inputVector,
@@ -58,11 +57,10 @@ class NEMOSYS_EXPORT srvBase : public vtkAlgorithm {
    */
   virtual int RequestData(vtkInformation *request,
                           vtkInformationVector **inputVector,
-                          vtkInformationVector *outputVector);
+                          vtkInformationVector *outputVector) = 0;
 
   /**
    * This is called by the superclass.
-   * This is the method you should override.
    */
   virtual int RequestUpdateExtent(vtkInformation *request,
                                   vtkInformationVector **inputVector,
