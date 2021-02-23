@@ -98,7 +98,7 @@ void oshGeoMesh::takeGeoMesh(geoMeshBase *otherGeoMesh) {
   if (otherOshGM) {
     setGeoMesh(otherOshGM->getGeoMesh());
     otherOshGM->setGeoMesh(
-        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, nullptr});
+        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}});
     _oshMesh = std::move(otherOshGM->_oshMesh);
     otherOshGM->resetNative();
   } else {
@@ -113,7 +113,7 @@ void oshGeoMesh::reconstructGeo() {
   auto sideSet = getGeoMesh().sideSet;
   auto oshFamily = _oshMesh->family();
   auto oshDim = _oshMesh->dim();
-  if (sideSet && sideSet->GetNumberOfCells() > 0) {
+  if (sideSet.sides && sideSet.sides->GetNumberOfCells() > 0) {
     for (int i = 0; i <= oshDim; ++i) {
       if (_oshMesh->has_tag(i, "class_dim")) {
         _oshMesh->remove_tag(i, "class_dim");
@@ -142,11 +142,11 @@ void oshGeoMesh::reconstructGeo() {
       }
     }
     {  // Set class_dim and class_id for dimension oshDim - 1
-      auto it = sideSet->NewCellIterator();
+      auto it = sideSet.sides->NewCellIterator();
       auto numNodes =
           Omega_h::element_degree(oshFamily, oshDim - 1, Omega_h::VERT);
       Omega_h::HostWrite<Omega_h::LO> ev2v(numNodes *
-                                           sideSet->GetNumberOfCells());
+                                           sideSet.sides->GetNumberOfCells());
       int i = 0;
       for (it->InitTraversal(); !it->IsDoneWithTraversal();
            it->GoToNextCell()) {
@@ -160,9 +160,8 @@ void oshGeoMesh::reconstructGeo() {
       Omega_h::LOs eqv2v(ev2v);
       // If we have a non-empty sideSet, we should have a non-empty geo ent
       // array
-      Omega_h::HostWrite<Omega_h::LO> h_class_id(sideSet->GetNumberOfCells());
-      auto geoEntArr = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
+      Omega_h::HostWrite<Omega_h::LO> h_class_id(sideSet.sides->GetNumberOfCells());
+      auto geoEntArr = sideSet.getGeoEntArr();
       for (i = 0; i < h_class_id.size(); ++i) {
         h_class_id[i] = geoEntArr->GetValue(i);
       }
@@ -305,7 +304,7 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
                                         const std::string &link) {
   auto vtkMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  if (!oshMesh || !oshMesh->is_valid()) return {vtkMesh, "", "", nullptr};
+  if (!oshMesh || !oshMesh->is_valid()) return {vtkMesh, "", "", {}};
   // Omega_h dimension is important to read its data.
   //
   // It stores 2D mesh without a z-coordinate while VTK always requires 3D. A
@@ -416,16 +415,12 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
 
   // Add boundary elements (of one lower dimension), if they exist, so we don't
   // have to reconstruct geometry.
-  auto sideSet = vtkSmartPointer<vtkPolyData>::New();
-  sideSet->SetPoints(vtkMesh->GetPoints());
+  auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+  sideSetPD->SetPoints(vtkMesh->GetPoints());
   auto sideSetEntities = vtkSmartPointer<vtkIntArray>::New();
-  sideSetEntities->SetName(SIDE_SET_GEO_ENT_NAME);
   auto sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
-  sideSetOrigCellId->SetName(SIDE_SET_ORIG_CELL_NAME);
   auto sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
-  sideSetCellFaceId->SetName(SIDE_SET_CELL_FACE_NAME);
   auto sideSetTwinId = vtkSmartPointer<vtkIdTypeArray>::New();
-  sideSetTwinId->SetName(SIDE_SET_TWIN_NAME);
   // Map from highest dimensional entities to bounding entities of one lower
   // dimension, using "class_id" indexing.
   std::map<Omega_h::ClassId, std::vector<Omega_h::ClassId>> entities;
@@ -503,7 +498,7 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
     auto numNodes = Omega_h::element_degree(family, dim - 1, Omega_h::VERT);
     Omega_h::HostRead<Omega_h::LO> point_id = oshMesh->ask_verts_of(dim - 1);
     if (!boundary_elem_idx.empty()) {
-      sideSet->Allocate(boundary_elem_idx.size());
+      sideSetPD->Allocate(boundary_elem_idx.size());
       // Some of the class_id could be non-positive, but gmsh requires
       // positive
       std::map<int, std::vector<std::size_t>> gmshTag2nodeTags;
@@ -534,7 +529,7 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
           }
           ptIds->InsertNextId(point_id[elem * numNodes + j]);
         }
-        sideSet->InsertNextCell(vtk_type, ptIds);
+        sideSetPD->InsertNextCell(vtk_type, ptIds);
         sideSetEntities->InsertNextValue(entity);
       }
       if (geo.empty()) {
@@ -576,16 +571,16 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
       vtkEntities->SetValue(i, arr_id[i]);
     }
     vtkMesh->GetCellData()->AddArray(vtkEntities);
-    sideSet->GetCellData()->AddArray(sideSetEntities);
-    sideSet->GetCellData()->AddArray(sideSetOrigCellId);
-    sideSet->GetCellData()->AddArray(sideSetCellFaceId);
-    sideSet->GetCellData()->AddArray(sideSetTwinId);
-    return {vtkMesh, geoName, linkName, sideSet};
+    return {vtkMesh,
+            geoName,
+            linkName,
+            {sideSetPD, sideSetEntities, sideSetOrigCellId, sideSetCellFaceId,
+             sideSetTwinId}};
   } else {
     if (geo.empty()) {
       gmsh::model::remove();
     }
-    return {vtkMesh, geo.empty() ? "" : geo, "", nullptr};
+    return {vtkMesh, geo.empty() ? "" : geo, "", {}};
   }
 }
 
@@ -784,12 +779,12 @@ Omega_h::Mesh *oshGeoMesh::GM2osh(const GeoMesh &geoMesh,
       }
     }
     // Add cells of dimension oshDim - 1 from the sideSet
-    if (sideSet && sideSet->GetNumberOfCells() > 0) {
-      auto it = sideSet->NewCellIterator();
+    if (sideSet.sides && sideSet.sides->GetNumberOfCells() > 0) {
+      auto it = sideSet.sides->NewCellIterator();
       auto numNodes =
           Omega_h::element_degree(oshFamily, oshDim - 1, Omega_h::VERT);
       Omega_h::HostWrite<Omega_h::LO> ev2v(numNodes *
-                                           sideSet->GetNumberOfCells());
+                                           sideSet.sides->GetNumberOfCells());
       int i = 0;
       for (it->InitTraversal(); !it->IsDoneWithTraversal();
            it->GoToNextCell()) {
@@ -803,9 +798,9 @@ Omega_h::Mesh *oshGeoMesh::GM2osh(const GeoMesh &geoMesh,
       Omega_h::LOs eqv2v(ev2v);
       // If we have a non-empty sideSet, we should have a non-empty geo ent
       // array
-      Omega_h::HostWrite<Omega_h::LO> h_class_id(sideSet->GetNumberOfCells());
-      auto geoEntArr = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
+      Omega_h::HostWrite<Omega_h::LO> h_class_id(
+          sideSet.sides->GetNumberOfCells());
+      auto geoEntArr = geoMesh.sideSet.getGeoEntArr();
       for (i = 0; i < h_class_id.size(); ++i) {
         h_class_id[i] = geoEntArr->GetValue(i);
       }

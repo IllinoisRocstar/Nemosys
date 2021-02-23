@@ -326,10 +326,10 @@ class NEMOSYS_EXPORT exoGeoMesh : public geoMeshBase {
   static const char *getExoIdArrName();
   constexpr static const char *SIDE_SET_ID_VAR_NAME = "NEM_SIDE_SET_ID";
   /**
-   * Clears element block names, element block properties, and dimension.
+   * Clears element block names, element block properties.
    * Creates element blocks and sets the dimension based on the @c GeoMesh.
    */
-  void resetElemBlocksAndDim();
+  void resetElemBlocks();
   /**
    * Renumbers the nodes in all node sets based on @p nodeMap if provided.
    * Removes duplicate node ids within a node set.
@@ -337,26 +337,20 @@ class NEMOSYS_EXPORT exoGeoMesh : public geoMeshBase {
    */
   void resetNodeSetPoints(vtkIdTypeArray *nodeMap = nullptr);
   /**
-   * Renumbers the side set points based on @p nodeMap.
-   * @param nodeMap map from old to new node indices (can be many-to-one)
-   */
-  void resetSideSetPoints(vtkIdTypeArray *nodeMap);
-  /**
    * Sets the (Exodus) side set IDs of each cell in the @c GeoMesh.sideSet by
-   * creating a side set for each pair (side geometric entity, parent
-   * physical group).
+   * creating a side set for each pair (side entity, parent entity).
    */
   void setSideSetObjId();
 
   void resetNative() override;
 
  protected:
-  struct elemBlock {
+  struct NEMOSYS_NO_EXPORT elemBlock {
     std::string name;
     VTKCellType cellType;
     std::map<std::string, int> properties;  // missing values treated as 0
   };
-  struct nodeSet {
+  struct NEMOSYS_NO_EXPORT nodeSet {
     std::string name;
     std::vector<vtkIdType> nodes;  // correspond to indices in the _geoMesh.mesh
   };
@@ -368,7 +362,6 @@ class NEMOSYS_EXPORT exoGeoMesh : public geoMeshBase {
   std::map<int, nodeSet> _nodeSets;
   std::set<std::string> _elemBlockPropNames;
   std::string _physGrpName;  // Should correspond to a property
-  int _dim;
 };
 
 }  // namespace MSH

@@ -5,6 +5,7 @@
 #include "geoMeshBase.H"
 
 #include <iostream>
+#include <set>
 #include <utility>
 
 #include <gmsh.h>
@@ -38,8 +39,7 @@ void GmshInterface::Finalize() {
 }
 
 geoMeshBase::geoMeshBase()
-    : geoMeshBase(
-          {vtkSmartPointer<vtkUnstructuredGrid>::New(), "", "", nullptr}) {}
+    : geoMeshBase({vtkSmartPointer<vtkUnstructuredGrid>::New(), "", "", {}}) {}
 
 geoMeshBase::geoMeshBase(GeoMesh inGeoMesh)
     : _geoMesh(std::move(inGeoMesh)), _angleThreshold(30.0 * M_PI / 180.0) {
@@ -64,7 +64,7 @@ void geoMeshBase::report(std::ostream &out) const {
 void geoMeshBase::takeGeoMesh(geoMeshBase *otherGeoMesh) {
   _geoMesh = std::move(otherGeoMesh->_geoMesh);
   otherGeoMesh->_geoMesh = {
-      vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, nullptr};
+      vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}};
   otherGeoMesh->resetNative();
   resetNative();
 }
@@ -124,8 +124,8 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getPointDataArrayCopy(
 }
 
 void geoMeshBase::getCellDataArrayCopy(const std::string &arrayName,
-                                        vtkAbstractArray *array,
-                                        int *arrayIdx) const {
+                                       vtkAbstractArray *array,
+                                       int *arrayIdx) const {
   getArrCopy(_geoMesh.mesh->GetCellData(), arrayName, arrayIdx, array);
 }
 
@@ -135,7 +135,7 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getCellDataArrayCopy(
 }
 
 void geoMeshBase::getCellDataArrayCopy(int arrayIdx,
-                                        vtkAbstractArray *array) const {
+                                       vtkAbstractArray *array) const {
   getArrCopy(_geoMesh.mesh->GetCellData(), arrayIdx, array);
 }
 
@@ -145,8 +145,8 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getCellDataArrayCopy(
 }
 
 void geoMeshBase::getFieldDataArrayCopy(const std::string &arrayName,
-                                       vtkAbstractArray *array,
-                                       int *arrayIdx) const {
+                                        vtkAbstractArray *array,
+                                        int *arrayIdx) const {
   getArrCopy(_geoMesh.mesh->GetFieldData(), arrayName, arrayIdx, array);
 }
 
@@ -156,7 +156,7 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getFieldDataArrayCopy(
 }
 
 void geoMeshBase::getFieldDataArrayCopy(int arrayIdx,
-                                       vtkAbstractArray *array) const {
+                                        vtkAbstractArray *array) const {
   getArrCopy(_geoMesh.mesh->GetFieldData(), arrayIdx, array);
 }
 
@@ -181,6 +181,210 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getFieldDataArrayCopy(
 //  }
 //  */
 //}
+
+geoMeshBase::SideSet::SideSet(vtkPolyData *sideSet, vtkIntArray *geoEnt,
+                              vtkIdTypeArray *origCell, vtkIntArray *cellFace,
+                              vtkIdTypeArray *twin)
+    : sides(sideSet) {
+  auto cellData = sideSet->GetCellData();
+  assert(geoEnt || cellData->HasArray(GEO_ENT_NAME));
+  if (geoEnt) {
+    geoEnt->SetName(GEO_ENT_NAME);
+    cellData->AddArray(geoEnt);
+  }
+  if (origCell) {
+    origCell->SetName(ORIG_CELL_NAME);
+    cellData->AddArray(origCell);
+  }
+  if (cellFace) {
+    cellFace->SetName(CELL_FACE_NAME);
+    cellData->AddArray(cellFace);
+  }
+  if (twin) {
+    twin->SetName(TWIN_NAME);
+    cellData->AddArray(twin);
+  }
+}
+
+geoMeshBase::SideSet::SideSet(vtkPolyData *sides) : SideSet(sides, nullptr) {}
+
+vtkSmartPointer<vtkIntArray> geoMeshBase::SideSet::getGeoEntArr() const {
+  return sides ? vtkIntArray::FastDownCast(
+                     sides->GetCellData()->GetArray(GEO_ENT_NAME))
+               : nullptr;
+}
+
+void geoMeshBase::SideSet::setGeoEntArr(vtkIntArray *arr) {
+  assert(arr);
+  arr->SetName(GEO_ENT_NAME);
+  sides->GetCellData()->AddArray(arr);
+}
+
+vtkSmartPointer<vtkIdTypeArray> geoMeshBase::SideSet::getOrigCellArr() const {
+  return sides ? vtkIdTypeArray::FastDownCast(
+                     sides->GetCellData()->GetAbstractArray(ORIG_CELL_NAME))
+               : nullptr;
+}
+
+void geoMeshBase::SideSet::setOrigCellArr(vtkIdTypeArray *arr) {
+  if (arr) {
+    arr->SetName(ORIG_CELL_NAME);
+    sides->GetCellData()->AddArray(arr);
+  } else {
+    sides->GetCellData()->RemoveArray(ORIG_CELL_NAME);
+  }
+}
+
+vtkSmartPointer<vtkIntArray> geoMeshBase::SideSet::getCellFaceArr() const {
+  return sides ? vtkIntArray::FastDownCast(
+                     sides->GetCellData()->GetAbstractArray(CELL_FACE_NAME))
+               : nullptr;
+}
+
+void geoMeshBase::SideSet::setCellFaceArr(vtkIntArray *arr) {
+  if (arr) {
+    arr->SetName(CELL_FACE_NAME);
+    sides->GetCellData()->AddArray(arr);
+  } else {
+    sides->GetCellData()->RemoveArray(CELL_FACE_NAME);
+  }
+}
+
+vtkSmartPointer<vtkIdTypeArray> geoMeshBase::SideSet::getTwinArr() const {
+  return sides ? vtkIdTypeArray::FastDownCast(
+                     sides->GetCellData()->GetAbstractArray(TWIN_NAME))
+               : nullptr;
+}
+
+void geoMeshBase::SideSet::setTwinArr(vtkIdTypeArray *arr) {
+  if (arr) {
+    arr->SetName(TWIN_NAME);
+    sides->GetCellData()->AddArray(arr);
+  } else {
+    sides->GetCellData()->RemoveArray(TWIN_NAME);
+  }
+}
+
+void geoMeshBase::GeoMesh::findSide2OrigCell() {
+  if (sideSet.sides && !sideSet.getOrigCellArr() && !sideSet.getCellFaceArr()) {
+    vtkIdType numSides = sideSet.sides->GetNumberOfCells();
+    auto entArr = sideSet.getGeoEntArr();
+    vtkNew<vtkIdTypeArray> origCellArr;
+    origCellArr->SetNumberOfTuples(numSides);
+    origCellArr->FillTypedComponent(0, -1);
+    vtkNew<vtkIntArray> cellFaceArr;
+    cellFaceArr->SetNumberOfTuples(numSides);
+    cellFaceArr->FillTypedComponent(0, -1);
+    // Using points->cell, intersect the set of cells that have the same points
+    // as the side cell
+    mesh->BuildLinks();
+    auto pt2Cell = mesh->GetCellLinks();
+    for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
+      auto sidePoints = sideSet.sides->GetCell(i)->GetPointIds();
+      auto cellList = pt2Cell->GetLink(sidePoints->GetId(0));
+      std::vector<vtkIdType> candidates{cellList.cells,
+                                        cellList.cells + cellList.ncells};
+      std::sort(candidates.begin(), candidates.end());
+      for (auto j = 1; j < sidePoints->GetNumberOfIds(); ++j) {
+        std::vector<vtkIdType> newCandidates{};
+        cellList = pt2Cell->GetLink(sidePoints->GetId(j));
+        for (auto iterCell = cellList.cells;
+             iterCell < cellList.cells + cellList.ncells; ++iterCell) {
+          auto findIter =
+              std::lower_bound(candidates.begin(), candidates.end(), *iterCell);
+          if (findIter != candidates.end() && *iterCell == *findIter) {
+            newCandidates.emplace_back(*iterCell);
+          }
+        }
+        candidates = std::move(newCandidates);
+        std::sort(candidates.begin(), candidates.end());
+      }
+      // For each candidate cell, check each edge/face for a match
+      bool foundMatch = false;
+      if (candidates.size() == 1) {
+        // If there is only one candidate (side is on boundary, not material
+        // interface), check by sorting points - note no check for orientation
+        std::vector<vtkIdType> sortedSidePoints(sidePoints->GetNumberOfIds());
+        auto pointsBegin = sidePoints->GetPointer(0);
+        std::partial_sort_copy(
+            pointsBegin, pointsBegin + sidePoints->GetNumberOfIds(),
+            sortedSidePoints.begin(), sortedSidePoints.end());
+        auto candOrigCell = mesh->GetCell(candidates.at(0));
+        auto dim = candOrigCell->GetCellDimension();
+        for (int j = 0; j < (dim == 3 ? candOrigCell->GetNumberOfFaces()
+                                      : candOrigCell->GetNumberOfEdges());
+             ++j) {
+          auto candSide =
+              dim == 3 ? candOrigCell->GetFace(j) : candOrigCell->GetEdge(j);
+          std::vector<vtkIdType> sortedCandPoints(sortedSidePoints.size());
+          auto candPointsBegin = candSide->GetPointIds()->GetPointer(0);
+          // Note use of sidePoints->GetNumberOfIds() in case, eg, candSide is
+          // a vtkQuadraticTriangle, but side is a vtkTriangle
+          auto candPointsEnd = candPointsBegin + sidePoints->GetNumberOfIds();
+          std::partial_sort_copy(candPointsBegin, candPointsEnd,
+                                 sortedCandPoints.begin(),
+                                 sortedCandPoints.end());
+          if (sortedSidePoints == sortedCandPoints) {
+            foundMatch = true;
+            origCellArr->SetTypedComponent(i, 0, candidates.at(0));
+            cellFaceArr->SetTypedComponent(i, 0, j);
+            break;
+          }
+        }
+      } else {
+        // If there are two candidates, match the orientation of the side
+        assert(candidates.size() == 2);
+        for (const auto &candIdx : candidates) {
+          auto candOrigCell = mesh->GetCell(candIdx);
+          auto dim = candOrigCell->GetCellDimension();
+          for (int j = 0; j < (dim == 3 ? candOrigCell->GetNumberOfFaces()
+                                        : candOrigCell->GetNumberOfEdges());
+               ++j) {
+            auto candSide =
+                dim == 3 ? candOrigCell->GetFace(j) : candOrigCell->GetEdge(j);
+            auto candPointsBegin = candSide->GetPointIds()->GetPointer(0);
+            // Note use of sidePoints->GetNumberOfIds() in case, eg, candSide is
+            // a vtkQuadraticTriangle, but side is a vtkTriangle
+            auto candPointsEnd = candPointsBegin + sidePoints->GetNumberOfIds();
+            auto findFirstPoint =
+                std::find(candPointsBegin, candPointsEnd, sidePoints->GetId(0));
+            if (findFirstPoint != candPointsEnd) {
+              std::vector<vtkIdType> rotatedCandPoints(
+                  sidePoints->GetNumberOfIds());
+              std::rotate_copy(candPointsBegin, findFirstPoint, candPointsEnd,
+                               rotatedCandPoints.begin());
+              if (std::equal(rotatedCandPoints.begin(), rotatedCandPoints.end(),
+                             sidePoints->GetPointer(0))) {
+                foundMatch = true;
+              }
+              if (foundMatch) {
+                origCellArr->SetTypedComponent(i, 0, candIdx);
+                cellFaceArr->SetTypedComponent(i, 0, j);
+              }
+            }
+          }
+          if (foundMatch) {
+            break;
+          }
+        }
+      }
+      if (!foundMatch) {
+        std::cerr << "No cell in mesh found to correspond to side set cell "
+                  << i << ".\n";
+      }
+    }
+    sideSet.setOrigCellArr(origCellArr);
+    sideSet.setCellFaceArr(cellFaceArr);
+  }
+}
+
+int geoMeshBase::GeoMesh::getDimension() const {
+  if (this->mesh->GetNumberOfCells() > 0) {
+    return this->mesh->GetCell(0)->GetCellDimension();
+  } else {
+    return -1;
+  }
+}
 
 }  // namespace MSH
 }  // namespace NEM

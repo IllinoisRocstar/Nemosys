@@ -11,11 +11,58 @@
 #include <gmsh.h>
 
 #include <vtkCellIterator.h>
-#include <vtkCellTypes.h>
+#include <vtkCellType.h>
 #include <vtkIntArray.h>
-#include <vtkStringArray.h>
 
 #include "AuxiliaryFunctions.H"
+
+namespace {
+template <typename T>
+void addGmshEntitiesToDataSet(
+    const gmsh::vectorpair &entityTags,
+    const std::map<std::size_t, vtkIdType> &gmshNodeNum2vtkId,
+    vtkSmartPointer<T> dataSet, vtkIntArray *vtkEntities = nullptr) {
+  // Parse by entity
+  for (const auto &dimTag : entityTags) {
+    // Get GMSH elements
+    std::vector<int> elementTypes;
+    std::vector<std::vector<std::size_t>> elementTags;
+    std::vector<std::vector<std::size_t>> nodeTags;
+    gmsh::model::mesh::getElements(elementTypes, elementTags, nodeTags,
+                                   dimTag.first, dimTag.second);
+
+    // Convert GMSH elements to VTK cells
+    for (std::size_t iety = 0; iety < elementTypes.size(); ++iety) {
+      // Get element type information from GMSH
+      std::string elementName;
+      int dim, order, numNodes, numPrimaryNodes;
+      std::vector<double> nodeCoord;
+      gmsh::model::mesh::getElementProperties(elementTypes[iety], elementName,
+                                              dim, order, numNodes, nodeCoord,
+                                              numPrimaryNodes);
+
+      // Convert GMSH element type to VTK cell type
+      VTKCellType ct =
+          NEM::MSH::gmshGeoMesh::getVTKTypeFromGmshType(elementName);
+      for (std::size_t ietg = 0; ietg < elementTags[iety].size(); ++ietg) {
+        // Create list of point ids for the cell.
+        vtkNew<vtkIdList> ptIds{};
+        ptIds->Allocate(numNodes);
+        for (int nn = 0; nn < numNodes; ++nn) {
+          ptIds->InsertNextId(
+              gmshNodeNum2vtkId.at(nodeTags[iety][ietg * numNodes + nn]));
+        }
+
+        // Add cell to mesh/sideSet
+        dataSet->InsertNextCell(ct, ptIds);
+
+        // geoEnt: Add to geometric entity array
+        if (vtkEntities) vtkEntities->InsertNextValue(dimTag.second);
+      }
+    }
+  }
+}
+}  // namespace
 
 namespace NEM {
 namespace MSH {
@@ -47,26 +94,16 @@ gmshGeoMesh::~gmshGeoMesh() {
 
 void gmshGeoMesh::write(const std::string &fileName) {
   _gmshMesh = GM2gmsh(this->getGeoMesh());
-
-  /*
-  {  // DEBUG
-    std::cout << "_gmshMesh: " << _gmshMesh << std::endl;
-    std::string name;
-    gmsh::model::getCurrent(name);
-    std::cout << name << std::endl;
-  }
-  */
-
   gmsh::write(fileName);
+  gmsh::model::mesh::clear();
 }
 
 void gmshGeoMesh::report(std::ostream &out) const { geoMeshBase::report(out); }
 
-// TODO: use numV to sort into higher order elements.
 VTKCellType gmshGeoMesh::getVTKTypeFromGmshType(const std::string &gmshType) {
   std::string name = nemAux::findToStr(gmshType, " ");
   int numV;
-  if(name == "Point") {
+  if (name == "Point") {
     numV = 1;
   } else {
     numV = std::stoi(nemAux::findFromStr(gmshType, " "));
@@ -75,41 +112,41 @@ VTKCellType gmshGeoMesh::getVTKTypeFromGmshType(const std::string &gmshType) {
   if (name == "Point") {
     return VTK_VERTEX;
   } else if (name == "Line") {
-    switch(numV) {
-      case 3 : return VTK_QUADRATIC_EDGE;
-      default : return VTK_LINE;
+    switch (numV) {
+      case 3: return VTK_QUADRATIC_EDGE;
+      default: return VTK_LINE;
     }
   } else if (name == "Triangle") {
-    switch(numV) {
-      case 6 : return VTK_QUADRATIC_TRIANGLE;
-      default : return VTK_TRIANGLE;
+    switch (numV) {
+      case 6: return VTK_QUADRATIC_TRIANGLE;
+      default: return VTK_TRIANGLE;
     }
   } else if (name == "Quadrilateral") {
-    switch(numV) {
-      case 8 : return VTK_QUADRATIC_QUAD;
-      case 9 : return VTK_BIQUADRATIC_QUAD;
-      default : return VTK_QUAD;
+    switch (numV) {
+      case 8: return VTK_QUADRATIC_QUAD;
+      case 9: return VTK_BIQUADRATIC_QUAD;
+      default: return VTK_QUAD;
     }
   } else if (name == "Polygon") {
     return VTK_POLYGON;
   } else if (name == "Tetrahedron") {
-    switch(numV) {
-      case 10 : return VTK_QUADRATIC_TETRA;
-      default : return VTK_TETRA;
+    switch (numV) {
+      case 10: return VTK_QUADRATIC_TETRA;
+      default: return VTK_TETRA;
     }
   } else if (name == "Hexahedron") {
-    switch(numV) {
-      case 20 : return VTK_QUADRATIC_HEXAHEDRON;
-      case 27 : return VTK_TRIQUADRATIC_HEXAHEDRON;
-      default : return VTK_HEXAHEDRON;
+    switch (numV) {
+      case 20: return VTK_QUADRATIC_HEXAHEDRON;
+      case 27: return VTK_TRIQUADRATIC_HEXAHEDRON;
+      default: return VTK_HEXAHEDRON;
     }
   } else if (name == "Prism") {
     return VTK_WEDGE;
   } else if (name == "Pyramid") {
     return VTK_PYRAMID;
   } else if (name == "Trihedron" ||  // Flat Quad + 2 Tris.
-             name == "Polyhedron"    // Occurs in MElementCuts
-  ) {
+             name == "Polyhedron")   // Occurs in MElementCuts
+  {
     std::cerr << "ERROR in Gmsh to VTK element conversion: Gmsh element \""
               << name << "\" is not supported by VTK." << std::endl;
   } else {
@@ -122,7 +159,7 @@ VTKCellType gmshGeoMesh::getVTKTypeFromGmshType(const std::string &gmshType) {
 geoMeshBase::GeoMesh gmshGeoMesh::gmsh2GM(const std::string &gmshMesh) {
   auto vtkMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  if (gmshMesh.empty()) return {vtkMesh, gmshMesh, "", nullptr};
+  if (gmshMesh.empty()) return {vtkMesh, gmshMesh, "", {}};
 
   std::string geoEntArrayName = GEO_ENT_DEFAULT_NAME;
 
@@ -130,8 +167,6 @@ geoMeshBase::GeoMesh gmshGeoMesh::gmsh2GM(const std::string &gmshMesh) {
 
   // Track GMSH node ids and VTK point ids.
   std::map<std::size_t, vtkIdType> gmshNodeNum2vtkId;
-  // Track GMSH element ids and VTK cell ids
-  std::map<std::size_t, vtkIdType> gmshElementNum2vtkId;
 
   {  // Add points
     vtkSmartPointer<vtkPoints> points =
@@ -161,7 +196,7 @@ geoMeshBase::GeoMesh gmshGeoMesh::gmsh2GM(const std::string &gmshMesh) {
     // total number of elements
 
     gmsh::vectorpair dimTags;
-    gmsh::model::getEntities(dimTags);
+    gmsh::model::getEntities(dimTags, gmsh::model::getDimension());
 
     // geoEnt: Track entities to place as cell data
     vtkSmartPointer<vtkIntArray> vtkEntities =
@@ -169,97 +204,44 @@ geoMeshBase::GeoMesh gmshGeoMesh::gmsh2GM(const std::string &gmshMesh) {
     vtkEntities->Initialize();  // Cannot allocate
     vtkEntities->SetName(geoEntArrayName.c_str());
 
-    // Parse by entity
-    for (const auto &dimTag : dimTags) {
-      // Get GMSH elements
-      std::vector<int> elementTypes;
-      std::vector<std::vector<std::size_t>> elementTags;
-      std::vector<std::vector<std::size_t>> nodeTags;
-      gmsh::model::mesh::getElements(elementTypes, elementTags, nodeTags,
-                                     dimTag.first, dimTag.second);
-
-      // Convert GMSH elements to VTK cells
-      for (std::size_t iety = 0; iety < elementTypes.size(); ++iety) {
-        // Get element type information from GMSH
-        std::string elementName;
-        int dim, order, numNodes, numPrimaryNodes;
-        std::vector<double> nodeCoord;
-        gmsh::model::mesh::getElementProperties(elementTypes[iety], elementName,
-                                                dim, order, numNodes, nodeCoord,
-                                                numPrimaryNodes);
-
-        // Convert GMSH element type to VTK cell type
-        VTKCellType ct = getVTKTypeFromGmshType(elementName);
-        if (dim == gmsh::model::getDimension()) {
-          for (std::size_t ietg = 0; ietg < elementTags[iety].size(); ++ietg) {
-            gmshElementNum2vtkId[elementTags[iety][ietg]] =
-                vtkMesh->GetNumberOfCells();
-
-            // Create list of point ids for the cell.
-            vtkSmartPointer<vtkIdList> ptIds =
-                vtkSmartPointer<vtkIdList>::New();
-            ptIds->Allocate(numNodes);
-            for (int nn = 0; nn < numNodes; ++nn) {
-              ptIds->InsertNextId(
-                  gmshNodeNum2vtkId[nodeTags[iety][ietg * numNodes + nn]]);
-            }
-
-            // Add cell to vtkUnstructuredGrid
-            vtkMesh->InsertNextCell(ct, ptIds);
-
-            // geoEnt: Add to geometric entity array
-            vtkEntities->InsertNextValue(dimTag.second);
-          }
-        }
-      }
-    }
+    addGmshEntitiesToDataSet(dimTags, gmshNodeNum2vtkId, vtkMesh, vtkEntities);
 
     // geoEnt: Add geometric entity data to VTK
     vtkMesh->GetCellData()->AddArray(vtkEntities);
+
+    // Since could not allocate elements/cells, we have to squeeze
+    vtkMesh->Squeeze();
   }
 
-  {
-      // Add point data
-      // TODO
+  SideSet sideSet{};
+  {  // sideSet
+    gmsh::vectorpair dimTags;
+    gmsh::model::getEntities(dimTags, gmsh::model::getDimension() - 1);
+    if (!dimTags.empty()) {
+      auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+      sideSetPD->SetPoints(vtkMesh->GetPoints());
+      sideSetPD->Allocate();
+      vtkNew<vtkIntArray> vtkEntities{};
+
+      addGmshEntitiesToDataSet(dimTags, gmshNodeNum2vtkId, sideSetPD,
+                               vtkEntities);
+      if (sideSetPD->GetNumberOfCells() > 0) {
+        sideSetPD->Squeeze();
+        sideSet = SideSet(sideSetPD, vtkEntities);
+      }
+    }
   }
 
-  {  // Add cell data
-     // TODO
-  }
-
-  // Since could not allocate elements/cells, we have to squeeze
-  vtkMesh->Squeeze();
+  // TODO: Add point, cell data
 
   // Only keep the geometry in the gmshMesh
   gmsh::model::mesh::clear();
 
-  return {vtkMesh, gmshMesh, geoEntArrayName, nullptr};
+  return {vtkMesh, gmshMesh, geoEntArrayName, sideSet};
 }
 
 std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
-  /*
-  // DEBUG
-  std::cout << "geoMesh.geo: " << geoMesh.geo << std::endl;
-  */
-
   gmsh::model::setCurrent(geoMesh.geo);
-
-  /*
-  {  // DEBUG
-    gmsh::vectorpair dimTags;
-    gmsh::model::getEntities(dimTags);
-    for (const auto &dimTag : dimTags) {
-      std::cout << "geoEnt   dim: " << dimTag.first
-                << "  tag: " << dimTag.second << std::endl;
-    }
-
-    gmsh::model::getPhysicalGroups(dimTags);
-    for (const auto &dimTag : dimTags) {
-      std::cout << "phyGrp   dim: " << dimTag.first
-                << "  tag: " << dimTag.second << std::endl;
-    }
-  }
-  */
 
   if (geoMesh.mesh->GetNumberOfPoints() > 0) {  // Add points
     std::vector<std::size_t> nodeTags;
@@ -281,15 +263,9 @@ std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
   }
 
   if (geoMesh.mesh->GetNumberOfCells() > 0) {  // Add elements
-    /*
-    // Debug
-    std::vector<int> elementTypes;
-    std::vector<std::vector<std::size_t>> elementTags;
-    std::vector<std::vector<std::size_t>> nodeTags;
-    */
-
     // Sort all cells by entity and element type
-    vtkSmartPointer<vtkCellIterator> it = geoMesh.mesh->NewCellIterator();
+    auto it =
+        vtkSmartPointer<vtkCellIterator>::Take(geoMesh.mesh->NewCellIterator());
     vtkSmartPointer<vtkIntArray> geoEntArray = vtkIntArray::FastDownCast(
         geoMesh.mesh->GetCellData()->GetArray(geoMesh.link.c_str()));
     for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell()) {
@@ -304,28 +280,27 @@ std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
       gmsh::model::mesh::addElementsByType(
           geoEnt, getGmshTypeFromVTKType(it->GetCellType()),
           {static_cast<std::size_t>(it->GetCellId() + 1)}, nodeTag);
-
-      /*
-      {  // Debug
-        std::cout << "cellId: " << it->GetCellId() + 1 << "  geoEnt: " << geoEnt
-                  << "  nodeTags:";
-        for (const auto &node : nodeTag) std::cout << " " << node;
-        std::cout << std::endl;
-      }
-      */
     }
-    it->Delete();
   }
 
-  /*
-  {  // DEBUG
-    int NbNode;
-    double NbNodeD;
-    gmsh::option::getNumber("Mesh.NbNodes", NbNodeD);
-    NbNode = static_cast<int>(NbNodeD);
-    std::cout << "NbNode: " << NbNode << std::endl;
+  if (geoMesh.sideSet.sides && geoMesh.sideSet.sides->GetNumberOfCells() > 0) {
+    auto it = vtkSmartPointer<vtkCellIterator>::Take(
+        geoMesh.sideSet.sides->NewCellIterator());
+    auto geoEntArray = geoMesh.sideSet.getGeoEntArr();
+    for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell()) {
+      int geoEnt = geoEntArray->GetTypedComponent(it->GetCellId(), 0);
+
+      vtkSmartPointer<vtkIdList> ptIds = it->GetPointIds();
+      std::vector<std::size_t> nodeTag;
+      for (vtkIdType pt = 0; pt < it->GetNumberOfPoints(); ++pt) {
+        nodeTag.emplace_back(ptIds->GetId(pt) + 1);
+      }
+
+      gmsh::model::mesh::addElementsByType(
+          geoEnt, getGmshTypeFromVTKType(it->GetCellType()),
+          {static_cast<std::size_t>(it->GetCellId() + 1)}, nodeTag);
+    }
   }
-  */
 
   gmsh::model::mesh::reclassifyNodes();
 
@@ -347,7 +322,7 @@ void gmshGeoMesh::resetNative() {
     getGeoMesh().mesh->GetCellData()->AddArray(linkArr);
   }
   setGeoMesh(gm);
-  _gmshMesh = GM2gmsh(gm);
+  _gmshMesh = gm.geo;
 }
 
 }  // namespace MSH

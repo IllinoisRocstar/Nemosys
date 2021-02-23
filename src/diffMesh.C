@@ -175,6 +175,9 @@ int diffMesh(geoMeshBase *gmb1, geoMeshBase *gmb2, double floor, double relTol,
 
   for (int i = 0; i < numCellArr1; ++i) {
     auto arr1 = gmb1->getCellDataArrayCopy(i);
+    if (arr1->GetName() == gmb1->getGeoEntArrayName()) {
+      continue;
+    }
     auto arr2 = gmb2->getCellDataArrayCopy(arr1->GetName());
     if (!arr2) {
       std::cerr << "Mesh 2 does not have a cell data array of name "

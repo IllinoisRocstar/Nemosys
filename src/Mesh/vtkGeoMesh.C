@@ -120,7 +120,7 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
       vtkMesh->GetNumberOfPoints() == 0 ||                        // No points
       !vtkMesh->GetCellData()->HasArray(phyGrpArrayName.c_str())  // No geometry
   )
-    return {vtkMesh, "", "", nullptr};
+    return {vtkMesh, "", "", {}};
 
   {  // Add geometric entities and physical groups
     std::set<std::pair<int, int>> dim_phyGrp;
@@ -162,7 +162,7 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
   }
   */
 
-  return {vtkMesh, gmshMesh, phyGrpArrayName, nullptr};
+  return {vtkMesh, gmshMesh, phyGrpArrayName, {}};
 }
 
 void vtkGeoMesh::resetNative() {}

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 54)
+set(NEMOSYS_MINOR_VERSION 55)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -564,6 +564,7 @@ set(NEMOSYS_SRCS
     src/Mesh/exoGeoMesh.C
     src/Mesh/gmshMesh.C
     src/Mesh/gmshGeoMesh.C
+    src/Mesh/inpGeoMesh.C
     src/Mesh/oshGeoMesh.C
     src/Mesh/patran.C
     src/Mesh/pntMesh.C
