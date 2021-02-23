@@ -125,11 +125,15 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
                   * @note used for identifying surface ids
                   * that change due to Boolean operations */
   std::map<std::string, int>
-      phystag_map;       /**< map for physical entity tags and physical names */
+      phystag_map; /**< map for physical entity tags and physical names */
+  std::map<std::string, int>
+      sstag_map;         /**< map for sideset physical entity tags and names */
   int id;                /**< shape object index
                           * @note used in shape_map */
   int physTag;           /**< physical entity tag id index
                           * @note used in phystag_map */
+  int ssTag;             /**< physical ss tag id index
+                          * @note used in sstag_map */
   std::string extension; /**< output file name extension */
   std::string ofname;    /**< output file name */
   std::map<std::string, std::pair<std::string, jsoncons::json>>
@@ -137,7 +141,7 @@ class NEMOSYS_EXPORT NucMeshDriver : public NemDriver {
                      * @note contents of map are Alias, Shape Type, and Shape
                      * JSON object */
   bool extrude;     /**< bool to construct 3D mesh */
-  bool gui;         /**< bool to open Gmsh gui */
+  bool gui{false};  /**< bool to open Gmsh gui */
   bool skipAll;     /**< bool to skip all break statements */
   std::vector<int> layers;     /** vector of 3D mesh layers */
   std::vector<double> heights; /** vector of 3D mesh layer heights */

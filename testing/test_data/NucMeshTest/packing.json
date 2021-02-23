@@ -8,7 +8,7 @@
 			"Global Options":
 			[
 				{
-				"Open GUI": true,
+				"Open GUI": false,
 				"3D": false,
 				"Number of Layers": [4],
 				"Heights": [1],

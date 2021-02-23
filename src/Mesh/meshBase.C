@@ -63,7 +63,8 @@ meshBase *meshBase::Create(const std::string &fname) {
     std::cout << "Processing the file ...." << std::endl;
     return exportPntToVtk(fname);
   } else if (fname.find(".g") != std::string::npos ||
-             fname.find(".exo") != std::string::npos) {
+             fname.find(".exo") != std::string::npos ||
+             fname.find(".e") != std::string::npos) {
     std::cout << "Detected file in Exodus II format" << std::endl;
     std::cout << "Processing the file ...." << std::endl;
     return exportExoToVtk(fname);
@@ -973,6 +974,13 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
   // Connectivities
   // allocating space for cell connectivities
   dataSet_tmp->Allocate(numVolCells);
+
+  // VTK int array for block IDs
+  vtkSmartPointer<vtkIntArray> blocks = vtkSmartPointer<vtkIntArray>::New();
+  blocks->SetNumberOfValues(numVolCells);
+  blocks->SetName("BlockId");
+
+  int count = 0;
   // read element blocks
   for (int iEB = 1; iEB <= numElmBlk; iEB++) {
     int num_el_in_blk, num_nod_per_el, num_attr /*, *connect*/;
@@ -995,6 +1003,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
     //_exErr = ex_get_elem_attr (fid, iEB, &attrib[0]);
     // EXOMesh::wrnErrMsg(_exErr, "Problem reading element block
     // attributes.\n");
+
     for (int iEl = 0; iEl < num_el_in_blk; ++iEl) {
       vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
       VTKCellType vct =
@@ -1006,18 +1015,24 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
       }
       // insert connectivities
       dataSet_tmp->InsertNextCell(vct, vtkcellIds);
+
+      vtkIdType i = count;
+      blocks->SetValue(i, iEB);
+      count++;
     }
   }
-
-  std::cout << "Trimmed name = " << nemAux::trim_fname(fname, ".vtu")
-            << std::endl;
+  // std::cout << "Trimmed name = " << nemAux::trim_fname(fname, ".vtu")
+  //          << std::endl;
 
   vtkMesh *vtkmesh = new vtkMesh();
   vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
-  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
-  // vtkmesh->write();
+
+  vtkmesh->dataSet->GetCellData()->AddArray(blocks);
+
+  vtkmesh->setFileName("vtkWithIds.vtu");
+  vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
   // closing the file
@@ -1249,9 +1264,8 @@ void meshBase::writeMSH(std::ofstream &outputStream,
   for (int i = 0; i < numPoints; ++i) {
     std::vector<double> pntcrds = getPoint(i);
     outputStream << i + 1 << " ";
-    outputStream << std::setprecision(16)
-                 << pntcrds[0] << " " << pntcrds[1] << " " << pntcrds[2]
-                 << " " << std::endl;
+    outputStream << std::setprecision(16) << pntcrds[0] << " " << pntcrds[1]
+                 << " " << pntcrds[2] << " " << std::endl;
   }
   outputStream << "$EndNodes" << std::endl;
 
@@ -1377,7 +1391,7 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
       faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkStaticCellLocator> surfCellLocator =
-    surfWithPatches->buildStaticCellLocator();
+      surfWithPatches->buildStaticCellLocator();
   // maximum number of vertices per face (to be found in proceeding loop)
   int nVerticesPerFaceMax = 0;
   // maximum number of faces per cell (to be found in proceeding loop)
@@ -1603,7 +1617,7 @@ void meshBase::checkMesh(const std::string &ofname) const {
 /**
  **/
 int diffMesh(meshBase *mesh1, meshBase *mesh2) {
-  //double tol = 1e-14;
+  // double tol = 1e-14;
   double tol = 3e-2;
 
   if (mesh1->getNumberOfPoints() != mesh2->getNumberOfPoints() ||
@@ -1617,7 +1631,7 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     std::vector<double> coord1 = mesh1->getPoint(i);
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j) {
-      if (std::fabs((coord1[j] - coord2[j])/coord2[j]) > tol) {
+      if (std::fabs((coord1[j] - coord2[j]) / coord2[j]) > tol) {
         std::cerr << "Meshes differ in point coordinates" << std::endl;
         std::cerr << "Index " << i << " Component " << j << std::endl;
         std::cerr << "Coord 1 " << std::setprecision(15) << coord1[j]
@@ -1638,7 +1652,7 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     }
     for (int j = 0; j < cell1.size(); ++j) {
       for (int k = 0; k < 3; ++k) {
-        if (std::fabs((cell1[j][k] - cell2[j][k])/cell2[j][k]) > tol) {
+        if (std::fabs((cell1[j][k] - cell2[j][k]) / cell2[j][k]) > tol) {
           std::cerr << "Meshes differ in cells" << std::endl;
           return 1;
         }
@@ -1677,17 +1691,15 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
         da1->GetRange(range, k);
         abs_error = std::fabs(comps1[k] - comps2[k]);
         double max_val = std::max(std::abs(range[0]), std::abs(range[1]));
-        rel_error = abs_error/std::max(1.0, max_val);
+        rel_error = abs_error / std::max(1.0, max_val);
         if (rel_error > tol) {
           std::cerr << "For point data array " << da1->GetName() << std::endl;
           std::cerr << "Meshes differ in point data values at point " << j
                     << " component " << k << std::endl;
-          std::cerr << std::setprecision(15)
-                    << "Mesh 1 value : "
-                    << comps1[k] << std::endl;
-          std::cerr << std::setprecision(15)
-                    << "Mesh 2 value : "
-                    << comps2[k] << std::endl;
+          std::cerr << std::setprecision(15) << "Mesh 1 value : " << comps1[k]
+                    << std::endl;
+          std::cerr << std::setprecision(15) << "Mesh 2 value : " << comps2[k]
+                    << std::endl;
           return 1;
         }
       }

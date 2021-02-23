@@ -1,5 +1,7 @@
-#include <meshBase.H>
+#include <exoMesh.H>
 #include <foamMesh.H>
+#include <meshBase.H>
+#include <NemDriver.H>
 #include <gtest.h>
 
 const char* mshName;
@@ -23,6 +25,47 @@ const char* packConv;
 const char* packConv_ref;
 const char* buildingTet;
 const char* buildingTet_ref;
+const char* combineBlocks_json;
+
+std::string combine_blocks(const char *jsonF) {
+  std::string fname(jsonF);
+  std::ifstream inputStream(fname);
+  if (!inputStream.good()) {
+    std::cerr << "Error opening file " << jsonF << std::endl;
+    exit(1);
+  }
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+
+  if (inputjson.contains("Conversion Options")) {
+    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
+        std::unique_ptr<NEM::DRV::NemDriver>(NEM::DRV::NemDriver::readJSON(inputjson));
+  }
+  std::string ifname = "four_boxes_combined.e";
+  return ifname;
+}
+
+#ifdef HAVE_EXODUSII
+TEST(Conversion, ConvertEXOtoEXO) {
+  auto em = new NEM::MSH::EXOMesh::exoMesh(combine_blocks(combineBlocks_json));
+  std::string mesh = "four_boxes_combined.e";
+  em->read(mesh);
+
+  int numBlks = em->getNumberOfElementBlocks();
+  std::cout << "Number of element blocks " << numBlks << std::endl;
+  int numSdes = em->getNumSdesInSdeSetById(4);
+  std::cout << "Number of sides in sideset " << numSdes << std::endl;
+
+  int ret;
+  if (numBlks != 3 || numSdes != 52) {
+    std::cout << "Expected number of blocks to be 3 and sides to be 52."
+              << std::endl;
+    ret = 1;
+  } else
+    ret = 0;
+  EXPECT_EQ(0, ret);
+}
+#endif
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -159,7 +202,7 @@ TEST(Conversion, ConvertVTKHexToTet)
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 22);
+  assert(argc == 23);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -181,6 +224,7 @@ int main(int argc, char** argv) {
   packConv_ref = argv[19];
   buildingTet = argv[20];
   buildingTet_ref = argv[21];
+  combineBlocks_json = argv[22];
   return RUN_ALL_TESTS();
 }
 

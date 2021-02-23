@@ -15,12 +15,19 @@
 #include <vtkCell.h>
 #include <vtkCell3D.h>
 #include <vtkCellData.h>
+#include <vtkConnectivityFilter.h>
+#include <vtkDataSetRegionSurfaceFilter.h>
+#include <vtkGenericCell.h>
 #include <vtkGeometryFilter.h>
 #include <vtkIdList.h>
 #include <vtkModelMetadata.h>
+#include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkStringArray.h>
+#include <vtkThreshold.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkXMLDataSetWriter.h>
+#include <vtkXMLWriter.h>
 
 #include "AuxiliaryFunctions.H"
 #include "cobalt.H"
@@ -100,6 +107,10 @@ ConversionDriver::ConversionDriver(const std::string &srcmsh,
     std::cout << "Converting to EXODUS II..." << std::endl;
     jsoncons::json opts = inputjson["Conversion Options"];
     genExo(opts, ofname);
+  } else if (method == "EXO->EXO") {
+    std::cout << "Manipulating EXODUS II..." << std::endl;
+    jsoncons::json opts = inputjson["Conversion Options"];
+    manipExo(opts, ofname);
   } else if (method == "FOAM->MSH") {
 #ifdef HAVE_CFMSH
     meshBase *fm = new FOAM::foamMesh();
@@ -408,14 +419,15 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
   std::vector<double> grpIds(mb->getNumberOfCells(), 0.0);
   if (usePhys) mb->getCellDataArray("PhysGrpId", grpIds);
 
+  bool is3D = false;
+  // Loop through all elements
   for (int iElm = 0; iElm < mb->getNumberOfCells(); iElm++) {
     VTKCellType vtkType =
         static_cast<VTKCellType>(mb->getDataSet()->GetCellType(iElm));
     NEM::MSH::EXOMesh::elementType exoType =
         NEM::MSH::EXOMesh::v2eEMap(vtkType);
-    elmBucket[static_cast<int>(grpIds[iElm])][exoType].emplace_back(iElm);
+
     // set the dimension of Exo database based on present elements
-    bool is3D = false;
     if (!is3D) {
       if (exoType == NEM::MSH::EXOMesh::elementType::TETRA ||
           exoType == NEM::MSH::EXOMesh::elementType::WEDGE ||
@@ -424,6 +436,8 @@ void ConversionDriver::genExo(meshBase *mb, NEM::MSH::EXOMesh::exoMesh *em,
         em->setDimension(3);
       }
     }
+
+    elmBucket[static_cast<int>(grpIds[iElm])][exoType].emplace_back(iElm);
   }
 
   // sanity check
@@ -757,7 +771,7 @@ void ConversionDriver::freeSurfaceSideSet(
   vtkSmartPointer<vtkDataSet> ds = mb->getDataSet();
   if (!ds) {
     std::cerr << "No dataset is associated to the meshbase." << std::endl;
-    exit(1);
+    throw;
   }
   bool tetWarning = false;
   // loop through cells and obtain different quantities needed
@@ -825,9 +839,11 @@ void ConversionDriver::freeSurfaceSideSet(
 
       if (splitTopBotSS) {
         if (sId == 5) {
+          // Top
           elementIds2.push_back(exoId);
           sideIds2.push_back(sId);
         } else if (sId == 6) {
+          // Bottom
           elementIds3.push_back(exoId);
           sideIds3.push_back(sId);
         } else {
@@ -846,9 +862,11 @@ void ConversionDriver::freeSurfaceSideSet(
 
       if (splitTopBotSS) {
         if (sId == 4) {
+          // Top
           elementIds2.push_back(exoId);
           sideIds2.push_back(sId);
         } else if (sId == 5) {
+          // Bottom
           elementIds3.push_back(exoId);
           sideIds3.push_back(sId);
         } else {
@@ -1105,6 +1123,57 @@ void ConversionDriver::procExo(const jsoncons::json &ppJson,
     em->scaleNodes(ppJson["Scale"].as<double>());
   } else {
     std::cerr << "Unknown operation requested: " << opr << std::endl;
+  }
+}
+
+//****************** Manipulate Exodus Mesh *******************//
+//*************************************************************//
+void ConversionDriver::manipExo(const jsoncons::json &opts,
+                                const std::string &fname) {
+  int nMsh = opts.get_with_default("Number of Mesh", 0);
+
+  // sanity check
+  if (nMsh == 0) {
+    std::cerr << "Error: At least one mesh should be provided!\n" << std::endl;
+    throw;
+  }
+
+  for (int iMsh = 0; iMsh < nMsh; iMsh++) {
+    jsoncons::json mshOpts;
+    if (opts.contains("Mesh Data"))
+      mshOpts = opts["Mesh Data"];
+    else {
+      std::cerr << "Error: 'Mesh Data' keyword missing from input JSON."
+                << std::endl;
+      throw;
+    }
+    std::string mshFName = mshOpts[iMsh].get_with_default("File", "");
+
+    // read in exo mesh from file name
+    auto em = new NEM::MSH::EXOMesh::exoMesh(mshFName);
+    em->read(mshFName);
+
+    // Combining Blocks
+    if (mshOpts[iMsh].contains("CombineBlocks")) {
+      jsoncons::json cmbBlks = mshOpts[iMsh]["CombineBlocks"];
+
+      for (const auto &cmb : cmbBlks.array_range()) {
+        std::vector<int> blkIdLst;
+        if (cmb.contains("BlockIDs")) {
+          jsoncons::json blkIDs = cmb["BlockIDs"];
+          for (int i = 0; i < blkIDs.size(); ++i)
+            blkIdLst.push_back(blkIDs[i].as<int>());
+        }
+        std::string newName = "";
+        if (cmb.contains("Rename")) newName = cmb["Rename"].as_string();
+        em->combineElmBlks(blkIdLst, newName);
+      }
+    }
+
+    // Set the output file name
+    em->setFileName(fname);
+    em->write();
+    em->report();
   }
 }
 

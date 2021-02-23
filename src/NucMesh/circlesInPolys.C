@@ -19,6 +19,7 @@ namespace GEO {
               mesh type,
               number of elements,
               region name,
+              sideset bools,
               rotation angle (degrees) */
 
 namespace occ = gmsh::model::occ;
@@ -29,7 +30,8 @@ circlesInPolys::circlesInPolys(int nsides, std::vector<double> cen,
                                std::vector<double> poly_rad,
                                std::vector<std::string> mtype,
                                std::vector<std::pair<int, int>> el,
-                               std::vector<std::string> name, double rot) {
+                               std::vector<std::string> name,
+                               std::vector<std::string> ss, double rot) {
   _nSides = nsides;                       // Number of sides
   _center = std::move(cen);               // Center of circle
   _circle_radii = std::move(circle_rad);  // Radii for concentric circles
@@ -37,6 +39,7 @@ circlesInPolys::circlesInPolys(int nsides, std::vector<double> cen,
   _meshType = std::move(mtype);           // Mesh type for each layer/circle
   _elems = std::move(el);                 // Number of element for transfinite
   _names = std::move(name);               // Physical group names (Region names)
+  _sideset = std::move(ss);               // Sideset bools
   _rotation = rot;                        // Rotation angle (degrees)
 }
 
@@ -182,8 +185,7 @@ void circlesInPolys::draw() {
   occ::synchronize();
 }
 
-// Applies the mesh type (tri,quad,struct) to surfaces
-void circlesInPolys::applyMeshType() {
+std::vector<std::vector<std::pair<int, int>>> circlesInPolys::getLines() const {
   // Gather all the lines of the polys for meshing
   std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
   std::vector<std::pair<int, int>> circleLines;
@@ -206,6 +208,14 @@ void circlesInPolys::applyMeshType() {
     allLines.push_back(circleLines);
     circleLines.clear();
   }
+  return allLines;
+}
+
+// Applies the mesh type (tri,quad,struct) to surfaces
+void circlesInPolys::applyMeshType() {
+  // Gather all the lines of the polys for meshing
+  std::vector<std::vector<std::pair<int, int>>> allLines;  // lines of circles
+  allLines = getLines();
 
   // Apply _meshType: "Tri"=tris, "Quad"=quads, "Struct"=structured
   for (int i = 0; i < _meshType.size(); i++) {
@@ -287,10 +297,8 @@ void circlesInPolys::applyMeshType() {
   }
 }
 
-std::map<int, int> circlesInPolys::getPhysSurf(
-    std::map<std::string, int> phystag_map, std::map<int, int> physSurf_map) {
-  //------------Physical Groups------------//
-  //---------------------------------------//
+void circlesInPolys::getPhysSurf(const std::map<std::string, int> &phystag_map,
+                                 std::map<int, int> &physSurf_map) const {
   int physTag;
   if (!_names.empty()) {
     for (int i = 0; i < _names.size(); ++i) {
@@ -308,12 +316,46 @@ std::map<int, int> circlesInPolys::getPhysSurf(
         std::cout << "physical tag not in phystag_map" << std::endl;
     }
   }
-  return physSurf_map;
-  occ::synchronize();
+}
+
+void circlesInPolys::getPhysLine(const std::map<std::string, int> &sstag_map,
+                                 std::map<int, int> &physLine_map) const {
+  std::vector<std::vector<std::pair<int, int>>> allLines;
+  allLines = getLines();
+
+  int ssTag;
+  if (!_sideset.empty()) {
+    for (int i = 0; i < _sideset.size(); ++i) {
+      // std::cout << "i = " << i << std::endl;
+      auto it = sstag_map.find(_sideset[i]);
+      if (it != sstag_map.end()) {
+        ssTag = it->second;
+
+        if (i == 0 && _sideset[i] != "None") {
+          for (auto &lines : allLines[i]) {
+            physLine_map.insert(std::pair<int, int>(lines.second, ssTag));
+            // std::cout << "inner line " << lines.second << std::endl;
+          }
+        }
+        // std::cout << "\n" << std::endl;
+        if (i > 0 && _sideset[i] != "None") {
+          // std::cout << "size of allLines " << allLines.size() << std::endl;
+          for (int j = 2; j < allLines[i].size(); j = j + 4) {
+            // std::cout << "j = " << j << std::flush;
+            physLine_map.insert(
+                std::pair<int, int>(allLines[i][j].second, ssTag));
+            // std::cout << ", other line " << allLines[i][j].second <<
+            // std::endl;
+          }
+        }
+        // std::cout << "\n" << std::endl;
+      }
+    }
+  }
 }
 
 // Returns the max ID/Tag of entity with dimension dim
-int circlesInPolys::getMaxID(int dim) {
+int circlesInPolys::getMaxID(int dim) const {
   std::vector<std::pair<int, int>> retTags;
   gmsh::model::getEntities(retTags, dim);
   int max = 0;

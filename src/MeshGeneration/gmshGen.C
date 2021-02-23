@@ -258,17 +258,18 @@ void gmshGen::meshSizeFields() {
       for (auto &prm : sf.params) {
         if (prm.first == "Thickness") {
           thick = prm.second;
+          std::cout << "thickness = " << thick << std::endl;
           break;
         }
       }
       for (auto &prm : sf.params) {
         std::string key = prm.first;
-        double val = prm.second;
+        int val = prm.second;
         if (key == "IField") {
           for (auto &sf2 : meshParams->sizeFields) {
             if (sf2.type == "Cylinder" && sf2.id == val) {
               double radius = 0;
-              double thick = 0;
+              //double thick = 0;
               double vin = 10.0;
               double vout = 10.0;
               double xc = 0.0;
@@ -280,7 +281,7 @@ void gmshGen::meshSizeFields() {
               // Get Cylinder field parameters
               for (auto &prm2 : sf2.params) {
                 if (prm2.first == "Radius") radius = prm2.second;
-                if (prm2.first == "Thickness") thick = prm2.second;
+                //if (prm2.first == "Thickness") thick = prm2.second;
                 if (prm2.first == "VIn") vin = prm2.second;
                 if (prm2.first == "VOut") vout = prm2.second;
                 if (prm2.first == "XCenter") xc = prm2.second;

@@ -206,6 +206,7 @@ NEM_add_test(conversion Conversion ConversionTest
     geom_pack_mesh_ref.vtu
     Building.vtu
     TetBuilding.vtu
+    conversion_exo2exo.json
     )
 
 NEM_add_test(cobaltGen CobaltGen CobaltGenTest
@@ -284,6 +285,9 @@ NEM_add_test(exoMesh ExoMesh ExoMeshTest
     pack.g
     test_merge_in.g
     test_merge_ref.g
+    four_boxes_tetra.e
+    four_boxes_hexa.e
+    simple_circles_test.e
     )
 
 NEM_add_test(geoMeshBase GeoMeshBase "")
