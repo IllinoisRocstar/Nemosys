@@ -4,24 +4,24 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 55)
+set(NEMOSYS_MINOR_VERSION 56)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
     "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
 set(NEMOSYS_SHORT_LICENSE "GNU General Public License v2 or later (GPLv2+)")
-set(NEMOSYS_HOMEPAGE_URL "http://git.illinois.rocstar/Nemosys/Nemosys")
+set(NEMOSYS_HOMEPAGE_URL "http://promesh.com")
 set(NEMOSYS_AUTHOR
-    "Masoud Safdari (lead)"
-    "Andrew Fu"
     "Alessandro Gondolo"
+    "Andrew Fu"
     "Sachin Natesh"
     "Akash Patel"
     "Seth Pemberton"
+    "Masoud Safdari"
     "Pavle Simonovic"
     "Taiyo Wilson")
-set(NEMOSYS_AUTHOR_EMAIL "msafdari@illinoisrocstar.com")
+set(NEMOSYS_AUTHOR_EMAIL "promesh@illinoisrocstar.com")
 set(NEMOSYS_PYTHON_CLASSIFIERS
     "Development Status :: 2 - Pre-Alpha"
     "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
@@ -82,7 +82,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/Modules/)
 
 # This variable controls the default value of the options, which are normally
 # set to ON (useful if you want to configure a minimal version of NEMoSys: e.g.,
-#  "cmake -DDEFAULT=0 -DENABLE_DTK=1")
+#  "cmake -DDEFAULT=0 -DENABLE_BUILD_UTILS=1")
 set(DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
 # creating code compilation database
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -120,7 +120,6 @@ opt(CFMSH "Enable cfMesh Meshing engine" OFF)
 opt(CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
 opt(CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 opt(CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
-opt(DTK "Enable DTK extensions" OFF)
 opt(EPIC "Enable EPIC preprocessor" OFF)
 opt(HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
 opt(METIS "Enable METIS partitioner" ${DEFAULT})
@@ -128,7 +127,6 @@ opt(NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 opt(OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
 with CUDA and linked dynamically)" OFF)
 opt(OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
-opt(SIMMETRIX "Enable Simmetrix Meshing engine (Used for Rocstar remeshing)" OFF)
 opt(TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
 opt(MLAMR "Enable machine learning module in AMR" OFF)
 opt(OPENMP "Enable OpenMP" ${DEFAULT})
@@ -351,55 +349,16 @@ if(ENABLE_NETGEN)
   endif()
 endif()
 
-# Find Trilinos
-if(ENABLE_DTK)
-  find_package(Trilinos PATHS ${TRILINOS_PATH}/lib/cmake/Trilinos
-                              ${TRILINOS_PATH})
-  if(NOT Trilinos_FOUND)
-    message(FATAL_ERROR "Could not find Trilinos!")
-  endif()
-  message(Trilinos_INCLUDE_DIRS = ${Trilinos_INCLUDE_DIRS})
-  link_directories(${Trilinos_LIBRARY_DIRS})
-  link_directories(${Trilinos_TPL_LIBRARY_DIRS})
-
-  # Import dtk related variables
-  include(dtk_stuff.txt)
-endif()
-
-# Find Simmetrix
-if(ENABLE_SIMMETRIX)
-  set(SIMMETRIX_LIB_DIR CACHE PATH "Simmetrix library directory path.")
-  find_library(SIMADM_LIB SimAdvMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMEXP_LIB SimExport HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMDSC_LIB SimDiscrete HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMPMH_LIB SimPartitionedMesh HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMPWR_LIB SimPartitionWrapper HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMSH_LIB SimMeshing HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMTL_LIB SimMeshTools HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMMDL_LIB SimModel HINTS ${SIMMETRIX_LIB_DIR})
-  find_library(SIMLCN_LIB SimLicense HINTS ${SIMMETRIX_LIB_DIR})
-  set(SIMMETRIX_LIBS ${SIMADM_LIB} ${SIMEXP_LIB} ${SIMDSC_LIB} ${SIMPMH_LIB}
-      ${SIMPWR_LIB} ${SIMMSH_LIB} ${SIMMTL_LIB} ${SIMMDL_LIB} ${SIMLCN_LIB})
-  find_file(SIMMETRIX_HDR MeshSim.h HINTS ${SIMMETRIX_LIB_DIR}/../../include)
-  get_filename_component(SIMMETRIX_INCPATH ${SIMMETRIX_HDR} PATH)
-  get_filename_component(SIMMETRIX_LIB_PATH ${SIMMDL_LIB} PATH)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${SIMMETRIX_INCPATH})
-  message(STATUS "Simmetrix include path ${SIMMETRIX_INCPATH}")
-  message(STATUS "Simmetrix libs ${SIMMETRIX_LIBS}")
-endif()
-
 # Find boost
 # Needed if there is no glob.h on the system
-if(ENABLE_SIMMETRIX OR ENABLE_CFMSH OR NOT HAVE_GLOB_H)
+if(ENABLE_CFMSH OR (ENABLE_BUILD_UTILS AND HAVE_CGNS AND NOT HAVE_GLOB_H))
   if(WIN32)
     set(Boost_USE_STATIC_LIBS ON) # needed ON on WIN32.
   endif()
   set(Boost_USE_MULTITHREADED ON)
-  find_package(Boost 1.45.0 REQUIRED COMPONENTS filesystem regex)
-  if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
+  find_package(Boost 1.45.0 REQUIRED COMPONENTS filesystem)
+  if(ENABLE_CFMSH)
     list(APPEND LIBRARY_DIRS ${Boost_LIBRARY_DIRS})
-    list(APPEND WRAPPER_INCLUDE_DIRS ${Boost_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -500,7 +459,6 @@ if(ENABLE_CONSRV_VOLUME_TRANSFER)
 endif()
 
 # Setting library files ########################################################
-# TODO: clean up the unnecessary modules such as R8
 
 # Setting include files
 file(GLOB H_FILES include/*.H)
@@ -508,20 +466,6 @@ file(GLOB h_FILES include/*.h)
 file(GLOB hpp_FILES include/*.hpp)
 file(GLOB cpp_FILES include/*.cpp)
 set(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES} ${cpp_FILES})
-
-# Setting r8 source
-set(R8_SRCS
-    src/Math/r8lib.cpp
-)
-
-# Setting interp source
-set(INTERP_SRCS
-    src/Geometry/spheres.C
-
-    src/Math/baseInterp.C
-    src/Math/rbf_interp_nd.cpp
-    src/Math/rbfInterp.C
-)
 
 # Setting Nemosys source
 # TODO: Commented files are orphaned! Check if to delete or reinclude.
@@ -550,8 +494,6 @@ set(NEMOSYS_SRCS
     src/InputGeneration/inputGen.C
 
     src/Integration/Cubature.C
-
-    src/IO/vtkAnalyzer.C
 
     src/Math/kmeans.C
 
@@ -612,23 +554,18 @@ set(NEMOSYS_SRCS
 #   src/Transfer/ConservativeVolumeTransfer.C
 
     src/diffMesh.C
-    src/StlToVtk.C
 )
 
 # Optional source files
 if(HAVE_CGNS)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Drivers/RocPartCommGenDriver.C
-      # src/Drivers/RocPrepDriver.C
-      # src/Drivers/RocRestartDriver.C
 
       src/IO/cgnsAnalyzer.C
       src/IO/cgnsWriter.C
       src/IO/rocstarCgns.C
 
       src/MeshPartitioning/meshStitcher.C
-
-      src/gridTransfer.C
   )
 endif()
 
@@ -645,18 +582,6 @@ if(ENABLE_EPIC)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/InputGeneration/ep16Post.C
       src/InputGeneration/ep16Prep.C
-  )
-endif()
-
-if(ENABLE_SIMMETRIX)
-  if(NOT ENABLE_CGNS)
-      MESSAGE(FATAL_ERROR "If enabling simmetrix, you MUST enable cgns as well.")
-  endif(NOT ENABLE_CGNS)
-  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
-      src/Drivers/RemeshDriver.C
-
-      src/MeshGeneration/simmetrixGen.C
-      src/MeshGeneration/simmetrixParams.C
   )
 endif()
 
@@ -707,27 +632,6 @@ endif()
 
 # Building libraries ###########################################################
 
-# Build r8 and rbf library
-add_library(r8 ${R8_SRCS})
-target_include_directories(r8
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nemosys>
-)
-
-# Build interp library
-add_library(interp ${INTERP_SRCS})
-target_link_libraries(interp
-    PRIVATE
-        r8
-        ANN
-)
-target_include_directories(interp
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nemosys>
-)
-
 # Build Nemosys library
 add_library(Nemosys ${NEMOSYS_SRCS})
 # /* Work around to disable warnings coming from contrib headers.
@@ -738,13 +642,11 @@ endforeach()
 # */
 target_link_libraries(Nemosys
     PUBLIC
-        interp
         MAdLib
         jsoncons
         omega_h
         ${VTK_LIBRARIES}
         ${GMSH_LIB}
-        ${Boost_LIBRARIES}
         ${EXO_LIB}
 )
 target_include_directories(Nemosys
@@ -799,10 +701,6 @@ if(HAVE_OPENCASCADE)
   target_link_libraries(Nemosys PUBLIC TKernel)
 endif()
 
-if(HAVE_GLOB_H)
-  target_compile_definitions(Nemosys PUBLIC HAVE_GLOB_H)
-endif()
-
 # TODO: Appears unused.
 #if(NOT ${BUILD_SHARED_LIBS})
 #  add_definitions(-DSTATIC_LINK)
@@ -836,12 +734,6 @@ if(ENABLE_NETGEN)
   endif()
   target_compile_definitions(Nemosys PUBLIC HAVE_NGEN)
   target_include_directories(Nemosys SYSTEM PUBLIC ${NETGEN_INCLUDE_DIRS})
-endif()
-
-if(ENABLE_SIMMETRIX)
-  target_link_libraries(Nemosys PUBLIC ${SIMMETRIX_LIBS})
-  target_include_directories(Nemosys SYSTEM PUBLIC ${SIMMETRIX_INCPATH})
-  target_compile_definitions(Nemosys PUBLIC HAVE_SIMMETRIX)
 endif()
 
 if(ENABLE_TEMPLATE_MESH)
@@ -885,6 +777,8 @@ if(ENABLE_CFMSH)
     set(OF_VERSION 7)
     target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
   endif()
+
+  target_link_libraries(Nemosys PRIVATE Boost::filesystem)
 endif()
 
 if(ENABLE_MLAMR)
@@ -966,36 +860,23 @@ endif()
 # Generate export header #######################################################
 include(GenerateExportHeader)
 generate_export_header(Nemosys)
-generate_export_header(interp)
-generate_export_header(r8)
 list(APPEND Nemosys_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h)
-list(APPEND interp_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/interp_export.h)
-list(APPEND r8_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/r8_export.h)
 target_include_directories(Nemosys PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_include_directories(interp PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_include_directories(r8 PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 # Set soname version ###########################################################
 
-# TODO: Set r8 and interp versions properly. They should be in contrib!
-set_target_properties(r8 PROPERTIES VERSION ${NEMOSYS_VERSION}
-                                    SOVERSION ${NEMOSYS_MAJOR_VERSION})
-set_target_properties(interp PROPERTIES VERSION ${NEMOSYS_VERSION}
-                                        SOVERSION ${NEMOSYS_MAJOR_VERSION})
 set_target_properties(Nemosys PROPERTIES VERSION ${NEMOSYS_VERSION}
                                          SOVERSION ${NEMOSYS_MAJOR_VERSION})
 
 # Install libraries ############################################################
 
 # Headers
-install(FILES ${r8_INC_FILES} ${interp_INC_FILES} ${Nemosys_INC_FILES}
+install(FILES ${Nemosys_INC_FILES}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys)
 
 # Libraries
-install(TARGETS r8 interp Nemosys
+install(TARGETS Nemosys
     EXPORT Nemosys
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -1017,39 +898,9 @@ set(NEMOSYSRUN_SRCS utils/Nemosys.C)
 
 # TODO: clean up old utilities
 if(ENABLE_BUILD_UTILS)
-  # Setting xmlDump utility source
-  set(XMLDUMP_SRCS utils/xmlDump.C)
-
   if(HAVE_CGNS)
-    # Setting cgns2gmsh utility source
-    set(CGNS2GMSH_SRCS utils/cgns2msh.C)
-
     # Setting stitch cgns utility source
     set(ROCSTITCHMESH_SRCS utils/rocStitchMesh.C)
-
-    # Setting Rocstar volume remesh utility source
-    set(ROCREMESH_SRCS utils/rocRemesh.C)
-
-    # Setting Rocstar surface remesh utility source
-    set(ROCSURFREMESH_SRCS utils/rocSurfRemesh.C)
-
-    # Setting Rocstar surface remesh utility source
-    set(GRID2GRIDTRANSFER_SRCS utils/grid2gridTransfer.C)
-
-    # Setting meshTransfer tutorial source
-    set(MSHTRANSFER_SRCS tutorials/mshTransfer.C)
-  endif()
-
-  # TODO: Orphaned files! Check if used.
-#  set(TUTR_SRCS tutorials/writeStructured.C)
-#  set(UTIL_SRCS
-#      utils/refineMesh.C
-#      utils/vol2planeTransfer.C
-#  )
-
-  # Setting DTK tutorial source
-  if(ENABLE_DTK)
-    set(DTKTUTORIAL_SRC tutorials/dtkTutorial.C)
   endif()
 endif()
 
@@ -1060,51 +911,15 @@ add_executable(nemosysRun ${NEMOSYSRUN_SRCS})
 target_link_libraries(nemosysRun Nemosys)
 
 if(ENABLE_BUILD_UTILS)
-  # Building xmlDump utility
-  add_executable(xmlDump ${XMLDUMP_SRCS})
-  target_link_libraries(xmlDump Nemosys)
-  if(NOT VTK_LIBRARIES)
-    target_link_libraries(xmlDump vtkHybrid vtkWidgets)
-  endif()
-
   if(HAVE_CGNS)
-    # Building cgns2gmsh utility
-    add_executable(cgns2msh ${CGNS2GMSH_SRCS})
-    target_link_libraries(cgns2msh Nemosys)
-
     # Building stitch cgns utility
     add_executable(rocStitchMesh ${ROCSTITCHMESH_SRCS})
     target_link_libraries(rocStitchMesh Nemosys)
-
-    # Building Rocstar volume remesh utility
-    add_executable(rocRemesh ${ROCREMESH_SRCS})
-    target_link_libraries(rocRemesh Nemosys)
-
-    # Building Rocstar surface remesh utility
-    add_executable(rocSurfRemesh ${ROCSURFREMESH_SRCS})
-    target_link_libraries(rocSurfRemesh Nemosys)
-
-    # Building Rocstar surface remesh utility
-    add_executable(grid2gridTransfer ${GRID2GRIDTRANSFER_SRCS})
-    target_link_libraries(grid2gridTransfer Nemosys)
-
-    # Building meshTransfer tutorial
-    add_executable(mshTransfer ${MSHTRANSFER_SRCS})
-    target_link_libraries(mshTransfer Nemosys)
-  endif()
-
-  # Building DTK tutorial
-  if(ENABLE_DTK)
-    add_executable(dtkTutorial ${DTKTUTORIAL_SRC})
-    set_target_properties(dtkTutorial PROPERTIES
-        COMPILE_FLAGS ${dtk_headers}
-        LINK_FLAGS ${dtk_libs})
-    target_link_libraries(dtkTutorial Nemosys
-        ${DTK_LIB} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
-    install(TARGETS dtkTutorial
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    if(HAVE_GLOB_H)
+      target_compile_definitions(rocStitchMesh PRIVATE HAVE_GLOB_H)
+    else()
+      target_link_libraries(rocStitchMesh Boost::filesystem)
+    endif()
   endif()
 endif()
 
@@ -1116,25 +931,8 @@ install(TARGETS nemosysRun
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 if(ENABLE_BUILD_UTILS)
-  install(TARGETS xmlDump
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-      PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-      GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
   if(HAVE_CGNS)
-    install(TARGETS grid2gridTransfer
-                    cgns2msh
-                    rocStitchMesh
-                    rocRemesh
-                    rocSurfRemesh
-                    mshTransfer
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-  endif()
-
-  if(ENABLE_DTK)
-    install(TARGETS dtkTutorial
+    install(TARGETS rocStitchMesh
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)

@@ -33,18 +33,7 @@ get_target_property(JSONCONS_COMPILE_ARGS jsoncons INTERFACE_COMPILE_DEFINITIONS
 list(APPEND WRAPPER_COMPILE_ARGS ${JSONCONS_COMPILE_ARGS})
 message(STATUS "${WRAPPER_COMPILE_ARGS}")
 
-if (ENABLE_SIMMETRIX)
-    file(COPY
-            pyNemosysSimmetrix.i
-            ${CMAKE_SOURCE_DIR}/include/simmetrixParams.H
-            ${CMAKE_SOURCE_DIR}/include/simmetrixGen.H
-            ${CMAKE_SOURCE_DIR}/include/meshStitcher.H
-            ${CMAKE_SOURCE_DIR}/include/meshPartitioner.H
-            DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosysSimmetrix.i)
-else ()
-    set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
-endif ()
+set(WRAPPER_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/pyNemosys.i)
 
 configure_file(${SETUP_PY_IN} ${SETUP_PY_IN_T})
 file(GENERATE

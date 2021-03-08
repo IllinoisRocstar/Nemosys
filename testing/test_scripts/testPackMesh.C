@@ -1,6 +1,5 @@
 #include <gtest.h>
 #include <algorithm>
-#include <boost/filesystem.hpp>
 #include <fstream>
 #include <iterator>
 #include <string>

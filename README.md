@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.55.0
+Version 0.56.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -41,14 +41,12 @@ in the notes section.
 | ENABLE_CGNS            | Enable CGNS extensions          | OFF     | Requires CGNS                    |
 | ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT         |
 | ENABLE_CONSRV_VOLUME_TRANSFER | Enable conservative volume transfer | OFF | Requires MPI              |
-| ENABLE_DTK             | Enable DTK extensions           | OFF     | UNSUPPORTED                      |
 | ENABLE_EPIC            | Enable EPIC preprocessor        | OFF     |                                  |
 | ENABLE_HDF5            | Enable HDF5 extensions          | OFF     | Requires HDF5                    |
 | ENABLE_METIS           | Enable Metis partitioner        | ON      | Requires METIS                   |
 | ENABLE_NETGEN          | Enable Netgen meshing engine    | ON      | Requires Netgen                  |
 | ENABLE_OMEGAH_CUDA     | Enable GPU for Omega_h          | OFF     | Requires Kokkos                  |
 | ENABLE_OPENCASCADE     | Enable OpenCASACADE support     | ON      | Requires OpenCASCADE (OCCT)      |
-| ENABLE_SIMMETRIX       | Enable Simmetrix Meshing engine | OFF     | Requires Simmetrix (UNSUPPORTED) |
 | ENABLE_TEMPLATE_MESH   | Enable meshing templates        | ON      |                                  |
 | ENABLE_MLAMR           | Enable machine learning based AMR | OFF   | Requires Frugally-deep library   |
 
@@ -99,17 +97,6 @@ To enable this, make sure that the following flag is set:
 and that `CMAKE_PREFIX_PATH` (or `$PATH`) contains
 `${NEMOSYS_DEPS_INSTALL_PATH}/kokkos/lib/CMake`. Note that both Kokkos and
 NEMoSys must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`).
-
-### Enabling Simmetrix (UNSUPPORTED) ###
-**Simmetrix** is a commercial meshing engine developed by Simmetrix Inc.
-(http://www.simmetrix.com/). To enable NEMoSys interface to the Simmetrix,
-compile with `ENABLE_SIMMETRIX=ON` and set the location of the Simmetrix
-libraries (`${PATH_TO_SIMMETRIX_LIBS}`). Ensure the folder structure set
-by Simmetrix Inc. is maintained as it is used to find the headers
-automatically. On the command line, the additional CMake options are:
-```
--DENABLE_SIMMETRIX=ON -DSIMMETRIX_LIB_DIR=${PATH_TO_SIMMETRIX_LIBS}
-```
 
 ## Unix Building Instructions ##
 ### Build Dependencies ###

@@ -5,14 +5,9 @@
 #include "gmshGen.H"
 #include "geoMeshFactory.H"
 #include "gmshParams.H"
-
 #ifdef HAVE_NGEN
 #  include "netgenGen.H"
 #  include "netgenParams.H"
-#endif
-#ifdef HAVE_SIMMETRIX
-#  include "simmetrixGen.H"
-#  include "simmetrixParams.H"
 #endif
 #ifdef HAVE_CFMSH
 #  include "blockMeshGen.H"
@@ -58,11 +53,6 @@ MeshGenDriver::MeshGenDriver(const std::string &ifname,
     generator =
         new NEM::GEN::gmshGen(dynamic_cast<NEM::GEN::gmshParams *>(params));
     std::string newname = nemAux::trim_fname(ifname, ".msh");
-#ifdef HAVE_SIMMETRIX
-  } else if (meshEngine == "simmetrix") {
-    generator = new simmetrixGen(dynamic_cast<simmetrixParams *>(params));
-    std::string newname = nemAux::trim_fname(ifname, ".vtu");
-#endif
 #ifdef HAVE_CFMSH
   } else if (meshEngine == "cfmesh") {
     generator = new cfmeshGen(dynamic_cast<cfmeshParams *>(params));
@@ -445,55 +435,9 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
       }
       std::cout << " Done." << std::endl;
 
-      auto* gmshGenerator =
-          new MeshGenDriver(ifname, meshEngine, params, ofname);
-      return gmshGenerator;
-    }
-  } else if (meshEngine == "simmetrix") {
-#ifndef HAVE_SIMMETRIX
-    std::cerr << "NEMoSys must be recompiled with Simmetrix support."
-              << std::endl;
-    exit(1);
-#else
-    if (!inputjson.contains("License File")) {
-      std::cerr << "Simmetrix license file must be specified in JSON"
-                << std::endl;
-      exit(1);
-    }
-
-    auto *params = new simmetrixParams();
-    params->licFName = inputjson["License File"].as<std::string>();
-    params->features = inputjson["Features"].as<std::string>();
-    params->logFName = inputjson["Log File"].as<std::string>();
-
-    std::string defaults =
-        inputjson["Meshing Parameters"]["Simmetrix Parameters"]
-            .as<std::string>();
-    if (defaults == "default") {
-      auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
-      return mshgndrvobj;
-    } else {
-      jsoncons::json simmxParams =
-          inputjson["Meshing Parameters"]["Simmetrix Parameters"];
-      if (simmxParams.contains("Mesh Size"))
-        params->meshSize = simmxParams["Mesh Size"].as<double>();
-      if (simmxParams.contains("Anisotropic Curvature Refinement"))
-        params->anisoMeshCurv =
-            simmxParams["Anisotropic Curvature Refinement"].as<double>();
-      if (simmxParams.contains("Global Gradation Rate"))
-        params->glbSizeGradRate =
-            simmxParams["Global Gradation Rate"].as<double>();
-      if (simmxParams.contains("Surface Mesh Improver Gradation Rate"))
-        params->surfMshImprovGradRate =
-            simmxParams["Surface Mesh Improver Gradation Rate"].as<double>();
-      if (simmxParams.contains("Surface Mesh Improver Min Size"))
-        params->surfMshImprovMinSize =
-            simmxParams["Surface Mesh Improver Min Size"].as<double>();
-
       auto *mshgndrvobj = new MeshGenDriver(ifname, meshEngine, params, ofname);
       return mshgndrvobj;
     }
-#endif
   } else if (meshEngine == "cfmesh") {
 #ifndef HAVE_CFMSH
     std::cerr << "NEMoSys must be recompiled with cfMesh support." << std::endl;
@@ -1721,5 +1665,5 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
   }
 }
 
-} // namespace DRV
-} // namespace NEM
+}  // namespace DRV
+}  // namespace NEM

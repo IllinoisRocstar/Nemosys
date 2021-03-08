@@ -7,8 +7,6 @@
 #include <iterator>
 #include <string>
 #include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/replace.hpp>
 
 const char* inp_json;
 meshBase* mesh;

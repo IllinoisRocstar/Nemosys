@@ -22,7 +22,6 @@
 #include "gmsh/discreteRegion.h"
 #include "gmsh/discreteFace.h"
 #include "gmsh/discreteEdge.h"
-#include "gmsh/discreteVertex.h"
 
 namespace MAd {
 
