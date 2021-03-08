@@ -43,7 +43,6 @@ ${CGNS_LIB_PATH};${CGNS_LIB_PATH}/../bin;\
 ${HDF5_LIB_PATH};${HDF5_LIB_PATH}/../bin;\
 ${EXO_LIB_PATH};${EXO_LIB_PATH}/../bin;\
 ${netCDF_LIB_DIR};${netCDF_LIB_DIR}/../bin;\
-${SIMMETRIX_LIB_DIR};\
 $ENV{PATH}")
   set(TEST_ENV_LD_OPTIONS
       "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
@@ -153,6 +152,7 @@ if(ENABLE_CFMSH)
   NEM_add_test_executable(CFM)
   NEM_add_test_executable(CFMQual)
   NEM_add_test_executable(SHM)
+  target_link_libraries(runSHMTest Boost::boost Boost::filesystem)
   NEM_add_test_executable(BlockMSH)
   NEM_add_test_executable(PackMesh)
 endif()

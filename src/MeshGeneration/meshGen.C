@@ -7,10 +7,6 @@
 #  include "netgenGen.H"
 #  include "netgenParams.H"
 #endif
-#ifdef HAVE_SIMMETRIX
-#  include "simmetrixGen.H"
-#  include "simmetrixParams.H"
-#endif
 #ifdef HAVE_CFMSH
 #  include "blockMeshGen.H"
 #  include "blockMeshParams.H"
@@ -37,12 +33,6 @@ meshGen *meshGen::Create(const std::string &fname,
     auto *generator = new NEM::GEN::gmshGen();
     return generator;
   }
-#ifdef HAVE_SIMMETRIX
-  else if (meshEngine == "simmetrix") {
-    auto *generator = new simmetrixGen();
-    return generator;
-  }
-#endif
 #ifdef HAVE_CFMSH
   else if (meshEngine == "cfmesh") {
     auto *generator = new cfmeshGen();
@@ -79,12 +69,6 @@ meshGen *meshGen::Create(const std::string &fname,
         new NEM::GEN::gmshGen(dynamic_cast<NEM::GEN::gmshParams *>(params));
     return generator;
   }
-#ifdef HAVE_SIMMETRIX
-  else if (meshEngine == "simmetrix") {
-    auto *generator = new simmetrixGen(dynamic_cast<simmetrixParams *>(params));
-    return generator;
-  }
-#endif
 #ifdef HAVE_CFMSH
   else if (meshEngine == "cfmesh") {
     auto *generator = new cfmeshGen(dynamic_cast<cfmeshParams *>(params));

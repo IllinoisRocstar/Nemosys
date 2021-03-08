@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -16,15 +17,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#ifdef HAVE_GLOB_H
-#  include <glob.h>
-
-#  include <cstring>
-#else
-#  include <boost/filesystem.hpp>
-#  include <boost/regex.hpp>
-#endif
 
 //--------------------------Start nemAux namespace----------------------------//
 namespace nemAux {
@@ -101,15 +93,6 @@ std::vector<T> hadamard(const std::vector<T> &x, const std::vector<T> &y);
 
 // check if _exp is in the _name string
 inline bool expCont(const std::string &_name, const std::string &_exp);
-
-// search for pattern and return vector of matches (wrapper around posix glob)
-#ifdef HAVE_GLOB_H
-inline std::vector<std::string> glob(const std::string &pattern);
-#else
-inline std::vector<std::string> glob(const std::string &_src_dir,
-                                     const std::string &_fn,
-                                     const std::string &_starts);
-#endif
 
 // compute 2 norm of vec
 template <typename T>
@@ -581,60 +564,6 @@ A leastUnusedKey(const std::map<A, B> &map, A min) {
   }
   return i;
 }
-
-// search for pattern and return vector of matches
-#ifdef HAVE_GLOB_H
-std::vector<std::string> glob(const std::string &pattern) {
-  glob_t glob_result;
-  memset(&glob_result, 0, sizeof(glob_result));
-  int ret = glob(pattern.c_str(), GLOB_TILDE, NULL, &glob_result);
-
-  if (ret == 0) {
-    std::vector<std::string> fnames;
-    for (std::size_t i = 0; i < glob_result.gl_pathc; ++i)
-      fnames.emplace_back(glob_result.gl_pathv[i]);
-    globfree(&glob_result);
-    return fnames;
-  } else if (ret == GLOB_NOMATCH) {
-    globfree(&glob_result);
-    return std::vector<std::string>();
-  } else {  // if (ret == GLOB_NOSPACE || ret == GLOB_ABORTED) {
-    std::cerr << "glob() failed with return value " << ret << std::endl;
-    globfree(&glob_result);
-    exit(1);
-  }
-}
-#else
-std::vector<std::string> glob(const std::string &_src_dir,
-                              const std::string &_prefix,
-                              const std::string &_timestamp) {
-  std::vector<std::string> fnames;
-  std::cout << _src_dir << " " << _prefix << " " << _timestamp << std::endl;
-
-  // recursive copy all content that contain given name
-  // iterate and delete matches
-  for (boost::filesystem::directory_iterator end_dir_it, it(_src_dir);
-       it != end_dir_it; ++it) {
-    bool overide = false;
-    if (expCont(_timestamp, "*")) overide = true;
-
-    std::string fext(it->path().filename().string());
-    if (!expCont(fext, _prefix)) continue;
-    {
-      if (fext[0] != _prefix[0]) continue;
-
-      if (!overide)
-        if (!expCont(fext, _timestamp)) continue;
-
-      std::cout << "Identified " << it->path() << std::endl;
-      fnames.push_back(it->path().filename().string());
-      // boost::filesystem::copy_file(it->path(), des_path,
-      // boost::filesystem::copy_option::overwrite_if_exists);
-    }
-  }
-  return fnames;
-}
-#endif
 
 //---------------------------End nemAux namespace-----------------------------//
 }  // namespace nemAux

@@ -19,9 +19,6 @@
 #ifdef HAVE_CGNS
 #  include "RocPartCommGenDriver.H"
 #endif
-#ifdef HAVE_SIMMETRIX
-#  include "RemeshDriver.H"
-#endif
 #ifdef HAVE_TEMPLATE_MESH
 #  include "TemplateMeshDriver.H"
 #endif
@@ -50,21 +47,6 @@ NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
     return NucMeshDriver::readJSON(inputjson);
   } else if (program_type == "Pack Mesh Generation") {
     return PackMeshDriver::readJSON(inputjson);
-  } else if (program_type == "Rocstar Remeshing") {
-#ifdef HAVE_SIMMETRIX
-    return RemeshDriver::readJSON(inputjson);
-#else
-    std::cerr << "Program Type " << program_type
-              << " is not enabled. Build NEMoSys with Simmetrix capabilities."
-              << std::endl;
-    exit(1);
-#endif  // HAVE_SIMMETRIX
-    /*
-  } else if (program_type == "Post Rocstar Remeshing") {
-    return RocRestartDriver::readJSON(inputjson);
-  } else if (program_type == "Rocstar Communication Generation") {
-    return RocPrepDriver::readJSON(inputjson);
-    */
   } else if (program_type == "Rocstar Communication Generation") {
 #ifdef HAVE_CGNS
     return RocPartCommGenDriver::readJSON(inputjson);
