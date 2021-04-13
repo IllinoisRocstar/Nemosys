@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 56)
+set(NEMOSYS_MINOR_VERSION 57)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -594,6 +594,7 @@ endif()
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
       src/Mesh/foamMesh.C
+      src/Mesh/foamGeoMesh.C
 
       src/MeshGeneration/blockMeshGen.C
       src/MeshGeneration/blockMeshParams.C

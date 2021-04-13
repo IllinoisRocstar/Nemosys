@@ -155,6 +155,7 @@ if(ENABLE_CFMSH)
   target_link_libraries(runSHMTest Boost::boost Boost::filesystem)
   NEM_add_test_executable(BlockMSH)
   NEM_add_test_executable(PackMesh)
+  NEM_add_test_executable(FoamGeoMesh)
 endif()
 if(HAVE_HDF5)
   NEM_add_test_executable(Proteus)
@@ -426,6 +427,14 @@ if(ENABLE_CFMSH)
   NEM_add_test(blockMsh_Box BlockMSH blockMsh_Box blockMsh_Box.json)
   NEM_add_test(blockMsh_Sphere BlockMSH blockMsh_Sphere blockMsh_Sphere.json)
   NEM_add_test(blockMsh_TCone BlockMSH blockMsh_TCone blockMsh_TCone.json)
+
+  # FoamGeoMesh tests
+  NEM_add_test(foamGeoMesh FoamGeoMesh FoamGeoMeshTest
+    Hex_Cube_Read
+    Tet_Cube_Read
+    Hex_Cube_Write
+    Tet_Cube_Write
+  )
 endif()
 
 if(ENABLE_CONSRV_VOLUME_TRANSFER)

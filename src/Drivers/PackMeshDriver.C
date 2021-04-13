@@ -9,6 +9,7 @@
 #  include "blockMeshParams.H"
 #  include "snappymeshGen.H"
 #  include "snappymeshParams.H"
+#  include "foamGeoMesh.H"
 #endif
 
 #include "PackMeshDriver.H"
@@ -48,7 +49,6 @@ PackMeshDriver::PackMeshDriver(
     const std::string &ofname_surrndng, const std::string &ofname_merged,
     const bool &useRocpack, const double &locAdjust) {
   std::cout << "PackMeshDriver constructed!" << std::endl;
-
   // Makes sure that constant and triSurface directories are present.
   // If directories are already present, it will not do anything.
   const char dir_path[] = "./constant";
