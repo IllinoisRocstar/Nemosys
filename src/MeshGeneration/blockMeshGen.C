@@ -37,35 +37,7 @@ blockMeshGen::blockMeshGen() // Default constructor body
 {
   // booleans
   _params = new blockMeshParams();
-  _params->_ownBlockMshDict = false;
-  _params->_isBlock = true;
-  _params->_isSphere = false;
-  _params->_isCylinder_TCone = false;
-
-  // General options
-  _params->cnvrtToMeters = 1;
-  _params->cellsXDir = 40;
-  _params->cellsYDir = 40;
-  _params->cellsZDir = 40;
-
-  // Block default options
-  _params->initX = 0;
-  _params->initY = 0;
-  _params->initZ = 0;
-  _params->lenX = 1;
-  _params->lenY = 1;
-  _params->lenZ = 1;
-  _params->smplGradingX = 1;
-  _params->smplGradingY = 1;
-  _params->smplGradingZ = 1;
-
-  // Sphere default options
-  _params->centerX = 0;
-  _params->centerY = 0;
-  _params->centerZ = 0;
-  _params->sphrGradingX = 1;
-  _params->sphrGradingY = 1;
-  _params->sphrGradingZ = 1;
+  defaults = true;
 
   // initializing the Foam environment
   initialize();
@@ -74,7 +46,7 @@ blockMeshGen::blockMeshGen() // Default constructor body
 
 // Constructor with user define parameters
 blockMeshGen::blockMeshGen(blockMeshParams* params):
-    _params(params)
+    defaults(false), _params(params)
 {
   // Initialize foam environment
   initialize();
@@ -88,8 +60,6 @@ blockMeshGen::~blockMeshGen() // destructor definition
 
 void blockMeshGen::initialize()
 {
-  caseName = "_blockMesh";
-
   // creates dictionaries in constant folder
   createBlockMshDict();
   createControlDict();
@@ -287,18 +257,18 @@ FoamFile\n\
 
     contText = contText + 
     "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n";
-  
-  if (((_params->_isBlock)) && !(_params->_isSphere) && 
-      !(_params->_isCylinder_TCone))
-  {
+
+    if (auto box = std::dynamic_pointer_cast<bmBox>(_params->shape))
+    {
     double finalX = 0;
     double finalY = 0;
     double finalZ = 0;
 
     // Automatically Generates Box Around Packs and Meshes that Hexahedrally.
-    if (_params->_autoGenerateBox)
+    if (box->autoGenerate.has_value())
     {
-      Foam::fileName inFileName((_params->packFileName));
+      const auto &autoGenerate = box->autoGenerate.value();
+      Foam::fileName inFileName((autoGenerate.packFileName));
 
       Foam::triSurf origSurface(inFileName);
       Foam::triSurfModifier sMod(origSurface);
@@ -308,63 +278,54 @@ FoamFile\n\
 
       Foam::vector negOffset, posOffset;
 
-      negOffset[0] = (_params->offsetX);
-      negOffset[1] = (_params->offsetY);
-      negOffset[2] = (_params->offsetZ);
-      posOffset[0] = (_params->offsetX);
-      posOffset[1] = (_params->offsetY);
-      posOffset[2] = (_params->offsetZ);
+      negOffset[0] = (autoGenerate.offset[0]);
+      negOffset[1] = (autoGenerate.offset[1]);
+      negOffset[2] = (autoGenerate.offset[2]);
+      posOffset[0] = (autoGenerate.offset[0]);
+      posOffset[1] = (autoGenerate.offset[1]);
+      posOffset[2] = (autoGenerate.offset[2]);
 
       const Foam::boundBox newBB(bb.min()-negOffset, bb.max()+posOffset);
 
-      (_params->initX) = newBB.min()[0];
-      (_params->initY) = newBB.min()[1];
-      (_params->initZ) = newBB.min()[2];
+      (box->init[0]) = newBB.min()[0];
+      (box->init[1]) = newBB.min()[1];
+      (box->init[2]) = newBB.min()[2];
 
       finalX = newBB.max()[0];
       finalY = newBB.max()[1];
       finalZ = newBB.max()[2];
 
-      std::vector<double> minPointsBox;
-      minPointsBox.push_back(newBB.min()[0]);
-      minPointsBox.push_back(newBB.min()[1]);
-      minPointsBox.push_back(newBB.min()[2]);
-      std::vector<double> maxPointsBox;
-      maxPointsBox.push_back(newBB.max()[0]);
-      maxPointsBox.push_back(newBB.max()[1]);
-      maxPointsBox.push_back(newBB.max()[2]);
+      std::array<double, 3> minPointsBox{newBB.min()[0], newBB.min()[1],
+                                         newBB.min()[2]};
+      std::array<double, 3> maxPointsBox{newBB.max()[0], newBB.max()[1],
+                                         newBB.max()[2]};
 
-      _params->coordsBox = std::make_pair(minPointsBox,maxPointsBox);
+      box->coordsBox = std::make_pair(minPointsBox,maxPointsBox);
 
-      if (_params->_cellSizeDefined)
+      if (_params->cellSize.has_value())
       {
-        double xLength =
-          std::sqrt(((_params->initX)-(finalX))*((_params->initX)-(finalX)));
-        double yLength =
-          std::sqrt(((_params->initY)-(finalY))*((_params->initY)-(finalY)));
-        double zLength =
-          std::sqrt(((_params->initZ)-(finalZ))*((_params->initZ)-(finalZ)));
+        double xLength = std::sqrt(((box->init[0]) - (finalX)) *
+                                   ((box->init[0]) - (finalX)));
+        double yLength = std::sqrt(((box->init[1]) - (finalY)) *
+                                   ((box->init[1]) - (finalY)));
+        double zLength = std::sqrt(((box->init[2]) - (finalZ)) *
+                                   ((box->init[2]) - (finalZ)));
 
-        (_params->cellsXDir) = xLength/(_params->cellSize);
-        (_params->cellsYDir) = yLength/(_params->cellSize);
-        (_params->cellsZDir) = zLength/(_params->cellSize);
+        (_params->nCells[0]) = xLength/(_params->cellSize.value());
+        (_params->nCells[1]) = yLength/(_params->cellSize.value());
+        (_params->nCells[2]) = zLength/(_params->cellSize.value());
       }
     }
     else
     {
-      finalX = (_params->initX) + (_params->lenX);
-      finalY = (_params->initY) + (_params->lenY);
-      finalZ = (_params->initZ) + (_params->lenZ);
+      finalX = (box->init[0]) + (box->len[0]);
+      finalY = (box->init[1]) + (box->len[1]);
+      finalZ = (box->init[2]) + (box->len[2]);
 
-      std::vector<double> minPointsBox;
-      minPointsBox.push_back(_params->initX);
-      minPointsBox.push_back(_params->initY);
-      minPointsBox.push_back(_params->initZ);
-      std::vector<double> maxPointsBox;
-      maxPointsBox.push_back(finalX);
-      maxPointsBox.push_back(finalY);
-      maxPointsBox.push_back(finalZ);
-      _params->coordsBox = std::make_pair(minPointsBox,maxPointsBox);
+      std::array<double, 3> minPointsBox{box->init[0], box->init[1],
+                                         box->init[2]};
+      std::array<double, 3> maxPointsBox{finalX, finalY, finalZ};
+      box->coordsBox = std::make_pair(minPointsBox, maxPointsBox);
     }
 
     // Box data
@@ -372,35 +333,35 @@ FoamFile\n\
             std::to_string(_params->cnvrtToMeters) + ";\n";
     contText = contText + "\nvertices\n";
     contText = contText + "(\n\n";
-    contText = contText + "\t(" + std::to_string(_params->initX)
-            + " " + std::to_string(_params->initY) + " "
-            + std::to_string(_params->initZ) + ")\n";
+    contText = contText + "\t(" + std::to_string(box->init[0])
+            + " " + std::to_string(box->init[1]) + " "
+            + std::to_string(box->init[2]) + ")\n";
             
     contText = contText + "\t(" + std::to_string(finalX)
-            + " " + std::to_string(_params->initY) + " "
-            + std::to_string(_params->initZ) + ")\n";
-            
-    contText = contText + "\t(" + std::to_string(finalX)
-            + " " + std::to_string(finalY) + " "
-            + std::to_string(_params->initZ) + ")\n";
-            
-    contText = contText + "\t(" + std::to_string(_params->initX)
-            + " " + std::to_string(finalY) + " "
-            + std::to_string(_params->initZ) + ")\n";
-            
-    contText = contText + "\t(" + std::to_string(_params->initX)
-            + " " + std::to_string(_params->initY) + " "
-            + std::to_string(finalZ) + ")\n";
-            
-    contText = contText + "\t(" + std::to_string(finalX)
-            + " " + std::to_string(_params->initY) + " "
-            + std::to_string(finalZ) + ")\n";
+            + " " + std::to_string(box->init[1]) + " "
+            + std::to_string(box->init[2]) + ")\n";
             
     contText = contText + "\t(" + std::to_string(finalX)
             + " " + std::to_string(finalY) + " "
+            + std::to_string(box->init[2]) + ")\n";
+            
+    contText = contText + "\t(" + std::to_string(box->init[0])
+            + " " + std::to_string(finalY) + " "
+            + std::to_string(box->init[2]) + ")\n";
+            
+    contText = contText + "\t(" + std::to_string(box->init[0])
+            + " " + std::to_string(box->init[1]) + " "
             + std::to_string(finalZ) + ")\n";
             
-    contText = contText + "\t(" + std::to_string(_params->initX)
+    contText = contText + "\t(" + std::to_string(finalX)
+            + " " + std::to_string(box->init[1]) + " "
+            + std::to_string(finalZ) + ")\n";
+            
+    contText = contText + "\t(" + std::to_string(finalX)
+            + " " + std::to_string(finalY) + " "
+            + std::to_string(finalZ) + ")\n";
+            
+    contText = contText + "\t(" + std::to_string(box->init[0])
             + " " + std::to_string(finalY) + " "
             + std::to_string(finalZ) + ")\n";
             
@@ -408,12 +369,12 @@ FoamFile\n\
         
     contText = contText + "\nblocks\n(";
     contText = contText + "\n\thex (0 1 2 3 4 5 6 7) (" +
-            std::to_string(_params->cellsXDir) + " " +
-            std::to_string(_params->cellsYDir) + " " +
-            std::to_string(_params->cellsZDir) + ") simpleGrading (" +
-            std::to_string(_params->smplGradingX) + " " +
-            std::to_string(_params->smplGradingY) + " " +
-            std::to_string(_params->smplGradingZ) + ")\n\n";
+            std::to_string(_params->nCells[0]) + " " +
+            std::to_string(_params->nCells[1]) + " " +
+            std::to_string(_params->nCells[2]) + ") simpleGrading (" +
+            std::to_string(box->smplGrading[0]) + " " +
+            std::to_string(box->smplGrading[1]) + " " +
+            std::to_string(box->smplGrading[2]) + ")\n\n";
         
     contText = contText + ");\n";
         
@@ -459,14 +420,13 @@ FoamFile\n\
     "\n //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//";
     }
 
-  else if (((_params->_isSphere)) && !(_params->_isBlock) && 
-    !(_params->_isCylinder_TCone))
+  else if (auto sphere = std::dynamic_pointer_cast<bmSphere>(_params->shape))
   {
     // Put sphere implementation here
-    contText = contText + "\ncx " + std::to_string(_params->centerX) + ";";
-    contText = contText + "\ncy " + std::to_string(_params->centerY) + ";";
-    contText = contText + "\ncz " + std::to_string(_params->centerZ) + ";";
-    contText = contText + "\nrad " + std::to_string(_params->radius) + ";";
+    contText = contText + "\ncx " + std::to_string(sphere->center[0]) + ";";
+    contText = contText + "\ncy " + std::to_string(sphere->center[1]) + ";";
+    contText = contText + "\ncz " + std::to_string(sphere->center[2]) + ";";
+    contText = contText + "\nrad " + std::to_string(sphere->radius) + ";";
 
     contText = contText + "\ngeometry\n{\n";
     contText = contText + "\tsphere\n\t{\n";
@@ -513,12 +473,12 @@ FoamFile\n\
     contText = contText + "\nblocks\n";
     contText = contText + "(\n";
     contText = contText + "\thex (0 1 2 3 4 5 6 7) (" +
-            std::to_string(_params->cellsXDir) + " " +
-            std::to_string(_params->cellsYDir) + " " +
-            std::to_string(_params->cellsZDir) + ") simpleGrading (" +
-            std::to_string(_params->sphrGradingX) + " " +
-            std::to_string(_params->sphrGradingY) + " " +
-            std::to_string(_params->sphrGradingZ) + ")\n\n";
+            std::to_string(_params->nCells[0]) + " " +
+            std::to_string(_params->nCells[1]) + " " +
+            std::to_string(_params->nCells[2]) + ") simpleGrading (" +
+            std::to_string(sphere->sphrGrading[0]) + " " +
+            std::to_string(sphere->sphrGrading[1]) + " " +
+            std::to_string(sphere->sphrGrading[2]) + ")\n\n";
 
     contText = contText + ");\n";
 
@@ -568,34 +528,32 @@ FoamFile\n\
     contText = contText + 
     "\n //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//";
   }
-  else if (((_params->_isCylinder_TCone)) && 
-          !(_params->_isSphere) && !(_params->_isBlock))
+  else if (auto cylTaperedCone
+             = std::dynamic_pointer_cast<bmCylTaperedCone>(_params->shape))
   {
-    contText = contText + "\n\ncx " + std::to_string(_params->centerCyl[0])
-            + ";\n";
-    contText = contText + "cy " + std::to_string(_params->centerCyl[1])
-            + ";\n";
-    contText = contText + "cz " + std::to_string(_params->centerCyl[2])
-            + ";\n";
-    contText = contText + "rad1 " + std::to_string(_params->radius1)
-            + ";\n";
-    contText = contText + "rad2 " + std::to_string(_params->radius2)
-            + ";\n";
-    contText = contText + "h " + std::to_string(_params->height)
-            + ";\n";
-    contText = contText + "cellX " + std::to_string(_params->cellsXDir)
-            + ";\n";
-    contText = contText + "cellY " + std::to_string(_params->cellsYDir)
-            + ";\n";
-    contText = contText + "cellZ " + std::to_string(_params->cellsZDir)
-            + ";\n";
-    contText = contText + "grdX " + std::to_string(_params->cylGrading[0])
-            + ";\n";
-    contText = contText + "grdY " + std::to_string(_params->cylGrading[1])
-            + ";\n";
-    contText = contText + "grdZ " + std::to_string(_params->cylGrading[2])
-            + ";\n\n";
-    
+    contText = contText + "\n\ncx " +
+               std::to_string(cylTaperedCone->centerCyl[0]) + ";\n";
+    contText =
+        contText + "cy " + std::to_string(cylTaperedCone->centerCyl[1]) + ";\n";
+    contText =
+        contText + "cz " + std::to_string(cylTaperedCone->centerCyl[2]) + ";\n";
+    contText =
+        contText + "rad1 " + std::to_string(cylTaperedCone->radius1) + ";\n";
+    contText = contText + "rad2 " +
+               std::to_string(
+                   cylTaperedCone->radius2.value_or(cylTaperedCone->radius1)) +
+               ";\n";
+    contText = contText + "h " + std::to_string(cylTaperedCone->height) + ";\n";
+    contText = contText + "cellX " + std::to_string(_params->nCells[0]) + ";\n";
+    contText = contText + "cellY " + std::to_string(_params->nCells[1]) + ";\n";
+    contText = contText + "cellZ " + std::to_string(_params->nCells[2]) + ";\n";
+    contText = contText + "grdX " +
+               std::to_string(cylTaperedCone->cylGrading[0]) + ";\n";
+    contText = contText + "grdY " +
+               std::to_string(cylTaperedCone->cylGrading[1]) + ";\n";
+    contText = contText + "grdZ " +
+               std::to_string(cylTaperedCone->cylGrading[2]) + ";\n\n";
+
     contText = contText + "\nX0 #calc \"$cx - 0.707106*$rad1\";";
     contText = contText + "\nY0 #calc \"$cy - 0.707106*$rad1\";";
     contText = contText + "\nX1 #calc \"$cx + 0.707106*$rad1\";";

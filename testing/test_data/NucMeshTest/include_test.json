@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "include_test",
+	"Mesh File Options": {
+		"Output Mesh File": "include_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

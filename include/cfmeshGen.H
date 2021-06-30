@@ -54,14 +54,14 @@ class cfmeshGen : public meshGen
   // class data and management flags
   private:
     bool defaults;
-    std::string caseName;
+    std::string caseName{"_cfmesh"};  // internal information
     cfmeshParams *_params;
 
   // openfoam data structure
   private:
-    Foam::argList *_args;
-    Foam::Time *_runTime;
-    Foam::fvMesh *_fmesh;
+    Foam::argList *_args{};
+    Foam::Time *_runTime{};
+    Foam::fvMesh *_fmesh{};
 };
 
 #endif

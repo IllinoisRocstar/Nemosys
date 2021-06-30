@@ -1,7 +1,7 @@
 #include <gtest.h>
 
+#include "Drivers/TransferDriver.H"
 #include "TransferBase.H"
-#include "TransferDriver.H"
 #include "meshBase.H"
 
 #include "AuxiliaryFunctions.H"

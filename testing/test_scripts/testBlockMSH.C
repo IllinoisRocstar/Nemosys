@@ -1,12 +1,14 @@
-#include "NemDriver.H"
-#include "blockMeshGen.H"
-#include "blockMeshParams.H"
-#include "vtkMesh.H"
 #include <gtest.h>
+#include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include <algorithm>
+#include "AuxiliaryFunctions.H"
+#include "Drivers/MeshGen/BlockMeshMeshGenDriver.H"
+#include "Drivers/NemDriver.H"
+#include "blockMeshGen.H"
+#include "blockMeshParams.H"
+#include "vtkMesh.H"
 
 const char* inp_json;
 meshBase* mesh;
@@ -47,197 +49,20 @@ int generate(const char* jsonF)
   
   jsoncons::json inputjson_tmp;
   inputStream >> inputjson_tmp;
-  inputjson = inputjson_tmp[0];  
+  inputjson = inputjson_tmp[0];
 
-  blockMeshParams* params = new blockMeshParams();
-  std::string ifname = inputjson["Mesh File Options"]
-                                ["Input Geometry File"].as<std::string>();  
-  std::string ofname = inputjson["Mesh File Options"]
-                                ["Output Mesh File"].as<std::string>();  
-  jsoncons::json bmshparams = 
-        inputjson["Meshing Parameters"]["blockMesh Parameters"];
+  auto driver = std::unique_ptr<NEM::DRV::BlockMeshMeshGenDriver>(
+      dynamic_cast<NEM::DRV::BlockMeshMeshGenDriver *>(
+          NEM::DRV::NemDriver::readJSON(inputjson).release()));
+  EXPECT_NE(driver, nullptr);
 
-  // required params here
-  // cad file
-  if (inputjson["Mesh File Options"].contains("Input Dict File"))
-      params->_ownBlockMshDict = 
-        inputjson["Mesh File Options"]["Input Dict File"].as<bool>();
-
-    
-  // Parameter parsing starts here
-  if (bmshparams.contains("Block Geometry"))
-    params->_isBlock =
-      bmshparams["Block Geometry"].as<bool>();
-  if (bmshparams.contains("Sphere Geometry"))
-    params->_isSphere =
-      bmshparams["Sphere Geometry"].as<bool>();
-  if (bmshparams.contains("Cylinder/Tapered_Cone Geometry"))
-    params->_isCylinder_TCone =
-      bmshparams["Cylinder/Tapered_Cone Geometry"].as<bool>();
-  if (bmshparams.contains("scaleToMeters"))
-    params->cnvrtToMeters = 
-    bmshparams["scaleToMeters"].as<double>();
-  if (bmshparams.contains("XdirectionCells"))
-    params->cellsXDir = 
-    bmshparams["XdirectionCells"].as<int>();
-  if (bmshparams.contains("YdirectionCells"))
-    params->cellsYDir = 
-    bmshparams["YdirectionCells"].as<int>();
-  if (bmshparams.contains("ZdirectionCells"))
-    params->cellsZDir = 
-    bmshparams["ZdirectionCells"].as<int>();
-
-  if (bmshparams.contains("Cell_Size")){
-    params->_cellSizeDefined = true;
-    params->cellSize = 
-     bmshparams["Cell_Size"].as<double>();
-  }
-  else
-  {
-    params->cellSize = -1;
-    params->_cellSizeDefined = false;
-  }
-      
-  if (bmshparams.contains("Block Parameters"))
-  {
-
-    if (bmshparams["Block Parameters"].contains("Auto_Generate"))
-    {
-      params->_autoGenerateBox = true;
-
-      if (inputjson["Mesh File Options"].contains("Input Geometry File"))
-        params->packFileName = 
-            inputjson["Mesh File Options"]
-                    ["Input Geometry File"].as<std::string>();
-      else
-      {
-        std::cerr << "A geometry file should be supplied.\n";
-        throw;        
-      }
-
-      if (bmshparams["Block Parameters"]
-          ["Auto_Generate"].contains("Offset_XDir"))
-            params->offsetX = 
-            bmshparams["Block Parameters"]
-              ["Auto_Generate"]["Offset_XDir"].as<double>();
-      else{
-        params->offsetX = 0.1;
-      }
-      if (bmshparams["Block Parameters"]
-          ["Auto_Generate"].contains("Offset_YDir"))
-           params->offsetY = 
-            bmshparams["Block Parameters"]
-            ["Auto_Generate"]["Offset_YDir"].as<double>();
-      else{
-        params->offsetY = 0.1;
-      }
-      if (bmshparams["Block Parameters"]
-          ["Auto_Generate"].contains("Offset_ZDir"))
-           params->offsetZ = 
-            bmshparams["Block Parameters"]
-            ["Auto_Generate"]["Offset_ZDir"].as<double>();
-      else{
-        params->offsetZ = 0.1;
-      }
-
-    }
-    else{
-      params->_autoGenerateBox = false;
-    }
-      
-    if (bmshparams["Block Parameters"].contains("X1"))
-      params->initX = bmshparams["Block Parameters"]["X1"].as<double>();
-    if (bmshparams["Block Parameters"].contains("Y1"))
-      params->initY = bmshparams["Block Parameters"]["Y1"].as<double>();
-    if (bmshparams["Block Parameters"].contains("Z1"))
-      params->initZ = bmshparams["Block Parameters"]["Z1"].as<double>();
-    if (bmshparams["Block Parameters"].contains("LengthX"))
-      params->lenX = bmshparams["Block Parameters"]["LengthX"].as<double>();
-    if (bmshparams["Block Parameters"].contains("LengthY"))
-      params->lenY = bmshparams["Block Parameters"]["LengthY"].as<double>();
-    if (bmshparams["Block Parameters"].contains("LengthZ"))
-      params->lenZ = bmshparams["Block Parameters"]["LengthZ"].as<double>();
-    if (bmshparams["Block Parameters"].contains("GradingXdir"))
-      params->smplGradingX = 
-        bmshparams["Block Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Block Parameters"].contains("GradingYdir"))
-      params->smplGradingY = 
-        bmshparams["Block Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Block Parameters"].contains("GradingZdir"))
-      params->smplGradingZ = 
-        bmshparams["Block Parameters"]["GradingZdir"].as<double>();
-  }
-    
-  if (bmshparams.contains("Sphere Parameters"))
-  {
-      
-    if (bmshparams["Sphere Parameters"].contains("Center Y"))
-      params->centerX =
-        bmshparams["Sphere Parameters"]["Center X"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("Center Y"))
-      params->centerY =
-        bmshparams["Sphere Parameters"]["Center Y"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("Center Z"))
-      params->centerZ =
-        bmshparams["Sphere Parameters"]["Center Z"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("Radius"))
-      params->radius =
-        bmshparams["Sphere Parameters"]["Radius"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
-      params->sphrGradingX =
-        bmshparams["Sphere Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("GradingYdir"))
-      params->sphrGradingY =
-        bmshparams["Sphere Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Sphere Parameters"].contains("GradingXdir"))
-      params->sphrGradingZ =
-        bmshparams["Sphere Parameters"]["GradingZdir"].as<double>();
-  }
-  
-  if (bmshparams.contains("Cylinder/Tapered_Cone Parameters"))
-  {
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center X"))
-      params->centerCyl[0] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Center X"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Y"))
-      params->centerCyl[1] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Center Y"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Center Z"))
-      params->centerCyl[2] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Center Z"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius1"))
-      params->radius1 =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius1"].as<double>();
-      
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Radius2")){
-      params->radius2 =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius2"].as<double>();
-    }
-    else{
-      params->radius2 =
-          bmshparams["Cylinder/Tapered_Cone Parameters"]["Radius1"].as<double>();
-    }
-      
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
-      params->cylGrading[0] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingXdir"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingYdir"))
-      params->cylGrading[1] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingYdir"].as<double>();
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("GradingXdir"))
-      params->cylGrading[2] =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["GradingZdir"].as<double>();
-      
-    if (bmshparams["Cylinder/Tapered_Cone Parameters"].contains("Height"))
-      params->height =
-        bmshparams["Cylinder/Tapered_Cone Parameters"]["Height"].as<double>();
-  }
-
-  auto *generator =
-        new blockMeshGen(dynamic_cast<blockMeshParams *>(params));
-  generator->createMeshFromSTL("");
-  mesh = vtkMesh::Create(generator->getDataSet(), ofname);
-  mesh->setFileName(ofname);
+  // Copied from BlockMeshMeshGenDriver::execute()
+  auto paramsCopy = driver->getParams();
+  blockMeshGen generator{&paramsCopy};
+  // Parameter not used
+  generator.createMeshFromSTL(nullptr);
+  mesh =
+      meshBase::Create(generator.getDataSet(), driver->getFiles().outputFile);
   mesh->report();
   mesh->write();
 

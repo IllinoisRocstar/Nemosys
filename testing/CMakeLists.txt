@@ -44,8 +44,8 @@ ${HDF5_LIB_PATH};${HDF5_LIB_PATH}/../bin;\
 ${EXO_LIB_PATH};${EXO_LIB_PATH}/../bin;\
 ${netCDF_LIB_DIR};${netCDF_LIB_DIR}/../bin;\
 $ENV{PATH}")
-  set(TEST_ENV_LD_OPTIONS
-      "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}")
+  # Escape the semicolons so set_tests_properties doesn't treat TEST_ENV_PATH_OPTIONS as a list
+  string(REGEX REPLACE "\;" "\\\;" TEST_ENVIRONMENT_VARS "${TEST_ENV_PATH_OPTIONS}")
 elseif(APPLE)
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   # Note: Do not indent. The indentation whitespace is added to the variable!
@@ -57,6 +57,7 @@ ${GMSH_LIB_PATH}:\
 ${NETGEN_LIBRARY_DIR}:\
 ${OpenCASCADE_LIBRARY_DIR}:\
 $ENV{LD_LIBRARY_PATH}")
+  set(TEST_ENVIRONMENT_VARS "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}")
 else()
   set(TEST_ENV_PATH_OPTIONS "PATH=${CMAKE_CURRENT_BINARY_DIR}:$ENV{PATH}")
   # Note: Do not indent. The indentation whitespace is added to the variable!
@@ -68,9 +69,10 @@ ${GMSH_LIB_PATH}:\
 ${NETGEN_LIBRARY_DIR}:\
 ${OpenCASCADE_LIBRARY_DIR}:\
 $ENV{LD_LIBRARY_PATH}")
+  set(TEST_ENVIRONMENT_VARS "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}")
 endif()
 
-message(STATUS "Test Env Options: ${TEST_ENV_PATH_OPTIONS} ${TEST_ENV_LD_OPTIONS}")
+message(STATUS "Test Env Options: ${TEST_ENVIRONMENT_VARS}")
 
 #-------------------------------------------------------------------------------
 # NEM_add_test_executable(<test_exe_name>)
@@ -100,10 +102,10 @@ endmacro()
 #  <test_name>Test                = name of CTest test
 macro(NEM_add_test TEST_NAME TEST_EXE_NAME TEST_PWD)
   add_test(NAME ${TEST_NAME}Test
-      COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-      run${TEST_EXE_NAME}Test --gtest_output=xml:${CMAKE_CURRENT_BINARY_DIR}/junit/ ${ARGN}
+      COMMAND run${TEST_EXE_NAME}Test --gtest_output=xml:${CMAKE_CURRENT_BINARY_DIR}/junit/ ${ARGN}
       WORKING_DIRECTORY ${TEST_DATA}/${TEST_PWD}
       )
+  set_tests_properties(${TEST_NAME}Test PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
 endmacro()
 #-------------------------------------------------------------------------------
 
@@ -463,16 +465,16 @@ endif()
 
 # Python wrapper testing
 if(ENABLE_PYTHON_BINDINGS)
-  find_package(PythonInterp 2.7 REQUIRED)
+  find_package(PythonInterp 3 REQUIRED)
   if(NOT PYTHONINTERP_FOUND)
     message(STATUS "Python interpreter NOT found")
   else()
     message(STATUS "Python interpreter found")
-    configure_file(test_scripts/test_pyNemosys27.py ${CMAKE_CURRENT_BINARY_DIR}/../python/test_pyNemosys27.py)
+    configure_file(test_scripts/test_pyNemosys.py ${CMAKE_CURRENT_BINARY_DIR}/../python/test_pyNemosys.py)
     add_test(NAME testPyNemosys
-        COMMAND ${CMAKE_COMMAND} -E env "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}"
-        ${PYTHON_EXECUTABLE} setup.py test
+        COMMAND ${PYTHON_EXECUTABLE} setup.py test
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../python)
+    set_tests_properties(testPyNemosys PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT_VARS}")
   endif()
 endif()
 

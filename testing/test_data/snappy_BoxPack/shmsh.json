@@ -2,14 +2,12 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "snappyHexMesh",
     "Mesh File Options": {
       "Input Geometry File": "packs.stl",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Modules Options": {
-    },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "snappyHexMesh",
       "snappyHexMesh Parameters": {
         "Castellated Mesh": true,
         "Snapping": true,
@@ -23,8 +21,6 @@
 
         "Castellated Mesh Controls": {
             "CellZones": false,
-            "RegionRefine": false,
-            "SurfaceRefine": false,
             "maxLocalCells": 2000000,
             "maxGlobalCells": 4000000,
             "minRefCells": 0,
@@ -35,9 +31,7 @@
             "GeneralGapLevelIncrement": 1,
             "gapLevelIncrement": 2,
             "planarAngle": 30,
-            "locationInMeshX": 0,
-            "locationInMeshY": 0,
-            "locationInMeshZ": 0,
+            "locationInMesh": [0, 0, 0],
             "allowFreeStandingZoneFaces": true
         },
 

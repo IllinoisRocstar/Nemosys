@@ -1,4 +1,4 @@
-#include <NemDriver.H>
+#include <Drivers/NemDriver.H>
 #include <exoMesh.H>
 #include <gtest.h>
 #include <fstream>
@@ -46,9 +46,9 @@ int exoTestConv(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(prog));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
 
   rm = new NEM::MSH::EXOMesh::exoMesh(std::string(refname));
@@ -101,9 +101,9 @@ int epTestInputGen(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(prog));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
 
   return 0;

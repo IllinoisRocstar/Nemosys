@@ -1,10 +1,11 @@
 {
+  //Sample EP16 post-processing file
   "Program Type": "Input Generation",
   "Service": "EPIC_2016_POST",
-  "Description": "Sample EP16 post-processing file",
-  "Number of Task": 1,
-  "Task" : 
-  [
+  "Input Generation Options": {
+    "Number of Task": 1,
+    "Task" :
+    [
       {
         "Type": "Erode",
         "Input File": "elem_centriods.csv",
@@ -12,5 +13,6 @@
         "Number of Cluster": 4,
         "Output Stem": "clust_"
       }
-  ]
+    ]
+  }
 }

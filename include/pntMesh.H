@@ -16,7 +16,7 @@ namespace PNTMesh {
 
 typedef int idTyp;
 
-enum elementType {
+enum class elementType {
   BAR,
   QUADRILATERAL,
   TRIANGLE,
@@ -31,7 +31,7 @@ enum elementType {
   OTHER
 };
 
-enum surfaceBCTag {
+enum class surfaceBCTag {
   REFLECTIVE,
   VOID
 };
@@ -60,7 +60,7 @@ typedef std::vector<blockType> BlockMap;
 VTKCellType p2vEMap(elementType et);
 elementType v2pEMap(VTKCellType vt);
 surfaceBCTag bcTagNum(const std::string &tag);
-std::string bcTagStr(int tag);
+std::string bcTagStr(surfaceBCTag tag);
 elementType elmTypeNum(const std::string &tag);
 std::string elmTypeStr(elementType tag);
 int elmNumNde(elementType et, int order);

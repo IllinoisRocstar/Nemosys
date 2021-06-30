@@ -1,7 +1,9 @@
 [
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "polar_array_rwa",
+	"Mesh File Options": {
+		"Output Mesh File": "polar_array_rwa"
+	},
 	"Geometry and Mesh": 
 	[
 		{
@@ -106,7 +108,6 @@
 {
 	"Program Type": "Conversion",
 	"Mesh File Options": {
-		"Input Mesh Files": "Custom",
 		"Output Mesh File": "polar_array_rwa.e"
 	},
 	"Conversion Options": {

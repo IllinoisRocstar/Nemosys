@@ -5,7 +5,7 @@
     "Output Mesh File": "refined_AMR.vtu"
   },
   "Refinement Options": {
-    "Transfer Data": 0,
+    "Transfer Data": false,
     "Input Field File": "IncomingField",
     "Refinement Method": "FV",
     "Refinement Operator": "Value",
@@ -15,9 +15,9 @@
     "Upper Refinement Level": 9.0,
     "Unrefinement Above": -1,
     "Unrefinement Below": -1,
-    "Write Refinement Data?": 0,
-    "Write Field Data?": 0,
-    "Write Mesh?": 0,
+    "Write Refinement Data?": false,
+    "Write Field Data?": false,
+    "Write Mesh?": false,
     "Start Time": 0,
     "Time Step": 0.5,
     "End Time": 1,

@@ -2,12 +2,12 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "cfmesh",
     "Mesh File Options": {
       "Input Geometry File": "bunnyWrapped.stl",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "cfmesh",
       "CFMesh Parameters": {
         "Generator": "polyMesh",
         "MaxCellSize": 40,

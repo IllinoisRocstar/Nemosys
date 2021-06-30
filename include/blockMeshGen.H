@@ -24,8 +24,8 @@ class blockMeshParams;  // Friend Class
 /**
   @brief blockMeshGen <-- meshGen <-- meshBase
         This class incorporates mesh generating method of blockMesh utility.
-        Currently, we are supporting automatic full-hex mesh generation 
-        Box, Sphere, Cylinder, and Tapered Cone geometries. Output mesh is 
+        Currently, we are supporting automatic full-hex mesh generation
+        Box, Sphere, Cylinder, and Tapered Cone geometries. Output mesh is
         written in OpenFOAM polyMesh format.
 **/
 class blockMeshGen : public meshGen
@@ -51,7 +51,7 @@ class blockMeshGen : public meshGen
   /** @brief Generates mesh and returns VTK database
       @param fname Input surface file name
       @return meshBase mesh dataset
-  **/ 
+  **/
   int createMeshFromSTL(const char* fname);
 
   /** @brief Reads OpenFOAM mesh from polyMesh directory
@@ -61,37 +61,37 @@ class blockMeshGen : public meshGen
 
   // -- Internal
   private:
-  /** 
+  /**
       @brief Initializes OpenFOAM args and runtime
   **/
   void initialize();
-  
-  /** 
+
+  /**
       @brief Creates blockMeshDict from user arguments
   **/
   void createBlockMshDict();
-  
-  /** 
+
+  /**
       @brief Creates dummy controlDict
   **/
   void createControlDict();
-  
-  /** 
+
+  /**
       @brief Creates dummy fvSchemesDict
   **/
   void createfvSchemesDict();
-  
-  /** 
+
+  /**
       @brief Creates dummy fvSolutionDict
   **/
   void createfvSolutionDict();
-  
-  /** 
+
+  /**
       @brief Generated VTK database from Foam mesh. Used in readFoamMesh function
   **/
   void genMshDB();
-  
-  /** 
+
+  /**
       @brief Generated VTK mesh statistics
   **/
   void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
@@ -99,14 +99,7 @@ class blockMeshGen : public meshGen
 
   // --- Internal Use
   private:
-  /** @brief Enables usage of default paramters. Default mesh is a 3D block with
-            low point of (0,0,0) and high point of (1,1,1)
-  **/
   bool defaults;  // Default parameters boolean
-
-  /** @brief Meshing case name for internal use
-  **/
-  std::string caseName; // Meshing case name for internal use
 
   /** @brief Definition of parameters pointer
   **/
@@ -114,10 +107,10 @@ class blockMeshGen : public meshGen
 
   // --- OpenFOAM Data Structure
   private:
-  Foam::argList* _args;
-  Foam::Time* _runTime;
-  Foam::fvMesh* _fmesh;
-  
+  Foam::argList* _args{};
+  Foam::Time* _runTime{};
+  Foam::fvMesh* _fmesh{};
+
 };
 
 

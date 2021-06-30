@@ -1,12 +1,12 @@
 [
   {
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "cfmesh",
     "Mesh File Options": {
       "Input Geometry File": "elbow_90degree.stl",
       "Output Mesh File": "elbow_mesh.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "cfmesh",
       "CFMesh Parameters": {
         "Generator": "cartesian3D",
         "MaxCellSize": 5.0,

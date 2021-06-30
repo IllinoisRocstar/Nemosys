@@ -1,13 +1,12 @@
 [
   {
-    "Reference File": "nothing",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "gmsh",
     "Mesh File Options": {
       "Input Geometry File": "./pitzdaily.step",
       "Output Mesh File": "./pitzdaily_test.msh"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "gmsh",
       "Gmsh Parameters": {
         "surfaceAlgorithm": "Automatic",
         "volumeAlgorithm": "Automatic",

@@ -1,39 +1,47 @@
-#include <ProteusDriver.H>
-#include <meshBase.H>
-#include <proteusHdf5.H>
+#include "Drivers/ProteusDriver.H"
+
+#include "meshBase.H"
+#include "proteusHdf5.H"
 
 namespace NEM {
 namespace DRV {
 
-ProteusDriver::ProteusDriver(const std::string &fieldFName,
-                             const std::string &meshFName,
-                             const std::string &edgeSidesetName,
-                             const std::string &exoMeshFName, bool lowOrder,
-                             bool bndryConst) {
+ProteusDriver::Files::Files(std::string fieldFName, std::string meshFName,
+                            std::string exoMeshFName)
+    : fieldFName(std::move(fieldFName)),
+      meshFName(std::move(meshFName)),
+      exoMeshFName(std::move(exoMeshFName)) {}
+
+ProteusDriver::Opts::Opts(std::string edgeSidesetName)
+    : edgeSidesetName(std::move(edgeSidesetName)) {}
+
+ProteusDriver::ProteusDriver(Files files, Opts opts)
+    : files_(std::move(files)), opts_(std::move(opts)) {
   std::cout << "ProteusDriver created\n";
-
-  // Create HDF5 class of Proteus type
-  hdf5Obj =
-      std::make_shared<proteusHdf5>(fieldFName, meshFName, edgeSidesetName,
-                                    exoMeshFName, lowOrder, bndryConst);
 }
 
-// Parse JSON input file
-ProteusDriver *ProteusDriver::readJSON(const jsoncons::json &inputjson) {
-  std::string fieldFName = inputjson["HDF5 Field File"].as<std::string>();
-  std::string meshFName = inputjson["Output Mesh File"].as<std::string>();
-  bool lowOrder = inputjson.get_with_default("Output Low Order", false);
-  std::string edgeSidesetName = inputjson["Edge Sideset"].as<std::string>();
-  std::string exoMeshFName = inputjson["Output Exodus File"].as<std::string>();
-  bool bndryConst = inputjson.get_with_default("Constraint Boundary", true);
+ProteusDriver::ProteusDriver() : ProteusDriver({{}, {}, {}}, Opts{{}}) {}
 
-  return new ProteusDriver(fieldFName, meshFName, edgeSidesetName, exoMeshFName,
-                           lowOrder, bndryConst);
-}
+const ProteusDriver::Files &ProteusDriver::getFiles() const { return files_; }
 
-// Destructor
+void ProteusDriver::setFiles(Files files) { this->files_ = std::move(files); }
+
+const ProteusDriver::Opts &ProteusDriver::getOpts() const { return opts_; }
+
+void ProteusDriver::setOpts(Opts opts) { this->opts_ = std::move(opts); }
+
 ProteusDriver::~ProteusDriver() {
   std::cout << "ProteusDriver destroyed" << std::endl;
+}
+
+jsoncons::string_view ProteusDriver::getProgramType() const {
+  return programType;
+}
+
+void ProteusDriver::execute() const {
+  proteusHdf5(this->files_.fieldFName, this->files_.meshFName,
+              this->opts_.edgeSidesetName, this->files_.exoMeshFName,
+              this->opts_.lowOrder, this->opts_.bndryConst);
 }
 
 }  // namespace DRV

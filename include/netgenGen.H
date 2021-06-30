@@ -21,11 +21,11 @@ class NEMOSYS_EXPORT netgenGen : public meshGen
 {
   public:
     netgenGen();
-    explicit netgenGen(netgenParams *params);
+    explicit netgenGen(const netgenParams *params);
 
     ~netgenGen() override;
 
-    void set_mp(netgenParams *params);
+    void set_mp(const netgenParams *params);
 
   // netgen mesh creation
   public:

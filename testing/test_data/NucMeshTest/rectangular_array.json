@@ -1,7 +1,9 @@
 [
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "rectangular_array",
+	"Mesh File Options": {
+		"Output Mesh File": "rectangular_array"
+	},
 	"Geometry and Mesh": 
 	[
 		{
@@ -126,7 +128,6 @@
 {
 	"Program Type": "Conversion",
 	"Mesh File Options": {
-		"Input Mesh Files": "Custom",
 		"Output Mesh File": "rectangular_array.e"
 	},
 	"Conversion Options": {

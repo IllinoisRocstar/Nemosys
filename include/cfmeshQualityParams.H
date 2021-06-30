@@ -4,27 +4,29 @@
 #ifdef HAVE_CFMSH
 
 #include "nemosys_export.h"
-
-#include <string>
-
 #include "meshQualityParams.H"
+
+#include <jsoncons/config/jsoncons_config.hpp>  // for jsoncons::optional
+#include <jsoncons/json_traits_macros.hpp>
+#include <string>
 
 class NEMOSYS_EXPORT cfmshQualityParams : public meshQualityParams {
  public:
   // initializing params with defaults
-  cfmshQualityParams();
-  ~cfmshQualityParams() override = default;
+  cfmshQualityParams() = default;
 
-  // meshOptimizer
- public:
-  int nIterations;          // number of optimization iterations
-  int nLoops;               // number of inner loops in optimization
-  double qualThrsh;         // quality threshold
-  int nSrfItr;              // number of surface iterations
-  std::string consCellSet;  // name of constrained cellSet
-  bool _withConstraint;
+  int nIterations{50};          // number of optimization iterations
+  int nLoops{10};               // number of inner loops in optimization
+  double qualThrsh{0.1};         // quality threshold
+  int nSrfItr{2};              // number of surface iterations
+  jsoncons::optional<std::string> consCellSet{};  // name of constrained cellSet
+
+  JSONCONS_TYPE_TRAITS_FRIEND
+
+ protected:
+  static constexpr const char *method = "meshOptimizer";
 };
 
-#endif  // HAVE_CFMESH
+#endif  // HAVE_CFMSH
 
 #endif  // NEMOSYS_CFMESHQUALITYPARAMS_H_

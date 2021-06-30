@@ -1,8 +1,8 @@
 #include <gtest.h>
 
+#include "Drivers/Refine/OmegahRefineDriver.H"
 #include "diffMesh.H"
 #include "geoMeshFactory.H"
-#include "omegahRefineDriver.H"
 
 // Test cases for NEM::SRV::omegahRefineDriver
 
@@ -26,8 +26,10 @@ int genTest(const char *jsonF, const char *newName, const char *goldName) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<NEM::DRV::omegahRefineDriver> refineDrv(
-      NEM::DRV::omegahRefineDriver::readJSON(inputjson));
+  auto refineDrv = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(dynamic_cast<NEM::DRV::OmegahRefineDriver *>(refineDrv.get()),
+            nullptr);
+  refineDrv->execute();
 
   auto goldMesh =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(goldName));

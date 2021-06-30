@@ -4,7 +4,7 @@
 #include <vtkPointData.h>
 
 #include "AuxiliaryFunctions.H"
-#include "TransferDriver.H"
+#include "Drivers/TransferDriver.H"
 #include "gmshMesh.H"
 
 namespace NEM {

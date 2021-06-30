@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "atr_example",
+	"Mesh File Options": {
+		"Output Mesh File": "atr_example"
+	},
 	"Geometry and Mesh": 
 	[
 		{

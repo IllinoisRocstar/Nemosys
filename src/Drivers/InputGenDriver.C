@@ -1,30 +1,40 @@
-// Nemosys headers
-#include "AuxiliaryFunctions.H"
-#include "InputGenDriver.H"
+#include "Drivers/InputGenDriver.H"
 
-#ifdef HAVE_EPIC
-#  include "ep16Post.H"
-#  include "ep16Prep.H"
-#endif
-
-#include <fstream>
 #include <iostream>
+#include "AuxiliaryFunctions.H"
+#include "ep16Post.H"
+#include "ep16Prep.H"
 
 namespace NEM {
 namespace DRV {
 
-//----------------------- Conversion Driver
-//-----------------------------------------//
-InputGenDriver::InputGenDriver(const std::string &_srvName,
-                               const jsoncons::json &inputjson) {
-  std::cout << "InputGenDriver created" << std::endl;
-  std::string srvName = _srvName;
+InputGenDriver::InputGenDriver(std::string service, jsoncons::json opts)
+    : service_(std::move(service)), opts_(std::move(opts)) {}
+
+const std::string &InputGenDriver::getService() const { return service_; }
+
+void InputGenDriver::setService(std::string service) {
+  this->service_ = std::move(service);
+}
+
+const jsoncons::json &InputGenDriver::getOpts() const { return opts_; }
+
+void InputGenDriver::setOpts(jsoncons::json opts) {
+  this->opts_ = std::move(opts);
+}
+
+jsoncons::string_view InputGenDriver::getProgramType() const {
+  return programType;
+}
+
+void InputGenDriver::execute() const {
+  std::string srvName = this->service_;
   nemAux::toLower(srvName);
   nemAux::Timer T;
   T.start();
   if (srvName == "epic_2016") {
 #ifdef HAVE_EPIC
-    ep16Prep::readJSON(inputjson);
+    ep16Prep::readJSON(this->opts_);
 #else
     std::cerr << "Compile the code with EPIC module enabled." << std::endl;
     exit(0);
@@ -32,7 +42,7 @@ InputGenDriver::InputGenDriver(const std::string &_srvName,
   } else if (srvName == "epic_2016_post") {
 #ifdef HAVE_EPIC
     int ret;
-    NEM::EPC::ep16Post::readJSON(inputjson, ret);
+    NEM::EPC::ep16Post::readJSON(this->opts_, ret);
 #else
     std::cerr << "Compile the code with EPIC module enabled." << std::endl;
     exit(0);
@@ -42,43 +52,6 @@ InputGenDriver::InputGenDriver(const std::string &_srvName,
               << std::endl;
   }
   T.stop();
-}
-
-InputGenDriver::~InputGenDriver() {
-  std::cout << "InputGenDriver destroyed" << std::endl;
-}
-
-InputGenDriver *InputGenDriver::readJSON(const jsoncons::json &inputjson) {
-  std::string srvName = inputjson["Service"].as<std::string>();
-  InputGenDriver *inpGenDrv;
-  inpGenDrv = new InputGenDriver(srvName, inputjson);
-  return inpGenDrv;
-}
-
-InputGenDriver *InputGenDriver::readJSON(const std::string &ifname) {
-  std::cout << "Reading JSON file" << std::endl;
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good() || nemAux::find_ext(ifname) != ".json") {
-    std::cerr << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-  if (nemAux::find_ext(ifname) != ".json") {
-    std::cerr << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
-
-  jsoncons::json inputjson;
-  inputStream >> inputjson;
-
-  // checking if array
-  if (inputjson.is_array()) {
-    std::cerr
-        << "Warning: Input is an array. Only first element will be processed"
-        << std::endl;
-    return InputGenDriver::readJSON(inputjson[0]);
-  } else {
-    return InputGenDriver::readJSON(inputjson);
-  }
 }
 
 }  // namespace DRV

@@ -205,9 +205,9 @@ void MeshQuality::cfmOptimize()
   //- construct the smoother
   Foam::meshOptimizer mOpt(pmg);
 
-  if (_cfmQPrms->_withConstraint)
+  if (_cfmQPrms->consCellSet.has_value())
   {
-    std::string constrainedCellSet = _cfmQPrms->consCellSet;
+    const std::string &constrainedCellSet = _cfmQPrms->consCellSet.value();
 
     //- lock cells in constrainedCellSet
     mOpt.lockCellsInSubset(constrainedCellSet);

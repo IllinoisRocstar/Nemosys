@@ -4,7 +4,7 @@
 #include <vtkCell.h>
 #include <cstdlib>
 
-#include "NemDriver.H"
+#include "Drivers/NemDriver.H"
 #include "meshBase.H"
 
 const char *simple_circles_test_json;
@@ -49,9 +49,9 @@ std::string simple_circles_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "simple_circles_test.msh";
   return ifname;
@@ -68,9 +68,9 @@ std::string concentric_circles_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "concentric_circles_test.msh";
   return ifname;
@@ -87,9 +87,9 @@ std::string concentric_circles_test_2(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "concentric_circles_test_2.msh";
   return ifname;
@@ -106,9 +106,9 @@ std::string simple_polygons_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "simple_polygons_test.msh";
   return ifname;
@@ -125,9 +125,9 @@ std::string concentric_polygons_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "concentric_polygons_test.msh";
   return ifname;
@@ -144,9 +144,9 @@ std::string circlesInPolys_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "circlesInPolys_test.msh";
   return ifname;
@@ -163,9 +163,9 @@ std::string rectangular_array_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "rectangular_array_pattern.msh";
   return ifname;
@@ -182,9 +182,9 @@ std::string polar_array_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "polar_array_pattern.msh";
   return ifname;
@@ -201,9 +201,9 @@ std::string hex_array_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "hex_array_pattern_test.msh";
   return ifname;
@@ -220,9 +220,9 @@ std::string cartesian_array_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "cartesian_array_test.msh";
   return ifname;
@@ -239,9 +239,9 @@ std::string mesh_area_conservation_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "mesh_area_conservation_test.msh";
   return ifname;
@@ -258,9 +258,9 @@ std::string threeD_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "3D_test.msh";
   return ifname;
@@ -277,9 +277,9 @@ std::string include_test(const char *jsonF) {
   inputStream >> inputjson;
 
   if (inputjson.contains("Geometry and Mesh")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
   std::string ifname = "include_test.msh";
   return ifname;

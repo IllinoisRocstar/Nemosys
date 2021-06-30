@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#include "NucMeshDriver.H"
+#include "Drivers/NucMeshDriver.H"
 
 #include <gmsh.h>
 #include <cmath>
@@ -13,27 +13,154 @@
 namespace NEM {
 namespace DRV {
 
-nemAux::Timer Tgeom, Tboolean, Textrude, Tmesh, Tpause, Tconserve;
+namespace {
 
-NucMeshDriver::~NucMeshDriver() {
-  std::cout << "NucMeshDriver destroyed" << std::endl;
-}
+/**
+ * @brief Helper class to implement NucMeshDriver
+ */
+class NucMeshRunner {
+ public:
+  /**
+   * @brief Constructs the geometry and generates mesh from input JSON
+   * @param shapes Geometry and Mesh JSON object from input JSON file
+   */
+  explicit NucMeshRunner(const std::string &ofname,
+                         const jsoncons::json &shapes);
 
-NucMeshDriver *NucMeshDriver::readJSON(const jsoncons::json &inputjson) {
-  std::cout << "Reading Input JSON File." << std::endl;
+ public:
+  /**
+   * @brief Parses the Geometry and Mesh data of JSON
+   * @param shapes Geometry and Mesh JSON object
+   */
+  void parseGeomAndMesh(const jsoncons::json &shapes);
 
-  if (inputjson.contains("Geometry and Mesh")) {
-    auto nucmeshobj = new NucMeshDriver(inputjson);
-    return nucmeshobj;
-  } else {
-    std::cerr << "Error: 'Geometry and Mesh' keyword not found, expected after "
-                 "'Output File Name'"
-              << std::endl;
-    throw;
-  }
-}
+  /**
+   * @brief Parses the global options data of JSON
+   * @param opts Global Options JSON object
+   */
+  void parseOptions(const jsoncons::json &opts);
 
-NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
+  /**
+   * @brief Parses the saved objects data of JSON
+   * @param savedObj Saved Objects JSON object
+   */
+  void parseSavedObjects(const jsoncons::json &savedObj);
+
+  /**
+   * @brief Augments the shapes radii so that the meshed area is conserved
+   * @param obj JSON object
+   * @param shapetype The shape type (circle,polygon) being evaluated
+   * @param tolerance The iterative solver tolerance
+   */
+  jsoncons::json correctMeshArea(jsoncons::json obj,
+                                 const std::string &shapetype,
+                                 double tolerance = 1e-8);
+
+  /**
+   * @brief Parses circle data of JSON and constructs Circles
+   * @param circ Circle JSON object
+   * @param conserving Boolean for whether mesh conservation is being done for
+   * that circle
+   */
+  void makeCircles(const jsoncons::json &circ, bool conserving = false);
+
+  /**
+   * @brief Parses circleInPolys data of JSON and constructs CirclesInPolys
+   * @param circInPoly CircleInPoly JSON object
+   * @param conserving Boolean for whether mesh conservation is being done for
+   * that circle in the polygon
+   */
+  void makeCirclesInPolys(const jsoncons::json &circInPoly,
+                          bool conserving = false);
+
+  /**
+   * @brief Parses polygon data of JSON and constructs Polygon
+   * @param poly Polygon JSON object
+   * @param ns number of sides of polygon
+   */
+  void makePolygons(const jsoncons::json &poly, int ns = 0);
+
+  /**
+   * @brief Parses array data of JSON and constructs Array
+   * @param arr Array JSON object
+   */
+  void makeArray(const jsoncons::json &arr);
+
+  /**
+   * @brief Parses rectangular array data of JSON and constructs Array
+   * @param arr Rectangular array JSON object
+   */
+  void makeRectangularArray(const jsoncons::json &arr);
+
+  /**
+   * @brief Parses cartesian array data of JSON and constructs Array
+   * @param arr Cartesian array JSON object
+   */
+  void makeCartesianArray(const jsoncons::json &arr);
+
+  /**
+   * @brief Parses polar array data of JSON and constructs Array
+   * @param arr Polar array JSON object
+   */
+  void makePolarArray(const jsoncons::json &arr);
+
+  /**
+   * @brief Parses hexagonal array data of JSON and constructs Array
+   * @param arr Hexagonal array JSON object
+   */
+  void makeHexagonalArray(const jsoncons::json &arr);
+
+  /**
+   * @brief Checks that polygon radii are larger than last circle radius
+   * @param circle_radii Circle radii
+   * @param poly_radii Polygon radii
+   * @param nSides Number of polygon sides
+   */
+  double checkInscribedCircle(const std::vector<double> &circle_radii,
+                              const std::vector<double> &poly_radii,
+                              int nSides);
+
+ private:
+  std::map<int, NEM::GEO::shape *>
+      shape_map; /**< map for shape index and shape
+                  * @note used for identifying surface ids
+                  * that change due to Boolean operations */
+  std::map<std::string, int>
+      phystag_map; /**< map for physical entity tags and physical names */
+  std::map<std::string, int>
+      sstag_map;         /**< map for sideset physical entity tags and names */
+  int id;                /**< shape object index
+                          * @note used in shape_map */
+  int physTag;           /**< physical entity tag id index
+                          * @note used in phystag_map */
+  int ssTag;             /**< physical ss tag id index
+                          * @note used in sstag_map */
+  std::string extension; /**< output file name extension */
+  std::string ofname;    /**< output file name */
+  std::map<std::string, std::pair<std::string, jsoncons::json>>
+      savedobj_map; /**< map for Saved Objects declared in input JSON file
+                     * @note contents of map are Alias, Shape Type, and Shape
+                     * JSON object */
+  bool extrude;     /**< bool to construct 3D mesh */
+  bool gui{false};  /**< bool to open Gmsh gui */
+  bool skipAll;     /**< bool to skip all break statements */
+  std::vector<int> layers;     /** vector of 3D mesh layers */
+  std::vector<double> heights; /** vector of 3D mesh layer heights */
+
+  double paused_time; /** accumulates the paused time while GUI is open */
+
+  int parsingCount; /** counter to make sure parseGeomAndMesh doesn't go to
+                       infinity */
+  nemAux::Timer Tgeom, Tboolean, Textrude, Tmesh, Tpause, Tconserve;
+
+  /**
+   * @brief Opens the Gmsh GUI
+   */
+  void openGUI();
+};
+
+NucMeshRunner::NucMeshRunner(const std::string &ofname,
+                             const jsoncons::json &shapes) {
   id = 1;
   physTag = 1;
   ssTag = 1;
@@ -41,18 +168,7 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
   skipAll = false;
   parsingCount = 0;
 
-  std::cout << "NucMeshDriver created" << std::endl;
-
-  if (inputjson.contains("Output File Name")) {
-    ofname = inputjson["Output File Name"].as_string();
-  } else {
-    std::cerr << "Error: 'Output File Name' keyword not found, expected after "
-                 "'Program Type'"
-              << std::endl;
-    throw;
-  }
-
-  jsoncons::json shapes = inputjson["Geometry and Mesh"];
+  std::cout << "NucMeshRunner created" << std::endl;
 
   Tgeom.start();
   gmsh::initialize();
@@ -439,7 +555,7 @@ NucMeshDriver::NucMeshDriver(jsoncons::json inputjson) {
 //********************************************************************//
 // Parses the Geometry and Mesh main section
 //********************************************************************//
-void NucMeshDriver::parseGeomAndMesh(jsoncons::json shapes) {
+void NucMeshRunner::parseGeomAndMesh(const jsoncons::json &shapes) {
   // Loop through Geometry and Mesh to get shapes
   std::cout << "Geometry and Mesh" << std::endl;
   for (const auto &obj : shapes.array_range()) {
@@ -503,7 +619,7 @@ void NucMeshDriver::parseGeomAndMesh(jsoncons::json shapes) {
 //********************************************************************//
 // Parses the global options data of json
 //********************************************************************//
-void NucMeshDriver::parseOptions(jsoncons::json opts) {
+void NucMeshRunner::parseOptions(const jsoncons::json &opts) {
   // Iterate through options
   for (const auto &it : opts.array_range()) {
     if (it.contains("Open GUI")) gui = it["Open GUI"].as_bool();
@@ -608,7 +724,7 @@ void NucMeshDriver::parseOptions(jsoncons::json opts) {
 //********************************************************************//
 // Parses the saved objects data of json
 //********************************************************************//
-void NucMeshDriver::parseSavedObjects(jsoncons::json savedObj) {
+void NucMeshRunner::parseSavedObjects(const jsoncons::json &savedObj) {
   std::cout << "Parsing Saved Objects..." << std::endl;
 
   // Iterate through Saved Objects key
@@ -681,8 +797,8 @@ void NucMeshDriver::parseSavedObjects(jsoncons::json savedObj) {
 //********************************************************************//
 // Calculates the area of meshed shape and adjusts the radii
 //********************************************************************//
-jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
-                                              std::string shapetype,
+jsoncons::json NucMeshRunner::correctMeshArea(jsoncons::json obj,
+                                              const std::string &shapetype,
                                               double tolerance) {
   std::cout << "\nConserving shape meshed area " << std::endl;
   Tconserve.start();
@@ -832,7 +948,7 @@ jsoncons::json NucMeshDriver::correctMeshArea(jsoncons::json obj,
 //********************************************************************//
 // Parses json for polygon data then creates polygon object
 //********************************************************************//
-void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
+void NucMeshRunner::makePolygons(const jsoncons::json &poly, int ns) {
   // Iterate through Polygon/Hexagon key
   for (const auto &it : poly.array_range()) {
     bool visible = true;
@@ -860,7 +976,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
           // the alias was found in map
           if (find->second.first == "Polygon" ||
               find->second.first == "Hexagon") {
-            jsoncons::json j = find->second.second[0];
+            const auto &j = find->second.second[0];
             if (j.contains("Center")) {
               orig_center.push_back(j["Center"][0].as<double>());
               orig_center.push_back(j["Center"][1].as<double>());
@@ -1143,7 +1259,7 @@ void NucMeshDriver::makePolygons(jsoncons::json poly, int ns) {
 //********************************************************************//
 // Parses json for circle data then creates circle object
 //********************************************************************//
-void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
+void NucMeshRunner::makeCircles(const jsoncons::json &circ, bool conserving) {
   // Iterate through Circles key
   for (const auto &it : circ.array_range()) {
     bool visible = true;
@@ -1171,7 +1287,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
           // the alias was found in map
           if (find->second.first == "Circle" ||
               find->second.first == "Circles") {
-            jsoncons::json j = find->second.second[0];
+            const auto &j = find->second.second[0];
             if (j.contains("Center")) {
               orig_center.push_back(j["Center"][0].as<double>());
               orig_center.push_back(j["Center"][1].as<double>());
@@ -1432,7 +1548,7 @@ void NucMeshDriver::makeCircles(jsoncons::json circ, bool conserving) {
 //********************************************************************//
 // Parses json for circlesInPolys data then creates circlesInPoly object
 //********************************************************************//
-void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
+void NucMeshRunner::makeCirclesInPolys(const jsoncons::json &circInPoly,
                                        bool conserving) {
   // Iterate through key
   for (const auto &it : circInPoly.array_range()) {
@@ -1461,7 +1577,7 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
         if (find != savedobj_map.end()) {
           // the alias was found in map
           if (find->second.first == "CirclesInPolys") {
-            jsoncons::json j = find->second.second[0];
+            const auto &j = find->second.second[0];
             if (j.contains("Center")) {
               orig_center.push_back(j["Center"][0].as<double>());
               orig_center.push_back(j["Center"][1].as<double>());
@@ -1815,7 +1931,7 @@ void NucMeshDriver::makeCirclesInPolys(jsoncons::json circInPoly,
 //********************************************************************//
 // Parses json for array data then creates array of shape objects
 //********************************************************************//
-void NucMeshDriver::makeArray(jsoncons::json arr) {
+void NucMeshRunner::makeArray(const jsoncons::json &arr) {
   std::string arrType = arr["Array"].as_string();
 
   if (arrType == "Rectangular") {
@@ -1846,7 +1962,7 @@ void NucMeshDriver::makeArray(jsoncons::json arr) {
 //********************************************************************//
 // Parses json for rectangular array then creates array of shape objects
 //********************************************************************//
-void NucMeshDriver::makeRectangularArray(jsoncons::json arr) {
+void NucMeshRunner::makeRectangularArray(const jsoncons::json &arr) {
   int nx = 0;
   int ny = 0;
   double dx = 0;
@@ -1910,7 +2026,7 @@ void NucMeshDriver::makeRectangularArray(jsoncons::json arr) {
     }
   }
 
-  jsoncons::json s = arr["Shapes"];  // the array of shapes
+  const jsoncons::json &s = arr["Shapes"];  // the array of shapes
   jsoncons::json circ, poly, circInPoly;
 
   std::vector<double> cent, updated_center;
@@ -2101,7 +2217,7 @@ void NucMeshDriver::makeRectangularArray(jsoncons::json arr) {
 //********************************************************************//
 // Parses json for cartesian array then creates array of shape objects
 //********************************************************************//
-void NucMeshDriver::makeCartesianArray(jsoncons::json arr) {
+void NucMeshRunner::makeCartesianArray(const jsoncons::json &arr) {
   int nx = 0;
   int ny = 0;
 
@@ -2200,7 +2316,7 @@ void NucMeshDriver::makeCartesianArray(jsoncons::json arr) {
     }
   }
 
-  jsoncons::json s = arr["Shapes"];  // the array of shapes
+  const jsoncons::json &s = arr["Shapes"];  // the array of shapes
   jsoncons::json circ, poly, circInPoly;
 
   std::vector<double> cent, updated_center;
@@ -2366,7 +2482,7 @@ void NucMeshDriver::makeCartesianArray(jsoncons::json arr) {
 //********************************************************************//
 // Parses json for polar array data then creates array of shape objects
 //********************************************************************//
-void NucMeshDriver::makePolarArray(jsoncons::json arr) {
+void NucMeshRunner::makePolarArray(const jsoncons::json &arr) {
   // get polar array parameters
   std::vector<double> center;  // center of array
   if (arr.contains("Center")) {
@@ -2456,7 +2572,7 @@ void NucMeshDriver::makePolarArray(jsoncons::json arr) {
     throw;
   }
 
-  jsoncons::json s = arr["Shapes"];  // the array of shapes
+  const jsoncons::json &s = arr["Shapes"];  // the array of shapes
   jsoncons::json circ, poly;
 
   std::vector<double> c_cen;
@@ -2569,7 +2685,7 @@ void NucMeshDriver::makePolarArray(jsoncons::json arr) {
 //********************************************************************//
 // Parses json for hex array data then creates array of shape objects
 //********************************************************************//
-void NucMeshDriver::makeHexagonalArray(jsoncons::json arr) {
+void NucMeshRunner::makeHexagonalArray(const jsoncons::json &arr) {
   std::vector<double> cent, c_cen;
   std::vector<std::vector<double>> orig_center;
 
@@ -2710,7 +2826,7 @@ void NucMeshDriver::makeHexagonalArray(jsoncons::json arr) {
   double ang = 60.0 * M_PI / 180.0;
   double xOff = 0.0, yOff = 0.0;
   // If Circles are used and visible, offset to edge of circle
-  jsoncons::json s = arr["Shapes"];  // the array of shapes
+  const jsoncons::json &s = arr["Shapes"];  // the array of shapes
   for (const auto &shapes : s.array_range()) {
     if (shapes.contains("BREAK"))
       if (shapes["BREAK"] == true) openGUI();
@@ -3105,7 +3221,7 @@ void NucMeshDriver::makeHexagonalArray(jsoncons::json arr) {
 //********************************************************************//
 // Causes the Gmsh GUI to wait for command line input
 //********************************************************************//
-void NucMeshDriver::openGUI() {
+void NucMeshRunner::openGUI() {
   // Tpause.start();
   gmsh::graphics::draw();
   if (!skipAll) {
@@ -3135,9 +3251,9 @@ void NucMeshDriver::openGUI() {
 //********************************************************************//
 // Checks that polygon radii are larger than last circle radius
 //********************************************************************//
-double NucMeshDriver::checkInscribedCircle(std::vector<double> circle_radii,
-                                           std::vector<double> poly_radii,
-                                           int nSides) {
+double NucMeshRunner::checkInscribedCircle(
+    const std::vector<double> &circle_radii,
+    const std::vector<double> &poly_radii, int nSides) {
   double firstPolyRadius = poly_radii[0];
   int last = circle_radii.size() - 1;
   double lastCircleRadius = circle_radii[last];
@@ -3149,6 +3265,33 @@ double NucMeshDriver::checkInscribedCircle(std::vector<double> circle_radii,
     return incircle;
   else
     return 1e20;
+}
+
+}  // namespace
+
+NucMeshDriver::NucMeshDriver(Files file, jsoncons::json geometryAndMesh)
+    : file_(std::move(file)), geometryAndMesh_(std::move(geometryAndMesh)) {}
+
+NucMeshDriver::NucMeshDriver() : NucMeshDriver(Files{{}}, {}) {}
+
+const NucMeshDriver::Files &NucMeshDriver::getFiles() const { return file_; }
+
+void NucMeshDriver::setFiles(Files file) { this->file_ = std::move(file); }
+
+const jsoncons::json &NucMeshDriver::getGeometryAndMesh() const {
+  return geometryAndMesh_;
+}
+
+void NucMeshDriver::setGeometryAndMesh(jsoncons::json geometryAndMesh) {
+  this->geometryAndMesh_ = std::move(geometryAndMesh);
+}
+
+jsoncons::string_view NucMeshDriver::getProgramType() const {
+  return programType;
+}
+
+void NucMeshDriver::execute() const {
+  NucMeshRunner(this->file_.outputFile, this->geometryAndMesh_);
 }
 
 }  // namespace DRV

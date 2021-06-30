@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.57.0
+Version 0.58.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -36,7 +36,7 @@ in the notes section.
 | ENABLE_MPI             | Enable MPI support              | OFF     | Requires MPI compiler            |
 | ENABLE_TESTING         | Enable testing                  | ON      |                                  |
 | ENABLE_BUILD_UTILS     | Build utilities                 | OFF     |                                  |
-| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python and SWIG         |
+| ENABLE_PYTHON_BINDINGS | Enable Python bindings          | OFF     | Requires Python 3 and SWIG 3     |
 | ENABLE_CFMSH           | Enable cfMesh Meshing engine    | OFF     | Requires OpenFOAM                |
 | ENABLE_CGNS            | Enable CGNS extensions          | OFF     | Requires CGNS                    |
 | ENABLE_CONSRV_SURFACE_TRANSFER | Enable conservative surface transfer | OFF | Requires IMPACT         |
@@ -120,11 +120,8 @@ You will need to `apt install` at least the following dependencies:
 
 Optional dependencies for additional functionality:
 
-* python3.5-dev
-* python3-pip
-* python2.7-dev
-* python-pip
-* swig
+* libpython3-dev
+* swig3.0
 
 #### Note
 We no longer maintain the build script. The file and the archive of TPLs in `contribs` folder 
@@ -161,8 +158,8 @@ ${NEMOSYS_DEPS_INSTALL_PATH}/netgen" \
         -DBUILD_SHARED_LIBS=ON \
         -DENABLE_PYTHON_BINDINGS=ON \
         -DCMAKE_BUILD_TYPE=Release 
-$ make -j$(nproc) (or however many threads you'd like to use)
-$ make install (sudo if install location requires it)
+$ make -j$(nproc) # (or however many threads you'd like to use)
+$ make install # (sudo if install location requires it)
 ```
 Executing the commands above will build all libraries, executables, and
 bindings. The libraries are installed in `$NEMOSYS_INSTALL_PATH/lib`.
@@ -187,7 +184,7 @@ $ cmake .. \
         -DBUILD_DOC_Overview=OFF \
         -DBUILD_MODULE_Draw=OFF \
         -DBUILD_MODULE_Visualization=OFF \
-        -DBUILD_MODULE_ApplicationFramework=OFF
+        -DBUILD_MODULE_ApplicationFramework=OFF \
         -DBUILD_LIBRARY_TYPE=STATIC
 $ make -j$(nproc)
 $ make install
@@ -206,7 +203,7 @@ $ cmake .. \
         -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \
         -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON \
         -DENABLE_OPENMP=ON
-$ make lib shared -j$(nproc)
+$ make -j$(nproc)
 $ make install -j$(nproc)
 ```
 

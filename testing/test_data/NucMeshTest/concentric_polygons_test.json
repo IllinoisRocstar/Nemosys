@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "concentric_polygons_test",
+	"Mesh File Options": {
+		"Output Mesh File": "concentric_polygons_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

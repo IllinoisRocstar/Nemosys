@@ -14,7 +14,7 @@ netgenGen::netgenGen()
   mesh = nglib::Ng_NewMesh();
 }
 
-netgenGen::netgenGen(netgenParams *params)
+netgenGen::netgenGen(const netgenParams *params)
     : refine_with_geom(), refine_without_geom()
 {
   std::cout << "initializing netgen mesh generator" << std::endl;
@@ -35,7 +35,7 @@ netgenGen::~netgenGen()
 }
 
 
-void netgenGen::set_mp(netgenParams* params)
+void netgenGen::set_mp(const netgenParams* params)
 {
   mp.uselocalh                   = params->uselocalh;
   mp.maxh                        = params->maxh;
@@ -46,7 +46,7 @@ void netgenGen::set_mp(netgenParams* params)
   mp.closeedgeenable             = params->closeedgeenable;
   mp.closeedgefact               = params->closeedgefact;
   mp.second_order                = params->second_order;
-  mp.meshsize_filename           = &(params->meshsize_filename)[0u];
+  mp.meshsize_filename = const_cast<char *>(params->meshsize_filename.c_str());
   mp.quad_dominated              = params->quad_dominated;
   mp.optvolmeshenable            = params->optvolmeshenable;
   mp.optsteps_2d                 = params->optsteps_2d;

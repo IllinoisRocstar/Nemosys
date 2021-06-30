@@ -1,7 +1,9 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "hex_array_pattern_test",
-	"Geometry and Mesh": 
+	"Mesh File Options": {
+		"Output Mesh File": "hex_array_pattern_test"
+	},
+	"Geometry and Mesh":
 	[
 		{
 			"Global Options":

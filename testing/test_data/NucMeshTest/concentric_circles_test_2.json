@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "concentric_circles_test_2",
+	"Mesh File Options": {
+		"Output Mesh File": "concentric_circles_test_2"
+	},
 	"Geometry and Mesh": 
 	[
 		{

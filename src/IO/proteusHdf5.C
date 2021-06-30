@@ -1,9 +1,8 @@
 /* Special purpose class for Proteus HDF5 files */
 
-#include "proteusHdf5.H"
-#include <ConversionDriver.H>
+#include <Drivers/Conversion/ConversionDriver.H>
+#include <Drivers/TransferDriver.H>
 #include <TransferBase.H>
-#include <TransferDriver.H>
 #include <stdio.h>
 #include <string.h>
 #include <vtkCell.h>
@@ -16,6 +15,7 @@
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkVersion.h>
+#include "proteusHdf5.H"
 
 // MAdLib
 #include <MAdLib.h>
@@ -195,12 +195,11 @@ proteusHdf5::proteusHdf5(std::string fname, std::string meshFname,
 
   refinedMeshBase->write();
 
-  NEM::DRV::ConversionDriver *convdrvobj = new NEM::DRV::ConversionDriver();
   std::vector<meshBase *> mbVec;
   mbVec.push_back(refinedMeshBase);
   std::string exoName = exoMeshFName;
 
-  convdrvobj->genExo(mbVec, exoName);
+  NEM::DRV::ConversionDriver::genExo(mbVec, exoName);
 
   // Close HDF5 file
   closeFile();
