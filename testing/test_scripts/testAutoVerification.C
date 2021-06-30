@@ -1,7 +1,7 @@
 #include <gtest.h>
 #include "omp.h"
 
-#include "AutoVerificationDriver.H"
+#include "Drivers/AutoVerificationDriver.H"
 #include "OrderOfAccuracy.H"
 
 const char *coarse;
@@ -75,9 +75,13 @@ TEST_F(OrderOfAccuracyTest, CheckAsymptoticRange) {
   }
 }
 
-TEST_F(OrderOfAccuracyTest, AutoVerificationDriverTest) {
-  auto driver =
-      NEM::DRV::AutoVerificationDriver::readJSON(std::string(jsonfile));
+TEST(AutoVerificationDriverTest, DriverTest) {
+  std::ifstream inputStream(jsonfile);
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+  auto driver = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(driver, nullptr);
+  driver->execute();
 }
 
 int main(int argc, char **argv) {

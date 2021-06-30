@@ -1,6 +1,7 @@
-#include <ConversionDriver.H>
+#include <Drivers/NemDriver.H>
 #include <gtest.h>
 #include <cctype>
+#include <fstream>
 
 const char *vtk2cobaltJSON;
 const char *cobalt_out;
@@ -9,7 +10,15 @@ const char *cobalt_ref;
 TEST(Conversion, ConvertVTKToCobalt) {
   // Test VTK->COBALT conversion driver (does not test the .cgi output)
   // Note quite crude - assumes same ordering of points/elements
-  NEM::DRV::ConversionDriver::readJSON(std::string(vtk2cobaltJSON));
+  std::ifstream inputStream(vtk2cobaltJSON);
+  if (!inputStream.good()) {
+    std::cerr << "Error opening file " << vtk2cobaltJSON << std::endl;
+    exit(1);
+  }
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+  NEM::DRV::NemDriver::readJSON(inputjson)->execute();
+
   std::ifstream resultFile(cobalt_out);
   EXPECT_TRUE(resultFile.good());
   std::ifstream reference(cobalt_ref);

@@ -1,7 +1,6 @@
 #include <fstream>
-
-#include "AuxiliaryFunctions.H"
-#include "NemDriver.H"
+#include <Drivers/NemDriver.H>
+#include <AuxiliaryFunctions.H>
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -20,12 +19,12 @@ int main(int argc, char *argv[]) {
   inputStream >> inputjson;
   if (inputjson.is_array())
     for (const auto &prog : inputjson.array_range()) {
-      NEM::DRV::NemDriver *nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
-      delete nemdrvobj;
+      auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+      nemdrvobj->execute();
     }
   else {
-    NEM::DRV::NemDriver *nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
-    delete nemdrvobj;
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+    nemdrvobj->execute();
   }
 
   return 0;

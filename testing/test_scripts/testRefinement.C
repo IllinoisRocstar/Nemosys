@@ -1,4 +1,4 @@
-#include <RefineDriver.H>
+#include <Drivers/Refine/RefineDriver.H>
 #include <gtest.h>
 
 #include "meshBase.H"
@@ -31,9 +31,9 @@ int genTest(const char *jsonF, const char *newName, const char *goldName) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
-      std::unique_ptr<NEM::DRV::RefineDriver>(
-          NEM::DRV::RefineDriver::readJSON(inputjson));
+  auto refineDrv = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(dynamic_cast<NEM::DRV::RefineDriver *>(refineDrv.get()), nullptr);
+  refineDrv->execute();
 
   std::unique_ptr<meshBase> goldMesh = meshBase::CreateUnique(goldName);
   std::unique_ptr<meshBase> newMesh = meshBase::CreateUnique(newName);
@@ -53,9 +53,9 @@ int AMRTest(const char *jsonF2) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
-      std::unique_ptr<NEM::DRV::RefineDriver>(
-          NEM::DRV::RefineDriver::readJSON(inputjson));
+  auto refineDrv = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(dynamic_cast<NEM::DRV::RefineDriver *>(refineDrv.get()), nullptr);
+  refineDrv->execute();
 
   std::unique_ptr<meshBase> genMesh = meshBase::CreateUnique("refined_AMR.vtu");
   std::unique_ptr<meshBase> refMesh =

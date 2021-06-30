@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "circlesInPolys_test",
+	"Mesh File Options": {
+		"Output Mesh File": "circlesInPolys_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

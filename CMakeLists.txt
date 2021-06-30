@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 57)
+set(NEMOSYS_MINOR_VERSION 58)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -192,30 +192,8 @@ find_package(VTK 8.2.0 REQUIRED)
 #include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
 list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
-list(APPEND WRAPPER_INCLUDE_DIRS ${VTK_INCLUDE_DIRS})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
-
-# Finding vtkCommonCore library to pass to Python for linking (8.2.0)
-if(VTK_ENABLE_KITS)
-  NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommon VTK_COMMON_CORE_LIB_PATH)
-else()
-  NEM_get_imported_location(VTK_COMMON_CORE_LIB vtkCommonCore VTK_COMMON_CORE_LIB_PATH)
-endif()
-if(VTK_COMMON_CORE_LIB)
-  get_filename_component(VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB} NAME)
-  if(WIN32) # Remove the .lib suffix
-    string(REGEX REPLACE "\\.lib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
-  elseif (APPLE)
-    string(REGEX REPLACE "\\.dylib$" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
-    string(REGEX REPLACE "lib" "" VTK_COMMON_CORE_LIB ${VTK_COMMON_CORE_LIB})
-  endif()
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX) # Add the : in front to force exact match by ld
-  set(VTK_COMMON_CORE_LIB ":${VTK_COMMON_CORE_LIB}")
-endif()
-message(STATUS "vtkCommonCore library ${VTK_COMMON_CORE_LIB}")
 
 # Find Gmsh
 find_library(GMSH_LIB gmsh HINTS lib)
@@ -223,7 +201,6 @@ find_file(GMSH_HDR gmsh.h HINTS include)
 get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
 get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
 list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
-list(APPEND WRAPPER_INCLUDE_DIRS ${GMSH_INCPATH})
 message(STATUS "gmsh include path ${GMSH_INCPATH}")
 message(STATUS "gmsh libs ${GMSH_LIB}")
 
@@ -233,7 +210,6 @@ find_file(EXO_HDR exodusII.h)
 get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
 get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
 list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
-list(APPEND WRAPPER_INCLUDE_DIRS ${EXO_INCPATH})
 message(STATUS "exodus include path ${EXO_INCPATH}")
 message(STATUS "exodus libs ${EXO_LIB}")
 
@@ -241,7 +217,6 @@ message(STATUS "exodus libs ${EXO_LIB}")
 if(WIN32)
   find_package(netCDF REQUIRED)
   list(APPEND LIBRARY_DIRS ${netCDF_LIB_DIR} ${netCDF_LIB_DIR}/../bin)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${netCDF_INCLUDE_DIRS})
   message(STATUS "netcdf include path ${netCDF_INCLUDE_DIR}")
   message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
 endif()
@@ -250,7 +225,6 @@ endif()
 if(ENABLE_OPENCASCADE)
   find_package(OpenCASCADE REQUIRED)
   list(APPEND LIBRARY_DIRS ${OpenCASCADE_LIBRARY_DIR})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${OpenCASCADE_INCLUDE_DIR})
   message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
   message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
 
@@ -272,7 +246,6 @@ if(ENABLE_CGNS)
   get_filename_component(CGNS_INCPATH ${CGNS_HDR} PATH)
   get_filename_component(CGNS_LIB_PATH ${CGNS_LIB} PATH)
   list(APPEND LIBRARY_DIRS ${CGNS_LIB_PATH} ${CGNS_LIB_PATH}/../bin)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${CGNS_INCPATH})
   message(STATUS "cgns include path ${CGNS_INCPATH}")
   message(STATUS "cgns libs ${CGNS_LIB}")
   set(HAVE_CGNS TRUE)
@@ -284,7 +257,6 @@ if(ENABLE_HDF5)
     find_package(hdf5 REQUIRED COMPONENTS CXX CXX_HL CONFIG)
     NEM_get_imported_location(HDF5_LIBRARIES hdf5::hdf5-shared HDF5_LIB_PATH)
     list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
-    list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
     message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIR}")
     message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
     set(HAVE_HDF5 TRUE)
@@ -294,7 +266,6 @@ if(ENABLE_HDF5)
     list(GET ${HDF5_LIBRARIES} 0 HDF5_LIBRARY)
     get_filename_component(HDF5_LIB_PATH ${HDF5_LIBRARY} PATH)
     list(APPEND LIBRARY_DIRS ${HDF5_LIB_PATH})
-    list(APPEND WRAPPER_INCLUDE_DIRS ${HDF5_INCLUDE_DIR})
     message(STATUS "hdf5 include path ${HDF5_INCLUDE_DIRS}")
     message(STATUS "hdf5 libs ${HDF5_LIBRARIES}")
     set(HAVE_HDF5 TRUE)
@@ -309,7 +280,6 @@ if(ENABLE_METIS)
   get_filename_component(METIS_INCPATH ${METIS_HDR} PATH)
   get_filename_component(METIS_LIB_PATH ${METIS_LIB} PATH)
   list(APPEND LIBRARY_DIRS ${METIS_LIB_PATH})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${METIS_INCPATH})
   message(STATUS "metis include path ${METIS_INCPATH}")
   message(STATUS "metis libs ${METIS_LIB}")
   set(HAVE_METIS TRUE)
@@ -332,7 +302,6 @@ if(ENABLE_NETGEN)
     set(HAVE_NETGEN_OLD TRUE)
   endif()
   list(APPEND LIBRARY_DIRS ${NETGEN_LIBRARY_DIR} ${NETGEN_LIBRARY_DIR}/../bin)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${NETGEN_INCLUDE_DIRS})
   message(STATUS "netgen include path ${NETGEN_INCLUDE_DIRS}")
   message(STATUS "netgen libs ${NETGEN_LIBRARY_DIR}")
 
@@ -343,7 +312,6 @@ if(ENABLE_NETGEN)
     include_directories(${ZLIB_INCLUDE_DIRS})
     get_filename_component(ZLIB_LIB_PATH ${ZLIB_LIBRARIES} PATH)
     list(APPEND LIBRARY_DIRS ${ZLIB_LIB_PATH} ${ZLIB_LIB_PATH}/../bin)
-    list(APPEND WRAPPER_INCLUDE_DIRS ${ZLIB_INCLUDE_DIRS})
     message(STATUS "zlib include path ${ZLIB_INCLUDE_DIRS}")
     message(STATUS "zlib libs ${ZLIB_LIBRARIES}")
   endif()
@@ -389,7 +357,6 @@ if(ENABLE_CFMSH)
   message(STATUS "OpenFOAM link directory ${OPNF_LIBRARY_DIRS}")
 
   list(APPEND LIBRARY_DIRS ${OPNF_LIBRARY_DIRS})
-  list(APPEND WRAPPER_INCLUDE_DIRS ${OPNF_INCLUDE_DIRS})
 endif()
 
 if(ENABLE_OPENMP)
@@ -437,50 +404,52 @@ list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
 add_subdirectory(contrib/madlib-1.3.0) # includes ANN
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
-get_target_property(MADLIB_INCPATH MAdLib INTERFACE_INCLUDE_DIRECTORIES)
-list(APPEND WRAPPER_INCLUDE_DIRS ${MADLIB_INCPATH})
-get_target_property(ANN_INCPATH ANN INTERFACE_INCLUDE_DIRECTORIES)
-list(APPEND WRAPPER_INCLUDE_DIRS ${ANN_INCPATH})
 
 # Find jsoncons
-add_subdirectory(contrib/jsoncons-0.127.0)
-get_target_property(JSONCONSRV_INCPATH jsoncons INTERFACE_INCLUDE_DIRECTORIES)
-list(APPEND WRAPPER_INCLUDE_DIRS ${JSONCONSRV_INCPATH})
+add_subdirectory(contrib/jsoncons-0.159.0)
 
 if(ENABLE_CFMSH)
   # Find cfMesh
   add_subdirectory(contrib/cfmesh-1.1.2ir1)
-  # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
+  # TODO: Add LIBRARY_DIRS
 endif()
 
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
   add_subdirectory(contrib/libsupermesh-1.0.1)
-  # TODO: Add LIBRARY_DIRS and WRAPPER_INCLUDE_DIRS
+  # TODO: Add LIBRARY_DIRS
 endif()
 
 # Setting library files ########################################################
 
 # Setting include files
-file(GLOB H_FILES include/*.H)
-file(GLOB h_FILES include/*.h)
-file(GLOB hpp_FILES include/*.hpp)
-file(GLOB cpp_FILES include/*.cpp)
-set(Nemosys_INC_FILES ${H_FILES} ${h_FILES} ${hpp_FILES} ${cpp_FILES})
+# TODO: Install headers conditionally
 
 # Setting Nemosys source
 # TODO: Commented files are orphaned! Check if to delete or reinclude.
 set(NEMOSYS_SRCS
     src/Drivers/NemDriver.C
     src/Drivers/AutoVerificationDriver.C
-    src/Drivers/ConversionDriver.C
-    src/Drivers/InputGenDriver.C
-    src/Drivers/MeshGenDriver.C
+    src/Drivers/Conversion/ConversionDriver.C
+    src/Drivers/Conversion/GmshToExoConversionDriver.C
+    src/Drivers/Conversion/GmshToVtkConversionDriver.C
+    src/Drivers/Conversion/ManipExoConversionDriver.C
+    src/Drivers/Conversion/SmartConversionDriver.C
+    src/Drivers/Conversion/VtkHexToTetConversionDriver.C
+    src/Drivers/Conversion/VtkToCobaltConversionDriver.C
+    src/Drivers/Conversion/VtkToPatranConversionDriver.C
+    src/Drivers/Conversion/VtkToPntConversionDriver.C
+    src/Drivers/MeshGen/MeshGenDriver.C
+    src/Drivers/MeshGen/GmshMeshGenDriver.C
     src/Drivers/MeshQualityDriver.C
     src/Drivers/NucMeshDriver.C
-    src/Drivers/omegahRefineDriver.C
-    src/Drivers/RefineDriver.C
+    src/Drivers/Refine/RefineDriver.C
+    src/Drivers/Refine/SizeFieldRefineDriver.C
+    src/Drivers/Refine/UniformRefineDriver.C
+    src/Drivers/Refine/Z2RefineDriver.C
+    src/Drivers/Refine/OmegahRefineDriver.C
     src/Drivers/TransferDriver.C
-    src/Drivers/PackMeshDriver.C
+    src/Drivers/PackMesh/PackMeshDriver.C
+    src/Drivers/PackMesh/SurfacePackMeshDriver.C
 
     src/Geometry/convexContainer.C
     src/Geometry/point.C
@@ -515,9 +484,7 @@ set(NEMOSYS_SRCS
 
     src/MeshGeneration/meshGen.C
     src/MeshGeneration/netgenGen.C
-    src/MeshGeneration/netgenParams.C
     src/MeshGeneration/gmshGen.C
-    src/MeshGeneration/gmshParams.C
 
     src/MeshOperation/dataSetRegionSurfaceFilter.C
     src/MeshOperation/mergeCells.C
@@ -580,8 +547,16 @@ endif()
 
 if(ENABLE_EPIC)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/InputGenDriver.C
+
       src/InputGeneration/ep16Post.C
       src/InputGeneration/ep16Prep.C
+  )
+endif()
+
+if(ENABLE_NETGEN)
+  set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/MeshGen/NetgenMeshGenDriver.C
   )
 endif()
 
@@ -593,21 +568,24 @@ endif()
 
 if(ENABLE_CFMSH)
   set(NEMOSYS_SRCS ${NEMOSYS_SRCS}
+      src/Drivers/Conversion/FoamToMshConversionDriver.C
+      src/Drivers/Conversion/FoamToVtkConversionDriver.C
+      src/Drivers/Conversion/VtkToFoamConversionDriver.C
+      src/Drivers/MeshGen/BlockMeshMeshGenDriver.C
+      src/Drivers/MeshGen/CFMeshMeshGenDriver.C
+      src/Drivers/MeshGen/SnappyMeshMeshGenDriver.C
+      src/Drivers/Refine/FoamRefineDriver.C
+      src/Drivers/PackMesh/HexPackMeshDriver.C
+
       src/Mesh/foamMesh.C
       src/Mesh/foamGeoMesh.C
 
       src/MeshGeneration/blockMeshGen.C
-      src/MeshGeneration/blockMeshParams.C
       src/MeshGeneration/cfmeshGen.C
-      src/MeshGeneration/cfmeshParams.C
       src/MeshGeneration/snappymeshGen.C
-      src/MeshGeneration/snappymeshParams.C
 
       src/MeshManipulationFoam/MeshManipulationFoam.C
-      src/MeshManipulationFoam/MeshManipulationFoamParams.C
       src/MeshManipulationFoam/mergePolyMesh.C
-
-      src/MeshQuality/cfmshQualityParams.C
 
       src/Refinement/AMRFoam.C
   )
@@ -636,7 +614,7 @@ endif()
 # Build Nemosys library
 add_library(Nemosys ${NEMOSYS_SRCS})
 # /* Work around to disable warnings coming from contrib headers.
-foreach(lib jsoncons ANN MAdLib)
+foreach(lib omega_h jsoncons ANN MAdLib)
   get_target_property(${lib}_include_dirs ${lib} INTERFACE_INCLUDE_DIRECTORIES)
   target_include_directories(Nemosys SYSTEM PUBLIC ${${lib}_include_dirs})
 endforeach()
@@ -692,9 +670,10 @@ if(HAVE_HDF5)
               hdf5::hdf5-static
       )
     endif()
+    target_include_directories(Nemosys SYSTEM PUBLIC ${HDF5_INCLUDE_DIR})
   else()
     target_link_libraries(Nemosys PUBLIC ${HDF5_LIBRARIES})
-    target_include_directories(Nemosys SYSTEM PUBLIC ${HDF5_INCLUDE_DIR})
+    target_include_directories(Nemosys SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
   endif()
 endif()
 
@@ -787,7 +766,6 @@ if(ENABLE_MLAMR)
   target_compile_definitions(Nemosys PUBLIC
       MLAMR)
   find_package(frugally-deep CONFIG REQUIRED)
-  list(APPEND WRAPPER_INCLUDE_DIRS ${PACKAGE_PREFIX_DIR}/include)
   message(STATUS "frugally-deep include ${PACKAGE_PREFIX_DIR}/include")
   target_include_directories(Nemosys SYSTEM
       PUBLIC ${PACKAGE_PREFIX_DIR}/include)
@@ -824,17 +802,17 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
-  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wpedantic")
-  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wall"
+  target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wpedantic")
+  target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wall"
           "${conditional_cuda_flag}-Wno-sign-compare")
-  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wextra"
+  target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wextra"
           "${conditional_cuda_flag}-Wno-unused-parameter")
-  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Woverloaded-virtual"
+  target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Woverloaded-virtual"
           "${conditional_cuda_flag}-Wnon-virtual-dtor")
-  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wstrict-null-sentinel"
+  target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wstrict-null-sentinel"
           "${conditional_cuda_flag}-Wredundant-decls")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
-    target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wfloat-conversion")
+    target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wfloat-conversion")
   endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
 
   # Stretch goals
@@ -861,7 +839,6 @@ endif()
 # Generate export header #######################################################
 include(GenerateExportHeader)
 generate_export_header(Nemosys)
-list(APPEND Nemosys_INC_FILES ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h)
 target_include_directories(Nemosys PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
@@ -873,8 +850,12 @@ set_target_properties(Nemosys PROPERTIES VERSION ${NEMOSYS_VERSION}
 # Install libraries ############################################################
 
 # Headers
-install(FILES ${Nemosys_INC_FILES}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys)
+install(DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys
+    FILES_MATCHING PATTERN "unsupported" EXCLUDE
+                   PATTERN "Eigen" EXCLUDE
+                   PATTERN "*.H" PATTERN "*.hpp")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys)
 
 # Libraries
 install(TARGETS Nemosys

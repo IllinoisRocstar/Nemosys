@@ -1,8 +1,10 @@
 #ifndef GMSHPARAMS_H
 #define GMSHPARAMS_H
 
+#include "nemosys_export.h"
 #include "meshingParams.H"
 
+#include <array>
 #include <map>
 #include <set>
 #include <string>
@@ -17,7 +19,7 @@ namespace GEN {
   * @brief A structure for defining volumetric mesh size fields.
   Size fields supported in this structure are Ball, Cylinder, Box, and Frustum.
 **/
-struct volSizeField {
+struct NEMOSYS_EXPORT volSizeField {
   std::string type; /**< Type of size field, eg. Ball,Cylinder,Box */
   int id;           /**< Size Field ID */
   /**< Vector of pairs to store size field parameters */
@@ -34,22 +36,24 @@ struct volSizeField {
 /**
  @brief A struct for defining hexahedral transfinite volumes.
  */
-struct TransfiniteBlock {
+struct NEMOSYS_EXPORT TransfiniteBlock {
   // specified gmsh id (tag) of volume to be treated as transfinite
-  size_t id;
+  int id;
 
   // 3 direction vectors specifying axis of block (hexahedron)
-  double axis[3][3];
+  std::array<std::array<double, 3>, 3> axis;
 
   // number of vertices in each axial direction
-  int vert[3];
+  std::array<int, 3> vert;
 
   // each axis has either "Progression" or "Bump" type
   // default is "Progression" with coef 1
-  std::string type[3] = { "Progression", "Progression", "Progression" };
+  std::array<std::string, 3> type{"Progression", "Progression", "Progression"};
 
   // value used in "Progression" or "Bump" along given axis
-  double coef[3] = { 1.0, 1.0, 1.0 };
+  std::array<double, 3> coef{1.0, 1.0, 1.0};
+
+  bool operator<(const TransfiniteBlock &rhs) const { return id < rhs.id; }
 };
 
 /**
@@ -57,107 +61,97 @@ struct TransfiniteBlock {
       using gmshGen class methods. These parameters are assigned a value
       at time of user input parsing through JSON in meshGenDriver.
 **/
-class gmshParams : public meshingParams {
+class NEMOSYS_EXPORT gmshParams : public meshingParams {
  public:
   /** @brief gmshParams standard constructor
    **/
-  gmshParams();
-
-  /** @brief gmshParams standard destructor
-   **/
-  ~gmshParams(){};
+  gmshParams() = default;
 
   /** @brief Output mesh file name
    **/
-  std::string ofname;
+  std::string ofname{};
 
   /** @brief Minimum global mesh size
    **/
-  double minSize;
+  double minSize{0.01};
 
   /** @brief Maximum global mesh size
    **/
-  double maxSize;
+  double maxSize{50.0};
 
   /** @brief Surface meshing algorithm
    **/
-  std::string algo2D;
+  std::string algo2D{"Frontal"};
 
   /** @brief Volume meshing algorithm
    **/
-  std::string algo3D;
+  std::string algo3D{"HXT"};
 
   /** @brief Extend mesh size from boundary option
    **/
-  bool extSizeFromBoundary;
+  bool extSizeFromBoundary{true};
 
   /** @brief Mesh size based on curvature option
    **/
-  bool sizeFromCurvature;
+  bool sizeFromCurvature{false};
 
   /** @brief Minimum number of mesh elements per two Pi
    **/
-  int minElePer2Pi;
+  int minElePer2Pi{6};
 
   /** @brief Whether to optimize mesh or not
    **/
-  bool optimize;
+  bool optimize{false};
 
   /** @brief Mesh optimization threshold, between 0 and 1
    **/
-  double optimizeThreshold;
-
-  /** @brief Mesh size field bool
-   **/
-  bool mSizeField;
-
-  /** @brief Mesh color map bool
-   **/
-  bool mColorMap;
-
-  /** @brief Mesh transfinite volume bool
-   **/
-  bool mTransfiniteVolumes;
+  double optimizeThreshold{0.3};
 
   /** @brief Size field ID to use as background field
    **/
-  int bgField;
+  int bgField{-1};
 
   /**
    * @brief Element order
    */
-  int elementOrder;
+  int elementOrder{1};
 
   /**
    * @brief Subdivision algorithm 0: none, 1: all quads, 2: all hexas
    */
-  int subdivisionAlg;
+  int subdivisionAlg{1};
 
   /**
    * @brief Save all elements
    */
-  bool saveAll;
+  bool saveAll{true};
 
   /**
    * @brief Whether to call boolean fragments on all volumes
    */
-  bool fragmentAll;
+  bool fragmentAll{false};
 
   /** @brief Vector for volSizeField struct
    **/
   std::vector<volSizeField> sizeFields;
 
-  /** @brief Vector of supported gmsh mesh file extensions
+  /** @brief Map from RGB to physical name
    **/
-  std::set<std::string> meshExtensions;
-
-  /** @brief Map from RGB float tuple (cast to string) to physical name
-   **/
-  std::map<std::string, std::string> color2groupMap;
+  std::map<std::array<int, 3>, std::string> color2groupMap;
 
   /** @brief Map from volume id to transfinite hexahedron information.
    **/
-  std::map<size_t, TransfiniteBlock> transfiniteBlocks;
+  std::set<TransfiniteBlock> transfiniteBlocks;
+
+  /**
+   * @brief Get list of file extensions supported by gmsh
+   * @return supported gmsh mesh file extensions
+   */
+  static const std::array<const char *, 6> &getMeshExtensions() {
+    static constexpr std::array<const char *, 6> meshExtensions{
+        ".inp", ".unv", ".p3d", ".stl", ".vtk", ".su2"};
+    return meshExtensions;
+  }
 };
 
 }  // namespace GEN

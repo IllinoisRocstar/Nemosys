@@ -1,19 +1,18 @@
-#include <stdio.h>
 #include <fstream>
+#include <string>
 
 #include <gtest.h>
 #include <vtkCell.h>
 
-#include "NemDriver.H"
+#include "Drivers/NemDriver.H"
 #include "meshBase.H"
 
 const char *test_spiral_tape_json;
 const char *spiral_test_REF;
 
 // Test implementations
-std::string spiral_tape_test(const char *jsonF) {
-  std::string fname(jsonF);
-  std::ifstream inputStream(fname);
+std::string spiral_tape_test(const std::string &jsonF) {
+  std::ifstream inputStream(jsonF);
   if (!inputStream.good()) {
     std::cerr << "Error opening file " << jsonF << std::endl;
     exit(1);
@@ -21,11 +20,9 @@ std::string spiral_tape_test(const char *jsonF) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
 
-  if (inputjson.contains("Template Name")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(inputjson));
-  }
+  auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+  nemdrvobj->execute();
+
   std::string ifname = "spiral.msh";
   return ifname;
 }

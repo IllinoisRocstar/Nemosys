@@ -1,13 +1,12 @@
 [
   {
-    "Reference File": "nothing",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "gmsh",
     "Mesh File Options": {
       "Input Geometry File": "./Box_Colors_Names_test.STEP",
       "Output Mesh File": "./box_test.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "gmsh",
       "Gmsh Parameters": {
         "minSize": 0.1,
         "maxSize": 10.0,

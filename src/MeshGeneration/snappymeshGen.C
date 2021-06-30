@@ -8,41 +8,41 @@
 #include "snappymeshParams.H"
 
 // openfoam headers
-#include "IOmanip.H"
-#include "MeshedSurface.H"
-#include "Time.H"
-#include "UnsortedMeshedSurface.H"
-#include "argList.H"
-#include "cellModeller.H"
-#include "decompositionMethod.H"
-#include "faceSet.H"
-#include "fileName.H"
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "fvMeshDistribute.H"
-#include "fvMeshTools.H"
-#include "globalIndex.H"
-#include "meshRefinement.H"
-#include "motionSmoother.H"
-#include "noDecomp.H"
-#include "polyTopoChange.H"
-#include "refinementParameters.H"
-#include "surfZoneIdentifierList.H"
-#include "uindirectPrimitivePatch.H"
-#include "vtkSetWriter.H"
-#include "vtkTopo.H"
-#include "wallPolyPatch.H"
+#include <IOmanip.H>
+#include <MeshedSurface.H>
+#include <Time.H>
+#include <UnsortedMeshedSurface.H>
+#include <argList.H>
+#include <cellModeller.H>
+#include <decompositionMethod.H>
+#include <faceSet.H>
+#include <fileName.H>
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <fvMeshDistribute.H>
+#include <fvMeshTools.H>
+#include <globalIndex.H>
+#include <meshRefinement.H>
+#include <motionSmoother.H>
+#include <noDecomp.H>
+#include <polyTopoChange.H>
+#include <refinementParameters.H>
+#include <surfZoneIdentifierList.H>
+#include <uindirectPrimitivePatch.H>
+#include <vtkSetWriter.H>
+#include <vtkTopo.H>
+#include <wallPolyPatch.H>
 
 // snappyHexMesh Headers
-#include "layerParameters.H"
-#include "refinementFeatures.H"
-#include "refinementSurfaces.H"
-#include "searchableSurfaces.H"
-#include "shellSurfaces.H"
-#include "snapParameters.H"
-#include "snappyLayerDriver.H"
-#include "snappyRefineDriver.H"
-#include "snappySnapDriver.H"
+#include <layerParameters.H>
+#include <refinementFeatures.H>
+#include <refinementSurfaces.H>
+#include <searchableSurfaces.H>
+#include <shellSurfaces.H>
+#include <snapParameters.H>
+#include <snappyLayerDriver.H>
+#include <snappyRefineDriver.H>
+#include <snappySnapDriver.H>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,62 +53,15 @@ snappymeshGen::snappymeshGen()  // default constructor definition
 {
   // Default Meshing Parameters
   _params = new snappymeshParams();
-  _params->_withCastMesh = true;
-  _params->_withSnap = true;
-  _params->_withLayers = false;
-  _params->geomFileName = "";
-  _params->singleSolidPatch = "";
-  _params->maxLCells = 2000000;
-  _params->maxGCells = 4000000;
-  _params->minRefCells = 0;
-  _params->cellsBetnLvls = 3;
-  _params->refSurfLvlMin = 0;
-  _params->refSurfLvlMax = 0;
-  _params->featAngle = 60;
-  _params->locMeshX = 0;
-  _params->locMeshY = 0;
-  _params->locMeshZ = 0;
-  _params->_alwFreeZone = true;
-  _params->snapSmthPatch = 4;
-  _params->snapTol = 0.5;
-  _params->solveSnapIter = 200;
-  _params->relaxSnapIter = 6;
-  _params->_relSize = true;
-  _params->expRatio = 1.3;
-  _params->finLThick = 1;
-  _params->minThick = 0.1;
-  _params->nGrow = 0;
-  _params->lyrFeatAngle = 30;
-  _params->lyrRelaxIter = 3;
-  _params->lyrSmthSurfNorm = 1;
-  _params->lyrSmthNorm = 3;
-  _params->lyrSmthThick = 2;
-  _params->lyrMaxFcTR = 0.5;
-  _params->lyrMaxThickTMR = 1;
-  _params->lyrMinMedAngl = 90;
-  _params->lyrBuffrCells = 0;
-  _params->lyrIter = 50;
-  _params->qcMaxNOrtho = 65;
-  _params->qcMaxBndrySkew = 20;
-  _params->qcMaxIntSkew = 4;
-  _params->qcMaxConc = 80;
-  _params->qcMinVol = 1e-13;
-  _params->qcMinTetQ = 1e-15;
-  _params->qcMinArea = -1;
-  _params->qcMinTwist = 0.02;
-  _params->qcMinFaceW = 0.05;
-  _params->qcMinVolRto = 0.01;
-  _params->qcMinDet = 0.001;
-  _params->qcMinTrTwist = -1;
-  _params->qcSmthScale = 5;
-  _params->qcErrRedctn = 0.75;
+  defaults = true;
 
   // Initialization Tasks
   initialize();
 }
 
 // constructor definition with parameters input
-snappymeshGen::snappymeshGen(snappymeshParams *params) : _params(params) {
+snappymeshGen::snappymeshGen(snappymeshParams *params)
+    : defaults(false), _params(params) {
   initialize();  // Foam Initialization
 }
 
@@ -118,8 +71,6 @@ snappymeshGen::~snappymeshGen()  // destructor definition
 }
 
 void snappymeshGen::initialize() {
-  caseName = "_snappymesh";
-
   // create dictionaries needed
   createControlDict();
   createSnappyDict();
@@ -307,19 +258,19 @@ FoamFile\n\
       "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n";
 
   // initial booleans
-  if ((_params->_withCastMesh)) {
+  if ((_params->withCastMesh)) {
     contText = contText + "\ncastellatedMesh  true;\n";
   } else {
     contText = contText + "\ncastellatedMesh  false;\n";
   }
 
-  if ((_params->_withSnap)) {
+  if ((_params->withSnap)) {
     contText = contText + "\nsnap       true;\n";
   } else {
     contText = contText + "\nsnap       false;\n";
   }
 
-  if ((_params->_withLayers)) {
+  if ((_params->withLayers)) {
     contText = contText + "\naddLayers      true;\n";
   } else {
     contText = contText + "\naddLayers      false;\n";
@@ -330,41 +281,59 @@ FoamFile\n\
   contText = contText + "\t" + (_params->geomFileName);
   contText = contText + "\n\t{\n\t\ttype\ttriSurfaceMesh;\n";
 
-  if (_params->_withMultiPatches) {
-    if ((_params->stlPatchDefs).size() == 0) {
+  if (_params->geoDef.withMultiPatches) {
+    if ((_params->geoDef.stlPatchDefs).size() == 0) {
       std::cerr << "Error reading in custom patches from JSON input!"
                 << std::endl;
       throw;
     }
     contText = contText + "\t\tregions\n\t\t{\n";
-    for (auto pt = (_params->stlPatchDefs).begin();
-         pt != (_params->stlPatchDefs).end(); pt++) {
+    for (auto pt = (_params->geoDef.stlPatchDefs).begin();
+         pt != (_params->geoDef.stlPatchDefs).end(); pt++) {
       contText = contText + "\t\t\t" + pt->STLPatchName + "  \t{name " +
                  pt->snappyPatchName + ";}\n";
     }
     contText = contText + "\t\t}\n";
   } else {
-    contText = contText + "\t\tname\t" + (_params->singleSolidPatch) + ";\n";
+    contText = contText + "\t\tname\t" + (_params->geoDef.singleSolidPatch) + ";\n";
   }
 
   // Searchable shapes go here
-  if ((_params->srchShape).size() > 0) {
-    for (auto pt = (_params->srchShape).begin();
-         pt != (_params->srchShape).end(); pt++) {
-      contText = contText + "\t\t" + (pt->patchNm);
+  if ((_params->geoDef.srchShape).size() > 0) {
+    for (const auto &shape : _params->geoDef.srchShape) {
+      contText = contText + "\t\t" + (shape->patchName);
       contText = contText + "\n\t\t{";
-      contText = contText + "\n\t\t\ttype " + (pt->searchableName) + ";\n";
+      contText = contText + "\n\t\t\ttype " + (shape->getType()) + ";\n";
 
-      if (pt->searchableName == "searchableBox") {
-        contText = contText + "\t\t\tmin " + (pt->shapeParameters1) + ";\n";
-        contText = contText + "\t\t\tmix " + (pt->shapeParameters2) + ";\n";
-      } else if (pt->searchableName == "searchableSphere") {
-        contText = contText + "\t\t\tcentre " + (pt->shapeParameters1) + ";\n";
-        contText = contText + "\t\t\tradius " + std::to_string(pt->rad) + ";\n";
-      } else if (pt->searchableName == "searchableCylinder") {
-        contText = contText + "\t\t\tpoint1 " + (pt->shapeParameters1) + ";\n";
-        contText = contText + "\t\t\tpoint2 " + (pt->shapeParameters2) + ";\n";
-        contText = contText + "\t\t\tradius " + std::to_string(pt->rad) + ";\n";
+      if (auto box = std::dynamic_pointer_cast<shmSearchableBox>(shape)) {
+        contText = contText + "\t\t\tmin (" +
+                   std::to_string(box->minBound.at(0)) + " " +
+                   std::to_string(box->minBound.at(1)) + " " +
+                   std::to_string(box->minBound.at(2)) + ");\n";
+        contText = contText + "\t\t\tmax (" +
+                   std::to_string(box->maxBound.at(0)) + " " +
+                   std::to_string(box->maxBound.at(1)) + " " +
+                   std::to_string(box->maxBound.at(2)) + ");\n";
+      } else if (auto sphere =
+                     std::dynamic_pointer_cast<shmSearchableSphere>(shape)) {
+        contText = contText + "\t\t\tcentre (" +
+                   std::to_string(sphere->center.at(0)) + " " +
+                   std::to_string(sphere->center.at(1)) + " " +
+                   std::to_string(sphere->center.at(2)) + ");\n";
+        contText = contText + "\t\t\tradius " +
+                   std::to_string(sphere->radius) + ";\n";
+      } else if (auto cyl =
+                     std::dynamic_pointer_cast<shmSearchableCylinder>(shape)) {
+        contText = contText + "\t\t\tpoint1 (" +
+                   std::to_string(cyl->axisPoint1.at(0)) + " " +
+                   std::to_string(cyl->axisPoint1.at(1)) + " " +
+                   std::to_string(cyl->axisPoint1.at(2)) + ");\n";
+        contText = contText + "\t\t\tpoint2 (" +
+                   std::to_string(cyl->axisPoint2.at(0)) + " " +
+                   std::to_string(cyl->axisPoint2.at(1)) + " " +
+                   std::to_string(cyl->axisPoint2.at(2)) + ");\n";
+        contText =
+            contText + "\t\t\tradius " + std::to_string(cyl->radius) + ";\n";
       }
       contText = contText + "\n\t\t}\n";
     }
@@ -376,19 +345,19 @@ FoamFile\n\
   // Castellated Mesh Controls
   contText = contText + "\n\ncastellatedMeshControls\n{\n";
   contText = contText + "\tmaxLocalCells\t" +
-             std::to_string(_params->maxLCells) + ";\n";
+             std::to_string(_params->castMeshControls.maxLCells) + ";\n";
   contText = contText + "\tmaxGlobalCells\t" +
-             std::to_string(_params->maxGCells) + ";\n";
+             std::to_string(_params->castMeshControls.maxGCells) + ";\n";
   contText = contText + "\tnCellsBetweenLevels\t" +
-             std::to_string(_params->cellsBetnLvls) + ";\n";
+             std::to_string(_params->castMeshControls.cellsBetnLvls) + ";\n";
   contText = contText + "\tminRefinementCells\t" +
-             std::to_string(_params->minRefCells) + ";\n";
+             std::to_string(_params->castMeshControls.minRefCells) + ";\n";
 
   // Features using emesh file
   contText = contText + "\n\tfeatures\n\t(\n";
-  if ((_params->ftrEdge).size() > 0) {
-    for (auto pt = (_params->ftrEdge).begin(); pt != (_params->ftrEdge).end();
-         pt++) {
+  if ((_params->castMeshControls.ftrEdge).size() > 0) {
+    for (auto pt = (_params->castMeshControls.ftrEdge).begin();
+         pt != (_params->castMeshControls.ftrEdge).end(); pt++) {
       contText = contText + "\t\t{\n";
       contText = contText + "\t\t\tfile \"" + pt->fileName + "\";\n";
       contText = contText + "\t\t\tlevels ((" + std::to_string(pt->minLvl) +
@@ -399,37 +368,38 @@ FoamFile\n\
   contText = contText + "\t);\n";
 
   contText = contText + "\n\trefinementSurfaces\n\t{\n";
-  if (_params->_withMultiPatches)
+  if (_params->geoDef.withMultiPatches)
     contText = contText + "\t\t" + (_params->geomFileName) + "\n\t\t{";
   else
-    contText = contText + "\t\t" + (_params->singleSolidPatch) + "\n\t\t{";
+    contText =
+        contText + "\t\t" + (_params->geoDef.singleSolidPatch) + "\n\t\t{";
   contText = contText + "\n\t\t\tlevel (" +
-             std::to_string(_params->refSurfLvlMin) + " " +
-             std::to_string(_params->refSurfLvlMax) + ");\n";
+             std::to_string(_params->castMeshControls.refSurfLvlMin) + " " +
+             std::to_string(_params->castMeshControls.refSurfLvlMax) + ");\n";
 
-  if ((_params->_withCellZones)) {
-    contText =
-        contText + "\t\t\tfaceZone\t" + (_params->singleSolidPatch) + ";\n";
-    contText =
-        contText + "\t\t\tcellZone\t" + (_params->singleSolidPatch) + ";\n";
+  if ((_params->castMeshControls.withCellZones)) {
+    contText = contText + "\t\t\tfaceZone\t" +
+               (_params->geoDef.singleSolidPatch) + ";\n";
+    contText = contText + "\t\t\tcellZone\t" +
+               (_params->geoDef.singleSolidPatch) + ";\n";
     contText = contText + "\t\t\tcellZoneInside\tinside;\n";
   }
 
-  if ((_params->_withMultiPatches)) {
-    if ((_params->_withSurfRefReg) && ((_params->surfRefs).size() > 0)) {
+  if ((_params->geoDef.withMultiPatches)) {
+    if (((_params->castMeshControls.surfRefs).size() > 0)) {
       contText = contText + "\n\t\t\tregions\n";
       contText = contText + "\t\t\t{";
 
-      for (auto pt = (_params->surfRefs).begin();
-           pt != (_params->surfRefs).end(); pt++) {
+      for (auto pt = (_params->castMeshControls.surfRefs).begin();
+           pt != (_params->castMeshControls.surfRefs).end(); pt++) {
         if (pt->patchType == "NO") {
-          contText = contText + "\n\t\t\t\t" + (pt->refPatchNm) + "\t{level (" +
-                     std::to_string((int)pt->minLvl) + " " +
+          contText = contText + "\n\t\t\t\t" + (pt->refPatchName) +
+                     "\t{level (" + std::to_string((int)pt->minLvl) + " " +
                      std::to_string(pt->maxLvl) +
                      "); patchInfo { type patch; }}";
         } else {
-          contText = contText + "\n\t\t\t\t" + (pt->refPatchNm) + "\t{level (" +
-                     std::to_string((int)pt->minLvl) + " " +
+          contText = contText + "\n\t\t\t\t" + (pt->refPatchName) +
+                     "\t{level (" + std::to_string((int)pt->minLvl) + " " +
                      std::to_string(pt->maxLvl) + "); patchInfo { type " +
                      pt->patchType + "; }}";
         }
@@ -442,25 +412,25 @@ FoamFile\n\
   contText = contText + "\t\t}\n";
 
   contText = contText + "\t\tgapLevelIncrement " +
-             std::to_string(_params->castMeshGpLvl) + +";\n";
+             std::to_string(_params->castMeshControls.castMeshGpLvl) + +";\n";
 
   contText = contText + "\t}\n";
 
   contText = contText + "\tresolveFeatureAngle\t" +
-             std::to_string(_params->featAngle) + ";\n";
+             std::to_string(_params->castMeshControls.featAngle) + ";\n";
 
   contText = contText + "\tgapLevelIncrement\t" +
-             std::to_string(_params->gPLvlInc) + ";\n";
+             std::to_string(_params->castMeshControls.gapLvlInc) + ";\n";
 
   contText = contText + "\n\tplanarAngle " +
-             std::to_string(_params->planarAngle) + ";\n";
+             std::to_string(_params->castMeshControls.planarAngle) + ";\n";
 
   contText = contText + "\n\trefinementRegions\n\t{\n";
 
-  if ((_params->_withGeomRefReg) && ((_params->geomRefs).size() > 0)) {
-    for (auto pt = (_params->geomRefs).begin(); pt != (_params->geomRefs).end();
-         pt++) {
-      contText = contText + "\n\t\t" + (pt->patchNm);
+  if (((_params->castMeshControls.geomRefs).size() > 0)) {
+    for (auto pt = (_params->castMeshControls.geomRefs).begin();
+         pt != (_params->castMeshControls.geomRefs).end(); pt++) {
+      contText = contText + "\n\t\t" + (pt->patchName);
       contText = contText + "\n\t\t{";
       contText = contText + "\n\t\t\tmode " + (pt->mode) + ";\n";
       contText = contText + "\t\t\tlevels ((" + std::to_string(pt->minLvl) +
@@ -472,41 +442,41 @@ FoamFile\n\
   contText = contText + "\t}";
 
   contText = contText + "\n\tlocationInMesh\t(" +
-             std::to_string(_params->locMeshX) + " " +
-             std::to_string(_params->locMeshY) + " " +
-             std::to_string(_params->locMeshZ) + ");\n";
-  if ((_params->_alwFreeZone) == 1)
+             std::to_string(_params->castMeshControls.locMesh.at(0)) + " " +
+             std::to_string(_params->castMeshControls.locMesh.at(1)) + " " +
+             std::to_string(_params->castMeshControls.locMesh.at(2)) + ");\n";
+  if ((_params->castMeshControls.alwFreeZone) == 1)
     contText = contText + "\tallowFreeStandingZoneFaces\ttrue;\n";
-  if ((_params->_alwFreeZone) == 0)
+  if ((_params->castMeshControls.alwFreeZone) == 0)
     contText = contText + "\tallowFreeStandingZoneFaces\tfalse;\n";
   contText = contText + "}\n";
 
   // Snap Controls
   contText = contText + "\n\nsnapControls\n{\n";
   contText = contText + "\tnSmoothPatch\t" +
-             std::to_string(_params->snapSmthPatch) + ";\n";
-  contText =
-      contText + "\ttolerance\t" + std::to_string(_params->snapTol) + ";\n";
+             std::to_string(_params->snapControls.nSmoothPatch) + ";\n";
+  contText = contText + "\ttolerance\t" +
+             std::to_string(_params->snapControls.tolerance) + ";\n";
   contText = contText + "\tnSolveIter\t" +
-             std::to_string(_params->solveSnapIter) + ";\n";
+             std::to_string(_params->snapControls.nSolveIter) + ";\n";
   contText = contText + "\tnRelaxIter\t" +
-             std::to_string(_params->relaxSnapIter) + ";\n";
+             std::to_string(_params->snapControls.nRelaxIter) + ";\n";
 
   // New Features
   contText = contText + "\tnFeatureSnapIter\t" +
-             std::to_string(_params->nFeatureSnapIter) + ";\n";
+             std::to_string(_params->snapControls.nFeatureSnapIter) + ";\n";
 
-  if (_params->implicitFeatureSnap)
+  if (_params->snapControls.implicitFeatureSnap)
     contText = contText + "\timplicitFeatureSnap\t true;\n";
   else
     contText = contText + "\timplicitFeatureSnap\t false;\n";
 
-  if (_params->explicitFeatureSnap)
+  if (_params->snapControls.explicitFeatureSnap)
     contText = contText + "\texplicitFeatureSnap\t true;\n";
   else
     contText = contText + "\texplicitFeatureSnap\t false;\n";
 
-  if (_params->multiRegionFeatureSnap)
+  if (_params->snapControls.multiRegionFeatureSnap)
     contText = contText + "\tmultiRegionFeatureSnap\t true;\n";
   else
     contText = contText + "\tmultiRegionFeatureSnap\t false;\n";
@@ -515,16 +485,16 @@ FoamFile\n\
 
   // Layer Controls
   contText = contText + "\n\naddLayersControls\n{\n";
-  if ((_params->_relSize) == 1)
+  if ((_params->layerControls.relSize) == 1)
     contText = contText + "\trelativeSizes\ttrue;\n";
-  if ((_params->_relSize) == 0)
+  if ((_params->layerControls.relSize) == 0)
     contText = contText + "\trelativeSizes\tfalse;\n";
 
   // Layers
   contText = contText + "\tlayers\n\t{\n";
-  if ((_params->layerVec).size() > 0) {
-    for (auto pt = (_params->layerVec).begin(); pt != (_params->layerVec).end();
-         pt++) {
+  if ((_params->layerControls.layerVec).size() > 0) {
+    for (auto pt = (_params->layerControls.layerVec).begin();
+         pt != (_params->layerControls.layerVec).end(); pt++) {
       contText = contText + "\t\t" + pt->patchName + "\n\t\t{\n";
       contText = contText + "\t\t\tnSurfaceLayers " +
                  std::to_string(pt->nSurfaceLayers) + ";\n";
@@ -546,86 +516,88 @@ FoamFile\n\
   contText = contText + "\t}\n";
 
   contText = contText + "\texpansionRatio\t" +
-             std::to_string(_params->expRatio) + ";\n";
+             std::to_string(_params->layerControls.expRatio) + ";\n";
   contText = contText + "\tfinalLayerThickness\t" +
-             std::to_string(_params->finLThick) + ";\n";
-  contText =
-      contText + "\tminThickness\t" + std::to_string(_params->minThick) + ";\n";
-  if (_params->firstLyrThickness > 0)
+             std::to_string(_params->layerControls.finLThick) + ";\n";
+  contText = contText + "\tminThickness\t" +
+             std::to_string(_params->layerControls.minThick) + ";\n";
+  if (_params->layerControls.firstLyrThickness > 0)
     contText = contText + "\tfirstLayerThickness\t" +
-               std::to_string(_params->firstLyrThickness) + ";\n";
-  if (_params->thickness > 0)
-    contText =
-        contText + "\tthickness\t" + std::to_string(_params->thickness) + ";\n";
-  contText = contText + "\tnGrow\t" + std::to_string(_params->nGrow) + ";\n";
+               std::to_string(_params->layerControls.firstLyrThickness) + ";\n";
+  if (_params->layerControls.thickness > 0)
+    contText = contText + "\tthickness\t" +
+               std::to_string(_params->layerControls.thickness) + ";\n";
+  contText = contText + "\tnGrow\t" +
+             std::to_string(_params->layerControls.nGrow) + ";\n";
   contText = contText + "\tfeatureAngle\t" +
-             std::to_string(_params->lyrFeatAngle) + ";\n";
+             std::to_string(_params->layerControls.featAngle) + ";\n";
   contText = contText + "\tslipFeatureAngle\t" +
-             std::to_string(_params->slipFeatureAngle) + ";\n";
+             std::to_string(_params->layerControls.slipFeatureAngle) + ";\n";
   contText = contText + "\tnRelaxIter\t" +
-             std::to_string(_params->lyrRelaxIter) + ";\n";
+             std::to_string(_params->layerControls.relaxIter) + ";\n";
   contText = contText + "\tnSmoothSurfaceNormals\t" +
-             std::to_string(_params->lyrSmthSurfNorm) + ";\n";
+             std::to_string(_params->layerControls.smthSurfNorm) + ";\n";
   contText = contText + "\tnSmoothNormals\t" +
-             std::to_string(_params->lyrSmthNorm) + ";\n";
+             std::to_string(_params->layerControls.smthNorm) + ";\n";
   contText = contText + "\tnSmoothThickness\t" +
-             std::to_string(_params->lyrSmthThick) + ";\n";
+             std::to_string(_params->layerControls.smthThick) + ";\n";
   contText = contText + "\tmaxFaceThicknessRatio\t" +
-             std::to_string(_params->lyrMaxFcTR) + ";\n";
+             std::to_string(_params->layerControls.maxFcTR) + ";\n";
   contText = contText + "\tmaxThicknessToMedialRatio\t" +
-             std::to_string(_params->lyrMaxThickTMR) + ";\n";
+             std::to_string(_params->layerControls.maxThickTMR) + ";\n";
   contText = contText + "\tminMedialAxisAngle\t" +
-             std::to_string(_params->lyrMinMedAngl) + ";\n";
+             std::to_string(_params->layerControls.minMedAngl) + ";\n";
   contText = contText + "\tnBufferCellsNoExtrude\t" +
-             std::to_string(_params->lyrBuffrCells) + ";\n";
-  contText =
-      contText + "\tnLayerIter\t" + std::to_string(_params->lyrIter) + ";\n";
+             std::to_string(_params->layerControls.bufferCells) + ";\n";
+  contText = contText + "\tnLayerIter\t" +
+             std::to_string(_params->layerControls.nIter) + ";\n";
   contText = contText + "\tnRelaxedIter\t" +
-             std::to_string(_params->nRelaxedIter) + ";\n";
-  if (_params->nMedialAxisIter > 0)
+             std::to_string(_params->layerControls.nRelaxedIter) + ";\n";
+  if (_params->layerControls.nMedialAxisIter > 0)
     contText = contText + "\tnMedialAxisIter\t" +
-               std::to_string(_params->nMedialAxisIter) + ";\n";
-  if (_params->nSmoothDisplacement > 0)
+               std::to_string(_params->layerControls.nMedialAxisIter) + ";\n";
+  if (_params->layerControls.nSmoothDisplacement > 0)
     contText = contText + "\tnSmoothDisplacement\t" +
-               std::to_string(_params->nSmoothDisplacement) + ";\n";
+               std::to_string(_params->layerControls.nSmoothDisplacement) +
+               ";\n";
   contText = contText + "}\n";
 
   // Mesh Quality Controls
   std::ostringstream minimumVol;
-  minimumVol << _params->qcMinVol;
+  minimumVol << _params->qualityControls.minVol;
   std::ostringstream minimumTetQuality;
-  minimumTetQuality << _params->qcMinTetQ;
+  minimumTetQuality << _params->qualityControls.minTetQ;
 
   contText = contText + "\n\nmeshQualityControls\n{\n";
   contText = contText + "\tmaxNonOrtho\t" +
-             std::to_string(_params->qcMaxNOrtho) + ";\n";
+             std::to_string(_params->qualityControls.maxNonOrtho) + ";\n";
   contText = contText + "\tmaxBoundarySkewness\t" +
-             std::to_string(_params->qcMaxBndrySkew) + ";\n";
+             std::to_string(_params->qualityControls.maxBndrySkew) + ";\n";
   contText = contText + "\tmaxInternalSkewness\t" +
-             std::to_string(_params->qcMaxIntSkew) + ";\n";
-  contText =
-      contText + "\tmaxConcave\t" + std::to_string(_params->qcMaxConc) + ";\n";
+             std::to_string(_params->qualityControls.maxIntSkew) + ";\n";
+  contText = contText + "\tmaxConcave\t" +
+             std::to_string(_params->qualityControls.maxConc) + ";\n";
   contText = contText + "\tminVol\t" + minimumVol.str() + ";\n";
   contText = contText + "\tminTetQuality\t" + minimumTetQuality.str() + ";\n";
-  contText =
-      contText + "\tminArea\t" + std::to_string(_params->qcMinArea) + ";\n";
-  contText =
-      contText + "\tminTwist\t" + std::to_string(_params->qcMinTwist) + ";\n";
+  contText = contText + "\tminArea\t" +
+             std::to_string(_params->qualityControls.minArea) + ";\n";
+  contText = contText + "\tminTwist\t" +
+             std::to_string(_params->qualityControls.minTwist) + ";\n";
   contText = contText + "\tminFaceWeight\t" +
-             std::to_string(_params->qcMinFaceW) + ";\n";
+             std::to_string(_params->qualityControls.minFaceW) + ";\n";
   contText = contText + "\tminVolRatio\t" +
-             std::to_string(_params->qcMinVolRto) + ";\n";
+             std::to_string(_params->qualityControls.minVolRto) + ";\n";
   contText = contText + "\tminDeterminant\t" +
-             std::to_string(_params->qcMinDet) + ";\n";
+             std::to_string(_params->qualityControls.minDet) + ";\n";
   contText = contText + "\tminTriangleTwist\t" +
-             std::to_string(_params->qcMinTrTwist) + ";\n";
+             std::to_string(_params->qualityControls.minTriTwist) + ";\n";
   contText = contText + "\tnSmoothScale\t" +
-             std::to_string(_params->qcSmthScale) + ";\n";
+             std::to_string(_params->qualityControls.smoothScale) + ";\n";
   contText = contText + "\terrorReduction\t" +
-             std::to_string(_params->qcErrRedctn) + ";\n";
+             std::to_string(_params->qualityControls.errReduction) + ";\n";
   contText = contText + "\trelaxed\n\t{\n";
   contText = contText + "\t\tmaxNonOrtho \t " +
-             std::to_string(_params->qcMaxNOrtho) + ";\n\t}\n";
+             std::to_string(_params->qualityControls.maxNonOrtho) + ";\n\t}\n";
   contText = contText + "}\n";
 
   contText = contText + "\nmergeTolerance\t" +

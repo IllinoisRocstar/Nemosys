@@ -3,8 +3,8 @@
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "PackMeshDriver.H"
-#include "NemDriver.H"
+#include "Drivers/NemDriver.H"
+#include "Drivers/PackMesh/PackMeshDriver.H"
 #include "meshBase.H"
 
 const char *inp_json;
@@ -45,7 +45,8 @@ int generate(const char *jsonF) {
   inputjson = inputjson_tmp[0];
 
   // Call packmesh readjson
-  auto pckmshdrvObj = NEM::DRV::PackMeshDriver::readJSON(inputjson);
+  auto pckmshdrvObj = NEM::DRV::NemDriver::readJSON(inputjson);
+  pckmshdrvObj->execute();
 
   return 0;
 }

@@ -32,29 +32,14 @@ cfmeshGen::cfmeshGen()
 {
   // default meshing parameters
   _params = new cfmeshParams();
-  _params->geomFilePath = "";
-  _params->maxCellSize = -1.;
-  _params->minCellSize = -1.;
-  _params->bndryCellSize = -1.;
-  _params->maxFrstLyrThk = -1.;
-  _params->_alwDiscDomains = false;
-  _params->alwDiscont = false;
-  _params->keepCellIB = false;
-  _params->chkGluMsh = -1;
-  _params->_withBndLyr = false;
-  _params->blNLyr = 2;
-  _params->blThkRto = 1.0;
-  _params->_withSrfEdg = false;
-  _params->srfEdgAng = 45.0;
-  _params->_withObjRfn = false;
-  defaults = 1;
+  defaults = true;
 
   // Initialization tasks
   initialize();
 }
 
 cfmeshGen::cfmeshGen(cfmeshParams* params):
-    _params(params)
+    defaults(false), _params(params)
 {
     // Initialization tasks
     initialize();
@@ -69,11 +54,8 @@ cfmeshGen::~cfmeshGen()
 
 void cfmeshGen::initialize()
 {
-    // internal information
-    caseName = "_cfmesh";
-
     // surface feature edge treatment
-    if (_params->_withSrfEdg)
+    if (_params->srfEdge.has_value())
         if ( surfaceFeatureEdgeDetect() )
         {
             std::cerr << "A problem occured during edge detection step!\n";
@@ -314,30 +296,31 @@ FoamFile\n\
         contText = contText + "\ncheckForGluedMesh 1;\n"; 
         //+ std::to_string(_params->chkGluMsh) + ";\n";
 
-    if ((_params->_alwDiscDomains))
+    if ((_params->alwDiscDomains))
         contText = contText + "\nallowDisconnectedDomains 1;\n";
 
     contText = contText +"\n\nsurfaceFile	\"" + (_params->geomFilePath) +"\";\n";
 
 
     // boundary layer
-    if (_params->_withBndLyr)
+    if (_params->boundaryLayers.has_value())
     {
+        const auto &boundaryLayer = _params->boundaryLayers.value();
         contText = contText + "\nboundaryLayers\n{\n";
-        contText = contText + "\tnLayers\t" + std::to_string(_params->blNLyr)
+        contText = contText + "\tnLayers\t" + std::to_string(boundaryLayer.blNLyr)
             + ";\n";
-        contText = contText + "\tthicknessRatio\t" + std::to_string(_params->blThkRto) + ";\n";
+        contText = contText + "\tthicknessRatio\t" + std::to_string(boundaryLayer.blThkRto) + ";\n";
         contText = contText + 
-            ( (_params->maxFrstLyrThk) > 0 ? "\n" : ("\tmaxFirstLayerThickness\t" + 
-              std::to_string(_params->maxFrstLyrThk) + ";\n") );
+            ( (boundaryLayer.maxFrstLyrThk) > 0 ? "\n" : ("\tmaxFirstLayerThickness\t" +
+              std::to_string(boundaryLayer.maxFrstLyrThk) + ";\n") );
         contText = contText + 
-            ( (_params->alwDiscont) ? ("\tallowDiscontinuity\t1;\n") : "\n" );
+            ( (boundaryLayer.alwDiscont) ? ("\tallowDiscontinuity\t1;\n") : "\n" );
         
         // boundary layer patches
-        if (_params->_withBndLyrPtch)
+        if (!boundaryLayer.blPatches.empty())
         {
             contText = contText + "\tpatchBoundaryLayers\n\t{\n";
-            for (auto pt=(_params->blPatches).begin(); pt!=(_params->blPatches).end(); pt++)
+            for (auto pt=(boundaryLayer.blPatches).begin(); pt!=(boundaryLayer.blPatches).end(); pt++)
             {
                 contText = contText + "\t\t\"" + (pt->patchName) + "\"\n\t\t{\n";
                 if ( (pt->alwDiscont) == true)
@@ -360,7 +343,7 @@ FoamFile\n\
     }
 
     // object refinements
-    if (_params->_withObjRfn)
+    if (!_params->objRefLst.empty())
     {
         contText = contText + "objectRefinements\n{\n";
         for (auto ref=(_params->objRefLst).begin(); ref!=(_params->objRefLst).end(); ref++)
@@ -374,7 +357,7 @@ FoamFile\n\
     }
 
     // local refinement
-    if (_params->_withLclRef)
+    if (!_params->refPatches.empty())
     {
         contText = contText + "localRefinement\n{\n";
         for (auto pt=(_params->refPatches).begin(); pt!=(_params->refPatches).end(); pt++)
@@ -395,18 +378,19 @@ FoamFile\n\
     }
 
     // rename boundaries
-    if (_params->_withRenBndry)
+    if (_params->renBndry.has_value())
     {
+        const auto &renBndry = _params->renBndry.value();
         contText = contText + "renameBoundary\n{\n";
-        contText = contText + "\tdefaultName\t" + (_params->renBndry).defName +";\n";
-        contText = contText + "\tdefaultType\t" + (_params->renBndry).defType +";\n";
+        contText = contText + "\tdefaultName\t" + (renBndry).defName +";\n";
+        contText = contText + "\tdefaultType\t" + (renBndry).defType +";\n";
         contText = contText + "\tnewPatchNames\n\t{\n";
-        for (auto pt=(_params->renBndry).newPatches.begin(); 
-                pt!=(_params->renBndry).newPatches.end(); pt++)
+        for (auto pt=(renBndry).newPatches.begin();
+                pt!=(renBndry).newPatches.end(); pt++)
         {
-            contText = contText + "\t\t\"" + (std::get<0>(*pt)) + "\"\n\t\t{\n";
-            contText = contText + "\t\t\tnewName\t" + std::get<1>(*pt) + ";\n";
-            contText = contText + "\t\t\ttype\t" + std::get<2>(*pt) + ";\n";
+            contText = contText + "\t\t\"" + (pt->name) + "\"\n\t\t{\n";
+            contText = contText + "\t\t\tnewName\t" + pt->newName + ";\n";
+            contText = contText + "\t\t\ttype\t" + pt->newType + ";\n";
             contText = contText + "\t\t}\n";
         }
         contText = contText + "\t\n}\n";
@@ -439,7 +423,7 @@ int cfmeshGen::createMeshFromSTL(const char* fname)
         tmg.writeMesh();
 
         // post-processing steps
-        if (_params->_withMshQlt)
+        if (_params->improveMeshQuality.has_value())
             improveMeshQuality();
     }
     else if (_params->generator == "cartesian3D")
@@ -600,7 +584,7 @@ int cfmeshGen::surfaceFeatureEdgeDetect()
         throw;
     }
 
-    double tol = _params->srfEdgAng;
+    double tol = _params->srfEdge.value().srfEdgAng;
     std::cout << "Using " << tol <<" deg angle\n";
 
     Foam::triSurf originalSurface(inFileName);
@@ -641,15 +625,17 @@ int cfmeshGen::improveMeshQuality()
     //- construct the smoother
     Foam::meshOptimizer mOpt(pmg);
 
-    if( (_params->qltConCelSet) != "none" )
+    const auto &meshQual = _params->improveMeshQuality.value();
+
+    if( (meshQual.qltConCelSet) != "none" )
     {
         //- lock cells in constrainedCellSet
-        mOpt.lockCellsInSubset((_params->qltConCelSet));
+        mOpt.lockCellsInSubset((meshQual.qltConCelSet));
 
         //- find boundary faces which shall be locked
         Foam::labelLongList lockedBndFaces, selectedCells;
 
-        const Foam::label sId = pmg.cellSubsetIndex((_params->qltConCelSet));
+        const Foam::label sId = pmg.cellSubsetIndex((meshQual.qltConCelSet));
         pmg.cellsInSubset(sId, selectedCells);
 
         Foam::boolList activeCell(pmg.cells().size(), false);
@@ -663,17 +649,17 @@ int cfmeshGen::improveMeshQuality()
     //- perform optimisation using the laplace smoother and
     mOpt.optimizeMeshFV
     (
-        (_params->qltNLop),
-        (_params->qltNLop),
-        (_params->qltNItr),
-        (_params->qltNSrfItr)
+        (meshQual.qltNLop),
+        (meshQual.qltNLop),
+        (meshQual.qltNItr),
+        (meshQual.qltNSrfItr)
     );
 
     //- perform optimisation of worst quality faces
-    mOpt.optimizeMeshFVBestQuality((_params->qltNLop), (_params->qltQltThr));
+    mOpt.optimizeMeshFVBestQuality((meshQual.qltNLop), (meshQual.qltQltThr));
 
     //- check the mesh again and untangl bad regions if any of them exist
-    mOpt.untangleMeshFV((_params->qltNLop), (_params->qltNItr), (_params->qltNSrfItr));
+    mOpt.untangleMeshFV((meshQual.qltNLop), (meshQual.qltNItr), (meshQual.qltNSrfItr));
 
     std::cout << "Finished optimization cycle\n";
     pmg.write();

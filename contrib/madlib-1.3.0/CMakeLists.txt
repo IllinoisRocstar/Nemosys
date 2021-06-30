@@ -143,7 +143,6 @@ target_include_directories(MAdLib PRIVATE Contrib/mathex)
 # Generate export header #######################################################
 include(GenerateExportHeader)
 generate_export_header(MAdLib)
-list(APPEND ${Nemosys_INC_FILES} madlib_export.h)
 file(COPY ${CMAKE_CURRENT_BINARY_DIR}/madlib_export.h
     DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Common)
 

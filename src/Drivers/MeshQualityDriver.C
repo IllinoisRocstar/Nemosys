@@ -1,75 +1,78 @@
-#include <MeshQualityDriver.H>
-
-#include <memory>
+#include "Drivers/MeshQualityDriver.H"
 
 #ifdef HAVE_CFMSH
 #  include "MeshQuality.H"
-#  include "cfmeshQualityParams.H"
 #endif
 
 namespace NEM {
 namespace DRV {
 
-MeshQualityDriver::MeshQualityDriver(const std::string &_mesh,
-                                     const std::string &ofname) {
-  // default constructor does standard check mesh process
-  // no improvement should be expected
-  mesh = meshBase::Create(_mesh);
-  mesh->checkMesh(ofname);
-  std::cout << "MeshQualityDriver created" << std::endl;
+jsoncons::string_view MeshQualityDriver::getProgramType() const {
+  return programType;
 }
 
-MeshQualityDriver::~MeshQualityDriver() {
-  delete mesh;
-  std::cout << "MeshQualityDriver destroyed" << std::endl;
+CheckMeshQualDriver::Files::Files(std::string input, std::string output)
+    : inputMeshFile(std::move(input)), outputFile(std::move(output)) {}
+
+CheckMeshQualDriver::CheckMeshQualDriver(Files files)
+    : files_(std::move(files)) {}
+
+CheckMeshQualDriver::CheckMeshQualDriver() : CheckMeshQualDriver({{}, {}}) {}
+
+CheckMeshQualDriver::Opts CheckMeshQualDriver::getOpts() { return {}; }
+
+const CheckMeshQualDriver::Files &CheckMeshQualDriver::getFiles() const {
+  return files_;
 }
 
-MeshQualityDriver *MeshQualityDriver::readJSON(
-    const jsoncons::json &inputjson) {
-  MeshQualityDriver *qualdrvobj;
-  std::string _mesh = inputjson["Input Mesh File"].as<std::string>();
-  std::string ofname = inputjson["Output File"].as<std::string>();
-  std::string engine =
-      inputjson.get_with_default("Mesh Quality Engine", "default");
+void CheckMeshQualDriver::setFiles(Files files) {
+  this->files_ = std::move(files);
+}
 
-  if (!inputjson.contains("Schedule") || engine == "default") {
-    // perform a simple check mesh
-    qualdrvobj = new MeshQualityDriver(_mesh, ofname);
-    return qualdrvobj;
+void CheckMeshQualDriver::execute() const {
+  auto mesh = meshBase::Create(this->files_.inputMeshFile);
+  mesh->checkMesh(this->files_.outputFile);
+}
+
+#ifdef HAVE_CFMSH
+OptimizeMeshQualDriver::Opts::Opts(std::vector<cfmshQualityParams> params)
+    : params(std::move(params)) {}
+
+OptimizeMeshQualDriver::OptimizeMeshQualDriver(
+    std::vector<cfmshQualityParams> params)
+    : opts_(std::move(params)) {}
+
+OptimizeMeshQualDriver::OptimizeMeshQualDriver()
+    : OptimizeMeshQualDriver(std::vector<cfmshQualityParams>{}) {}
+
+const std::vector<cfmshQualityParams> &OptimizeMeshQualDriver::getParams()
+    const {
+  return getOpts().params;
+}
+
+void OptimizeMeshQualDriver::setParams(std::vector<cfmshQualityParams> params) {
+  setOpts(Opts{std::move(params)});
+}
+
+void OptimizeMeshQualDriver::addParams(cfmshQualityParams params) {
+  this->opts_.params.emplace_back(std::move(params));
+}
+
+const OptimizeMeshQualDriver::Opts &OptimizeMeshQualDriver::getOpts() const {
+  return opts_;
+}
+
+void OptimizeMeshQualDriver::setOpts(Opts opts) {
+  this->opts_ = std::move(opts);
+}
+
+void OptimizeMeshQualDriver::execute() const {
+  for (const auto &param : this->opts_.params) {
+    MeshQuality mq{&param};
+    mq.cfmOptimize();
   }
-
-  if (engine == "cfmesh") {
-#ifndef HAVE_CFMSH
-    std::cerr << "NEMoSys must be recompiled with cfMesh support." << std::endl;
-    exit(1);
-#else
-    auto *params = new cfmshQualityParams();
-    auto *mq = new MeshQuality(params);
-
-    // carry out schedules
-    for (const auto &jsch : inputjson["Schedule"].array_range()) {
-      std::string qImpMtd = jsch["Method"].as<std::string>();
-      if (qImpMtd == "meshOptimizer") {
-        params->nIterations = jsch["Params"]["NIterations"].as<int>();
-        params->nLoops = jsch["Params"]["NLoops"].as<int>();
-        params->qualThrsh = jsch["Params"]["QualityThreshold"].as<double>();
-        params->nSrfItr = jsch["Params"]["NSurfaceIterations"].as<int>();
-        if (jsch["Params"].contains("ConstrainedCellSet")) {
-          params->_withConstraint = true;
-          params->consCellSet =
-              jsch["Params"]["ConstrainedCellSet"].as<std::string>();
-        }
-        mq->cfmOptimize();
-      }
-    }
-
-    return nullptr;
+}
 #endif
-  }
-
-  std::cerr << "Invalid engine specified: " << engine;
-  exit(1);
-}
 
 }  // namespace DRV
 }  // namespace NEM

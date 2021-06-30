@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "mesh_area_conservation_test",
+	"Mesh File Options": {
+		"Output Mesh File": "mesh_area_conservation_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

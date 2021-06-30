@@ -9,9 +9,6 @@
 #include <string>
 #include <iostream>
 
-
-class meshingParams;
-
 class NEMOSYS_EXPORT meshGen {
   public:
     meshGen() : dataSet(nullptr)

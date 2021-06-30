@@ -12,164 +12,146 @@
  *         PackMeshDriver.
  */
 class NEMOSYS_EXPORT MeshManipulationFoamParams {
-  // --- constructors and destructors
  public:
-  /** @brief Standard MeshManipulationFoamParams constructor
-   */
-  MeshManipulationFoamParams();
+  struct NEMOSYS_EXPORT SurfaceLambdaMuSmooth {
+    // --- SurfaceLambdaMuSmooth
+    /** @brief If enabled, allows adding feature file for surfLambdaMuSmooth
+     *         (Default is off)
+     */
+    bool addFeatureFile;  // Add feature file for smoothing
 
-  /** @brief Standard MeshManipulationFoamParams destructor
-   */
-  ~MeshManipulationFoamParams() = default;
+    /** @brief Input surface file for surfLambdaMuSmooth utility
+     */
+    std::string slmssurfaceFile;  // Defines input surface file
 
-  // --- parameter variables
- public:
-  // --- Booleans
-  /** @brief Enables/Disables surfLambdaMuSmooth utility
-             (Default is off)
-   */
-  bool _doSurfaceLMSmth;  // Enables SurfaceLambdaMuSmooth
+    /** @brief Output surface file for surfLambdaMuSmooth utility
+     */
+    std::string slmsoutputFile;  // Defines output surface file
 
-  /** @brief Enables/Disables splitMshRegions utility
-   *         (Default is off)
-   */
-  bool _doSplitMshRegs;  // Enables SplitMeshRegions
+    /** @brief Lambda (Range 0....1) for surfLambdaMuSmooth smoothing
+     */
+    double lambda_{1.};  // Lambda (0...1) for smoothing
 
-  /** @brief Enables/Disables mergeMeshes utility
-   *         (Default is off)
-   */
-  bool _doMergeMsh;  // Enables MergeMeshes
+    /** @brief Mu (Range 0....1) for surfLambdaMuSmooth smoothing.
+     */
+    double mu{1.};  // Mu (0...1) for smoothing
 
-  /** @brief Enables/Disables createPatch utility
-   *         (Default is off)
-   */
-  bool _doCreatePtchs;  // Enables CreatePatch
+    /** @brief Number of smoothing iterations for surfLambdaMuSmooth
+     */
+    int slmsIterations{50};  // Number of smoothing iterations
+  };
 
-  /** @brief Enables/Disables foamToSurface utility
-   *         (Default is off)
-   */
-  bool _doFoam2Surf;  // Enables FoamToSurface
+  struct NEMOSYS_EXPORT SplitMeshRegions {
+    // --- splitMeshRegions
+    /** @brief Enables overwriting mesh in splitMshRegions
+     *        (Default is on)
+     */
+    bool overwriteMsh{true};  // Enable overwriting mesh
 
-  /** @brief Enables/Disables surfSpltByTopology utility
-   *         (Default is off)
-   */
-  bool _doSurfSplit;  // Enables SurfaceSplitByManifold
+    /** @brief Enables using of cellZones option in splitMshRegions
+     *        (Default is on)
+     */
+    bool cellZones{true};  // Enable cellZones feature
+  };
 
-  // --- SurfaceLambdaMuSmooth
-  /** @brief If enabled, allows adding feature file for surfLambdaMuSmooth
-   *         (Default is off)
-   */
-  bool _addFeatureFile;  // Add feature file for smoothing
+  struct NEMOSYS_EXPORT MergeMeshes {
+    // --- mergeMeshes
+    /** @brief Defines master mesh region for mergeMeshes
+     */
+    std::string masterCase;  // Defines master mesh region
 
-  /** @brief Input surface file for surfLambdaMuSmooth utility
-   */
-  std::string slmssurfaceFile;  // Defines input surface file
+    /** @brief Defines total number of domains (meshes) to merge using mergeMeshes
+     */
+    int numDomains;  // Defines number of disconnected domains
 
-  /** @brief Output surface file for surfLambdaMuSmooth utility
-   */
-  std::string slmsoutputFile;  // Defines output surface file
+    /** @brief Defines name of first mesh region to add to master mesh
+     */
+    std::string addCase;  // Defines name of slave region to add
 
-  /** @brief Lambda (Range 0....1) for surfLambdaMuSmooth smoothing
-   */
-  double lambda;  // Lambda (0...1) for smoothing
+    /** @brief Enables overwriting merged mesh in mergeMeshes
+     *        (Default is on)
+     */
+    bool overwriteMergeMsh{true};  // Enable overwriting mesh
 
-  /** @brief Mu (Range 0....1) for surfLambdaMuSmooth smoothing.
-   */
-  double mu;  // Mu (0...1) for smoothing
+    /** @brief Specifies directory for master mesh
+     */
+    std::string masterCasePath;  // Defines directory of master region
 
-  /** @brief Number of smoothing iterations for surfLambdaMuSmooth
-   */
-  int slmsIterations;  // Number of smoothing iterations
+    /** @brief Specifies directory for mesh to be merge with master mesh
+     */
+    std::string addCasePath;  // Defines directory of slave region
+  };
 
-  // --- splitMeshRegions
-  /** @brief Enables overwriting mesh in splitMshRegions
-   *        (Default is on)
-   */
-  bool _overwriteMsh;  // Enable overwriting mesh
+  struct NEMOSYS_EXPORT CreatePatch {
+    // --- createPatch
+    /** @brief Enables overwrite option for createPatch utility
+     *        (Default is on)
+     */
+    bool overwritecpMsh{true};  // Enable overwriting mesh
 
-  /** @brief Enables using of cellZones option in splitMshRegions
-   *        (Default is on)
-   */
-  bool _cellZones;  // Enable cellZones feature
+    /** @brief Defines surrounding patch name for createPatch utility
+     *        (this is specific to "Pack Mesh" workflow)
+     */
+    std::string surroundingName;  // Patch name for surrounding
 
-  // --- mergeMeshes
-  /** @brief Defines master mesh region for mergeMeshes
-   */
-  std::string masterCase;  // Defines master mesh region
+    /** @brief Defines packs patch name for createPatch utility
+     *        (this is specific to "Pack Mesh" workflow)
+     */
+    std::string packsName;  // Patch name for packs
 
-  /** @brief Defines total number of domains (meshes) to merge using mergeMeshes
-   */
-  int numDomains;  // Defines number of disconnected domains
+    /** @brief Defines surrounding patch type for createPatch utility
+     *        (this is specific to "Pack Mesh" workflow)
+     */
+    std::string srrndngPatchType;  // Patch type - surrounding (wall, symm., etc.)
 
-  /** @brief Defines name of first mesh region to add to master mesh
-   */
-  std::string addCase;  // Defines name of slave region to add
+    /** @brief Defines packs patch type for createPatch utility
+     *        (this is specific to "Pack Mesh" workflow)
+     */
+    std::string packsPatchType;  // Patch type - packs (wall, symm., etc.)
 
-  /** @brief Enables overwriting merged mesh in mergeMeshes
-   *        (Default is on)
-   */
-  bool _overwriteMergeMsh;  // Enable overwriting mesh
+    /** @brief  Defines surrounding mesh path from main directory
+     */
+    std::string pathSurrounding;  // Path for surrounding mesh
 
-  /** @brief Specifies directory for master mesh
-   */
-  std::string masterCasePath;  // Defines directory of master region
+    /** @brief Defines pack mesh path from main directory
+     */
+    std::string pathPacks;  // Path for pack mesh
+  };
 
-  /** @brief Specifies directory for mesh to be merge with master mesh
-   */
-  std::string addCasePath;  // Defines directory of slave region
+  struct NEMOSYS_EXPORT FoamToSurface {
+    // --- foamToSurface
+    /** @brief Output surface file name.extension for foamToSurface utility
+     */
+    std::string outSurfName;  // Output surface file name (Accepts path from
+                              // current directory)
+  };
 
-  // --- createPatch
-  /** @brief Enables overwrite option for createPatch utility
-   *        (Default is on)
-   */
-  bool _overwritecpMsh;  // Enable overwriting mesh
+  struct NEMOSYS_EXPORT SurfaceSplitByManifold {
+    // --- surfaceSplitByTopology
+    /** @brief Input surface file for surfSpltByTopology utility
+     */
+    std::string surfFile;  // Input surface file
 
-  /** @brief Defines surrounding patch name for createPatch utility
-   *        (this is specific to "Pack Mesh" workflow)
-   */
-  std::string surroundingName;  // Patch name for surrounding
+    /** @brief Output surface file for surfSpltByTopology utility
+     */
+    std::string outSurfFile;  // Output surface file
 
-  /** @brief Defines packs patch name for createPatch utility
-   *        (this is specific to "Pack Mesh" workflow)
-   */
-  std::string packsName;  // Patch name for packs
+    /** @brief A vector containing all region names for packs
+     **/
+    std::vector<std::string> pckRegionNames;
+  };
 
-  /** @brief Defines surrounding patch type for createPatch utility
-   *        (this is specific to "Pack Mesh" workflow)
-   */
-  std::string srrndngPatchType;  // Patch type - surrounding (wall, symm., etc.)
+  SurfaceLambdaMuSmooth surfLMSmoothParams;
 
-  /** @brief Defines packs patch type for createPatch utility
-   *        (this is specific to "Pack Mesh" workflow)
-   */
-  std::string packsPatchType;  // Patch type - packs (wall, symm., etc.)
+  SplitMeshRegions splitMeshRegParams;
 
-  /** @brief  Defines surrounding mesh path from main directory
-   */
-  std::string pathSurrounding;  // Path for surrounding mesh
+  MergeMeshes mergeMeshesParams;
 
-  /** @brief Defines pack mesh path from main directory
-   */
-  std::string pathPacks;  // Path for pack mesh
+  CreatePatch createPatchParams;
 
-  // --- foamToSurface
-  /** @brief Output surface file name.extension for foamToSurface utility
-   */
-  std::string outSurfName;  // Output surface file name (Accepts path..
-                            // ..from current directory)
+  FoamToSurface foamToSurfParams;
 
-  // --- surfaceSplitByTopology
-  /** @brief Input surface file for surfSpltByTopology utility
-   */
-  std::string surfFile;  // Input surface file
-
-  /** @brief Output surface file for surfSpltByTopology utility
-   */
-  std::string outSurfFile;  // Output surface file
-
-  /** @brief A vector containing all region names for packs
-  **/
-  std::vector<std::string> pckRegionNames;
+  SurfaceSplitByManifold surfSplitParams;
 };
 
 #endif  // NEMOSYS_MESHMANIPULATIONFOAMPARAMS_H_

@@ -2,11 +2,8 @@
   {
     "Program Type": "Conversion",
     "Mesh File Options": {
-      "Input Mesh Files": {
-        "Source Mesh": "fullsolid.vtu",
-        "Target Mesh": "fullsolid.out"
-      },
-      "Output Mesh File": ""
+      "Input Mesh File": "fullsolid.vtu",
+      "Output Mesh File": "fullsolid.out"
     },
     "Conversion Options": {
       "Method": "VTK->PATRAN",

@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "simple_circles_test",
+	"Mesh File Options": {
+		"Output Mesh File": "simple_circles_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

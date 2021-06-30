@@ -1,15 +1,25 @@
-#include <ConversionDriver.H>
+#include <Drivers/Conversion/ConversionDriver.H>
 #include <gtest.h>
 
 const char *vtk2patranJSON;
 const char *vtk2patran_out;
 const char *vtk2patran_ref;
 
+// Test VTK->PATRAN conversion driver
+// Note quite crude - tests for equality by character in file
+// except file name (2nd line) and date (4th line)
 TEST(Conversion, ConvertVTKToPatran) {
-  // Test VTK->PATRAN conversion driver
-  // Note quite crude - tests for equality by character in file
-  // except file name (2nd line) and date (4th line)
-  NEM::DRV::ConversionDriver::readJSON(std::string(vtk2patranJSON));
+  std::string fName(vtk2patranJSON);
+  std::ifstream inputStream(fName);
+  if (!inputStream.good()) {
+    std::cerr << "Error opening file " << vtk2patranJSON << std::endl;
+  }
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+
+  auto driver = NEM::DRV::NemDriver::readJSON(inputjson[0]);
+  EXPECT_NE(driver, nullptr);
+  driver->execute();
   std::ifstream resultFile(vtk2patran_out);
   EXPECT_TRUE(resultFile.good());
   std::ifstream reference(vtk2patran_ref);

@@ -1,7 +1,9 @@
 [
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "hex_packing",
+	"Mesh File Options": {
+		"Output Mesh File": "hex_packing"
+	},
 	"Geometry and Mesh": 
 	[
 		{
@@ -139,7 +141,6 @@
 {
 	"Program Type": "Conversion",
 	"Mesh File Options": {
-		"Input Mesh Files": "Custom",
 		"Output Mesh File": "hex_packing.e"
 	},
 	"Conversion Options": {

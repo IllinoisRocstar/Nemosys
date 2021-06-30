@@ -23,15 +23,6 @@ namespace GEN {
 gmshGen::gmshGen() {
   // Default meshing parameters
   meshParams = new gmshParams();
-  meshParams->minSize = 0.01;
-  meshParams->maxSize = 50.0;
-  meshParams->algo2D = "Frontal";
-  meshParams->algo3D = "HXT";
-  meshParams->extSizeFromBoundary = true;
-  meshParams->sizeFromCurvature = false;
-  meshParams->minElePer2Pi = 6;
-  meshParams->optimize = false;
-  meshParams->optimizeThreshold = 0.3;
 }
 
 gmshGen::gmshGen(gmshParams *params) : meshParams(params) {}
@@ -85,13 +76,13 @@ int gmshGen::createMeshFromSTEP(const char *fname) {
   }
 
   // Apply mesh size fields
-  if (meshParams->mSizeField) meshSizeFields();
+  if (!meshParams->sizeFields.empty()) meshSizeFields();
 
   // Apply mesh color naming
-  if (meshParams->mColorMap) applyColorNames();
+  if (!meshParams->color2groupMap.empty()) applyColorNames();
 
   // Apply transfinite volumes
-  if (meshParams->mTransfiniteVolumes) applyTransfiniteVolumes();
+  if (!meshParams->transfiniteBlocks.empty()) applyTransfiniteVolumes();
 
   gmsh::model::mesh::generate(3);
   gmsh::model::mesh::removeDuplicateNodes();
@@ -102,14 +93,14 @@ int gmshGen::createMeshFromSTEP(const char *fname) {
   std::string ext = nemAux::find_ext(meshParams->ofname);
 
   if (ext != ".msh" && ext != ".vtu") {
-    auto pos = meshParams->meshExtensions.find(ext);
-    if (pos == meshParams->meshExtensions.end()) {
+    auto &meshExtensions = gmshParams::getMeshExtensions();
+    auto pos = std::find(meshExtensions.begin(), meshExtensions.end(), ext);
+    if (pos == meshExtensions.end()) {
       std::cerr << "Error: Output file extension " << ext
                 << " not supported in this mesh engine." << std::endl;
       std::cout << "Supported formats are ";
-      for (auto it = meshParams->meshExtensions.begin();
-           it != meshParams->meshExtensions.end(); ++it) {
-        std::cout << *it << " ";
+      for (auto meshExtension : meshExtensions) {
+        std::cout << meshExtension << " ";
       }
       std::cout << "\n" << std::endl;
     } else {
@@ -410,7 +401,10 @@ void gmshGen::applyColorNames() {
   // loop over color, group names and find constituent surfaces
   for(auto iter = meshParams->color2groupMap.begin();
       iter != meshParams->color2groupMap.end(); ++iter) {
-    std::string groupColor = iter->first;
+    const auto &groupColor = iter->first;
+    std::string groupColorStr = std::to_string(groupColor.at(0)) + "," +
+                                std::to_string(groupColor.at(1)) + "," +
+                                std::to_string(groupColor.at(2));
     std::string groupName = iter->second;
     std::vector<int> surfTags;
 
@@ -420,17 +414,15 @@ void gmshGen::applyColorNames() {
       int tag = s.second;
       int r, g, b, a;
       gmsh::model::getColor(dim, tag, r, g, b, a);
-      std::string surfColor = std::to_string(r) + "," +
-                              std::to_string(g) + "," +
-                              std::to_string(b);
-      if(surfColor != groupColor) continue;
+      if (groupColor != std::array<int, 3>{r, g, b}) continue;
       std::string surfName = groupName + "_" + std::to_string(id);
       gmsh::model::setEntityName(dim, tag, surfName);
       surfTags.push_back(tag);
       ++id;
     }
     if(surfTags.size() == 0) {
-      std::cout << "NO SURFACES WITH COLOR " << groupColor << " FOUND." << std::endl;
+      std::cout << "NO SURFACES WITH COLOR " << groupColorStr << " FOUND."
+                << std::endl;
     } else {
       std::cout << "Found "
                 << surfTags.size()
@@ -438,7 +430,7 @@ void gmshGen::applyColorNames() {
                 << " in group "
                 << groupName
                 << " mapped by color "
-                << groupColor
+                << groupColorStr
                 << std::endl;
       std::cout << "Adding physical group " << groupName << std::endl;
       int groupTag = gmsh::model::addPhysicalGroup(2, surfTags);
@@ -456,13 +448,18 @@ void gmshGen::applyTransfiniteVolumes() {
     int volumeDim = v.first;
     int volumeTag = v.second;
 
+    // Use lower_bound because TransfiniteBlock::operator< is based on id
+    auto blockIter = std::lower_bound(
+        meshParams->transfiniteBlocks.begin(),
+        meshParams->transfiniteBlocks.end(), volumeTag,
+        [](const TransfiniteBlock &block, int tag) { return block.id < tag; });
     // if not a transfinite volume, continue
-    if(meshParams->transfiniteBlocks.find(volumeTag) ==
-       meshParams->transfiniteBlocks.end()) {
+    if (blockIter == meshParams->transfiniteBlocks.end() ||
+        blockIter->id != volumeTag) {
       continue;
     }
 
-    NEM::GEN::TransfiniteBlock block = meshParams->transfiniteBlocks[volumeTag];
+    const auto &block = *blockIter;
 
     gmsh::vectorpair volume = { v };
     gmsh::vectorpair surfaces;

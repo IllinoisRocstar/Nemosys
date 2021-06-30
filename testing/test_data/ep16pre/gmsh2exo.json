@@ -2,7 +2,6 @@
   {
     "Program Type": "Conversion",
     "Mesh File Options": {
-      "Input Mesh Files": "Custom",
       "Output Mesh File": "bctest.g"
     },
     "Conversion Options": {

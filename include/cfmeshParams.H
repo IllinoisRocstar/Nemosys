@@ -3,77 +3,97 @@
 
 #ifdef HAVE_CFMSH
 
+#include "nemosys_export.h"
 #include "meshingParams.H"
 
 #include <string>
 #include <vector>
 #include <map>
 #include <tuple>
+#include <jsoncons/config/jsoncons_config.hpp>  // for jsoncons::optional
 
-struct cfmObjRef
+struct NEMOSYS_EXPORT cfmObjRef
 {
   std::string name;
   std::map<std::string, std::string> params; // all other parameters
 };
 
-struct cfmLclRefPatch
+struct NEMOSYS_EXPORT cfmLclRefPatch
 {
   std::string patchName;    // patch name
-  double cellSize;          // patch cell size
-  int aditRefLvls;          // additional refinement levels
-  double refThickness;      // local refinement thickness
+  double cellSize{-1.};          // patch cell size
+  int aditRefLvls{-1};          // additional refinement levels
+  double refThickness{-1.};      // local refinement thickness
 };
 
-struct cfmPtchBndLyr
-{
-  std::string patchName;    // patch name
-  int blNLyr;               // number of boundary layers
-  double blThkRto;          // thickness ratio
-  double maxFrstLyrThk;     // thickness of first boundary layer
-  bool alwDiscont;          // allowing for discontinuity can be used for patches
+struct NEMOSYS_EXPORT cfmPtchBndLyr {
+  std::string patchName;      // patch name
+  int blNLyr{-1};             // number of boundary layers
+  double blThkRto{1.};       // thickness ratio
+  double maxFrstLyrThk{-1.};  // thickness of first boundary layer
+  bool alwDiscont{false};  // allowing for discontinuity can be used for patches
 };
 
-typedef std::tuple<std::string, std::string, std::string> cfmNewPatch;
-struct cfmRenBndry
+struct NEMOSYS_EXPORT cfmNewPatch {
+  std::string name;
+  std::string newName;
+  std::string newType;
+};
+
+struct NEMOSYS_EXPORT cfmRenBndry
 {
   std::string defName;
   std::string defType;
   std::vector<cfmNewPatch> newPatches;
 };
 
-class cfmeshParams : public meshingParams
+struct NEMOSYS_EXPORT cfmBoundaryLayer {
+  int blNLyr{1};        // number of boundary layers
+  double blThkRto{1.};  // thickness ratio
+  double maxFrstLyrThk{-1.};  // thickness of first boundary layer
+  // allowing for discontinuity can be used for patches
+  bool alwDiscont{false};
+  // define additional constrains on boundary layers
+  std::vector<cfmPtchBndLyr> blPatches{};
+};
+
+struct NEMOSYS_EXPORT cfmMeshQual {
+  int qltNItr;                // number of iterations
+  int qltNLop;                // number of loops
+  double qltQltThr;           // quality threshold
+  int qltNSrfItr;             // number of surface iterations
+  std::string qltConCelSet{"none"};   // name of constrained cellSet
+};
+
+struct NEMOSYS_EXPORT cfmSrfFeatEdge {
+  double srfEdgAng{45.};
+};
+
+class NEMOSYS_EXPORT cfmeshParams : public meshingParams
 {
   public:
     // initializing params with defaults
-    cfmeshParams();
-
-    ~cfmeshParams() override = default;
+    cfmeshParams() = default;
 
     // general
-    bool _alwDiscDomains;       // Multi-region meshing
-    std::string geomFilePath;   // name of geometry file and full path
-    std::string generator;      // mesh generation method to be used
-    double maxCellSize;         // maximum cell size
-    double minCellSize;         // minimum cell size
-    double bndryCellSize;       // boundary cell size
-    double bndryCellSizeRefThk; // boundary cell size refinement thickness
-    bool keepCellIB;            // keep cells intersecting boundary
-    bool chkGluMsh;             // check for glued mesh
+    bool alwDiscDomains{false};       // Multi-region meshing
+    std::string geomFilePath;         // name of geometry file and full path
+    std::string generator;            // mesh generation method to be used
+    double maxCellSize{-1.};          // maximum cell size
+    double minCellSize{-1.};          // minimum cell size
+    double bndryCellSize{-1.};        // boundary cell size
+    double bndryCellSizeRefThk{-1.};  // boundary cell size refinement thickness
+    bool keepCellIB{false};           // keep cells intersecting boundary
+    bool chkGluMsh{false};            // check for glued mesh
 
     // boundary layer
-    bool _withBndLyr;
-    bool _withBndLyrPtch;
-    int blNLyr;                 // number of boundary layers
-    double blThkRto;            // thickness ratio
-    double maxFrstLyrThk;       // thickness of first boundary layer
-    bool alwDiscont;            // allowing for discontinuity can be used for patches
+    jsoncons::optional<cfmBoundaryLayer> boundaryLayers;
 
     // surfaceFeatureEdges
-    bool _withSrfEdg;
-    double srfEdgAng;           // angle used for feature extraction
+    jsoncons::optional<cfmSrfFeatEdge> srfEdge{};
 
     // object refinements
-    bool _withObjRfn;
+    std::vector<cfmObjRef> objRefLst;         // objects to refine
     std::string refTyp;         // type of refinement size field
     double refCellSize;         // target cell size
     std::string refP0;          // P0 point coordinates eg (0,0,0)
@@ -82,23 +102,13 @@ class cfmeshParams : public meshingParams
     double refRad1;             // radius 1
 
     // mesh quality improvement
-    bool _withMshQlt;
-    int qltNItr;                // number of iterations
-    int qltNLop;                // number of loops
-    double qltQltThr;           // quality threshold
-    int qltNSrfItr;             // number of surface iterations
-    std::string qltConCelSet;   // name of constrained cellSet
+    jsoncons::optional<cfmMeshQual> improveMeshQuality{};
 
-    // local refinement 
-    bool _withLclRef;
-    std::vector<cfmObjRef> objRefLst;         // objects to refine
-    std::vector<cfmPtchBndLyr> blPatches;     // define additional constrains
-                                              // on boundary layers
+    // local refinement
     std::vector<cfmLclRefPatch> refPatches;   // define additional constrains
                                               // on refinement of given patches
     // rename boundaries
-    bool _withRenBndry;
-    cfmRenBndry renBndry;                     // rename boundaries
+    jsoncons::optional<cfmRenBndry> renBndry;               // rename boundaries
 };
 
 #endif

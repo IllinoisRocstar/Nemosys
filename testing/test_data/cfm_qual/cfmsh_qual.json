@@ -1,20 +1,18 @@
 [
   {
     "Program Type": "Mesh Quality",
-    "Mesh Quality Engine": "cfmesh",
-    "Input Mesh File": "default",
-    "Output File": "default",
-    "Schedule": [
-      {
-        "Method": "meshOptimizer",
-        "Params": {
+    "Mesh Quality Options": {
+      "Mesh Quality Engine": "cfmesh",
+      "Schedule": [
+        {
+          "Method": "meshOptimizer",
           "NIterations": 4,
           "NLoops": 4,
           "QualityThreshold": 0.3,
           "NSurfaceIterations": 4,
-          "ConstrainedCellSet": "N/A"
+          "ConstrainedCellSet": null
         }
-      }
-    ]
+      ]
+    }
   }
 ]

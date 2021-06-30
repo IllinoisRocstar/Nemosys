@@ -121,6 +121,7 @@ MeshManipulationFoam::~MeshManipulationFoam() {
 */
 void MeshManipulationFoam::surfLambdaMuSmooth() {
   using namespace Foam;
+  const auto &surfLMSmoothParams = _mshMnipPrms->surfLMSmoothParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -131,11 +132,11 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
   Foam::Time runTime(Foam::Time::controlDictName, args);
   Foam::argList::noParallel();
 
-  const fileName surfFileName = (_mshMnipPrms->slmssurfaceFile);
-  const fileName outFileName = (_mshMnipPrms->slmsoutputFile);
-  const scalar lambda = (_mshMnipPrms->lambda);
-  const scalar mu = (_mshMnipPrms->mu);
-  const label iters = (_mshMnipPrms->slmsIterations);
+  const fileName surfFileName = (surfLMSmoothParams.slmssurfaceFile);
+  const fileName outFileName = (surfLMSmoothParams.slmsoutputFile);
+  const scalar lambda = (surfLMSmoothParams.lambda_);
+  const scalar mu = (surfLMSmoothParams.mu);
+  const label iters = (surfLMSmoothParams.slmsIterations);
 
   if (lambda < 0 || lambda > 1) {
     FatalErrorInFunction
@@ -161,8 +162,8 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
 
   PackedBoolList fixedPoints(surf1.localPoints().size(), false);
 
-  if (_mshMnipPrms->_addFeatureFile) {
-    const fileName featureFileName(_mshMnipPrms->_addFeatureFile);
+  if (surfLMSmoothParams.addFeatureFile) {
+    const fileName featureFileName(surfLMSmoothParams.addFeatureFile);
     Info << "Reading features from " << featureFileName << " ..." << endl;
 
     edgeMesh feMesh(featureFileName);
@@ -218,6 +219,7 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
 std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions() {
   int impVar;
   using namespace Foam;
+  const auto &splitMeshRegions = _mshMnipPrms->splitMeshRegParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -235,10 +237,10 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
   const bool makeCellZones = false;
   const bool largestOnly = false;
   const bool insidePoint = false;
-  const bool useCellZones = (_mshMnipPrms->_cellZones);
+  const bool useCellZones = (splitMeshRegions.cellZones);
   const bool useCellZonesOnly = false;
   const bool useCellZonesFile = false;
-  const bool overwrite = (_mshMnipPrms->_overwriteMsh);
+  const bool overwrite = (splitMeshRegions.overwriteMsh);
   const bool detectOnly = false;
   const bool sloppyCellZones = false;
   const bool useFaceZones = false;
@@ -668,12 +670,12 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
 
   label largestReg = findMax(regionSizes);
   std::string largestRegMsh = regionNames[largestReg];
-  _mshMnipPrms->pathSurrounding = largestRegMsh;
+  _mshMnipPrms->createPatchParams.pathSurrounding = largestRegMsh;
 
   // Iterate through wordlist regionNames
   for (int i=0; i<regionNames.size(); i++)
     if (regionNames[i] != largestRegMsh)
-      _mshMnipPrms->pckRegionNames.push_back(regionNames[i]);
+      _mshMnipPrms->surfSplitParams.pckRegionNames.push_back(regionNames[i]);
 
   std::vector<int> rtrnVec;
   rtrnVec.push_back(impVar);
@@ -687,6 +689,7 @@ and merges the slave regions to master region one by one.
 */
 void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
   using namespace Foam;
+  const auto &mergeMeshesParams = _mshMnipPrms->mergeMeshesParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -732,7 +735,7 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
   // number of packs are passed through this function for use in loop.
 
   if (ndoms == 2) {
-    addCases.push_back(_mshMnipPrms->addCase);
+    addCases.push_back(mergeMeshesParams.addCase);
   } else {
     for (int i = 2; i < (ndoms + 1); i++) {
       if (i == dirStat) {
@@ -741,17 +744,17 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
       addCases.push_back("domain" + (std::to_string(i)));
     }
 
-    addCases.push_back(_mshMnipPrms->addCase);
+    addCases.push_back(mergeMeshesParams.addCase);
   }
 
   // Main for loop. It loops through all the slave regions and adds them to
   // master region one by one. At the end, master region directory will have
   // all the slave regions added. Keep overwrite boolean true for this.
   for (int j = 0; j < (ndoms - 1); j++) {
-    const bool overwrite = (_mshMnipPrms->_overwriteMergeMsh);
+    const bool overwrite = (mergeMeshesParams.overwriteMergeMsh);
     word masterRegion = polyMesh::defaultRegion;
 
-    fileName masterCase = (_mshMnipPrms->masterCasePath);
+    fileName masterCase = (mergeMeshesParams.masterCasePath);
     if (ndoms == 2) {
       if (dirStat == 1)
         masterRegion = "domain2";
@@ -762,7 +765,7 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
         masterRegion = "domain1";
       //masterRegion = (_mshMnipPrms->masterCase);
 
-    fileName addCase = (_mshMnipPrms->addCasePath);
+    fileName addCase = (mergeMeshesParams.addCasePath);
     word addRegion = polyMesh::defaultRegion;
     addRegion = addCases[j];
 
@@ -797,7 +800,7 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
     polyMesh meshToAdd(
         IOobject(addRegion, runTimeToAdd.timeName(), runTimeToAdd));
 
-    if (!(_mshMnipPrms->_overwriteMergeMsh)) {
+    if (!(mergeMeshesParams.overwriteMergeMsh)) {
       runTimeMaster++;
     }
 
@@ -806,7 +809,7 @@ void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
     masterMesh.addMesh(meshToAdd);
     masterMesh.merge();
 
-    if ((_mshMnipPrms->_overwriteMergeMsh)) {
+    if ((mergeMeshesParams.overwriteMergeMsh)) {
       masterMesh.setInstance(oldInstance);
     }
 
@@ -823,8 +826,9 @@ customizations for Pack Mesh Generation service. More general methods could be
 added in future.
 */
 void MeshManipulationFoam::createPatchDict(int dirStat) {
+  const auto &createPatchParams = _mshMnipPrms->createPatchParams;
   // creating a base system directory
-  std::string dir_path = "./system/"+_mshMnipPrms->pathSurrounding;
+  std::string dir_path = "./system/"+createPatchParams.pathSurrounding;
   boost::filesystem::path dir(dir_path);
   try {
     boost::filesystem::create_directory(dir);
@@ -866,11 +870,11 @@ FoamFile\n\
   contText = contText + "\n\npatches\n";
   contText = contText + "(\n";
   contText = contText + "\t{\n";
-  contText = contText + "\t\tname " + (_mshMnipPrms->surroundingName) + ";\n";
+  contText = contText + "\t\tname " + (createPatchParams.surroundingName) + ";\n";
   contText = contText + "\n\t\tpatchInfo\n";
   contText = contText + "\t\t{\n";
   contText =
-      contText + "\t\t\ttype " + (_mshMnipPrms->srrndngPatchType) + ";\n";
+      contText + "\t\t\ttype " + (createPatchParams.srrndngPatchType) + ";\n";
   contText = contText + "\t\t}\n";
   contText = contText + "\n\t\tconstructFrom patches;\n";
   contText = contText + "\n\t\tpatches (\"domain0_to_domain.*\");";
@@ -926,11 +930,11 @@ FoamFile\n\
     contText2 = contText2 + "\n\npatches\n";
     contText2 = contText2 + "(\n";
     contText2 = contText2 + "\t{\n";
-    contText2 = contText2 + "\t\tname " + (_mshMnipPrms->packsName) + ";\n";
+    contText2 = contText2 + "\t\tname " + (createPatchParams.packsName) + ";\n";
     contText2 = contText2 + "\n\t\tpatchInfo\n";
     contText2 = contText2 + "\t\t{\n";
     contText2 =
-        contText2 + "\t\t\ttype " + (_mshMnipPrms->packsPatchType) + ";\n";
+        contText2 + "\t\t\ttype " + (createPatchParams.packsPatchType) + ";\n";
     contText2 = contText2 + "\t\t}\n";
     contText2 = contText2 + "\n\t\tconstructFrom patches;\n";
     contText2 = contText2 + "\n\t\tpatches (\"domain.*_to_domain0\");";
@@ -985,11 +989,11 @@ FoamFile\n\
     contText2 = contText2 + "\n\npatches\n";
     contText2 = contText2 + "(\n";
     contText2 = contText2 + "\t{\n";
-    contText2 = contText2 + "\t\tname " + (_mshMnipPrms->packsName) + ";\n";
+    contText2 = contText2 + "\t\tname " + (createPatchParams.packsName) + ";\n";
     contText2 = contText2 + "\n\t\tpatchInfo\n";
     contText2 = contText2 + "\t\t{\n";
     contText2 =
-        contText2 + "\t\t\ttype " + (_mshMnipPrms->packsPatchType) + ";\n";
+        contText2 + "\t\t\ttype " + (createPatchParams.packsPatchType) + ";\n";
     contText2 = contText2 + "\t\t}\n";
     contText2 = contText2 + "\n\t\tconstructFrom patches;\n";
     contText2 = contText2 + "\n\t\tpatches (\"domain.*_to_domain0\");";
@@ -1013,6 +1017,7 @@ Pack Mesh Generation service.
 */
 void MeshManipulationFoam::createPatch(int dirStat) {
   using namespace Foam;
+  const auto &createPatchParams = _mshMnipPrms->createPatchParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -1026,7 +1031,7 @@ void MeshManipulationFoam::createPatch(int dirStat) {
 
   Time runTime(Time::controlDictName, "", "");
 
-  std::string firstPtch = _mshMnipPrms->pathSurrounding;
+  std::string firstPtch = createPatchParams.pathSurrounding;
   std::string secondPtch;
 
   if (dirStat == 1)
@@ -1045,7 +1050,7 @@ void MeshManipulationFoam::createPatch(int dirStat) {
     if (i == 1) {
       regnName = secondPtch;
     }
-    const bool overwrite = (_mshMnipPrms->_overwritecpMsh);
+    const bool overwrite = (createPatchParams.overwritecpMsh);
 
     Foam::word meshRegionName = regnName;
 
@@ -1328,6 +1333,7 @@ It can take paths for output file location and name.
 */
 void MeshManipulationFoam::foamToSurface() {
   using namespace Foam;
+  const auto &foamToSurfaceParams = _mshMnipPrms->foamToSurfParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -1338,7 +1344,7 @@ void MeshManipulationFoam::foamToSurface() {
   Foam::Time runTime(Foam::Time::controlDictName, args);
   Foam::argList::noParallel();
 
-  fileName exportName = (_mshMnipPrms->outSurfName);
+  fileName exportName = (foamToSurfaceParams.outSurfName);
 
   scalar scaleFactor = 0;
   const bool doTriangulate = true;
@@ -1388,6 +1394,7 @@ files for all regions. User inputs are input file name and output file name.
 */
 int MeshManipulationFoam::surfSpltByTopology() {
   using namespace Foam;
+  const auto &surfSplitParams = _mshMnipPrms->surfSplitParams;
 
   int argc = 1;
   char** argv = new char*[2];
@@ -1399,10 +1406,10 @@ int MeshManipulationFoam::surfSpltByTopology() {
 
   Time runTime(Time::controlDictName, "", "");
 
-  fileName surfFileName(_mshMnipPrms->surfFile);
+  fileName surfFileName(surfSplitParams.surfFile);
   Info << "Reading surface from " << surfFileName << endl;
 
-  fileName outFileName(_mshMnipPrms->outSurfFile);
+  fileName outFileName(surfSplitParams.outSurfFile);
   fileName outFileBaseName = outFileName.lessExt();
   word outExtension = outFileName.ext();
 

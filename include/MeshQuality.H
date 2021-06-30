@@ -20,7 +20,7 @@ class NEMOSYS_EXPORT MeshQuality {
   MeshQuality() = default;
   explicit MeshQuality(const meshBase *_mesh);
 #ifdef HAVE_CFMSH
-  explicit MeshQuality(cfmshQualityParams *params) { _cfmQPrms = params; }
+  explicit MeshQuality(const cfmshQualityParams *params) { _cfmQPrms = params; }
 #endif
   ~MeshQuality();
 
@@ -41,7 +41,7 @@ class NEMOSYS_EXPORT MeshQuality {
   const meshBase *mesh;
   vtkSmartPointer<vtkMeshQuality> qualityFilter;
 #ifdef HAVE_CFMSH
-  cfmshQualityParams *_cfmQPrms;
+  const cfmshQualityParams *_cfmQPrms;
 #endif
 };
 

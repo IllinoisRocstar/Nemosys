@@ -15,14 +15,34 @@ namespace SRV {
  * Store variables to create Omega_h's MetricSource object used to define
  * metrics for refinement
  */
-struct omegahRefineMetricSource {
-  Omega_h_Source type;   ///< type of source, e.g., by variation, by gradient
-  Omega_h::Real knob;    ///< extra parameter depending on source type
-  std::string tag_name;  ///< name of field defining the source
-  Omega_h_Isotropy isotropy;  ///< controls the conversion of anisotropic
-                              ///< metrics to isotropic ones
-  Omega_h_Scales scales;      ///< determines whether a metric is allowed to be
-                              ///< scaled to satisfy an element count constraint
+struct NEMOSYS_EXPORT omegahRefineMetricSource {
+  omegahRefineMetricSource() = default;
+  omegahRefineMetricSource(Omega_h_Source type, Omega_h::Real knob,
+                           std::string tag_name, Omega_h_Isotropy isotropy,
+                           Omega_h_Scales scales)
+      : type(type), knob(knob), tag_name(std::move(tag_name)),
+        isotropy(isotropy), scales(scales) {}
+  /**
+   * @brief type of source, e.g., by variation, by gradient
+   */
+  Omega_h_Source type{OMEGA_H_IMPLIED};
+  /**
+   * @brief extra parameter depending on source type
+   */
+  Omega_h::Real knob{1.};
+  /**
+   * @brief name of field defining the source
+   */
+  std::string tag_name{};
+  /**
+   * @brief controls the conversion of anisotropic metrics to isotropic ones
+   */
+  Omega_h_Isotropy isotropy{OMEGA_H_ANISOTROPIC};
+  /**
+   * @brief determines whether a metric is allowed to be scaled to satisfy an
+   * element count constraint
+   */
+  Omega_h_Scales scales{OMEGA_H_SCALES};
 };
 
 /**

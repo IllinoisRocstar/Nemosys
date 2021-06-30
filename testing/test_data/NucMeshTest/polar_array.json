@@ -1,7 +1,9 @@
 [
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "polar_array",
+	"Mesh File Options": {
+		"Output Mesh File": "polar_array"
+	},
 	"Geometry and Mesh": 
 	[
 		{
@@ -231,7 +233,6 @@
 {
 	"Program Type": "Conversion",
 	"Mesh File Options": {
-		"Input Mesh Files": "Custom",
 		"Output Mesh File": "polar_array.e"
 	},
 	"Conversion Options": {

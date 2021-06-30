@@ -22,8 +22,6 @@
 
 typedef std::size_t nemId_t;
 
-class meshingParams;
-
 /** @brief A brief description of meshBase.
     @note Virtual methods are usually implemented in vtkMesh.C. We use that
         class for more VTK-specific functions that we want wrapped by meshBase
@@ -743,7 +741,6 @@ struct NEMOSYS_EXPORT sortNemId_tVec_compare {
   bool operator()(std::vector<nemId_t> lhs, std::vector<nemId_t> rhs) const;
 };
 
-#ifndef SWIG
 // --- auxiliary helpers
 /** @brief compares two meshBase classes. used in testing
     @param mesh1 <>
@@ -751,6 +748,7 @@ struct NEMOSYS_EXPORT sortNemId_tVec_compare {
 **/
 NEMOSYS_EXPORT int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
+#ifndef SWIG
 /** @brief write patch map file for roc prep (trivial identity mapping)
     @param mapFile <>
     @param patchMap <>

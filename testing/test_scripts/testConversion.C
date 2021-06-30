@@ -1,7 +1,8 @@
 #include <exoMesh.H>
 #include <foamMesh.H>
 #include <meshBase.H>
-#include <NemDriver.H>
+#include <Drivers/NemDriver.H>
+#include <Drivers/Conversion/ManipExoConversionDriver.H>
 #include <gtest.h>
 
 const char* mshName;
@@ -37,18 +38,20 @@ std::string combine_blocks(const char *jsonF) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
 
-  if (inputjson.contains("Conversion Options")) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(NEM::DRV::NemDriver::readJSON(inputjson));
-  }
-  std::string ifname = "four_boxes_combined.e";
-  return ifname;
+  auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(nemdrvobj, nullptr);
+  nemdrvobj->execute();
+
+  std::string ofname =
+      dynamic_cast<NEM::DRV::ManipExoConversionDriver *>(nemdrvobj.get())
+          ->getFiles()
+          .outputMeshFile;
+  return ofname;
 }
 
-#ifdef HAVE_EXODUSII
 TEST(Conversion, ConvertEXOtoEXO) {
-  auto em = new NEM::MSH::EXOMesh::exoMesh(combine_blocks(combineBlocks_json));
-  std::string mesh = "four_boxes_combined.e";
+  auto mesh = combine_blocks(combineBlocks_json);
+  auto em = new NEM::MSH::EXOMesh::exoMesh(mesh);
   em->read(mesh);
 
   int numBlks = em->getNumberOfElementBlocks();
@@ -65,7 +68,6 @@ TEST(Conversion, ConvertEXOtoEXO) {
     ret = 0;
   EXPECT_EQ(0, ret);
 }
-#endif
 
 TEST(Conversion, ConvertGmshToVTK)
 {

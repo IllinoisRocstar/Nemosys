@@ -1,7 +1,8 @@
-#include "TransferDriver.H"
+#include "Drivers/TransferDriver.H"
 
 #include <iostream>
 #include <string>
+#include <utility>
 
 #include "FETransfer.H"
 #ifdef HAVE_IMPACT
@@ -15,123 +16,64 @@
 namespace NEM {
 namespace DRV {
 
-//----------------------- Transfer Driver ------------------------------------//
-TransferDriver::TransferDriver(const std::string &srcmsh,
-                               const std::string &trgmsh,
-                               const std::string &method,
-                               const std::string &ofname, bool checkQuality) {
-  std::cerr << "creating src" << std::endl;
-  source = meshBase::Create(srcmsh);
-  std::cerr << "creating trg" << std::endl;
-  target = meshBase::Create(trgmsh);
-  std::cerr << "creating transfer object" << std::endl;
-  transfer = TransferDriver::CreateTransferObject(source, target, method);
+TransferDriver::Files::Files(std::string source, std::string target,
+                             std::string output)
+    : sourceMeshFile(std::move(source)),
+      targetMeshFile(std::move(target)),
+      outputMeshFile(std::move(output)) {}
+
+TransferDriver::Opts::Opts(std::string method, bool checkQuality)
+    : method(std::move(method)), checkQuality(checkQuality) {}
+
+TransferDriver::TransferDriver(Files files, Opts opts)
+    : files_(std::move(files)), opts_(std::move(opts)) {
   std::cout << "TransferDriver created" << std::endl;
-
-  nemAux::Timer T;
-  T.start();
-  source->setCheckQuality(checkQuality);
-  // source->transfer(target, method);
-  auto transfer = TransferDriver::CreateTransferObject(source, target, method);
-  transfer->run(source->getNewArrayNames());
-  T.stop();
-
-  std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
-
-  target->write(ofname);
 }
 
-TransferDriver::TransferDriver(const std::string &srcmsh,
-                               const std::string &trgmsh,
-                               const std::string &method,
-                               const std::vector<std::string> &arrayNames,
-                               const std::string &ofname, bool checkQuality) {
-  source = meshBase::Create(srcmsh);
-  target = meshBase::Create(trgmsh);
+TransferDriver::TransferDriver() : TransferDriver({{}, {}, {}}, {{}, {}}) {}
+
+void TransferDriver::execute() const {
+  std::shared_ptr<meshBase> source{
+      meshBase::Create(this->files_.sourceMeshFile)};
+  std::shared_ptr<meshBase> target{
+      meshBase::Create(this->files_.targetMeshFile)};
   std::cout << "TransferDriver created" << std::endl;
 
   nemAux::Timer T;
   T.start();
-  source->setCheckQuality(checkQuality);
+  source->setCheckQuality(this->opts_.checkQuality);
   // source->transfer(target, method, arrayNames);
-  auto transfer = TransferDriver::CreateTransferObject(source, target, method);
-  transfer->transferPointData(source->getArrayIDs(arrayNames),
-                              source->getNewArrayNames());
+  auto transfer = TransferDriver::CreateTransferObject(
+      source.get(), target.get(), this->opts_.method);
+  if (this->opts_.arrayNames) {
+    transfer->transferPointData(
+        source->getArrayIDs(this->opts_.arrayNames.value()),
+        source->getNewArrayNames());
+  } else {
+    transfer->run(source->getNewArrayNames());
+  }
   source->write("new.vtu");
   T.stop();
 
   std::cout << "Time spent transferring data (ms) " << T.elapsed() << std::endl;
 
-  target->write(ofname);
+  target->write(this->files_.outputMeshFile);
 }
 
+const TransferDriver::Files &TransferDriver::getFiles() const { return files_; }
+
+void TransferDriver::setFiles(Files files) { this->files_ = std::move(files); }
+
+const TransferDriver::Opts &TransferDriver::getOpts() const { return opts_; }
+
+void TransferDriver::setOpts(Opts opts) { this->opts_ = std::move(opts); }
+
 TransferDriver::~TransferDriver() {
-  delete source;
-  delete target;
   std::cout << "TransferDriver destroyed" << std::endl;
 }
 
-TransferDriver *TransferDriver::readJSON(const jsoncons::json &inputjson) {
-  std::string srcmsh =
-      inputjson["Mesh File Options"]["Input Mesh Files"]["Source Mesh"]
-          .as<std::string>();
-  std::string trgmsh =
-      inputjson["Mesh File Options"]["Input Mesh Files"]["Target Mesh"]
-          .as<std::string>();
-  std::string outmsh =
-      inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>();
-  std::string method =
-      inputjson["Transfer Options"]["Method"].as<std::string>();
-
-  bool transferAll =
-      inputjson["Transfer Options"]["Transfer All Arrays"].as<bool>();
-
-  std::vector<std::string> arrayNames;
-  if (!transferAll)
-    arrayNames = inputjson["Transfer Options"]["Array Names"]
-                     .as<std::vector<std::string>>();
-
-  bool checkQuality =
-      inputjson["Transfer Options"]["Check Transfer Quality"].as<bool>();
-
-  TransferDriver *trnsdrvobj;
-  if (transferAll) {
-    trnsdrvobj =
-        new TransferDriver(srcmsh, trgmsh, method, outmsh, checkQuality);
-  } else {
-    std::cout << "Transferring selected arrays:" << std::endl;
-    for (const auto &arrayName : arrayNames)
-      std::cout << "\t" << arrayName << "\n";
-    trnsdrvobj = new TransferDriver(srcmsh, trgmsh, method, arrayNames, outmsh,
-                                    checkQuality);
-  }
-
-  return trnsdrvobj;
-}
-
-TransferDriver *TransferDriver::readJSON(const std::string &ifname) {
-  if (nemAux::find_ext(ifname) != ".json") {
-    std::cerr << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
-
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good()) {
-    std::cerr << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-
-  jsoncons::json inputjson;
-  inputStream >> inputjson;
-
-  // checking if array
-  if (inputjson.is_array()) {
-    std::cerr
-        << "Warning: Input is an array. Only first element will be processed\n";
-    return TransferDriver::readJSON(inputjson[0]);
-  } else {
-    return TransferDriver::readJSON(inputjson);
-  }
+jsoncons::string_view TransferDriver::getProgramType() const {
+  return programType;
 }
 
 std::shared_ptr<TransferBase> TransferDriver::CreateTransferObject(

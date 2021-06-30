@@ -60,7 +60,7 @@ class AMRFoam : public dynamicFvMesh {
                  volScalarField& vFld, const double& lowerRefineLevel,
                  const double& upperRefineLevel, const double& unrefineAbove,
                  const double& unrefineBelow, const int& nBufferLayers,
-                 int& maxCells);
+                 const int &maxCells);
 
   /** @brief New method for machine learning ML. Takes output from ML model
              and performs refinement/unrefinement.

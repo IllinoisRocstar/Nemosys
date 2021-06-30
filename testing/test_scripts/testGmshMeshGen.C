@@ -7,9 +7,10 @@
 #include <gtest.h>
 #include <vtkCell.h>
 
-#include "NemDriver.H"
-#include "meshBase.H"
+#include "Drivers/MeshGen/GmshMeshGenDriver.H"
+#include "Drivers/NemDriver.H"
 #include "geoMeshFactory.H"
+#include "meshBase.H"
 
 const char *box_test_json;
 const char *pitz_daily_test_json;
@@ -29,12 +30,10 @@ std::string box_test(const char *jsonF) {
   inputStream >> inputjson;
 
   for (const auto &prog : inputjson.array_range()) {
-    if (prog.contains("Mesh Generation Engine")) {
-      std::cout << "Reading JSON array, Mesh Generation Engine" << std::endl;
-      std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-          std::unique_ptr<NEM::DRV::NemDriver>(
-              NEM::DRV::NemDriver::readJSON(prog));
-    }
+    std::cout << "Reading JSON array" << std::endl;
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(dynamic_cast<NEM::DRV::GmshMeshGenDriver *>(nemdrvobj.get()), nullptr);
+    nemdrvobj->execute();
   }
 
   std::string ifname = "./box_test.vtu";
@@ -49,11 +48,9 @@ TEST(gmshMeshGenTest, pitz_daily_Test) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    if (prog.contains("Mesh Generation Engine")) {
-      std::cout << "Reading JSON array, Mesh Generation Engine" << std::endl;
-      std::shared_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::shared_ptr<NEM::DRV::NemDriver>(NEM::DRV::NemDriver::readJSON(prog));
-    }
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
 
   auto genPDMesh = std::shared_ptr<NEM::MSH::geoMeshBase>(NEM::MSH::Read("pitzdaily.msh"));

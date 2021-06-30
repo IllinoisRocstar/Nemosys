@@ -7,6 +7,6 @@
   "Refinement Options": {
     "Refinement Method": "uniform",
     "Edge Scaling": 1.0,
-    "Transfer Data": 1
+    "Transfer Data": true
   }
 }

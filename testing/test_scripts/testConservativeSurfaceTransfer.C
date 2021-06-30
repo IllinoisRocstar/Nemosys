@@ -3,8 +3,8 @@
 #include "gtest.h"
 
 #include "AuxiliaryFunctions.H"
-#include "TransferDriver.H"
 #include "ConservativeSurfaceTransfer.H"
+#include "Drivers/TransferDriver.H"
 #include "vtkMesh.H"
 
 #include "vtkPointData.h"

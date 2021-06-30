@@ -139,10 +139,6 @@ class snappymeshGen : public meshGen
   **/
   bool defaults;  // Default scenario
 
-  /** @brief Case name for internal use
-  **/
-  std::string caseName; // Case name for internal use
-
   /** @brief snappymeshParams object Parameters
   **/
   snappymeshParams* _params;  // SnappyHexMesh Parameters

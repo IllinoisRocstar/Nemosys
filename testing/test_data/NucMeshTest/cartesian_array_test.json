@@ -1,6 +1,8 @@
 {
 	"Program Type": "NucMesh Generation",
-	"Output File Name": "cartesian_array_test",
+	"Mesh File Options": {
+		"Output Mesh File": "cartesian_array_test"
+	},
 	"Geometry and Mesh": 
 	[
 		{

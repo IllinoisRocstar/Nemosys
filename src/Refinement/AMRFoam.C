@@ -172,7 +172,7 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
                         const double& upperRefineLevel,
                         const double& unrefineAbove,
                         const double& unrefineBelow, const int& nBufferLayers,
-                        int& maxCells) {
+                        const int &maxCells) {
   bool hasChanged = false;
 
   if (refineInterval == 0) {
@@ -183,8 +183,6 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
                          << "The refineInterval value should"
                          << " be >= 1." << nl << exit(FatalError);
   }
-
-  if (maxCells < 0) maxCells = 500000;
 
   // Cannot refine at time = 0;
   if (fvMesh::time().timeIndex() > 0 &&
