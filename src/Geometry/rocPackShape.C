@@ -1,7 +1,7 @@
-#include <hmxShape.H>
-#include <icosidodecahedronShape.H>
-#include <petnShape.H>
-#include <rocPackShape.H>
+#include "Geometry/hmxShape.H"
+#include "Geometry/icosidodecahedronShape.H"
+#include "Geometry/petnShape.H"
+#include "Geometry/rocPackShape.H"
 
 namespace NEM {
 

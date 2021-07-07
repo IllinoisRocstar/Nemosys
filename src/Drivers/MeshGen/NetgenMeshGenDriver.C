@@ -1,8 +1,8 @@
 #include "Drivers/MeshGen/NetgenMeshGenDriver.H"
 
 #include "AuxiliaryFunctions.H"
-#include "meshBase.H"
-#include "netgenGen.H"
+#include "Mesh/meshBase.H"
+#include "MeshGeneration/netgenGen.H"
 
 namespace NEM {
 namespace DRV {

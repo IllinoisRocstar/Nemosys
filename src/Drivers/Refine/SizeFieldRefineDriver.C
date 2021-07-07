@@ -1,6 +1,6 @@
 #include "Drivers/Refine/SizeFieldRefineDriver.H"
 
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

@@ -1,15 +1,15 @@
-#include "geoMeshFactory.H"
+#include "Mesh/geoMeshFactory.H"
 
 #include "AuxiliaryFunctions.H"
 
-#include "inpGeoMesh.H"
-#include "exoGeoMesh.H"
-#include "gmshGeoMesh.H"
-#include "oshGeoMesh.H"
-#include "vtkGeoMesh.H"
+#include "Mesh/inpGeoMesh.H"
+#include "Mesh/exoGeoMesh.H"
+#include "Mesh/gmshGeoMesh.H"
+#include "Mesh/oshGeoMesh.H"
+#include "Mesh/vtkGeoMesh.H"
 
 #ifdef HAVE_CFMSH
-  #include "foamGeoMesh.H"
+  #include "Mesh/foamGeoMesh.H"
 #endif
 
 namespace NEM {

@@ -4,8 +4,10 @@
 #include <iomanip>
 #include <cmath>
 #include <vector>
-#include <gtest.h>
-#include <orthoPoly3D.H>
+#include <gtest/gtest.h>
+#include <PatchRecovery/orthoPoly3D.H>
+
+using Eigen::VectorXd;
 
 const char* file_name;
 

@@ -1,8 +1,14 @@
-#include "orthoPoly3D.H"
+#include "PatchRecovery/orthoPoly3D.H"
 
 #ifdef NEMOSYS_DEBUG
-  #include <AuxiliaryFunctions.H>
+  #include "AuxiliaryFunctions.H"
 #endif
+
+#include <unsupported/Eigen/KroneckerProduct>
+
+using Eigen::KroneckerProduct;
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // remove given column from matrix in place (VERY SLOW)
 void removeColumn(MatrixXd &matrix, unsigned int colToRemove)

@@ -1,6 +1,6 @@
 #include "Drivers/Refine/Z2RefineDriver.H"
 
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

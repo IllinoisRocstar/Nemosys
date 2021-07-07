@@ -1,6 +1,6 @@
 #include "AuxiliaryFunctions.H"
+#include "SolutionVerification/OrderOfAccuracy.H"
 #include "Drivers/TransferDriver.H"
-#include "OrderOfAccuracy.H"
 
 #include <vtkDoubleArray.h>
 #include <vtkPointData.h>

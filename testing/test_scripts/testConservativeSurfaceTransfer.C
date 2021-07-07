@@ -1,11 +1,9 @@
-#include "meshBase.H"
-#include "vtkMesh.H"
-#include "gtest.h"
-
-#include "AuxiliaryFunctions.H"
-#include "ConservativeSurfaceTransfer.H"
-#include "Drivers/TransferDriver.H"
-#include "vtkMesh.H"
+#include <Mesh/meshBase.H>
+#include <Mesh/vtkMesh.H>
+#include <gtest/gtest.h>
+#include <Drivers/TransferDriver.H>
+#include <Transfer/ConservativeSurfaceTransfer.H>
+#include <Mesh/vtkMesh.H>
 
 #include "vtkPointData.h"
 #include "vtkDoubleArray.h"

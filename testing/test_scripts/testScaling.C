@@ -1,10 +1,8 @@
-#include <gtest.h>
-
-#include "AuxiliaryFunctions.H"
-#include "Cubature.H"
-#include "Drivers/TransferDriver.H"
-#include "OrderOfAccuracy.H"
-#include "meshBase.H"
+#include <gtest/gtest.h>
+#include <Integration/Cubature.H>
+#include <Drivers/TransferDriver.H>
+#include <SolutionVerification/OrderOfAccuracy.H>
+#include <Mesh/meshBase.H>
 
 #include "vtkDoubleArray.h"
 #include "vtkPointData.h"
@@ -107,7 +105,6 @@ TEST(ScalingTest, Transfer) {
   std::string method("Consistent Interpolation");
   auto transfer = NEM::DRV::TransferDriver::CreateTransferObject(
       coarse.get(), fine.get(), method);
-  nemAux::Timer transferTimer;
   std::cerr << "transferring..." << std::endl;
   transfer->run();
 

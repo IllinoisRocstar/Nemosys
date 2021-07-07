@@ -1,9 +1,9 @@
-#include "meshStitcher.H"
+#include "MeshPartitioning/meshStitcher.H"
 #include "AuxiliaryFunctions.H"
 
-#include "cgnsAnalyzer.H"
-#include "meshBase.H"
-#include "rocstarCgns.H"
+#include "IO/cgnsAnalyzer.H"
+#include "Mesh/meshBase.H"
+#include "IO/rocstarCgns.H"
 
 meshStitcher::meshStitcher(std::vector<std::string> _cgFileNames, bool surf)
     : cgFileNames(std::move(_cgFileNames)), stitchedMesh(nullptr),

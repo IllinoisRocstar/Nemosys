@@ -1,9 +1,7 @@
 #include <fstream>
-
-#include <gtest.h>
-
-#include "Drivers/NemDriver.H"
-#include "meshBase.H"
+#include <gtest/gtest.h>
+#include <Drivers/NemDriver.H>
+#include <Mesh/meshBase.H>
 
 const char *bench1_json;
 const char *bench1_ref;

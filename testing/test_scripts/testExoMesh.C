@@ -1,6 +1,5 @@
-#include <gtest.h>
-
-#include "exoMesh.H"
+#include <gtest/gtest.h>
+#include <Mesh/exoMesh.H>
 
 std::string arg_fName1;
 std::string arg_fName2;

@@ -1,6 +1,5 @@
 #include <Drivers/Conversion/ConversionDriver.H>
-#include <gtest.h>
-
+#include <gtest/gtest.h>
 const char *vtk2patranJSON;
 const char *vtk2patran_out;
 const char *vtk2patran_ref;

@@ -1,10 +1,10 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <vtkInformation.h>
 #include <vtkInformationStringKey.h>
 
-#include "diffMesh.H"
-#include "exoGeoMesh.H"
-#include "geoMeshFactory.H"
+#include <Mesh/diffMesh.H>
+#include <Mesh/exoGeoMesh.H>
+#include <Mesh/geoMeshFactory.H>
 
 // Test cases for the NEM::MSH::exoGeoMesh class, which handles Exodus II files
 

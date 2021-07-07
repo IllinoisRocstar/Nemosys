@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "geoMeshBase.H"
+#include "Mesh/geoMeshBase.H"
 
 #include <algorithm>
 #include <iostream>
@@ -23,8 +23,8 @@
 #include <vtkType.h>  // for vtkIdType
 
 #include "AuxiliaryFunctions.H"
-#include "dataSetRegionSurfaceFilter.H"
-#include "gmshTypes.H"
+#include "MeshOperation/dataSetRegionSurfaceFilter.H"
+#include "Mesh/gmshTypes.H"
 
 namespace NEM {
 namespace MSH {

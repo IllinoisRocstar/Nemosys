@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include "AuxiliaryFunctions.H"
-#include "ep16Post.H"
-#include "ep16Prep.H"
+#include "InputGeneration/ep16Post.H"
+#include "InputGeneration/ep16Prep.H"
 
 namespace NEM {
 namespace DRV {

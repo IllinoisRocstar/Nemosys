@@ -1,8 +1,8 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <chrono>
 
-#include "patchRecovery.H"
-#include "meshBase.H"
+#include <PatchRecovery/patchRecovery.H>
+#include <Mesh/meshBase.H>
 
 const char* nodeMesh;
 const char* recoveredMesh;

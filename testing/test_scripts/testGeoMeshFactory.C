@@ -1,11 +1,10 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
+#include <Mesh/geoMeshFactory.H>
 
-#include "geoMeshFactory.H"
-
-#include "vtkGeoMesh.H"
-#include "gmshGeoMesh.H"
-#include "oshGeoMesh.H"
-#include "exoGeoMesh.H"
+#include <Mesh/vtkGeoMesh.H>
+#include <Mesh/gmshGeoMesh.H>
+#include <Mesh/oshGeoMesh.H>
+#include <Mesh/exoGeoMesh.H>
 
 // Tests for NEM::MSH::Read accepting files of all geoMeshBase child classes
 

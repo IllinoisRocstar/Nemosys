@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "foamGeoMesh.H"
+#include "Mesh/foamGeoMesh.H"
 
 #include <iostream>
 #include <set>
@@ -25,16 +25,17 @@
 #include <vtkStringArray.h>
 #include <vtkFieldData.h>
 
+#include <ZoneMesh.H>
+#include <cellZone.H>
+#include <topoSetSource.H>
+#include <globalMeshData.H>
+#include <timeSelector.H>
+#include <IOobjectList.H>
+#include <cellZoneSet.H>
+#include <faceZoneSet.H>
+#include <pointZoneSet.H>
+
 #include "AuxiliaryFunctions.H"
-#include "ZoneMesh.H"
-#include "cellZone.H"
-#include "topoSetSource.H"
-#include "globalMeshData.H"
-#include "timeSelector.H"
-#include "IOobjectList.H"
-#include "cellZoneSet.H"
-#include "faceZoneSet.H"
-#include "pointZoneSet.H"
 
 namespace NEM {
 namespace MSH {

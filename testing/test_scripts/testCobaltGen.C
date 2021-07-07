@@ -1,5 +1,5 @@
 #include <Drivers/NemDriver.H>
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <cctype>
 #include <fstream>
 

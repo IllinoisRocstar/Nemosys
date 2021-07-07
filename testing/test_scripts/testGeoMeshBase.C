@@ -1,12 +1,10 @@
 #if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
 #  define _USE_MATH_DEFINES
 #endif
-
-#include <gtest.h>
-
+#include <gtest/gtest.h>
 #include <gmsh.h>
 
-#include "geoMeshBase.H"
+#include <Mesh/geoMeshBase.H>
 
 class testGeoMeshBase : public NEM::MSH::geoMeshBase {
   using geoMeshBase::geoMeshBase;

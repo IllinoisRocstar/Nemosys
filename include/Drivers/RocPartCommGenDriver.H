@@ -7,8 +7,8 @@
 #include <vtkPolyData.h>
 
 #include "nemosys_export.h"
-#include "NemDriver.H"
-#include "meshBase.H"
+#include "Drivers/NemDriver.H"
+#include "Mesh/meshBase.H"
 
 #include <cgnslib.h>
 

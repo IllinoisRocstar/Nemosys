@@ -1,6 +1,9 @@
-#include "orthoPoly1D.H"
+#include "PatchRecovery/orthoPoly1D.H"
 
 #include <cmath>
+#include <limits>
+
+using Eigen::VectorXd;
 
 // constructor
 orthoPoly1D::orthoPoly1D(int _order, const std::vector<double> &x)

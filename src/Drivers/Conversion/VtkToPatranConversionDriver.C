@@ -1,6 +1,6 @@
 #include "Drivers/Conversion/VtkToPatranConversionDriver.H"
 
-#include "patran.H"
+#include "Mesh/patran.H"
 
 namespace NEM {
 namespace DRV {

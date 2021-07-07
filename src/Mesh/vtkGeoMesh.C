@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "vtkGeoMesh.H"
+#include "Mesh/vtkGeoMesh.H"
 
 #include <iostream>
 #include <set>

@@ -3,9 +3,9 @@
 #endif
 
 #include "AuxiliaryFunctions.H"
-#include "gmshGen.H"
-#include "gmshParams.H"
-#include "gmshTypes.H"
+#include "MeshGeneration/gmshGen.H"
+#include "MeshGeneration/gmshParams.H"
+#include "Mesh/gmshTypes.H"
 
 #include <gmsh.h>
 

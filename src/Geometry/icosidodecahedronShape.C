@@ -3,8 +3,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <rocPackShape.H>
-#include <icosidodecahedronShape.H>
+#include "Geometry/rocPackShape.H"
+#include "Geometry/icosidodecahedronShape.H"
 
 namespace NEM {
 

@@ -1,14 +1,13 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "AuxiliaryFunctions.H"
-#include "Drivers/MeshGen/BlockMeshMeshGenDriver.H"
-#include "Drivers/NemDriver.H"
-#include "blockMeshGen.H"
-#include "blockMeshParams.H"
-#include "vtkMesh.H"
+#include <Drivers/MeshGen/BlockMeshMeshGenDriver.H>
+#include <Drivers/NemDriver.H>
+#include <MeshGeneration/blockMeshGen.H>
+#include <MeshGeneration/blockMeshParams.H>
+#include <Mesh/vtkMesh.H>
 
 const char* inp_json;
 meshBase* mesh;

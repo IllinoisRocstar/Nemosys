@@ -1,13 +1,12 @@
-#include <gtest.h>
-
-#include "srvBase.H"
+#include <gtest/gtest.h>
+#include <Services/srvBase.H>
 
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkSmartPointer.h>
 
-#include "geoMeshBase.H"
+#include <Mesh/geoMeshBase.H>
 
 // Tests for NEM::SRV::srvBase using minimal child class testSrvBase
 

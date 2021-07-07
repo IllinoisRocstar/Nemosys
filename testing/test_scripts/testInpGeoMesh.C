@@ -1,9 +1,7 @@
-#include <gtest.h>
-
-#include "AuxiliaryFunctions.H"
-#include "diffMesh.H"
-#include "geoMeshFactory.H"
-#include "inpGeoMesh.H"
+#include <gtest/gtest.h>
+#include <Mesh/diffMesh.H>
+#include <Mesh/geoMeshFactory.H>
+#include <Mesh/inpGeoMesh.H>
 
 namespace {
 std::string gmshMesh;
@@ -16,7 +14,8 @@ TEST(inpGeoMesh, gmsh2Inp2GM) {
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(gmshMesh));
   vtkNew<NEM::MSH::inpGeoMesh> inpGM;
   inpGM->takeGeoMesh(gmshGM);
-  auto inpFile = "test_" + nemAux::trim_fname(gmshMesh, ".inp");
+  auto inpFile =
+      "test_" + gmshMesh.substr(0, gmshMesh.find_last_of('.')) + ".inp";
   inpGM->write(inpFile);
   auto reRead =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(inpFile));
@@ -29,7 +28,7 @@ TEST(inpGeoMesh, inp2Vtk) {
   auto vtkGM = vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(
       NEM::MSH::New(NEM::MSH::MeshType::VTK_GEO_MESH));
   vtkGM->takeGeoMesh(inpGM);
-  vtkGM->write("test_" + nemAux::trim_fname(inpMesh, ".vtu"));
+  vtkGM->write("test_" + inpMesh.substr(0, inpMesh.find_last_of('.')) + ".vtu");
   auto gold =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(vtkMesh));
   EXPECT_EQ(0, NEM::MSH::diffMesh(vtkGM, gold));

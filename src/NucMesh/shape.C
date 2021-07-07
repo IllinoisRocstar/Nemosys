@@ -1,4 +1,4 @@
-#include "shape.H"
+#include "NucMesh/shape.H"
 
 namespace NEM {
 namespace GEO {

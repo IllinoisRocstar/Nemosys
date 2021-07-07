@@ -1,8 +1,11 @@
-#ifndef INPUTGENDRIVER_H
-#define INPUTGENDRIVER_H
+#ifndef NEMOSYS_INPUTGENDRIVER_H_
+#define NEMOSYS_INPUTGENDRIVER_H_
 
 #include "nemosys_export.h"
-#include "NemDriver.H"
+#include "Drivers/NemDriver.H"
+
+#include <string>
+#include <jsoncons/json.hpp>
 
 namespace NEM {
 namespace DRV {
@@ -33,4 +36,4 @@ class NEMOSYS_EXPORT InputGenDriver : public NemDriver {
 }  // namespace DRV
 }  // namespace NEM
 
-#endif
+#endif  // NEMOSYS_INPUTGENDRIVER_H_

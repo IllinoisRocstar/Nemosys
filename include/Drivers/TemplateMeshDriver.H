@@ -4,6 +4,9 @@
 #include "nemosys_export.h"
 #include "Drivers/NemDriver.H"
 
+#include <jsoncons/json.hpp>
+#include <string>
+
 namespace NEM {
 namespace DRV {
 

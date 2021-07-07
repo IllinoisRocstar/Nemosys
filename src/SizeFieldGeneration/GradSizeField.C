@@ -1,4 +1,4 @@
-#include "GradSizeField.H"
+#include "SizeFieldGeneration/GradSizeField.H"
 
 #include <vtkCell.h>
 #include <vtkCellData.h>

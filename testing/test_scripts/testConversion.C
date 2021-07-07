@@ -1,10 +1,9 @@
-#include <exoMesh.H>
-#include <foamMesh.H>
-#include <meshBase.H>
+#include <Mesh/exoMesh.H>
+#include <Mesh/foamMesh.H>
+#include <Mesh/meshBase.H>
 #include <Drivers/NemDriver.H>
 #include <Drivers/Conversion/ManipExoConversionDriver.H>
-#include <gtest.h>
-
+#include <gtest/gtest.h>
 const char* mshName;
 const char* volName;
 const char* refMshVTUName;

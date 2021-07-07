@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#include "polygon.H"
+#include "NucMesh/polygon.H"
 
 #include <algorithm>
 #include <cmath>

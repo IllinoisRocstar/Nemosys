@@ -4,12 +4,12 @@
 #include <string>
 #include <utility>
 
-#include "FETransfer.H"
+#include "Transfer/FETransfer.H"
 #ifdef HAVE_IMPACT
-#  include "ConservativeSurfaceTransfer.H"
+#  include "Transfer/ConservativeSurfaceTransfer.H"
 #endif
 #ifdef HAVE_SUPERMESH
-#  include "ConservativeVolumeTransfer.H"
+#  include "Transfer/ConservativeVolumeTransfer.H"
 #endif
 #include "AuxiliaryFunctions.H"
 

@@ -1,8 +1,7 @@
-#include <gtest.h>
-
-#include "Drivers/Refine/OmegahRefineDriver.H"
-#include "diffMesh.H"
-#include "geoMeshFactory.H"
+#include <gtest/gtest.h>
+#include <Drivers/Refine/OmegahRefineDriver.H>
+#include <Mesh/diffMesh.H>
+#include <Mesh/geoMeshFactory.H>
 
 // Test cases for NEM::SRV::omegahRefineDriver
 

@@ -1,4 +1,4 @@
-#include <AuxiliaryFunctions.H>
+#include "AuxiliaryFunctions.H"
 #include <vtkAppendFilter.h>
 #include <vtkBooleanOperationPolyDataFilter.h>
 #include <vtkCell.h>
@@ -9,7 +9,7 @@
 #include <vtkDataSetTriangleFilter.h>
 #include <vtkFieldData.h>
 #include <vtkGeometryFilter.h>
-#include <vtkMesh.H>
+#include "Mesh/vtkMesh.H"
 #include <vtkPointData.h>
 #include <vtkPolyDataNormals.h>
 #include <vtkSTLReader.h>
@@ -26,10 +26,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "MeshManipulationFoam.H"
-#include "MeshManipulationFoamParams.H"
-#include "foamMesh.H"
-#include "meshBase.H"
+#include "MeshManipulationFoam/MeshManipulationFoam.H"
+#include "MeshManipulationFoam/MeshManipulationFoamParams.H"
+#include "Mesh/foamMesh.H"
+#include "Mesh/meshBase.H"
 
 // New
 
@@ -44,59 +44,59 @@
 #include <vtkSphereSource.h>
 
 // openfoam headers
-#include "fileName.H"
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "vtkTopo.H"
+#include <fileName.H>
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <vtkTopo.H>
 
 // SurfLambdaMuSmooth
-#include "MeshedSurfaces.H"
-#include "argList.H"
-#include "boundBox.H"
-#include "edgeMesh.H"
-#include "matchPoints.H"
+#include <MeshedSurfaces.H>
+#include <argList.H>
+#include <boundBox.H>
+#include <edgeMesh.H>
+#include <matchPoints.H>
 
 // splitMeshByRegions
-#include "EdgeMap.H"
-#include "IOobjectList.H"
-#include "ReadFields.H"
-#include "SortableList.H"
-#include "cellSet.H"
-#include "faceSet.H"
-#include "fvMeshSubset.H"
-#include "fvMeshTools.H"
-#include "mappedWallPolyPatch.H"
-#include "polyTopoChange.H"
-#include "regionSplit.H"
-#include "removeCells.H"
-#include "syncTools.H"
-#include "volFields.H"
-#include "zeroGradientFvPatchFields.H"
+#include <EdgeMap.H>
+#include <IOobjectList.H>
+#include <ReadFields.H>
+#include <SortableList.H>
+#include <cellSet.H>
+#include <faceSet.H>
+#include <fvMeshSubset.H>
+#include <fvMeshTools.H>
+#include <mappedWallPolyPatch.H>
+#include <polyTopoChange.H>
+#include <regionSplit.H>
+#include <removeCells.H>
+#include <syncTools.H>
+#include <volFields.H>
+#include <zeroGradientFvPatchFields.H>
 
 // mergeMeshes
-#include "Time.H"
-#include "mergePolyMesh.H"
+#include <Time.H>
+#include "MeshManipulationFoam/mergePolyMesh.H"
 
 // createPatch
-#include "IOPtrList.H"
-#include "IOdictionary.H"
-#include "OFstream.H"
-#include "SortableList.H"
-#include "cyclicPolyPatch.H"
-#include "meshTools.H"
-#include "polyMesh.H"
-#include "polyModifyFace.H"
-#include "syncTools.H"
-#include "wordReList.H"
+#include <IOPtrList.H>
+#include <IOdictionary.H>
+#include <OFstream.H>
+#include <SortableList.H>
+#include <cyclicPolyPatch.H>
+#include <meshTools.H>
+#include <polyMesh.H>
+#include <polyModifyFace.H>
+#include <syncTools.H>
+#include <wordReList.H>
 
 // splitMeshByTopology
-#include "triSurface.H"
+#include <triSurface.H>
 
 // foamToSurface
-#include "IOdictionary.H"
-#include "polyMesh.H"
-#include "polyPatch.H"
-#include "timeSelector.H"
+#include <IOdictionary.H>
+#include <polyMesh.H>
+#include <polyPatch.H>
+#include <timeSelector.H>
 
 // third party
 #include <ANN/ANN.h>
@@ -230,7 +230,7 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
   Foam::Time runTime(Foam::Time::controlDictName, args);
   Foam::argList::noParallel();
 
-#include "createNamedMesh.H"
+#include <createNamedMesh.H>
   const word oldInstance = mesh.pointsInstance();
   word blockedFacesName;
 

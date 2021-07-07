@@ -1,15 +1,16 @@
+#include <gtest/gtest.h>
 #include <vtkGenericDataObjectReader.h>
 #include <vtkSmartPointer.h>
 #include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "Drivers/MeshGen/CFMeshMeshGenDriver.H"
-#include "Drivers/MeshQualityDriver.H"
-#include "cfmeshQualityParams.H"
-#include "foamMesh.H"
-#include "gtest.h"
-#include "vtkMesh.H"
+
+#include <Drivers/MeshGen/CFMeshMeshGenDriver.H>
+#include <Drivers/MeshQualityDriver.H>
+#include <MeshQuality/cfmeshQualityParams.H>
+#include <Mesh/foamMesh.H>
+#include <Mesh/vtkMesh.H>
 
 const char* inp_json;
 const char* inp_json_2;

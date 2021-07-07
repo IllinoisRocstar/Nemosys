@@ -4,7 +4,7 @@
 #include "nemosys_export.h"
 #include "Drivers/MeshGen/MeshGenDriver.H"
 
-#include "netgenParams.H"
+#include "MeshGeneration/netgenParams.H"
 
 namespace NEM {
 namespace DRV {

@@ -33,6 +33,7 @@ ${CMAKE_BINARY_DIR};\
 ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0;\
 ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN;\
 ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src;\
+${CMAKE_BINARY_DIR}/contrib/kmeans-5b9691d;\
 ${gtest_BINARY_DIR};\
 ${VTK_LIB_DIR};\
 ${GMSH_LIB_PATH};\
@@ -84,6 +85,7 @@ message(STATUS "Test Env Options: ${TEST_ENVIRONMENT_VARS}")
 macro(NEM_add_test_executable TEST_EXE_NAME)
   add_executable(run${TEST_EXE_NAME}Test ${TEST_SCRIPTS}/test${TEST_EXE_NAME}.C)
   target_link_libraries(run${TEST_EXE_NAME}Test gtest gtest_main Nemosys)
+  target_include_directories(run${TEST_EXE_NAME}Test SYSTEM PRIVATE ${Nemosys_NOWARN_DIRS})
   add_dependencies(unittests run${TEST_EXE_NAME}Test)
 endmacro()
 #-------------------------------------------------------------------------------
@@ -123,8 +125,6 @@ NEM_add_test_executable(PNTGen)
 NEM_add_test_executable(AutoVerification)
 NEM_add_test_executable(Refinement)
 NEM_add_test_executable(GmshMesh)
-NEM_add_test_executable(KMeans)
-NEM_add_test_executable(QHull)
 NEM_add_test_executable(RocPackPeriodic)
 NEM_add_test_executable(NucMesh)
 NEM_add_test_executable(GmshMeshGen)
@@ -349,10 +349,6 @@ if(NOT WIN32) # TODO: Switch Win CI/CD to 64-bit to re-enable.
       cube41.msh
       )
 endif() # Disable in Win
-
-NEM_add_test(kMean KMeans kmeans)
-
-NEM_add_test(qHull QHull "")
 
 # Disable in Win due to CI/CD's Gmsh lacking OpenCASCADE support.
 if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.

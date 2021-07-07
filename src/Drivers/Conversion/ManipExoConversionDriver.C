@@ -1,6 +1,6 @@
 #include "Drivers/Conversion/ManipExoConversionDriver.H"
 
-#include "exoMesh.H"
+#include "Mesh/exoMesh.H"
 
 namespace NEM {
 namespace DRV {

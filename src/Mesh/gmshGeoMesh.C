@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "gmshGeoMesh.H"
+#include "Mesh/gmshGeoMesh.H"
 
 #include <array>
 #include <map>

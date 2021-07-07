@@ -4,7 +4,7 @@
 #include "nemosys_export.h"
 #include "Drivers/Conversion/ConversionDriver.H"
 
-#include "pntMesh.H"
+#include "Mesh/pntMesh.H"
 
 namespace NEM {
 namespace DRV {

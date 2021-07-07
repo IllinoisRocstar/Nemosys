@@ -1,8 +1,10 @@
 /* Special purpose class for Proteus HDF5 files */
 
-#include <Drivers/Conversion/ConversionDriver.H>
-#include <Drivers/TransferDriver.H>
-#include <TransferBase.H>
+#include "IO/proteusHdf5.H"
+#include "Drivers/Conversion/ConversionDriver.H"
+#include "Transfer/TransferBase.H"
+#include "Drivers/TransferDriver.H"
+
 #include <stdio.h>
 #include <string.h>
 #include <vtkCell.h>
@@ -15,7 +17,6 @@
 #include <vtkPoints.h>
 #include <vtkPolyData.h>
 #include <vtkVersion.h>
-#include "proteusHdf5.H"
 
 // MAdLib
 #include <MAdLib.h>

@@ -6,9 +6,9 @@
 #include <iomanip>
 
 #include "AuxiliaryFunctions.H"
-#include "circles.H"
-#include "circlesInPolys.H"
-#include "polygon.H"
+#include "NucMesh/circles.H"
+#include "NucMesh/circlesInPolys.H"
+#include "NucMesh/polygon.H"
 
 namespace NEM {
 namespace DRV {

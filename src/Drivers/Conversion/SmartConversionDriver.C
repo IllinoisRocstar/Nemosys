@@ -1,6 +1,6 @@
 #include "Drivers/Conversion/SmartConversionDriver.H"
 
-#include "geoMeshFactory.H"
+#include "Mesh/geoMeshFactory.H"
 
 namespace NEM {
 namespace DRV {

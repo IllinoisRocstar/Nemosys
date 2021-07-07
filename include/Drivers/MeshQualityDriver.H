@@ -4,9 +4,9 @@
 #include "nemosys_export.h"
 #include "Drivers/NemDriver.H"
 
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 #ifdef HAVE_CFMSH
-#  include "cfmeshQualityParams.H"
+#  include "MeshQuality/cfmeshQualityParams.H"
 #endif
 
 namespace NEM {
@@ -57,11 +57,11 @@ class NEMOSYS_EXPORT CheckMeshQualDriver : public MeshQualityDriver {
 
 class NEMOSYS_EXPORT OptimizeMeshQualDriver : public MeshQualityDriver {
  public:
-  explicit OptimizeMeshQualDriver(std::vector<cfmshQualityParams> params);
+  explicit OptimizeMeshQualDriver(std::vector<cfmeshQualityParams> params);
 
-  const std::vector<cfmshQualityParams> &getParams() const;
-  void setParams(std::vector<cfmshQualityParams> params);
-  void addParams(cfmshQualityParams params);
+  const std::vector<cfmeshQualityParams> &getParams() const;
+  void setParams(std::vector<cfmeshQualityParams> params);
+  void addParams(cfmeshQualityParams params);
   void execute() const override;
 
   JSONCONS_TYPE_TRAITS_FRIEND
@@ -72,10 +72,10 @@ class NEMOSYS_EXPORT OptimizeMeshQualDriver : public MeshQualityDriver {
  public:
   struct NEMOSYS_NO_EXPORT Opts {
    public:
-    explicit Opts(std::vector<cfmshQualityParams> params);
+    explicit Opts(std::vector<cfmeshQualityParams> params);
     // Change this to std::vector<std::shared_ptr<meshQualityParams>> (or
     // std::vector<std::variant<>>) to support multiple methods in the future
-    std::vector<cfmshQualityParams> params{};
+    std::vector<cfmeshQualityParams> params{};
     JSONCONS_TYPE_TRAITS_FRIEND
    private:
     Opts() = default;

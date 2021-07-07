@@ -5,12 +5,11 @@
 #include <memory>
 
 // Nemosys headers
-#include <meshBase.H>
-#include <meshPartitioner.H>
-#include <meshStitcher.H>
-#include <cgnsWriter.H>
+#include <Mesh/meshBase.H>
+#include <MeshPartitioning/meshPartitioner.H>
+#include <MeshPartitioning/meshStitcher.H>
+#include <IO/cgnsWriter.H>
 #include <vtkAppendFilter.h>
-#include <AuxiliaryFunctions.H>
 #ifdef HAVE_GLOB_H
 #  include <glob.h>
 #  include <cstring>
@@ -19,6 +18,12 @@
 #endif
 
 namespace {
+
+// check if _exp is in the _name string
+bool expCont(const std::string &_name, const std::string &_exp) {
+  return (_name.find(_exp) != std::string::npos);
+}
+
 // search for pattern and return vector of matches
 #ifdef HAVE_GLOB_H
 std::vector<std::string> glob(const std::string &pattern) {
@@ -53,15 +58,15 @@ std::vector<std::string> glob(const std::string &_src_dir,
   for (boost::filesystem::directory_iterator end_dir_it, it(_src_dir);
        it != end_dir_it; ++it) {
     bool overide = false;
-    if (nemAux::expCont(_timestamp, "*")) overide = true;
+    if (expCont(_timestamp, "*")) overide = true;
 
     std::string fext(it->path().filename().string());
-    if (!nemAux::expCont(fext, _prefix)) continue;
+    if (!expCont(fext, _prefix)) continue;
     {
       if (fext[0] != _prefix[0]) continue;
 
       if (!overide)
-        if (!nemAux::expCont(fext, _timestamp)) continue;
+        if (!expCont(fext, _timestamp)) continue;
 
       std::cout << "Identified " << it->path() << std::endl;
       fnames.push_back(it->path().filename().string());
@@ -111,7 +116,10 @@ int main(int argc, char* argv[])
     cgFnames = newCgFnames;
   }
 
-  nemAux::printVec(cgFnames);
+  for (const auto &cgFname : cgFnames) {
+    std::cout << cgFname << " ";
+  }
+  std::cout << '\n';
   meshStitcher *stitcher = new meshStitcher(cgFnames, is_surf);
   delete stitcher; stitcher = nullptr;
   std::cout << "Application ended successfully!\n";

@@ -1,6 +1,6 @@
 #include <Drivers/NemDriver.H>
-#include <exoMesh.H>
-#include <gtest.h>
+#include <Mesh/exoMesh.H>
+#include <gtest/gtest.h>
 #include <fstream>
 
 const char *bench1_json;

@@ -1,5 +1,5 @@
-#ifndef NEMOSYS_AUTOVERIFICATIONDRIVER_H
-#define NEMOSYS_AUTOVERIFICATIONDRIVER_H
+#ifndef NEMOSYS_AUTOVERIFICATIONDRIVER_H_
+#define NEMOSYS_AUTOVERIFICATIONDRIVER_H_
 
 #include "nemosys_export.h"
 
@@ -91,4 +91,4 @@ class NEMOSYS_EXPORT AutoVerificationDriver : public NemDriver {
 }  // namespace DRV
 }  // namespace NEM
 
-#endif
+#endif  // NEMOSYS_AUTOVERIFICATIONDRIVER_H_

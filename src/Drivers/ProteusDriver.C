@@ -1,7 +1,7 @@
 #include "Drivers/ProteusDriver.H"
 
-#include "meshBase.H"
-#include "proteusHdf5.H"
+#include "Mesh/meshBase.H"
+#include "IO/proteusHdf5.H"
 
 namespace NEM {
 namespace DRV {

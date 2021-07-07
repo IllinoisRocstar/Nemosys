@@ -1,8 +1,8 @@
 #include "Drivers/MeshGen/GmshMeshGenDriver.H"
 
 #include "AuxiliaryFunctions.H"
-#include "gmshGen.H"
-#include "meshBase.H"
+#include "MeshGeneration/gmshGen.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

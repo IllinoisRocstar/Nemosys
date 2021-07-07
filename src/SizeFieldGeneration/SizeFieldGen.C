@@ -1,13 +1,13 @@
-#include "SizeFieldGen.H"
+#include "SizeFieldGeneration/SizeFieldGen.H"
 
 #include <vtkCell.h>
 #include <vtkCellData.h>
 #include <vtkPointData.h>
 
 #include "AuxiliaryFunctions.H"
-#include "GradSizeField.H"
-#include "ValSizeField.H"
-#include "Z2ErrorSizeField.H"
+#include "SizeFieldGeneration/GradSizeField.H"
+#include "SizeFieldGeneration/ValSizeField.H"
+#include "SizeFieldGeneration/Z2ErrorSizeField.H"
 
 namespace NEM {
 namespace ADP {

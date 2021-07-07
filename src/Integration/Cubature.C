@@ -1,4 +1,4 @@
-#include "Cubature.H"
+#include "Integration/Cubature.H"
 
 #include <vtkQuadraturePointsGenerator.h>
 #include <vtkMeshQuality.h>
@@ -7,7 +7,7 @@
 #include <vtkCellTypes.h>
 #include <vtkInformation.h>
 #include <vtkXMLPolyDataWriter.h>
-#include <vtkMesh.H> // for writeVTFile
+#include "Mesh/vtkMesh.H" // for writeVTFile
 
 #ifdef HAVE_OPENMP
 #include <omp.h>

@@ -1,8 +1,8 @@
 #include "Drivers/MeshGen/BlockMeshMeshGenDriver.H"
 
 #include "AuxiliaryFunctions.H"
-#include "blockMeshGen.H"
-#include "meshBase.H"
+#include "MeshGeneration/blockMeshGen.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

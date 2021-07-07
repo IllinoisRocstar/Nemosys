@@ -1,7 +1,9 @@
-#include "patchRecovery.H"
+#include "PatchRecovery/patchRecovery.H"
 
-#include "polyApprox.H"
-#include "orthoPoly3D.H"
+#include "PatchRecovery/polyApprox.H"
+#include "PatchRecovery/orthoPoly3D.H"
+
+using Eigen::VectorXd;
 
 //TODO: To define orthogonal polynomials over patches of a structured grid that has
 //      deformed from a rectilinear grid, a conformal mapping must be applied to transform

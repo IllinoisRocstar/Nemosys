@@ -1,16 +1,15 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
+#include <Services/omegahRefineSrv.H>
 
-#include "omegahRefineSrv.H"
-
-#include <geoMeshFactory.H>
+#include <Mesh/geoMeshFactory.H>
 #include <vtkSmartPointer.h>
 #include <vtkExecutive.h>
 #include <vtkCommand.h>
 #include <Omega_h_build.hpp>
 
-#include "diffMesh.H"
-#include "oshGeoMesh.H"
-#include "vtkGeoMesh.H"
+#include <Mesh/diffMesh.H>
+#include <Mesh/oshGeoMesh.H>
+#include <Mesh/vtkGeoMesh.H>
 
 // Test cases for NEM::SRV::omegahRefineSrv
 

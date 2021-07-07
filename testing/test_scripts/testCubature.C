@@ -1,7 +1,6 @@
-#include <gtest.h>
-
-#include "Cubature.H"
-#include "meshBase.H"
+#include <gtest/gtest.h>
+#include <Integration/Cubature.H>
+#include <Mesh/meshBase.H>
 
 const char *nodeMesh;
 const char *refGauss;

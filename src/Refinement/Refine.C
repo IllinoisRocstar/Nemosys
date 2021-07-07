@@ -1,11 +1,11 @@
-#include "Refine.H"
+#include "Refinement/Refine.H"
 
 #include <vtkCellData.h>
 #include <vtkPointData.h>
 
 #include "AuxiliaryFunctions.H"
 #include "Drivers/TransferDriver.H"
-#include "gmshMesh.H"
+#include "Mesh/gmshMesh.H"
 
 namespace NEM {
 namespace ADP {

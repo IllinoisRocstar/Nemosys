@@ -1,4 +1,4 @@
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 #include <exodusII.h>
 #include <vtkAppendFilter.h>
@@ -17,18 +17,18 @@
 #include <vtkSelectionNode.h>
 #include <vtkUnstructuredGrid.h>
 
-//#include "cobalt.H"
-//#include "patran.H"
+//#include "Mesh/cobalt.H"
+//#include "Mesh/patran.H"
 #include "AuxiliaryFunctions.H"
-#include "Cubature.H"
-#include "MeshQuality.H"
-#include "Refine.H"
-#include "SizeFieldGen.H"
-#include "exoMesh.H"
-#include "meshGen.H"
-#include "meshPartitioner.H"
-#include "pntMesh.H"
-#include "vtkMesh.H"
+#include "Integration/Cubature.H"
+#include "MeshQuality/MeshQuality.H"
+#include "Refinement/Refine.H"
+#include "SizeFieldGeneration/SizeFieldGen.H"
+#include "Mesh/exoMesh.H"
+#include "MeshGeneration/meshGen.H"
+#include "MeshPartitioning/meshPartitioner.H"
+#include "Mesh/pntMesh.H"
+#include "Mesh/vtkMesh.H"
 
 // netgen
 #ifdef HAVE_NGEN

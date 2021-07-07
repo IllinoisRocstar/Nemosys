@@ -1,7 +1,7 @@
 #include "Drivers/AutoVerificationDriver.H"
 
-#include "OrderOfAccuracy.H"
-#include "meshBase.H"
+#include "SolutionVerification/OrderOfAccuracy.H"
+#include "Mesh/meshBase.H"
 
 #ifdef HAVE_OPENMP
 #  include <omp.h>

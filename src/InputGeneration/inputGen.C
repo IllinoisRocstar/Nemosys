@@ -1,5 +1,5 @@
 // Nemosys headers
-#include "inputGen.H"
+#include "InputGeneration/inputGen.H"
 
 // other headers
 #include <iostream>

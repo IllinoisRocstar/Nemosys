@@ -4,9 +4,9 @@
 #include "nemosys_export.h"
 #include "Drivers/PackMesh/PackMeshDriver.H"
 
-#include "MeshManipulationFoamParams.H"
-#include "blockMeshParams.H"
-#include "snappymeshParams.H"
+#include "MeshManipulationFoam/MeshManipulationFoamParams.H"
+#include "MeshGeneration/blockMeshParams.H"
+#include "MeshGeneration/snappymeshParams.H"
 
 namespace NEM {
 namespace DRV {

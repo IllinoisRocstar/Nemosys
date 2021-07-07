@@ -1,5 +1,5 @@
-#ifndef MESHGENDRIVER_H
-#define MESHGENDRIVER_H
+#ifndef NEMOSYS_MESHGENDRIVER_H_
+#define NEMOSYS_MESHGENDRIVER_H_
 
 #include "nemosys_export.h"
 #include "Drivers/NemDriver.H"
@@ -35,4 +35,4 @@ class NEMOSYS_EXPORT MeshGenDriver : public NemDriver {
 }  // namespace DRV
 }  // namespace NEM
 
-#endif
+#endif  // NEMOSYS_MESHGENDRIVER_H_

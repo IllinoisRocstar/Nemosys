@@ -1,4 +1,4 @@
-#include "pntMesh.H"
+#include "Mesh/pntMesh.H"
 
 #include "AuxiliaryFunctions.H"
 

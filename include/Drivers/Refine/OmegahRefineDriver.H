@@ -4,8 +4,8 @@
 #include "Drivers/Refine/RefineDriver.H"
 
 #include <Omega_h_defines.hpp>
-#include "geoMeshBase.H"
-#include "omegahRefineSrv.H"
+#include "Mesh/geoMeshBase.H"
+#include "Services/omegahRefineSrv.H"
 
 namespace NEM {
 namespace DRV {
