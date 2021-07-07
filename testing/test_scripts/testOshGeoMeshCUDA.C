@@ -1,4 +1,4 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <math.h>
 
 #include "Omega_h_adapt.hpp"
@@ -6,7 +6,7 @@
 #include "Omega_h_build.hpp"
 #include "Omega_h_metric.hpp"
 
-#include "oshGeoMesh.H"
+#include <Mesh/oshGeoMesh.H>
 
 #include <nvml.h>
 

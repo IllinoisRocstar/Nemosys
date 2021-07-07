@@ -2,8 +2,8 @@
 
 #include "AuxiliaryFunctions.H"
 #include "Drivers/TransferDriver.H"
-#include "cgnsWriter.H"
-#include "meshBase.H"
+#include "IO/cgnsWriter.H"
+#include "Mesh/meshBase.H"
 
 #include <vtkAppendFilter.h>
 #include <vtkCellData.h>

@@ -1,11 +1,10 @@
 #include <fstream>
-
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <vtkCell.h>
 #include <cstdlib>
 
-#include "Drivers/NemDriver.H"
-#include "meshBase.H"
+#include <Drivers/NemDriver.H>
+#include <Mesh/meshBase.H>
 
 const char *simple_circles_test_json;
 const char *simple_circles_test_REF;

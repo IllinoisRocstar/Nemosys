@@ -1,11 +1,11 @@
 /* implementation of mesh partition class(es) */
 
-#include "meshPartitioner.H"
+#include "MeshPartitioning/meshPartitioner.H"
 
 /* disable -- AEG
-#include "cgnsAnalyzer.H"
+#include "IO/cgnsAnalyzer.H"
 */
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 #include <vtkCellTypes.h>
 

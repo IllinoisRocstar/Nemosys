@@ -1,9 +1,9 @@
-#include <Drivers/ProteusDriver.H>
-#include <gtest.h>
-#include <meshBase.H>
+#include <gtest/gtest.h>
 #include <stdlib.h>
 #include <vtkPointData.h>
-#include "exoMesh.H"
+#include <Drivers/ProteusDriver.H>
+#include <Mesh/meshBase.H>
+#include <Mesh/exoMesh.H>
 
 const char *arg_jsonFile1;
 std::string arg_vtuFile1;

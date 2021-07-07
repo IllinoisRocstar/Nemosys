@@ -10,7 +10,7 @@
 #include <gmsh/MTetrahedron.h>
 #include <gmsh/MTriangle.h>
 
-#include "gmshMesh.H"
+#include "Mesh/gmshMesh.H"
 
 #include <vtkIdList.h>
 #include <vtkUnstructuredGrid.h>

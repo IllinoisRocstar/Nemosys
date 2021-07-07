@@ -2,11 +2,11 @@
 
 #include <boost/filesystem.hpp>
 #include "AuxiliaryFunctions.H"
-#include "MeshManipulationFoam.H"
-#include "blockMeshGen.H"
-#include "rocPack.H"
-#include "snappymeshGen.H"
-#include "vtkMesh.H"
+#include "MeshManipulationFoam/MeshManipulationFoam.H"
+#include "MeshGeneration/blockMeshGen.H"
+#include "Geometry/rocPack.H"
+#include "MeshGeneration/snappymeshGen.H"
+#include "Mesh/vtkMesh.H"
 
 namespace NEM {
 namespace DRV {

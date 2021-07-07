@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "exoMesh.H"
-#include "meshBase.H"
+#include "Mesh/exoMesh.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

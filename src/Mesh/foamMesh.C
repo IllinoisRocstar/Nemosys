@@ -1,15 +1,15 @@
-#include <foamMesh.H>
-#include <AuxiliaryFunctions.H>
+#include "Mesh/foamMesh.H"
+#include "AuxiliaryFunctions.H"
 #include <iostream>
 #include <string>
 #include <boost/filesystem.hpp>
 
 // openfoam headers
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "vtkTopo.H"
-#include "fileName.H"
-#include "cellModeller.H"
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <vtkTopo.H>
+#include <fileName.H>
+#include <cellModeller.H>
 
 // vtk
 #include <vtkPoints.h>

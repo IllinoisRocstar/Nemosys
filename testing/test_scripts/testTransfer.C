@@ -1,10 +1,7 @@
-#include <gtest.h>
-
-#include "Drivers/TransferDriver.H"
-#include "TransferBase.H"
-#include "meshBase.H"
-
-#include "AuxiliaryFunctions.H"
+#include <gtest/gtest.h>
+#include <Drivers/TransferDriver.H>
+#include <Transfer/TransferBase.H>
+#include <Mesh/meshBase.H>
 
 #ifdef HAVE_OPENMP
 #  include <omp.h>

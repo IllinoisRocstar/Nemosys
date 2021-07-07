@@ -1,36 +1,36 @@
 #include <iostream>
 #include <string>
-#include "blockMeshGen.H"
-#include "blockMeshParams.H"
+#include "MeshGeneration/blockMeshGen.H"
+#include "MeshGeneration/blockMeshParams.H"
 #include <boost/filesystem.hpp>
-#include "meshGen.H"
+#include "MeshGeneration/meshGen.H"
 #include <vtkUnstructuredGrid.h>
 #include <set>
 #include <cstdlib>
 #include <sstream>
 
 // OpenFOAM headers
-#include "Time.H"
-#include "IOdictionary.H"
-#include "IOPtrList.H"
-#include "blockMesh.H"
-#include "attachPolyTopoChanger.H"
-#include "emptyPolyPatch.H"
-#include "cellSet.H"
-#include "argList.H"
-#include "OSspecific.H"
-#include "OFstream.H"
-#include "Pair.H"
-#include "slidingInterface.H"
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "vtkTopo.H"
-#include "fileName.H"
-#include "argList.H"
-#include "IFstream.H"
-#include "triSurf.H"
-#include "triSurfModifier.H"
-#include "boundBox.H"
+#include <Time.H>
+#include <IOdictionary.H>
+#include <IOPtrList.H>
+#include <blockMesh.H>
+#include <attachPolyTopoChanger.H>
+#include <emptyPolyPatch.H>
+#include <cellSet.H>
+#include <argList.H>
+#include <OSspecific.H>
+#include <OFstream.H>
+#include <Pair.H>
+#include <slidingInterface.H>
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <vtkTopo.H>
+#include <fileName.H>
+#include <argList.H>
+#include <IFstream.H>
+#include <triSurf.H>
+#include <triSurfModifier.H>
+#include <boundBox.H>
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
 blockMeshGen::blockMeshGen() // Default constructor body

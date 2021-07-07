@@ -3,14 +3,13 @@
 #endif
 
 #include <fstream>
-
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <vtkCell.h>
 
-#include "Drivers/MeshGen/GmshMeshGenDriver.H"
-#include "Drivers/NemDriver.H"
-#include "geoMeshFactory.H"
-#include "meshBase.H"
+#include <Drivers/MeshGen/GmshMeshGenDriver.H>
+#include <Drivers/NemDriver.H>
+#include <Mesh/geoMeshFactory.H>
+#include <Mesh/meshBase.H>
 
 const char *box_test_json;
 const char *pitz_daily_test_json;

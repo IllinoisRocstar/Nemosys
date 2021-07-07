@@ -1,10 +1,9 @@
-#include <gtest.h>
-
+#include <gtest/gtest.h>
 #include "Omega_h_build.hpp"
 
-#include "diffMesh.H"
-#include "oshGeoMesh.H"
-#include "vtkGeoMesh.H"
+#include <Mesh/diffMesh.H>
+#include <Mesh/oshGeoMesh.H>
+#include <Mesh/vtkGeoMesh.H>
 
 // Test cases for NEM::MSH::oshGeoMesh
 

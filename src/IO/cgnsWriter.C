@@ -1,5 +1,5 @@
 /* Implementation of CGNSWriter class */
-#include "cgnsWriter.H"
+#include "IO/cgnsWriter.H"
 
 #include <iostream>
 #include <cstring>

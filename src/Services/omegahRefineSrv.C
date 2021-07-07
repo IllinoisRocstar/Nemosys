@@ -1,4 +1,4 @@
-#include "omegahRefineSrv.H"
+#include "Services/omegahRefineSrv.H"
 
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
@@ -6,7 +6,7 @@
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_class.hpp>
 
-#include "oshGeoMesh.H"
+#include "Mesh/oshGeoMesh.H"
 
 namespace NEM {
 namespace SRV {

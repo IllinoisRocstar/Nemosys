@@ -1,15 +1,14 @@
 #ifdef _WIN32
 #  define _USE_MATH_DEFINES
 #endif
-#include <gtest.h>
-
+#include <gtest/gtest.h>
 #include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
 
-#include "meshBase.H"
-#include "rocPack.H"
+#include <Mesh/meshBase.H>
+#include <Geometry/rocPack.H>
 
 TEST(rocPack, NumCellsPeriodicSpheres) {
   auto *objrocPck = new NEM::GEO::rocPack("rocOut", "periodicGeom.vtu");

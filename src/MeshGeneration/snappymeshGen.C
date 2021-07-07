@@ -3,9 +3,9 @@
 #include <iostream>
 #include <set>
 #include <string>
-#include "meshGen.H"
-#include "snappymeshGen.H"
-#include "snappymeshParams.H"
+#include "MeshGeneration/meshGen.H"
+#include "MeshGeneration/snappymeshGen.H"
+#include "MeshGeneration/snappymeshParams.H"
 
 // openfoam headers
 #include <IOmanip.H>
@@ -1122,7 +1122,7 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
 
   // Read meshing dictionary
   const word dictName("snappyHexMeshDict");
-#include "setSystemMeshDictionaryIO.H"
+#include <setSystemMeshDictionaryIO.H>
   const IOdictionary meshDict(dictIO);
 
   // all surface geometry

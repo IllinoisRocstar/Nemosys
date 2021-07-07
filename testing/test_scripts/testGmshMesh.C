@@ -1,6 +1,5 @@
-#include <gmshMesh.H>
-#include <gtest.h>
-
+#include <Mesh/gmshMesh.H>
+#include <gtest/gtest.h>
 #include <sstream>
 
 std::string arg_fnameMSH2;

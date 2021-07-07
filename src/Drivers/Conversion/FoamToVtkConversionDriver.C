@@ -1,7 +1,7 @@
 #include "Drivers/Conversion/FoamToVtkConversionDriver.H"
 
-#include "foamMesh.H"
-#include "vtkMesh.H"
+#include "Mesh/foamMesh.H"
+#include "Mesh/vtkMesh.H"
 
 namespace NEM {
 namespace DRV {

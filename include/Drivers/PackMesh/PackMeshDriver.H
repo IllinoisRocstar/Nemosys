@@ -1,5 +1,5 @@
-#ifndef PACKMESHDRIVER_H
-#define PACKMESHDRIVER_H
+#ifndef NEMOSYS_PACKMESHDRIVER_H_
+#define NEMOSYS_PACKMESHDRIVER_H_
 
 #include "Drivers/NemDriver.H"
 
@@ -38,4 +38,4 @@ class NEMOSYS_EXPORT PackMeshDriver : public NemDriver {
 }  // namespace DRV
 }  // namespace NEM
 
-#endif
+#endif  // NEMOSYS_PACKMESHDRIVER_H_

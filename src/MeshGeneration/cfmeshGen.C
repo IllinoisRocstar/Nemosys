@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include <cfmeshGen.H>
-#include <cfmeshParams.H>
+#include "MeshGeneration/cfmeshGen.H"
+#include "MeshGeneration/cfmeshParams.H"
 #include <boost/filesystem.hpp>
 
 // vtk
@@ -11,21 +11,21 @@
 #include <vtkCellArray.h>
 
 // openfoam headers
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "vtkTopo.H"
-#include "fileName.H"
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <vtkTopo.H>
+#include <fileName.H>
 
 // cfmesh headers
-#include "cartesian2DMeshGenerator.H"
-#include "triSurfaceDetectFeatureEdges.H"
-#include "triSurfacePatchManipulator.H"
-#include "triSurf.H"
-#include "tetMeshGenerator.H"
-#include "polyMeshGenModifier.H"
-#include "meshOptimizer.H"
-#include "cartesianMeshGenerator.H"
-#include "voronoiMeshGenerator.H"
+#include <cartesian2DMeshGenerator.H>
+#include <triSurfaceDetectFeatureEdges.H>
+#include <triSurfacePatchManipulator.H>
+#include <triSurf.H>
+#include <tetMeshGenerator.H>
+#include <polyMeshGenModifier.H>
+#include <meshOptimizer.H>
+#include <cartesianMeshGenerator.H>
+#include <voronoiMeshGenerator.H>
 
 
 cfmeshGen::cfmeshGen() 

@@ -386,7 +386,7 @@ VtkToPntConversionDriver.Files = DriverInOutFiles
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, VtkToPntConversionDriver, Opts, elemBlockMap);
 %rename("$ignore", %$isfunction, %$isglobal, regextarget=1, fullname=1) "PNTMesh::.*";
 %ignore PNTMesh::pntMesh;
-%include <pntMesh.H>
+%include <Mesh/pntMesh.H>
 CUSTOM_PROPERTIES_NS(PNTMesh, blockType, elmIds, srfBCTag, srfBCEleRef, glbSrfId, adjBlkId, adjElmId, adjRefId, eConn)
 RENAME_ENUM(elementType)
 RENAME_ENUM(surfaceBCTag)
@@ -411,7 +411,7 @@ BlockMeshMeshGenDriver.Files = DriverOutFile
 %shared_ptr(bmSphere);
 %shared_ptr(bmCylTaperedCone);
 OPTIONAL_TEMPLATE(OptionalBmAutoGenBox, jsoncons::optional, bmAutoGenBox)
-%include <blockMeshParams.H>
+%include <MeshGeneration/blockMeshParams.H>
 CUSTOM_PROPERTIES(bmAutoGenBox, offset)
 CUSTOM_PROPERTIES(bmBox, init, len, smplGrading, coordsBox, autoGenerate)
 CUSTOM_PROPERTIES(bmSphere, center, sphrGrading)
@@ -434,7 +434,7 @@ OPTIONAL_TEMPLATE(OptionalCfmBoundaryLayer, jsoncons::optional, cfmBoundaryLayer
 OPTIONAL_TEMPLATE(OptionalCfmSrfFeatEdge, jsoncons::optional, cfmSrfFeatEdge)
 OPTIONAL_TEMPLATE(OptionalCfmMeshQual, jsoncons::optional, cfmMeshQual)
 OPTIONAL_TEMPLATE(OptionalCfmRenBndry, jsoncons::optional, cfmRenBndry)
-%include <cfmeshParams.H>
+%include <MeshGeneration/cfmeshParams.H>
 CUSTOM_PROPERTIES(cfmObjRef, params)
 CUSTOM_PROPERTIES(cfmRenBndry, newPatches)
 CUSTOM_PROPERTIES(cfmBoundaryLayer, blPatches)
@@ -458,7 +458,7 @@ SnappyMeshMeshGenDriver.Files = MeshGenDriver.MeshGenFiles
 %template(VecShmSurfRefine) std::vector<shmSurfRefine>;
 %template(VecShmRegionRefine) std::vector<shmRegionRefine>;
 %template(VecShmLayers) std::vector<shmLayers>;
-%include <snappymeshParams.H>
+%include <MeshGeneration/snappymeshParams.H>
 CUSTOM_PROPERTIES(shmSearchableBox, minBound, maxBound)
 CUSTOM_PROPERTIES(shmSearchableCylinder, axisPoint1, axisPoint2)
 CUSTOM_PROPERTIES(shmSearchableSphere, center)
@@ -476,7 +476,7 @@ CUSTOM_PROPERTIES(shmLayerControls, layerVec)
 %pythoncode {
 NetgenMeshGenDriver.Files = MeshGenDriver.MeshGenFiles
 };
-%include <netgenParams.H>
+%include <MeshGeneration/netgenParams.H>
 #endif  // HAVE_NGEN
 
 %{
@@ -490,7 +490,7 @@ GmshMeshGenDriver.Files = MeshGenDriver.MeshGenFiles
 %template(VecVolSizeField) std::vector<NEM::GEN::volSizeField>;
 %template(SetTransfiniteBlock) std::set<NEM::GEN::TransfiniteBlock>;
 %ignore NEM::GEN::gmshParams::getMeshExtensions;
-%include <gmshParams.H>
+%include <MeshGeneration/gmshParams.H>
 CUSTOM_PROPERTIES_NS(NEM::GEN, volSizeField, params, num_list_params, strg_list_params)
 CUSTOM_PROPERTIES_NS(NEM::GEN, TransfiniteBlock, axis, vert, type, coef)
 CUSTOM_PROPERTIES_NS(NEM::GEN, gmshParams, sizeFields, color2groupMap, transfiniteBlocks)
@@ -500,13 +500,13 @@ CUSTOM_PROPERTIES_NS(NEM::GEN, gmshParams, sizeFields, color2groupMap, transfini
 %}
 %ignore NEM::DRV::CheckMeshQualDriver::Opts;
 #ifdef HAVE_CFMSH
-%template(VecCfmeshQualityParams) std::vector<cfmshQualityParams>;
+%template(VecCfmeshQualityParams) std::vector<cfmeshQualityParams>;
 %ignore NEM::DRV::OptimizeMeshQualDriver::Opts;
 #endif
 %include <Drivers/MeshQualityDriver.H>
 EXPOSE_FLATNESTED_PY_CLASSES(CheckMeshQualDriver, Files)
 #ifdef HAVE_CFMSH
-%include <cfmeshQualityParams.H>
+%include <MeshQuality/cfmeshQualityParams.H>
 #endif
 
 %{
@@ -564,7 +564,7 @@ if hasattr(NucMeshDriver.__init__, '__annotations__'):
 %}
 %include <Drivers/PackMesh/HexPackMeshDriver.H>
 EXPOSE_FLATNESTED_PY_CLASSES(HexPackMeshDriver, Files, Opts)
-%include <MeshManipulationFoamParams.H>
+%include <MeshManipulationFoam/MeshManipulationFoamParams.H>
 EXPOSE_FLATNESTED_PY_CLASSES(MeshManipulationFoamParams, SurfaceLambdaMuSmooth, SplitMeshRegions, MergeMeshes, CreatePatch, FoamToSurface, SurfaceSplitByManifold)
 CUSTOM_PROPERTIES_INNER(MeshManipulationFoamParams, SurfaceSplitByManifold, pckRegionNames)
 #endif  // HAVE_CFMSH
@@ -605,7 +605,7 @@ RENAME_INNER_ENUM(FoamRefineDriver.Opts, Criteria)
 #include <Drivers/Refine/OmegahRefineDriver.H>
 %}
 %ignore NEM::SRV::omegahRefineSrv;
-%include <omegahRefineSrv.H>
+%include <Services/omegahRefineSrv.H>
 // Copy-pasted to avoid other defs
 // Note using enum class as opposed to enum to use the RENAME_ENUM macro;
 // it seems that typemaps are created to/from Python int so no issues
@@ -678,19 +678,19 @@ EXPOSE_FLATNESTED_PY_CLASSES(TransferDriver, Files, Opts)
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, TransferDriver, Opts, arrayNames)
 
 %{
-#include <meshBase.H>
+#include <Mesh/meshBase.H>
 %}
 %ignore meshBase::CreateShared;
 %ignore meshBase::CreateUnique;
 %newobject meshBase::Create;
 %ignore sortNemId_tVec_compare;
-%include <meshBase.H>
+%include <Mesh/meshBase.H>
 
 %{
-#include <TransferBase.H>
+#include <Transfer/TransferBase.H>
 %}
 %shared_ptr(TransferBase);
-%include <TransferBase.H>
+%include <Transfer/TransferBase.H>
 
 // Cleanup to prevent exposing symbols
 %pythoncode {

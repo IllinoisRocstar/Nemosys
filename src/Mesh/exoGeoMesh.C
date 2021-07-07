@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "exoGeoMesh.H"
+#include "Mesh/exoGeoMesh.H"
 
 #include <exodusII.h>
 #include <gmsh.h>
@@ -18,7 +18,7 @@
 #include <unordered_set>
 
 #include "AuxiliaryFunctions.H"
-#include "mergeCells.H"
+#include "MeshOperation/mergeCells.H"
 
 namespace NEM {
 namespace MSH {

@@ -1,5 +1,5 @@
 #define _USE_MATH_DEFINES
-#include "circles.H"
+#include "NucMesh/circles.H"
 
 #include <gmsh.h>
 

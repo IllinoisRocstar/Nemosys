@@ -2,9 +2,9 @@
 #define NEMOSYS_TRANSFERDRIVER_H_
 
 #include "nemosys_export.h"
-#include "NemDriver.H"
-#include "TransferBase.H"
-#include "meshBase.H"
+#include "Drivers/NemDriver.H"
+#include "Transfer/TransferBase.H"
+#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {

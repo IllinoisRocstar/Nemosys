@@ -1,6 +1,6 @@
 #include "Drivers/PackMesh/SurfacePackMeshDriver.H"
 
-#include "rocPack.H"
+#include "Geometry/rocPack.H"
 
 namespace NEM {
 namespace DRV {

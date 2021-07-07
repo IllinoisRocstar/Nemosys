@@ -1,14 +1,13 @@
 #include <Drivers/Refine/RefineDriver.H>
-#include <gtest.h>
-
-#include "meshBase.H"
+#include <gtest/gtest.h>
+#include <Mesh/meshBase.H>
 
 #ifdef HAVE_CFMSH
-#  include "AMRFoam.H"
+#  include <Refinement/AMRFoam.H>
 #endif
 #ifdef MLAMR
 #  include <fdeep/fdeep.hpp>
-#  include "vtkMesh.H"
+#  include <Mesh/vtkMesh.H>
 #endif
 
 const char *refineValueJSON;

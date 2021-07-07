@@ -2,8 +2,8 @@
 
 #include <vtkCell.h>
 #include "AuxiliaryFunctions.H"
-#include "exoMesh.H"
-#include "meshSrch.H"
+#include "Mesh/exoMesh.H"
+#include "MeshOperation/meshSrch.H"
 
 // helper functions
 

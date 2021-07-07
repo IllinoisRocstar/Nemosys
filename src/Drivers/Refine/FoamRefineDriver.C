@@ -3,12 +3,12 @@
 #include <pointFieldsFwd.H>
 
 #include <interpolatePointToCell.H>
-#include "AMRFoam.H"
+#include "Refinement/AMRFoam.H"
 #include "AuxiliaryFunctions.H"
-#include "MeshManipulationFoam.H"
-#include "foamMesh.H"
-#include "meshBase.H"
-#include "vtkMesh.H"
+#include "MeshManipulationFoam/MeshManipulationFoam.H"
+#include "Mesh/foamMesh.H"
+#include "Mesh/meshBase.H"
+#include "Mesh/vtkMesh.H"
 
 #ifdef MLAMR
 #  include <fdeep/fdeep.hpp>

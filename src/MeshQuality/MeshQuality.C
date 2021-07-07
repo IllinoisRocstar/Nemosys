@@ -1,19 +1,19 @@
-#include <MeshQuality.H>
+#include "MeshQuality/MeshQuality.H"
 #include <vtkCellData.h>
 #include <vtkFieldData.h>
 #include <vtkCell.h>
 #include <vtkCellType.h>
-#include <AuxiliaryFunctions.H>
+#include "AuxiliaryFunctions.H"
 
 #ifdef HAVE_CFMSH
   // openfoam headers
-  #include "fvCFD.H"
-  #include "fvMesh.H"
-  #include "fileName.H"
+  #include <fvCFD.H>
+  #include <fvMesh.H>
+  #include <fileName.H>
 
   // cfmesh headers
-  #include "polyMeshGenModifier.H"
-  #include "meshOptimizer.H"
+  #include <polyMeshGenModifier.H>
+  #include <meshOptimizer.H>
 #endif
 
 

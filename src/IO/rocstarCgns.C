@@ -1,6 +1,6 @@
 /* Special purpose class for Rocstar CGNS files */
 
-#include "rocstarCgns.H"
+#include "IO/rocstarCgns.H"
 
 ///////////////////////////////////////////////////
 // INITIALIZATION

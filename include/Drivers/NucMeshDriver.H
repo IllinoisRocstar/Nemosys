@@ -4,7 +4,7 @@
 #include "nemosys_export.h"
 #include "Drivers/NemDriver.H"
 
-#include "shape.H"
+#include "NucMesh/shape.H"
 
 namespace NEM {
 namespace DRV {

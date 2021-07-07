@@ -1,9 +1,9 @@
-#include "Z2ErrorSizeField.H"
+#include "SizeFieldGeneration/Z2ErrorSizeField.H"
 
 #include <vtkCellData.h>
 #include <vtkCellIterator.h>
 
-#include "patchRecovery.H"
+#include "PatchRecovery/patchRecovery.H"
 
 namespace NEM {
 namespace ADP {

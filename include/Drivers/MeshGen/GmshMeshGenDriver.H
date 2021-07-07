@@ -3,7 +3,7 @@
 
 #include "nemosys_export.h"
 #include "Drivers/MeshGen/MeshGenDriver.H"
-#include "gmshParams.H"
+#include "MeshGeneration/gmshParams.H"
 
 namespace NEM {
 namespace DRV {

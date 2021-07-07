@@ -1,8 +1,8 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include "omp.h"
 
-#include "Drivers/AutoVerificationDriver.H"
-#include "OrderOfAccuracy.H"
+#include <Drivers/AutoVerificationDriver.H>
+#include <SolutionVerification/OrderOfAccuracy.H>
 
 const char *coarse;
 const char *fine;

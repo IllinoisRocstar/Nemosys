@@ -1,16 +1,16 @@
 #define _USE_MATH_DEFINES
 
 #include <ANN/ANN.h>
-#include <AuxiliaryFunctions.H>
-#include <hmxShape.H>
-#include <icosidodecahedronShape.H>
-#include <petnShape.H>
-#include <rocPack.H>
-#include <rocPackShape.H>
+#include "AuxiliaryFunctions.H"
+#include "Geometry/hmxShape.H"
+#include "Geometry/icosidodecahedronShape.H"
+#include "Geometry/petnShape.H"
+#include "Geometry/rocPack.H"
+#include "Geometry/rocPackShape.H"
 #include <stdlib.h>
 #include <vtkCell.h>
 #include <vtkCell3D.h>
-#include <vtkMesh.H>
+#include "Mesh/vtkMesh.H"
 
 #include <Eigen/Geometry>
 #include <chrono>
@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 // GMSH Header
 #include <gmsh.h>

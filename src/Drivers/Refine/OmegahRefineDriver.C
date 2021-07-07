@@ -1,8 +1,8 @@
 #include "Drivers/Refine/OmegahRefineDriver.H"
 
-#include "geoMeshFactory.H"
-#include "omegahRefineSrv.H"
-#include "oshGeoMesh.H"
+#include "Mesh/geoMeshFactory.H"
+#include "Services/omegahRefineSrv.H"
+#include "Mesh/oshGeoMesh.H"
 
 namespace NEM {
 namespace DRV {

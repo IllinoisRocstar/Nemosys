@@ -1,11 +1,10 @@
 #include <fstream>
 #include <string>
-
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <vtkCell.h>
 
-#include "Drivers/NemDriver.H"
-#include "meshBase.H"
+#include <Drivers/NemDriver.H>
+#include <Mesh/meshBase.H>
 
 const char *test_spiral_tape_json;
 const char *spiral_test_REF;

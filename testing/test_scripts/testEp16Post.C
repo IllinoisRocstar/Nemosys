@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
-#include <cmath>
-#include "ep16Post.H"
-#include "point.H"
+
+#include <InputGeneration/ep16Post.H>
+#include <vtkSTLReader.h>
+#include <string>
 
 // data loading
 class TestDriver : public testing::Test {
@@ -20,8 +21,14 @@ TEST_F(TestDriver, EndToEnd) {
   NEM::EPC::ep16Post *ep =
       NEM::EPC::ep16Post::readJSON(inp.at("Input Generation Options"), ret);
   ASSERT_EQ(0, ret);
-  std::vector<Point> means(ep->kmeans->getMeans());
-  ASSERT_EQ(4, means.size());
+  delete ep;
+  vtkNew<vtkSTLReader> stlReader;
+  for (int i = 0; i < 4; ++i) {
+    std::string stlFileName{"clust_" + std::to_string(i) + ".stl"};
+    stlReader->SetFileName(stlFileName.c_str());
+    stlReader->Update();
+    ASSERT_NE(stlReader->GetOutput(), nullptr);
+  }
 }
 
 int main(int argc, char **argv) {

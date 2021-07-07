@@ -1,8 +1,8 @@
 #include "Drivers/MeshGen/SnappyMeshMeshGenDriver.H"
 
 #include "AuxiliaryFunctions.H"
-#include "meshBase.H"
-#include "snappymeshGen.H"
+#include "Mesh/meshBase.H"
+#include "MeshGeneration/snappymeshGen.H"
 
 namespace NEM {
 namespace DRV {

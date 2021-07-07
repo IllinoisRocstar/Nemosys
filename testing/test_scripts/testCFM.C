@@ -1,13 +1,12 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "AuxiliaryFunctions.H"
-#include "Drivers/MeshGen/CFMeshMeshGenDriver.H"
-#include "cfmeshGen.H"
-#include "cfmeshParams.H"
-#include "vtkMesh.H"
+#include <Drivers/MeshGen/CFMeshMeshGenDriver.H>
+#include <MeshGeneration/cfmeshGen.H>
+#include <MeshGeneration/cfmeshParams.H>
+#include <Mesh/vtkMesh.H>
 
 const char* inp_json;
 meshBase* mesh;
@@ -45,7 +44,7 @@ int generate(const char* jsonF)
     std::cerr << "Error opening file " << jsonF << std::endl;
     exit(1);
   }
-  
+
   jsoncons::json inputjson_tmp;
   inputStream >> inputjson_tmp;
   inputjson = inputjson_tmp[0];
@@ -60,8 +59,9 @@ int generate(const char* jsonF)
   cfmeshGen generator{&paramsCopy};
   // Parameter not used
   generator.createMeshFromSTL(nullptr);
+  const auto &inputGeoFile = driver->getFiles().inputGeoFile;
   std::string newname =
-      nemAux::trim_fname(driver->getFiles().inputGeoFile, ".vtu");
+      inputGeoFile.substr(0, inputGeoFile.find_last_of('.')) + ".vtu";
   mesh = meshBase::Create(generator.getDataSet(), newname);
   mesh->setFileName(driver->getFiles().outputMeshFile);
   mesh->report();
@@ -97,9 +97,9 @@ TEST(CfMesh, NumberOfCells)
 //TEST(CfMesh, FileDiff)
 //{
 //  bool res = compareFiles
-//      ( 
+//      (
 //       inputjson["Reference File"].as<std::string>(),
-//       inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>() 
+//       inputjson["Mesh File Options"]["Output Mesh File"].as<std::string>()
 //      );
 //  EXPECT_EQ(res, 1);
 //}
@@ -111,10 +111,10 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   assert(argc >= 2);
   inp_json = argv[1];
-  
+
   // run tests
   int res = RUN_ALL_TESTS();
-  
+
   // clean up
   if (mesh)
       delete mesh;

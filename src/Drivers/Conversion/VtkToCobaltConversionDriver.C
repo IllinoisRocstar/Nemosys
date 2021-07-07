@@ -1,6 +1,6 @@
 #include "Drivers/Conversion/VtkToCobaltConversionDriver.H"
 
-#include "cobalt.H"
+#include "Mesh/cobalt.H"
 
 namespace NEM {
 namespace DRV {

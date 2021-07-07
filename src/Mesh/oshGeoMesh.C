@@ -2,7 +2,7 @@
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "oshGeoMesh.H"
+#include "Mesh/oshGeoMesh.H"
 
 #include <array>
 

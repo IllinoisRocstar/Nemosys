@@ -1,4 +1,4 @@
-#include "ValSizeField.H"
+#include "SizeFieldGeneration/ValSizeField.H"
 
 #include <vtkCellData.h>
 #include <vtkCellIterator.h>

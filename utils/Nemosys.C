@@ -1,6 +1,9 @@
-#include <fstream>
 #include <Drivers/NemDriver.H>
-#include <AuxiliaryFunctions.H>
+
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -9,10 +12,16 @@ int main(int argc, char *argv[]) {
   }
 
   std::string fname = argv[1];
+  auto ext_begin = fname.find_last_of('.');
+  if (ext_begin == std::string::npos ||
+      fname.compare(ext_begin, fname.length() - ext_begin, ".json") != 0) {
+    std::cerr << "Warning: " << fname << " does not end in .json\n";
+  }
+
   std::ifstream inputStream(fname);
-  if (!inputStream.good() || nemAux::find_ext(fname) != ".json") {
+  if (!inputStream.good()) {
     std::cerr << "Error opening file " << fname << std::endl;
-    exit(1);
+    std::exit(1);
   }
 
   jsoncons::json inputjson;

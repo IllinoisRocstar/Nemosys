@@ -1,7 +1,11 @@
-#include "polyApprox.H"
+#include "PatchRecovery/polyApprox.H"
 
 #include <iostream>
 
+#include <Eigen/LU>
+
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using Eigen::Vector4d;
 typedef Eigen::Matrix<double, 10, 1> Vector10d;
 

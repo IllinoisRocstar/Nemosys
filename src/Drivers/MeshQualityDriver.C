@@ -1,7 +1,7 @@
 #include "Drivers/MeshQualityDriver.H"
 
 #ifdef HAVE_CFMSH
-#  include "MeshQuality.H"
+#  include "MeshQuality/MeshQuality.H"
 #endif
 
 namespace NEM {
@@ -35,26 +35,26 @@ void CheckMeshQualDriver::execute() const {
 }
 
 #ifdef HAVE_CFMSH
-OptimizeMeshQualDriver::Opts::Opts(std::vector<cfmshQualityParams> params)
+OptimizeMeshQualDriver::Opts::Opts(std::vector<cfmeshQualityParams> params)
     : params(std::move(params)) {}
 
 OptimizeMeshQualDriver::OptimizeMeshQualDriver(
-    std::vector<cfmshQualityParams> params)
+    std::vector<cfmeshQualityParams> params)
     : opts_(std::move(params)) {}
 
 OptimizeMeshQualDriver::OptimizeMeshQualDriver()
-    : OptimizeMeshQualDriver(std::vector<cfmshQualityParams>{}) {}
+    : OptimizeMeshQualDriver(std::vector<cfmeshQualityParams>{}) {}
 
-const std::vector<cfmshQualityParams> &OptimizeMeshQualDriver::getParams()
+const std::vector<cfmeshQualityParams> &OptimizeMeshQualDriver::getParams()
     const {
   return getOpts().params;
 }
 
-void OptimizeMeshQualDriver::setParams(std::vector<cfmshQualityParams> params) {
+void OptimizeMeshQualDriver::setParams(std::vector<cfmeshQualityParams> params) {
   setOpts(Opts{std::move(params)});
 }
 
-void OptimizeMeshQualDriver::addParams(cfmshQualityParams params) {
+void OptimizeMeshQualDriver::addParams(cfmeshQualityParams params) {
   this->opts_.params.emplace_back(std::move(params));
 }
 

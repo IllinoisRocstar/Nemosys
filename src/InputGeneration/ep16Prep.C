@@ -1,6 +1,6 @@
 #ifdef HAVE_EPIC
 
-#include "ep16Prep.H"
+#include "InputGeneration/ep16Prep.H"
 
 #include "AuxiliaryFunctions.H"
 

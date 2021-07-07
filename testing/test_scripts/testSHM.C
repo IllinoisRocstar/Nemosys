@@ -1,16 +1,15 @@
-#include <gtest.h>
+#include <gtest/gtest.h>
 #include <algorithm>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "AuxiliaryFunctions.H"
-#include "Drivers/MeshGen/SnappyMeshMeshGenDriver.H"
-#include "Drivers/NemDriver.H"
-#include "snappymeshGen.H"
-#include "snappymeshParams.H"
-#include "vtkMesh.H"
+#include <Drivers/MeshGen/SnappyMeshMeshGenDriver.H>
+#include <Drivers/NemDriver.H>
+#include <MeshGeneration/snappymeshGen.H>
+#include <MeshGeneration/snappymeshParams.H>
+#include <Mesh/vtkMesh.H>
 namespace fs = boost::filesystem;
 
 const char *inp_json;
@@ -95,8 +94,9 @@ int generate(const char *jsonF) {
   snappymeshGen generator{&paramsCopy};
   // Parameter not used
   generator.createMeshFromSTL(nullptr);
+  const auto &inputGeoFile = driver->getFiles().inputGeoFile;
   std::string newname =
-      nemAux::trim_fname(driver->getFiles().inputGeoFile, ".vtu");
+      inputGeoFile.substr(0, inputGeoFile.find_last_of('.')) + ".vtu";
   mesh = meshBase::Create(generator.getDataSet(), newname);
   mesh->setFileName(driver->getFiles().outputMeshFile);
   mesh->report();

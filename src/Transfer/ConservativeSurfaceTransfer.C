@@ -1,10 +1,10 @@
-#include "ConservativeSurfaceTransfer.H"
+#include "Transfer/ConservativeSurfaceTransfer.H"
 
-#include "vtkDoubleArray.h"
-#include "vtkPointData.h"
-#include "vtkPolyData.h"
+#include <vtkDoubleArray.h>
+#include <vtkPointData.h>
+#include <vtkPolyData.h>
 
-#include "com.h"
+#include <com.h>
 
 #include "AuxiliaryFunctions.H"
 

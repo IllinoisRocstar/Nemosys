@@ -1,7 +1,7 @@
 #include "Drivers/Conversion/FoamToMshConversionDriver.H"
 
-#include "foamMesh.H"
-#include "gmshMesh.H"
+#include "Mesh/foamMesh.H"
+#include "Mesh/gmshMesh.H"
 
 namespace NEM {
 namespace DRV {

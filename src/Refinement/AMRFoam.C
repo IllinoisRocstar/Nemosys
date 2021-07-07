@@ -6,35 +6,36 @@
 #include <string>
 #include <vector>
 
-#include "AMRFoam.H"
+#include "Refinement/AMRFoam.H"
 #include "AuxiliaryFunctions.H"
-#include "IFstream.H"
-#include "IOdictionary.H"
-#include "OFstream.H"
-#include "ReadFields.H"
-#include "Time.H"
-#include "addToRunTimeSelectionTable.H"
-#include "argList.H"
-#include "cellSet.H"
-#include "fvCFD.H"
-#include "fvMesh.H"
-#include "hexRef8.H"
-#include "labelIOList.H"
-#include "mapPolyMesh.H"
-#include "motionSolver.H"
-#include "multiDirRefinement.H"
-#include "pointFields.H"
-#include "pointMesh.H"
-#include "pointPatchField.H"
-#include "polyMesh.H"
-#include "polyTopoChange.H"
-#include "sigFpe.H"
-#include "surfaceFields.H"
-#include "surfaceInterpolate.H"
-#include "syncTools.H"
-#include "timeSelector.H"
-#include "vectorIOField.H"
-#include "volFields.H"
+
+#include <IFstream.H>
+#include <IOdictionary.H>
+#include <OFstream.H>
+#include <ReadFields.H>
+#include <Time.H>
+#include <addToRunTimeSelectionTable.H>
+#include <argList.H>
+#include <cellSet.H>
+#include <fvCFD.H>
+#include <fvMesh.H>
+#include <hexRef8.H>
+#include <labelIOList.H>
+#include <mapPolyMesh.H>
+#include <motionSolver.H>
+#include <multiDirRefinement.H>
+#include <pointFields.H>
+#include <pointMesh.H>
+#include <pointPatchField.H>
+#include <polyMesh.H>
+#include <polyTopoChange.H>
+#include <sigFpe.H>
+#include <surfaceFields.H>
+#include <surfaceInterpolate.H>
+#include <syncTools.H>
+#include <timeSelector.H>
+#include <vectorIOField.H>
+#include <volFields.H>
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam {
 

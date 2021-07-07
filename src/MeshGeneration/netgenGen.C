@@ -1,7 +1,7 @@
 #ifdef HAVE_NGEN
 
-#include "netgenGen.H"
-#include "netgenParams.H"
+#include "MeshGeneration/netgenGen.H"
+#include "MeshGeneration/netgenParams.H"
 
 #include "AuxiliaryFunctions.H"
 

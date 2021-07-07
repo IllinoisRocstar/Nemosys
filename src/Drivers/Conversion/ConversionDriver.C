@@ -16,9 +16,9 @@
 #include <vtkStringArray.h>
 #include <vtkUnstructuredGrid.h>
 
-#include "cobalt.H"
-#include "meshSrch.H"
-#include "geoMeshFactory.H"
+#include "Mesh/cobalt.H"
+#include "MeshOperation/meshSrch.H"
+#include "Mesh/geoMeshFactory.H"
 
 namespace NEM {
 namespace DRV {

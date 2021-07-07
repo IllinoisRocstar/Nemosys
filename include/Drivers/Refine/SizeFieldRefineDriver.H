@@ -1,5 +1,5 @@
-#ifndef NEMOSYS_VALUEREFINEDRIVER_H_
-#define NEMOSYS_VALUEREFINEDRIVER_H_
+#ifndef NEMOSYS_SIZEFIELDREFINEDRIVER_H_
+#define NEMOSYS_SIZEFIELDREFINEDRIVER_H_
 
 #include "nemosys_export.h"
 #include "Drivers/Refine/RefineDriver.H"
@@ -45,4 +45,4 @@ class NEMOSYS_EXPORT SizeFieldRefineDriver : public RefineDriver {
 }  // namespace DRV
 }  // namespace NEM
 
-#endif  // NEMOSYS_VALUEREFINEDRIVER_H_
+#endif  // NEMOSYS_SIZEFIELDREFINEDRIVER_H_

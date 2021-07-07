@@ -1,12 +1,12 @@
-#include <meshBase.H>
-#include <vtkMesh.H>
-#include <gtest.h>
+#include <Mesh/meshBase.H>
+#include <Mesh/vtkMesh.H>
+#include <gtest/gtest.h>
+#include <Drivers/TransferDriver.H>
+#include <Transfer/ConservativeVolumeTransfer.H>
+#include <Transfer/ConservativeSurfaceTransfer.H>
+#include <Mesh/vtkMesh.H>
 
-#include "AuxiliaryFunctions.H"
-#include "ConservativeSurfaceTransfer.H"
-#include "ConservativeVolumeTransfer.H"
-#include "Drivers/TransferDriver.H"
-#include "vtkMesh.H"
+#include <chrono>
 
 #include "vtkPointData.h"
 #include "vtkDoubleArray.h"
@@ -20,7 +20,7 @@ vtkMesh * sourceMesh;
 vtkMesh * targetMesh;
 ConservativeVolumeTransfer * volumeTransfer;
 
-nemAux::Timer totalTransferTimer;
+std::chrono::time_point start_time;
 
 TEST(ConservativeVolumeTransferTest, driverTest)
 {
@@ -34,7 +34,7 @@ TEST(ConservativeVolumeTransferTest, driverTest)
 
 TEST(ConservativeVolumeTransferTest, constructionTest)
 {
-  totalTransferTimer.start();
+  start_time = std::chrono::system_clock::now();
   sourceMesh = new vtkMesh(sourceFile);
   targetMesh = new vtkMesh(targetFile);
 
@@ -84,9 +84,12 @@ TEST(ConservativeVolumeTransferTest, transferScalarTest)
   std::vector<int> arrayIds = { 0 };
   volumeTransfer->transferPointData(arrayIds);
 
-  totalTransferTimer.stop();
+  auto end_time = std::chrono::system_clock::now();
+  auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        end_time - start_time)
+                        .count();
 
-  std::cout << "TOTAL TRANSFER TIME : " << totalTransferTimer.elapsed() << std::endl;
+  std::cout << "TOTAL TRANSFER TIME : " << elapsed_ms << std::endl;
 
   auto targetGrid = volumeTransfer->getTargetGrid();
 

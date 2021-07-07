@@ -5,25 +5,25 @@
  * members of this class are protected.
  */
 
+#include "MeshOperation/mergeCells.H"
+
 #include <algorithm>
 #include <cstdlib>
 #include <map>
-#include "vtkCell.h"
-#include "vtkCellArray.h"
-#include "vtkCellData.h"
-#include "vtkCharArray.h"
-#include "vtkDataArray.h"
-#include "vtkIdTypeArray.h"
-#include "vtkIntArray.h"
-#include "vtkKdTree.h"
-#include "vtkMergePoints.h"
-#include "vtkObjectFactory.h"
-#include "vtkPointData.h"
-#include "vtkPoints.h"
-#include "vtkUnsignedCharArray.h"
-#include "vtkUnstructuredGrid.h"
-
-#include "mergeCells.H"
+#include <vtkCell.h>
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkCharArray.h>
+#include <vtkDataArray.h>
+#include <vtkIdTypeArray.h>
+#include <vtkIntArray.h>
+#include <vtkKdTree.h>
+#include <vtkMergePoints.h>
+#include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkPoints.h>
+#include <vtkUnsignedCharArray.h>
+#include <vtkUnstructuredGrid.h>
 
 namespace NEM {
 namespace MSH {

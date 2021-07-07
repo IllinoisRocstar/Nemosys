@@ -1,15 +1,16 @@
 #ifdef HAVE_EPIC
 
-#include "ep16Post.H"
 #include "AuxiliaryFunctions.H"
-#include "csv.H"
-#include "point.H"
-#include "kmeans.H"
-#include "convexContainer.H"
+#include "Geometry/convexContainer.H"
+#include "InputGeneration/ep16Post.H"
 
 #include <iostream>
 #include <fstream>
 #include <memory>
+
+#include <point.h>
+#include <kmeans.h>
+#include <csv.h>
 
 namespace NEM {
 
@@ -102,6 +103,7 @@ int ep16Post::readJSON()
 
 int ep16Post::procErode(const jsoncons::json &jtsk)
 {
+  using namespace kmeans;
   // reading other necessary fields
   int nClst = jtsk["Number of Cluster"].as<int>();
   std::string ofClStem = jtsk["Output Stem"].as<std::string>();
@@ -137,7 +139,7 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
   }
 
   // kmeans
-  kmeans = new NEM::MTH::KMeans(nClst, _kmeans_max_itr);
+  auto kmeans = new KMeans(nClst, _kmeans_max_itr);
   //kmeans->verbose();
   kmeans->init(pnts);
   bool ret = kmeans->run();
@@ -148,6 +150,7 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
   }
   kmeans->printMeans();
   pnts = kmeans->getPoints();
+  delete kmeans;
 
   // creating convex containers and output
   for (int iClst=0; iClst<nClst; iClst++)
@@ -161,12 +164,13 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
           quickhull::Vector3<double>(pit->data_[0], pit->data_[1], pit->data_[2]) );
       }
     }
-    cont = new convexContainer(clPntCrd);
+    auto cont = new NEM::GEO::convexContainer(clPntCrd);
     cont->computeConvexHull();
     std::stringstream ss;
     ss << iClst;
     std::string clFName = ofClStem + ss.str(); 
     cont->toSTL(clFName);
+    delete cont;
   }
 
   return(0);

@@ -2,7 +2,8 @@ find_package(PythonInterp 3 REQUIRED) # Needed for PYTHON_EXECUTABLE
 find_package(SWIG REQUIRED)
 
 # setuptools should add Python include directories
-get_target_property(WRAPPER_INCLUDE_DIRS Nemosys INTERFACE_INCLUDE_DIRECTORIES)
+recurse_interface_includes(WRAPPER_INCLUDE_DIRS Nemosys)
+
 set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")
