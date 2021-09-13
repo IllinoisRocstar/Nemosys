@@ -30,8 +30,13 @@
 #include <surfZoneIdentifierList.H>
 #include <uindirectPrimitivePatch.H>
 #include <vtkSetWriter.H>
-#include <vtkTopo.H>
 #include <wallPolyPatch.H>
+#include <foamVTKTopo.H>
+#include <decompositionModel.H>
+#include <processorMeshes.H>
+#include <profiling.H>
+#include <snappyVoxelMeshDriver.H>
+
 
 // snappyHexMesh Headers
 #include <layerParameters.H>
@@ -649,9 +654,9 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
 
   labelList regionOffset(surfI);
 
-  labelList globalMinLevel(surfI, 0);
-  labelList globalMaxLevel(surfI, 0);
-  labelList globalLevelIncr(surfI, 0);
+  labelList globalMinLevel(surfI, Zero);
+  labelList globalMaxLevel(surfI, Zero);
+  labelList globalLevelIncr(surfI, Zero);
   PtrList<dictionary> globalPatchInfo(surfI);
   List<Map<label>> regionMinLevel(surfI);
   List<Map<label>> regionMaxLevel(surfI);
@@ -678,15 +683,12 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
 
       // Find the index in shapeControlDict
       // Invert surfaceCellSize to get the refinementLevel
-      // OF-4.x does not have "optionalSubDict Method"
-
-      const word scsFuncName = shapeDict.lookup("surfaceCellSizeFunction");
-      const dictionary &scsDict =
-          // shapeDict.optionalSubDict(scsFuncName + "Coeffs");
-          shapeDict.subDict(scsFuncName + "Coeffs");
-
+      const word scsFuncName =
+                shapeDict.get<word>("surfaceCellSizeFunction");
+      const dictionary& scsDict =
+                shapeDict.optionalSubDict(scsFuncName + "Coeffs");
       const scalar surfaceCellSize =
-          readScalar(scsDict.lookup("surfaceCellSizeCoeff"));
+          scsDict.get<scalar>("surfaceCellSizeCoeff");
 
       const label refLevel =
           sizeCoeffToRefinement(level0Coeff, surfaceCellSize);
@@ -695,8 +697,10 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
       globalMaxLevel[surfI] = refLevel;
       globalLevelIncr[surfI] = gapLevelIncrement;
 
-      // Surface zones
-      surfZones.set(surfI, new surfaceZonesInfo(surface, shapeDict));
+      // Surface zones    
+      surfZones.set(surfI,
+                    new surfaceZonesInfo(surface,shapeDict,
+                    allGeometry.regionNames()[surfaces[surfI]]));
 
       // Global perpendicular angle
       if (shapeDict.found("patchInfo")) {
@@ -732,15 +736,13 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
         forAll (regionNames, regionI) {
           if (shapeControlRegionsDict.found(regionNames[regionI])) {
             const dictionary &shapeControlRegionDict =
-                shapeControlRegionsDict.subDict(regionNames[regionI]);
-
+                shapeControlRegionsDict.subDict(regionNames[regionI]);            
             const word scsFuncName =
-                shapeControlRegionDict.lookup("surfaceCellSizeFunction");
+                shapeDict.get<word>("surfaceCellSizeFunction");
             const dictionary &scsDict =
                 shapeControlRegionDict.subDict(scsFuncName + "Coeffs");
-
             const scalar surfaceCellSize =
-                readScalar(scsDict.lookup("surfaceCellSizeCoeff"));
+                            scsDict.get<scalar>("surfaceCellSizeCoeff");
 
             const label refLevel =
                 sizeCoeffToRefinement(level0Coeff, surfaceCellSize);
@@ -765,8 +767,8 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
   }
 
   // Rework surface specific information into information per global region
-  labelList minLevel(nRegions, 0);
-  labelList maxLevel(nRegions, 0);
+  labelList minLevel(nRegions, Zero);
+  labelList maxLevel(nRegions, Zero);
   labelList gapLevel(nRegions, -1);
   PtrList<dictionary> patchInfo(nRegions);
 
@@ -803,10 +805,23 @@ Foam::autoPtr<refinementSurfaces> snappymeshGen::createRefinementSurfaces(
     }
   }
 
-  surfacePtr.set(new refinementSurfaces(
-      allGeometry, surfaces, names, surfZones, regionOffset, minLevel, maxLevel,
-      gapLevel, scalarField(nRegions, -GREAT),  // perpendicularAngle,
-      patchInfo));
+  surfacePtr.reset
+  (
+    new refinementSurfaces
+      (
+      allGeometry,
+      surfaces,
+      names,
+      surfZones,
+      regionOffset,
+      minLevel,
+      maxLevel,
+      gapLevel,
+      scalarField(nRegions, -GREAT),  //perpendicularAngle,
+      patchInfo,
+      false                           //dryRun
+    )
+  );
 
   const refinementSurfaces &rf = surfacePtr();
 
@@ -854,6 +869,11 @@ void snappymeshGen::writeMesh(
 
   meshRefiner.printMeshInfo(debugLevel, msg);
   Info << "Writing mesh to time " << meshRefiner.timeName() << endl;
+
+  processorMeshes::removeFiles(mesh);
+    if (!debugLevel && !(writeLevel&meshRefinement::WRITELAYERSETS))
+      topoSet::removeFiles(mesh);
+    refinementHistory::removeFiles(mesh);
 
   meshRefiner.write(
       debugLevel,
@@ -915,7 +935,8 @@ void snappymeshGen::removeZeroSizedPatches(Foam::fvMesh &mesh) {
 }
 
 Foam::scalar snappymeshGen::getMergeDistance(const Foam::polyMesh &mesh,
-                                             const Foam::scalar mergeTol) {
+                                             const Foam::scalar mergeTol,
+                                             const bool dryRun) {
   using namespace Foam;
   const boundBox &meshBb = mesh.bounds();
   scalar mergeDist = mergeTol * meshBb.mag();
@@ -925,7 +946,7 @@ Foam::scalar snappymeshGen::getMergeDistance(const Foam::polyMesh &mesh,
        << "Absolute matching distance : " << mergeDist << nl << endl;
 
   // check writing tolerance
-  if (mesh.time().writeFormat() == IOstream::ASCII) {
+  if (mesh.time().writeFormat() == IOstream::ASCII && !dryRun) {
     const scalar writeTol =
         std::pow(scalar(10.0), -scalar(IOstream::defaultPrecision()));
 
@@ -952,18 +973,18 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
 
   // Collect sizes. Hash on names to handle local-only patches (e.g.
   //  processor patches)
-  HashTable<label> patchSize(1000);
+  HashTable<label> patchSize(1024);
   label nFaces = 0;
-  forAllConstIter(labelHashSet, includePatches, iter) {
-    const polyPatch &pp = bMesh[iter.key()];
+  for (const label patchi : includePatches) {
+    const polyPatch& pp = bMesh[patchi];
     patchSize.insert(pp.name(), pp.size());
     nFaces += pp.size();
   }
   Pstream::mapCombineGather(patchSize, plusEqOp<label>());
 
   // Allocate zone/patch for all patches
-  HashTable<label> compactZoneID(1000);
-  forAllConstIter(HashTable<label>, patchSize, iter) {
+  HashTable<label> compactZoneID(1024);
+  forAllConstIters(patchSize, iter) {
     label sz = compactZoneID.size();
     compactZoneID.insert(iter.key(), sz);
   }
@@ -971,7 +992,7 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
 
   // Rework HashTable into labelList just for speed of conversion
   labelList patchToCompactZone(bMesh.size(), -1);
-  forAllConstIter(HashTable<label>, compactZoneID, iter) {
+  forAllConstIters(compactZoneID, iter) {
     label patchi = bMesh.findPatchID(iter.key());
     if (patchi != -1) {
       patchToCompactZone[patchi] = iter();
@@ -981,10 +1002,10 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
   // Collect faces on zones
   DynamicList<label> faceLabels(nFaces);
   DynamicList<label> compactZones(nFaces);
-  forAllConstIter(labelHashSet, includePatches, iter) {
-    const polyPatch &pp = bMesh[iter.key()];
-    forAll (pp, i) {
-      faceLabels.append(pp.start() + i);
+  for (const label patchi : includePatches) {
+    const polyPatch& pp = bMesh[patchi];
+    forAll(pp, i) {
+      faceLabels.append(pp.start()+i);
       compactZones.append(patchToCompactZone[pp.index()]);
     }
   }
@@ -1017,18 +1038,8 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
   // Gather all ZoneIDs
   List<labelList> gatheredZones(Pstream::nProcs());
 
-#ifdef HAVE_OF4
-  gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
-#endif
-#ifdef HAVE_OF5
-  gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
-#endif
-#ifdef HAVE_OF6
-  gatheredZones[Pstream::myProcNo()] = compactZones.xfer();
-#endif
-#ifdef HAVE_OF7
-  gatheredZones[Pstream::myProcNo()] = move(compactZones);
-#endif
+  gatheredZones[Pstream::myProcNo()].transfer(compactZones);
+
   Pstream::gatherList(gatheredZones);
 
   // On master combine all points, faces, zones
@@ -1047,31 +1058,16 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
 
     // Zones
     surfZoneIdentifierList surfZones(compactZoneID.size());
-    forAllConstIter(HashTable<label>, compactZoneID, iter) {
+    forAllConstIters(compactZoneID, iter) {
       surfZones[iter()] = surfZoneIdentifier(iter.key(), iter());
-      Info << "surfZone " << iter() << " : " << surfZones[iter()].name()
-           << endl;
+      Info<< "surfZone " << iter()  <<  " : " << surfZones[iter()].name()
+          << endl;
     }
 
-#ifdef HAVE_OF4
-    UnsortedMeshedSurface<face> unsortedFace(
-        xferMove(allPoints), xferMove(allFaces), xferMove(allZones),
-        xferMove(surfZones));
-#endif
-#ifdef HAVE_OF5
-    UnsortedMeshedSurface<face> unsortedFace(
-        xferMove(allPoints), xferMove(allFaces), xferMove(allZones),
-        xferMove(surfZones));
-#endif
-#ifdef HAVE_OF6
-    UnsortedMeshedSurface<face> unsortedFace(
-        xferMove(allPoints), xferMove(allFaces), xferMove(allZones),
-        xferMove(surfZones));
-#endif
-#ifdef HAVE_OF7
-    UnsortedMeshedSurface<face> unsortedFace(clone(allPoints), clone(allFaces),
-                                             clone(allZones), clone(surfZones));
-#endif
+    UnsortedMeshedSurface<face> unsortedFace(std::move(allPoints),
+                                             std::move(allFaces),
+                                             std::move(allZones),
+                                             surfZones);
 
     MeshedSurface<face> sortedFace(unsortedFace);
 
@@ -1086,6 +1082,43 @@ void snappymeshGen::extractSurface(const Foam::polyMesh &mesh,
   }
 }
 
+Foam::label snappymeshGen::checkAlignment(const Foam::polyMesh& mesh,
+                                          const Foam::scalar tol,
+                                          Foam::Ostream& os) {
+  // Check all edges aligned with one of the coordinate axes
+  const faceList &faces = mesh.faces();
+  const pointField &points = mesh.points();
+
+  label nUnaligned = 0;
+
+  forAll(faces, facei) {
+    const face &f = faces[facei];
+    forAll(f, fp) {
+      label fp1 = f.fcIndex(fp);
+      const linePointRef e(edge(f[fp], f[fp1]).line(points));
+      const vector v(e.vec());
+      const scalar magV(mag(v));
+      if (magV > ROOTVSMALL) {
+        for (direction dir = 0; dir < pTraits<vector>::nComponents; ++dir) {
+          const scalar s(mag(v[dir]));
+          if (s > magV * tol && s < magV * (1 - tol)) {
+            ++nUnaligned;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  reduce(nUnaligned, sumOp<label>());
+
+  if (nUnaligned) {
+    os << "Initial mesh has " << nUnaligned
+       << " edges unaligned with any of the coordinate axes" << nl << endl;
+  }
+  return nUnaligned;
+}
+
 int snappymeshGen::createMeshFromSTL(const char *fname) {
   using namespace Foam;
 
@@ -1097,12 +1130,16 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   Foam::Info << "Create time\n" << Foam::endl;
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, "", "");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   const bool overwrite = true;
+  const bool dryRun = false;
+  const bool checkGeometry = false;
+  const bool surfaceSimplify = false;
 
   autoPtr<fvMesh> meshPtr;
-
   {
     Foam::Info << "Create mesh for time = " << runTime.timeName() << Foam::nl
                << Foam::endl;
@@ -1126,33 +1163,78 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   const IOdictionary meshDict(dictIO);
 
   // all surface geometry
-  const dictionary &geometryDict = meshDict.subDict("geometry");
+  const dictionary& geometryDict =
+      meshRefinement::subDict(meshDict, "geometry", dryRun);
 
   // refinement parameters
-  const dictionary &refineDict = meshDict.subDict("castellatedMeshControls");
+  const dictionary& refineDict =
+      meshRefinement::subDict(meshDict, "castellatedMeshControls", dryRun);
 
   // mesh motion and mesh quality parameters
-  const dictionary &motionDict = meshDict.subDict("meshQualityControls");
+  const dictionary& motionDict =
+      meshRefinement::subDict(meshDict, "meshQualityControls", dryRun);
 
   // snap-to-surface parameters
-  const dictionary &snapDict = meshDict.subDict("snapControls");
+  const dictionary& snapDict =
+      meshRefinement::subDict(meshDict, "snapControls", dryRun);
 
   // layer addition parameters
-  const dictionary &layerDict = meshDict.subDict("addLayersControls");
+  const dictionary& layerDict =
+      meshRefinement::subDict(meshDict, "addLayersControls", dryRun);
 
   // absolute merge distance
-  const scalar mergeDist =
-      getMergeDistance(mesh, readScalar(meshDict.lookup("mergeTolerance")));
+  const scalar mergeDist = getMergeDistance(
+      mesh,
+      meshRefinement::get<scalar>(meshDict,"mergeTolerance",dryRun),dryRun);
 
-  const Switch keepPatches(meshDict.lookupOrDefault("keepPatches", false));
+  const bool keepPatches(meshDict.getOrDefault("keepPatches", false));
+
+  // format to be used for writing lines
+  const word setFormat
+  (
+    meshDict.getOrDefault<word>
+    (
+      "setFormat",
+      vtkSetWriter<scalar>::typeName
+    )
+  );
+  const autoPtr<writer<scalar>> setFormatter
+  (
+    writer<scalar>::New(setFormat)
+  );
+
+  const scalar maxSizeRatio
+  (
+    meshDict.getOrDefault<scalar>("maxSizeRatio", 100)
+  );
 
   // Read decomposePar dictionary
   dictionary decomposeDict;
   {
     if (Pstream::parRun()) {
-      decomposeDict = IOdictionary(
-          IOobject("decomposeParDict", runTime.system(), mesh,
-                   IOobject::MUST_READ_IF_MODIFIED, IOobject::NO_WRITE));
+      IOdictionary* dictPtr = new IOdictionary
+      (
+        IOobject::selectIO
+        (
+          IOobject
+          (
+            decompositionModel::canonicalName,
+            runTime.system(),
+            runTime,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+          ),
+          args.getOrDefault<fileName>("decomposeParDict", "")
+        )
+      );
+
+      // Store it on the object registry, but to be found it must also
+      // have the expected "decomposeParDict" name.
+
+      dictPtr->rename(decompositionModel::canonicalName);
+      runTime.store(dictPtr);
+
+      decomposeDict = *dictPtr;
     } else {
       decomposeDict.add("method", "none");
       decomposeDict.add("numberOfSubdomains", 1);
@@ -1164,12 +1246,12 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
 
   // Set debug level
   meshRefinement::debugType debugLevel =
-      meshRefinement::debugType(meshDict.lookupOrDefault<label>("debug", 0));
+      meshRefinement::debugType(meshDict.getOrDefault<label>("debug", 0));
   {
     wordList flags;
     if (meshDict.readIfPresent("debugFlags", flags)) {
       debugLevel = meshRefinement::debugType(
-          meshRefinement::readFlags(meshRefinement::IOdebugTypeNames, flags));
+          meshRefinement::readFlags(meshRefinement::debugTypeNames, flags));
     }
   }
   if (debugLevel > 0) {
@@ -1184,22 +1266,15 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
     wordList flags;
     if (meshDict.readIfPresent("writeFlags", flags)) {
       meshRefinement::writeLevel(meshRefinement::writeType(
-          meshRefinement::readFlags(meshRefinement::IOwriteTypeNames, flags)));
+          meshRefinement::readFlags(meshRefinement::writeTypeNames, flags)));
     }
   }
 
-  // Set output level
-  {
-    wordList flags;
-    if (meshDict.readIfPresent("outputFlags", flags)) {
-      meshRefinement::outputLevel(meshRefinement::outputType(
-          meshRefinement::readFlags(meshRefinement::IOoutputTypeNames, flags)));
-    }
-  }
+  // for the impatient who want to see some output files:
+  profiling::writeNow();
 
   // Read geometry
   // ~~~~~~~~~~~~~
-
   searchableSurfaces allGeometry(
       IOobject("abc",                   // dummy name
                mesh.time().constant(),  // instance
@@ -1207,7 +1282,7 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
                "triSurface",  // local
                mesh.time(),   // registry
                IOobject::MUST_READ, IOobject::NO_WRITE),
-      geometryDict, meshDict.lookupOrDefault("singleRegionName", true));
+      geometryDict, meshDict.getOrDefault("singleRegionName", true));
 
   // Read refinement surfaces
   // ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1215,119 +1290,60 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   autoPtr<refinementSurfaces> surfacesPtr;
 
   Info << "Reading refinement surfaces." << endl;
-
-  /*if (surfaceSimplify)
-  {
-      IOdictionary foamyHexMeshDict
-      (
-         IOobject
-         (
-              "foamyHexMeshDict",
-              runTime.system(),
-              runTime,
-              IOobject::MUST_READ_IF_MODIFIED,
-              IOobject::NO_WRITE
-         )
-      );
-
-      const dictionary& conformationDict =
-          foamyHexMeshDict.subDict("surfaceConformation").subDict
-          (
-              "geometryToConformTo"
-          );
-
-      const dictionary& motionDict =
-          foamyHexMeshDict.subDict("motionControl");
-
-      const dictionary& shapeControlDict =
-          motionDict.subDict("shapeControlFunctions");
-
-      // Calculate current ratio of hex cells v.s. wanted cell size
-      const scalar defaultCellSize =
-          readScalar(motionDict.lookup("defaultCellSize"));
-
-      const scalar initialCellSize = ::pow(meshPtr().V()[0], 1.0/3.0);
-
-      //Info<< "Wanted cell size  = " << defaultCellSize << endl;
-      //Info<< "Current cell size = " << initialCellSize << endl;
-      //Info<< "Fraction          = " << initialCellSize/defaultCellSize
-      //    << endl;
-
-      surfacesPtr =
-          createRefinementSurfaces
-          (
-              allGeometry,
-              conformationDict,
-              shapeControlDict,
-              refineDict.lookupOrDefault("gapLevelIncrement", 0),
-              initialCellSize/defaultCellSize
-          );
-  }*/
-  // else
-  //{
-  surfacesPtr.set(new refinementSurfaces(
-      allGeometry, refineDict.subDict("refinementSurfaces"),
-      refineDict.lookupOrDefault("gapLevelIncrement", 0)));
+  
+  surfacesPtr.reset(
+    new refinementSurfaces(allGeometry,meshRefinement::subDict(
+      refineDict,
+      "refinementSurfaces",
+      dryRun), refineDict.getOrDefault("gapLevelIncrement", 0), dryRun));
 
   Info << "Read refinement surfaces in = " << mesh.time().cpuTimeIncrement()
        << " s" << nl << endl;
-  //}
 
   refinementSurfaces &surfaces = surfacesPtr();
 
-  // Checking only?
+  if (dryRun) {
+    // Check geometry to mesh bounding box
+    Info<< "Checking for geometry size relative to mesh." << endl;
+    const boundBox& meshBb = mesh.bounds();
+    forAll(allGeometry, geomi)
+    {
+      const searchableSurface& s = allGeometry[geomi];
+      const boundBox& bb = s.bounds();
 
-  /*if (checkGeometry)
-  {
-      // Extract patchInfo
-      List<wordList> patchTypes(allGeometry.size());
-
-      const PtrList<dictionary>& patchInfo = surfaces.patchInfo();
-      const labelList& surfaceGeometry = surfaces.surfaces();
-      forAll(surfaceGeometry, surfI)
+      scalar ratio = bb.mag() / meshBb.mag();
+      if (ratio > maxSizeRatio || ratio < 1.0/maxSizeRatio)
       {
-          label geomI = surfaceGeometry[surfI];
-          const wordList& regNames = allGeometry.regionNames()[geomI];
-
-          patchTypes[geomI].setSize(regNames.size());
-          forAll(regNames, regionI)
-          {
-              label globalRegionI = surfaces.globalRegion(surfI, regionI);
-
-              if (patchInfo.set(globalRegionI))
-              {
-                  patchTypes[geomI][regionI] =
-                      word(patchInfo[globalRegionI].lookup("type"));
-              }
-              else
-              {
-                  patchTypes[geomI][regionI] = wallPolyPatch::typeName;
-              }
-          }
+        Warning
+            << "    " << allGeometry.names()[geomi]
+            << " bounds differ from mesh"
+            << " by more than a factor " << maxSizeRatio << ":" << nl
+            << "        bounding box      : " << bb << nl
+            << "        mesh bounding box : " << meshBb
+            << endl;
       }
-
-      // Write some stats
-      allGeometry.writeStats(patchTypes, Info);
-      // Check topology
-      allGeometry.checkTopology(true);
-      // Check geometry
-      allGeometry.checkGeometry
-      (
-          100.0,      // max size ratio
-          1e-9,       // intersection tolerance
-          autoPtr<writer<scalar>>(new vtkSetWriter<scalar>()),
-          0.01,       // min triangle quality
-          true
-      );
-
-      return 0;
-  }*/
+      if (!meshBb.contains(bb))
+      {
+        Warning
+            << "    " << allGeometry.names()[geomi]
+            << " bounds not fully contained in mesh" << nl
+            << "        bounding box      : " << bb << nl
+            << "        mesh bounding box : " << meshBb
+            << endl;
+      }
+    }
+    Info<< endl;
+  }
 
   // Read refinement shells
   // ~~~~~~~~~~~~~~~~~~~~~~
 
   Info << "Reading refinement shells." << endl;
-  shellSurfaces shells(allGeometry, refineDict.subDict("refinementRegions"));
+  shellSurfaces shells(
+    allGeometry,
+    meshRefinement::subDict(refineDict, "refinementRegions", dryRun),
+    dryRun
+  );
   Info << "Read refinement shells in = " << mesh.time().cpuTimeIncrement()
        << " s" << nl << endl;
 
@@ -1337,13 +1353,68 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   Info << "Checked shell refinement in = " << mesh.time().cpuTimeIncrement()
        << " s" << nl << endl;
 
+  // Optionally read limit shells
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  const dictionary limitDict(refineDict.subOrEmptyDict("limitRegions"));
+
+  if (!limitDict.empty()) {
+    Info << "Reading limit shells." << endl;
+  }
+
+  shellSurfaces limitShells(allGeometry, limitDict, dryRun);
+
+  if (!limitDict.empty()) {
+    Info << "Read limit shells in = " << mesh.time().cpuTimeIncrement() << " s"
+         << nl << endl;
+  }
+
+  if (dryRun) {
+    // Check for use of all geometry
+    const wordList &allGeomNames = allGeometry.names();
+
+    labelHashSet unusedGeometries(identity(allGeomNames.size()));
+    unusedGeometries.erase(surfaces.surfaces());
+    unusedGeometries.erase(shells.shells());
+    unusedGeometries.erase(limitShells.shells());
+
+    if (unusedGeometries.size()) {
+      IOWarningInFunction(geometryDict)
+          << "The following geometry entries are not used:" << nl;
+      for (const label geomi : unusedGeometries) {
+        Info << "    " << allGeomNames[geomi] << nl;
+      }
+      Info << endl;
+    }
+  }
+
   // Read feature meshes
   // ~~~~~~~~~~~~~~~~~~~
 
   Info << "Reading features." << endl;
-  refinementFeatures features(mesh, refineDict.lookup("features"));
+  refinementFeatures features(mesh,
+                              PtrList<dictionary>(meshRefinement::lookup(
+                                  refineDict, "features", dryRun)),
+                              dryRun);
   Info << "Read features in = " << mesh.time().cpuTimeIncrement() << " s" << nl
        << endl;
+
+  if (dryRun) {
+    // Check geometry to mesh bounding box
+    Info << "Checking for line geometry size relative to surface geometry."
+         << endl;
+
+    OStringStream os;
+    bool hasErrors =
+        features.checkSizes(maxSizeRatio,  // const scalar maxRatio,
+                            mesh.bounds(),
+                            true,  // const bool report,
+                            os     // FatalIOError
+        );
+    if (hasErrors) {
+      Warning << os.str() << endl;
+    }
+  }
 
   // Refinement engine
   // ~~~~~~~~~~~~~~~~~
@@ -1354,14 +1425,20 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   // Main refinement engine
   meshRefinement meshRefiner(
       mesh,
-      mergeDist,  // tolerance used in sorting coordinates
-      overwrite,  // overwrite mesh files?
-      surfaces,   // for surface intersection refinement
-      features,   // for feature edges/point based refinement
-      shells      // for volume (inside/outside) refinement
-  );
-  Info << "Calculated surface intersections in = "
-       << mesh.time().cpuTimeIncrement() << " s" << nl << endl;
+      mergeDist,    // tolerance used in sorting coordinates
+      overwrite,    // overwrite mesh files?
+      surfaces,     // for surface intersection refinement
+      features,     // for feature edges/point based refinement
+      shells,       // for volume (inside/outside) refinement
+      limitShells,  // limit of volume refinement
+      labelList(),  // initial faces to test
+      dryRun);
+
+  if (!dryRun) {
+    meshRefiner.updateIntersections(identity(mesh.nFaces()));
+    Info << "Calculated surface intersections in = "
+         << mesh.time().cpuTimeIncrement() << " s" << nl << endl;
+  }
 
   // Some stats
   meshRefiner.printMeshInfo(debugLevel, "Initial mesh");
@@ -1371,6 +1448,27 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
       meshRefinement::writeType(0),
       mesh.time().path() / meshRefiner.timeName());
 
+  // Refinement parameters
+  const refinementParameters refineParams(refineDict, dryRun);
+
+  // Snap parameters
+  const snapParameters snapParams(snapDict, dryRun);
+
+  // Add all the cellZones and faceZones
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // 1. cellZones relating to surface (faceZones added later)
+
+  const labelList namedSurfaces(
+      surfaceZonesInfo::getNamedSurfaces(surfaces.surfZones()));
+
+  labelList surfaceToCellZone = surfaceZonesInfo::addCellZonesToMesh(
+      surfaces.surfZones(), namedSurfaces, mesh);
+
+  // 2. cellZones relating to locations
+
+  refineParams.addCellZonesToMesh(mesh);
+
   // Add all the surface regions as patches
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1378,6 +1476,7 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
   //  (faceZone surfaces)
   labelList globalToMasterPatch;
   labelList globalToSlavePatch;
+
   {
     Info << nl << "Adding patches for surface regions" << nl
          << "----------------------------------" << nl << endl;
@@ -1386,31 +1485,38 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
     globalToMasterPatch.setSize(surfaces.nRegions(), -1);
     globalToSlavePatch.setSize(surfaces.nRegions(), -1);
 
-    Info << setf(ios_base::left) << Foam::setw(6) << "Patch" << Foam::setw(20)
-         << "Type" << Foam::setw(30) << "Region" << nl << Foam::setw(6)
-         << "-----" << Foam::setw(20) << "----" << Foam::setw(30) << "------"
-         << endl;
+    if (!dryRun) {
+      Info << setf(ios_base::left) << Foam::setw(6) << "Patch" << Foam::setw(20)
+           << "Type" << Foam::setw(30) << "Region" << nl << Foam::setw(6)
+           << "-----" << Foam::setw(20) << "----" << Foam::setw(30) << "------"
+           << endl;
+    }
 
     const labelList &surfaceGeometry = surfaces.surfaces();
     const PtrList<dictionary> &surfacePatchInfo = surfaces.patchInfo();
+    const polyBoundaryMesh &pbm = mesh.boundaryMesh();
 
-    forAll (surfaceGeometry, surfI) {
-      label geomI = surfaceGeometry[surfI];
+    forAll(surfaceGeometry, surfi) {
+      label geomi = surfaceGeometry[surfi];
 
-      const wordList &regNames = allGeometry.regionNames()[geomI];
+      const wordList &regNames = allGeometry.regionNames()[geomi];
 
-      Info << surfaces.names()[surfI] << ':' << nl << nl;
+      if (!dryRun) {
+        Info << surfaces.names()[surfi] << ':' << nl << nl;
+      }
 
-      if (surfaces.surfZones()[surfI].faceZoneName().empty()) {
+      const wordList &fzNames = surfaces.surfZones()[surfi].faceZoneNames();
+
+      if (fzNames.empty()) {
         // 'Normal' surface
-        forAll (regNames, i) {
-          label globalRegionI = surfaces.globalRegion(surfI, i);
+        forAll(regNames, i) {
+          label globalRegioni = surfaces.globalRegion(surfi, i);
 
           label patchi;
 
-          if (surfacePatchInfo.set(globalRegionI)) {
+          if (surfacePatchInfo.set(globalRegioni)) {
             patchi = meshRefiner.addMeshedPatch(
-                regNames[i], surfacePatchInfo[globalRegionI]);
+                regNames[i], surfacePatchInfo[globalRegioni]);
           } else {
             dictionary patchInfo;
             patchInfo.set("type", wallPolyPatch::typeName);
@@ -1418,25 +1524,27 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
             patchi = meshRefiner.addMeshedPatch(regNames[i], patchInfo);
           }
 
-          Info << setf(ios_base::left) << Foam::setw(6) << patchi
-               << Foam::setw(20) << mesh.boundaryMesh()[patchi].type()
-               << Foam::setw(30) << regNames[i] << nl;
+          if (!dryRun) {
+            Info << setf(ios_base::left) << Foam::setw(6) << patchi
+                 << Foam::setw(20) << pbm[patchi].type() << Foam::setw(30)
+                 << regNames[i] << nl;
+          }
 
-          globalToMasterPatch[globalRegionI] = patchi;
-          globalToSlavePatch[globalRegionI] = patchi;
+          globalToMasterPatch[globalRegioni] = patchi;
+          globalToSlavePatch[globalRegioni] = patchi;
         }
       } else {
         // Zoned surface
-        forAll (regNames, i) {
-          label globalRegionI = surfaces.globalRegion(surfI, i);
+        forAll(regNames, i) {
+          label globalRegioni = surfaces.globalRegion(surfi, i);
 
           // Add master side patch
           {
             label patchi;
 
-            if (surfacePatchInfo.set(globalRegionI)) {
+            if (surfacePatchInfo.set(globalRegioni)) {
               patchi = meshRefiner.addMeshedPatch(
-                  regNames[i], surfacePatchInfo[globalRegionI]);
+                  regNames[i], surfacePatchInfo[globalRegioni]);
             } else {
               dictionary patchInfo;
               patchInfo.set("type", wallPolyPatch::typeName);
@@ -1444,20 +1552,22 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
               patchi = meshRefiner.addMeshedPatch(regNames[i], patchInfo);
             }
 
-            Info << setf(ios_base::left) << Foam::setw(6) << patchi
-                 << Foam::setw(20) << mesh.boundaryMesh()[patchi].type()
-                 << Foam::setw(30) << regNames[i] << nl;
+            if (!dryRun) {
+              Info << setf(ios_base::left) << Foam::setw(6) << patchi
+                   << Foam::setw(20) << pbm[patchi].type() << Foam::setw(30)
+                   << regNames[i] << nl;
+            }
 
-            globalToMasterPatch[globalRegionI] = patchi;
+            globalToMasterPatch[globalRegioni] = patchi;
           }
           // Add slave side patch
           {
             const word slaveName = regNames[i] + "_slave";
             label patchi;
 
-            if (surfacePatchInfo.set(globalRegionI)) {
+            if (surfacePatchInfo.set(globalRegioni)) {
               patchi = meshRefiner.addMeshedPatch(
-                  slaveName, surfacePatchInfo[globalRegionI]);
+                  slaveName, surfacePatchInfo[globalRegioni]);
             } else {
               dictionary patchInfo;
               patchInfo.set("type", wallPolyPatch::typeName);
@@ -1465,28 +1575,99 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
               patchi = meshRefiner.addMeshedPatch(slaveName, patchInfo);
             }
 
-            Info << setf(ios_base::left) << Foam::setw(6) << patchi
-                 << Foam::setw(20) << mesh.boundaryMesh()[patchi].type()
-                 << Foam::setw(30) << slaveName << nl;
+            if (!dryRun) {
+              Info << setf(ios_base::left) << Foam::setw(6) << patchi
+                   << Foam::setw(20) << pbm[patchi].type() << Foam::setw(30)
+                   << slaveName << nl;
+            }
 
-            globalToSlavePatch[globalRegionI] = patchi;
+            globalToSlavePatch[globalRegioni] = patchi;
+          }
+        }
+
+        // For now: have single faceZone per surface. Use first
+        // region in surface for patch for zoning
+        if (regNames.size()) {
+          forAll(fzNames, fzi) {
+            const word &fzName = fzNames[fzi];
+            label globalRegioni = surfaces.globalRegion(surfi, fzi);
+
+            meshRefiner.addFaceZone(
+                fzName, pbm[globalToMasterPatch[globalRegioni]].name(),
+                pbm[globalToSlavePatch[globalRegioni]].name(),
+                surfaces.surfZones()[surfi].faceType());
           }
         }
       }
 
-      Info << nl;
+      if (!dryRun) {
+        Info << nl;
+      }
     }
     Info << "Added patches in = " << mesh.time().cpuTimeIncrement() << " s"
          << nl << endl;
   }
 
+  // Add all information for all the remaining faceZones
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  HashTable<Pair<word>> faceZoneToPatches;
+  forAll(mesh.faceZones(), zonei) {
+    const word &fzName = mesh.faceZones()[zonei].name();
+
+    label mpI, spI;
+    surfaceZonesInfo::faceZoneType fzType;
+    bool hasInfo = meshRefiner.getFaceZoneInfo(fzName, mpI, spI, fzType);
+
+    if (!hasInfo) {
+      // faceZone does not originate from a surface but presumably
+      // from a cellZone pair instead
+      string::size_type i = fzName.find("_to_");
+      if (i != string::npos) {
+        word cz0 = fzName.substr(0, i);
+        word cz1 = fzName.substr(i + 4, fzName.size() - i + 4);
+        word slaveName(cz1 + "_to_" + cz0);
+        faceZoneToPatches.insert(fzName, Pair<word>(fzName, slaveName));
+      } else {
+        // Add as fzName + fzName_slave
+        const word slaveName = fzName + "_slave";
+        faceZoneToPatches.insert(fzName, Pair<word>(fzName, slaveName));
+      }
+    }
+  }
+
+  if (faceZoneToPatches.size()) {
+    snappyRefineDriver::addFaceZones(meshRefiner, refineParams,
+                                     faceZoneToPatches);
+  }
+
+  // Re-do intersections on meshed boundaries since they use an extrapolated
+  // other side
+  {
+    const labelList adaptPatchIDs(meshRefiner.meshedPatches());
+
+    const polyBoundaryMesh &pbm = mesh.boundaryMesh();
+
+    label nFaces = 0;
+    forAll(adaptPatchIDs, i) { nFaces += pbm[adaptPatchIDs[i]].size(); }
+
+    labelList faceLabels(nFaces);
+    nFaces = 0;
+    forAll(adaptPatchIDs, i) {
+      const polyPatch &pp = pbm[adaptPatchIDs[i]];
+      forAll(pp, i) { faceLabels[nFaces++] = pp.start() + i; }
+    }
+    meshRefiner.updateIntersections(faceLabels);
+  }
+
   // Parallel
   // ~~~~~~~~
 
-  // Decomposition
+  // Construct decomposition engine. Note: cannot use decompositionModel
+  // MeshObject since we're clearing out the mesh inside the mesh generation.
   autoPtr<decompositionMethod> decomposerPtr(
       decompositionMethod::New(decomposeDict));
-  decompositionMethod &decomposer = decomposerPtr();
+  decompositionMethod &decomposer = *decomposerPtr;
 
   if (Pstream::parRun() && !decomposer.parallelAware()) {
     FatalErrorInFunction << "You have selected decomposition method "
@@ -1501,16 +1682,54 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
 
   // Now do the real work -refinement -snapping -layers
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  const bool wantRefine(
+      meshRefinement::get<bool>(meshDict, "castellatedMesh", dryRun));
+  const bool wantSnap(meshRefinement::get<bool>(meshDict, "snap", dryRun));
+  const bool wantLayers(
+      meshRefinement::get<bool>(meshDict, "addLayers", dryRun));
 
-  const Switch wantRefine(meshDict.lookup("castellatedMesh"));
-  const Switch wantSnap(meshDict.lookup("snap"));
-  const Switch wantLayers(meshDict.lookup("addLayers"));
+  if (dryRun) {
+    string errorMsg(FatalError.message());
+    string IOerrorMsg(FatalIOError.message());
 
-  // Refinement parameters
-  const refinementParameters refineParams(refineDict);
+    if (errorMsg.size() || IOerrorMsg.size()) {
+      // errorMsg = "[dryRun] " + errorMsg;
+      // errorMsg.replaceAll("\n", "\n[dryRun] ");
+      // IOerrorMsg = "[dryRun] " + IOerrorMsg;
+      // IOerrorMsg.replaceAll("\n", "\n[dryRun] ");
 
-  // Snap parameters
-  const snapParameters snapParams(snapDict);
+      Warning << nl << "Missing/incorrect required dictionary entries:" << nl
+              << nl << IOerrorMsg.c_str() << nl << errorMsg.c_str() << nl << nl
+              << "Exiting dry-run" << nl << endl;
+
+      FatalError.clear();
+      FatalIOError.clear();
+
+      return 0;
+    }
+  }
+
+  // How to treat co-planar faces
+  meshRefinement::FaceMergeType mergeType =
+      meshRefinement::FaceMergeType::GEOMETRIC;
+  {
+    const bool mergePatchFaces(meshDict.getOrDefault("mergePatchFaces", true));
+
+    if (!mergePatchFaces) {
+      Info << "Not merging patch-faces of cell to preserve"
+           << " (split)hex cell shape." << nl << endl;
+      mergeType = meshRefinement::FaceMergeType::NONE;
+    } else {
+      const bool mergeAcrossPatches(
+          meshDict.getOrDefault("mergeAcrossPatches", false));
+
+      if (mergeAcrossPatches) {
+        Info << "Merging co-planar patch-faces of cells"
+             << ", regardless of patch assignment" << nl << endl;
+        mergeType = meshRefinement::FaceMergeType::IGNOREPATCH;
+      }
+    }
+  }
 
   // Layer addition parameters
   const layerParameters layerParams(layerDict, mesh.boundaryMesh());
@@ -1519,30 +1738,33 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
     cpuTime timer;
 
     snappyRefineDriver refineDriver(meshRefiner, decomposer, distributor,
-                                    globalToMasterPatch, globalToSlavePatch);
+                                    globalToMasterPatch, globalToSlavePatch,
+                                    setFormatter,dryRun);
 
     if (!overwrite && !debugLevel) {
       const_cast<Time &>(mesh.time())++;
     }
 
     refineDriver.doRefine(refineDict, refineParams, snapParams,
-                          refineParams.handleSnapProblems(), motionDict);
+                          refineParams.handleSnapProblems(),mergeType,motionDict);
 
     if (!keepPatches && !wantSnap && !wantLayers) {
-      removeZeroSizedPatches(mesh);
+      fvMeshTools::removeEmptyPatches(mesh,true);
     }
 
     writeMesh("Refined mesh", meshRefiner, debugLevel,
               meshRefinement::writeLevel());
 
     Info << "Mesh refined in = " << timer.cpuTimeIncrement() << " s." << endl;
+
+    profiling::writeNow();
   }
 
   if (wantSnap) {
     cpuTime timer;
-
     snappySnapDriver snapDriver(meshRefiner, globalToMasterPatch,
-                                globalToSlavePatch);
+                                globalToSlavePatch,false);
+
 
     if (!overwrite && !debugLevel) {
       const_cast<Time &>(mesh.time())++;
@@ -1552,23 +1774,25 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
     scalar curvature = refineParams.curvature();
     scalar planarAngle = refineParams.planarAngle();
 
-    snapDriver.doSnap(snapDict, motionDict, curvature, planarAngle, snapParams);
+    snapDriver.doSnap(snapDict, motionDict, mergeType, curvature, planarAngle, snapParams);
 
     if (!keepPatches && !wantLayers) {
-      removeZeroSizedPatches(mesh);
+      fvMeshTools::removeEmptyPatches(mesh,true);
     }
 
     writeMesh("Snapped mesh", meshRefiner, debugLevel,
               meshRefinement::writeLevel());
 
     Info << "Mesh snapped in = " << timer.cpuTimeIncrement() << " s." << endl;
+
+    profiling::writeNow();
   }
 
   if (wantLayers) {
     cpuTime timer;
 
     snappyLayerDriver layerDriver(meshRefiner, globalToMasterPatch,
-                                  globalToSlavePatch);
+                                  globalToSlavePatch,dryRun);
 
     // Use the maxLocalCells from the refinement parameters
     bool preBalance = returnReduce(
@@ -1578,24 +1802,27 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
       const_cast<Time &>(mesh.time())++;
     }
 
-    layerDriver.doLayers(layerDict, motionDict, layerParams, preBalance,
+    layerDriver.doLayers(layerDict, motionDict, layerParams, mergeType, preBalance,
                          decomposer, distributor);
 
     if (!keepPatches) {
-      removeZeroSizedPatches(mesh);
+      fvMeshTools::removeEmptyPatches(mesh,true);
     }
 
     writeMesh("Layer mesh", meshRefiner, debugLevel,
               meshRefinement::writeLevel());
 
     Info << "Layers added in = " << timer.cpuTimeIncrement() << " s." << endl;
+    profiling::writeNow();
   }
 
   {
+    addProfiling(checkMesh, "snappyHexMesh::checkMesh");
     // Check final mesh
     Info << "Checking final mesh ..." << endl;
     faceSet wrongFaces(mesh, "wrongFaces", mesh.nFaces() / 100);
-    motionSmoother::checkMesh(false, mesh, motionDict, wrongFaces);
+
+    motionSmoother::checkMesh(false, mesh, motionDict, wrongFaces, dryRun);
     const label nErrors = returnReduce(wrongFaces.size(), sumOp<label>());
 
     if (nErrors > 0) {
@@ -1605,74 +1832,14 @@ int snappymeshGen::createMeshFromSTL(const char *fname) {
     } else {
       Info << "Finished meshing without any errors" << endl;
     }
+    profiling::writeNow();
   }
 
-  // Comment out surface simplify if not going to use
-  /*if (surfaceSimplify)
-  {
-      const polyBoundaryMesh& bMesh = mesh.boundaryMesh();
-
-      labelHashSet includePatches(bMesh.size());
-
-      if (args.optionFound("patches"))
-      {
-          includePatches = bMesh.patchSet
-          (
-              wordReList(args.optionLookup("patches")())
-          );
-      }
-      else
-      {
-          forAll(bMesh, patchi)
-          {
-              const polyPatch& patch = bMesh[patchi];
-
-              if (!isA<processorPolyPatch>(patch))
-              {
-                  includePatches.insert(patchi);
-              }
-          }
-      }
-
-      // Comment out args if needed
-      fileName outFileName
-      (
-          args.optionLookupOrDefault<fileName>
-          (
-              "outFile",
-              "constant/triSurface/simplifiedSurface.stl"
-          )
-      );
-
-      extractSurface
-      (
-          mesh,
-          runTime,
-          includePatches,
-          outFileName
-      );
-
-      pointIOField cellCentres
-      (
-          IOobject
-          (
-              "internalCellCentres",
-              runTime.timeName(),
-              mesh,
-              IOobject::NO_READ,
-              IOobject::AUTO_WRITE
-          ),
-          mesh.cellCentres()
-      );
-
-      cellCentres.write();
-  }*/
+    profiling::writeNow();
 
   Info << "Finished meshing in = " << runTime.elapsedCpuTime() << " s." << endl;
 
   Info << "End\n" << endl;
-
-  // return 0;
 
   readSnappyFoamMesh();
 }
@@ -1681,7 +1848,9 @@ void snappymeshGen::readSnappyFoamMesh() {
   Foam::Info << "Create time\n" << Foam::endl;
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, "", "");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
   // reading mesh database and converting
   Foam::word regionName;
   regionName = Foam::fvMesh::defaultRegion;
@@ -1704,14 +1873,14 @@ void snappymeshGen::genMshDB() {
       vtkSmartPointer<vtkUnstructuredGrid>::New();
 
   // decomposition
-  Foam::vtkTopo::decomposePoly = false;
+  Foam::foamVTKTopo::decomposePoly = false;
 
   // creating equivalent vtk topology from fvMesh
   // by default polyhedral cells will be decomposed to
   // tets and pyramids. Additional points will be added
   // to underlying fvMesh.
   std::cout << "Performing topological decomposition.\n";
-  Foam::vtkTopo topo(*_fmesh);
+  Foam::foamVTKTopo topo(*_fmesh);
 
   // point coordinates
   Foam::pointField pf = _fmesh->points();

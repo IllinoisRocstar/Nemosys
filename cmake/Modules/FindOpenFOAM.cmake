@@ -61,7 +61,6 @@ set(OPNF_VALID_COMPONENTS
     DSMC
     dynamicFvMesh
     dynamicMesh
-    edgeMesh
     engine
     extrude2DMesh
     extrudeModel
@@ -69,7 +68,6 @@ set(OPNF_VALID_COMPONENTS
     fileFormats
     finiteVolume
     fluidThermophysicalModels
-    foamToVTK
     forces
     fvMotionSolvers
     fvOptions
@@ -88,6 +86,7 @@ set(OPNF_VALID_COMPONENTS
     liquidMixtureProperties
     liquidProperties
     meshTools
+    meshLibrary
     molecularMeasurements
     molecule
     multiphaseInterFoam
@@ -138,7 +137,6 @@ set(OPNF_VALID_COMPONENTS
     thermalBaffleModels
     thermophysicalFunctions
     topoChangerFvMesh
-    triSurface
     turbulenceModels
     twoPhaseMixture
     twoPhaseMixtureThermo
@@ -156,6 +154,7 @@ if(EXISTS $ENV{FOAM_SRC})
   set(OPNF_INST_DIR $ENV{WM_PROJECT_DIR})
   set(OPNF_SRC_DIR $ENV{FOAM_SRC})
   set(OPNF_LIB_DIR $ENV{FOAM_LIBBIN})
+  list( APPEND OPNF_LIB_DIR $ENV{FOAM_USER_LIBBIN})
   set(OPNF_APP_DIR $ENV{FOAM_APPBIN})
   set(OPNF_SITE_APP_DIR $ENV{FOAM_SITE_APPBIN})
   set(OPNF_SITE_LIB_DIR $ENV{FOAM_SITE_LIBBIN})
@@ -192,14 +191,14 @@ set(OPNF_INC_DIR_default
     ${OPNF_INST_DIR}/src/OpenFOAM/lnInclude
     ${OPNF_INST_DIR}/src/finiteVolume/lnInclude
     ${OPNF_INST_DIR}/src/meshTools/lnInclude
-    ${OPNF_INST_DIR}/src/triSurface/lnInclude
     ${OPNF_INST_DIR}/src/parallel/decompose/decompositionMethods/lnInclude
+    ${OPNF_INST_DIR}/src/parallel/decompose/decompose/lnInclude
+    ${OPNF_INST_DIR}/src/parallel/reconstruct/reconstruct/lnInclude
     ${OPNF_INST_DIR}/src/mesh/snappyHexMesh/lnInclude
     ${OPNF_INST_DIR}/src/fileFormats/lnInclude
     ${OPNF_INST_DIR}/src/surfMesh/lnInclude
     ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
     ${OPNF_INST_DIR}/src/lagrangian/basic/lnInclude
-    ${OPNF_INST_DIR}/applications/utilities/postProcessing/dataConversion/foamToVTK/foamToVTK/lnInclude
     ${OPNF_INST_DIR}/src/mesh/blockMesh/lnInclude
     ${OPNF_INST_DIR}/src/TurbulenceModels/turbulenceModels/lnInclude
     ${OPNF_INST_DIR}/src/TurbulenceModels/incompressible/lnInclude

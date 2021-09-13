@@ -112,13 +112,16 @@ TEST(snappyHexMesh, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 TEST(snappyHexMesh, NumberOfNodes) {
   if (ref) delete ref;
   ref = meshBase::Create(inputjson["Reference File"].as<std::string>());
-  EXPECT_EQ(mesh->getNumberOfPoints(), ref->getNumberOfPoints());
+  EXPECT_TRUE((mesh->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
+              (mesh->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
+
 }
 
 TEST(snappyHexMesh, NumberOfCells) {
   if (ref) delete ref;
   ref = meshBase::Create(inputjson["Reference File"].as<std::string>());
-  EXPECT_EQ(mesh->getNumberOfCells(), ref->getNumberOfCells());
+  EXPECT_TRUE((mesh->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
+              (mesh->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
 }
 
 // test constructor

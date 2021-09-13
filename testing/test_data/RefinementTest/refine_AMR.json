@@ -1,7 +1,7 @@
 {
   "Program Type": "Refinement",
   "Mesh File Options": {
-    "Input Mesh File": "Cylinder.vtu",
+    "Input Mesh File": "pitz.vtu",
     "Output Mesh File": "refined_AMR.vtu"
   },
   "Refinement Options": {
@@ -11,10 +11,10 @@
     "Refinement Operator": "Value",
     "Refinement Interval": 1,
     "Maximum Refinement": 1,
-    "Lower Refinement Level": 0.0,
-    "Upper Refinement Level": 9.0,
+    "Lower Refinement Level": 8.5,
+    "Upper Refinement Level": 17.0,
     "Unrefinement Above": -1,
-    "Unrefinement Below": -1,
+    "Unrefinement Below": 8.4,
     "Write Refinement Data?": false,
     "Write Field Data?": false,
     "Write Mesh?": false,

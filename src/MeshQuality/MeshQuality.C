@@ -14,8 +14,10 @@
   // cfmesh headers
   #include <polyMeshGenModifier.H>
   #include <meshOptimizer.H>
-#endif
 
+  using namespace Foam;
+  using namespace Foam::Module;
+#endif
 
 MeshQuality::MeshQuality(const meshBase *_mesh)
     : mesh(_mesh)
@@ -203,7 +205,7 @@ void MeshQuality::cfmOptimize()
   pmg.read();
 
   //- construct the smoother
-  Foam::meshOptimizer mOpt(pmg);
+  Foam::Module::meshOptimizer mOpt(pmg);
 
   if (_cfmQPrms->consCellSet.has_value())
   {
@@ -213,7 +215,7 @@ void MeshQuality::cfmOptimize()
     mOpt.lockCellsInSubset(constrainedCellSet);
 
     //- find boundary faces which shall be locked
-    Foam::labelLongList lockedBndFaces, selectedCells;
+    labelLongList lockedBndFaces, selectedCells;
 
     const label sId = pmg.cellSubsetIndex(constrainedCellSet);
     pmg.cellsInSubset(sId, selectedCells);

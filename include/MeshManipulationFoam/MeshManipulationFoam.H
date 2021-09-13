@@ -196,14 +196,14 @@ class NEMOSYS_EXPORT MeshManipulationFoam {
             between fixed points
   **/
   Foam::tmp<Foam::pointField> avg(const Foam::meshedSurface& s,
-                                  const Foam::PackedBoolList& fixedPoints);
+                                  const Foam::bitSet& fixedPoints);
 
   /** @brief surfLambdaMuSmooth Internal Function. Obtains fixed mesh points
             from edges
   **/
   void getFixedPoints(const Foam::edgeMesh& feMesh,
                       const Foam::pointField& points,
-                      Foam::PackedBoolList& fixedPoints);
+                      Foam::bitSet& fixedPoints);
 
   // splitMshByRegion functions
   /** @brief splitMshByRegion Internal Function. Renames patches discovered

@@ -13,7 +13,7 @@
 // openfoam headers
 #include <fvCFD.H>
 #include <fvMesh.H>
-#include <vtkTopo.H>
+#include <foamVTKTopo.H>
 #include <fileName.H>
 
 // cfmesh headers
@@ -26,7 +26,6 @@
 #include <meshOptimizer.H>
 #include <cartesianMeshGenerator.H>
 #include <voronoiMeshGenerator.H>
-
 
 cfmeshGen::cfmeshGen() 
 {
@@ -61,7 +60,6 @@ void cfmeshGen::initialize()
             std::cerr << "A problem occured during edge detection step!\n";
             throw;
         }
-
 
     // create dictionaries needed
     createControlDict();
@@ -403,21 +401,20 @@ FoamFile\n\
     contDict.close();
 }
 
-
 int cfmeshGen::createMeshFromSTL(const char* fname)
 {
     // mesh generation and I/O
     Foam::Info << "Generating mesh with cfMesh engine" << Foam::endl;
     if (_params->generator == "cartesian2D")
     {
-        Foam::cartesian2DMeshGenerator cmg(*_runTime);
+        Foam::Module::cartesian2DMeshGenerator cmg(*_runTime);
         std::cout << "ExecutionTime = " << _runTime->elapsedCpuTime() << " s\n"
             << "ClockTime = " << _runTime->elapsedClockTime() << " s" << std::endl;
         cmg.writeMesh();
     }
     else if (_params->generator == "tetMesh")
     {
-        Foam::tetMeshGenerator tmg(*_runTime);
+        Foam::Module::tetMeshGenerator tmg(*_runTime);
         std::cout << "ExecutionTime = " << _runTime->elapsedCpuTime() << " s\n"
             << "ClockTime = " << _runTime->elapsedClockTime() << " s" << std::endl;
         tmg.writeMesh();
@@ -428,14 +425,14 @@ int cfmeshGen::createMeshFromSTL(const char* fname)
     }
     else if (_params->generator == "cartesian3D")
     {
-        Foam::cartesianMeshGenerator cmg(*_runTime);
+        Foam::Module::cartesianMeshGenerator cmg(*_runTime);
         std::cout << "ExecutionTime = " << _runTime->elapsedCpuTime() << " s\n"
             << "ClockTime = " << _runTime->elapsedClockTime() << " s" << std::endl;
         cmg.writeMesh();
     }
     else if (_params->generator == "polyMesh")
     {
-        Foam::voronoiMeshGenerator pmg(*_runTime);
+        Foam::Module::voronoiMeshGenerator pmg(*_runTime);
         std::cout << "ExecutionTime = " << _runTime->elapsedCpuTime() << " s\n"
             << "ClockTime = " << _runTime->elapsedClockTime() << " s" << std::endl;
         pmg.writeMesh();
@@ -450,6 +447,8 @@ int cfmeshGen::createMeshFromSTL(const char* fname)
 
     // loading the mesh file
     readFoamMesh();
+
+    return 0;
 }
 
 void cfmeshGen::readFoamMesh()
@@ -494,14 +493,14 @@ void cfmeshGen::genMshDB()
         = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
     // decomposition
-    Foam::vtkTopo::decomposePoly = false;
+    Foam::foamVTKTopo::decomposePoly = false;
 
     // creating equivalent vtk topology from fvMesh
     // by default polyhedral cells will be decomposed to 
     // tets and pyramids. Additional points will be added
     // to underlying fvMesh.
     std::cout << "Performing topological decomposition.\n";
-    Foam::vtkTopo topo(*_fmesh);
+    Foam::foamVTKTopo topo(*_fmesh);
 
     // point coordinates
     Foam::pointField pf = _fmesh->points();
@@ -575,7 +574,7 @@ int cfmeshGen::surfaceFeatureEdgeDetect()
     std::cout << "Performing surface feature edge detection.\n";
     std::string of = "./"+caseName+"_feature.ftr";
     Foam::fileName inFileName(_params->geomFilePath);
-    fileName outFileName(of);
+    Foam::fileName outFileName(of);
 
     if (outFileName == inFileName)
     {
@@ -587,9 +586,9 @@ int cfmeshGen::surfaceFeatureEdgeDetect()
     double tol = _params->srfEdge.value().srfEdgAng;
     std::cout << "Using " << tol <<" deg angle\n";
 
-    Foam::triSurf originalSurface(inFileName);
+    Foam::Module::triSurf originalSurface(inFileName);
 
-    Foam::triSurfaceDetectFeatureEdges edgeDetector(originalSurface, tol);
+    Foam::Module::triSurfaceDetectFeatureEdges edgeDetector(originalSurface, tol);
     edgeDetector.detectFeatureEdges();
 
     if( outFileName.ext() == "fms" || outFileName.ext() == "FMS" )
@@ -599,8 +598,8 @@ int cfmeshGen::surfaceFeatureEdgeDetect()
     }
     else
     {
-        Foam::triSurfacePatchManipulator manipulator(originalSurface);
-        const triSurf* newSurfPtr = manipulator.surfaceWithPatches();
+        Foam::Module::triSurfacePatchManipulator manipulator(originalSurface);
+        const Foam::Module::triSurf* newSurfPtr = manipulator.surfaceWithPatches();
 
         std::cout << "Writing : " << outFileName << std::endl;
         newSurfPtr->writeSurface(outFileName);
@@ -619,11 +618,11 @@ int cfmeshGen::improveMeshQuality()
     std::cout << "Performing mesh quality improvements.\n";
 
     //- load the mesh from disk
-    Foam::polyMeshGen pmg(*_runTime);
+    Foam::Module::polyMeshGen pmg(*_runTime);
     pmg.read();
 
     //- construct the smoother
-    Foam::meshOptimizer mOpt(pmg);
+    Foam::Module::meshOptimizer mOpt(pmg);
 
     const auto &meshQual = _params->improveMeshQuality.value();
 
@@ -633,7 +632,7 @@ int cfmeshGen::improveMeshQuality()
         mOpt.lockCellsInSubset((meshQual.qltConCelSet));
 
         //- find boundary faces which shall be locked
-        Foam::labelLongList lockedBndFaces, selectedCells;
+        Foam::Module::labelLongList lockedBndFaces, selectedCells;
 
         const Foam::label sId = pmg.cellSubsetIndex((meshQual.qltConCelSet));
         pmg.cellsInSubset(sId, selectedCells);

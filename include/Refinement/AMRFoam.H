@@ -1,28 +1,26 @@
 #ifndef NEMOSYS_AMRFOAM_H_
 #define NEMOSYS_AMRFOAM_H_
 
-#include <vector>
-
-#include <PackedBoolList.H>
 #include <Switch.H>
+#include <bitSet.H>
 #include <dynamicFvMesh.H>
 #include <hexRef8.H>
+#include <motionSolver.H>
+
+#include <vector>
 
 namespace Foam {
 
-// TODO
-// 1. Implement a point to volume field method (pF2vF).
-
 /** @brief AMRFoam class is a standalone adaptive mesh refinement application
-           that uses polyMesh as its base and provides useful interface for
-           use of different solvers and mesh formats. Initially the supported
-           refinement criterias would be size field defined over mesh as well
-           as a gradient field of any simulation quantity.
+          that uses polyMesh as its base and provides useful interface for
+          use of different solvers and mesh formats. Initially the supported
+          refinement criterias would be size field defined over mesh as well
+          as a gradient field of any simulation quantity.
 
-           Any object/pointer created for this class in C++ runtime will act
-           as finiteVolume mesh of OpenFOAM.
+          Any object/pointer created for this class in C++ runtime will act
+          as finiteVolume mesh of OpenFOAM.
 **/
-class motionSolver;
+// class motionSolver;
 class AMRFoam : public dynamicFvMesh {
   // Constructor and destructor
  public:
@@ -60,7 +58,7 @@ class AMRFoam : public dynamicFvMesh {
                  volScalarField& vFld, const double& lowerRefineLevel,
                  const double& upperRefineLevel, const double& unrefineAbove,
                  const double& unrefineBelow, const int& nBufferLayers,
-                 const int &maxCells);
+                 const int& maxCells);
 
   /** @brief New method for machine learning ML. Takes output from ML model
              and performs refinement/unrefinement.
@@ -82,37 +80,11 @@ class AMRFoam : public dynamicFvMesh {
   **/
   void solveMotion();
 
-  /** @brief Marked the cells to unrefine based on user defined levels
-      @param unrefineAbove Unrefine cells above this thresold.
-      @param unrefineBelow Unrefine cells below this thresold.
-      @param markedCell Unrefinable cells list
-      @param pFld PointField at current runTime
-      @return List of cells/points to unrefine.
-  **/
-  Foam::labelList selectPts2Unrefine(const scalar unrefineAbove,
-                                     const scalar unrefineBelow,
-                                     const Foam::PackedBoolList& markedCell,
-                                     const scalarField& pFld);
-
-  /** @brief Unrefines selected cells in a mesh.
-      @param splitPoints Selected hanging nodes that can be erased to unrefine
-             previously refined cells. Selection is performed using criteria and
-             protected cells are excluded.
-      @return Mapped Polymesh.
-  **/
-  Foam::autoPtr<Foam::mapPolyMesh> unrefineAMR(const labelList& splitPoints);
-
-  /** @brief Refines selected cells in a mesh.
-      @param cellsToRefine Cell list selected for refinement.
-      @return Mapped Polymesh.
-  **/
-  Foam::autoPtr<Foam::mapPolyMesh> refineAMR(const labelList& cellsToRefine);
-
   /** @brief Converts volume field to point field
       @param vFld Volume Field.
       @return Point Field.
   **/
-  Foam::scalarField cell2Pt(const Foam::scalarField& vFld);
+  Foam::scalarField cell2Pt(const scalarField& vFld);
 
   /** @brief Writes refinement history in current time directory.
    **/
@@ -127,6 +99,10 @@ class AMRFoam : public dynamicFvMesh {
   /** @brief Ability to write current mesh into current time directory
    **/
   void writeMesh();
+
+  /** @brief Ability to explicitely disable motion
+   **/
+  void disableMotion();
 
   /** @brief Converts incoming size-field/solution-field into pointScalarField
              defined over all points of mesh
@@ -193,7 +169,6 @@ class AMRFoam : public dynamicFvMesh {
   /** @brief Transforms incoming scalar field into refinement levels understood
              by OpenFOAM environement. Appends this information to lower, upper
              and unrefine level vectors for AMR
-
   **/
   void transformField(volScalarField& inField);
 
@@ -221,21 +196,25 @@ class AMRFoam : public dynamicFvMesh {
 
   /** @brief Step size for one time refinement
    **/
-  int stepSz;
+  int stepSz = 1;
+
+  /**@brief Boolean to check if mesh motion is needed
+   **/
+  bool enableMotion{false};
 
   // Private Attributes
  private:
   /** @brief Boolean to enable writing of updated solution field every timestep
    **/
-  bool writeField = false;
+  bool writeField{false};
 
   /** @brief Boolean to enable writing of refinement history
    **/
-  bool writeRefHistory = false;
+  bool writeRefHistory{false};
 
   /** @brief Boolean to enable writing of mesh
    **/
-  bool writeMeshData = false;
+  bool writeMeshData{false};
 
   /** @brief Vector to store user defined vector
    **/
@@ -246,7 +225,7 @@ class AMRFoam : public dynamicFvMesh {
   hexRef8 meshCutter_;
 
   //- Dump cellLevel for postprocessing
-  Switch dumpLevel_;
+  bool dumpLevel_;
 
   //- Fluxes to map
   HashTable<word> correctFluxes_;
@@ -255,16 +234,35 @@ class AMRFoam : public dynamicFvMesh {
   label nRefinementIterations_;
 
   //- Protected cells (usually since not hexes)
-  PackedBoolList protectedCell_;
+  bitSet protectedCell_;
 
   // Protected Member Functions
+  /** @brief Checks for availability of mesh motion keywords in dictionary
+   **/
+  void checkForMotion();
 
-  //- Count set/unset elements in packedlist.
-  static label count(const PackedBoolList&, const unsigned int);
+  /** @brief Calculates and stores non-hex cells in protected cells catagory to
+             avoid their refinement
+  **/
+  void calcProtectedCells();
+
+  /** @brief Unrefines selected cells in a mesh.
+      @param splitPoints Selected hanging nodes that can be erased to unrefine
+             previously refined cells. Selection is performed using criteria and
+             protected cells are excluded.
+      @return Mapped Polymesh.
+  **/
+  virtual autoPtr<mapPolyMesh> refine(const labelList&);
+
+  /** @brief Refines selected cells in a mesh.
+      @param cellsToRefine Cell list selected for refinement.
+      @return Mapped Polymesh.
+  **/
+  virtual autoPtr<mapPolyMesh> unrefine(const labelList&);
 
   //- Calculate cells that cannot be refined since would trigger
   //  refinement of protectedCell_ (since 2:1 refinement cascade)
-  void calculateProtectedCells(PackedBoolList& unrefineableCell) const;
+  void calculateProtectedCells(bitSet& unrefineableCell) const;
 
   //- Read the projection parameters from dictionary
   void readDict();
@@ -289,23 +287,54 @@ class AMRFoam : public dynamicFvMesh {
   virtual void selectRefineCandidates(const scalar lowerRefineLevel,
                                       const scalar upperRefineLevel,
                                       const scalarField& vFld,
-                                      PackedBoolList& candidateCell) const;
+                                      bitSet& candidateCell) const;
 
   //- Subset candidate cells for refinement
-  virtual labelList selectRefineCells(
-      const label maxCells, const label maxRefinement,
-      const PackedBoolList& candidateCell) const;
+  virtual labelList selectRefineCells(const label maxCells,
+                                      const label maxRefinement,
+                                      const bitSet& candidateCell) const;
+
+  /** @brief Marked the cells to unrefine based on user defined levels
+      @param unrefineAbove Unrefine cells above this thresold.
+      @param unrefineBelow Unrefine cells below this thresold.
+      @param markedCell Unrefinable cells list
+      @param pFld PointField at current runTime
+      @return List of cells/points to unrefine.
+  **/
+  virtual labelList selectUnrefinePoints(const scalar unrefineAbove,
+                                         const scalar unrefineBelow,
+                                         const bitSet& markedCell,
+                                         const scalarField& pFld) const;
 
   //- Extend markedCell with cell-face-cell.
-  void extendMarkedCells(PackedBoolList& markedCell) const;
+  void extendMarkedCells(bitSet& markedCell) const;
 
   //- Check all cells have 8 anchor points
-  void checkEightAnchorPoints(PackedBoolList& protectedCell,
-                              label& nProtected) const;
+  void checkEightAnchorPoints(bitSet& protectedCell) const;
+
+  //- Map single non-flux surface<Type>Field
+  //  for new internal faces (e.g. AMR refine). This currently
+  //  interpolates values from surrounding faces (faces on
+  //  neighbouring cells) that do have a value.
+  template <class T>
+  void mapNewInternalFaces(const labelList& faceMap,
+                           GeometricField<T, fvsPatchField, surfaceMesh>&);
+
+  //- Correct surface fields for new faces
+  template <class T>
+  void mapNewInternalFaces(const labelList& faceMap);
+
+  //- Correct surface fields for new faces. Converts any oriented
+  //  fields into non-oriented (i.e. phi -> Uf) before mapping
+  template <class T>
+  void mapNewInternalFaces(const surfaceVectorField& Sf,
+                           const surfaceScalarField& magSf,
+                           const labelList& faceMap);
 
  public:
-  virtual bool update(){};
+  virtual bool update();
 
+  // Pointer for motion solver
   autoPtr<motionSolver> motionPtr_;
 
   // Member Functions
@@ -314,16 +343,19 @@ class AMRFoam : public dynamicFvMesh {
   const hexRef8& meshCutter() const { return meshCutter_; }
 
   //- Cells which should not be refined/unrefined
-  const PackedBoolList& protectedCell() const { return protectedCell_; }
+  const bitSet& protectedCell() const { return protectedCell_; }
 
   //- Cells which should not be refined/unrefined
-  PackedBoolList& protectedCell() { return protectedCell_; }
+  bitSet& protectedCell() { return protectedCell_; }
 
   //- Write using given format, version and compression
   virtual bool writeObject(IOstream::streamFormat fmt,
                            IOstream::versionNumber ver,
                            IOstream::compressionType cmp,
                            const bool valid) const;
+
+  //- Map all fields in time using given map.
+  virtual void mapFields(const mapPolyMesh& mpm);
 };
 
 }  // namespace Foam

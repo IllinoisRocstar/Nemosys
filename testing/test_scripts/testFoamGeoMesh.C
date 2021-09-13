@@ -10,7 +10,6 @@
 #include <fvOptions.H>
 #include <fvMesh.H>
 #include <fvCFD.H>
-#include <vtkTopo.H>
 #include <fileName.H>
 #include <cellModeller.H>
 
@@ -40,57 +39,23 @@ Foam::fvMesh* getFoamMesh() {
   Foam::pointField pointData(0);
   Foam::cellShapeList cellShapeData(0);
 
-#ifdef HAVE_OF5
-  fm = new Foam::fvMesh(
+  auto tmpfm = std::unique_ptr<Foam::polyMesh>(new Foam::polyMesh(
     IOobject
     (
-        Foam::polyMesh::defaultRegion,
-        runTime_->constant(),
-        *runTime_
+      Foam::polyMesh::defaultRegion,
+      runTime_->constant(),
+      *runTime_
     ),
-    Foam::xferMove(pointData),   // Vertices
+    std::move(pointData),   // Vertices
     cellShapeData,               // Cell shape and points
     Foam::faceListList(),        // Boundary faces
     Foam::wordList(),            // Boundary Patch Names
     Foam::PtrList<dictionary>(), // Boundary Dicts
     "defaultPatch",              // Default Patch Name
     Foam::polyPatch::typeName    // Default Patch Type
-  );
-#endif
-#ifdef HAVE_OF6
-  fm = new Foam::fvMesh(
-    IOobject
-    (
-        Foam::polyMesh::defaultRegion,
-        runTime_->constant(),
-        *runTime_
-    ),
-    Foam::xferMove(pointData),   // Vertices
-    cellShapeData,               // Cell shape and points
-    Foam::faceListList(),        // Boundary faces
-    Foam::wordList(),            // Boundary Patch Names
-    Foam::PtrList<dictionary>(), // Boundary Dicts
-    "defaultPatch",              // Default Patch Name
-    Foam::polyPatch::typeName    // Default Patch Type
-  );
-#endif
-#ifdef HAVE_OF7
-  fm = new Foam::fvMesh(
-    IOobject
-    (
-        Foam::polyMesh::defaultRegion,
-        runTime_->constant(),
-        *runTime_
-    ),
-    Foam::move(pointData),   // Vertices
-    cellShapeData,               // Cell shape and points
-    Foam::faceListList(),        // Boundary faces
-    Foam::wordList(),            // Boundary Patch Names
-    Foam::PtrList<dictionary>(), // Boundary Dicts
-    "defaultPatch",              // Default Patch Name
-    Foam::polyPatch::typeName    // Default Patch Type
-  );
-#endif
+  ));
+
+  Foam::fvMesh* fm = dynamic_cast<Foam::fvMesh*>(tmpfm.get());
   return fm;
 }
 

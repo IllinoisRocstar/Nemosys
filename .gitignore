@@ -2,6 +2,7 @@
 Build.dat
 *build*/
 *install*/
+*.idea/
 *.swp
 *.swo
 lnInclude/
