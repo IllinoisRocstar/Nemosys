@@ -3,7 +3,7 @@ stages:
   - deploy
 
 test:ubuntu18:
-  image: ilrocstar/nemosys-test-img-ubuntu18:v6-merc
+  image: ilrocstar/nemosys-test-img-ubuntu18:v8
   tags:
     - nemosys
   script:
@@ -24,9 +24,9 @@ test:ubuntu18:
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
       -DENABLE_CFMSH=ON
-      -DENABLE_CGNS=ON
-      -DENABLE_HDF5=ON
-      -DENABLE_OPENCASCADE=OFF
+      -DENABLE_CGNS=OFF
+      -DENABLE_HDF5=OFF
+      -DENABLE_OPENCASCADE=ON
     - make -j$(nproc)
     - make install
     - ctest --output-on-failure
@@ -127,7 +127,7 @@ test:win10:
       - "*.msi"
 
 test:centos7:
-  image: ilrocstar/nemosys-centos7:v5
+  image: ilrocstar/nemosys-centos7:v7
   tags:
     - nemosys
   script:
@@ -145,9 +145,9 @@ test:centos7:
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
       -DENABLE_CFMSH=ON
-      -DENABLE_OPENCASCADE=OFF
-      -DENABLE_HDF5=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_OPENCASCADE=ON
+      -DENABLE_HDF5=OFF
+      -DENABLE_CGNS=OFF
       -DPYTHON_EXECUTABLE=/usr/bin/python3.6
       -DBoost_INCLUDE_DIR=/usr/include/boost169/
       -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so

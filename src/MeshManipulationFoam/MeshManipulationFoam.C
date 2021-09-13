@@ -47,7 +47,7 @@
 #include <fileName.H>
 #include <fvCFD.H>
 #include <fvMesh.H>
-#include <vtkTopo.H>
+#include <foamVTKTopo.H>
 
 // SurfLambdaMuSmooth
 #include <MeshedSurfaces.H>
@@ -160,10 +160,10 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
        << "Vertices    : " << surf1.nPoints() << nl
        << "Bounding Box: " << boundBox(surf1.localPoints()) << endl;
 
-  PackedBoolList fixedPoints(surf1.localPoints().size(), false);
+  bitSet fixedPoints(surf1.localPoints().size(), false);
 
   if (surfLMSmoothParams.addFeatureFile) {
-    const fileName featureFileName(surfLMSmoothParams.addFeatureFile);
+    const fileName featureFileName("ftrEdge.ftr");
     Info << "Reading features from " << featureFileName << " ..." << endl;
 
     edgeMesh feMesh(featureFileName);
@@ -321,7 +321,7 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
 
   // Will be implemented in future
   else if (useCellZonesFile) {
-    const word zoneFile = args.option("cellZonesFileOnly");
+    const word zoneFile(args["cellZonesFileOnly"]);
     Info << "Reading split from cellZones file " << zoneFile << endl
          << "This requires all"
          << " cells to be in one and only one cellZone." << nl << endl;
@@ -614,8 +614,8 @@ std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions()
     // ~~~~~~~~~~~~~~
 
     if (insidePoint) {
-      // Will be implemented in future
-      const point insidePoint = args.optionRead<point>("insidePoint");
+      // Will be implemented in future       
+      const point insidePoint = args.get<point>("insidePoint");
 
       label regionI = -1;
 
@@ -1029,7 +1029,9 @@ void MeshManipulationFoam::createPatch(int dirStat) {
 
   createPatchDict(dirStat);
 
-  Time runTime(Time::controlDictName, "", "");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   std::string firstPtch = createPatchParams.pathSurrounding;
   std::string secondPtch;
@@ -1088,8 +1090,8 @@ void MeshManipulationFoam::createPatch(int dirStat) {
 
     HashSet<word> addedPatchNames;
     forAll(patchSources, addedI) {
-      const dictionary& dict = patchSources[addedI];
-      addedPatchNames.insert(dict.lookup("name"));
+      const dictionary& dict = patchSources[addedI];   
+      addedPatchNames.insert(dict.get<word>("name"));
     }
 
     // 1. Add all new patches
@@ -1352,10 +1354,8 @@ void MeshManipulationFoam::foamToSurface() {
   fileName exportBase = exportName.lessExt();
   word exportExt = exportName.ext();
 
-  Time runTimeMaster(Time::controlDictName, ".", ".");
-
   polyMesh mesh(IOobject(Foam::polyMesh::defaultRegion,
-                         runTimeMaster.timeName(), runTimeMaster,
+                         runTime.timeName(), runTime,
                          Foam::IOobject::MUST_READ));
 
   polyMesh::readUpdateState state = mesh.readUpdate();
@@ -1404,7 +1404,9 @@ int MeshManipulationFoam::surfSpltByTopology() {
   Foam::Info << "Create time\n" << Foam::endl;
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, "", "");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   fileName surfFileName(surfSplitParams.surfFile);
   Info << "Reading surface from " << surfFileName << endl;
@@ -1732,7 +1734,9 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
   Foam::argList args(argc, argv);
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, ".", ".");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   Foam::word regionName = Foam::polyMesh::defaultRegion;
 
@@ -1754,8 +1758,8 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
   // tets and pyramids. Additional points will be added
   // to underlying fvMesh.
   std::cout << "Performing topological decomposition.\n";
-  Foam::vtkTopo topo1(*_fmeshSurr);
-  Foam::vtkTopo topo2(*_fmeshPacks);
+  Foam::foamVTKTopo topo1(*_fmeshSurr);
+  Foam::foamVTKTopo topo2(*_fmeshPacks);
 
   // point data for surrounding
   Foam::pointField pfSurr = _fmeshSurr->points();
@@ -2060,7 +2064,9 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   Foam::argList args(argc, argv);
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, ".", ".");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   Foam::word regionName = Foam::polyMesh::defaultRegion;
 
@@ -2082,8 +2088,8 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   // tets and pyramids. Additional points will be added
   // to underlying fvMesh.
   std::cout << "Performing topological decomposition.\n";
-  Foam::vtkTopo topo1(*_fmeshSurr);
-  Foam::vtkTopo topo2(*_fmeshPacks);
+  Foam::foamVTKTopo topo1(*_fmeshSurr);
+  Foam::foamVTKTopo topo2(*_fmeshPacks);
 
   // point data for surrounding
   Foam::pointField pfSurr = _fmeshSurr->points();
@@ -2473,7 +2479,9 @@ void MeshManipulationFoam::periodicMeshMapper(std::string patch1,
   Foam::argList args(argc, argv);
   Foam::argList::noParallel();
 
-  Time runTime(Time::controlDictName, ".", ".");
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+  Time runTime(Time::controlDictName, one, two);
 
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
@@ -2567,8 +2575,9 @@ void MeshManipulationFoam::periodicMeshMapper(std::string patch1,
 // All the private functions are defined here
 
 // SurfaceLambdaMuSmooth
-Foam::tmp<Foam::pointField> MeshManipulationFoam::avg(
-    const Foam::meshedSurface& s, const Foam::PackedBoolList& fixedPoints) {
+  Foam::tmp<Foam::pointField> MeshManipulationFoam::avg(
+       const Foam::meshedSurface& s, const Foam::bitSet& fixedPoints)
+{
   using namespace Foam;
   const labelListList& pointEdges = s.pointEdges();
 
@@ -2599,9 +2608,10 @@ Foam::tmp<Foam::pointField> MeshManipulationFoam::avg(
 }
 
 // SurfaceLambdaMuSmooth
-void MeshManipulationFoam::getFixedPoints(const Foam::edgeMesh& feMesh,
-                                          const Foam::pointField& points,
-                                          Foam::PackedBoolList& fixedPoints) {
+  void MeshManipulationFoam::getFixedPoints(const Foam::edgeMesh& feMesh,
+                                            const Foam::pointField& points,
+                                            Foam::bitSet& fixedPoints)
+{
   using namespace Foam;
   scalarList matchDistance(feMesh.points().size(), 1e-1);
   labelList from0To1;
@@ -2956,75 +2966,13 @@ Foam::autoPtr<Foam::mapPolyMesh> MeshManipulationFoam::createRegionMesh(
 
     Foam::autoPtr<Foam::fvMesh>& newMesh) {
   using namespace Foam;
-  // Create dummy system/fv*
+// Create dummy system/fv*
   {
     IOobject io("fvSchemes", mesh.time().system(), regionName, mesh,
                 IOobject::NO_READ, IOobject::NO_WRITE, false);
 
     Info << "Testing:" << io.objectPath() << endl;
 
-#ifdef HAVE_OF5
-
-    if (!io.typeHeaderOk<IOdictionary>(true))
-    // if (!exists(io.objectPath()))
-    {
-      Info << "Writing dummy " << regionName / io.name() << endl;
-      dictionary dummyDict;
-      dictionary divDict;
-      dummyDict.add("divSchemes", divDict);
-      dictionary gradDict;
-      dummyDict.add("gradSchemes", gradDict);
-      dictionary laplDict;
-      dummyDict.add("laplacianSchemes", laplDict);
-
-      IOdictionary(io, dummyDict).regIOobject::write();
-    }
-  }
-  {
-    IOobject io("fvSolution", mesh.time().system(), regionName, mesh,
-                IOobject::NO_READ, IOobject::NO_WRITE, false);
-
-    if (!io.typeHeaderOk<IOdictionary>(true))
-    // if (!exists(io.objectPath()))
-    {
-      Info << "Writing dummy " << regionName / io.name() << endl;
-      dictionary dummyDict;
-      IOdictionary(io, dummyDict).regIOobject::write();
-    }
-  }
-
-#endif
-
-#ifdef HAVE_OF4
-
-  if (!io.headerOk()) {
-    Info << "Writing dummy " << regionName / io.name() << endl;
-    dictionary dummyDict;
-    dictionary divDict;
-    dummyDict.add("divSchemes", divDict);
-    dictionary gradDict;
-    dummyDict.add("gradSchemes", gradDict);
-    dictionary laplDict;
-    dummyDict.add("laplacianSchemes", laplDict);
-
-    IOdictionary(io, dummyDict).regIOobject::write();
-  }
-}
-{
-  IOobject io("fvSolution", mesh.time().system(), regionName, mesh,
-              IOobject::NO_READ, IOobject::NO_WRITE, false);
-
-  if (!io.headerOk()) {
-    Info << "Writing dummy " << regionName / io.name() << endl;
-    dictionary dummyDict;
-    IOdictionary(io, dummyDict).regIOobject::write();
-  }
-}
-
-#endif
-
-#ifdef HAVE_OF6
-
 if (!io.typeHeaderOk<IOdictionary>(true))
 // if (!exists(io.objectPath()))
 {
@@ -3052,40 +3000,6 @@ if (!io.typeHeaderOk<IOdictionary>(true))
     IOdictionary(io, dummyDict).regIOobject::write();
   }
 }
-
-#endif
-
-#ifdef HAVE_OF7
-
-if (!io.typeHeaderOk<IOdictionary>(true))
-// if (!exists(io.objectPath()))
-{
-  Info << "Writing dummy " << regionName / io.name() << endl;
-  dictionary dummyDict;
-  dictionary divDict;
-  dummyDict.add("divSchemes", divDict);
-  dictionary gradDict;
-  dummyDict.add("gradSchemes", gradDict);
-  dictionary laplDict;
-  dummyDict.add("laplacianSchemes", laplDict);
-
-  IOdictionary(io, dummyDict).regIOobject::write();
-}
-}
-{
-  IOobject io("fvSolution", mesh.time().system(), regionName, mesh,
-              IOobject::NO_READ, IOobject::NO_WRITE, false);
-
-  if (!io.typeHeaderOk<IOdictionary>(true))
-  // if (!exists(io.objectPath()))
-  {
-    Info << "Writing dummy " << regionName / io.name() << endl;
-    dictionary dummyDict;
-    IOdictionary(io, dummyDict).regIOobject::write();
-  }
-}
-
-#endif
 
 // Neighbour cellRegion.
 labelList coupledRegion(mesh.nFaces() - mesh.nInternalFaces());

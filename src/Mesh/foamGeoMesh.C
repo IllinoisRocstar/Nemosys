@@ -12,7 +12,6 @@
 
 #include <fvCFD.H>
 #include <fvMesh.H>
-#include <vtkTopo.H>
 #include <fileName.H>
 #include <cellModeller.H>
 
@@ -25,6 +24,7 @@
 #include <vtkStringArray.h>
 #include <vtkFieldData.h>
 
+#include <foamVTKTopo.H>
 #include <ZoneMesh.H>
 #include <cellZone.H>
 #include <topoSetSource.H>
@@ -111,7 +111,7 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
     // tets and pyramids. Additional points will be added
     // to underlying fvMesh.
     std::cout << "Performing topological decomposition.\n";
-    Foam::vtkTopo topo(*foamMesh);
+    foamVTKTopo topo(*foamMesh);
 
     // point data
     Foam::pointField pf = foamMesh->points();
@@ -333,11 +333,6 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     std::vector<int> typeCell;
     typeCell.resize(numCells);
 
-    // Foam cell modelers
-    const Foam::cellModel& hex = *(Foam::cellModeller::lookup("hex"));
-    const Foam::cellModel& pyr = *(Foam::cellModeller::lookup("pyr"));
-    const Foam::cellModel& tet = *(Foam::cellModeller::lookup("tet"));
-
     for (int i=0; i<numPoints; i++) {
       pointData[i] = Foam::vector(verts[i][0],verts[i][1],verts[i][2]);
       pointData2[i] = Foam::vector(verts[i][0],verts[i][1],verts[i][2]);
@@ -355,16 +350,16 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
         meshPoints[k] = cellIds[i][k];
       typeCell[i] = geoMesh.mesh->GetCellType(i);
       if (typeCell[i] == 12) {
-        cellShapeData[i] = cellShape(hex, meshPoints, true);
-        cellShapeData2[i] = cellShape(hex, meshPoints, true);
+        cellShapeData[i] = cellShape("hex", meshPoints, true);
+        cellShapeData2[i] = cellShape("hex", meshPoints, true);
       }
       else if (typeCell[i] == 14) {
-        cellShapeData[i] = cellShape(pyr, meshPoints, true);
-        cellShapeData2[i] = cellShape(pyr, meshPoints, true);
+        cellShapeData[i] = cellShape("pyr", meshPoints, true);
+        cellShapeData2[i] = cellShape("pyr", meshPoints, true);
       }
       else if (typeCell[i] == 10) {
-        cellShapeData[i] = cellShape(tet, meshPoints, true);
-        cellShapeData2[i] = cellShape(tet, meshPoints, true);
+        cellShapeData[i] = cellShape("tet", meshPoints, true);
+        cellShapeData2[i] = cellShape("tet", meshPoints, true);
       }
       else {
         std::cerr << "Only Hexahedral, Tetrahedral," 
@@ -394,6 +389,9 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
   std::vector<int> startIds;
   std::vector<int> nFacesInPatch;
   Foam::PtrList<Foam::dictionary> dictList(0);
+  Foam::PtrList<Foam::polyPatch> patchPtrList(0);
+  Foam::cellList cellLst2(0);
+  Foam::faceList faceLst2(0);
 
   if (idx1 != -1 && idx2 != -1) {
     // Patches exist
@@ -457,7 +455,6 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     boundaryPatchPhysicalTypes.resize(totalPatches,polyPatch::typeName);
   }
 
-#ifdef HAVE_OF5
   {
     Foam::polyMesh tmpfm(
       IOobject
@@ -468,7 +465,7 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
         Foam::IOobject::NO_READ,
         Foam::IOobject::AUTO_WRITE
       ),
-      Foam::xferMove(pointData),   // Vertices
+      std::move(pointData),        // Vertices
       cellShapeData,               // Cell shape and points
       bndryFaces,                  // Boundary faces
       BndryPatchNames,             // Boundary Patch Names
@@ -479,21 +476,19 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     );
 
     const polyBoundaryMesh& patches2 = tmpfm.boundaryMesh();
-    
+
     for (int i=0; i<patches2.size(); i++) {
-      startIds.push_back(patches2[i].start());
+      Foam::polyPatch *tmpPtch = new Foam::polyPatch(patches2[i]);
+      patchPtrList.append(tmpPtch);
     }
 
-    for (int i=0; i<totalPatches; i++) {
-      Foam::dictionary *tmpDict = new Foam::dictionary(BndryPatchNames[i]);
-      tmpDict->add("type","patch");
-      tmpDict->add("nFaces",nFacesInPatch[i]);
-      tmpDict->add("startFace",startIds[i]);
-      dictList.append(tmpDict);
-    }
+    // Get pointField (points), faceList (faces), and cellList (cells).
+    const Foam::cellList cellLst = tmpfm.cells();
+    cellLst2 = cellLst;
+    const Foam::faceList faceLst = tmpfm.faces();
+    faceLst2 = faceLst;
   }
 
-  // Create FvMesh
   auto fm = std::unique_ptr<Foam::fvMesh>(new Foam::fvMesh(
     IOobject
     (
@@ -503,180 +498,13 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
       Foam::IOobject::NO_READ,
       Foam::IOobject::AUTO_WRITE
     ),
-    Foam::xferMove(pointData2),
-    cellShapeData2,
-    bndryFaces,
-    BndryPatchNames,
-    dictList,
-    "defaultPatch",
-    Foam::polyPatch::typeName
+    std::move(pointData2),
+    std::move(faceLst2),
+    std::move(cellLst2)
   ));
-#endif
-#ifdef HAVE_OF6
-  {
-    Foam::polyMesh tmpfm(
-      IOobject
-      (
-        regName,
-        runTime_->timeName(),
-        *runTime_,
-        Foam::IOobject::NO_READ,
-        Foam::IOobject::AUTO_WRITE
-      ),
-      Foam::xferMove(pointData),   // Vertices
-      cellShapeData,               // Cell shape and points
-      bndryFaces,                  // Boundary faces
-      BndryPatchNames,             // Boundary Patch Names
-      BndryPatchTypes,             // Boundary Patch Types
-      "defaultPatch",              // Default Patch Name
-      Foam::polyPatch::typeName,   // Default Patch Type
-      Foam::wordList()
-    );
 
-    const polyBoundaryMesh& patches2 = tmpfm.boundaryMesh();
-    
-    for (int i=0; i<patches2.size(); i++) {
-      startIds.push_back(patches2[i].start());
-    }
-
-    for (int i=0; i<totalPatches; i++) {
-      Foam::dictionary *tmpDict = new Foam::dictionary(BndryPatchNames[i]);
-      tmpDict->add("type","patch");
-      tmpDict->add("nFaces",nFacesInPatch[i]);
-      tmpDict->add("startFace",startIds[i]);
-      dictList.append(tmpDict);
-    }
-  }
-
-  // Create FvMesh
-  auto fm = std::unique_ptr<Foam::fvMesh>(new Foam::fvMesh(
-    IOobject
-    (
-      regName,
-      runTime_->timeName(),
-      *runTime_,
-      Foam::IOobject::NO_READ,
-      Foam::IOobject::AUTO_WRITE
-    ),
-    Foam::xferMove(pointData2),
-    cellShapeData2,
-    bndryFaces,
-    BndryPatchNames,
-    dictList,
-    "defaultPatch",
-    Foam::polyPatch::typeName
-  ));
-#endif
-#ifdef HAVE_OF7
-  {
-    Foam::polyMesh tmpfm(
-      IOobject
-      (
-        regName,
-        runTime_->timeName(),
-        *runTime_,
-        Foam::IOobject::NO_READ,
-        Foam::IOobject::AUTO_WRITE
-      ),
-      Foam::move(pointData),       // Vertices
-      cellShapeData,               // Cell shape and points
-      bndryFaces,                  // Boundary faces
-      BndryPatchNames,             // Boundary Patch Names
-      BndryPatchTypes,             // Boundary Patch Types
-      "defaultPatch",              // Default Patch Name
-      Foam::polyPatch::typeName,   // Default Patch Type
-      Foam::wordList()
-    );
-
-    const polyBoundaryMesh& patches2 = tmpfm.boundaryMesh();
-    
-    for (int i=0; i<patches2.size(); i++) {
-      startIds.push_back(patches2[i].start());
-    }
-
-    for (int i=0; i<totalPatches; i++) {
-      Foam::dictionary *tmpDict = new Foam::dictionary(BndryPatchNames[i]);
-      tmpDict->add("type","patch");
-      tmpDict->add("nFaces",nFacesInPatch[i]);
-      tmpDict->add("startFace",startIds[i]);
-      dictList.append(tmpDict);
-    }
-  }
-
-  // Create FvMesh
-  auto fm = std::unique_ptr<Foam::fvMesh>(new Foam::fvMesh(
-    IOobject
-    (
-      regName,
-      runTime_->timeName(),
-      *runTime_,
-      Foam::IOobject::NO_READ,
-      Foam::IOobject::AUTO_WRITE
-    ),
-    Foam::move(pointData2),
-    cellShapeData2,
-    bndryFaces,
-    BndryPatchNames,
-    dictList,
-    "defaultPatch",
-    Foam::polyPatch::typeName
-  ));
-#endif
-#ifdef HAVE_OF8
-  {
-    Foam::polyMesh tmpfm(
-      IOobject
-      (
-        regName,
-        runTime_->timeName(),
-        *runTime_,
-        Foam::IOobject::NO_READ,
-        Foam::IOobject::AUTO_WRITE
-      ),
-      Foam::move(pointData),   // Vertices
-      cellShapeData,               // Cell shape and points
-      bndryFaces,                  // Boundary faces
-      BndryPatchNames,             // Boundary Patch Names
-      BndryPatchTypes,             // Boundary Patch Types
-      "defaultPatch",              // Default Patch Name
-      Foam::polyPatch::typeName,   // Default Patch Type
-      Foam::wordList()
-    );
-
-    const polyBoundaryMesh& patches2 = tmpfm.boundaryMesh();
-    
-    for (int i=0; i<patches2.size(); i++) {
-      startIds.push_back(patches2[i].start());
-    }
-
-    for (int i=0; i<totalPatches; i++) {
-      Foam::dictionary *tmpDict = new Foam::dictionary(BndryPatchNames[i]);
-      tmpDict->add("type","patch");
-      tmpDict->add("nFaces",nFacesInPatch[i]);
-      tmpDict->add("startFace",startIds[i]);
-      dictList.append(tmpDict);
-    }
-  }
-
-  // Create FvMesh
-  auto fm = std::unique_ptr<Foam::fvMesh>(new Foam::fvMesh(
-    IOobject
-    (
-      regName,
-      runTime_->timeName(),
-      *runTime_,
-      Foam::IOobject::NO_READ,
-      Foam::IOobject::AUTO_WRITE
-    ),
-    Foam::move(pointData2),
-    cellShapeData2,
-    bndryFaces,
-    BndryPatchNames,
-    dictList,
-    "defaultPatch",
-    Foam::polyPatch::typeName
-  ));
-#endif
+  // Add boundary patches to fvMesh using patchPtrList
+  fm->addFvPatches(patchPtrList,true);
 
   // Get Physical Groups Vector from GeoMesh
   std::vector<double> allGroups;

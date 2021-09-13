@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 59)
+set(NEMOSYS_MINOR_VERSION 60)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -160,7 +160,7 @@ if(ENABLE_MPI)
   endif(MPI_EXTRA_LIBRARY)
   # Needed for mpich 2
   add_definitions("-DMPICH_IGNORE_CXX_SEEK")
-  set(Omega_h_USE_MPI ON)
+  set(Omega_h_USE_MPI OFF)
 endif()
 
 # Find VTK
@@ -312,24 +312,17 @@ endif()
 # Find cfMesh and OpenFOAM
 if(ENABLE_CFMSH)
   # checking OpenFOAM version
-  string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
-  if(OF4 GREATER -1)
-    # OpenFOAM 4.x
-    find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
-        meshTools finiteVolume foamToVTK dynamicMesh lagrangian
-        fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
-        genericPatchFields
-        edgeMesh dynamicMesh topoChangerFvMesh dynamicFvMesh sampling
-        fvOptions incompressibleTransportModels incompressibleTurbulenceModels
-        turbulenceModels)
-  else()
-    # 5.x and 6.x series
-    find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM triSurface
-        meshTools finiteVolume foamToVTK dynamicMesh lagrangian
-        fileFormats surfMesh triSurface distributed snappyHexMesh blockMesh
+  string(FIND $ENV{WM_PROJECT_VERSION} "2006" OF2006)
+  if(OF2006 GREATER -1)
+    # OpenFOAM-v2006 present
+    find_package(OpenFOAM REQUIRED COMPONENTS OpenFOAM
+        meshTools finiteVolume dynamicMesh lagrangian
+        fileFormats surfMesh distributed snappyHexMesh blockMesh
         genericPatchFields dynamicMesh topoChangerFvMesh dynamicFvMesh sampling
         fvOptions incompressibleTransportModels incompressibleTurbulenceModels
-        turbulenceModels)
+        turbulenceModels decompose decompositionMethods reconstruct meshLibrary)
+  else()
+    message(FATAL_ERROR "Only openfoam.com v2006 is supported.")
   endif()
 
   message(STATUS "OpenFOAM include directory ${OPNF_INCLUDE_DIRS}")
@@ -390,12 +383,6 @@ add_subdirectory(contrib/jsoncons-0.159.0)
 # Find Eigen
 add_subdirectory(contrib/eigen-3.3.7)
 
-if(ENABLE_CFMSH)
-  # Find cfMesh
-  add_subdirectory(contrib/cfmesh-1.1.2ir1)
-  # TODO: Add LIBRARY_DIRS
-endif()
-
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
   add_subdirectory(contrib/libsupermesh-1.0.1)
   # TODO: Add LIBRARY_DIRS
@@ -407,6 +394,11 @@ if(ENABLE_EPIC)
   list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/kmeans-5b9691d)
   add_subdirectory(contrib/fast-cpp-csv-parser-75600d0)
 endif()
+
+# Setting include files for CfMesh
+file(GLOB cfmsh_H_files contrib/cfmesh_headers/*.H)
+file(GLOB cfmsh_C_files contrib/cfmesh_headers/*.C)
+set(CFMSH_INC_FILES ${cfmsh_H_files} ${cfmsh_C_files})
 
 # Setting library files ########################################################
 
@@ -697,6 +689,7 @@ if(ENABLE_CFMSH)
       include/MeshManipulationFoam/MeshManipulationFoamParams.H
       src/MeshManipulationFoam/mergePolyMesh.H
       src/MeshManipulationFoam/mergePolyMesh.C
+      src/MeshManipulationFoam/foamVTKTopo.C
 
       include/MeshQuality/cfmeshQualityParams.H
 
@@ -831,39 +824,28 @@ endif()
 
 if(ENABLE_CFMSH)
   target_link_libraries(Nemosys
-      # TODO: Add namespace to cfMesh to protect the symbol clash between
-      #       libdynamicMesh.so in OpenFOAM and libmeshLibrary.so in cfMesh.
-      #       Till then, link cfMesh before OpenFOAM.
-      PUBLIC cfmesh
+      # PUBLIC cfmesh
       PUBLIC ${OPNF_LIBRARIES})
   NEM_include_3p_directories(Nemosys PUBLIC ${OPNF_INCLUDE_DIRS})
+  NEM_include_3p_directories(Nemosys PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/contrib/cfmesh_headers>
+      $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cfmesh>
+  )
+
   target_compile_definitions(Nemosys PUBLIC
       HAVE_CFMSH
       ${OPNF_COMPILE_DEFINITIONS}
   )
 
-  string(FIND $ENV{WM_PROJECT_VERSION} "4" OF4)
-  if(OF4 GREATER -1)
-    set(OF_VERSION 4)
-    target_compile_definitions(Nemosys PUBLIC HAVE_OF4)
+  string(FIND $ENV{WM_PROJECT_VERSION} "v2006" OF2006)
+  string(FIND $ENV{WM_PROJECT_VERSION} "v2012" OF2012)
+  if(OF2006 GREATER -1)
+    set(OF_VERSION v2006)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF2006)
   endif()
-
-  string(FIND $ENV{WM_PROJECT_VERSION} "5" OF5)
-  if(OF5 GREATER -1)
-    set(OF_VERSION 5)
-    target_compile_definitions(Nemosys PUBLIC HAVE_OF5)
-  endif()
-
-  string(FIND $ENV{WM_PROJECT_VERSION} "6" OF6)
-  if(OF6 GREATER -1)
-    set(OF_VERSION 6)
-    target_compile_definitions(Nemosys PUBLIC HAVE_OF6)
-  endif()
-
-  string(FIND $ENV{WM_PROJECT_VERSION} "7" OF7)
-  if(OF7 GREATER -1)
-    set(OF_VERSION 7)
-    target_compile_definitions(Nemosys PUBLIC HAVE_OF7)
+  if(OF2012 GREATER -1)
+    set(OF_VERSION v2012)
+    target_compile_definitions(Nemosys PUBLIC HAVE_OF2012)
   endif()
 
   target_link_libraries(Nemosys PRIVATE Boost::filesystem)
@@ -919,6 +901,12 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
           "${conditional_cuda_flag}-Wnon-virtual-dtor")
   target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wstrict-null-sentinel"
           "${conditional_cuda_flag}-Wredundant-decls")
+
+  target_compile_options(Nemosys PUBLIC "${conditional_cuda_flag}-Wno-deprecated-declarations")
+#  target_compile_definitions(Nemosys PUBLIC
+#      NEMOSYS_DEPRECATED_EXPORT=NEMOSYS_EXPORT
+#      NEMOSYS_DEPRECATED_NO_EXPORT=NEMOSYS_NO_EXPORT)
+
   if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
     target_compile_options(Nemosys PRIVATE "${conditional_cuda_flag}-Wfloat-conversion")
   endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4.9)
@@ -969,6 +957,12 @@ endforeach()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/nemosys_export.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nemosys)
+
+# cfmesh
+if(ENABLE_CFMSH)
+  install(FILES ${CFMSH_INC_FILES}
+      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cfmesh)
+endif()
 
 # Libraries
 install(TARGETS Nemosys

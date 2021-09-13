@@ -109,10 +109,11 @@ class snappymeshGen : public meshGen
   **/
   void removeZeroSizedPatches(Foam::fvMesh& mesh);
   
-  /** @brief
+  /** @brief Get bounding box magnitude
   **/
   Foam::scalar getMergeDistance(const Foam::polyMesh& mesh,
-                              const Foam::scalar mergeTol);
+                                const Foam::scalar mergeTol,
+                                const bool dryRun);
   
   /** @brief Extracts mesh surface from volumetric mesh
   **/
@@ -134,6 +135,11 @@ class snappymeshGen : public meshGen
                             const Foam::dictionary& shapeControlDict,
                             const Foam::label gapLevelIncrement,
                             const Foam::scalar level0Coeff);
+
+  /** @brief Checks alignment of edges with axes of coordinates
+  **/
+  Foam::label checkAlignment(const Foam::polyMesh& mesh, const Foam::scalar tol,
+                             Foam::Ostream& os);
 
   private:
   /** @brief If enabled, generated mesh using default parameters

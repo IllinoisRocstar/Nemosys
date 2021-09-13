@@ -7,7 +7,7 @@
 // openfoam headers
 #include <fvCFD.H>
 #include <fvMesh.H>
-#include <vtkTopo.H>
+#include <foamVTKTopo.H>
 #include <fileName.H>
 #include <cellModeller.H>
 
@@ -140,7 +140,7 @@ void foamMesh::genMshDB()
     // tets and pyramids. Additional points will be added
     // to underlying fvMesh.
     std::cout << "Performing topological decomposition.\n";
-    Foam::vtkTopo topo(*_fmesh);
+    Foam::foamVTKTopo topo(*_fmesh);
 
     // point data
     Foam::pointField pf = _fmesh->points();
@@ -566,11 +566,14 @@ void foamMesh::write(const std::string &fname) const
   Foam::Info<< "Create time\n" << Foam::endl;
   Foam::argList::noParallel();
 
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
+
   Time runTime
   (
       Time::controlDictName,
-      "",
-      ""
+      one,
+      two
   );
   
   // Fetches VTK dataset from VTU/VTK files
@@ -606,11 +609,6 @@ void foamMesh::write(const std::string &fname) const
   // Foam cell data container
   Foam::cellShapeList cellShapeData(numCells);
 
-  // Foam cell modelers
-  const Foam::cellModel& hex = *(Foam::cellModeller::lookup("hex"));
-  const Foam::cellModel& pyr = *(Foam::cellModeller::lookup("pyr"));
-  const Foam::cellModel& tet = *(Foam::cellModeller::lookup("tet"));
-
 
   for (int i=0; i<numPoints; i++)
   {
@@ -639,15 +637,15 @@ void foamMesh::write(const std::string &fname) const
 
     if (typeCell[i] == 12)
     {
-      cellShapeData[i] = cellShape(hex, meshPoints, true);
+      cellShapeData[i] = cellShape("hex", meshPoints, true);
     }
     else if (typeCell[i] == 14)
     {
-      cellShapeData[i] = cellShape(pyr, meshPoints, true);
+      cellShapeData[i] = cellShape("pyr", meshPoints, true);
     }
     else if (typeCell[i] == 10)
     {
-      cellShapeData[i] = cellShape(tet, meshPoints, true);
+      cellShapeData[i] = cellShape("tet", meshPoints, true);
     }
     else
     {
@@ -659,8 +657,6 @@ void foamMesh::write(const std::string &fname) const
     
   }
 
-#ifdef HAVE_OF4
-
   Foam::polyMesh mesh
   (
     IOobject
@@ -669,7 +665,7 @@ void foamMesh::write(const std::string &fname) const
         runTime.constant(),
         runTime
     ),
-    Foam::xferMove(pointData), // Vertices
+    std::move(pointData), // Vertices
     cellShapeData,  // Cell shape and points
     Foam::faceListList(), // Boundary faces
     Foam::wordList(), // Boundary Patch Names
@@ -678,74 +674,6 @@ void foamMesh::write(const std::string &fname) const
     Foam::polyPatch::typeName,  // Default Patch Type
     Foam::wordList()  // Boundary Patch Physical Type
   );
-
-#endif
-
-#ifdef HAVE_OF5
-
-  Foam::polyMesh mesh
-  (
-    IOobject
-    (
-        Foam::polyMesh::defaultRegion,
-        runTime.constant(),
-        runTime
-    ),
-    Foam::xferMove(pointData), // Vertices
-    cellShapeData,  // Cell shape and points
-    Foam::faceListList(), // Boundary faces
-    Foam::wordList(), // Boundary Patch Names
-    Foam::wordList(), // Boundary Patch Type
-    "defaultPatch", // Default Patch Name
-    Foam::polyPatch::typeName,  // Default Patch Type
-    Foam::wordList()  // Boundary Patch Physical Type
-  );
-
-#endif
-
-#ifdef HAVE_OF6
-
-  Foam::polyMesh mesh
-  (
-    IOobject
-    (
-        Foam::polyMesh::defaultRegion,
-        runTime.constant(),
-        runTime
-    ),
-    Foam::xferMove(pointData), // Vertices
-    cellShapeData,  // Cell shape and points
-    Foam::faceListList(), // Boundary faces
-    Foam::wordList(), // Boundary Patch Names
-    Foam::wordList(), // Boundary Patch Type
-    "defaultPatch", // Default Patch Name
-    Foam::polyPatch::typeName,  // Default Patch Type
-    Foam::wordList()  // Boundary Patch Physical Type
-  );
-
-#endif
-
-#ifdef HAVE_OF7
-  
-  Foam::polyMesh mesh
-  (
-    IOobject
-    (
-        Foam::polyMesh::defaultRegion,
-        runTime.constant(),
-        runTime
-    ),
-    Foam::move(pointData), // Vertices
-    cellShapeData,  // Cell shape and points
-    Foam::faceListList(), // Boundary faces
-    Foam::wordList(), // Boundary Patch Names
-    Foam::wordList(), // Boundary Patch Type
-    "defaultPatch", // Default Patch Name
-    Foam::polyPatch::typeName,  // Default Patch Type
-    Foam::wordList()  // Boundary Patch Physical Type
-  );
-
-#endif
 
   // ****************************************************************** //
 

@@ -7,14 +7,11 @@
 #include <vtkUnstructuredGrid.h>
 #include <set>
 #include <cstdlib>
-#include <sstream>
 
 // OpenFOAM headers
 #include <Time.H>
 #include <IOdictionary.H>
-#include <IOPtrList.H>
 #include <blockMesh.H>
-#include <attachPolyTopoChanger.H>
 #include <emptyPolyPatch.H>
 #include <cellSet.H>
 #include <argList.H>
@@ -24,14 +21,16 @@
 #include <slidingInterface.H>
 #include <fvCFD.H>
 #include <fvMesh.H>
-#include <vtkTopo.H>
+#include <foamVTKTopo.H>
 #include <fileName.H>
-#include <argList.H>
-#include <IFstream.H>
 #include <triSurf.H>
 #include <triSurfModifier.H>
 #include <boundBox.H>
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
+
+constexpr double Pi =3.14159265358979323846;
+constexpr double tan30 = 0.577350269189625731;
+constexpr double sin45 = 0.707106781186547462;
 
 blockMeshGen::blockMeshGen() // Default constructor body
 {
@@ -258,8 +257,8 @@ FoamFile\n\
     contText = contText + 
     "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n";
 
-    if (auto box = std::dynamic_pointer_cast<bmBox>(_params->shape))
-    {
+  if (auto box = std::dynamic_pointer_cast<bmBox>(_params->shape))
+  {
     double finalX = 0;
     double finalY = 0;
     double finalZ = 0;
@@ -270,8 +269,8 @@ FoamFile\n\
       const auto &autoGenerate = box->autoGenerate.value();
       Foam::fileName inFileName((autoGenerate.packFileName));
 
-      Foam::triSurf origSurface(inFileName);
-      Foam::triSurfModifier sMod(origSurface);
+      Foam::Module::triSurf origSurface(inFileName);
+      Foam::Module::triSurfModifier sMod(origSurface);
       Foam::pointField& points = sMod.pointsAccess();
 
       const Foam::boundBox bb(points);
@@ -311,9 +310,12 @@ FoamFile\n\
         double zLength = std::sqrt(((box->init[2]) - (finalZ)) *
                                    ((box->init[2]) - (finalZ)));
 
-        (_params->nCells[0]) = xLength/(_params->cellSize.value());
-        (_params->nCells[1]) = yLength/(_params->cellSize.value());
-        (_params->nCells[2]) = zLength/(_params->cellSize.value());
+        (_params->nCells[0]) =
+            static_cast<int>(std::round(xLength / (_params->cellSize.value())));
+        (_params->nCells[1]) =
+            static_cast<int>(std::round(yLength / (_params->cellSize.value())));
+        (_params->nCells[2]) =
+            static_cast<int>(std::round(zLength / (_params->cellSize.value())));
       }
     }
     else
@@ -329,44 +331,44 @@ FoamFile\n\
     }
 
     // Box data
-    contText = contText + "convertToMeters " + 
+    contText = contText + "convertToMeters " +
             std::to_string(_params->cnvrtToMeters) + ";\n";
     contText = contText + "\nvertices\n";
     contText = contText + "(\n\n";
     contText = contText + "\t(" + std::to_string(box->init[0])
             + " " + std::to_string(box->init[1]) + " "
             + std::to_string(box->init[2]) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(finalX)
             + " " + std::to_string(box->init[1]) + " "
             + std::to_string(box->init[2]) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(finalX)
             + " " + std::to_string(finalY) + " "
             + std::to_string(box->init[2]) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(box->init[0])
             + " " + std::to_string(finalY) + " "
             + std::to_string(box->init[2]) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(box->init[0])
             + " " + std::to_string(box->init[1]) + " "
             + std::to_string(finalZ) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(finalX)
             + " " + std::to_string(box->init[1]) + " "
             + std::to_string(finalZ) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(finalX)
             + " " + std::to_string(finalY) + " "
             + std::to_string(finalZ) + ")\n";
-            
+
     contText = contText + "\t(" + std::to_string(box->init[0])
             + " " + std::to_string(finalY) + " "
             + std::to_string(finalZ) + ")\n";
-            
+
     contText = contText + "\n);\n";
-        
+
     contText = contText + "\nblocks\n(";
     contText = contText + "\n\thex (0 1 2 3 4 5 6 7) (" +
             std::to_string(_params->nCells[0]) + " " +
@@ -375,51 +377,50 @@ FoamFile\n\
             std::to_string(box->smplGrading[0]) + " " +
             std::to_string(box->smplGrading[1]) + " " +
             std::to_string(box->smplGrading[2]) + ")\n\n";
-        
+
     contText = contText + ");\n";
-        
+
     contText = contText + "\nedges\n";
     contText = contText + "(\n\n);\n";
-        
+
     contText = contText + "\npatches";
     contText = contText + "\n(\n";
     contText = contText + "\n\tpatch up\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(3 7 6 2)\n";
     contText = contText + "\t)\n";
-        
+
     contText = contText + "\tpatch down\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(0 4 5 1)\n";
     contText = contText + "\t)\n";
-        
+
     contText = contText + "\tpatch in\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(3 7 4 0)\n";
     contText = contText + "\t)\n";
-        
+
     contText = contText + "\tpatch out\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(2 6 5 1)\n";
     contText = contText + "\t)\n";
-        
+
     contText = contText + "\tpatch front\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(0 1 2 3)\n";
     contText = contText + "\t)\n";
-        
+
     contText = contText + "\tpatch back\n";
     contText = contText + "\t(\n";
     contText = contText + "\t\t(4 5 6 7)\n";
     contText = contText + "\t)\n";
-        
-    contText = contText + "\n);\n";
-    
-    contText = contText + "\nmergePatchPairs\n(\n);\n";
-    contText = contText + 
-    "\n //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//";
-    }
 
+    contText = contText + "\n);\n";
+
+    contText = contText + "\nmergePatchPairs\n(\n);\n";
+    contText = contText +
+    "\n //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//";
+  }
   else if (auto sphere = std::dynamic_pointer_cast<bmSphere>(_params->shape))
   {
     // Put sphere implementation here
@@ -438,23 +439,35 @@ FoamFile\n\
     contText = contText + "\nconvertToMeters "
             + std::to_string(_params->cnvrtToMeters) + ";\n";
 
-    contText = contText + "\nvx   #calc \"$cx + 0.5773502*$rad\";\n";
-    contText = contText + "mvx  #calc \"$cx + -0.5773502*$rad\";\n";
+    double vx = (sphere->center[0]) + tan30*(sphere->radius);
+    double mvx = (sphere->center[0]) - tan30*(sphere->radius);
+    contText = contText + "\nvx "+std::to_string(vx)+";\n";
+    contText = contText + "mvx "+std::to_string(mvx)+";\n";
 
-    contText = contText + "\nvy  #calc \"$cy + 0.5773502*$rad\";\n";
-    contText = contText + "mvy  #calc \"$cy + -0.5773502*$rad\";\n";
+    double vy  = (sphere->center[1]) + tan30*(sphere->radius);
+    double mvy = (sphere->center[1]) - tan30*(sphere->radius);
+    contText = contText + "\nvy "+std::to_string(vy)+";\n";
+    contText = contText + "mvy "+std::to_string(mvy)+";\n";
 
-    contText = contText + "\nvz  #calc \"$cz + 0.5773502*$rad\";\n";
-    contText = contText + "mvz  #calc \"$cz + -0.5773502*$rad\";\n";
+    double vz  = (sphere->center[2]) + tan30*(sphere->radius);
+    double mvz = (sphere->center[2]) - tan30*(sphere->radius);
+    contText = contText + "\nvz "+std::to_string(vz)+";\n";
+    contText = contText + "mvz "+std::to_string(mvz)+";\n";
 
-    contText = contText + "\nax  #calc \"$cx + 0.7071067*$rad\";\n";
-    contText = contText + "max  #calc \"$cx + -0.7071067*$rad\";\n";
+    double ax  = (sphere->center[0]) + sin45*(sphere->radius);
+    double max = (sphere->center[0]) - sin45*(sphere->radius);
+    contText = contText + "\nax "+std::to_string(ax)+";\n";
+    contText = contText + "max "+std::to_string(max)+";\n";
 
-    contText = contText + "\nay  #calc \"$cy + 0.7071067*$rad\";\n";
-    contText = contText + "may  #calc \"$cy + -0.7071067*$rad\";\n";
+    double ay  = (sphere->center[1]) + sin45*(sphere->radius);
+    double may = (sphere->center[1]) - sin45*(sphere->radius);
+    contText = contText + "\nay "+std::to_string(ay)+";\n";
+    contText = contText + "may "+std::to_string(may)+";\n";
 
-    contText = contText + "\naz  #calc \"$cz + 0.7071067*$rad\";\n";
-    contText = contText + "maz  #calc \"$cz + -0.7071067*$rad\";\n";
+    double az  = (sphere->center[2]) + sin45*(sphere->radius);
+    double naz = (sphere->center[2]) - sin45*(sphere->radius);
+    contText = contText + "\naz "+std::to_string(az)+";\n";
+    contText = contText + "maz "+std::to_string(naz)+";\n";
 
 
     contText = contText + "\nvertices\n";
@@ -554,55 +567,155 @@ FoamFile\n\
     contText = contText + "grdZ " +
                std::to_string(cylTaperedCone->cylGrading[2]) + ";\n\n";
 
-    contText = contText + "\nX0 #calc \"$cx - 0.707106*$rad1\";";
-    contText = contText + "\nY0 #calc \"$cy - 0.707106*$rad1\";";
-    contText = contText + "\nX1 #calc \"$cx + 0.707106*$rad1\";";
-    contText = contText + "\nY1 #calc \"$cy - 0.707106*$rad1\";";
-    contText = contText + "\nX2 #calc \"$cx - 0.707106*0.3*$rad1\";";
-    contText = contText + "\nY2 #calc \"$cy - 0.707106*0.3*$rad1\";";
-    contText = contText + "\nX3 #calc \"$cx + 0.707106*0.3*$rad1\";";
-    contText = contText + "\nY3 #calc \"$cy - 0.707106*0.3*$rad1\";";
-    contText = contText + "\nX4 #calc \"$cx + 0.707106*0.3*$rad1\";";
-    contText = contText + "\nY4 #calc \"$cy + 0.707106*0.3*$rad1\";";
-    contText = contText + "\nX5 #calc \"$cx + 0.707106*$rad1\";";
-    contText = contText + "\nY5 #calc \"$cy + 0.707106*$rad1\";";
-    contText = contText + "\nX6 #calc \"$cx - 0.707106*0.3*$rad1\";";
-    contText = contText + "\nY6 #calc \"$cy + 0.707106*0.3*$rad1\";";
-    contText = contText + "\nX7 #calc \"$cx - 0.707106*$rad1\";";
-    contText = contText + "\nY7 #calc \"$cy + 0.707106*$rad1\";";
-    contText = contText + "\nX8 #calc \"$cx - 0.707106*$rad2\";";
-    contText = contText + "\nY8 #calc \"$cy - 0.707106*$rad2\";";
-    contText = contText + "\nX9 #calc \"$cx + 0.707106*$rad2\";";
-    contText = contText + "\nY9 #calc \"$cy - 0.707106*$rad2\";";
-    contText = contText + "\nX10 #calc \"$cx - 0.707106*0.3*$rad2\";";
-    contText = contText + "\nY10 #calc \"$cy - 0.707106*0.3*$rad2\";";
-    contText = contText + "\nX11 #calc \"$cx + 0.707106*0.3*$rad2\";";
-    contText = contText + "\nY11 #calc \"$cy - 0.707106*0.3*$rad2\";";
-    contText = contText + "\nX12 #calc \"$cx + 0.707106*0.3*$rad2\";";
-    contText = contText + "\nY12 #calc \"$cy + 0.707106*0.3*$rad2\";";
-    contText = contText + "\nX13 #calc \"$cx + 0.707106*$rad2\";";
-    contText = contText + "\nY13 #calc \"$cy + 0.707106*$rad2\";";
-    contText = contText + "\nX14 #calc \"$cx - 0.707106*0.3*$rad2\";";
-    contText = contText + "\nY14 #calc \"$cy + 0.707106*0.3*$rad2\";";
-    contText = contText + "\nX15 #calc \"$cx - 0.707106*$rad2\";";
-    contText = contText + "\nY15 #calc \"$cy + 0.707106*$rad2\";";
-    contText = contText + "\narcX1 #calc \"$cx*1\";";
-    contText = contText + "\narcY1 #calc \"$cy - $rad1\";";
-    contText = contText + "\narcX2 #calc \"$cx + $rad1\";";
-    contText = contText + "\narcY2 #calc \"$cy*1\";";
-    contText = contText + "\narcX3 #calc \"$cx*1\";";
-    contText = contText + "\narcY3 #calc \"$cy + $rad1\";";
-    contText = contText + "\narcX4 #calc \"$cx - $rad1\";";
-    contText = contText + "\narcY4 #calc \"$cy*1\";";
-    contText = contText + "\narcX5 #calc \"$cx*1\";";
-    contText = contText + "\narcY5 #calc \"$cy - $rad2\";";
-    contText = contText + "\narcX6 #calc \"$cx + $rad2\";";
-    contText = contText + "\narcY6 #calc \"$cy*1\";";
-    contText = contText + "\narcX7 #calc \"$cx*1\";";
-    contText = contText + "\narcY7 #calc \"$cy + $rad2\";";
-    contText = contText + "\narcX8 #calc \"$cx - $rad2\";";
-    contText = contText + "\narcY8 #calc \"$cy*1\";";
-    contText = contText + "\nfz #calc \"$cz + $h\";";
+    double rad1 = cylTaperedCone->radius1;
+    double rad2 = cylTaperedCone->radius2.value_or(cylTaperedCone->radius1);
+    double X0 = (cylTaperedCone->centerCyl[0]) - sin45*rad1;
+    contText = contText + "\nX0 "+std::to_string(X0)+";";
+
+    double Y0 = (cylTaperedCone->centerCyl[1]) - sin45*rad1;
+    contText = contText + "\nY0 "+std::to_string(Y0)+";";
+
+    double X1 = (cylTaperedCone->centerCyl[0]) + sin45*rad1;
+    contText = contText + "\nX1 "+std::to_string(X1)+";";
+
+    double Y1 = (cylTaperedCone->centerCyl[1]) - sin45*rad1;
+    contText = contText + "\nY1 "+std::to_string(Y1)+";";
+
+    double X2 = (cylTaperedCone->centerCyl[0]) - sin45*0.3*rad1;
+    contText = contText + "\nX2 "+std::to_string(X2)+";";
+
+    double Y2 = (cylTaperedCone->centerCyl[1]) - sin45*0.3*rad1;
+    contText = contText + "\nY2 "+std::to_string(Y2)+";";
+
+    double X3 = (cylTaperedCone->centerCyl[0]) + sin45*0.3*rad1;
+    contText = contText + "\nX3 "+std::to_string(X3)+";";
+
+    double Y3 = (cylTaperedCone->centerCyl[1]) - sin45*0.3*rad1;
+    contText = contText + "\nY3 "+std::to_string(Y3)+";";
+
+    double X4 = (cylTaperedCone->centerCyl[0]) + sin45*0.3*rad1;
+    contText = contText + "\nX4 "+std::to_string(X4)+";";
+
+    double Y4 = (cylTaperedCone->centerCyl[1]) + sin45*0.3*rad1;
+    contText = contText + "\nY4 "+std::to_string(Y4)+";";
+
+    double X5 = (cylTaperedCone->centerCyl[0]) + sin45*rad1;
+    contText = contText + "\nX5 "+std::to_string(X5)+";";
+
+    double Y5 = (cylTaperedCone->centerCyl[1]) + sin45*rad1;
+    contText = contText + "\nY5 "+std::to_string(Y5)+";";
+
+    double X6 = (cylTaperedCone->centerCyl[0]) - sin45*0.3*rad1;
+    contText = contText + "\nX6 "+std::to_string(X6)+";";
+
+    double Y6 = (cylTaperedCone->centerCyl[1]) + sin45*0.3*rad1;
+    contText = contText + "\nY6 "+std::to_string(Y6)+";";
+
+    double X7 = (cylTaperedCone->centerCyl[0]) - sin45*rad1;
+    contText = contText + "\nX7 "+std::to_string(X7)+";";
+
+    double Y7 = (cylTaperedCone->centerCyl[1]) + sin45*rad1;
+    contText = contText + "\nY7 "+std::to_string(Y7)+";";
+
+    double X8 = (cylTaperedCone->centerCyl[0]) - sin45*rad2;
+    contText = contText + "\nX8 "+std::to_string(X8)+";";
+
+    double Y8 = (cylTaperedCone->centerCyl[1]) - sin45*rad2;
+    contText = contText + "\nY8 "+std::to_string(Y8)+";";
+
+    double X9 = (cylTaperedCone->centerCyl[0]) + sin45*rad2;
+    contText = contText + "\nX9 "+std::to_string(X9)+";";
+
+    double Y9 = (cylTaperedCone->centerCyl[1]) - sin45*rad2;
+    contText = contText + "\nY9 "+std::to_string(Y9)+";";
+
+    double X10 = (cylTaperedCone->centerCyl[0]) - sin45*0.3*rad2;
+    contText = contText + "\nX10 "+std::to_string(X10)+";";
+
+    double Y10 = (cylTaperedCone->centerCyl[1]) - sin45*0.3*rad2;
+    contText = contText + "\nY10 "+std::to_string(Y10)+";";
+
+    double X11 = (cylTaperedCone->centerCyl[0]) + sin45*0.3*rad2;
+    contText = contText + "\nX11 "+std::to_string(X11)+";";
+
+    double Y11 = (cylTaperedCone->centerCyl[1]) - sin45*0.3*rad2;
+    contText = contText + "\nY11 "+std::to_string(Y11)+";";
+
+    double X12 = (cylTaperedCone->centerCyl[0]) + sin45*0.3*rad2;
+    contText = contText + "\nX12 "+std::to_string(X12)+";";
+
+    double Y12 = (cylTaperedCone->centerCyl[1]) + sin45*0.3*rad2;
+    contText = contText + "\nY12 "+std::to_string(Y12)+";";
+
+    double X13 = (cylTaperedCone->centerCyl[0]) + sin45*rad2;
+    contText = contText + "\nX13 "+std::to_string(X13)+";";
+
+    double Y13 = (cylTaperedCone->centerCyl[1]) + sin45*rad2;
+    contText = contText + "\nY13 "+std::to_string(Y13)+";";
+
+    double X14 = (cylTaperedCone->centerCyl[0]) - sin45*0.3*rad2;
+    contText = contText + "\nX14 "+std::to_string(X14)+";";
+
+    double Y14 = (cylTaperedCone->centerCyl[1]) + sin45*0.3*rad2;
+    contText = contText + "\nY14 "+std::to_string(Y14)+";";
+
+    double X15 = (cylTaperedCone->centerCyl[0]) - sin45*rad2;
+    contText = contText + "\nX15 "+std::to_string(X15)+";";
+
+    double Y15 = (cylTaperedCone->centerCyl[1]) + sin45*rad2;
+    contText = contText + "\nY15 "+std::to_string(Y15)+";";
+
+    double arcX1 = cylTaperedCone->centerCyl[0];
+    contText = contText + "\narcX1 "+std::to_string(arcX1)+";";
+
+    double arcY1 = (cylTaperedCone->centerCyl[1] - rad1);
+    contText = contText + "\narcY1 "+std::to_string(arcY1)+";";
+
+    double arcX2 = (cylTaperedCone->centerCyl[0] + rad1);
+    contText = contText + "\narcX2 "+std::to_string(arcX2)+";";
+
+    double arcY2 = cylTaperedCone->centerCyl[1];
+    contText = contText + "\narcY2 "+std::to_string(arcY2)+";";
+
+    double arcX3 = cylTaperedCone->centerCyl[0];
+    contText = contText + "\narcX3 "+std::to_string(arcX3)+";";
+
+    double arcY3 = (cylTaperedCone->centerCyl[1] + rad1);
+    contText = contText + "\narcY3 "+std::to_string(arcY3)+";";
+
+    double arcX4 = (cylTaperedCone->centerCyl[0] - rad1);
+    contText = contText + "\narcX4 "+std::to_string(arcX4)+";";
+
+    double arcY4 = cylTaperedCone->centerCyl[1];
+    contText = contText + "\narcY4 "+std::to_string(arcY4)+";";
+
+    double arcX5 = cylTaperedCone->centerCyl[0];
+    contText = contText + "\narcX5 "+std::to_string(arcX5)+";";
+
+    double arcY5 = (cylTaperedCone->centerCyl[1] - rad2);
+    contText = contText + "\narcY5 "+std::to_string(arcY5)+";";
+
+    double arcX6 = (cylTaperedCone->centerCyl[0] + rad2);
+    contText = contText + "\narcX6 "+std::to_string(arcX6)+";";
+
+    double arcY6 = cylTaperedCone->centerCyl[1];
+    contText = contText + "\narcY6 "+std::to_string(arcY6)+";";
+
+    double arcX7 = cylTaperedCone->centerCyl[0];
+    contText = contText + "\narcX7 "+std::to_string(arcX7)+";";
+
+    double arcY7 = (cylTaperedCone->centerCyl[1] + rad2);
+    contText = contText + "\narcY7 "+std::to_string(arcY7)+";";
+
+    double arcX8 = (cylTaperedCone->centerCyl[0] - rad2);
+    contText = contText + "\narcX8 "+std::to_string(arcX8)+";";
+
+    double arcY8 = cylTaperedCone->centerCyl[1];
+    contText = contText + "\narcY8 "+std::to_string(arcY8)+";";
+
+    double fz = (cylTaperedCone->centerCyl[1] + (cylTaperedCone->height));
+    contText = contText + "\nfz "+std::to_string(fz)+";";
+
     contText = contText + "\nconvertToMeters "
             + std::to_string(_params->cnvrtToMeters) + ";\n";
     
@@ -708,9 +821,6 @@ FoamFile\n\
 // Implementation of blockMesh code
 int blockMeshGen::createMeshFromSTL(const char* fname)
 {
-
-  using namespace Foam;
-
   int argc = 1;
   char** argv = new char*[2];
   argv[0] = new char[100];
@@ -719,11 +829,13 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
   Foam::Info<< "Create time\n" << Foam::endl;
   Foam::argList::noParallel();
 
+  Foam::fileName one = ".";
+  Foam::fileName two = ".";
   Time runTime
   (
     Time::controlDictName,
-    "",
-    ""
+    one,
+    two
   );
 
 
@@ -769,165 +881,41 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
     false
   );
 
-#ifdef HAVE_OF5
-
-    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    //if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-
-      Info<< "Creating block mesh from\n    "
-      << meshDictIO.objectPath() << endl;
-
-  IOdictionary meshDict(meshDictIO);
-  blockMesh blocks(meshDict, regionName);
-  
-  Info<< nl << "Creating polyMesh from blockMesh" << endl;
-
-  word defaultFacesName = "defaultFaces";
-  word defaultFacesType = emptyPolyPatch::typeName;
-  polyMesh mesh
-  (
-    IOobject
-    (
-      regionName,
-      runTime.constant(),
-      runTime
-    ),
-    xferCopy(blocks.points()),
-    blocks.cells(),
-    blocks.patches(),
-    blocks.patchNames(),
-    blocks.patchDicts(),
-    defaultFacesName,
-    defaultFacesType
-  );
-
-#endif
-
-#ifdef HAVE_OF4
-
-    //if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-
-      Info<< "Creating block mesh from\n    "
-      << meshDictIO.objectPath() << endl;
-
-  IOdictionary meshDict(meshDictIO);
-  blockMesh blocks(meshDict, regionName);
-  
-  Info<< nl << "Creating polyMesh from blockMesh" << endl;
-
-  word defaultFacesName = "defaultFaces";
-  word defaultFacesType = emptyPolyPatch::typeName;
-  polyMesh mesh
-  (
-    IOobject
-    (
-      regionName,
-      runTime.constant(),
-      runTime
-    ),
-    xferCopy(blocks.points()),
-    blocks.cells(),
-    blocks.patches(),
-    blocks.patchNames(),
-    blocks.patchDicts(),
-    defaultFacesName,
-    defaultFacesType
-  );
-    
-#endif
-
-#ifdef HAVE_OF6
-
-    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    //if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
-
-      Info<< "Creating block mesh from\n    "
-      << meshDictIO.objectPath() << endl;
-
-  IOdictionary meshDict(meshDictIO);
-  blockMesh blocks(meshDict, regionName);
-  
-  Info<< nl << "Creating polyMesh from blockMesh" << endl;
-
-  word defaultFacesName = "defaultFaces";
-  word defaultFacesType = emptyPolyPatch::typeName;
-  polyMesh mesh
-  (
-    IOobject
-    (
-      regionName,
-      runTime.constant(),
-      runTime
-    ),
-    xferCopy(blocks.points()),
-    blocks.cells(),
-    blocks.patches(),
-    blocks.patchNames(),
-    blocks.patchDicts(),
-    defaultFacesName,
-    defaultFacesType
-  );
-
-#endif
-
-#ifdef HAVE_OF7
-
-    if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
-    //if (!meshDictIO.headerOk())  // OF-4.0
-    {
-        FatalErrorInFunction
-            << meshDictIO.objectPath()
-            << nl
-            << exit(FatalError);
-    }
+  if (!meshDictIO.typeHeaderOk<IOdictionary>(true)) //OF-5.0
+  //if (!meshDictIO.headerOk())  // OF-4.0
+  {
+      FatalErrorInFunction
+          << meshDictIO.objectPath()
+          << nl
+          << exit(FatalError);
+  }
 
     Info<< "Creating block mesh from\n    "
     << meshDictIO.objectPath() << endl;
 
-    IOdictionary meshDict(meshDictIO);
-    blockMesh blocks(meshDict, regionName);
+  IOdictionary meshDict(meshDictIO);
+  blockMesh blocks(meshDict, regionName);
   
-    Info<< nl << "Creating polyMesh from blockMesh" << endl;
+  Info<< nl << "Creating polyMesh from blockMesh" << endl;
 
-    word defaultFacesName = "defaultFaces";
-    word defaultFacesType = emptyPolyPatch::typeName;
-    polyMesh mesh
+  word defaultFacesName = "defaultFaces";
+  word defaultFacesType = emptyPolyPatch::typeName;
+  polyMesh mesh
+  (
+    IOobject
     (
-        IOobject
-        (
-        regionName,
-        runTime.constant(),
-        runTime
-        ),
-        Foam::clone(blocks.points()),
-        blocks.cells(),
-        blocks.patches(),
-        blocks.patchNames(),
-        blocks.patchDicts(),
-        defaultFacesName,
-        defaultFacesType
-    );
-
-#endif
+      regionName,
+      runTime.constant(),
+      runTime
+    ),
+    Foam::pointField(blocks.points()),
+    blocks.cells(),
+    blocks.patches(),
+    blocks.patchNames(),
+    blocks.patchDicts(),
+    defaultFacesName,
+    defaultFacesType
+  );
 
     // Disabling mergePairs feature for now
     /*// Read in a list of dictionaries for the merge patch pairs
@@ -966,31 +954,12 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
     forAll(blocks, blockI)
     {
       const block& b = blocks[blockI];
-
-      #ifdef HAVE_OF5
-
-        const List<FixedList<label, 8>> blockCells = b.cells();  //OF-5.0
-
-      #endif
-      #ifdef HAVE_OF4
-
-        const labelListList& blockCells = b.cells();         //OF-4.0
-
-      #endif
-      #ifdef HAVE_OF6
-
-        const List<FixedList<label, 8>> blockCells = b.cells();  //OF-5.0
-
-      #endif
-      #ifdef HAVE_OF7
-
-        const List<FixedList<label, 8>> blockCells = b.cells();  //OF-5.0
-
-      #endif
+      
+      const List<FixedList<label, 8>> blockCells = b.cells();
 
        const word& zoneName = b.zoneName();
 
-       if (zoneName.size())
+       if (!zoneName.empty())
        {
           HashTable<label>::const_iterator iter = zoneMap.find(zoneName);
 
@@ -1015,7 +984,7 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
           }
 
         }
-        else
+       else
         {
           celli += b.cells().size();
         }
@@ -1098,6 +1067,8 @@ int blockMeshGen::createMeshFromSTL(const char* fname)
   Info<< "\nEnd\n" << endl;
 
   readFoamMesh();
+
+  return 0;
 }
 
 // Reads mesh from polyMesh
@@ -1108,10 +1079,11 @@ void blockMeshGen::readFoamMesh()
 
   Time runTime
   (
-    Time::controlDictName,
-    "",
-    ""
+      Time::controlDictName,
+      Foam::fileName("."),
+      Foam::fileName(".")
   );
+
   // reading mesh database and converting
   Foam::word regionName;
   regionName = Foam::fvMesh::defaultRegion;
@@ -1145,14 +1117,14 @@ void blockMeshGen::genMshDB()
       = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
   // decomposition
-  Foam::vtkTopo::decomposePoly = false;
+  Foam::foamVTKTopo::decomposePoly = false;
 
   // creating equivalent vtk topology from fvMesh
   // by default polyhedral cells will be decomposed to 
   // tets and pyramids. Additional points will be added
   // to underlying fvMesh.
   std::cout << "Performing topological decomposition.\n";
-  Foam::vtkTopo topo(*_fmesh);
+  Foam::foamVTKTopo topo(*_fmesh);
 
     // point coordinates
   Foam::pointField pf = _fmesh->points();
