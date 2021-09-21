@@ -1,6 +1,6 @@
 [
   {
-    "Reference File": "geom_mesh_ref.vtk",
+    "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
     "Mesh File Options": {
       "Input Geometry File": "box.stl",

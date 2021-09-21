@@ -9,12 +9,13 @@
 #include <Drivers/NemDriver.H>
 #include <MeshGeneration/snappymeshGen.H>
 #include <MeshGeneration/snappymeshParams.H>
+#include <Mesh/geoMeshFactory.H>
 #include <Mesh/vtkMesh.H>
 namespace fs = boost::filesystem;
 
 const char *inp_json;
-meshBase *mesh;
-meshBase *ref;
+NEM::MSH::geoMeshBase *mesh;
+NEM::MSH::geoMeshBase *ref;
 jsoncons::json inputjson;
 
 // Aux functions
@@ -97,10 +98,11 @@ int generate(const char *jsonF) {
   const auto &inputGeoFile = driver->getFiles().inputGeoFile;
   std::string newname =
       inputGeoFile.substr(0, inputGeoFile.find_last_of('.')) + ".vtu";
-  mesh = meshBase::Create(generator.getDataSet(), newname);
-  mesh->setFileName(driver->getFiles().outputMeshFile);
-  mesh->report();
-  mesh->write();
+  auto *mshWriter = NEM::MSH::Read(".foam");
+  mesh = NEM::MSH::New(driver->getFiles().outputMeshFile);
+  mesh->takeGeoMesh(mshWriter);
+  mesh->write(driver->getFiles().outputMeshFile);
+  mshWriter->Delete();
 
   return 0;
 }
@@ -111,15 +113,12 @@ TEST(snappyHexMesh, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 
 TEST(snappyHexMesh, NumberOfNodes) {
   if (ref) delete ref;
-  ref = meshBase::Create(inputjson["Reference File"].as<std::string>());
+  ref = NEM::MSH::Read(inputjson["Reference File"].as<std::string>());
   EXPECT_TRUE((mesh->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
               (mesh->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
-
 }
 
 TEST(snappyHexMesh, NumberOfCells) {
-  if (ref) delete ref;
-  ref = meshBase::Create(inputjson["Reference File"].as<std::string>());
   EXPECT_TRUE((mesh->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
               (mesh->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
 }
@@ -138,7 +137,8 @@ int main(int argc, char **argv) {
   int res = RUN_ALL_TESTS();
 
   // clean up
-  if (mesh) delete mesh;
+  mesh->Delete();
+  ref->Delete();
 
   snappyLogistics();  // clean up and replace mesh
 

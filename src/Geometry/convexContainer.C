@@ -3,8 +3,6 @@
 #include<sstream>
 #include<string.h>
 
-using namespace std;
-
 namespace NEM {
 
 namespace GEO {

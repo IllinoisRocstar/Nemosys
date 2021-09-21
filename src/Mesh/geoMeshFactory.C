@@ -52,14 +52,15 @@ geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
     case MeshType::FOAM_GEO_MESH:
 #ifdef HAVE_CFMSH
       std::string fname = fileName;
-      fname.erase(fname.find_last_of("."));
+      fname.erase(fname.find_last_of('.'));
       return foamGeoMesh::Read(fname);
 #else
-      std::cerr << "Please build NEMoSys with ENABLE_CFMSH=ON to use this" <<
-      " feature!" << std::endl;
+      std::cerr << "Please build NEMoSys with ENABLE_CFMSH=ON to use this"
+                << " feature!" << std::endl;
       throw;
 #endif
   }
+  return nullptr;
 }
 
 geoMeshBase *New(MeshType meshType) {
@@ -69,15 +70,16 @@ geoMeshBase *New(MeshType meshType) {
     case MeshType::OSH_GEO_MESH: return oshGeoMesh::New();
     case MeshType::EXO_GEO_MESH: return exoGeoMesh::New();
     case MeshType::INP_GEO_MESH: return inpGeoMesh::New();
-    case MeshType::FOAM_GEO_MESH: 
+    case MeshType::FOAM_GEO_MESH:
 #ifdef HAVE_CFMSH
       return foamGeoMesh::New();
 #else
-      std::cerr << "Please build NEMoSys with ENABLE_CFMSH=ON to use this" <<
-      " feature!" << std::endl;
+      std::cerr << "Please build NEMoSys with ENABLE_CFMSH=ON to use this"
+                << " feature!" << std::endl;
       throw;
 #endif
   }
+  return nullptr;
 }
 
 geoMeshBase *New(const std::string &fileName) {

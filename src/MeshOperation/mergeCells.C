@@ -28,7 +28,7 @@
 namespace NEM {
 namespace MSH {
 
-vtkStandardNewMacro(mergeCells);
+vtkStandardNewMacro(mergeCells)
 
 class mergeCellsSTLCloak {
  public:

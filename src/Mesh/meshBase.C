@@ -1104,6 +1104,11 @@ void meshBase::writeMSH(std::ofstream &outputStream) {
         {
           outputStream << 3 << " " << 2 << " " << 1 << " " << 1 << " ";
           break;
+        } else
+        {
+          std::cerr << "Cells with 4 components must be tet or quad."
+                    << std::endl;
+          exit(1);
         }
       }
 

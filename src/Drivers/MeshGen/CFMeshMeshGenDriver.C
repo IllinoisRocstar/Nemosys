@@ -2,7 +2,6 @@
 
 #include "AuxiliaryFunctions.H"
 #include "MeshGeneration/cfmeshGen.H"
-#include "Mesh/meshBase.H"
 
 namespace NEM {
 namespace DRV {
@@ -55,11 +54,16 @@ void CFMeshMeshGenDriver::execute() const {
   // Parameter not used
   generator.createMeshFromSTL(nullptr);
   std::string newname = nemAux::trim_fname(this->files_.inputGeoFile, ".vtu");
-  auto mesh =
-      meshBase::CreateShared(meshBase::Create(generator.getDataSet(), newname));
-  mesh->setFileName(this->files_.outputMeshFile);
-  mesh->report();
-  mesh->write();
+  //  auto mesh =
+  //      meshBase::CreateShared(meshBase::Create(generator.getDataSet(),
+  //      newname));
+  //  mesh->setFileName(this->files_.outputMeshFile);
+  //  mesh->report();
+  //  mesh->write();
+  auto mesh = NEM::MSH::New(this->files_.outputMeshFile);
+  mesh->takeGeoMesh(generator.gmData.get());
+  mesh->write(this->files_.outputMeshFile);
+  mesh->Delete();
 }
 
 }  // namespace DRV

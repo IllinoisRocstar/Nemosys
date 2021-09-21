@@ -1024,12 +1024,12 @@ void vtkMesh::unsetFieldDataArray(const std::string &name) {
 // Merges new dataset with existing dataset
 void vtkMesh::merge(vtkSmartPointer<vtkDataSet> dataSet_new) {
   vtkSmartPointer<vtkAppendFilter> appendFilter =
-    vtkSmartPointer<vtkAppendFilter>::New();
+      vtkSmartPointer<vtkAppendFilter>::New();
   appendFilter->AddInputData(dataSet);
   appendFilter->AddInputData(dataSet_new);
   appendFilter->MergePointsOn();
   appendFilter->Update();
-  dataSet = vtkDataSet::SafeDownCast(appendFilter->GetOutput());
+  dataSet = appendFilter->GetOutput();
 
   numCells = dataSet->GetNumberOfCells();
   numPoints = dataSet->GetNumberOfPoints();

@@ -103,7 +103,6 @@ int ep16Post::readJSON()
 
 int ep16Post::procErode(const jsoncons::json &jtsk)
 {
-  using namespace kmeans;
   // reading other necessary fields
   int nClst = jtsk["Number of Cluster"].as<int>();
   std::string ofClStem = jtsk["Output Stem"].as<std::string>();
@@ -125,21 +124,21 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
   csv.read_header(io::ignore_extra_column, "ELM#", "MAT", "X", "Y", "Z");
   size_t elm,mat; 
   double x,y,z;
-  std::vector<Point> pnts;
+  std::vector<kmeans::Point> pnts;
   std::vector<size_t> elmIds, matIds;
 
   while(csv.read_row(elm, mat, x, y, z))
   {
       //std::cout << elm << " " << mat << " "
       //    << x << " " << y << " " << z << std::endl;
-      Point p(x,y,z);
+      kmeans::Point p(x,y,z);
       pnts.push_back(p);
       elmIds.push_back(elm);
       matIds.push_back(mat);
   }
 
   // kmeans
-  auto kmeans = new KMeans(nClst, _kmeans_max_itr);
+  auto kmeans = new kmeans::KMeans(nClst, _kmeans_max_itr);
   //kmeans->verbose();
   kmeans->init(pnts);
   bool ret = kmeans->run();

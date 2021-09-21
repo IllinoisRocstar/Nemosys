@@ -113,6 +113,13 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
    */
   virtual void reconstructGeo();
 
+  /**
+   * Merge mesh data from a new geoMesh to an existing geoMesh. Deletes the data
+   * from the new geoMesh pointer
+   * @param otherGeoMesh A new geoMesh data to merge
+   */
+  virtual void mergeGeoMesh(geoMeshBase *otherGeoMesh);
+
  public:
   /**
    * Get the name of the geometric entities array

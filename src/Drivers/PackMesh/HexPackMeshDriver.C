@@ -6,7 +6,6 @@
 #include "MeshGeneration/blockMeshGen.H"
 #include "Geometry/rocPack.H"
 #include "MeshGeneration/snappymeshGen.H"
-#include "Mesh/vtkMesh.H"
 
 namespace NEM {
 namespace DRV {
@@ -141,40 +140,39 @@ void HexPackMeshDriver::execute() const {
   MeshManipulationFoamParams mmfParams;  // should outlive objMsh
   mmfParams.mergeMeshesParams = this->opts_.mmfMergeParams;
   mmfParams.createPatchParams = this->opts_.mmfCreatePatchParams;
-  MeshManipulationFoam *objMsh = new MeshManipulationFoam(&mmfParams);
+  auto objMsh = std::unique_ptr<MeshManipulationFoam>(
+      new MeshManipulationFoam(&mmfParams));
   const char *nameFile = "a";  // Dummy name for input
 
   // A rocpack method that creates stl and then moves it to triSurface using
   // boost.
   if (this->files_.isInputRocpackFile()) {
     std::string hexOutSTL = this->files_.getInputFile() + ".stl";
-    auto *objrocPck =
-        new NEM::GEO::rocPack(this->files_.getInputFile(), hexOutSTL);
+    auto objrocPck = std::unique_ptr<NEM::GEO::rocPack>(
+        new NEM::GEO::rocPack(this->files_.getInputFile(), hexOutSTL));
 
     objrocPck->removeBoundaryVolumes();
     objrocPck->rocPack2Surf();
 
-    if (objrocPck) delete objrocPck;
-
-    const std::string dir_path1 = hexOutSTL;
-    boost::filesystem::path dir1(dir_path1);
+    // const std::string dir_path11 = hexOutSTL;
+    boost::filesystem::path dir11(hexOutSTL);
 
     const std::string dir_path2 =
         "./constant/triSurface/" + this->files_.getInputFile() + ".stl";
     boost::filesystem::path dir2(dir_path2);
 
     boost::filesystem::copy_file(
-        dir1, dir2, boost::filesystem::copy_option::overwrite_if_exists);
+        dir11, dir2, boost::filesystem::copy_option::overwrite_if_exists);
   } else {
-    const std::string dir_path1 = this->files_.getInputFile();
-    boost::filesystem::path dir1(dir_path1);
+    const std::string dir_path11 = this->files_.getInputFile();
+    boost::filesystem::path dir11(dir_path11);
 
     const std::string dir_path2 =
         "./constant/triSurface/" + this->files_.getInputFile();
     boost::filesystem::path dir2(dir_path2);
 
     boost::filesystem::copy_file(
-        dir1, dir2, boost::filesystem::copy_option::overwrite_if_exists);
+        dir11, dir2, boost::filesystem::copy_option::overwrite_if_exists);
   }
 
   // blockMesh utility takes user input for surrounding box region and
@@ -182,12 +180,14 @@ void HexPackMeshDriver::execute() const {
   // previous mesh created by CfMesh. This mesh will be used as background mesh
   // by snappyHexMesh later.
   auto bmParamsCopy = this->opts_.bmParams;  // should outlive objBM
-  blockMeshGen *objBM = new blockMeshGen(&bmParamsCopy);
+  bmParamsCopy.isPackMesh = true;
+  auto objBM = std::unique_ptr<blockMeshGen>(new blockMeshGen(&bmParamsCopy));
   objBM->createMeshFromSTL(nameFile);
 
   // Updating location for next process
   auto adjust = this->opts_.locAdjust >= 0. ? this->opts_.locAdjust : 0.;
   auto smParamsCopy = this->opts_.smParams;  // should outlive objSHM
+  smParamsCopy.isPackMesh = true;
   smParamsCopy.castMeshControls.locMesh[0] =
       std::dynamic_pointer_cast<bmBox>(bmParamsCopy.shape)->coordsBox.first[0] +
       0.001 + adjust;
@@ -203,7 +203,8 @@ void HexPackMeshDriver::execute() const {
   // ground mesh and creates different cellZones (i.e different solids). These
   // interfaces between pack and surrounding regions are completely conformal
   // due to snappyHexMesh's unique snapping abilities.
-  snappymeshGen *objSHM = new snappymeshGen(&smParamsCopy);
+  auto objSHM =
+      std::unique_ptr<snappymeshGen>(new snappymeshGen(&smParamsCopy));
   objSHM->createMeshFromSTL(nameFile);
 
   // splitMeshRegions reads mesh from constant/polyMesh directory and splits
@@ -214,42 +215,68 @@ void HexPackMeshDriver::execute() const {
   // in constant folder, it skips one number for the disconnected region it
   // encounters first. This number is taken out to provide as input to merge
   // mesh.
-  std::pair<std::vector<int>, std::string> dirStat = objMsh->splitMshRegions();
+  std::pair<std::vector<int>, std::vector<std::string>> dirStat =
+      objMsh->splitMshRegions();
 
-  int skippedDir = dirStat.first[0];
-  int totalRegs = dirStat.first[1] - 1;
-  std::string surroundingRegion = dirStat.second;
+  std::string surroundingRegion = dirStat.second[0];
+  mmfParams.surfSplitParams.pckRegionNames = dirStat.second;
 
-  // *************** Merge meshes using meshBase and write *******************//
-  // packRegNames is a vector containing all names of pack regions
+  /*std::pair<std::vector<int>, std::string> dirStat =
+  objMsh->splitMshRegions(); int skippedDir = dirStat.first[0]; int totalRegs =
+  dirStat.first[1] - 1; std::string surroundingRegion = dirStat.second;
+  */
+
+  // *************** Merge meshes using geoMeshBase and write
+  // *******************// packRegNames is a vector containing all names of pack
+  // regions
+  mmfParams.surfSplitParams.pckRegionNames.erase(
+      mmfParams.surfSplitParams.pckRegionNames.begin());
   std::vector<std::string> packRegNames =
       mmfParams.surfSplitParams.pckRegionNames;
 
-  bool readDB = false;
-  // Create surrounding region database
-  meshBase *fm = new FOAM::foamMesh(readDB);
-  fm->read(surroundingRegion);
-  std::vector<double> physId = std::vector<double>(fm->getNumberOfCells(), 0);
-  vtkMesh *vm = new vtkMesh(fm->getDataSet(), this->files_.outCombinedFile);
-  vm->setCellDataArray("PhysGrpId", physId);
+  // FoamGeoMesh
+  auto fgm_ = NEM::MSH::Read(surroundingRegion + ".foam");
+  auto mesh = NEM::MSH::New(this->files_.outCombinedFile);
+  mesh->takeGeoMesh(fgm_);
 
-  // Loop through all pack particles and merge their databases into main
-  // database
-  for (int i = 0; i < packRegNames.size(); i++) {
-    fm->read(packRegNames[i]);
-    std::vector<double> physIdLoop =
-        std::vector<double>(fm->getNumberOfCells(), i + 1);
-    vtkMesh *vm2 = new vtkMesh(fm->getDataSet(), this->files_.outCombinedFile);
-    vm2->setCellDataArray("PhysGrpId", physIdLoop);
-    vm2->write();
-    vm->merge(vm2->getDataSet());
+  for (auto &packRegName : packRegNames) {
+    auto fgm_loop = NEM::MSH::Read(packRegName + ".foam");
+    mesh->mergeGeoMesh(fgm_loop);
   }
 
-  // Write mesh and clean up objects
-  vm->write();
-  if (vm) delete vm;
-  if (fm) delete fm;
+  mesh->write(this->files_.outCombinedFile);
+
+  mesh->Delete();
+  fgm_->Delete();
+
   // *************** Merge meshes using meshBase and write *******************//
+
+  //  bool readDB = false;
+  //  // Create surrounding region database
+  //  meshBase *fm = new FOAM::foamMesh(readDB);
+  //  fm->read(surroundingRegion);
+  //  std::vector<double> physId = std::vector<double>(fm->getNumberOfCells(),
+  //  0); auto *vm = new vtkMesh(fm->getDataSet(),
+  //  this->files_.outCombinedFile); vm->setCellDataArray("PhysGrpId", physId);
+  //
+  //  // Loop through all pack particles and merge their databases into main
+  //  // database
+  //  for (int i = 0; i < (int) packRegNames.size(); i++) {
+  //    fm->read(packRegNames[i]);
+  //    std::vector<double> physIdLoop =
+  //        std::vector<double>(fm->getNumberOfCells(), i + 1);
+  //    auto *vm2 =
+  //        new vtkMesh(fm->getDataSet(), "pack" + std::to_string(i) + ".vtu");
+  //    vm2->setCellDataArray("PhysGrpId", physIdLoop);
+  //    // vm2->write();
+  //    vm->merge(vm2->getDataSet());
+  //  }
+  //
+  //  // Write mesh and clean up objects
+  //  vm->report();
+  //  vm->write();
+  //  delete vm;
+  //  delete fm;
 
   // *************** Merge meshes using OF and write ************************ //
   // Use this method for writing pack and surrounding meshes separately. This
@@ -323,10 +350,6 @@ void HexPackMeshDriver::execute() const {
   // if (objPackQ) delete objPackQ;
   // *************** Merge meshes using OF and write ************************ //
 
-  // Cleaning up
-  if (objMsh) delete objMsh;
-  if (objSHM) delete objSHM;
-  if (objBM) delete objBM;
   // End of workflow
 }
 

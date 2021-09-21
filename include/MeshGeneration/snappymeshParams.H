@@ -19,9 +19,9 @@
 struct NEMOSYS_EXPORT shmRegionRefine  // Refinement Regions
 {
   std::string patchName; /**< Patch name */
-  std::string mode;    /**< Inside, Outside */
-  double minLvl;       /**< Minimum refinement level */
-  int maxLvl;          /**< Maximum refinement level */
+  std::string mode;      /**< Inside, Outside */
+  double minLvl;         /**< Minimum refinement level */
+  int maxLvl;            /**< Maximum refinement level */
 };
 
 /**
@@ -35,33 +35,27 @@ struct NEMOSYS_EXPORT shmSearchableShape {
 
  protected:
   shmSearchableShape() = default;
-  shmSearchableShape(const shmSearchableShape&) = default;
+  shmSearchableShape(const shmSearchableShape &) = default;
   shmSearchableShape(shmSearchableShape &&) = default;
   shmSearchableShape &operator=(const shmSearchableShape &) = default;
   shmSearchableShape &operator=(shmSearchableShape &&) = default;
 };
 
 struct NEMOSYS_EXPORT shmSearchableBox : public shmSearchableShape {
-  std::string getType() const override {
-    return "searchableBox";
-  }
+  std::string getType() const override { return "searchableBox"; }
   std::array<double, 3> minBound;
   std::array<double, 3> maxBound;
 };
 
 struct NEMOSYS_EXPORT shmSearchableCylinder : public shmSearchableShape {
-  std::string getType() const override {
-    return "searchableCylinder";
-  }
+  std::string getType() const override { return "searchableCylinder"; }
   std::array<double, 3> axisPoint1;
   std::array<double, 3> axisPoint2;
   double radius;
 };
 
 struct NEMOSYS_EXPORT shmSearchableSphere : public shmSearchableShape {
-  std::string getType() const override {
-    return "searchableSphere";
-  }
+  std::string getType() const override { return "searchableSphere"; }
   std::array<double, 3> center;
   double radius;
 };
@@ -70,12 +64,13 @@ struct NEMOSYS_EXPORT shmSearchableSphere : public shmSearchableShape {
     @brief A structure to represent geometry surface
           refining capability in snappymeshgGen
 **/
-struct NEMOSYS_EXPORT shmSurfRefine  // Surface Refinement (Add all shapes and their controls)
+struct NEMOSYS_EXPORT
+    shmSurfRefine  // Surface Refinement (Add all shapes and their controls)
 {
-  std::string refPatchName; /**< Refining region patch name */
-  std::string patchType{"NO"};  /** < Patch Type in Mesh */
-  double minLvl{1.};          /**< Minimum refinement level */
-  int maxLvl;             /**< Maximum refinement level */
+  std::string refPatchName;    /**< Refining region patch name */
+  std::string patchType{"NO"}; /** < Patch Type in Mesh */
+  double minLvl{1.};           /**< Minimum refinement level */
+  int maxLvl;                  /**< Maximum refinement level */
 };
 
 /** @brief A structure for STL definition
@@ -234,7 +229,7 @@ struct NEMOSYS_EXPORT shmSnapControls {
 };
 
 /** @brief Layer Controls
-  **/
+ **/
 struct NEMOSYS_EXPORT shmLayerControls {
   /** @brief Enables relative sizes option during layer addition
    **/
@@ -326,7 +321,7 @@ struct NEMOSYS_EXPORT shmLayerControls {
 };
 
 /** @brief Mesh Quality Controls
-  **/
+ **/
 struct NEMOSYS_EXPORT shmMeshQualityControls {
   /** @brief Maximum non-orthogonality
    **/
@@ -424,6 +419,10 @@ class NEMOSYS_EXPORT snappymeshParams : public meshingParams {
   /** @brief merge tolerance for mesh
    **/
   double mergeTol{1e-6};  // Merge Tolerance
+
+  /** @brief Boolean for packmesh
+   **/
+  bool isPackMesh{true};
 };
 
 #endif

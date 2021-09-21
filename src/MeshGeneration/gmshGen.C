@@ -255,7 +255,7 @@ void gmshGen::meshSizeFields() {
       }
       for (auto &prm : sf.params) {
         std::string key = prm.first;
-        int val = prm.second;
+        int val = static_cast<int>(prm.second);
         if (key == "IField") {
           for (auto &sf2 : meshParams->sizeFields) {
             if (sf2.type == "Cylinder" && sf2.id == val) {
@@ -380,7 +380,7 @@ void gmshGen::applyColorNames() {
 
   std::vector<int> volumeTags;
   for(const std::pair<int,int> &v : volumes) {
-    int dim = v.first;
+    // int dim = v.first;
     int tag = v.second;
     volumeTags.push_back(tag);
   }
@@ -445,7 +445,7 @@ void gmshGen::applyTransfiniteVolumes() {
   gmsh::model::getEntities(volumes, 3);
 
   for(const std::pair<int,int> &v : volumes) {
-    int volumeDim = v.first;
+    // int volumeDim = v.first;
     int volumeTag = v.second;
 
     // Use lower_bound because TransfiniteBlock::operator< is based on id

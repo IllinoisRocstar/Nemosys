@@ -7,8 +7,8 @@
 #include <vtkUnstructuredGrid.h>
 
 #include <argList.H>
-#include <fvOptions.H>
 #include <fvMesh.H>
+#include <fvOptions.H>
 
 namespace NEM {
 namespace MSH {
@@ -22,127 +22,119 @@ namespace MSH {
  * fvMesh
  */
 class NEMOSYS_EXPORT foamGeoMesh : public geoMeshBase {
-  public:
-   static foamGeoMesh *New();
-   vtkTypeMacro(foamGeoMesh, geoMeshBase)
+ public:
+  static foamGeoMesh *New();
+  vtkTypeMacro(foamGeoMesh, geoMeshBase)
 
-  public:
-   /**
-    * Create a foamMesh from mesh in current directory
-    * @param fileName name of file
-    * @param phyGrpArrayName name of a volScalarField defining the
-    * physical group of each cell
-    * @return new foamGeoMesh from mesh
-    */
-   static foamGeoMesh *Read(const std::string &fileName,
-                            const std::string &phyGrpArrayName = std::string());
+ public:
+  /**
+   * Create a foamMesh from mesh in current directory
+   * @param fileName name of file
+   * @param phyGrpArrayName name of a volScalarField defining the
+   * physical group of each cell
+   * @return new foamGeoMesh from mesh
+   */
+  static foamGeoMesh *Read(const std::string &fileName,
+                           const std::string &phyGrpArrayName = std::string());
 
-  public:
-   /**
-    * Construct a foamGeoMesh with an empty mesh
-    */
-   foamGeoMesh();
-   
-   /**
-    * Construct a foamGeoMesh from an existing fvMesh
-    * @param foamMesh existing foamMesh
-    * @param phyGrpArrayName name of a volScalarField defining the physical 
-    * group of each cell
-    */
-   explicit foamGeoMesh(Foam::fvMesh *foamMesh,
-                        const std::string &phyGrpArrayName = std::string());
+ public:
+  /**
+   * Construct a foamGeoMesh with an empty mesh
+   */
+  foamGeoMesh();
 
-   /**
-    * foamGeoMesh deconstructor
-    */
-   ~foamGeoMesh() override;
+  /**
+   * Construct a foamGeoMesh from an existing fvMesh
+   * @param foamMesh existing foamMesh
+   * @param phyGrpArrayName name of a volScalarField defining the physical
+   * group of each cell
+   */
+  explicit foamGeoMesh(Foam::fvMesh *foamMesh,
+                       const std::string &phyGrpArrayName = std::string());
 
-  public:
-   /**
-    * Writes foam mesh into current directory
-    * @param fileName Direcotry path where foam mesh should be written
-    */
-   void write(const std::string &fileName) override;
+  /**
+   * foamGeoMesh destructor
+   */
+  ~foamGeoMesh() override;
 
-   /**
-    * Reports data about mesh
-    */
-   void report(std::ostream &out) const override;
+ public:
+  /**
+   * Writes foam mesh into current directory
+   * @param fileName Directory path where foam mesh should be written
+   */
+  void write(const std::string &fileName) override;
 
-  public:
-   /**
+  /**
+   * Reports data about mesh
+   */
+  void report(std::ostream &out) const override;
+
+ public:
+  /**
    * Copy the mesh
    * @return fvMesh
    */
-   const Foam::fvMesh &getFoamMesh() const { return *fmesh_; }
-  
-   /**
-    * Set the foamGeoMesh's mesh to @p foamMesh
-    * @param foamMesh existing fvMesh;
-    */
-   void setFoamMesh(std::unique_ptr<Foam::fvMesh> foamMesh);
+  const Foam::fvMesh &getFoamMesh() const { return *fmesh_; }
 
-   /**
-    * Resets the class members and initiates an empty foam mesh
-    */
-   void resetNative() override;
+  /**
+   * Set the foamGeoMesh's mesh to @p foamMesh
+   * @param foamMesh existing fvMesh;
+   */
+  void setFoamMesh(std::unique_ptr<Foam::fvMesh> foamMesh);
 
-  private:
-   /**
-    * Initializes arguments and runtime objects
-    */
-   void InitializeFoam();
+  /**
+   * Resets the class members and initiates an empty foam mesh
+   */
+  void resetNative() override;
 
-   /**
-    * Initializes empty fvMesh object
-    */
-   std::unique_ptr<Foam::fvMesh> initFoamMesh();
+ private:
+  /**
+   * Initializes arguments and runtime objects
+   */
+  void InitializeFoam();
 
-  private:
-   /**
-    * Create a @c GeoMesh from a @c fvMesh
-    * @details Assumes gmsh has already been initialized.
-    * @param foamMesh fv mesh
-    * @param phyGrpArrayName name of cell data array describing physical group of
-    * each cell
-    * @return @c GeoMesh
-    */
-   static GeoMesh foam2GM(Foam::fvMesh *foamMesh,
-                          const std::string &phyGrpArrayName = std::string());
+ private:
+  /**
+   * Create a @c GeoMesh from a @c fvMesh
+   * @details Assumes gmsh has already been initialized.
+   * @param foamMesh fv mesh
+   * @param phyGrpArrayName name of cell data array describing physical group of
+   * each cell
+   * @return @c GeoMesh
+   */
+  static GeoMesh foam2GM(Foam::fvMesh *foamMesh,
+                         const std::string &phyGrpArrayName = std::string());
 
-   /**
-    * Create a @c fvMesh from @c geoMeshBase
-    * @param geoMesh GeoMesh
-    * @param phyGrpArrayName name of cell data array describing physical group of
-    * each cell
-    * @return @c fvMesh
-    */
-   static std::unique_ptr<Foam::fvMesh> GM2foam(
-        const GeoMesh &geoMesh,
-        Foam::Time *runTime_,
-        const std::string &phyGrpArrayName = std::string());
+  /**
+   * Create a @c fvMesh from @c geoMeshBase
+   * @param geoMesh GeoMesh
+   * @param runTime TODO
+   * @param phyGrpArrayName name of cell data array describing physical group of
+   * each cell
+   * @return @c fvMesh
+   */
+  static std::unique_ptr<Foam::fvMesh> GM2foam(
+      const GeoMesh &geoMesh, Foam::Time *runTime,
+      const std::string &phyGrpArrayName = std::string());
 
-  private:
-   // ControlDict
-   std::unique_ptr<Foam::dictionary> controlDict_;
-  
-   // fvSchemes
-   std::unique_ptr<Foam::dictionary> fvSchemes_;
-  
-   // fvSolution
-   std::unique_ptr<Foam::dictionary> fvSolution_;
-   
-   // OpenFOAM time object
-   std::unique_ptr<Foam::Time> runTime_;
+ private:
+  // ControlDict
+  std::unique_ptr<Foam::dictionary> controlDict_;
 
-   // OpenFOAM fvMesh Object
-   std::unique_ptr<Foam::fvMesh> fmesh_;
+  // fvSchemes
+  std::unique_ptr<Foam::dictionary> fvSchemes_;
 
-   // vtkUnstructuredGrid
-   vtkSmartPointer<vtkUnstructuredGrid> dataSet;
+  // fvSolution
+  std::unique_ptr<Foam::dictionary> fvSolution_;
+
+  // OpenFOAM time object
+  std::unique_ptr<Foam::Time> runTime_;
+
+  // OpenFOAM fvMesh Object
+  std::unique_ptr<Foam::fvMesh> fmesh_;
 };
 
-} // namespace MSH
-} // namespace NEM
+}  // namespace MSH
+}  // namespace NEM
 
 #endif  // NEMOSYS_FOAMGEOMESH_H_
