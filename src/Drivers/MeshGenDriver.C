@@ -108,9 +108,17 @@ MeshGenDriver::MeshGenDriver(const std::string &ifname,
         meshBase::Create(generator->getDataSet(), newname));
   }
 
-  mesh->setFileName(ofname);
-  mesh->report();
-  mesh->write();
+  if (meshEngine == "cfmesh" || meshEngine == "snappyHexMesh" ||
+      meshEngine == "blockMesh") {
+    geoMesh = NEM::MSH::New(ofname);
+    geoMesh->takeGeoMesh(generator->gmData.get());
+    geoMesh->write(ofname);
+    geoMesh->Delete();
+  } else {
+    mesh->setFileName(ofname);
+    mesh->report();
+    mesh->write();
+  }
 }
 
 std::shared_ptr<meshBase> MeshGenDriver::getNewMesh() const {
@@ -307,7 +315,8 @@ MeshGenDriver *MeshGenDriver::readJSON(const std::string &ifname,
               double axis_len = std::sqrt(x * x + y * y + z * z);
               if (axis_len < 1e-3) {
                 std::cerr << "Axis " << i << " for block " << block.id
-                          << " is too small. Please prescribe an axis with length > 1e-3"
+                          << " is too small. Please prescribe an axis with "
+                             "length > 1e-3"
                           << std::endl;
                 exit(1);
               }

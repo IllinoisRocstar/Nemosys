@@ -300,6 +300,7 @@ NEM_add_test(geoMeshFactory GeoMeshFactory GeoMeshFactoryTest
     cube41.msh
     box0.osh
     smallTestFile.exo
+    Hex_Cube_Read.foam
     )
 NEM_add_test(vtkGeoMesh VtkGeoMesh VtkGeoMeshTest
     unstructured_grid.vtk

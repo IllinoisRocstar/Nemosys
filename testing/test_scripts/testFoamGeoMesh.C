@@ -7,11 +7,9 @@
 #include <Mesh/foamGeoMesh.H>
 
 #include <argList.H>
-#include <fvOptions.H>
-#include <fvMesh.H>
-#include <fvCFD.H>
-#include <fileName.H>
 #include <cellModeller.H>
+#include <fileName.H>
+#include <fvMesh.H>
 
 std::string fileNameHexRead;
 std::string fileNameTetRead;
@@ -40,7 +38,7 @@ Foam::fvMesh* getFoamMesh() {
   Foam::cellShapeList cellShapeData(0);
 
   auto tmpfm = std::unique_ptr<Foam::polyMesh>(new Foam::polyMesh(
-    IOobject
+    Foam::IOobject
     (
       Foam::polyMesh::defaultRegion,
       runTime_->constant(),
@@ -50,7 +48,7 @@ Foam::fvMesh* getFoamMesh() {
     cellShapeData,               // Cell shape and points
     Foam::faceListList(),        // Boundary faces
     Foam::wordList(),            // Boundary Patch Names
-    Foam::PtrList<dictionary>(), // Boundary Dicts
+    Foam::PtrList<Foam::dictionary>(), // Boundary Dicts
     "defaultPatch",              // Default Patch Name
     Foam::polyPatch::typeName    // Default Patch Type
   ));
@@ -84,7 +82,7 @@ bool comparePatches(Foam::fileName &a, Foam::fileName &b) {
   // a
   {
     auto *msh = new Foam::fvMesh(
-      IOobject
+      Foam::IOobject
       (
           a,
           runTime_->constant(),
@@ -94,16 +92,16 @@ bool comparePatches(Foam::fileName &a, Foam::fileName &b) {
       )
     );
 
-    const polyBoundaryMesh& patches = msh->boundaryMesh();
-    wordList patchNames = patches.names();
+    const Foam::polyBoundaryMesh& patches = msh->boundaryMesh();
+    Foam::wordList patchNames = patches.names();
     for (int i=0; i<patchNames.size(); i++) onePatches.push_back(patchNames[i]);
     for (int i=0; i<patches.size(); i++) onePts.push_back(patches[i].nPoints());
   }
-  
+
   // b
   {
     auto *msh = new Foam::fvMesh(
-      IOobject
+      Foam::IOobject
       (
           b,
           runTime_->constant(),
@@ -113,8 +111,8 @@ bool comparePatches(Foam::fileName &a, Foam::fileName &b) {
       )
     );
 
-    const polyBoundaryMesh& patches = msh->boundaryMesh();
-    wordList patchNames = patches.names();
+    const Foam::polyBoundaryMesh& patches = msh->boundaryMesh();
+    Foam::wordList patchNames = patches.names();
     for (int i=0; i<patchNames.size(); i++) twoPatches.push_back(patchNames[i]);
     for (int i=0; i<patches.size(); i++) twoPts.push_back(patches[i].nPoints());
   }

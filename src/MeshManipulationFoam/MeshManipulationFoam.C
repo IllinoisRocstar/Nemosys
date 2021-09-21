@@ -1,102 +1,38 @@
 #include "AuxiliaryFunctions.H"
 #include <vtkAppendFilter.h>
-#include <vtkBooleanOperationPolyDataFilter.h>
 #include <vtkCell.h>
 #include <vtkCell3D.h>
-#include <vtkCellData.h>
-#include <vtkCellType.h>
-#include <vtkDataSet.h>
 #include <vtkDataSetTriangleFilter.h>
-#include <vtkFieldData.h>
 #include <vtkGeometryFilter.h>
-#include "Mesh/vtkMesh.H"
-#include <vtkPointData.h>
 #include <vtkPolyDataNormals.h>
-#include <vtkSTLReader.h>
-#include <vtkSTLWriter.h>
-#include <vtkTriangleFilter.h>
 #include <vtkUnstructuredGrid.h>
-#include <vtkXMLUnstructuredGridReader.h>
 
 #include <boost/filesystem.hpp>
 #include <iostream>
 #include <set>
 #include <string>
-#include <tuple>
 #include <unordered_map>
 #include <vector>
 
 #include "MeshManipulationFoam/MeshManipulationFoam.H"
-#include "MeshManipulationFoam/MeshManipulationFoamParams.H"
-#include "Mesh/foamMesh.H"
-#include "Mesh/meshBase.H"
 
 // New
-
-#include <vtkActor.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkPolyDataReader.h>
 #include <vtkProperty.h>
-#include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkSmartPointer.h>
-#include <vtkSphereSource.h>
 
 // openfoam headers
 #include <fileName.H>
-#include <fvCFD.H>
 #include <fvMesh.H>
-#include <foamVTKTopo.H>
-
-// SurfLambdaMuSmooth
-#include <MeshedSurfaces.H>
-#include <argList.H>
-#include <boundBox.H>
-#include <edgeMesh.H>
-#include <matchPoints.H>
-
-// splitMeshByRegions
-#include <EdgeMap.H>
-#include <IOobjectList.H>
-#include <ReadFields.H>
-#include <SortableList.H>
-#include <cellSet.H>
-#include <faceSet.H>
-#include <fvMeshSubset.H>
-#include <fvMeshTools.H>
-#include <mappedWallPolyPatch.H>
-#include <polyTopoChange.H>
-#include <regionSplit.H>
-#include <removeCells.H>
-#include <syncTools.H>
-#include <volFields.H>
-#include <zeroGradientFvPatchFields.H>
-
-// mergeMeshes
-#include <Time.H>
-#include "MeshManipulationFoam/mergePolyMesh.H"
-
-// createPatch
-#include <IOPtrList.H>
-#include <IOdictionary.H>
-#include <OFstream.H>
-#include <SortableList.H>
-#include <cyclicPolyPatch.H>
-#include <meshTools.H>
-#include <polyMesh.H>
-#include <polyModifyFace.H>
-#include <syncTools.H>
-#include <wordReList.H>
-
-// splitMeshByTopology
-#include <triSurface.H>
-
-// foamToSurface
-#include <IOdictionary.H>
-#include <polyMesh.H>
-#include <polyPatch.H>
-#include <timeSelector.H>
+#include <foamVtkVtuAdaptor.H>
+#include <getDicts.H>
+#include <surfaceLambdaMuSmooth.H>  // SurfLambdaMuSmooth
+#include <splitMeshRegions.H>       // splitMeshByRegions
+#include <mergeMeshes.H>            // mergeMeshes
+#include <createPatch.H>            // createPatch
+#include <surfaceSplitByTopology.H> // surfaceSplitByTopology
+#include <foamToSurface.H>          // foamToSurface
 
 // third party
 #include <ANN/ANN.h>
@@ -104,7 +40,7 @@
 // TODO
 // 1. Two of these methods (mergeMesh and CreatePatch) are little bit pack
 //    mesh specific but can be modified to accept very broad user
-//    arguments and perform mesh manipulations. - Akash
+//    arguments and perform mesh manipulations.
 
 //* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
@@ -120,90 +56,15 @@ MeshManipulationFoam::~MeshManipulationFoam() {
   It will write output file at userdefined path
 */
 void MeshManipulationFoam::surfLambdaMuSmooth() {
-  using namespace Foam;
   const auto &surfLMSmoothParams = _mshMnipPrms->surfLMSmoothParams;
-
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
-  Foam::argList::noParallel();
-
-  const fileName surfFileName = (surfLMSmoothParams.slmssurfaceFile);
-  const fileName outFileName = (surfLMSmoothParams.slmsoutputFile);
-  const scalar lambda = (surfLMSmoothParams.lambda_);
-  const scalar mu = (surfLMSmoothParams.mu);
-  const label iters = (surfLMSmoothParams.slmsIterations);
-
-  if (lambda < 0 || lambda > 1) {
-    FatalErrorInFunction
-        << lambda << endl
-        << "0: no change   1: move vertices to average of neighbours"
-        << exit(FatalError);
-  }
-  if (mu < 0 || mu > 1) {
-    FatalErrorInFunction
-        << mu << endl
-        << "0: no change   1: move vertices to average of neighbours"
-        << exit(FatalError);
-  }
-  Info << "lambda      : " << lambda << nl << "mu          : " << mu << nl
-       << "Iters       : " << iters << nl << "Reading surface from "
-       << surfFileName << " ..." << endl;
-
-  meshedSurface surf1(surfFileName);
-
-  Info << "Faces       : " << surf1.size() << nl
-       << "Vertices    : " << surf1.nPoints() << nl
-       << "Bounding Box: " << boundBox(surf1.localPoints()) << endl;
-
-  bitSet fixedPoints(surf1.localPoints().size(), false);
-
-  if (surfLMSmoothParams.addFeatureFile) {
-    const fileName featureFileName("ftrEdge.ftr");
-    Info << "Reading features from " << featureFileName << " ..." << endl;
-
-    edgeMesh feMesh(featureFileName);
-
-    getFixedPoints(feMesh, surf1.localPoints(), fixedPoints);
-
-    Info << "Number of fixed points on surface = " << fixedPoints.count()
-         << endl;
-  }
-
-  pointField newPoints(surf1.localPoints());
-
-  for (label iter = 0; iter < iters; iter++) {
-    // Lambda
-    {
-      pointField newLocalPoints((1 - lambda) * surf1.localPoints() +
-                                lambda * avg(surf1, fixedPoints));
-
-      pointField newPoints(surf1.points());
-      UIndirectList<point>(newPoints, surf1.meshPoints()) = newLocalPoints;
-
-      surf1.movePoints(newPoints);
-    }
-
-    // Mu
-    if (mu != 0) {
-      pointField newLocalPoints((1 + mu) * surf1.localPoints() -
-                                mu * avg(surf1, fixedPoints));
-
-      pointField newPoints(surf1.points());
-      UIndirectList<point>(newPoints, surf1.meshPoints()) = newLocalPoints;
-
-      surf1.movePoints(newPoints);
-    }
-  }
-
-  Info << "Writing surface to " << outFileName << " ..." << endl;
-  surf1.write(outFileName);
-
-  Info << "End\n" << endl;
+  const Foam::fileName surfFileName = (surfLMSmoothParams.slmssurfaceFile);
+  const Foam::fileName outFileName = (surfLMSmoothParams.slmsoutputFile);
+  const Foam::scalar lambda = (surfLMSmoothParams.lambda_);
+  const Foam::scalar mu = (surfLMSmoothParams.mu);
+  const Foam::label iters = (surfLMSmoothParams.slmsIterations);
+  const bool addFtrFl = (surfLMSmoothParams.addFeatureFile);
+  auto slmsObj = surfaceLambdaMuSmooth();
+  slmsObj.execute(surfFileName, outFileName, lambda, mu, iters, addFtrFl);
 }
 
 /*
@@ -216,607 +77,77 @@ void MeshManipulationFoam::surfLambdaMuSmooth() {
   returned and used in mergeMeshes function so that it knows which directory is
   missing from constant folder.
 */
-std::pair<std::vector<int>, std::string> MeshManipulationFoam::splitMshRegions() {
-  int impVar;
-  using namespace Foam;
-  const auto &splitMeshRegions = _mshMnipPrms->splitMeshRegParams;
-
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
-  Foam::argList::noParallel();
-
-#include <createNamedMesh.H>
-  const word oldInstance = mesh.pointsInstance();
-  word blockedFacesName;
-
-  const bool makeCellZones = false;
-  const bool largestOnly = false;
-  const bool insidePoint = false;
-  const bool useCellZones = (splitMeshRegions.cellZones);
-  const bool useCellZonesOnly = false;
-  const bool useCellZonesFile = false;
-  const bool overwrite = (splitMeshRegions.overwriteMsh);
-  const bool detectOnly = false;
-  const bool sloppyCellZones = false;
-  const bool useFaceZones = false;
-  const bool prefixRegion = false;
-
-  if ((useCellZonesOnly || useCellZonesFile) &&
-      (useCellZones || blockedFacesName.size())) {
-    FatalErrorInFunction
-        << "You cannot specify both -cellZonesOnly or -cellZonesFileOnly"
-        << " (which specify complete split)"
-        << " in combination with -blockedFaces or -cellZones"
-        << " (which imply a split based on topology)" << exit(FatalError);
-  }
-
-  if (useFaceZones) {
-    Info << "Using current faceZones to divide inter-region interfaces"
-         << " into multiple patches." << nl << endl;
-  } else {
-    Info << "Creating single patch per inter-region interface." << nl << endl;
-  }
-
-  if (insidePoint && largestOnly) {
-    FatalErrorInFunction << "You cannot specify both -largestOnly"
-                         << " (keep region with most cells)"
-                         << " and -insidePoint (keep region containing point)"
-                         << exit(FatalError);
-  }
-
-  const cellZoneMesh& cellZones = mesh.cellZones();
-
-  // Existing zoneID
-  labelList zoneID(mesh.nCells(), -1);
-  // Neighbour zoneID.
-  labelList neiZoneID(mesh.nFaces() - mesh.nInternalFaces());
-  getZoneID(mesh, cellZones, zoneID, neiZoneID);
-
-  // Determine per cell the region it belongs to
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  // cellRegion is the labelList with the region per cell.
-  labelList cellRegion;
-  // Region per zone
-  labelList regionToZone;
-  // Name of region
-  wordList regionNames;
-  // Zone to region
-  labelList zoneToRegion;
-
-  label nCellRegions = 0;
-  if (useCellZonesOnly) {
-    Info << "Using current cellZones to split mesh into regions."
-         << " This requires all"
-         << " cells to be in one and only one cellZone." << nl << endl;
-
-    label unzonedCelli = findIndex(zoneID, -1);
-    if (unzonedCelli != -1) {
-      FatalErrorInFunction
-          << "For the cellZonesOnly option all cells "
-          << "have to be in a cellZone." << endl
-          << "Cell " << unzonedCelli << " at"
-          << mesh.cellCentres()[unzonedCelli]
-          << " is not in a cellZone. There might be more unzoned cells."
-          << exit(FatalError);
-    }
-
-    cellRegion = zoneID;
-    nCellRegions = gMax(cellRegion) + 1;
-    regionToZone.setSize(nCellRegions);
-    regionNames.setSize(nCellRegions);
-    zoneToRegion.setSize(cellZones.size(), -1);
-
-    for (label regionI = 0; regionI < nCellRegions; regionI++) {
-      regionToZone[regionI] = regionI;
-      zoneToRegion[regionI] = regionI;
-      regionNames[regionI] = cellZones[regionI].name();
-    }
-  }
-
-  // Will be implemented in future
-  else if (useCellZonesFile) {
-    const word zoneFile(args["cellZonesFileOnly"]);
-    Info << "Reading split from cellZones file " << zoneFile << endl
-         << "This requires all"
-         << " cells to be in one and only one cellZone." << nl << endl;
-
-    cellZoneMesh newCellZones(
-        IOobject(zoneFile, mesh.facesInstance(), polyMesh::meshSubDir, mesh,
-                 IOobject::MUST_READ, IOobject::NO_WRITE, false),
-        mesh);
-
-    labelList newZoneID(mesh.nCells(), -1);
-    labelList newNeiZoneID(mesh.nFaces() - mesh.nInternalFaces());
-    getZoneID(mesh, newCellZones, newZoneID, newNeiZoneID);
-
-    label unzonedCelli = findIndex(newZoneID, -1);
-    if (unzonedCelli != -1) {
-      FatalErrorInFunction
-          << "For the cellZonesFileOnly option all cells "
-          << "have to be in a cellZone." << endl
-          << "Cell " << unzonedCelli << " at"
-          << mesh.cellCentres()[unzonedCelli]
-          << " is not in a cellZone. There might be more unzoned cells."
-          << exit(FatalError);
-    }
-    cellRegion = newZoneID;
-    nCellRegions = gMax(cellRegion) + 1;
-    zoneToRegion.setSize(newCellZones.size(), -1);
-    regionToZone.setSize(nCellRegions);
-    regionNames.setSize(nCellRegions);
-
-    for (label regionI = 0; regionI < nCellRegions; regionI++) {
-      regionToZone[regionI] = regionI;
-      zoneToRegion[regionI] = regionI;
-      regionNames[regionI] = newCellZones[regionI].name();
-    }
-  } else {
-    // Determine connected regions
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Mark additional faces that are blocked
-    boolList blockedFace;
-
-    // Read from faceSet
-    if (blockedFacesName.size()) {
-      faceSet blockedFaceSet(mesh, blockedFacesName);
-      Info << "Read " << returnReduce(blockedFaceSet.size(), sumOp<label>())
-           << " blocked faces from set " << blockedFacesName << nl << endl;
-
-      blockedFace.setSize(mesh.nFaces(), false);
-
-      forAllConstIter(faceSet, blockedFaceSet, iter) {
-        blockedFace[iter.key()] = true;
-      }
-    }
-
-    // Imply from differing cellZones
-    if (useCellZones) {
-      blockedFace.setSize(mesh.nFaces(), false);
-
-      for (label facei = 0; facei < mesh.nInternalFaces(); facei++) {
-        label own = mesh.faceOwner()[facei];
-        label nei = mesh.faceNeighbour()[facei];
-
-        if (zoneID[own] != zoneID[nei]) {
-          blockedFace[facei] = true;
-        }
-      }
-
-      // Different cellZones on either side of processor patch.
-      forAll(neiZoneID, i) {
-        label facei = i + mesh.nInternalFaces();
-
-        if (zoneID[mesh.faceOwner()[facei]] != neiZoneID[i]) {
-          blockedFace[facei] = true;
-        }
-      }
-    }
-
-    // Do a topological walk to determine regions
-    regionSplit regions(mesh, blockedFace);
-    nCellRegions = regions.nRegions();
-    cellRegion.transfer(regions);
-
-    // Make up region names. If possible match them to existing zones.
-    impVar = matchRegions(sloppyCellZones, mesh, nCellRegions, cellRegion,
-
-                          regionToZone, regionNames, zoneToRegion);
-
-    // Override any default region names if single region selected
-    if (largestOnly || insidePoint) {
-      forAll(regionToZone, regionI) {
-        if (regionToZone[regionI] == -1) {
-          if (overwrite) {
-            regionNames[regionI] = polyMesh::defaultRegion;
-          } else if (insidePoint) {
-            regionNames[regionI] = "insidePoint";
-          } else if (largestOnly) {
-            regionNames[regionI] = "largestOnly";
-          }
-        }
-      }
-    }
-  }
-
-  Info << endl << "Number of regions:" << nCellRegions << nl << endl;
-
-  // Write decomposition to file
-  writeCellToRegion(mesh, cellRegion);
-
-  // Sizes per region
-  // ~~~~~~~~~~~~~~~~
-
-  labelList regionSizes(nCellRegions, 0);
-
-  forAll(cellRegion, celli) { regionSizes[cellRegion[celli]]++; }
-  forAll(regionSizes, regionI) { reduce(regionSizes[regionI], sumOp<label>()); }
-
-  Info << "Region\tCells" << nl << "------\t-----" << endl;
-
-  forAll(regionSizes, regionI) {
-    Info << regionI << '\t' << regionSizes[regionI] << nl;
-  }
-  Info << endl;
-
-  // Print region to zone
-  Info << "Region\tZone\tName" << nl << "------\t----\t----" << endl;
-  forAll(regionToZone, regionI) {
-    Info << regionI << '\t' << regionToZone[regionI] << '\t'
-         << regionNames[regionI] << nl;
-  }
-  Info << endl;
-
-  // Since we're going to mess with patches and zones make sure all
-  // is synchronised
-  mesh.boundaryMesh().checkParallelSync(true);
-  mesh.faceZones().checkParallelSync(true);
-
-  // Interfaces
-  // ----------
-  // per interface:
-  // - the two regions on either side
-  // - the name
-  // - the (global) size
-  edgeList interfaces;
-  List<Pair<word>> interfaceNames;
-  labelList interfaceSizes;
-  // per face the interface
-  labelList faceToInterface;
-
-  getInterfaceSizes(mesh, useFaceZones, cellRegion, regionNames,
-
-                    interfaces, interfaceNames, interfaceSizes,
-                    faceToInterface);
-
-  Info << "Sizes of interfaces between regions:" << nl << nl
-       << "Interface\tRegion\tRegion\tFaces" << nl
-       << "---------\t------\t------\t-----" << endl;
-
-  forAll(interfaces, interI) {
-    const edge& e = interfaces[interI];
-
-    Info << interI << "\t\t" << e[0] << '\t' << e[1] << '\t'
-         << interfaceSizes[interI] << nl;
-  }
-  Info << endl;
-
-  if (detectOnly) {
-    exit(1);  // return 0;
-  }
-
-  // Read objects in time directory
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  IOobjectList objects(mesh, runTime.timeName());
-
-  // Read vol fields.
-
-  PtrList<volScalarField> vsFlds;
-  ReadFields(mesh, objects, vsFlds);
-
-  PtrList<volVectorField> vvFlds;
-  ReadFields(mesh, objects, vvFlds);
-
-  PtrList<volSphericalTensorField> vstFlds;
-  ReadFields(mesh, objects, vstFlds);
-
-  PtrList<volSymmTensorField> vsymtFlds;
-  ReadFields(mesh, objects, vsymtFlds);
-
-  PtrList<volTensorField> vtFlds;
-  ReadFields(mesh, objects, vtFlds);
-
-  // Read surface fields.
-
-  PtrList<surfaceScalarField> ssFlds;
-  ReadFields(mesh, objects, ssFlds);
-
-  PtrList<surfaceVectorField> svFlds;
-  ReadFields(mesh, objects, svFlds);
-
-  PtrList<surfaceSphericalTensorField> sstFlds;
-  ReadFields(mesh, objects, sstFlds);
-
-  PtrList<surfaceSymmTensorField> ssymtFlds;
-  ReadFields(mesh, objects, ssymtFlds);
-
-  PtrList<surfaceTensorField> stFlds;
-  ReadFields(mesh, objects, stFlds);
-
-  Info << endl;
-
-  // Remove any demand-driven fields ('S', 'V' etc)
-  mesh.clearOut();
-
-  if (nCellRegions == 1) {
-    Info << "Only one region. Doing nothing." << endl;
-  } else if (makeCellZones) {
-    Info << "Putting cells into cellZones instead of splitting mesh." << endl;
-
-    // Check if region overlaps with existing zone. If so keep.
-
-    for (label regionI = 0; regionI < nCellRegions; regionI++) {
-      label zoneI = regionToZone[regionI];
-
-      if (zoneI != -1) {
-        Info << "    Region " << regionI << " : corresponds to existing"
-             << " cellZone " << zoneI << ' ' << cellZones[zoneI].name() << endl;
-      } else {
-        // Create new cellZone.
-        labelList regionCells = findIndices(cellRegion, regionI);
-
-        word zoneName = "region" + Foam::name(regionI);
-
-        zoneI = cellZones.findZoneID(zoneName);
-
-        if (zoneI == -1) {
-          zoneI = cellZones.size();
-          mesh.cellZones().setSize(zoneI + 1);
-          mesh.cellZones().set(zoneI,
-                               new cellZone(zoneName,     // name
-                                            regionCells,  // addressing
-                                            zoneI,        // index
-                                            cellZones     // cellZoneMesh
-                                            ));
-        } else {
-          mesh.cellZones()[zoneI].clearAddressing();
-          mesh.cellZones()[zoneI] = regionCells;
-        }
-        Info << "    Region " << regionI << " : created new cellZone " << zoneI
-             << ' ' << cellZones[zoneI].name() << endl;
-      }
-    }
-
-    mesh.cellZones().writeOpt() = IOobject::AUTO_WRITE;
-
-    if (!overwrite) {
-      runTime++;
-      mesh.setInstance(runTime.timeName());
-    } else {
-      mesh.setInstance(oldInstance);
-    }
-
-    Info << "Writing cellZones as new mesh to time " << runTime.timeName() << nl
-         << endl;
-
-    mesh.write();
-
-    // Write cellSets for convenience
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Info << "Writing cellSets corresponding to cellZones." << nl << endl;
-
-    forAll(cellZones, zoneI) {
-      const cellZone& cz = cellZones[zoneI];
-
-      cellSet(mesh, cz.name(), cz).write();
-    }
-  } else {
-    // Add patches for interfaces
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Add all possible patches. Empty ones get filtered later on.
-    Info << nl << "Adding patches" << nl << endl;
-
-    labelList interfacePatches(
-        addRegionPatches(mesh, regionNames, interfaces, interfaceNames));
-
-    if (!overwrite) {
-      runTime++;
-    }
-
-    // Create regions
-    // ~~~~~~~~~~~~~~
-
-    if (insidePoint) {
-      // Will be implemented in future       
-      const point insidePoint = args.get<point>("insidePoint");
-
-      label regionI = -1;
-
-      (void)mesh.tetBasePtIs();
-
-      label celli = mesh.findCell(insidePoint);
-
-      Info << nl << "Found point " << insidePoint << " in cell " << celli
-           << endl;
-
-      if (celli != -1) {
-        regionI = cellRegion[celli];
-      }
-
-      reduce(regionI, maxOp<label>());
-
-      Info << nl << "Subsetting region " << regionI << " containing point "
-           << insidePoint << endl;
-
-      if (regionI == -1) {
-        FatalErrorInFunction
-            << "Point " << insidePoint << " is not inside the mesh." << nl
-            << "Bounding box of the mesh:" << mesh.bounds() << exit(FatalError);
-      }
-
-      createAndWriteRegion(mesh, cellRegion, regionNames, prefixRegion,
-                           faceToInterface, interfacePatches, regionI,
-                           (overwrite ? oldInstance : runTime.timeName()));
-    } else if (largestOnly) {
-      label regionI = findMax(regionSizes);
-
-      Info << nl << "Subsetting region " << regionI << " of size "
-           << regionSizes[regionI] << " as named region "
-           << regionNames[regionI] << endl;
-
-      createAndWriteRegion(mesh, cellRegion, regionNames, prefixRegion,
-                           faceToInterface, interfacePatches, regionI,
-                           (overwrite ? oldInstance : runTime.timeName()));
-    } else {
-      // Split all
-      for (label regionI = 0; regionI < nCellRegions; regionI++) {
-        Info << nl << "Region " << regionI << nl << "-------- " << endl;
-
-        createAndWriteRegion(mesh, cellRegion, regionNames, prefixRegion,
-                             faceToInterface, interfacePatches, regionI,
-                             (overwrite ? oldInstance : runTime.timeName()));
-      }
-    }
-  }
-
-  Info << "End\n" << endl;
-
-  label largestReg = findMax(regionSizes);
-  std::string largestRegMsh = regionNames[largestReg];
-  _mshMnipPrms->createPatchParams.pathSurrounding = largestRegMsh;
-
-  // Iterate through wordlist regionNames
-  for (int i=0; i<regionNames.size(); i++)
-    if (regionNames[i] != largestRegMsh)
-      _mshMnipPrms->surfSplitParams.pckRegionNames.push_back(regionNames[i]);
-
-  std::vector<int> rtrnVec;
-  rtrnVec.push_back(impVar);
-  rtrnVec.push_back(nCellRegions);
-  return std::make_pair(rtrnVec,largestRegMsh);
+std::pair<std::vector<int>, std::vector<std::string>>
+MeshManipulationFoam::splitMshRegions() {
+  const auto &spltMshRegions = _mshMnipPrms->splitMeshRegParams;
+  const bool useCellZones = (spltMshRegions.cellZones);
+  auto smrObj = splitMeshRegions();
+  return smrObj.execute(useCellZones);
 }
 
 /*
 MergeMeshes utility takes master region and slave region names/paths from user
 and merges the slave regions to master region one by one.
 */
-void MeshManipulationFoam::mergeMeshes(int dirStat, int nDomains) {
-  using namespace Foam;
+void MeshManipulationFoam::mergeMesh(int dirStat, int nDomains) {
+  auto mmObj = mergeMeshes();
   const auto &mergeMeshesParams = _mshMnipPrms->mergeMeshesParams;
 
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
-  Foam::argList::noParallel();
-
-  int ndoms;
-
-  // if ((_mshMnipPrms->numDomains) == -1) {
-  //   ndoms = nDomains;
-  // } else {
-  //   ndoms = (_mshMnipPrms->numDomains);
-  // }
-
-  ndoms = nDomains;
-
   std::vector<std::string> addCases;
-
-  /*if ((_mshMnipPrms->numDomains) == 2)
-  {
-        addCases.push_back(_mshMnipPrms->addCase);
-  }
-  else
-  {
-    for (int i=2; i<(ndoms+1); i++)
-    {
-      if (i == dirStat)
-      {
-          i++;
-      }
-      addCases.push_back("domain" + (std::to_string(i)));
-    }
-
-    addCases.push_back(_mshMnipPrms->addCase);
-  }*/
 
   // Collecting all domain names for automatic merging of all mesh regions.
   // Directory number obtained from splitMeshRegions is used here. Also
   // number of packs are passed through this function for use in loop.
 
-  if (ndoms == 2) {
+  if (nDomains == 2) {
     addCases.push_back(mergeMeshesParams.addCase);
   } else {
-    for (int i = 2; i < (ndoms + 1); i++) {
-      if (i == dirStat) {
-        i++;
-      }
+    for (int i = 2; i < (nDomains + 1); i++) {
+      if (i == dirStat) i++;
       addCases.push_back("domain" + (std::to_string(i)));
     }
-
     addCases.push_back(mergeMeshesParams.addCase);
   }
+  mmObj.execute(mergeMeshesParams.masterCasePath, mergeMeshesParams.addCasePath,
+                addCases, nDomains, dirStat);
+}
 
-  // Main for loop. It loops through all the slave regions and adds them to
-  // master region one by one. At the end, master region directory will have
-  // all the slave regions added. Keep overwrite boolean true for this.
-  for (int j = 0; j < (ndoms - 1); j++) {
-    const bool overwrite = (mergeMeshesParams.overwriteMergeMsh);
-    word masterRegion = polyMesh::defaultRegion;
+/*
+CreatePatch utility merges multiple patches of certain mesh in a single patch.
+It reads createPatchDict from system/mesh_reg_name/createPatchDict. Currently
+the utility implementation is wrapped with for loop to execute it twice for
+Pack Mesh Generation service.
+*/
+void MeshManipulationFoam::createPtch(int dirStat) {
+  const auto &createPatchParams = _mshMnipPrms->createPatchParams;
+  auto cpObj = createPatch();
+  createPatchDict(dirStat, true);
+  cpObj.execute(dirStat, createPatchParams.pathSurrounding, cpDict_);
+}
 
-    fileName masterCase = (mergeMeshesParams.masterCasePath);
-    if (ndoms == 2) {
-      if (dirStat == 1)
-        masterRegion = "domain2";
-      else
-        masterRegion = "domain1";
-        //masterRegion = (_mshMnipPrms->masterCase);
-    } else
-        masterRegion = "domain1";
-      //masterRegion = (_mshMnipPrms->masterCase);
+/*
+This utility converts OpenFoam mesh into STL file. Filename is user-input.
+It can take paths for output file location and name.
+*/
+void MeshManipulationFoam::foamToSurf() {
+  const auto &foamToSurfaceParams = _mshMnipPrms->foamToSurfParams;
+  auto ftsObj = foamToSurface();
+  ftsObj.execute(foamToSurfaceParams.outSurfName);
+}
 
-    fileName addCase = (mergeMeshesParams.addCasePath);
-    word addRegion = polyMesh::defaultRegion;
-    addRegion = addCases[j];
-
-    getRootCase(masterCase);
-    getRootCase(addCase);
-
-    Info << "Master:      " << masterCase << "  region " << masterRegion << nl
-         << "mesh to add: " << addCase << "  region " << addRegion << endl;
-
-    const fileName masterCasePath = masterCase.path();
-    const fileName masterCaseName = masterCase.name();
-
-    Time runTimeMaster(Time::controlDictName, masterCasePath, masterCaseName);
-    runTimeMaster.functionObjects().off();
-
-    const fileName addCasePath = addCase.path();
-    const fileName addCaseName = addCase.name();
-
-    Time runTimeToAdd(Time::controlDictName, addCasePath, addCaseName);
-    runTimeToAdd.functionObjects().off();
-
-    Info << "Reading master mesh for time = " << runTimeMaster.timeName() << nl;
-
-    Info << "Create mesh\n" << endl;
-    Foam::mergePolyMesh masterMesh(
-        IOobject(masterRegion, runTimeMaster.timeName(), runTimeMaster));
-    const word oldInstance = masterMesh.pointsInstance();
-
-    Info << "Reading mesh to add for time = " << runTimeToAdd.timeName() << nl;
-
-    Info << "Create mesh\n" << endl;
-    polyMesh meshToAdd(
-        IOobject(addRegion, runTimeToAdd.timeName(), runTimeToAdd));
-
-    if (!(mergeMeshesParams.overwriteMergeMsh)) {
-      runTimeMaster++;
-    }
-
-    Info << "Writing combined mesh to " << runTimeMaster.timeName() << endl;
-
-    masterMesh.addMesh(meshToAdd);
-    masterMesh.merge();
-
-    if ((mergeMeshesParams.overwriteMergeMsh)) {
-      masterMesh.setInstance(oldInstance);
-    }
-
-    masterMesh.write();
-  }
-
-  Info << "End\n" << endl;
+/*
+surfaceSplitByTopology is a surface file manipulation utility which aims at
+splitting multiple disconnected regions in geometry into separate surfaces and
+outputs a single surface file containing all regions as well as separate STL
+files for all regions. User inputs are input file name and output file name.
+*/
+int MeshManipulationFoam::surfSpltByTopology() {
+  const auto &surfSplitParams = _mshMnipPrms->surfSplitParams;
+  Foam::fileName surfFileName(surfSplitParams.surfFile);
+  Foam::Info << "Reading surface from " << surfFileName << Foam::endl;
+  Foam::fileName outFileName(surfSplitParams.outSurfFile);
+  auto ssbtObj = surfaceSplitByTopology();
+  return ssbtObj.execute(surfFileName, outFileName);
 }
 
 /*
@@ -825,23 +156,25 @@ puts them in defined path (i.e system/domainX). Currently this function has
 customizations for Pack Mesh Generation service. More general methods could be
 added in future.
 */
-void MeshManipulationFoam::createPatchDict(int dirStat) {
+void MeshManipulationFoam::createPatchDict(const int &dirStat,
+                                           const bool &write) {
   const auto &createPatchParams = _mshMnipPrms->createPatchParams;
+
   // creating a base system directory
-  std::string dir_path = "./system/"+createPatchParams.pathSurrounding;
-  boost::filesystem::path dir(dir_path);
-  try {
-    boost::filesystem::create_directory(dir);
-  } catch (boost::filesystem::filesystem_error& e) {
-    std::cerr << "Problem in creating system directory for the snappyHexMesh"
-              << "\n";
-    std::cerr << e.what() << std::endl;
-    throw;
+  std::string dir_path = "./system/" + createPatchParams.pathSurrounding;
+
+  if (write) {
+    boost::filesystem::path dir(dir_path);
+    try {
+      boost::filesystem::create_directory(dir);
+    } catch (boost::filesystem::filesystem_error &e) {
+      std::cerr << "Problem in creating system directory for the snappyHexMesh"
+                << "\n";
+      std::cerr << e.what() << std::endl;
+      throw;
+    }
   }
 
-  // creating mesh dictionary file
-  std::ofstream contDict;
-  contDict.open(std::string(dir_path) + "/createPatchDict");
   // header
   std::string contText =
       "\
@@ -870,7 +203,8 @@ FoamFile\n\
   contText = contText + "\n\npatches\n";
   contText = contText + "(\n";
   contText = contText + "\t{\n";
-  contText = contText + "\t\tname " + (createPatchParams.surroundingName) + ";\n";
+  contText =
+      contText + "\t\tname " + (createPatchParams.surroundingName) + ";\n";
   contText = contText + "\n\t\tpatchInfo\n";
   contText = contText + "\t\t{\n";
   contText =
@@ -885,23 +219,36 @@ FoamFile\n\
              "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * "
              "*//\n\n";
 
-  contDict << contText;
-  contDict.close();
+  // creating mesh dictionary file
+  std::ofstream contDict;
+  if (write) {
+    contDict.open(std::string(dir_path) + "/createPatchDict");
+    contDict << contText;
+    contDict.close();
+  }
+
+  // Keep this dictionary in memory
+  Foam::dictionary tmptmpDuc =
+      new Foam::dictionary(Foam::IStringStream(contText)(), true);
+  cpDict_ = std::unique_ptr<Foam::dictionary>(
+      new Foam::dictionary("createPatchDict"));
+  cpDict_->merge(tmptmpDuc);
 
   if (dirStat == 1) {
     const char dir_path2[] = "./system/domain2";
-    boost::filesystem::path dir2(dir_path2);
-    try {
-      boost::filesystem::create_directory(dir2);
-    } catch (boost::filesystem::filesystem_error& e) {
-      std::cerr << "Problem in creating system directory for createPatch"
-                << "\n";
-      std::cerr << e.what() << std::endl;
-      throw;
+
+    if (write) {
+      boost::filesystem::path dir2(dir_path2);
+      try {
+        boost::filesystem::create_directory(dir2);
+      } catch (boost::filesystem::filesystem_error &e) {
+        std::cerr << "Problem in creating system directory for createPatch"
+                  << "\n";
+        std::cerr << e.what() << std::endl;
+        throw;
+      }
     }
-    // creating mesh dictionary file
-    std::ofstream contDict2;
-    contDict2.open(std::string(dir_path2) + "/createPatchDict");
+
     // header
     std::string contText2 =
         "\
@@ -945,22 +292,35 @@ FoamFile\n\
                 "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * "
                 "* * //\n\n";
 
-    contDict2 << contText2;
-    contDict2.close();
+    // creating mesh dictionary file
+    std::ofstream contDict2;
+    if (write) {
+      contDict2.open(std::string(dir_path2) + "/createPatchDict");
+      contDict2 << contText2;
+      contDict2.close();
+    }
+
+    // Keep this dictionary in memory
+    cpDict_.reset();
+    Foam::dictionary tmptmpDuc2 =
+        new Foam::dictionary(Foam::IStringStream(contText2)(), true);
+    cpDict_ = std::unique_ptr<Foam::dictionary>(
+        new Foam::dictionary("createPatchDict"));
+    cpDict_->merge(tmptmpDuc2);
   } else {
     const char dir_path2[] = "./system/domain1";
-    boost::filesystem::path dir2(dir_path2);
-    try {
-      boost::filesystem::create_directory(dir2);
-    } catch (boost::filesystem::filesystem_error& e) {
-      std::cerr << "Problem in creating system directory for createPatch"
-                << "\n";
-      std::cerr << e.what() << std::endl;
-      throw;
+    if (write) {
+      boost::filesystem::path dir2(dir_path2);
+      try {
+        boost::filesystem::create_directory(dir2);
+      } catch (boost::filesystem::filesystem_error &e) {
+        std::cerr << "Problem in creating system directory for createPatch"
+                  << "\n";
+        std::cerr << e.what() << std::endl;
+        throw;
+      }
     }
-    // creating mesh dictionary file
-    std::ofstream contDict2;
-    contDict2.open(std::string(dir_path2) + "/createPatchDict");
+
     // header
     std::string contText2 =
         "\
@@ -1004,803 +364,66 @@ FoamFile\n\
                 "// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * "
                 "* * //\n\n";
 
-    contDict2 << contText2;
-    contDict2.close();
+    // creating mesh dictionary file
+    std::ofstream contDict2;
+    if (write) {
+      contDict2.open(std::string(dir_path2) + "/createPatchDict");
+      contDict2 << contText2;
+      contDict2.close();
+    }
+
+    // Keep this dictionary in memory
+    Foam::dictionary tmptmpDuc2 =
+        new Foam::dictionary(Foam::IStringStream(contText2)(), true);
+    cpDict_.reset();
+    cpDict_ = std::unique_ptr<Foam::dictionary>(
+        new Foam::dictionary("createPatchDict"));
+    cpDict_->merge(tmptmpDuc2);
   }
 }
-
-/*
-CreatePatch utility merges multiple patches of certain mesh in a single patch.
-It reads createPatchDict from system/mesh_reg_name/createPatchDict. Currently
-the utility implementation is wrapped with for loop to execute it twice for
-Pack Mesh Generation service.
-*/
-void MeshManipulationFoam::createPatch(int dirStat) {
-  using namespace Foam;
-  const auto &createPatchParams = _mshMnipPrms->createPatchParams;
-
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::argList::noParallel();
-
-  createPatchDict(dirStat);
-
-  Foam::fileName one = ".";
-  Foam::fileName two = ".";
-  Time runTime(Time::controlDictName, one, two);
-
-  std::string firstPtch = createPatchParams.pathSurrounding;
-  std::string secondPtch;
-
-  if (dirStat == 1)
-    secondPtch = "domain2";
-  else
-    secondPtch = "domain1";
-
-  std::string regnName;
-
-  // This loop wraps around utility execution to merge patches of all packs and
-  // surounding regions into two distinct patches.
-  for (int i = 0; i < 2; i++) {
-    if (i == 0) {
-      regnName = firstPtch;
-    }
-    if (i == 1) {
-      regnName = secondPtch;
-    }
-    const bool overwrite = (createPatchParams.overwritecpMsh);
-
-    Foam::word meshRegionName = regnName;
-
-    Foam::word regionName;
-    regionName = regnName;
-    Foam::Info << "Create polyMesh for time = " << runTime.timeName()
-               << Foam::nl << Foam::endl;
-
-    Foam::polyMesh mesh(Foam::IOobject(regionName, runTime.timeName(), runTime,
-                                       Foam::IOobject::MUST_READ));
-
-    const word oldInstance = mesh.pointsInstance();
-
-    const word dictName("createPatchDict");
-
-    IOobject dictIO(dictName, runTime.system(), mesh,
-                    IOobject::MUST_READ_IF_MODIFIED, IOobject::NO_WRITE);
-
-    Info << "Reading " << dictName << nl << endl;
-
-    IOdictionary dict(dictIO);
-
-    // Whether to synchronise points
-    const Switch pointSync(dict.lookup("pointSync"));
-
-    const polyBoundaryMesh& patches = mesh.boundaryMesh();
-
-    // If running parallel check same patches everywhere
-    patches.checkParallelSync(true);
-
-    dumpCyclicMatch("initial_", mesh);
-
-    // Read patch construct info from dictionary
-    PtrList<dictionary> patchSources(dict.lookup("patches"));
-
-    HashSet<word> addedPatchNames;
-    forAll(patchSources, addedI) {
-      const dictionary& dict = patchSources[addedI];   
-      addedPatchNames.insert(dict.get<word>("name"));
-    }
-
-    // 1. Add all new patches
-    // ~~~~~~~~~~~~~~~~~~~~~~
-
-    if (patchSources.size()) {
-      // Old and new patches.
-      DynamicList<polyPatch*> allPatches(patches.size() + patchSources.size());
-
-      label startFacei = mesh.nInternalFaces();
-
-      // Copy old patches.
-      forAll(patches, patchi) {
-        const polyPatch& pp = patches[patchi];
-
-        if (!isA<processorPolyPatch>(pp)) {
-          allPatches.append(
-              pp.clone(patches, patchi, pp.size(), startFacei).ptr());
-          startFacei += pp.size();
-        }
-      }
-
-      forAll(patchSources, addedI) {
-        const dictionary& dict = patchSources[addedI];
-
-        word patchName(dict.lookup("name"));
-
-        label destPatchi = patches.findPatchID(patchName);
-
-        if (destPatchi == -1) {
-          dictionary patchDict(dict.subDict("patchInfo"));
-
-          destPatchi = allPatches.size();
-
-          Info << "Adding new patch " << patchName << " as patch " << destPatchi
-               << " from " << patchDict << endl;
-
-          patchDict.set("nFaces", 0);
-          patchDict.set("startFace", startFacei);
-
-          // Add an empty patch.
-          allPatches.append(
-              polyPatch::New(patchName, patchDict, destPatchi, patches).ptr());
-        } else {
-          Info << "Patch '" << patchName << "' already exists.  Only "
-               << "moving patch faces - type will remain the same" << endl;
-        }
-      }
-
-      // Copy old patches.
-      forAll(patches, patchi) {
-        const polyPatch& pp = patches[patchi];
-
-        if (isA<processorPolyPatch>(pp)) {
-          allPatches.append(
-              pp.clone(patches, patchi, pp.size(), startFacei).ptr());
-          startFacei += pp.size();
-        }
-      }
-
-      allPatches.shrink();
-      mesh.removeBoundary();
-      mesh.addPatches(allPatches);
-      Info << endl;
-    }
-
-    // 2. Repatch faces
-    // ~~~~~~~~~~~~~~~~
-
-    polyTopoChange meshMod(mesh);
-
-    forAll(patchSources, addedI) {
-      const dictionary& dict = patchSources[addedI];
-
-      const word patchName(dict.lookup("name"));
-      label destPatchi = patches.findPatchID(patchName);
-
-      if (destPatchi == -1) {
-        FatalErrorInFunction << "patch " << patchName << " not added. Problem."
-                             << abort(FatalError);
-      }
-
-      const word sourceType(dict.lookup("constructFrom"));
-
-      if (sourceType == "patches") {
-        labelHashSet patchSources(
-            patches.patchSet(wordReList(dict.lookup("patches"))));
-
-        // Repatch faces of the patches.
-        forAllConstIter(labelHashSet, patchSources, iter) {
-          const polyPatch& pp = patches[iter.key()];
-
-          Info << "Moving faces from patch " << pp.name() << " to patch "
-               << destPatchi << endl;
-
-          forAll(pp, i) {
-            changePatchID(mesh, pp.start() + i, destPatchi, meshMod);
-          }
-        }
-      } else if (sourceType == "set") {
-        const word setName(dict.lookup("set"));
-
-        faceSet faces(mesh, setName);
-
-        Info << "Read " << returnReduce(faces.size(), sumOp<label>())
-             << " faces from faceSet " << faces.name() << endl;
-
-        // Sort (since faceSet contains faces in arbitrary order)
-        labelList faceLabels(faces.toc());
-
-        SortableList<label> patchFaces(faceLabels);
-
-        forAll(patchFaces, i) {
-          label facei = patchFaces[i];
-
-          if (mesh.isInternalFace(facei)) {
-            FatalErrorInFunction
-                << "Face " << facei << " specified in set " << faces.name()
-                << " is not an external face of the mesh." << endl
-                << "This application can only repatch existing boundary"
-                << " faces." << exit(FatalError);
-          }
-
-          changePatchID(mesh, facei, destPatchi, meshMod);
-        }
-      } else {
-        FatalErrorInFunction << "Invalid source type " << sourceType << endl
-                             << "Valid source types are 'patches' 'set'"
-                             << exit(FatalError);
-      }
-    }
-    Info << endl;
-
-    // Change mesh, use inflation to reforce calculation of transformation
-    // tensors.
-    Info << "Doing topology modification to order faces." << nl << endl;
-    autoPtr<mapPolyMesh> map = meshMod.changeMesh(mesh, true);
-    mesh.movePoints(map().preMotionPoints());
-
-    dumpCyclicMatch("coupled_", mesh);
-
-    // Synchronise points.
-    if (!pointSync) {
-      Info << "Not synchronising points." << nl << endl;
-    } else {
-      Info << "Synchronising points." << nl << endl;
-
-      // This is a bit tricky. Both normal and position might be out and
-      // current separation also includes the normal
-      // ( separation_ = (nf&(Cr - Cf))*nf ).
-
-      // For cyclic patches:
-      // - for separated ones use user specified offset vector
-
-      forAll(mesh.boundaryMesh(), patchi) {
-        const polyPatch& pp = mesh.boundaryMesh()[patchi];
-
-        if (pp.size() && isA<coupledPolyPatch>(pp)) {
-          const coupledPolyPatch& cpp = refCast<const coupledPolyPatch>(pp);
-
-          if (cpp.separated()) {
-            Info << "On coupled patch " << pp.name() << " separation[0] was "
-                 << cpp.separation()[0] << endl;
-
-            if (isA<cyclicPolyPatch>(pp) && pp.size()) {
-              const cyclicPolyPatch& cycpp = refCast<const cyclicPolyPatch>(pp);
-
-              if (cycpp.transform() == cyclicPolyPatch::TRANSLATIONAL) {
-                // Force to wanted separation
-                Info << "On cyclic translation patch " << pp.name()
-                     << " forcing uniform separation of "
-                     << cycpp.separationVector() << endl;
-                const_cast<vectorField&>(cpp.separation()) =
-                    pointField(1, cycpp.separationVector());
-              } else {
-                const cyclicPolyPatch& nbr = cycpp.neighbPatch();
-                const_cast<vectorField&>(cpp.separation()) =
-                    pointField(1, nbr[0].centre(mesh.points()) -
-                                      cycpp[0].centre(mesh.points()));
-              }
-            }
-            Info << "On coupled patch " << pp.name()
-                 << " forcing uniform separation of " << cpp.separation()
-                 << endl;
-          } else if (!cpp.parallel()) {
-            Info << "On coupled patch " << pp.name()
-                 << " forcing uniform rotation of " << cpp.forwardT()[0]
-                 << endl;
-
-            const_cast<tensorField&>(cpp.forwardT()).setSize(1);
-            const_cast<tensorField&>(cpp.reverseT()).setSize(1);
-
-            Info << "On coupled patch " << pp.name()
-                 << " forcing uniform rotation of " << cpp.forwardT() << endl;
-          }
-        }
-      }
-
-      Info << "Synchronising points." << endl;
-
-      pointField newPoints(mesh.points());
-
-      syncPoints(mesh, newPoints, minMagSqrEqOp<vector>(),
-                 point(GREAT, GREAT, GREAT));
-
-      scalarField diff(mag(newPoints - mesh.points()));
-      Info << "Points changed by average:" << gAverage(diff)
-           << " max:" << gMax(diff) << nl << endl;
-
-      mesh.movePoints(newPoints);
-    }
-
-    // 3. Remove zeros-sized patches
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Info << "Removing patches with no faces in them." << nl << endl;
-    filterPatches(mesh, addedPatchNames);
-
-    dumpCyclicMatch("final_", mesh);
-
-    // Set the precision of the points data to 10
-    IOstream::defaultPrecision(max(10u, IOstream::defaultPrecision()));
-
-    if (!overwrite) {
-      runTime++;
-    } else {
-      mesh.setInstance(oldInstance);
-    }
-
-    // Write resulting mesh
-    Info << "Writing repatched mesh to " << runTime.timeName() << nl << endl;
-    mesh.write();
-  }
-
-  Info << "End\n" << endl;
-}
-
-/*
-This utility converts OpenFoam mesh into STL file. Filename is user-input.
-It can take paths for output file location and name.
-*/
-void MeshManipulationFoam::foamToSurface() {
-  using namespace Foam;
-  const auto &foamToSurfaceParams = _mshMnipPrms->foamToSurfParams;
-
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
-  Foam::argList::noParallel();
-
-  fileName exportName = (foamToSurfaceParams.outSurfName);
-
-  scalar scaleFactor = 0;
-  const bool doTriangulate = true;
-
-  fileName exportBase = exportName.lessExt();
-  word exportExt = exportName.ext();
-
-  polyMesh mesh(IOobject(Foam::polyMesh::defaultRegion,
-                         runTime.timeName(), runTime,
-                         Foam::IOobject::MUST_READ));
-
-  polyMesh::readUpdateState state = mesh.readUpdate();
-  exportName = exportBase + "." + exportExt;
-
-  meshedSurface surf(mesh.boundaryMesh());
-  surf.scalePoints(scaleFactor);
-
-  Info << "writing " << exportName;
-
-  if (doTriangulate) {
-    Info << " triangulated";
-    surf.triangulate();
-  }
-
-  if (scaleFactor <= 0) {
-    Info << " without scaling" << endl;
-  } else {
-    Info << " with scaling " << scaleFactor << endl;
-  }
-
-  // Add an error handler for directory check before writing
-  surf.write(exportName);
-  // surf.write("./constant/triSurface/InputPacks.stl");
-
-  Info << nl << endl;
-
-  Info << "End\n" << endl;
-}
-
-/*
-surfaceSplitByTopology is a surface file manipulation utility which aims at
-splitting multiple disconnected regions in geometry into separate surfaces and
-outputs a single surface file containing all regions as well as separate STL
-files for all regions. User inputs are input file name and output file name.
-*/
-int MeshManipulationFoam::surfSpltByTopology() {
-  using namespace Foam;
-  const auto &surfSplitParams = _mshMnipPrms->surfSplitParams;
-
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::argList::noParallel();
-
-  Foam::fileName one = ".";
-  Foam::fileName two = ".";
-  Time runTime(Time::controlDictName, one, two);
-
-  fileName surfFileName(surfSplitParams.surfFile);
-  Info << "Reading surface from " << surfFileName << endl;
-
-  fileName outFileName(surfSplitParams.outSurfFile);
-  fileName outFileBaseName = outFileName.lessExt();
-  word outExtension = outFileName.ext();
-
-  // Load surface
-  triSurface surf(surfFileName);
-
-  bool anyZoneRemoved = false;
-
-  label iterationNo = 0;
-  label iterationLimit = 10;
-
-  Info << "Splitting off baffle parts " << endl;
-
-  do {
-    anyZoneRemoved = false;
-
-    labelList faceZone;
-
-    const labelListList& edFaces = surf.edgeFaces();
-    const labelListList& faceEds = surf.faceEdges();
-
-    boolList multipleEdges(edFaces.size(), false);
-
-    forAll(multipleEdges, i) {
-      if (edFaces[i].size() > 2) {
-        multipleEdges[i] = true;
-      }
-    }
-
-    label nZones = surf.markZones(multipleEdges, faceZone);
-
-    if (nZones < 2) {
-      break;
-    }
-
-    boolList nonBaffle(faceZone.size(), true);
-    boolList baffle(faceZone.size(), true);
-    labelList pointMap;
-    labelList faceMap;
-
-    for (label z = 0; z < nZones; z++) {
-      bool keepZone = true;
-
-      forAll(faceZone, f) {
-        if (faceZone[f] == z) {
-          forAll(faceEds[f], fe) {
-            if (edFaces[faceEds[f][fe]].size() < 2) {
-              keepZone = false;
-
-              anyZoneRemoved = true;
-
-              break;
-            }
-          }
-        }
-
-        if (!keepZone) {
-          break;
-        }
-      }
-
-      forAll(faceZone, f) {
-        if (faceZone[f] == z) {
-          nonBaffle[f] = keepZone;
-          baffle[f] = !keepZone;
-        }
-      }
-    }
-
-    Info << "    Iteration " << iterationNo << endl;
-
-    triSurface baffleSurf = surf.subsetMesh(baffle, pointMap, faceMap);
-
-    if (baffleSurf.size()) {
-      fileName bafflePartFileName = outFileBaseName + "_bafflePart_" +
-                                    name(iterationNo) + "." + outExtension;
-
-      Info << "    Writing baffle part to " << bafflePartFileName << endl;
-
-      baffleSurf.write(bafflePartFileName);
-    }
-
-    surf = surf.subsetMesh(nonBaffle, pointMap, faceMap);
-
-    if (iterationNo == iterationLimit) {
-      WarningInFunction << "Iteration limit of " << iterationLimit << "reached"
-                        << endl;
-    }
-
-    iterationNo++;
-
-  } while (anyZoneRemoved && iterationNo < iterationLimit);
-
-  Info << "Writing new surface to " << outFileName << endl;
-
-  surf.write(outFileName);
-
-  labelList faceZone;
-
-  const labelListList& edFaces = surf.edgeFaces();
-
-  boolList multipleEdges(edFaces.size(), false);
-
-  forAll(multipleEdges, i) {
-    if (edFaces[i].size() > 2) {
-      multipleEdges[i] = true;
-    }
-  }
-
-  label nZones = surf.markZones(multipleEdges, faceZone);
-
-  int nofPacks = nZones;
-
-  // nZones is number of pack domains. it will be great to get that out for
-  // mergeMeshes. Also, surface renumbering is needed as output STL
-
-  /*Info<< "Splitting remaining multiply connected parts" << endl;
-
-  for (label z = 0; z < nZones; z++)
-  {
-
-      boolList include(faceZone.size(), false);
-      labelList pointMap;
-      labelList faceMap;
-
-      forAll(faceZone, f)
-      {
-          if (faceZone[f] == z)
-          {
-              include[f] = true;
-          }
-      }
-
-      triSurface zoneSurf = surf.subsetMesh(include, pointMap, faceMap);
-
-
-      fileName remainingPartFileName =
-          outFileBaseName
-        + "_multiplePart_"
-        + name(z)
-        + "." + outExtension;
-
-      Info<< "    Writing mulitple part "
-          << z << " to " << remainingPartFileName << endl;
-
-      zoneSurf.write(remainingPartFileName);
-  }*/
-
-  Info << "End\n" << endl;
-
-  return nofPacks;
-}
-
-void MeshManipulationFoam::createControlDict() {
-  // creating a base system directory
-  const char dir_path[] = "./system";
-  boost::filesystem::path dir(dir_path);
-  try {
-    boost::filesystem::create_directory(dir);
-  } catch (boost::filesystem::filesystem_error& e) {
-    std::cerr << "Problem in creating system directory for the cfMesh"
-              << "\n";
-    std::cerr << e.what() << std::endl;
-    throw;
-  }
-
-  std::ofstream contDict;
-  contDict.open(std::string(dir_path) + "/controlDict");
-  std::string contText =
-      "\
-/*--------------------------------*- C++ -*----------------------------------*\n\
-| =========                 |                                                |\n\
-| \\\\      /  F ield         | NEMoSys: cfMesh interface                      |\n\
-|  \\\\    /   O peration     |                                                |\n\
-|   \\\\  /    A nd           |                                                |\n\
-|    \\\\/     M anipulation  |                                                |\n\
-\\*---------------------------------------------------------------------------*/\n\
-\n\
-FoamFile\n\
-{\n\
-    version   2.0;\n\
-    format    ascii;\n\
-    class     dictionary;\n\
-    location  \"system\";\n\
-    object    controlDict;\n\
-}\n\n\
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
-deltaT  1;\n\n\
-startTime   0;\n\n\
-writeInterval   1;\n\n\
-// ***************************************************************** //";
-  contDict << contText;
-  contDict.close();
-}
-
-void MeshManipulationFoam::initAMRWorkFlow(const double startT,
-                                           const double& dt,
-                                           const double& endT) {
-  // creating a base constant directory
-  const char dir_path[] = "./constant";
-  boost::filesystem::path dir(dir_path);
-  try {
-    boost::filesystem::create_directory(dir);
-  } catch (boost::filesystem::filesystem_error& e) {
-    std::cerr << "Problem in creating system directory for the cfMesh"
-              << "\n";
-    std::cerr << e.what() << std::endl;
-    throw;
-  }
-
-  // Creating "dynamicMeshDict"
-  std::ofstream contDict;
-  contDict.open(std::string(dir_path) + "/dynamicMeshDict");
-  std::string contText =
-      "\
-/*--------------------------------*- C++ -*----------------------------------*\n\
-| =========                 |                                                |\n\
-| \\\\      /  F ield         | NEMoSys: cfMesh interface                      |\n\
-|  \\\\    /   O peration     |                                                |\n\
-|   \\\\  /    A nd           |                                                |\n\
-|    \\\\/     M anipulation  |                                                |\n\
-\\*---------------------------------------------------------------------------*/\n\
-\n\
-FoamFile\n\
-{\n\
-    version   2.0;\n\
-    format    ascii;\n\
-    class     dictionary;\n\
-    location  \"constant\";\n\
-    object    dynamicMeshDict;\n\
-}\n\n\
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n\
-dynamicFvMesh   dynamicRefineFvMesh;\n\n";
-
-  contText = contText + "refineInterval  1;\n\n";
-  contText = contText + "field  ";
-  contText = contText + "meshField;\n\n";
-  contText = contText + "lowerRefineLevel  0;\n\n";
-  contText = contText + "upperRefineLevel  1;\n\n";
-  contText = contText + "unrefineLevel  10;\n\n";
-
-  contText = contText + "nBufferLayers   3;\n\n";
-  contText = contText + "maxRefinement   3;\n\n";
-  contText = contText + "maxCells        2000000;\n\n";
-  contText = contText + "correctFluxes\n";
-  contText = contText + "(\n";
-  contText = contText + ");\n";
-  contText = contText + "dumpLevel       true;";
-
-  contDict << contText;
-  contDict.close();
-
-  // Creating controlDict
-  // creating a base system directory
-  const char dir_path2[] = "./system";
-  boost::filesystem::path dir2(dir_path2);
-  try {
-    boost::filesystem::create_directory(dir2);
-  } catch (boost::filesystem::filesystem_error& e) {
-    std::cerr << "Problem in creating system directory for the cfMesh"
-              << "\n";
-    std::cerr << e.what() << std::endl;
-    throw;
-  }
-
-  std::ofstream contDict2;
-  contDict2.open(std::string(dir_path2) + "/controlDict");
-  std::string contText2 =
-      "\
-/*--------------------------------*- C++ -*----------------------------------*\n\
-| =========                 |                                                |\n\
-| \\\\      /  F ield         | NEMoSys: cfMesh interface                      |\n\
-|  \\\\    /   O peration     |                                                |\n\
-|   \\\\  /    A nd           |                                                |\n\
-|    \\\\/     M anipulation  |                                                |\n\
-\\*---------------------------------------------------------------------------*/\n\
-\n\
-FoamFile\n\
-{\n\
-    version   2.0;\n\
-    format    ascii;\n\
-    class     dictionary;\n\
-    location  \"system\";\n\
-    object    controlDict;\n\
-}\n\n\
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //\n\n";
-
-  contText2 = contText2 + "startFrom       startTime;\n";
-  contText2 = contText2 + "startTime       " + std::to_string(startT) + ";\n";
-  contText2 = contText2 + "stopAt          endTime;\n";
-  contText2 = contText2 + "endTime        " + std::to_string(endT) + ";\n";
-  contText2 = contText2 + "deltaT         " + std::to_string(dt) + ";\n";
-  contText2 = contText2 + "writeControl    timeStep;\n";
-  contText2 = contText2 + "writeInterval   1;\n";
-  contText2 = contText2 + "purgeWrite      0;\n";
-  contText2 = contText2 + "writeFormat     ascii;\n";
-  contText2 = contText2 + "writePrecision  6;\n";
-  contText2 = contText2 + "writeCompression off;\n";
-  contText2 = contText2 + "timeFormat      general;\n";
-  contText2 = contText2 + "timePrecision   6;\n";
-  contText2 = contText2 + "runTimeModifiable true;\n";
-
-  contText2 =
-      contText2 +
-      "// ***************************************************************** //";
-  contDict2 << contText2;
-  contDict2.close();
-}
-
-// Feature in development currently
 
 // Adds connectivity information at shared interfaces.
 void MeshManipulationFoam::addCohesiveElements(double tol,
-                                               const std::string outName) {
-  // Initializing FOAM
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::argList::noParallel();
+                                               const std::string &outName) {
+  bool writeDicts = true;
+  std::unique_ptr<getDicts> initFoam;
+  initFoam = std::unique_ptr<getDicts>(new getDicts());
+  auto controlDict_ = initFoam->createControlDict(writeDicts);
 
-  Foam::fileName one = ".";
-  Foam::fileName two = ".";
-  Time runTime(Time::controlDictName, one, two);
+  Foam::Time runTime(controlDict_.get(), ".", ".");
 
-  Foam::word regionName = Foam::polyMesh::defaultRegion;
+  auto _fmeshSurr = std::unique_ptr<NEM::MSH::foamGeoMesh>(
+      NEM::MSH::foamGeoMesh::Read("domain0.foam"));
 
-  auto _fmeshSurr = new Foam::polyMesh(Foam::IOobject(
-      "domain0", runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
-
-  // New query points (From Packs)
-  auto _fmeshPacks = new Foam::polyMesh(Foam::IOobject(
-      "domain1", runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
-
-  Foam::pointField packsPF = _fmeshPacks->points();
+  auto _fmeshPacks = std::unique_ptr<NEM::MSH::foamGeoMesh>(
+      NEM::MSH::foamGeoMesh::Read("domain1.foam"));
 
   // declare vtk datasets
   vtkSmartPointer<vtkUnstructuredGrid> dataSetSurr =
       vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  // creating equivalent vtk topology from fvMesh
-  // by default polyhedral cells will be decomposed to
-  // tets and pyramids. Additional points will be added
-  // to underlying fvMesh.
-  std::cout << "Performing topological decomposition.\n";
-  Foam::foamVTKTopo topo1(*_fmeshSurr);
-  Foam::foamVTKTopo topo2(*_fmeshPacks);
+  vtkSmartPointer<vtkUnstructuredGrid> surrTmp =
+      vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto objVfoamSurr = Foam::vtk::vtuAdaptor();
+  surrTmp = objVfoamSurr.internal(_fmeshSurr->getFoamMesh());
 
-  // point data for surrounding
-  Foam::pointField pfSurr = _fmeshSurr->points();
-  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-  for (int ipt = 0; ipt < _fmeshSurr->nPoints(); ipt++)
-    points->InsertNextPoint(pfSurr[ipt].x(), pfSurr[ipt].y(), pfSurr[ipt].z());
+  int impPts = (int)(surrTmp->GetNumberOfPoints());
 
-  // point data for packs
-  int impPts = (_fmeshSurr->nPoints());
-  for (int ipt = 0; ipt < _fmeshPacks->nPoints(); ipt++)
-    points->InsertNextPoint(packsPF[ipt].x(), packsPF[ipt].y(),
-                            packsPF[ipt].z());
+  vtkSmartPointer<vtkUnstructuredGrid> pckTmp =
+      vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto objVfoamPck = Foam::vtk::vtuAdaptor();
+  pckTmp = objVfoamPck.internal(_fmeshPacks->getFoamMesh());
 
-  dataSetSurr->SetPoints(points);
+  // Merge two foam meshes
+  vtkSmartPointer<vtkAppendFilter> appendFilter =
+      vtkSmartPointer<vtkAppendFilter>::New();
+  appendFilter->AddInputData(surrTmp);
+  appendFilter->AddInputData(pckTmp);
+  appendFilter->MergePointsOn();
+  appendFilter->Update();
+  dataSetSurr = appendFilter->GetOutput();
 
-  // cell data for surrounding
-  std::vector<int> pntIds;
-  int nCelPnts = 0;
-  for (int icl = 0; icl < topo1.vertLabels().size(); icl++) {
-    nCelPnts = topo1.vertLabels()[icl].size();
-    pntIds.resize(nCelPnts, -1);
-    for (int ip = 0; ip < nCelPnts; ip++) {
-      pntIds[ip] = topo1.vertLabels()[icl][ip];
-    }
-    createVtkCell(dataSetSurr, topo1.cellTypes()[icl], pntIds);
-  }
-
-  // cell data for packs
-  int nCelPnts2;
-  for (int icl = 0; icl < topo2.vertLabels().size(); icl++) {
-    std::vector<int> pntIds2;
-    nCelPnts2 = topo2.vertLabels()[icl].size();
-    pntIds2.resize(nCelPnts2, -1);
-    for (int ip = 0; ip < nCelPnts2; ip++) {
-      pntIds2[ip] = impPts + topo2.vertLabels()[icl][ip];
-    }
-    createVtkCell(dataSetSurr, topo2.cellTypes()[icl], pntIds2);
-  }
-
-  int numCells = dataSetSurr->GetNumberOfCells();
-  int numPoints = dataSetSurr->GetNumberOfPoints();
+  int numPoints = (int)(dataSetSurr->GetNumberOfPoints());
 
   int nDim = 3;
   ANNpointArray pntCrd;
@@ -1813,7 +436,7 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
     pntCrd[iPnt][2] = getPt[2];
   }
 
-  ANNkd_tree* kdTree = new ANNkd_tree(pntCrd, numPoints, nDim);
+  ANNkd_tree *kdTree = new ANNkd_tree(pntCrd, numPoints, nDim);
 
   // Finding duplicate nodes
   double rad = 1e-05;
@@ -1832,29 +455,29 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
     qryPnt[2] = getPt[2];
     kdTree->annkFRSearch(qryPnt, rad, nNib, nnIdx, dists, 0);
     if (dists[1] <= tol) {
-      if ((nnIdx[1]) >= (_fmeshSurr->nPoints()))
+      if ((nnIdx[1]) >= impPts)
         dupNdeMap[nnIdx[0]] = nnIdx[1];  // Format Surrounding::Pack
       else
         dupNdeMap[nnIdx[1]] = nnIdx[0];  // Format Surrounding::Pack
     }
   }
 
-  int numDupPnts = dupNdeMap.size();
+  int numDupPnts = (int)dupNdeMap.size();
   std::cout << "Found " << numDupPnts << " duplicate nodes.\n";
 
   // Getting cells in packs
   std::map<int, int>::iterator it = dupNdeMap.begin();
   std::vector<int> cellID;
-  for (int i = 0; i < (dupNdeMap.size()); i++) {
+  for (int i = 0; i < (int)(dupNdeMap.size()); i++) {
     int nCells, cellNum;
-    vtkIdList* cells = vtkIdList::New();
+    vtkIdList *cells = vtkIdList::New();
 
     // get cells the point belongs to
     dataSetSurr->GetPointCells(it->second, cells);
-    nCells = cells->GetNumberOfIds();
+    nCells = (int)cells->GetNumberOfIds();
 
     for (cellNum = 0; cellNum < nCells; cellNum++) {
-      cellID.push_back(cells->GetId(cellNum));  // get cell id from the list
+      cellID.push_back((int)(cells->GetId(cellNum)));  // get cell id from list
     }
     it++;
   }
@@ -1862,7 +485,7 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
   sort(cellID.begin(), cellID.end());
   cellID.erase(unique(cellID.begin(), cellID.end()), cellID.end());
 
-  int know = cellID.size();
+  int know = (int)cellID.size();
 
   // std::cout << "Total Cells Found Are " << know << std::endl;
 
@@ -1874,15 +497,12 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
     // Getting all cell defining points
     std::vector<int> ptIdzz(8);
     int cntr = 0;
-    vtkCell* cell;
-    vtkPoints* fp;
+    vtkCell *cell;
     cell = dataSetSurr->GetCell(cellID[i]);
 
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
-    for (int j = 0; j < 8; j++) {
-      ptIdzz[j] = pts->GetId(j);
-    }
+    for (int j = 0; j < 8; j++) { ptIdzz[j] = (int)(pts->GetId(j)); }
 
     // Checking if any cell contains any 4 or more of duplicate nodes.
     std::map<int, int>::iterator it2 = dupNdeMap.begin();
@@ -1904,21 +524,21 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
     }
   }
 
-  int size2 = newCellIds.size();
+  int size2 = (int)newCellIds.size();
 
   // Getting useful faces from cells
   std::vector<int> globalPtIds;
   std::vector<int> surroundingArray;
   std::vector<int> packArray;
   for (int i = 0; i < size2; i++) {
-    vtkCell* cell;
+    vtkCell *cell;
     cell = dataSetSurr->GetCell(newCellIds[i]);
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
     for (int j = 0; j < 6; j++) {
       int isFour = 0;
-      int* ptFaces = nullptr;
-      vtkCell3D* cell3d = static_cast<vtkCell3D*>(cell);
+      int *ptFaces = nullptr;
+      vtkCell3D *cell3d = static_cast<vtkCell3D *>(cell);
       cell3d->GetFacePoints(j, ptFaces);
       std::vector<int> keysDupMap = std::vector<int>(4);
       std::map<int, int>::iterator it3 = dupNdeMap.begin();
@@ -1936,9 +556,7 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
       }
 
       if (isFour == 4) {
-        for (int k = 0; k < 4; k++) {
-          globalPtIds.push_back(keysDupMap[k]);
-        }
+        for (int k = 0; k < 4; k++) { globalPtIds.push_back(keysDupMap[k]); }
       }
     }
   }
@@ -1948,7 +566,7 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
   // Creating node map with sequence.
   std::unordered_multimap<int, int> cohesiveMap;
 
-  for (int i = 0; i < globalPtIds.size(); i++) {
+  for (int i = 0; i < (int)globalPtIds.size(); i++) {
     it5 = dupNdeMap.find(globalPtIds[i]);
 
     if (it5 == dupNdeMap.end()) {
@@ -1960,13 +578,13 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
   }
 
   // std::cout << "Size = " << packArray.size() << std::endl;
-  int newCells = packArray.size() / 4;
-  int startNum = dataSetSurr->GetNumberOfCells();
+  int newCells = (int)(packArray.size() / 4);
+  int startNum = (int)(dataSetSurr->GetNumberOfCells());
 
   // Finally, creating VTK cells
   int it7 = 0;
   std::vector<int> pntCohesiveIds;
-  int nCelCohesivePnts = 0;
+  int nCelCohesivePnts;
   for (int icl = 0; icl < newCells; icl++) {
     nCelCohesivePnts = 4;
     pntCohesiveIds.resize((nCelCohesivePnts * 2), -1);
@@ -1975,34 +593,34 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
       pntCohesiveIds[ip + 4] = surroundingArray[it7];
       it7++;
     }
-    createVtkCell(dataSetSurr, 12, pntCohesiveIds);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(pntCohesiveIds.size());
+    for (auto pit = pntCohesiveIds.begin(); pit != pntCohesiveIds.end(); pit++)
+      vtkCellIds->SetId(pit - pntCohesiveIds.begin(), *pit);
+    dataSetSurr->InsertNextCell(12, vtkCellIds);
   }
 
-  int endNum = dataSetSurr->GetNumberOfCells();
+  int endNum = (int)(dataSetSurr->GetNumberOfCells());
 
   // ****************************** //
   // Zero volume cells visualization method for debugging purpose.
   std::vector<int> cohCellIds;
-  for (int i = startNum; i < endNum; i++) {
-    cohCellIds.push_back(i);
-  }
+  for (int i = startNum; i < endNum; i++) { cohCellIds.push_back(i); }
 
-  int size3 = cohCellIds.size();
+  int size3 = (int)cohCellIds.size();
   // Takes cell Ids as input and writes VTK mesh
   vtkSmartPointer<vtkUnstructuredGrid> visDataSet =
       vtkSmartPointer<vtkUnstructuredGrid>::New();
 
   std::vector<int> ptIdzz2;
   for (int i = 0; i < size3; i++) {
-    vtkCell* cell;
-    vtkPoints* fp;
+    vtkCell *cell;
+
     cell = dataSetSurr->GetCell(cohCellIds[i]);
 
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
-    for (int j = 0; j < 8; j++) {
-      ptIdzz2.push_back(pts->GetId(j));
-    }
+    for (int j = 0; j < 8; j++) { ptIdzz2.push_back((int)(pts->GetId(j))); }
   }
 
   int lvar = 0;
@@ -2023,114 +641,83 @@ void MeshManipulationFoam::addCohesiveElements(double tol,
       ptnewIdz.push_back(lvar);
       lvar++;
     }
-    createVtkCell(visDataSet, 12, ptnewIdz);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(ptnewIdz.size());
+    for (auto pit = ptnewIdz.begin(); pit != ptnewIdz.end(); pit++)
+      vtkCellIds->SetId(pit - ptnewIdz.begin(), *pit);
+    visDataSet->InsertNextCell(12, vtkCellIds);
   }
 
-  vtkMesh* vm = new vtkMesh(visDataSet, "CohesiveElements.vtu");
-  vm->report();
-  vm->write();
+  auto vm = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+      new NEM::MSH::vtkGeoMesh(visDataSet));
+  vm->write("CohesiveElements.vtu");
 
   // ********************************************* //
-  vtkMesh* vm2 = new vtkMesh(dataSetSurr, outName);
-  vm2->report();
-  vm2->write();
+  auto vm2 = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+      new NEM::MSH::vtkGeoMesh(dataSetSurr));
+  vm2->write(outName);
 
-  if (vm) delete vm;
-  if (vm2) delete vm2;
-
+  // Convert final mesh to tetrahedral
   bool tetra = false;
   std::string ofnameTet = "Tetra" + outName;
 
-  if (tetra == true) {
-    // create meshBase object
-    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(outName);
+  if (tetra) {
+    vtkSmartPointer<vtkDataSetTriangleFilter> triFilter =
+        vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triFilter->SetInputData(dataSetSurr);
+    triFilter->Update();
 
-    // Converts hex mesh to tet mesh and writes in VTU file.
-    myMesh->convertHexToTetVTK(dataSetSurr);
-    myMesh->report();
-    myMesh->write(ofnameTet);
+    auto newData_tet = triFilter->GetOutput();
+
+    auto vm3 = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+        new NEM::MSH::vtkGeoMesh(newData_tet));
+    vm3->write(ofnameTet);
   }
-  // *******************************************************************************
-  // //
+  // **************************************************************************
 }
 
 void MeshManipulationFoam::addArtificialThicknessElements(
-    double tol, const std::string outName, double thickness) {
+    double &tol, const std::string &outName, double &thickness) {
   // Initializing FOAM
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::argList::noParallel();
+  bool writeDicts = true;
+  std::unique_ptr<getDicts> initFoam;
+  initFoam = std::unique_ptr<getDicts>(new getDicts());
+  auto controlDict_ = initFoam->createControlDict(writeDicts);
 
-  Foam::fileName one = ".";
-  Foam::fileName two = ".";
-  Time runTime(Time::controlDictName, one, two);
+  Foam::Time runTime(controlDict_.get(), ".", ".");
 
-  Foam::word regionName = Foam::polyMesh::defaultRegion;
+  auto _fmeshSurr = std::unique_ptr<NEM::MSH::foamGeoMesh>(
+      NEM::MSH::foamGeoMesh::Read("domain0.foam"));
 
-  auto _fmeshSurr = new Foam::polyMesh(Foam::IOobject(
-      "domain0", runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
-
-  // New query points (From Packs)
-  auto _fmeshPacks = new Foam::polyMesh(Foam::IOobject(
-      "domain1", runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
-
-  Foam::pointField packsPF = _fmeshPacks->points();
+  auto _fmeshPacks = std::unique_ptr<NEM::MSH::foamGeoMesh>(
+      NEM::MSH::foamGeoMesh::Read("domain1.foam"));
 
   // declare vtk datasets
   vtkSmartPointer<vtkUnstructuredGrid> dataSetSurr =
       vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  // creating equivalent vtk topology from fvMesh
-  // by default polyhedral cells will be decomposed to
-  // tets and pyramids. Additional points will be added
-  // to underlying fvMesh.
-  std::cout << "Performing topological decomposition.\n";
-  Foam::foamVTKTopo topo1(*_fmeshSurr);
-  Foam::foamVTKTopo topo2(*_fmeshPacks);
+  vtkSmartPointer<vtkUnstructuredGrid> surrTmp =
+      vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto objVfoamSurr = Foam::vtk::vtuAdaptor();
+  surrTmp = objVfoamSurr.internal(_fmeshSurr->getFoamMesh());
 
-  // point data for surrounding
-  Foam::pointField pfSurr = _fmeshSurr->points();
-  vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-  for (int ipt = 0; ipt < _fmeshSurr->nPoints(); ipt++)
-    points->InsertNextPoint(pfSurr[ipt].x(), pfSurr[ipt].y(), pfSurr[ipt].z());
+  int impPts = (surrTmp->GetNumberOfPoints());
 
-  // point data for packs
-  int impPts = (_fmeshSurr->nPoints());
-  for (int ipt = 0; ipt < _fmeshPacks->nPoints(); ipt++)
-    points->InsertNextPoint(packsPF[ipt].x(), packsPF[ipt].y(),
-                            packsPF[ipt].z());
+  vtkSmartPointer<vtkUnstructuredGrid> pckTmp =
+      vtkSmartPointer<vtkUnstructuredGrid>::New();
+  auto objVfoamPck = Foam::vtk::vtuAdaptor();
+  pckTmp = objVfoamPck.internal(_fmeshPacks->getFoamMesh());
 
-  dataSetSurr->SetPoints(points);
+  // Merge two foam meshes
+  vtkSmartPointer<vtkAppendFilter> appendFilter =
+      vtkSmartPointer<vtkAppendFilter>::New();
+  appendFilter->AddInputData(surrTmp);
+  appendFilter->AddInputData(surrTmp);
+  appendFilter->MergePointsOn();
+  appendFilter->Update();
+  dataSetSurr = appendFilter->GetOutput();
 
-  // cell data for surrounding
-  std::vector<int> pntIds;
-  int nCelPnts = 0;
-  for (int icl = 0; icl < topo1.vertLabels().size(); icl++) {
-    nCelPnts = topo1.vertLabels()[icl].size();
-    pntIds.resize(nCelPnts, -1);
-    for (int ip = 0; ip < nCelPnts; ip++) {
-      pntIds[ip] = topo1.vertLabels()[icl][ip];
-    }
-    createVtkCell(dataSetSurr, topo1.cellTypes()[icl], pntIds);
-  }
-
-  // cell data for packs
-  int nCelPnts2;
-  for (int icl = 0; icl < topo2.vertLabels().size(); icl++) {
-    std::vector<int> pntIds2;
-    nCelPnts2 = topo2.vertLabels()[icl].size();
-    pntIds2.resize(nCelPnts2, -1);
-    for (int ip = 0; ip < nCelPnts2; ip++) {
-      pntIds2[ip] = impPts + topo2.vertLabels()[icl][ip];
-    }
-    createVtkCell(dataSetSurr, topo2.cellTypes()[icl], pntIds2);
-  }
-
-  int numCells = dataSetSurr->GetNumberOfCells();
-  int numPoints = dataSetSurr->GetNumberOfPoints();
+  int numPoints = (int)(dataSetSurr->GetNumberOfPoints());
 
   int nDim = 3;
   ANNpointArray pntCrd;
@@ -2143,7 +730,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
     pntCrd[iPnt][2] = getPt[2];
   }
 
-  ANNkd_tree* kdTree = new ANNkd_tree(pntCrd, numPoints, nDim);
+  ANNkd_tree *kdTree = new ANNkd_tree(pntCrd, numPoints, nDim);
 
   // Finding duplicate nodes
   double rad = 1e-05;
@@ -2162,7 +749,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
     qryPnt[2] = getPt[2];
     kdTree->annkFRSearch(qryPnt, rad, nNib, nnIdx, dists, 0);
     if (dists[1] <= tol) {
-      if ((nnIdx[1]) >= (_fmeshSurr->nPoints())) {
+      if ((nnIdx[1]) >= impPts) {
         dupNdeMap[nnIdx[0]] = nnIdx[1];  // Format Surrounding::Pack
       } else {
         dupNdeMap[nnIdx[1]] = nnIdx[0];  // Format Surrounding::Pack
@@ -2170,22 +757,23 @@ void MeshManipulationFoam::addArtificialThicknessElements(
     }
   }
 
-  int numDupPnts = dupNdeMap.size();
+  int numDupPnts = (int)dupNdeMap.size();
   std::cout << "Found " << numDupPnts << " duplicate nodes.\n";
 
   // Getting cells in packs
   std::map<int, int>::iterator it = dupNdeMap.begin();
   std::vector<int> cellID;
-  for (int i = 0; i < (dupNdeMap.size()); i++) {
+  for (int i = 0; i < (int)(dupNdeMap.size()); i++) {
     int nCells, cellNum;
-    vtkIdList* cells = vtkIdList::New();
+    vtkIdList *cells = vtkIdList::New();
 
     // get cells the point belongs to
     dataSetSurr->GetPointCells(it->second, cells);
-    nCells = cells->GetNumberOfIds();
+    nCells = (int)(cells->GetNumberOfIds());
 
     for (cellNum = 0; cellNum < nCells; cellNum++) {
-      cellID.push_back(cells->GetId(cellNum));  // get cell id from the list
+      cellID.push_back(
+          (int)(cells->GetId(cellNum)));  // get cell id from the list
     }
     it++;
   }
@@ -2203,15 +791,12 @@ void MeshManipulationFoam::addArtificialThicknessElements(
     // Getting all cell defining points
     std::vector<int> ptIdzz(8);
     int cntr = 0;
-    vtkCell* cell;
-    vtkPoints* fp;
+    vtkCell *cell;
     cell = dataSetSurr->GetCell(cellID[i]);
 
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
-    for (int j = 0; j < 8; j++) {
-      ptIdzz[j] = pts->GetId(j);
-    }
+    for (int j = 0; j < 8; j++) { ptIdzz[j] = pts->GetId(j); }
 
     // Checking if any cell contains any 4 or more of duplicate nodes.
     std::map<int, int>::iterator it2 = dupNdeMap.begin();
@@ -2233,21 +818,21 @@ void MeshManipulationFoam::addArtificialThicknessElements(
     }
   }
 
-  int size2 = newCellIds.size();
+  int size2 = (int)(newCellIds.size());
 
   // Getting useful faces from cells
   std::vector<int> globalPtIds;
   std::vector<int> surroundingArray;
   std::vector<int> packArray;
   for (int i = 0; i < size2; i++) {
-    vtkCell* cell;
+    vtkCell *cell;
     cell = dataSetSurr->GetCell(newCellIds[i]);
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
     for (int j = 0; j < 6; j++) {
       int isFour = 0;
-      int* ptFaces = nullptr;
-      vtkCell3D* cell3d = static_cast<vtkCell3D*>(cell);
+      int *ptFaces = nullptr;
+      vtkCell3D *cell3d = static_cast<vtkCell3D *>(cell);
       cell3d->GetFacePoints(j, ptFaces);
       std::vector<int> keysDupMap = std::vector<int>(4);
       std::map<int, int>::iterator it3 = dupNdeMap.begin();
@@ -2265,9 +850,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
       }
 
       if (isFour == 4) {
-        for (int k = 0; k < 4; k++) {
-          globalPtIds.push_back(keysDupMap[k]);
-        }
+        for (int k = 0; k < 4; k++) { globalPtIds.push_back(keysDupMap[k]); }
       }
     }
   }
@@ -2277,7 +860,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   // Creating node map with sequence.
   std::unordered_multimap<int, int> cohesiveMap;
 
-  for (int i = 0; i < globalPtIds.size(); i++) {
+  for (int i = 0; i < (int)globalPtIds.size(); i++) {
     it5 = dupNdeMap.find(globalPtIds[i]);
 
     if (it5 == dupNdeMap.end()) {
@@ -2322,7 +905,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   vtkIdType numPointsNew = polydata->GetNumberOfPoints();
   std::cout << "There are " << numPointsNew << " points." << std::endl;
 
-  vtkDataArray* normalsGeneric = polydata->GetPointData()->GetNormals();
+  vtkDataArray *normalsGeneric = polydata->GetPointData()->GetNormals();
 
   // Number of normals should match number of points
   std::cout << "There are " << normalsGeneric->GetNumberOfTuples()
@@ -2331,7 +914,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   // Changing point coordinates for adding artificial thickness;
 
   // Surrounding cells
-  for (int i = 0; i < surroundingArray.size(); i++) {
+  for (int i = 0; i < (int)surroundingArray.size(); i++) {
     double normalOfPt[3];
     normalsGeneric->GetTuple(surroundingArray[i], normalOfPt);
 
@@ -2349,7 +932,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   }
 
   // Pack cells
-  for (int i = 0; i < packArray.size(); i++) {
+  for (int i = 0; i < (int)packArray.size(); i++) {
     double normalOfPt[3];
     normalsGeneric->GetTuple(packArray[i], normalOfPt);
 
@@ -2365,8 +948,8 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   }
 
   // Making cells now and plotting them
-  int newCells = packArray.size() / 4;
-  int startNum = dataSetSurr->GetNumberOfCells();
+  int newCells = (int)(packArray.size() / 4);
+  int startNum = (int)(dataSetSurr->GetNumberOfCells());
 
   // Finally, creating VTK cells
   int it7 = 0;
@@ -2380,7 +963,11 @@ void MeshManipulationFoam::addArtificialThicknessElements(
       pntCohesiveIds[ip + 4] = surroundingArray[it7];
       it7++;
     }
-    createVtkCell(dataSetSurr, 12, pntCohesiveIds);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(pntCohesiveIds.size());
+    for (auto pit = pntCohesiveIds.begin(); pit != pntCohesiveIds.end(); pit++)
+      vtkCellIds->SetId(pit - pntCohesiveIds.begin(), *pit);
+    dataSetSurr->InsertNextCell(12, vtkCellIds);
   }
 
   int endNum = dataSetSurr->GetNumberOfCells();
@@ -2388,9 +975,7 @@ void MeshManipulationFoam::addArtificialThicknessElements(
   // ****************************** //
   // Zero volume cells visualization method for debugging purpose.
   std::vector<int> cohCellIds;
-  for (int i = startNum; i < endNum; i++) {
-    cohCellIds.push_back(i);
-  }
+  for (int i = startNum; i < endNum; i++) { cohCellIds.push_back(i); }
 
   int size3 = cohCellIds.size();
   // Takes cell Ids as input and writes VTK mesh
@@ -2399,15 +984,12 @@ void MeshManipulationFoam::addArtificialThicknessElements(
 
   std::vector<int> ptIdzz2;
   for (int i = 0; i < size3; i++) {
-    vtkCell* cell;
-    vtkPoints* fp;
+    vtkCell *cell;
     cell = dataSetSurr->GetCell(cohCellIds[i]);
 
-    vtkIdList* pts = cell->GetPointIds();
+    vtkIdList *pts = cell->GetPointIds();
 
-    for (int j = 0; j < 8; j++) {
-      ptIdzz2.push_back(pts->GetId(j));
-    }
+    for (int j = 0; j < 8; j++) { ptIdzz2.push_back(pts->GetId(j)); }
   }
 
   int lvar = 0;
@@ -2428,74 +1010,70 @@ void MeshManipulationFoam::addArtificialThicknessElements(
       ptnewIdz.push_back(lvar);
       lvar++;
     }
-    createVtkCell(visDataSet, 12, ptnewIdz);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(ptnewIdz.size());
+    for (auto pit = ptnewIdz.begin(); pit != ptnewIdz.end(); pit++)
+      vtkCellIds->SetId(pit - ptnewIdz.begin(), *pit);
+    visDataSet->InsertNextCell(12, vtkCellIds);
   }
 
-  vtkMesh* vm = new vtkMesh(visDataSet, "ArtificialElements.vtu");
-  vm->report();
-  vm->write();
+  auto vm = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+      new NEM::MSH::vtkGeoMesh(visDataSet));
+  vm->write("ArtificialElements.vtu");
 
-  if (vm) delete vm;
+  // ********************************************* //
+  auto vm2 = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+      new NEM::MSH::vtkGeoMesh(dataSetSurr));
+  vm2->write(outName);
 
-  vtkMesh* vm2 = new vtkMesh(dataSetSurr, outName);
-  vm2->report();
-  vm2->write();
-
-  if (vm2) delete vm2;
-
+  // Convert final mesh to tetrahedra
   bool tetra = false;
   std::string ofnameTet = "Tetra" + outName;
 
-  if (tetra == true) {
-    // create meshBase object
-    std::shared_ptr<meshBase> myMesh = meshBase::CreateShared(outName);
+  if (tetra) {
+    vtkSmartPointer<vtkDataSetTriangleFilter> triFilter =
+        vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+    triFilter->SetInputData(dataSetSurr);
+    triFilter->Update();
 
-    // Converts hex mesh to tet mesh and writes in VTU file.
-    myMesh->convertHexToTetVTK(dataSetSurr);
-    myMesh->report();
-    myMesh->write(ofnameTet);
+    auto newData_tet = triFilter->GetOutput();
+
+    auto vm3 = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+        new NEM::MSH::vtkGeoMesh(newData_tet));
+    vm3->write(ofnameTet);
   }
 }
 
-// Creates a VTK cell in databse using provided points and cell type.
-void MeshManipulationFoam::createVtkCell(
-    vtkSmartPointer<vtkUnstructuredGrid> dataSet, const int cellType,
-    std::vector<int>& vrtIds) {
-  vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
-  vtkCellIds->SetNumberOfIds(vrtIds.size());
-  for (auto pit = vrtIds.begin(); pit != vrtIds.end(); pit++)
-    vtkCellIds->SetId(pit - vrtIds.begin(), *pit);
-  dataSet->InsertNextCell(cellType, vtkCellIds);
-}
-
 // Generates Periodic Mesh
-void MeshManipulationFoam::periodicMeshMapper(std::string patch1,
-                                              std::string patch2) {
-  // Initializing FOAM
-  int argc = 1;
-  char** argv = new char*[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::argList::noParallel();
+void MeshManipulationFoam::periodicMeshMapper(std::string &patch1,
+                                              std::string &patch2) {
+  bool writeDicts = false;
+  std::unique_ptr<getDicts> initFoam;
+  initFoam = std::unique_ptr<getDicts>(new getDicts());
+  auto controlDict_ = initFoam->createControlDict(writeDicts);
 
   Foam::fileName one = ".";
   Foam::fileName two = ".";
-  Time runTime(Time::controlDictName, one, two);
+  Foam::Time runTime(controlDict_.get(), one, two);
 
   vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-  Foam::word regionName = Foam::polyMesh::defaultRegion;
+  // Foam::word regionName = Foam::polyMesh::defaultRegion;
 
-  auto _fmeshPacks = new Foam::polyMesh(Foam::IOobject(
-      regionName, runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
+  // auto _fmeshPacks = new Foam::polyMesh(Foam::IOobject(
+  //     regionName, runTime.timeName(), runTime, Foam::IOobject::MUST_READ));
+
+  auto fm = std::unique_ptr<NEM::MSH::foamGeoMesh>(
+      NEM::MSH::foamGeoMesh::Read(".foam"));
+
+  const auto &_fmeshPacks = fm->getFoamMesh();
 
   // Creating patch objects for periodic boundary patches
-  int patchIDIn = _fmeshPacks->boundaryMesh().findPatchID(patch1);
-  int patchIDOut = _fmeshPacks->boundaryMesh().findPatchID(patch2);
+  int patchIDIn = _fmeshPacks.boundaryMesh().findPatchID(patch1);
+  int patchIDOut = _fmeshPacks.boundaryMesh().findPatchID(patch2);
 
-  const Foam::polyPatch& InPolyPatch = _fmeshPacks->boundaryMesh()[patchIDIn];
-  const Foam::polyPatch& OutPolyPatch = _fmeshPacks->boundaryMesh()[patchIDOut];
+  const Foam::polyPatch &InPolyPatch = _fmeshPacks.boundaryMesh()[patchIDIn];
+  const Foam::polyPatch &OutPolyPatch = _fmeshPacks.boundaryMesh()[patchIDOut];
 
   // Point IDs from periodic patches.
   Foam::labelList inPts(InPolyPatch.meshPoints());
@@ -2507,14 +1085,12 @@ void MeshManipulationFoam::periodicMeshMapper(std::string patch1,
     throw;
   }
 
-  Foam::pointField packsPF = _fmeshPacks->points();
+  Foam::pointField packsPF = _fmeshPacks.points();
 
   // Creating map of IDs on both patches
   std::map<int, int> periodicMap;
 
-  for (int i = 0; i < inPts.size(); i++) {
-    periodicMap[inPts[i]] = outPts[i];
-  }
+  for (int i = 0; i < inPts.size(); i++) { periodicMap[inPts[i]] = outPts[i]; }
 
   ofstream myfile;
   myfile.open("PeriodicMap.csv");
@@ -2537,1303 +1113,43 @@ void MeshManipulationFoam::periodicMeshMapper(std::string patch1,
 
   dataSetTest->SetPoints(pointsMesh);
 
-  forAll(_fmeshPacks->boundaryMesh()[patchIDIn], facei) {
-    const Foam::label& faceID =
-        _fmeshPacks->boundaryMesh()[patchIDIn].start() + facei;
+  forAll (_fmeshPacks.boundaryMesh()[patchIDIn], facei) {
+    const Foam::label &faceID =
+        _fmeshPacks.boundaryMesh()[patchIDIn].start() + facei;
     std::vector<int> pntIds;
     pntIds.resize(4, -1);
     int g = 0;
-    forAll(_fmeshPacks->faces()[faceID], nodei) {
-      const Foam::label& nodeID = _fmeshPacks->faces()[faceID][nodei];
+    forAll (_fmeshPacks.faces()[faceID], nodei) {
+      const Foam::label &nodeID = _fmeshPacks.faces()[faceID][nodei];
       pntIds[g] = nodeID;
       g++;
     }
-    createVtkCell(dataSetTest, 9, pntIds);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(pntIds.size());
+    for (auto pit = pntIds.begin(); pit != pntIds.end(); pit++)
+      vtkCellIds->SetId(pit - pntIds.begin(), *pit);
+    dataSetTest->InsertNextCell(9, vtkCellIds);
   }
 
-  forAll(_fmeshPacks->boundaryMesh()[patchIDOut], facei) {
-    const Foam::label& faceID =
-        _fmeshPacks->boundaryMesh()[patchIDOut].start() + facei;
+  forAll (_fmeshPacks.boundaryMesh()[patchIDOut], facei) {
+    const Foam::label &faceID =
+        _fmeshPacks.boundaryMesh()[patchIDOut].start() + facei;
     std::vector<int> pntIds;
     pntIds.resize(4, -1);
     int g = 0;
-    forAll(_fmeshPacks->faces()[faceID], nodei) {
-      const Foam::label& nodeID = _fmeshPacks->faces()[faceID][nodei];
+    forAll (_fmeshPacks.faces()[faceID], nodei) {
+      const Foam::label &nodeID = _fmeshPacks.faces()[faceID][nodei];
       pntIds[g] = nodeID;
       g++;
     }
-    createVtkCell(dataSetTest, 9, pntIds);
+    vtkSmartPointer<vtkIdList> vtkCellIds = vtkSmartPointer<vtkIdList>::New();
+    vtkCellIds->SetNumberOfIds(pntIds.size());
+    for (auto pit = pntIds.begin(); pit != pntIds.end(); pit++)
+      vtkCellIds->SetId(pit - pntIds.begin(), *pit);
+    dataSetTest->InsertNextCell(9, vtkCellIds);
   }
 
-  vtkMesh* vm = new vtkMesh(dataSetTest, "PeriodicMesh.vtu");
-  vm->report();
-  vm->write();
-
-  if (vm) delete vm;
-}
-
-// All the private functions are defined here
-
-// SurfaceLambdaMuSmooth
-  Foam::tmp<Foam::pointField> MeshManipulationFoam::avg(
-       const Foam::meshedSurface& s, const Foam::bitSet& fixedPoints)
-{
-  using namespace Foam;
-  const labelListList& pointEdges = s.pointEdges();
-
-  tmp<pointField> tavg(new pointField(s.nPoints(), Zero));
-  pointField& avg = tavg.ref();
-
-  forAll(pointEdges, vertI) {
-    vector& avgPos = avg[vertI];
-
-    if (fixedPoints[vertI]) {
-      avgPos = s.localPoints()[vertI];
-    } else {
-      const labelList& pEdges = pointEdges[vertI];
-
-      forAll(pEdges, myEdgeI) {
-        const edge& e = s.edges()[pEdges[myEdgeI]];
-
-        label otherVertI = e.otherVertex(vertI);
-
-        avgPos += s.localPoints()[otherVertI];
-      }
-
-      avgPos /= pEdges.size();
-    }
-  }
-
-  return tavg;
-}
-
-// SurfaceLambdaMuSmooth
-  void MeshManipulationFoam::getFixedPoints(const Foam::edgeMesh& feMesh,
-                                            const Foam::pointField& points,
-                                            Foam::bitSet& fixedPoints)
-{
-  using namespace Foam;
-  scalarList matchDistance(feMesh.points().size(), 1e-1);
-  labelList from0To1;
-
-  bool matchedAll =
-      matchPoints(feMesh.points(), points, matchDistance, false, from0To1);
-
-  if (!matchedAll) {
-    WarningInFunction
-        << "Did not match all feature points to points on the surface" << endl;
-  }
-
-  forAll(from0To1, fpI) {
-    if (from0To1[fpI] != -1) {
-      fixedPoints[from0To1[fpI]] = true;
-    }
-  }
-}
-
-// splitMeshByRegions
-void MeshManipulationFoam::renamePatches(
-    Foam::fvMesh& mesh, const Foam::word& prefix,
-    const Foam::labelList& patchesToRename) {
-  using namespace Foam;
-  polyBoundaryMesh& polyPatches =
-      const_cast<polyBoundaryMesh&>(mesh.boundaryMesh());
-  forAll(patchesToRename, i) {
-    label patchi = patchesToRename[i];
-    polyPatch& pp = polyPatches[patchi];
-
-    if (isA<coupledPolyPatch>(pp)) {
-      WarningInFunction << "Encountered coupled patch " << pp.name()
-                        << ". Will only rename the patch itself,"
-                        << " not any referred patches."
-                        << " This might have to be done by hand." << endl;
-    }
-
-    pp.name() = prefix + '_' + pp.name();
-  }
-  // Recalculate any demand driven data (e.g. group to name lookup)
-  polyPatches.updateMesh();
-}
-
-// splitMeshByRegions
-template <class GeoField>
-void MeshManipulationFoam::subsetVolFields(
-    const Foam::fvMesh& mesh, const Foam::fvMesh& subMesh,
-    const Foam::labelList& cellMap, const Foam::labelList& faceMap,
-    const Foam::labelHashSet& addedPatches) {
-  using namespace Foam;
-  const labelList patchMap(identity(mesh.boundaryMesh().size()));
-
-  HashTable<const GeoField*> fields(
-      mesh.objectRegistry::lookupClass<GeoField>());
-  forAllConstIter(typename HashTable<const GeoField*>, fields, iter) {
-    const GeoField& fld = *iter();
-
-    Info << "Mapping field " << fld.name() << endl;
-
-    tmp<GeoField> tSubFld(
-        fvMeshSubset::interpolate(fld, subMesh, patchMap, cellMap, faceMap));
-
-    // Hack: set value to 0 for introduced patches (since don't
-    //       get initialised.
-    forAll(tSubFld().boundaryField(), patchi) {
-      if (addedPatches.found(patchi)) {
-        tSubFld.ref().boundaryFieldRef()[patchi] ==
-            typename GeoField::value_type(Zero);
-      }
-    }
-
-    // Store on subMesh
-    GeoField* subFld = tSubFld.ptr();
-    subFld->rename(fld.name());
-    subFld->writeOpt() = IOobject::AUTO_WRITE;
-    subFld->store();
-  }
-}
-
-// splitMeshByRegions
-template <class GeoField>
-void MeshManipulationFoam::subsetSurfaceFields(
-    const Foam::fvMesh& mesh, const Foam::fvMesh& subMesh,
-    const Foam::labelList& cellMap, const Foam::labelList& faceMap,
-    const Foam::labelHashSet& addedPatches) {
-  using namespace Foam;
-  const labelList patchMap(identity(mesh.boundaryMesh().size()));
-
-  HashTable<const GeoField*> fields(
-      mesh.objectRegistry::lookupClass<GeoField>());
-  forAllConstIter(typename HashTable<const GeoField*>, fields, iter) {
-    const GeoField& fld = *iter();
-
-    Info << "Mapping field " << fld.name() << endl;
-
-    tmp<GeoField> tSubFld(
-        fvMeshSubset::interpolate(fld, subMesh, patchMap, cellMap, faceMap));
-
-    // Hack: set value to 0 for introduced patches (since don't
-    //       get initialised.
-    forAll(tSubFld().boundaryField(), patchi) {
-      if (addedPatches.found(patchi)) {
-        tSubFld.ref().boundaryFieldRef()[patchi] ==
-            typename GeoField::value_type(Zero);
-      }
-    }
-
-    // Store on subMesh
-    GeoField* subFld = tSubFld.ptr();
-    subFld->rename(fld.name());
-    subFld->writeOpt() = IOobject::AUTO_WRITE;
-    subFld->store();
-  }
-}
-
-// splitMeshByRegions
-Foam::labelList MeshManipulationFoam::getNonRegionCells(
-    const Foam::labelList& cellRegion, const Foam::label regionI) {
-  using namespace Foam;
-  DynamicList<label> nonRegionCells(cellRegion.size());
-  forAll(cellRegion, celli) {
-    if (cellRegion[celli] != regionI) {
-      nonRegionCells.append(celli);
-    }
-  }
-  return nonRegionCells.shrink();
-}
-
-// splitMeshByRegions
-void MeshManipulationFoam::addToInterface(
-    const Foam::polyMesh& mesh, const Foam::label zoneID,
-    const Foam::label ownRegion, const Foam::label neiRegion,
-    Foam::EdgeMap<Foam::Map<Foam::label>>& regionsToSize) {
-  using namespace Foam;
-  edge interface(min(ownRegion, neiRegion), max(ownRegion, neiRegion));
-
-  EdgeMap<Map<label>>::iterator iter = regionsToSize.find(interface);
-
-  if (iter != regionsToSize.end()) {
-    // Check if zone present
-    Map<label>::iterator zoneFnd = iter().find(zoneID);
-    if (zoneFnd != iter().end()) {
-      // Found zone. Increment count.
-      zoneFnd()++;
-    } else {
-      // New or no zone. Insert with count 1.
-      iter().insert(zoneID, 1);
-    }
-  } else {
-    // Create new interface of size 1.
-    Map<label> zoneToSize;
-    zoneToSize.insert(zoneID, 1);
-    regionsToSize.insert(interface, zoneToSize);
-  }
-}
-
-// splitMeshByRegions
-void MeshManipulationFoam::getInterfaceSizes(
-    const Foam::polyMesh& mesh, const bool useFaceZones,
-    const Foam::labelList& cellRegion, const Foam::wordList& regionNames,
-
-    Foam::edgeList& interfaces,
-    Foam::List<Foam::Pair<Foam::word>>& interfaceNames,
-    Foam::labelList& interfaceSizes, Foam::labelList& faceToInterface) {
-  using namespace Foam;
-  // From region-region to faceZone (or -1) to number of faces.
-
-  EdgeMap<Map<label>> regionsToSize;
-
-  // Internal faces
-  // ~~~~~~~~~~~~~~
-
-  forAll(mesh.faceNeighbour(), facei) {
-    label ownRegion = cellRegion[mesh.faceOwner()[facei]];
-    label neiRegion = cellRegion[mesh.faceNeighbour()[facei]];
-
-    if (ownRegion != neiRegion) {
-      addToInterface(mesh,
-                     (useFaceZones ? mesh.faceZones().whichZone(facei) : -1),
-                     ownRegion, neiRegion, regionsToSize);
-    }
-  }
-
-  // Boundary faces
-  // ~~~~~~~~~~~~~~
-
-  // Neighbour cellRegion.
-  labelList coupledRegion(mesh.nFaces() - mesh.nInternalFaces());
-
-  forAll(coupledRegion, i) {
-    label celli = mesh.faceOwner()[i + mesh.nInternalFaces()];
-    coupledRegion[i] = cellRegion[celli];
-  }
-  syncTools::swapBoundaryFaceList(mesh, coupledRegion);
-
-  forAll(coupledRegion, i) {
-    label facei = i + mesh.nInternalFaces();
-    label ownRegion = cellRegion[mesh.faceOwner()[facei]];
-    label neiRegion = coupledRegion[i];
-
-    if (ownRegion != neiRegion) {
-      addToInterface(mesh,
-                     (useFaceZones ? mesh.faceZones().whichZone(facei) : -1),
-                     ownRegion, neiRegion, regionsToSize);
-    }
-  }
-
-  if (Pstream::parRun()) {
-    if (Pstream::master()) {
-      // Receive and add to my sizes
-      for (int slave = Pstream::firstSlave(); slave <= Pstream::lastSlave();
-           slave++) {
-        IPstream fromSlave(Pstream::commsTypes::blocking, slave);
-
-        EdgeMap<Map<label>> slaveSizes(fromSlave);
-
-        forAllConstIter(EdgeMap<Map<label>>, slaveSizes, slaveIter) {
-          EdgeMap<Map<label>>::iterator masterIter =
-              regionsToSize.find(slaveIter.key());
-
-          if (masterIter != regionsToSize.end()) {
-            // Same inter-region
-            const Map<label>& slaveInfo = slaveIter();
-            Map<label>& masterInfo = masterIter();
-
-            forAllConstIter(Map<label>, slaveInfo, iter) {
-              label zoneID = iter.key();
-              label slaveSize = iter();
-
-              Map<label>::iterator zoneFnd = masterInfo.find(zoneID);
-              if (zoneFnd != masterInfo.end()) {
-                zoneFnd() += slaveSize;
-              } else {
-                masterInfo.insert(zoneID, slaveSize);
-              }
-            }
-          } else {
-            regionsToSize.insert(slaveIter.key(), slaveIter());
-          }
-        }
-      }
-    } else {
-      // Send to master
-      {
-        OPstream toMaster(Pstream::commsTypes::blocking, Pstream::masterNo());
-        toMaster << regionsToSize;
-      }
-    }
-  }
-
-  // Rework
-
-  Pstream::scatter(regionsToSize);
-
-  // Now we have the global sizes of all inter-regions.
-  // Invert this on master and distribute.
-  label nInterfaces = 0;
-  forAllConstIter(EdgeMap<Map<label>>, regionsToSize, iter) {
-    const Map<label>& info = iter();
-    nInterfaces += info.size();
-  }
-
-  interfaces.setSize(nInterfaces);
-  interfaceNames.setSize(nInterfaces);
-  interfaceSizes.setSize(nInterfaces);
-  EdgeMap<Map<label>> regionsToInterface(nInterfaces);
-
-  nInterfaces = 0;
-  forAllConstIter(EdgeMap<Map<label>>, regionsToSize, iter) {
-    const edge& e = iter.key();
-    const word& name0 = regionNames[e[0]];
-    const word& name1 = regionNames[e[1]];
-
-    const Map<label>& info = iter();
-    forAllConstIter(Map<label>, info, infoIter) {
-      interfaces[nInterfaces] = iter.key();
-      label zoneID = infoIter.key();
-      if (zoneID == -1) {
-        interfaceNames[nInterfaces] =
-            Pair<word>(name0 + "_to_" + name1, name1 + "_to_" + name0);
-      } else {
-        const word& zoneName = mesh.faceZones()[zoneID].name();
-        interfaceNames[nInterfaces] =
-            Pair<word>(zoneName + "_" + name0 + "_to_" + name1,
-                       zoneName + "_" + name1 + "_to_" + name0);
-      }
-      interfaceSizes[nInterfaces] = infoIter();
-
-      if (regionsToInterface.found(e)) {
-        regionsToInterface[e].insert(zoneID, nInterfaces);
-      } else {
-        Map<label> zoneAndInterface;
-        zoneAndInterface.insert(zoneID, nInterfaces);
-        regionsToInterface.insert(e, zoneAndInterface);
-      }
-      nInterfaces++;
-    }
-  }
-
-  // Now all processor have consistent interface information
-
-  Pstream::scatter(interfaces);
-  Pstream::scatter(interfaceNames);
-  Pstream::scatter(interfaceSizes);
-  Pstream::scatter(regionsToInterface);
-
-  // Mark all inter-region faces.
-  faceToInterface.setSize(mesh.nFaces(), -1);
-
-  forAll(mesh.faceNeighbour(), facei) {
-    label ownRegion = cellRegion[mesh.faceOwner()[facei]];
-    label neiRegion = cellRegion[mesh.faceNeighbour()[facei]];
-
-    if (ownRegion != neiRegion) {
-      label zoneID = -1;
-      if (useFaceZones) {
-        zoneID = mesh.faceZones().whichZone(facei);
-      }
-
-      edge interface(min(ownRegion, neiRegion), max(ownRegion, neiRegion));
-
-      faceToInterface[facei] = regionsToInterface[interface][zoneID];
-    }
-  }
-  forAll(coupledRegion, i) {
-    label facei = i + mesh.nInternalFaces();
-    label ownRegion = cellRegion[mesh.faceOwner()[facei]];
-    label neiRegion = coupledRegion[i];
-
-    if (ownRegion != neiRegion) {
-      label zoneID = -1;
-      if (useFaceZones) {
-        zoneID = mesh.faceZones().whichZone(facei);
-      }
-
-      edge interface(min(ownRegion, neiRegion), max(ownRegion, neiRegion));
-
-      faceToInterface[facei] = regionsToInterface[interface][zoneID];
-    }
-  }
-}
-
-// splitMeshByRegions
-Foam::autoPtr<Foam::mapPolyMesh> MeshManipulationFoam::createRegionMesh(
-    const Foam::fvMesh& mesh,
-    // Region info
-    const Foam::labelList& cellRegion, const Foam::label regionI,
-    const Foam::word& regionName,
-    // Interface info
-    const Foam::labelList& interfacePatches,
-    const Foam::labelList& faceToInterface,
-
-    Foam::autoPtr<Foam::fvMesh>& newMesh) {
-  using namespace Foam;
-// Create dummy system/fv*
-  {
-    IOobject io("fvSchemes", mesh.time().system(), regionName, mesh,
-                IOobject::NO_READ, IOobject::NO_WRITE, false);
-
-    Info << "Testing:" << io.objectPath() << endl;
-
-if (!io.typeHeaderOk<IOdictionary>(true))
-// if (!exists(io.objectPath()))
-{
-  Info << "Writing dummy " << regionName / io.name() << endl;
-  dictionary dummyDict;
-  dictionary divDict;
-  dummyDict.add("divSchemes", divDict);
-  dictionary gradDict;
-  dummyDict.add("gradSchemes", gradDict);
-  dictionary laplDict;
-  dummyDict.add("laplacianSchemes", laplDict);
-
-  IOdictionary(io, dummyDict).regIOobject::write();
-}
-}
-{
-  IOobject io("fvSolution", mesh.time().system(), regionName, mesh,
-              IOobject::NO_READ, IOobject::NO_WRITE, false);
-
-  if (!io.typeHeaderOk<IOdictionary>(true))
-  // if (!exists(io.objectPath()))
-  {
-    Info << "Writing dummy " << regionName / io.name() << endl;
-    dictionary dummyDict;
-    IOdictionary(io, dummyDict).regIOobject::write();
-  }
-}
-
-// Neighbour cellRegion.
-labelList coupledRegion(mesh.nFaces() - mesh.nInternalFaces());
-
-forAll(coupledRegion, i) {
-  label celli = mesh.faceOwner()[i + mesh.nInternalFaces()];
-  coupledRegion[i] = cellRegion[celli];
-}
-syncTools::swapBoundaryFaceList(mesh, coupledRegion);
-
-// Topology change container. Start off from existing mesh.
-polyTopoChange meshMod(mesh);
-
-// Cell remover engine
-removeCells cellRemover(mesh);
-
-// Select all but region cells
-labelList cellsToRemove(getNonRegionCells(cellRegion, regionI));
-
-// Find out which faces will get exposed. Note that this
-// gets faces in mesh face order. So both regions will get same
-// face in same order (important!)
-labelList exposedFaces = cellRemover.getExposedFaces(cellsToRemove);
-
-labelList exposedPatchIDs(exposedFaces.size());
-forAll(exposedFaces, i) {
-  label facei = exposedFaces[i];
-  label interfacei = faceToInterface[facei];
-
-  label ownRegion = cellRegion[mesh.faceOwner()[facei]];
-  label neiRegion = -1;
-
-  if (mesh.isInternalFace(facei)) {
-    neiRegion = cellRegion[mesh.faceNeighbour()[facei]];
-  } else {
-    neiRegion = coupledRegion[facei - mesh.nInternalFaces()];
-  }
-
-  // Check which side is being kept - determines which of the two
-  // patches will be used.
-
-  label otherRegion = -1;
-
-  if (ownRegion == regionI && neiRegion != regionI) {
-    otherRegion = neiRegion;
-  } else if (ownRegion != regionI && neiRegion == regionI) {
-    otherRegion = ownRegion;
-  } else {
-    FatalErrorInFunction << "Exposed face:" << facei
-                         << " fc:" << mesh.faceCentres()[facei]
-                         << " has owner region " << ownRegion
-                         << " and neighbour region " << neiRegion
-                         << " when handling region:" << regionI
-                         << exit(FatalError);
-  }
-
-  // Find the patch.
-  if (regionI < otherRegion) {
-    exposedPatchIDs[i] = interfacePatches[interfacei];
-  } else {
-    exposedPatchIDs[i] = interfacePatches[interfacei] + 1;
-  }
-}
-
-// Remove faces
-cellRemover.setRefinement(cellsToRemove, exposedFaces, exposedPatchIDs,
-                          meshMod);
-
-autoPtr<mapPolyMesh> map =
-    meshMod.makeMesh(newMesh,
-                     IOobject(regionName, mesh.time().timeName(), mesh.time(),
-                              IOobject::NO_READ, IOobject::AUTO_WRITE),
-                     mesh);
-
-return map;
-}
-
-// splitMeshRegions
-// void MeshManipulationFoam::createAndWriteRegion
-void MeshManipulationFoam::createAndWriteRegion(
-    const Foam::fvMesh& mesh, const Foam::labelList& cellRegion,
-    const Foam::wordList& regionNames, const bool prefixRegion,
-    const Foam::labelList& faceToInterface,
-    const Foam::labelList& interfacePatches, const Foam::label regionI,
-    const Foam::word& newMeshInstance) {
-  using namespace Foam;
-  Info << "Creating mesh for region " << regionI << ' ' << regionNames[regionI]
-       << endl;
-
-  autoPtr<fvMesh> newMesh;
-  autoPtr<mapPolyMesh> map =
-      createRegionMesh(mesh, cellRegion, regionI, regionNames[regionI],
-                       interfacePatches, faceToInterface, newMesh);
-
-  // Make map of all added patches
-  labelHashSet addedPatches(2 * interfacePatches.size());
-  forAll(interfacePatches, interfacei) {
-    addedPatches.insert(interfacePatches[interfacei]);
-    addedPatches.insert(interfacePatches[interfacei] + 1);
-  }
-
-  Info << "Mapping fields" << endl;
-
-  // Map existing fields
-  newMesh().updateMesh(map());
-
-  // Add subsetted fields
-  subsetVolFields<volScalarField>(mesh, newMesh(), map().cellMap(),
-                                  map().faceMap(), addedPatches);
-  subsetVolFields<volVectorField>(mesh, newMesh(), map().cellMap(),
-                                  map().faceMap(), addedPatches);
-  subsetVolFields<volSphericalTensorField>(mesh, newMesh(), map().cellMap(),
-                                           map().faceMap(), addedPatches);
-  subsetVolFields<volSymmTensorField>(mesh, newMesh(), map().cellMap(),
-                                      map().faceMap(), addedPatches);
-  subsetVolFields<volTensorField>(mesh, newMesh(), map().cellMap(),
-                                  map().faceMap(), addedPatches);
-
-  subsetSurfaceFields<surfaceScalarField>(mesh, newMesh(), map().cellMap(),
-                                          map().faceMap(), addedPatches);
-  subsetSurfaceFields<surfaceVectorField>(mesh, newMesh(), map().cellMap(),
-                                          map().faceMap(), addedPatches);
-  subsetSurfaceFields<surfaceSphericalTensorField>(
-      mesh, newMesh(), map().cellMap(), map().faceMap(), addedPatches);
-  subsetSurfaceFields<surfaceSymmTensorField>(mesh, newMesh(), map().cellMap(),
-                                              map().faceMap(), addedPatches);
-  subsetSurfaceFields<surfaceTensorField>(mesh, newMesh(), map().cellMap(),
-                                          map().faceMap(), addedPatches);
-
-  const polyBoundaryMesh& newPatches = newMesh().boundaryMesh();
-  newPatches.checkParallelSync(true);
-
-  // Delete empty patches
-  // ~~~~~~~~~~~~~~~~~~~~
-
-  // Create reordering list to move patches-to-be-deleted to end
-  labelList oldToNew(newPatches.size(), -1);
-  DynamicList<label> sharedPatches(newPatches.size());
-  label newI = 0;
-
-  Info << "Deleting empty patches" << endl;
-
-  // Assumes all non-proc boundaries are on all processors!
-  forAll(newPatches, patchi) {
-    const polyPatch& pp = newPatches[patchi];
-
-    if (!isA<processorPolyPatch>(pp)) {
-      if (returnReduce(pp.size(), sumOp<label>()) > 0) {
-        oldToNew[patchi] = newI;
-        if (!addedPatches.found(patchi)) {
-          sharedPatches.append(newI);
-        }
-        newI++;
-      }
-    }
-  }
-
-  // Same for processor patches (but need no reduction)
-  forAll(newPatches, patchi) {
-    const polyPatch& pp = newPatches[patchi];
-
-    if (isA<processorPolyPatch>(pp) && pp.size()) {
-      oldToNew[patchi] = newI++;
-    }
-  }
-
-  const label nNewPatches = newI;
-
-  // Move all deleteable patches to the end
-  forAll(oldToNew, patchi) {
-    if (oldToNew[patchi] == -1) {
-      oldToNew[patchi] = newI++;
-    }
-  }
-
-  // reorderPatches(newMesh(), oldToNew, nNewPatches);
-  fvMeshTools::reorderPatches(newMesh(), oldToNew, nNewPatches, true);
-
-  // Rename shared patches with region name
-  if (prefixRegion) {
-    Info << "Prefixing patches with region name" << endl;
-
-    renamePatches(newMesh(), regionNames[regionI], sharedPatches);
-  }
-
-  Info << "Writing new mesh" << endl;
-
-  newMesh().setInstance(newMeshInstance);
-  newMesh().write();
-
-  // Write addressing files like decomposePar
-  Info << "Writing addressing to base mesh" << endl;
-
-  labelIOList pointProcAddressing(
-      IOobject("pointRegionAddressing", newMesh().facesInstance(),
-               newMesh().meshSubDir, newMesh(), IOobject::NO_READ,
-               IOobject::NO_WRITE, false),
-      map().pointMap());
-  Info << "Writing map " << pointProcAddressing.name() << " from region"
-       << regionI << " points back to base mesh." << endl;
-  pointProcAddressing.write();
-
-  labelIOList faceProcAddressing(
-      IOobject("faceRegionAddressing", newMesh().facesInstance(),
-               newMesh().meshSubDir, newMesh(), IOobject::NO_READ,
-               IOobject::NO_WRITE, false),
-      newMesh().nFaces());
-  forAll(faceProcAddressing, facei) {
-    // face + turning index. (see decomposePar)
-    // Is the face pointing in the same direction?
-    label oldFacei = map().faceMap()[facei];
-
-    if (map().cellMap()[newMesh().faceOwner()[facei]] ==
-        mesh.faceOwner()[oldFacei]) {
-      faceProcAddressing[facei] = oldFacei + 1;
-    } else {
-      faceProcAddressing[facei] = -(oldFacei + 1);
-    }
-  }
-  Info << "Writing map " << faceProcAddressing.name() << " from region"
-       << regionI << " faces back to base mesh." << endl;
-  faceProcAddressing.write();
-
-  labelIOList cellProcAddressing(
-      IOobject("cellRegionAddressing", newMesh().facesInstance(),
-               newMesh().meshSubDir, newMesh(), IOobject::NO_READ,
-               IOobject::NO_WRITE, false),
-      map().cellMap());
-  Info << "Writing map " << cellProcAddressing.name() << " from region"
-       << regionI << " cells back to base mesh." << endl;
-  cellProcAddressing.write();
-
-  labelIOList boundaryProcAddressing(
-      IOobject("boundaryRegionAddressing", newMesh().facesInstance(),
-               newMesh().meshSubDir, newMesh(), IOobject::NO_READ,
-               IOobject::NO_WRITE, false),
-      labelList(nNewPatches, -1));
-  forAll(oldToNew, i) {
-    if (!addedPatches.found(i)) {
-      label newI = oldToNew[i];
-      if (newI >= 0 && newI < nNewPatches) {
-        boundaryProcAddressing[oldToNew[i]] = i;
-      }
-    }
-  }
-  Info << "Writing map " << boundaryProcAddressing.name() << " from region"
-       << regionI << " boundary back to base mesh." << endl;
-  boundaryProcAddressing.write();
-}
-
-// splitMeshRegions
-Foam::labelList MeshManipulationFoam::addRegionPatches(
-    Foam::fvMesh& mesh, const Foam::wordList& regionNames,
-    const Foam::edgeList& interfaces,
-    const Foam::List<Foam::Pair<Foam::word>>& interfaceNames) {
-  using namespace Foam;
-  Info << nl << "Adding patches" << nl << endl;
-
-  labelList interfacePatches(interfaces.size());
-
-  forAll(interfaces, interI) {
-    const edge& e = interfaces[interI];
-    const Pair<word>& names = interfaceNames[interI];
-
-    // Info<< "For interface " << interI
-    //    << " between regions " << e
-    //    << " trying to add patches " << names << endl;
-
-    mappedWallPolyPatch patch1(names[0],
-                               0,                  // overridden
-                               0,                  // overridden
-                               0,                  // overridden
-                               regionNames[e[1]],  // sampleRegion
-                               mappedPatchBase::NEARESTPATCHFACE,
-                               names[1],     // samplePatch
-                               point::zero,  // offset
-                               mesh.boundaryMesh());
-
-    interfacePatches[interI] =
-        fvMeshTools::addPatch(mesh, patch1,
-                              dictionary(),  // optional per field value
-                              calculatedFvPatchField<scalar>::typeName,
-                              true  // validBoundary
-        );
-
-    mappedWallPolyPatch patch2(names[1], 0, 0, 0,
-                               regionNames[e[0]],  // sampleRegion
-                               mappedPatchBase::NEARESTPATCHFACE, names[0],
-                               point::zero,  // offset
-                               mesh.boundaryMesh());
-    fvMeshTools::addPatch(mesh, patch2,
-                          dictionary(),  // optional per field value
-                          calculatedFvPatchField<scalar>::typeName,
-                          true  // validBoundary
-    );
-
-    Info << "For interface between region " << regionNames[e[0]] << " and "
-         << regionNames[e[1]] << " added patches" << endl
-         << "    " << interfacePatches[interI] << "\t"
-         << mesh.boundaryMesh()[interfacePatches[interI]].name() << endl
-         << "    " << interfacePatches[interI] + 1 << "\t"
-         << mesh.boundaryMesh()[interfacePatches[interI] + 1].name() << endl;
-  }
-  return interfacePatches;
-}
-
-// splitMeshRegions
-Foam::label MeshManipulationFoam::findCorrespondingRegion(
-    const Foam::labelList& existingZoneID,  // per cell the (unique) zoneID
-    const Foam::labelList& cellRegion, const Foam::label nCellRegions,
-    const Foam::label zoneI, const Foam::label minOverlapSize) {
-  using namespace Foam;
-  // Per region the number of cells in zoneI
-  labelList cellsInZone(nCellRegions, 0);
-
-  forAll(cellRegion, celli) {
-    if (existingZoneID[celli] == zoneI) {
-      cellsInZone[cellRegion[celli]]++;
-    }
-  }
-
-  Pstream::listCombineGather(cellsInZone, plusEqOp<label>());
-  Pstream::listCombineScatter(cellsInZone);
-
-  // Pick region with largest overlap of zoneI
-  label regionI = findMax(cellsInZone);
-
-  if (cellsInZone[regionI] < minOverlapSize) {
-    // Region covers too little of zone. Not good enough.
-    regionI = -1;
-  } else {
-    // Check that region contains no cells that aren't in cellZone.
-    forAll(cellRegion, celli) {
-      if (cellRegion[celli] == regionI && existingZoneID[celli] != zoneI) {
-        // celli in regionI but not in zoneI
-        regionI = -1;
-        break;
-      }
-    }
-    // If one in error, all should be in error. Note that branch gets taken
-    // on all procs.
-    reduce(regionI, minOp<label>());
-  }
-
-  return regionI;
-}
-
-// splitMeshRegions
-void MeshManipulationFoam::getZoneID(const Foam::polyMesh& mesh,
-                                     const Foam::cellZoneMesh& cellZones,
-                                     Foam::labelList& zoneID,
-                                     Foam::labelList& neiZoneID) {
-  using namespace Foam;
-  // Existing zoneID
-  zoneID.setSize(mesh.nCells());
-  zoneID = -1;
-
-  forAll(cellZones, zoneI) {
-    const cellZone& cz = cellZones[zoneI];
-
-    forAll(cz, i) {
-      label celli = cz[i];
-      if (zoneID[celli] == -1) {
-        zoneID[celli] = zoneI;
-      } else {
-        FatalErrorInFunction
-            << "Cell " << celli << " with cell centre "
-            << mesh.cellCentres()[celli]
-            << " is multiple zones. This is not allowed." << endl
-            << "It is in zone " << cellZones[zoneID[celli]].name()
-            << " and in zone " << cellZones[zoneI].name() << exit(FatalError);
-      }
-    }
-  }
-
-  // Neighbour zoneID.
-  neiZoneID.setSize(mesh.nFaces() - mesh.nInternalFaces());
-
-  forAll(neiZoneID, i) {
-    neiZoneID[i] = zoneID[mesh.faceOwner()[i + mesh.nInternalFaces()]];
-  }
-  syncTools::swapBoundaryFaceList(mesh, neiZoneID);
-}
-
-// splitMeshRegions
-// void MeshManipulationFoam::matchRegions
-int MeshManipulationFoam::matchRegions(const bool sloppyCellZones,
-                                       const Foam::polyMesh& mesh,
-
-                                       const Foam::label nCellRegions,
-                                       const Foam::labelList& cellRegion,
-
-                                       Foam::labelList& regionToZone,
-                                       Foam::wordList& regionNames,
-                                       Foam::labelList& zoneToRegion) {
-  using namespace Foam;
-  const cellZoneMesh& cellZones = mesh.cellZones();
-
-  regionToZone.setSize(nCellRegions, -1);
-  regionNames.setSize(nCellRegions);
-  zoneToRegion.setSize(cellZones.size(), -1);
-
-  // Get current per cell zoneID
-  labelList zoneID(mesh.nCells(), -1);
-  labelList neiZoneID(mesh.nFaces() - mesh.nInternalFaces());
-  getZoneID(mesh, cellZones, zoneID, neiZoneID);
-
-  // Sizes per cellzone
-  labelList zoneSizes(cellZones.size(), 0);
-  {
-    List<wordList> zoneNames(Pstream::nProcs());
-    zoneNames[Pstream::myProcNo()] = cellZones.names();
-    Pstream::gatherList(zoneNames);
-    Pstream::scatterList(zoneNames);
-
-    forAll(zoneNames, proci) {
-      if (zoneNames[proci] != zoneNames[0]) {
-        FatalErrorInFunction
-            << "cellZones not synchronised across processors." << endl
-            << "Master has cellZones " << zoneNames[0] << endl
-            << "Processor " << proci << " has cellZones " << zoneNames[proci]
-            << exit(FatalError);
-      }
-    }
-
-    forAll(cellZones, zoneI) {
-      zoneSizes[zoneI] = returnReduce(cellZones[zoneI].size(), sumOp<label>());
-    }
-  }
-
-  if (sloppyCellZones) {
-    Info << "Trying to match regions to existing cell zones;"
-         << " region can be subset of cell zone." << nl << endl;
-
-    forAll(cellZones, zoneI) {
-      label regionI = findCorrespondingRegion(
-          zoneID, cellRegion, nCellRegions, zoneI,
-          label(0.5 * zoneSizes[zoneI])  // minimum overlap
-      );
-
-      if (regionI != -1) {
-        Info << "Sloppily matched region "
-             << regionI
-             //<< " size " << regionSizes[regionI]
-             << " to zone " << zoneI << " size " << zoneSizes[zoneI] << endl;
-        zoneToRegion[zoneI] = regionI;
-        regionToZone[regionI] = zoneI;
-        regionNames[regionI] = cellZones[zoneI].name();
-      }
-    }
-  } else {
-    Info << "Trying to match regions to existing cell zones." << nl << endl;
-
-    forAll(cellZones, zoneI) {
-      label regionI =
-          findCorrespondingRegion(zoneID, cellRegion, nCellRegions, zoneI,
-                                  1  // minimum overlap
-          );
-
-      if (regionI != -1) {
-        zoneToRegion[zoneI] = regionI;
-        regionToZone[regionI] = zoneI;
-        regionNames[regionI] = cellZones[zoneI].name();
-      }
-    }
-  }
-
-  int caughtU;
-  int countU = 0;
-  // Allocate region names for unmatched regions.
-  forAll(regionToZone, regionI) {
-    if (regionToZone[regionI] == -1) {
-      regionNames[regionI] = "domain" + Foam::name(regionI);
-    } else {
-      caughtU = countU;
-    }
-    countU++;
-  }
-
-  return caughtU;
-}
-
-// splitMeshRegions
-void MeshManipulationFoam::writeCellToRegion(
-    const Foam::fvMesh& mesh, const Foam::labelList& cellRegion) {
-  using namespace Foam;
-  // Write to manual decomposition option
-  {
-    labelIOList cellToRegion(
-        IOobject("cellToRegion", mesh.facesInstance(), mesh, IOobject::NO_READ,
-                 IOobject::NO_WRITE, false),
-        cellRegion);
-    cellToRegion.write();
-
-    Info << "Writing region per cell file (for manual decomposition) to "
-         << cellToRegion.objectPath() << nl << endl;
-  }
-  // Write for postprocessing
-  {
-    volScalarField cellToRegion(
-        IOobject("cellToRegion", mesh.time().timeName(), mesh,
-                 IOobject::NO_READ, IOobject::NO_WRITE, false),
-        mesh, dimensionedScalar("zero", dimless, 0),
-        zeroGradientFvPatchScalarField::typeName);
-    forAll(cellRegion, celli) { cellToRegion[celli] = cellRegion[celli]; }
-    cellToRegion.write();
-
-    Info << "Writing region per cell as volScalarField to "
-         << cellToRegion.objectPath() << nl << endl;
-  }
-}
-
-// mergeMeshes
-void MeshManipulationFoam::getRootCase(Foam::fileName& casePath) {
-  using namespace Foam;
-  casePath.clean();
-
-  if (casePath.empty() || casePath == ".") {
-    // handle degenerate form and '.'
-    casePath = cwd();
-  } else if (casePath[0] != '/' && casePath.name() == "..") {
-    // avoid relative cases ending in '..' - makes for very ugly names
-    casePath = cwd() / casePath;
-    casePath.clean();
-  }
-}
-
-// createPatch
-void MeshManipulationFoam::changePatchID(const Foam::polyMesh& mesh,
-                                         const Foam::label faceID,
-                                         const Foam::label patchID,
-                                         Foam::polyTopoChange& meshMod) {
-  using namespace Foam;
-  const label zoneID = mesh.faceZones().whichZone(faceID);
-
-  bool zoneFlip = false;
-
-  if (zoneID >= 0) {
-    const faceZone& fZone = mesh.faceZones()[zoneID];
-
-    zoneFlip = fZone.flipMap()[fZone.whichFace(faceID)];
-  }
-
-  meshMod.setAction(polyModifyFace(mesh.faces()[faceID],      // face
-                                   faceID,                    // face ID
-                                   mesh.faceOwner()[faceID],  // owner
-                                   -1,                        // neighbour
-                                   false,                     // flip flux
-                                   patchID,                   // patch ID
-                                   false,    // remove from zone
-                                   zoneID,   // zone ID
-                                   zoneFlip  // zone flip
-                                   ));
-}
-
-void MeshManipulationFoam::filterPatches(
-    Foam::polyMesh& mesh, const Foam::HashSet<Foam::word>& addedPatchNames) {
-  using namespace Foam;
-  const polyBoundaryMesh& patches = mesh.boundaryMesh();
-
-  // Patches to keep
-  DynamicList<polyPatch*> allPatches(patches.size());
-
-  label nOldPatches = returnReduce(patches.size(), sumOp<label>());
-
-  // Copy old patches.
-  forAll(patches, patchi) {
-    const polyPatch& pp = patches[patchi];
-
-    // Note: reduce possible since non-proc patches guaranteed in same order
-    if (!isA<processorPolyPatch>(pp)) {
-      // Add if
-      // - non zero size
-      // - or added from the createPatchDict
-      // - or cyclic (since referred to by other cyclic half or
-      //   proccyclic)
-
-      if (addedPatchNames.found(pp.name()) ||
-          returnReduce(pp.size(), sumOp<label>()) > 0 ||
-          isA<coupledPolyPatch>(pp)) {
-        allPatches.append(
-            pp.clone(patches, allPatches.size(), pp.size(), pp.start()).ptr());
-      } else {
-        Info << "Removing zero-sized patch " << pp.name() << " type "
-             << pp.type() << " at position " << patchi << endl;
-      }
-    }
-  }
-  // Copy non-empty processor patches
-  forAll(patches, patchi) {
-    const polyPatch& pp = patches[patchi];
-
-    if (isA<processorPolyPatch>(pp)) {
-      if (pp.size()) {
-        allPatches.append(
-            pp.clone(patches, allPatches.size(), pp.size(), pp.start()).ptr());
-      } else {
-        Info << "Removing empty processor patch " << pp.name()
-             << " at position " << patchi << endl;
-      }
-    }
-  }
-
-  label nAllPatches = returnReduce(allPatches.size(), sumOp<label>());
-  if (nAllPatches != nOldPatches) {
-    Info << "Removing patches." << endl;
-    allPatches.shrink();
-    mesh.removeBoundary();
-    mesh.addPatches(allPatches);
-  } else {
-    Info << "No patches removed." << endl;
-    forAll(allPatches, i) { delete allPatches[i]; }
-  }
-}
-
-void MeshManipulationFoam::dumpCyclicMatch(const Foam::fileName& prefix,
-                                           const Foam::polyMesh& mesh) {
-  using namespace Foam;
-  const polyBoundaryMesh& patches = mesh.boundaryMesh();
-
-  forAll(patches, patchi) {
-    if (isA<cyclicPolyPatch>(patches[patchi]) &&
-        refCast<const cyclicPolyPatch>(patches[patchi]).owner()) {
-      const cyclicPolyPatch& cycPatch =
-          refCast<const cyclicPolyPatch>(patches[patchi]);
-
-      // Dump patches
-      {
-        OFstream str(prefix + cycPatch.name() + ".obj");
-        Pout << "Dumping " << cycPatch.name() << " faces to " << str.name()
-             << endl;
-        meshTools::writeOBJ(str, cycPatch, cycPatch.points());
-      }
-
-      const cyclicPolyPatch& nbrPatch = cycPatch.neighbPatch();
-      {
-        OFstream str(prefix + nbrPatch.name() + ".obj");
-        Pout << "Dumping " << nbrPatch.name() << " faces to " << str.name()
-             << endl;
-        meshTools::writeOBJ(str, nbrPatch, nbrPatch.points());
-      }
-
-      // Lines between corresponding face centres
-      OFstream str(prefix + cycPatch.name() + nbrPatch.name() + "_match.obj");
-      label vertI = 0;
-
-      Pout << "Dumping cyclic match as lines between face centres to "
-           << str.name() << endl;
-
-      forAll(cycPatch, facei) {
-        const point& fc0 = mesh.faceCentres()[cycPatch.start() + facei];
-        meshTools::writeOBJ(str, fc0);
-        vertI++;
-        const point& fc1 = mesh.faceCentres()[nbrPatch.start() + facei];
-        meshTools::writeOBJ(str, fc1);
-        vertI++;
-
-        str << "l " << vertI - 1 << ' ' << vertI << nl;
-      }
-    }
-  }
-}
-
-void MeshManipulationFoam::separateList(const Foam::vectorField& separation,
-                                        Foam::UList<Foam::vector>& field) {
-  using namespace Foam;
-  if (separation.size() == 1) {
-    // Single value for all.
-
-    forAll(field, i) { field[i] += separation[0]; }
-  } else if (separation.size() == field.size()) {
-    forAll(field, i) { field[i] += separation[i]; }
-  } else {
-    FatalErrorInFunction
-        << "Sizes of field and transformation not equal. field:" << field.size()
-        << " transformation:" << separation.size() << abort(FatalError);
-  }
-}
-
-template <class CombineOp>
-void MeshManipulationFoam::syncPoints(const Foam::polyMesh& mesh,
-                                      Foam::pointField& points,
-                                      const CombineOp& cop,
-                                      const Foam::point& nullValue) {
-  using namespace Foam;
-  if (points.size() != mesh.nPoints()) {
-    FatalErrorInFunction << "Number of values " << points.size()
-                         << " is not equal to the number of points in the mesh "
-                         << mesh.nPoints() << abort(FatalError);
-  }
-
-  const polyBoundaryMesh& patches = mesh.boundaryMesh();
-
-  // Is there any coupled patch with transformation?
-  bool hasTransformation = false;
-
-  if (Pstream::parRun()) {
-    // Send
-
-    forAll(patches, patchi) {
-      const polyPatch& pp = patches[patchi];
-
-      if (isA<processorPolyPatch>(pp) && pp.nPoints() > 0 &&
-          refCast<const processorPolyPatch>(pp).owner()) {
-        const processorPolyPatch& procPatch =
-            refCast<const processorPolyPatch>(pp);
-
-        // Get data per patchPoint in neighbouring point numbers.
-        pointField patchInfo(procPatch.nPoints(), nullValue);
-
-        const labelList& meshPts = procPatch.meshPoints();
-        const labelList& nbrPts = procPatch.neighbPoints();
-
-        forAll(nbrPts, pointi) {
-          label nbrPointi = nbrPts[pointi];
-          if (nbrPointi >= 0 && nbrPointi < patchInfo.size()) {
-            patchInfo[nbrPointi] = points[meshPts[pointi]];
-          }
-        }
-
-        OPstream toNbr(Pstream::commsTypes::blocking, procPatch.neighbProcNo());
-        toNbr << patchInfo;
-      }
-    }
-
-    // Receive and set.
-
-    forAll(patches, patchi) {
-      const polyPatch& pp = patches[patchi];
-
-      if (isA<processorPolyPatch>(pp) && pp.nPoints() > 0 &&
-          !refCast<const processorPolyPatch>(pp).owner()) {
-        const processorPolyPatch& procPatch =
-            refCast<const processorPolyPatch>(pp);
-
-        pointField nbrPatchInfo(procPatch.nPoints());
-        {
-          // We do not know the number of points on the other side
-          // so cannot use Pstream::read.
-          IPstream fromNbr(Pstream::commsTypes::blocking,
-                           procPatch.neighbProcNo());
-          fromNbr >> nbrPatchInfo;
-        }
-        // Null any value which is not on neighbouring processor
-        nbrPatchInfo.setSize(procPatch.nPoints(), nullValue);
-
-        if (!procPatch.parallel()) {
-          hasTransformation = true;
-          transformList(procPatch.forwardT(), nbrPatchInfo);
-        } else if (procPatch.separated()) {
-          hasTransformation = true;
-          separateList(-procPatch.separation(), nbrPatchInfo);
-        }
-
-        const labelList& meshPts = procPatch.meshPoints();
-
-        forAll(meshPts, pointi) {
-          label meshPointi = meshPts[pointi];
-          points[meshPointi] = nbrPatchInfo[pointi];
-        }
-      }
-    }
-  }
-
-  // Do the cyclics.
-  forAll(patches, patchi) {
-    const polyPatch& pp = patches[patchi];
-
-    if (isA<cyclicPolyPatch>(pp) &&
-        refCast<const cyclicPolyPatch>(pp).owner()) {
-      const cyclicPolyPatch& cycPatch = refCast<const cyclicPolyPatch>(pp);
-
-      const edgeList& coupledPoints = cycPatch.coupledPoints();
-      const labelList& meshPts = cycPatch.meshPoints();
-      const cyclicPolyPatch& nbrPatch = cycPatch.neighbPatch();
-      const labelList& nbrMeshPts = nbrPatch.meshPoints();
-
-      pointField half0Values(coupledPoints.size());
-
-      forAll(coupledPoints, i) {
-        const edge& e = coupledPoints[i];
-        label point0 = meshPts[e[0]];
-        half0Values[i] = points[point0];
-      }
-
-      if (!cycPatch.parallel()) {
-        hasTransformation = true;
-        transformList(cycPatch.reverseT(), half0Values);
-      } else if (cycPatch.separated()) {
-        hasTransformation = true;
-        separateList(cycPatch.separation(), half0Values);
-      }
-
-      forAll(coupledPoints, i) {
-        const edge& e = coupledPoints[i];
-        label point1 = nbrMeshPts[e[1]];
-        points[point1] = half0Values[i];
-      }
-    }
-  }
-
-  //- Note: hasTransformation is only used for warning messages so
-  //  reduction not strictly nessecary.
-  // reduce(hasTransformation, orOp<bool>());
-
-  // Synchronize multiple shared points.
-  const globalMeshData& pd = mesh.globalData();
-
-  if (pd.nGlobalPoints() > 0) {
-    if (hasTransformation) {
-      WarningInFunction << "There are decomposed cyclics in this mesh with"
-                        << " transformations." << endl
-                        << "This is not supported. The result will be incorrect"
-                        << endl;
-    }
-
-    // Values on shared points.
-    pointField sharedPts(pd.nGlobalPoints(), nullValue);
-
-    forAll(pd.sharedPointLabels(), i) {
-      label meshPointi = pd.sharedPointLabels()[i];
-      // Fill my entries in the shared points
-      sharedPts[pd.sharedPointAddr()[i]] = points[meshPointi];
-    }
-
-    // Combine on master.
-    Pstream::listCombineGather(sharedPts, cop);
-    Pstream::listCombineScatter(sharedPts);
-
-    // Now we will all have the same information. Merge it back with
-    // my local information.
-    forAll(pd.sharedPointLabels(), i) {
-      label meshPointi = pd.sharedPointLabels()[i];
-      points[meshPointi] = sharedPts[pd.sharedPointAddr()[i]];
-    }
-  }
+  auto vm = std::unique_ptr<NEM::MSH::vtkGeoMesh>(
+      new NEM::MSH::vtkGeoMesh(dataSetTest));
+  vm->write("PeriodicMesh.vtu");
 }

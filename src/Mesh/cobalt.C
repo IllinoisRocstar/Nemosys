@@ -9,7 +9,8 @@
 #include <vtkUnstructuredGrid.h>
 
 #include "AuxiliaryFunctions.H"
-using nemAux::operator-;
+
+using nemAux::operator-;  // for vector subtraction.
 
 //////////////////////////////////
 // cobalt class 

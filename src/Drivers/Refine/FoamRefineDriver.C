@@ -1,16 +1,15 @@
 #include "Drivers/Refine/FoamRefineDriver.H"
 
 #include <pointFieldsFwd.H>
-
 #include <interpolatePointToCell.H>
+#include "getDicts.H"
 #include "Refinement/AMRFoam.H"
 #include "AuxiliaryFunctions.H"
-#include "MeshManipulationFoam/MeshManipulationFoam.H"
-#include "Mesh/foamMesh.H"
-#include "Mesh/meshBase.H"
-#include "Mesh/vtkMesh.H"
+#include "Mesh/foamGeoMesh.H"
+#include "Mesh/geoMeshFactory.H"
 
 #ifdef MLAMR
+#  include <Mesh/meshBase.H>
 #  include <fdeep/fdeep.hpp>
 #endif
 
@@ -18,15 +17,14 @@
 namespace {
 std::unique_ptr<Foam::AMRFoam> initializeRefine(
     const NEM::DRV::RefineDriver::Files &files,
-    const NEM::DRV::FoamRefineOptsBase &opts, const Foam::Time &runTime,
-    std::shared_ptr<meshBase> mesh = nullptr) {
-  if (mesh == nullptr) {
-    mesh = meshBase::CreateShared(files.inputMeshFile);
-  }
-
+    const NEM::DRV::FoamRefineOptsBase &opts, const Foam::Time &runTime) {
   // Reading mesh from vtk file.
-  FOAM::foamMesh *fm = new FOAM::foamMesh(mesh);
-  fm->write(files.outputMeshFile);
+  auto vgm = NEM::MSH::Read(files.inputMeshFile);
+  auto mesh = new NEM::MSH::foamGeoMesh();
+  mesh->takeGeoMesh(vgm);
+  mesh->write("");
+  mesh->Delete();
+  vgm->Delete();
 
   Foam::polyMesh mesh1(Foam::IOobject(Foam::polyMesh::defaultRegion,
                                       runTime.timeName(), runTime,
@@ -51,12 +49,14 @@ void finishRefine(Foam::AMRFoam *amr, const std::string &outputMeshFile,
   amr->writeMesh();
 
   // Export final mesh to vtu format
-  FOAM::foamMesh *fm2 = new FOAM::foamMesh(false);
-  fm2->readAMR(runTime);
-  vtkMesh *vm = new vtkMesh(fm2->getDataSet(), outputMeshFile);
-  vm->report();
-  vm->write();
-  delete vm;
+  auto fm = new Foam::fvMesh(Foam::IOobject("", runTime.timeName(), runTime,
+                                            Foam::IOobject::MUST_READ));
+  auto fgm_ = new NEM::MSH::foamGeoMesh(fm);
+  auto mesh = NEM::MSH::New(outputMeshFile);
+  mesh->takeGeoMesh(fgm_);
+  mesh->write(outputMeshFile);
+  mesh->Delete();
+  fgm_->Delete();
 }
 }  // namespace
 
@@ -81,26 +81,20 @@ void FoamRefineDriver::setOpts(Opts opts) { this->opts_ = std::move(opts); }
 
 void FoamRefineDriver::execute() const {
   // Initializes AMR workflow
-  auto *mshManip = new MeshManipulationFoam();
-  mshManip->initAMRWorkFlow(this->opts_.startTime, this->opts_.timeStep,
-                            this->opts_.endTime);
-  if (mshManip) delete mshManip;
-
-  // Starting
-  int argc = 1;
-  char **argv = new char *[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
+  std::unique_ptr<getDicts> initFoam;
+  initFoam = std::unique_ptr<getDicts>(new getDicts());
+  initFoam->writeBasicDicts("system/", this->opts_.startTime,
+                            this->opts_.timeStep, this->opts_.endTime);
+  initFoam->createDynamicMeshDict(true);
+  auto controlDict_ = initFoam->createControlDict(true);
+  Foam::Time runTime(controlDict_.get(), ".", ".");
 
   auto amr = initializeRefine(this->files_, this->opts_, runTime);
 
-  int nSteps = opts_.endTime / opts_.timeStep;
+  int nSteps = static_cast<int>(std::round(opts_.endTime / opts_.timeStep));
 
   // Creates scalar field from incoming text/CSV files
-  volScalarField meshFieldXY =
+  Foam::volScalarField meshFieldXY =
       amr->readIncomingCellField(this->opts_.inputFieldFile, "meshFieldXY");
 
   if (opts_.refCriteria == Opts::Criteria::VALUE) {
@@ -115,7 +109,7 @@ void FoamRefineDriver::execute() const {
     }
     meshFieldXY.write();
   } else {  // opts_.refCriteria == Opts::Criteria::GRADIENT
-    volScalarField magGrad = amr->getGradient(meshFieldXY);
+    Foam::volScalarField magGrad = amr->getGradient(meshFieldXY);
     for (int i = 0; i < nSteps; i++) {
       amr->updateAMR(this->opts_.refineInterval, this->opts_.maxRefinement,
                      magGrad, this->opts_.lowerRefineLevel,
@@ -143,29 +137,21 @@ const FoamMLRefineDriver::Opts &FoamMLRefineDriver::getOpts() const {
   return opts_;
 }
 
-void FoamMLRefineDriver::setOpts(Opts opts) {
-  this->opts_ = std::move(opts);
-}
+void FoamMLRefineDriver::setOpts(Opts opts) { this->opts_ = std::move(opts); }
 
 void FoamMLRefineDriver::execute() const {
   // Initializes AMR workflow
-  auto *mshManip = new MeshManipulationFoam();
-  mshManip->initAMRWorkFlow(this->opts_.startTime, this->opts_.timeStep,
-                            this->opts_.endTime);
-  if (mshManip) delete mshManip;
-
-  // Starting
-  int argc = 1;
-  char **argv = new char *[2];
-  argv[0] = new char[100];
-  strcpy(argv[0], "NONE");
-  Foam::argList args(argc, argv);
-  Foam::Info << "Create time\n" << Foam::endl;
-  Foam::Time runTime(Foam::Time::controlDictName, args);
+  std::unique_ptr<getDicts> initFoam;
+  initFoam = std::unique_ptr<getDicts>(new getDicts());
+  initFoam->writeBasicDicts("system/", this->opts_.startTime,
+                            this->opts_.timeStep, this->opts_.endTime);
+  initFoam->createDynamicMeshDict(true);
+  auto controlDict_ = initFoam->createControlDict(true);
+  Foam::Time runTime(controlDict_.get(), ".", ".");
 
   std::shared_ptr<meshBase> mesh =
       meshBase::CreateShared(this->files_.inputMeshFile);
-  auto amr = initializeRefine(this->files_, this->opts_, runTime, mesh);
+  auto amr = initializeRefine(this->files_, this->opts_, runTime);
 
   int nSteps = opts_.endTime / opts_.timeStep;
 
@@ -183,9 +169,7 @@ void FoamMLRefineDriver::execute() const {
 
   // Making predictions
   std::vector<int> refinementVec;
-  for (int i = 0; i < nonDimUGrad.size(); i++) {
-    refinementVec.push_back(0);
-  }
+  for (int i = 0; i < nonDimUGrad.size(); i++) { refinementVec.push_back(0); }
   for (int i = 0; i < nonDimUGrad.size(); i++) {
     const auto result = model.predict(
         {fdeep::tensor(fdeep::tensor_shape(static_cast<double>(4)),
@@ -193,7 +177,7 @@ void FoamMLRefineDriver::execute() const {
 
     if (result[0].get(0, 0, 0, 0, 0) >= 0.5) refinementVec[i] = 1;
   }
-  volScalarField meshField = amr->assignToVolScalarField(refinementVec);
+  Foam::volScalarField meshField = amr->assignToVolScalarField(refinementVec);
 
   for (int i = 0; i < nSteps; i++) {
     amr->updateAMRML(this->opts_.refineInterval, this->opts_.maxRefinement,

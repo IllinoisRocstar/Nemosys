@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "Refinement/AMRFoam.H"
 #include "AuxiliaryFunctions.H"
+#include "Refinement/AMRFoam.H"
 
 #include <IFstream.H>
 #include <IOdictionary.H>
@@ -14,8 +14,8 @@
 #include <Time.H>
 #include <argList.H>
 #include <cellSet.H>
-#include <fvCFD.H>
 #include <fvMesh.H>
+#include <fvcGrad.H>
 #include <hexRef8.H>
 #include <mapPolyMesh.H>
 #include <motionSolver.H>
@@ -31,7 +31,7 @@
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 namespace Foam {
 
-AMRFoam::AMRFoam(const Foam::IOobject& iomesh)
+AMRFoam::AMRFoam(const Foam::IOobject &iomesh)
     : dynamicFvMesh(iomesh),
       meshCutter_(*this),
       dumpLevel_(true),
@@ -48,20 +48,16 @@ void AMRFoam::checkForMotion() {
                IOobject::MUST_READ_IF_MODIFIED, IOobject::NO_WRITE, false)));
 
   word subType = word(refineDict.lookup("dynamicFvMesh"));
-  if (subType == "dynamicMotionSolverFvMesh") {
-    enableMotion = true;
-  }
+  if (subType == "dynamicMotionSolverFvMesh") { enableMotion = true; }
 
-  if (enableMotion) {
-    motionPtr_ = motionSolver::New(*this);
-  }
+  if (enableMotion) { motionPtr_ = motionSolver::New(*this); }
 }
 
 void AMRFoam::disableMotion() { enableMotion = false; }
 
 void AMRFoam::calcProtectedCells() {
-  const labelList& cellLevel = meshCutter_.cellLevel();
-  const labelList& pointLevel = meshCutter_.pointLevel();
+  const labelList &cellLevel = meshCutter_.cellLevel();
+  const labelList &pointLevel = meshCutter_.pointLevel();
 
   // Set cells that should not be refined.
   // This is currently any cell which does not have 8 anchor points or
@@ -75,8 +71,8 @@ void AMRFoam::calcProtectedCells() {
 
   label nProtected = 0;
 
-  forAll(pointCells(), pointi) {
-    const labelList& pCells = pointCells()[pointi];
+  forAll (pointCells(), pointi) {
+    const labelList &pCells = pointCells()[pointi];
 
     for (const label celli : pCells) {
       if (!protectedCell_.test(celli)) {
@@ -110,11 +106,11 @@ void AMRFoam::calcProtectedCells() {
 
     bitSet protectedFace(nFaces());
 
-    forAll(faceOwner(), facei) {
+    forAll (faceOwner(), facei) {
       const label faceLevel =
           max(cellLevel[faceOwner()[facei]], neiLevel[facei]);
 
-      const face& f = faces()[facei];
+      const face &f = faces()[facei];
 
       label nnAnchors = 0;
 
@@ -148,20 +144,16 @@ void AMRFoam::calcProtectedCells() {
     }
 
     // Also protect any cells that are less than hex
-    forAll(cells(), celli) {
-      const cell& cFaces = cells()[celli];
+    forAll (cells(), celli) {
+      const cell &cFaces = cells()[celli];
 
       if (cFaces.size() < 6) {
-        if (protectedCell_.set(celli)) {
-          nProtected++;
-        }
+        if (protectedCell_.set(celli)) { nProtected++; }
 
       } else {
         for (const label cfacei : cFaces) {
           if (faces()[cfacei].size() < 4) {
-            if (protectedCell_.set(celli)) {
-              nProtected++;
-            }
+            if (protectedCell_.set(celli)) { nProtected++; }
             break;
           }
         }
@@ -173,27 +165,25 @@ void AMRFoam::calcProtectedCells() {
 
     if (enableMotion) {
       // Block boundary cells from refinement
-      const polyBoundaryMesh& patches = boundaryMesh();
+      const polyBoundaryMesh &patches = boundaryMesh();
       wordList ptchTypes = patches.types();
 
       labelList assignedScore(nCells(), 0);
 
-      forAll(patches, patchI) {
+      forAll (patches, patchI) {
         if (ptchTypes[patchI] != "empty") {
           auto allCells = patches[patchI].faceCells();
-          forAll(allCells, cellI) {
+          forAll (allCells, cellI) {
             assignedScore[allCells[cellI]] += 1;
             // Find all neighbours and assign the score of one
             auto neiCells = cellCells()[allCells[cellI]];
-            forAll(neiCells, nCellI) { assignedScore[neiCells[nCellI]] += 1; }
+            forAll (neiCells, nCellI) { assignedScore[neiCells[nCellI]] += 1; }
           }
         }
       }
 
-      forAll(assignedScore, scoreI) {
-        if (assignedScore[scoreI] >= 2) {
-          protectedCell_.set(scoreI);
-        }
+      forAll (assignedScore, scoreI) {
+        if (assignedScore[scoreI] >= 2) { protectedCell_.set(scoreI); }
       }
     }
   }
@@ -226,7 +216,7 @@ bool AMRFoam::update() {
 
   // Rework into hashtable.
   correctFluxes_.resize(fluxVelocities.size());
-  for (const auto& pr : fluxVelocities) {
+  for (const auto &pr : fluxVelocities) {
     correctFluxes_.insert(pr.first(), pr.second());
   }
 
@@ -267,7 +257,7 @@ bool AMRFoam::update() {
 
     const word fieldName(refineDict.get<word>("field"));
 
-    const volScalarField& vFld = lookupObject<volScalarField>(fieldName);
+    const volScalarField &vFld = lookupObject<volScalarField>(fieldName);
 
     const scalar lowerRefineLevel = refineDict.get<scalar>("lowerRefineLevel");
     const scalar upperRefineLevel = refineDict.get<scalar>("upperRefineLevel");
@@ -300,12 +290,12 @@ bool AMRFoam::update() {
         // Update refineCell. Note that some of the marked ones have
         // not been refined due to constraints.
         {
-          const labelList& cellMap = map().cellMap();
-          const labelList& reverseCellMap = map().reverseCellMap();
+          const labelList &cellMap = map().cellMap();
+          const labelList &reverseCellMap = map().reverseCellMap();
 
           bitSet newRefineCell(cellMap.size());
 
-          forAll(cellMap, celli) {
+          forAll (cellMap, celli) {
             const label oldCelli = cellMap[celli];
             if ((oldCelli < 0) || (reverseCellMap[oldCelli] != celli) ||
                 (refineCell.test(oldCelli))) {
@@ -344,12 +334,12 @@ bool AMRFoam::update() {
     if ((nRefinementIterations_ % 1) == 0) {
       // Compact refinement history occasionally (how often?).
       // Unrefinement causes holes in the refinementHistory.
-      const_cast<refinementHistory&>(meshCutter().history()).compact();
+      const_cast<refinementHistory &>(meshCutter().history()).compact();
     }
     nRefinementIterations_++;
   }
 
-  writeData();
+  writeHistory();
 
   writeMesh();
 
@@ -365,12 +355,12 @@ bool AMRFoam::update() {
   return hasChanged;
 }
 
-bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
-                        volScalarField& vFld, const double& lowerRefineLevel,
-                        const double& upperRefineLevel,
-                        const double& unrefineAbove,
-                        const double& unrefineBelow, const int& nBufferLayers,
-                        const int& maxCells) {
+bool AMRFoam::updateAMR(const int &refineInterval, const int &maxRefinement,
+                        volScalarField &vFld, const double &lowerRefineLevel,
+                        const double &upperRefineLevel,
+                        const double &unrefineAbove,
+                        const double &unrefineBelow, const int &nBufferLayers,
+                        const int &maxCells) {
   bool hasChanged = false;
 
   if (refineInterval == 0) {
@@ -420,12 +410,12 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
         // Update refineCell. Note that some of the marked ones have
         // not been refined due to constraints.
         {
-          const labelList& cellMap = map().cellMap();
-          const labelList& reverseCellMap = map().reverseCellMap();
+          const labelList &cellMap = map().cellMap();
+          const labelList &reverseCellMap = map().reverseCellMap();
 
           bitSet newRefineCell(cellMap.size());
 
-          forAll(cellMap, celli) {
+          forAll (cellMap, celli) {
             const label oldCelli = cellMap[celli];
             if ((oldCelli < 0) || (reverseCellMap[oldCelli] != celli) ||
                 (refineCell.test(oldCelli))) {
@@ -456,6 +446,7 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
       if (nSplitPoints > 0) {
         // Refine/update mesh
         unrefine(pointsToUnrefine);
+
         hasChanged = true;
       }
     }
@@ -463,7 +454,7 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
     if ((nRefinementIterations_ % 10) == 0) {
       // Compact refinement history occasionally (how often?).
       // Unrefinement causes holes in the refinementHistory.
-      const_cast<refinementHistory&>(meshCutter().history()).compact();
+      const_cast<refinementHistory &>(meshCutter().history()).compact();
     }
     nRefinementIterations_++;
   }
@@ -480,7 +471,7 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
 
   if (writeField) vFld.write();
 
-  if (writeRefHistory) writeData();
+  if (writeRefHistory) writeHistory();
 
   if (writeMeshData) writeMesh();
 
@@ -488,9 +479,9 @@ bool AMRFoam::updateAMR(const int& refineInterval, const int& maxRefinement,
 }
 
 // New method for machine learning model
-bool AMRFoam::updateAMRML(const int& refineInterval, const int& maxRefinement,
-                          const int& nBufferLayers, const int& maxCells,
-                          volScalarField& vFld) {
+bool AMRFoam::updateAMRML(const int &refineInterval, const int &maxRefinement,
+                          const int &nBufferLayers, const int &maxCells,
+                          volScalarField &vFld) {
   bool hasChanged = false;
   if (refineInterval == 0) {
     polyMesh::topoChanging(hasChanged);
@@ -541,12 +532,12 @@ bool AMRFoam::updateAMRML(const int& refineInterval, const int& maxRefinement,
 
         // Update refineCell. Note that some of the marked ones have not been
         // refined due to constraints.
-        const labelList& cellMap = map().cellMap();
-        const labelList& reverseCellMap = map().reverseCellMap();
+        const labelList &cellMap = map().cellMap();
+        const labelList &reverseCellMap = map().reverseCellMap();
 
         bitSet newRefineCell(cellMap.size());
 
-        forAll(cellMap, celli) {
+        forAll (cellMap, celli) {
           label oldCelli = cellMap[celli];
 
           if (oldCelli < 0)
@@ -583,27 +574,25 @@ bool AMRFoam::updateAMRML(const int& refineInterval, const int& maxRefinement,
 
     if ((nRefinementIterations_ % 10) == 0) {
       // Unrefinement causes holes in the refinementHistory
-      const_cast<refinementHistory&>(meshCutter().history()).compact();
+      const_cast<refinementHistory &>(meshCutter().history()).compact();
     }
     nRefinementIterations_++;
   }
 
   polyMesh::topoChanging(hasChanged);
-  if (hasChanged) {
-    polyMesh::moving(false);
-  }
+  if (hasChanged) { polyMesh::moving(false); }
 
   return hasChanged;
 }
 
 labelList AMRFoam::selectUnrefinePoints(const scalar unrefineAbove,
                                         const scalar unrefineBelow,
-                                        const bitSet& markedCell,
-                                        const scalarField& pFld) const {
+                                        const bitSet &markedCell,
+                                        const scalarField &pFld) const {
   // All points that can be unrefined
   const labelList splitPoints(meshCutter_.getSplitPoints());
 
-  const labelListList& pointCells = this->pointCells();
+  const labelListList &pointCells = this->pointCells();
 
   // If we have any protected cells make sure they also are not being
   // unrefined
@@ -612,7 +601,7 @@ labelList AMRFoam::selectUnrefinePoints(const scalar unrefineAbove,
 
   if (!protectedCell_.empty()) {
     // Get all points on a protected cell
-    forAll(pointCells, pointi) {
+    forAll (pointCells, pointi) {
       for (const label celli : pointCells[pointi]) {
         if (protectedCell_.test(celli)) {
           protectedPoint.set(pointi);
@@ -644,9 +633,7 @@ labelList AMRFoam::selectUnrefinePoints(const scalar unrefineAbove,
         }
       }
 
-      if (!hasMarked) {
-        newSplitPoints.append(pointi);
-      }
+      if (!hasMarked) { newSplitPoints.append(pointi); }
     }
   }
 
@@ -662,14 +649,15 @@ labelList AMRFoam::selectUnrefinePoints(const scalar unrefineAbove,
   return consistentSet;
 }
 
-scalarField AMRFoam::cell2Pt(const scalarField& vFld) {
+scalarField AMRFoam::cell2Pt(const scalarField &vFld) {
   scalarField pFld(nPoints());
 
-  forAll(pointCells(), pointi) {
-    const labelList& pCells = pointCells()[pointi];
+  forAll (pointCells(), pointi) {
+    const labelList &pCells = pointCells()[pointi];
 
     scalar sum = 0.0;
-    forAll(pCells, i) sum += vFld[pCells[i]];
+    forAll (pCells, i)
+      sum += vFld[pCells[i]];
 
     pFld[pointi] = sum / pCells.size();
   }
@@ -677,21 +665,19 @@ scalarField AMRFoam::cell2Pt(const scalarField& vFld) {
   return pFld;
 }
 
-void AMRFoam::writeData() {
+void AMRFoam::writeHistory() {
   // Just write refiment history in current time
-  const_cast<hexRef8&>(meshCutter_).setInstance(time().timeName());
+  const_cast<hexRef8 &>(meshCutter_).setInstance(time().timeName());
   meshCutter_.write(true);
 }
 
-const polyMesh& AMRFoam::getMesh() { return meshCutter_.mesh(); }
+const polyMesh &AMRFoam::getMesh() { return meshCutter_.mesh(); }
 
 void AMRFoam::writeMesh() {
-  auto strmOpt =
-      IOstreamOption(time().writeFormat(), time().writeCompression());
-  dynamicFvMesh::writeObject(strmOpt, true);
+  writeObjectAMR(true);
 }
 
-void AMRFoam::transformField(volScalarField& inField) {
+void AMRFoam::transformField(volScalarField &inField) {
   double maxNum = 0;
   for (int i = 0; i < inField.size(); i++) {
     if (inField[i] < 0) {
@@ -706,8 +692,8 @@ void AMRFoam::transformField(volScalarField& inField) {
   for (int i = 0; i < inField.size(); i++) inField[i] = inField[i] / maxNum;
 }
 
-volScalarField AMRFoam::readIncomingCellField(const std::string& inName,
-                                              const std::string& outName) {
+volScalarField AMRFoam::readIncomingCellField(const std::string &inName,
+                                              const std::string &outName) {
   std::cout << " - Parsing Input file ... " << std::endl;
   std::ifstream inFld(inName);
   if (inFld.is_open()) {
@@ -733,14 +719,14 @@ volScalarField AMRFoam::readIncomingCellField(const std::string& inName,
   }
 }
 
-volScalarField AMRFoam::assignToVolScalarField(const std::vector<int>& vec) {
+volScalarField AMRFoam::assignToVolScalarField(const std::vector<int> &vec) {
   volScalarField vFld = initScalarField("vFld");
   for (int i = 0; i < (int)vec.size(); i++) vFld[i] = vec[i];
   return vFld;
 }
 
-pointScalarField AMRFoam::readIncomingPtField(const std::string& inName,
-                                              const std::string& outName) {
+pointScalarField AMRFoam::readIncomingPtField(const std::string &inName,
+                                              const std::string &outName) {
   std::cout << " - Parsing Input file ... " << std::endl;
   std::ifstream inFld(inName);
   if (inFld.is_open()) {
@@ -767,7 +753,7 @@ pointScalarField AMRFoam::readIncomingPtField(const std::string& inName,
   }
 }
 
-volScalarField AMRFoam::readInitialField(const std::string& fldName) {
+volScalarField AMRFoam::readInitialField(const std::string &fldName) {
   volScalarField meshFieldXY(IOobject(fldName, time().timeName(), *this,
                                       IOobject::NO_READ, IOobject::AUTO_WRITE),
                              *this);
@@ -775,13 +761,13 @@ volScalarField AMRFoam::readInitialField(const std::string& fldName) {
   return meshFieldXY;
 }
 
-volScalarField AMRFoam::pF2vF(const pointScalarField& pntF,
-                              const std::string& outName) {
+volScalarField AMRFoam::pF2vF(const pointScalarField &pntF,
+                              const std::string &outName) {
   volScalarField returnFld = initScalarField(outName);
   return returnFld;
 }
 
-volScalarField AMRFoam::initScalarField(const std::string& fldName) {
+volScalarField AMRFoam::initScalarField(const std::string &fldName) {
   volScalarField emptyScalar(IOobject(fldName, time().timeName(), *this,
                                       IOobject::NO_READ, IOobject::AUTO_WRITE),
                              *this, dimensionedScalar("scalar", dimLength, 0));
@@ -789,7 +775,7 @@ volScalarField AMRFoam::initScalarField(const std::string& fldName) {
   return emptyScalar;
 }
 
-volScalarField AMRFoam::initGradientField(const std::string& fldName) {
+volScalarField AMRFoam::initGradientField(const std::string &fldName) {
   volScalarField emptyScalar(IOobject(fldName, time().timeName(), *this,
                                       IOobject::NO_READ, IOobject::AUTO_WRITE),
                              *this, dimensionedScalar("scalar", dimless, 0));
@@ -797,7 +783,7 @@ volScalarField AMRFoam::initGradientField(const std::string& fldName) {
   return emptyScalar;
 }
 
-pointScalarField AMRFoam::initPntSField(const std::string& fldName) {
+pointScalarField AMRFoam::initPntSField(const std::string &fldName) {
   // Initialize a pointMesh object
   pointMesh pMesh(*this);
 
@@ -817,12 +803,12 @@ void AMRFoam::enableUpdatedField() { writeField = true; }
 
 void AMRFoam::enableMeshWriting() { writeMeshData = true; }
 
-volScalarField AMRFoam::getGradient(const volScalarField& fldGrd) {
+volScalarField AMRFoam::getGradient(const volScalarField &fldGrd) {
   volVectorField returnGrad(IOobject("fldName", time().timeName(), *this,
                                      IOobject::NO_READ, IOobject::NO_WRITE),
                             *this, dimensionedVector("vector", dimless, Zero));
 
-  returnGrad = fvc::grad(fldGrd);
+  returnGrad = Foam::fvc::grad(fldGrd);
   returnGrad.write();
   volScalarField returnScalar = initGradientField("gradient");
   returnScalar = mag(returnGrad);
@@ -830,13 +816,13 @@ volScalarField AMRFoam::getGradient(const volScalarField& fldGrd) {
   return returnScalar;
 }
 
-void AMRFoam::calculateProtectedCells(bitSet& unrefineableCell) const {
+void AMRFoam::calculateProtectedCells(bitSet &unrefineableCell) const {
   if (protectedCell_.empty()) {
     unrefineableCell.clear();
     return;
   }
 
-  const labelList& cellLevel = meshCutter_.cellLevel();
+  const labelList &cellLevel = meshCutter_.cellLevel();
 
   unrefineableCell = protectedCell_;
 
@@ -885,9 +871,7 @@ void AMRFoam::calculateProtectedCells(bitSet& unrefineableCell) const {
 
     for (label facei = 0; facei < nInternalFaces(); ++facei) {
       if (seedFace.test(facei)) {
-        if (unrefineableCell.set(faceOwner()[facei])) {
-          hasExtended = true;
-        }
+        if (unrefineableCell.set(faceOwner()[facei])) { hasExtended = true; }
         if (unrefineableCell.set(faceNeighbour()[facei])) {
           hasExtended = true;
         }
@@ -897,15 +881,11 @@ void AMRFoam::calculateProtectedCells(bitSet& unrefineableCell) const {
       if (seedFace.test(facei)) {
         const label own = faceOwner()[facei];
 
-        if (unrefineableCell.set(own)) {
-          hasExtended = true;
-        }
+        if (unrefineableCell.set(own)) { hasExtended = true; }
       }
     }
 
-    if (!returnReduce(hasExtended, orOp<bool>())) {
-      break;
-    }
+    if (!returnReduce(hasExtended, orOp<bool>())) { break; }
   }
 }
 
@@ -920,20 +900,20 @@ void AMRFoam::readDict() {
       List<Pair<word>>(refineDict.lookup("correctFluxes"));
   // Rework into hashtable.
   correctFluxes_.resize(fluxVelocities.size());
-  forAll(fluxVelocities, i)
-      correctFluxes_.insert(fluxVelocities[i][0], fluxVelocities[i][1]);
+  forAll (fluxVelocities, i)
+    correctFluxes_.insert(fluxVelocities[i][0], fluxVelocities[i][1]);
 
   dumpLevel_ = Switch(refineDict.lookup("dumpLevel"));
 }
 
-void AMRFoam::mapFields(const mapPolyMesh& mpm) {
+void AMRFoam::mapFields(const mapPolyMesh &mpm) {
   dynamicFvMesh::mapFields(mpm);
 
   // Correct the flux for modified/added faces. All the faces which only
   // have been renumbered will already have been handled by the mapping.
   {
-    const labelList& faceMap = mpm.faceMap();
-    const labelList& reverseFaceMap = mpm.reverseFaceMap();
+    const labelList &faceMap = mpm.faceMap();
+    const labelList &reverseFaceMap = mpm.reverseFaceMap();
 
     // Storage for any master faces. These will be the original faces
     // on the coarse cell that get split into four (or rather the
@@ -942,7 +922,7 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
 
     bitSet masterFaces(nFaces());
 
-    forAll(faceMap, facei) {
+    forAll (faceMap, facei) {
       const label oldFacei = faceMap[facei];
 
       if (oldFacei >= 0) {
@@ -963,7 +943,7 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
       Pout << "Found " << masterFaces.count() << " split faces " << endl;
     }
 
-    HashTable<surfaceScalarField*> fluxes(lookupClass<surfaceScalarField>());
+    HashTable<surfaceScalarField *> fluxes(lookupClass<surfaceScalarField>());
     forAllIters(fluxes, iter) {
       if (!correctFluxes_.found(iter.key())) {
         WarningInFunction
@@ -976,13 +956,11 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
         continue;
       }
 
-      const word& UName = correctFluxes_[iter.key()];
+      const word &UName = correctFluxes_[iter.key()];
 
-      if (UName == "none") {
-        continue;
-      }
+      if (UName == "none") { continue; }
 
-      surfaceScalarField& phi = *iter();
+      surfaceScalarField &phi = *iter();
 
       if (UName == "NaN") {
         Pout << "Setting surfaceScalarField " << iter.key() << " to NaN"
@@ -1015,15 +993,15 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
       }
 
       // Recalculate new boundary faces.
-      surfaceScalarField::Boundary& phiBf = phi.boundaryFieldRef();
+      surfaceScalarField::Boundary &phiBf = phi.boundaryFieldRef();
 
-      forAll(phiBf, patchi) {
-        fvsPatchScalarField& patchPhi = phiBf[patchi];
-        const fvsPatchScalarField& patchPhiU = phiU.boundaryField()[patchi];
+      forAll (phiBf, patchi) {
+        fvsPatchScalarField &patchPhi = phiBf[patchi];
+        const fvsPatchScalarField &patchPhiU = phiU.boundaryField()[patchi];
 
         label facei = patchPhi.patch().start();
 
-        forAll(patchPhi, i) {
+        forAll (patchPhi, i) {
           const label oldFacei = faceMap[facei];
 
           if (oldFacei == -1) {
@@ -1046,9 +1024,9 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
           const label patchi = boundaryMesh().whichPatch(facei);
           const label i = facei - boundaryMesh()[patchi].start();
 
-          const fvsPatchScalarField& patchPhiU = phiU.boundaryField()[patchi];
+          const fvsPatchScalarField &patchPhiU = phiU.boundaryField()[patchi];
 
-          fvsPatchScalarField& patchPhi = phiBf[patchi];
+          fvsPatchScalarField &patchPhi = phiBf[patchi];
 
           patchPhi[i] = patchPhiU[i];
         }
@@ -1060,7 +1038,7 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
   // no correspondence to the old mesh (i.e. added without a masterFace, edge
   // or point). An example is the internal faces from hexRef8.
   {
-    const labelList& faceMap = mpm.faceMap();
+    const labelList &faceMap = mpm.faceMap();
 
     mapNewInternalFaces<scalar>(this->Sf(), this->magSf(), faceMap);
     mapNewInternalFaces<vector>(this->Sf(), this->magSf(), faceMap);
@@ -1073,7 +1051,7 @@ void AMRFoam::mapFields(const mapPolyMesh& mpm) {
 }
 
 // Refines cells, maps fields and recalculates (an approximate) flux
-autoPtr<mapPolyMesh> Foam::AMRFoam::refine(const labelList& cellsToRefine) {
+autoPtr<mapPolyMesh> Foam::AMRFoam::refine(const labelList &cellsToRefine) {
   // Mesh changing engine.
   polyTopoChange meshMod(*this);
 
@@ -1116,12 +1094,9 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::refine(const labelList& cellsToRefine) {
   // Update numbering of protectedCell_
   if (!protectedCell_.empty()) {
     bitSet newProtectedCell(nCells());
-
-    forAll(newProtectedCell, celli) {
+    forAll (newProtectedCell, celli) {
       const label oldCelli = map().cellMap()[celli];
-      if (protectedCell_.test(oldCelli)) {
-        newProtectedCell.set(celli);
-      }
+      if (protectedCell_.test(oldCelli)) { newProtectedCell.set(celli); }
     }
     protectedCell_.transfer(newProtectedCell);
   }
@@ -1132,7 +1107,7 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::refine(const labelList& cellsToRefine) {
   return map;
 }
 
-autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
+autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList &splitPoints) {
   polyTopoChange meshMod(*this);
 
   // Play refinement commands into mesh changer.
@@ -1148,12 +1123,12 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
 
   {
     for (const label pointi : splitPoints) {
-      const labelList& pEdges = pointEdges()[pointi];
+      const labelList &pEdges = pointEdges()[pointi];
 
       for (const label edgei : pEdges) {
         const label otherPointi = edges()[edgei].otherVertex(pointi);
 
-        const labelList& pFaces = pointFaces()[otherPointi];
+        const labelList &pFaces = pointFaces()[otherPointi];
 
         for (const label facei : pFaces) {
           faceToSplitPoint.insert(facei, otherPointi);
@@ -1180,10 +1155,10 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
 
   // Correct the flux for modified faces.
   {
-    const labelList& reversePointMap = map().reversePointMap();
-    const labelList& reverseFaceMap = map().reverseFaceMap();
+    const labelList &reversePointMap = map().reversePointMap();
+    const labelList &reverseFaceMap = map().reverseFaceMap();
 
-    HashTable<surfaceScalarField*> fluxes(lookupClass<surfaceScalarField>());
+    HashTable<surfaceScalarField *> fluxes(lookupClass<surfaceScalarField>());
     forAllIters(fluxes, iter) {
       if (!correctFluxes_.found(iter.key())) {
         WarningInFunction
@@ -1196,17 +1171,15 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
         continue;
       }
 
-      const word& UName = correctFluxes_[iter.key()];
+      const word &UName = correctFluxes_[iter.key()];
 
-      if (UName == "none") {
-        continue;
-      }
+      if (UName == "none") { continue; }
 
       DebugInfo << "Mapping flux " << iter.key() << " using interpolated flux "
                 << UName << endl;
 
-      surfaceScalarField& phi = *iter();
-      surfaceScalarField::Boundary& phiBf = phi.boundaryFieldRef();
+      surfaceScalarField &phi = *iter();
+      surfaceScalarField::Boundary &phiBf = phi.boundaryFieldRef();
 
       const surfaceScalarField phiU(
           fvc::interpolate(lookupObject<volVectorField>(UName)) & Sf());
@@ -1225,9 +1198,9 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
               label patchi = boundaryMesh().whichPatch(facei);
               label i = facei - boundaryMesh()[patchi].start();
 
-              const fvsPatchScalarField& patchPhiU =
+              const fvsPatchScalarField &patchPhiU =
                   phiU.boundaryField()[patchi];
-              fvsPatchScalarField& patchPhi = phiBf[patchi];
+              fvsPatchScalarField &patchPhi = phiBf[patchi];
               patchPhi[i] = patchPhiU[i];
             }
           }
@@ -1243,11 +1216,9 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
   if (!protectedCell_.empty()) {
     bitSet newProtectedCell(nCells());
 
-    forAll(newProtectedCell, celli) {
+    forAll (newProtectedCell, celli) {
       const label oldCelli = map().cellMap()[celli];
-      if (protectedCell_.test(oldCelli)) {
-        newProtectedCell.set(celli);
-      }
+      if (protectedCell_.test(oldCelli)) { newProtectedCell.set(celli); }
     }
     protectedCell_.transfer(newProtectedCell);
   }
@@ -1258,11 +1229,11 @@ autoPtr<mapPolyMesh> Foam::AMRFoam::unrefine(const labelList& splitPoints) {
   return map;
 }
 
-scalarField AMRFoam::maxPointField(const scalarField& pFld) const {
+scalarField AMRFoam::maxPointField(const scalarField &pFld) const {
   scalarField vFld(nCells(), -GREAT);
 
-  forAll(pointCells(), pointi) {
-    const labelList& pCells = pointCells()[pointi];
+  forAll (pointCells(), pointi) {
+    const labelList &pCells = pointCells()[pointi];
 
     for (const label celli : pCells) {
       vFld[celli] = max(vFld[celli], pFld[pointi]);
@@ -1271,11 +1242,12 @@ scalarField AMRFoam::maxPointField(const scalarField& pFld) const {
   return vFld;
 }
 
-scalarField AMRFoam::maxCellField(const volScalarField& vFld) const {
+scalarField AMRFoam::maxCellField(const volScalarField &vFld) const {
   scalarField pFld(nPoints(), -GREAT);
 
-  forAll(pointCells(), pointi) {
-    const labelList& pCells = pointCells()[pointi];
+  forAll (pointCells(), pointi) {
+    const labelList &pCells = pointCells()[pointi];
+
     for (const label celli : pCells) {
       pFld[pointi] = max(pFld[pointi], vFld[celli]);
     }
@@ -1283,59 +1255,52 @@ scalarField AMRFoam::maxCellField(const volScalarField& vFld) const {
   return pFld;
 }
 
-scalarField AMRFoam::cellToPoint(const scalarField& vFld) const {
+scalarField AMRFoam::cellToPoint(const scalarField &vFld) const {
   scalarField pFld(nPoints());
 
-  forAll(pointCells(), pointi) {
-    const labelList& pCells = pointCells()[pointi];
+  forAll (pointCells(), pointi) {
+    const labelList &pCells = pointCells()[pointi];
 
     scalar sum = 0.0;
-    for (const label celli : pCells) {
-      sum += vFld[celli];
-    }
+    for (const label celli : pCells) { sum += vFld[celli]; }
     pFld[pointi] = sum / pCells.size();
   }
   return pFld;
 }
 
-scalarField AMRFoam::error(const scalarField& fld, const scalar minLevel,
+scalarField AMRFoam::error(const scalarField &fld, const scalar minLevel,
                            const scalar maxLevel) const {
   scalarField c(fld.size(), scalar(-1));
-
-  forAll(fld, i) {
+  forAll (fld, i) {
     scalar err = min(fld[i] - minLevel, maxLevel - fld[i]);
 
-    if (err >= 0) {
-      c[i] = err;
-    }
+    if (err >= 0) { c[i] = err; }
   }
   return c;
 }
 
 void AMRFoam::selectRefineCandidates(const scalar lowerRefineLevel,
                                      const scalar upperRefineLevel,
-                                     const scalarField& vFld,
-                                     bitSet& candidateCell) const {
+                                     const scalarField &vFld,
+                                     bitSet &candidateCell) const {
   // Get error per cell. Is -1 (not to be refined) to >0 (to be refined,
   // higher more desirable to be refined).
   scalarField cellError(maxPointField(
       error(cellToPoint(vFld), lowerRefineLevel, upperRefineLevel)));
 
   // Mark cells that are candidates for refinement.
-  forAll(cellError, celli) {
-    if (cellError[celli] > 0) {
-      candidateCell.set(celli);
-    }
+  forAll (cellError, celli) {
+    if (cellError[celli] > 0) { candidateCell.set(celli); }
   }
 }
 
 labelList AMRFoam::selectRefineCells(const label maxCells,
                                      const label maxRefinement,
-                                     const bitSet& candidateCell) const {
+                                     const bitSet &candidateCell) const {
   // Every refined cell causes 7 extra cells
   label nTotToRefine = (maxCells - globalData().nTotalCells()) / 7;
 
-  const labelList& cellLevel = meshCutter_.cellLevel();
+  const labelList &cellLevel = meshCutter_.cellLevel();
 
   // Mark cells that cannot be refined since they would trigger refinement
   // of protected cells (since 2:1 cascade)
@@ -1343,7 +1308,7 @@ labelList AMRFoam::selectRefineCells(const label maxCells,
   calculateProtectedCells(unrefineableCell);
 
   // Count current selection
-  auto nLocalCandidates = (label)candidateCell.count();
+  label nLocalCandidates = candidateCell.count();
   label nCandidates = returnReduce(nLocalCandidates, sumOp<label>());
 
   // Collect all cells
@@ -1383,7 +1348,7 @@ labelList AMRFoam::selectRefineCells(const label maxCells,
   return consistentSet;
 }
 
-void AMRFoam::extendMarkedCells(bitSet& markedCell) const {
+void AMRFoam::extendMarkedCells(bitSet &markedCell) const {
   // Mark faces using any marked cell
   bitSet markedFace(nFaces());
 
@@ -1401,48 +1366,37 @@ void AMRFoam::extendMarkedCells(bitSet& markedCell) const {
     }
   }
   for (label facei = nInternalFaces(); facei < nFaces(); ++facei) {
-    if (markedFace.test(facei)) {
-      markedCell.set(faceOwner()[facei]);
-    }
+    if (markedFace.test(facei)) { markedCell.set(faceOwner()[facei]); }
   }
 }
 
-void AMRFoam::checkEightAnchorPoints(bitSet& protectedCell) const {
-  const labelList& cellLevel = meshCutter_.cellLevel();
-  const labelList& pointLevel = meshCutter_.pointLevel();
+void AMRFoam::checkEightAnchorPoints(bitSet &protectedCell) const {
+  const labelList &cellLevel = meshCutter_.cellLevel();
+  const labelList &pointLevel = meshCutter_.pointLevel();
 
   labelList nAnchorPoints(nCells(), Zero);
 
-  forAll(pointLevel, pointi) {
-    const labelList& pCells = pointCells(pointi);
+  forAll (pointLevel, pointi) {
+    const labelList &pCells = pointCells(pointi);
 
     for (const label celli : pCells) {
       if (pointLevel[pointi] <= cellLevel[celli]) {
         // Check if cell has already 8 anchor points -> protect cell
-        if (nAnchorPoints[celli] == 8) {
-          protectedCell.set(celli);
-        }
+        if (nAnchorPoints[celli] == 8) { protectedCell.set(celli); }
 
-        if (!protectedCell.test(celli)) {
-          ++nAnchorPoints[celli];
-        }
+        if (!protectedCell.test(celli)) { ++nAnchorPoints[celli]; }
       }
     }
   }
 
-  forAll(protectedCell, celli) {
-    if (nAnchorPoints[celli] != 8) {
-      protectedCell.set(celli);
-    }
+  forAll (protectedCell, celli) {
+    if (nAnchorPoints[celli] != 8) { protectedCell.set(celli); }
   }
 }
 
-bool AMRFoam::writeObject(IOstream::streamFormat fmt,
-                          IOstream::versionNumber ver,
-                          IOstream::compressionType cmp,
-                          const bool valid) const {
+bool AMRFoam::writeObjectAMR(const bool valid) const {
   // Force refinement data to go to the current time directory.
-  const_cast<hexRef8&>(meshCutter_).setInstance(time().timeName());
+  const_cast<hexRef8 &>(meshCutter_).setInstance(time().timeName());
   auto strmOpt =
       IOstreamOption(time().writeFormat(), time().writeCompression());
   bool writeOk =
@@ -1454,9 +1408,9 @@ bool AMRFoam::writeObject(IOstream::streamFormat fmt,
                  IOobject::AUTO_WRITE, false),
         *this, dimensionedScalar("level", dimless, 0));
 
-    const labelList& cellLevel = meshCutter_.cellLevel();
+    const labelList &cellLevel = meshCutter_.cellLevel();
 
-    forAll(cellLevel, celli) { scalarCellLevel[celli] = cellLevel[celli]; }
+    forAll (cellLevel, celli) { scalarCellLevel[celli] = cellLevel[celli]; }
 
     writeOk = writeOk && scalarCellLevel.write();
   }
@@ -1474,25 +1428,23 @@ void AMRFoam::solveMotion() {
 
 template <class T>
 void AMRFoam::mapNewInternalFaces(
-    const labelList& faceMap,
-    GeometricField<T, fvsPatchField, surfaceMesh>& sFld) {
+    const labelList &faceMap,
+    GeometricField<T, fvsPatchField, surfaceMesh> &sFld) {
   typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
 
   //- Make flat field for ease of looping
   Field<T> tsFld(this->nFaces(), Zero);
   SubField<T>(tsFld, this->nInternalFaces()) = sFld.internalField();
 
-  const typename GeoField::Boundary& bFld = sFld.boundaryField();
-  forAll(bFld, patchi) {
+  const typename GeoField::Boundary &bFld = sFld.boundaryField();
+  forAll (bFld, patchi) {
     label facei = this->boundaryMesh()[patchi].start();
-    for (const T& val : bFld[patchi]) {
-      tsFld[facei++] = val;
-    }
+    for (const T &val : bFld[patchi]) { tsFld[facei++] = val; }
   }
 
-  const labelUList& owner = this->faceOwner();
-  const labelUList& neighbour = this->faceNeighbour();
-  const cellList& cells = this->cells();
+  const labelUList &owner = this->faceOwner();
+  const labelUList &neighbour = this->faceNeighbour();
+  const cellList &cells = this->cells();
 
   for (label facei = 0; facei < nInternalFaces(); facei++) {
     label oldFacei = faceMap[facei];
@@ -1505,7 +1457,7 @@ void AMRFoam::mapNewInternalFaces(
       T tmpValue(pTraits<T>::zero);
       label counter = 0;
 
-      const cell& ownFaces = cells[owner[facei]];
+      const cell &ownFaces = cells[owner[facei]];
       for (auto ownFacei : ownFaces) {
         if (faceMap[ownFacei] != -1) {
           tmpValue += tsFld[ownFacei];
@@ -1513,7 +1465,7 @@ void AMRFoam::mapNewInternalFaces(
         }
       }
 
-      const cell& neiFaces = cells[neighbour[facei]];
+      const cell &neiFaces = cells[neighbour[facei]];
       for (auto neiFacei : neiFaces) {
         if (faceMap[neiFacei] != -1) {
           tmpValue += tsFld[neiFacei];
@@ -1521,17 +1473,15 @@ void AMRFoam::mapNewInternalFaces(
         }
       }
 
-      if (counter > 0) {
-        sFld[facei] = tmpValue / counter;
-      }
+      if (counter > 0) { sFld[facei] = tmpValue / counter; }
     }
   }
 }
 
 template <class T>
-void AMRFoam::mapNewInternalFaces(const labelList& faceMap) {
+void AMRFoam::mapNewInternalFaces(const labelList &faceMap) {
   typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
-  HashTable<GeoField*> sFlds(this->objectRegistry::lookupClass<GeoField>());
+  HashTable<GeoField *> sFlds(this->objectRegistry::lookupClass<GeoField>());
 
   forAllIters(sFlds, iter) {
     // if (mapSurfaceFields_.found(iter.key()))
@@ -1540,7 +1490,7 @@ void AMRFoam::mapNewInternalFaces(const labelList& faceMap) {
                 << " Mapping new internal faces by interpolation on "
                 << iter.key() << endl;
 
-      GeoField& sFld = *iter();
+      GeoField &sFld = *iter();
 
       if (sFld.oriented()()) {
         WarningInFunction << "Ignoring mapping oriented field " << sFld.name()
@@ -1553,11 +1503,11 @@ void AMRFoam::mapNewInternalFaces(const labelList& faceMap) {
 }
 
 template <class T>
-void AMRFoam::mapNewInternalFaces(const surfaceVectorField& Sf,
-                                  const surfaceScalarField& magSf,
-                                  const labelList& faceMap) {
+void AMRFoam::mapNewInternalFaces(const surfaceVectorField &Sf,
+                                  const surfaceScalarField &magSf,
+                                  const labelList &faceMap) {
   typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
-  HashTable<GeoField*> sFlds(this->objectRegistry::lookupClass<GeoField>());
+  HashTable<GeoField *> sFlds(this->objectRegistry::lookupClass<GeoField>());
 
   forAllIters(sFlds, iter) {
     // if (mapSurfaceFields_.found(iter.key()))
@@ -1566,7 +1516,7 @@ void AMRFoam::mapNewInternalFaces(const surfaceVectorField& Sf,
                 << " Mapping new internal faces by interpolation on "
                 << iter.key() << endl;
 
-      GeoField& sFld = *iter();
+      GeoField &sFld = *iter();
 
       if (sFld.oriented()()) {
         DebugInfo << "dynamicRefineMotionFvMesh::mapNewInternalFaces(): "

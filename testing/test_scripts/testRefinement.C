@@ -161,5 +161,6 @@ int main(int argc, char **argv) {
   AMRValueJSON = argv[7];
   mlPredictVTU = argv[8];
   mlModelFile = argv[9];
+
   return RUN_ALL_TESTS();
 }

@@ -17,7 +17,7 @@ endmacro()
 # TODO: Should headers of transitive dependencies also be added as SYSTEM headers?
 macro(NEM_link_3p_targets target_ scope_)
   if("${scope_}" STREQUAL "PRIVATE" OR "${scope_}" STREQUAL "PUBLIC")  # but not INTERFACE
-    foreach(dep_target_ IN LISTS ARGN)
+    foreach(dep_target_ IN ITEMS ${ARGN})
       get_target_property(dependency_include_dirs_ ${dep_target_} INTERFACE_INCLUDE_DIRECTORIES)
       if(dependency_include_dirs_)
         target_include_directories(${target_} SYSTEM PRIVATE ${dependency_include_dirs_})

@@ -9,59 +9,47 @@
 #include <argList.H>
 #include <fvOptions.H>
 
-// VTK
-#include <vtkUnstructuredGrid.h>
-
 class cfmeshParams;
 
-class cfmeshGen : public meshGen
-{
-  public:
-    cfmeshGen();
-    explicit cfmeshGen(cfmeshParams *params);
-    ~cfmeshGen() override;
+class cfmeshGen : public meshGen {
+ public:
+  cfmeshGen();
+  explicit cfmeshGen(cfmeshParams *params);
+  ~cfmeshGen() override;
 
   // cfmesh mesh creation
-  public:
-    // create a 3D polygonal discretization from STL file
-    int createMeshFromSTL(const char *fname) override;
-
-    // reading openFoam mesh database
-    void readFoamMesh();
+ public:
+  // create a 3D polygonal discretization from STL file
+  int createMeshFromSTL(const char *fname) override;
 
   // internal management
-  private:
-    // pre-processor
-    void initialize();
+ private:
+  // pre-processor
+  void initialize();
 
-    // create dictionaries needed for openFoam
-    void createControlDict();
-    void createMshDict();
-    void createfvSchemesDict();
-    void createfvSolutionDict();
+  // create dictionaries needed for openFoam
+  void createMshDict(const bool &write);
 
-    // convert to built-in mesh database
-    void genMshDB();
-    void createVtkCell(vtkSmartPointer<vtkUnstructuredGrid> dataSet,
-                       int cellType, std::vector<int> &vrtIds);
+  // surface edge extraction
+  int surfaceFeatureEdgeDetect();
 
-    // surface edge extraction
-    int surfaceFeatureEdgeDetect();
-
-    // mesh quality improvement
-    int improveMeshQuality();
+  // mesh quality improvement
+  int improveMeshQuality();
 
   // class data and management flags
-  private:
-    bool defaults;
-    std::string caseName{"_cfmesh"};  // internal information
-    cfmeshParams *_params;
+ private:
+  bool defaults;
+  std::string caseName{"_cfmesh"};  // internal information
+  cfmeshParams *params_;
 
   // openfoam data structure
-  private:
-    Foam::argList *_args{};
-    Foam::Time *_runTime{};
-    Foam::fvMesh *_fmesh{};
+ private:
+  std::unique_ptr<Foam::dictionary> controlDict_;
+  std::unique_ptr<Foam::dictionary> fvSchemes_;
+  std::unique_ptr<Foam::dictionary> fvSolution_;
+  std::unique_ptr<Foam::Time> runTime_;
+  std::unique_ptr<Foam::fvMesh> fmesh_;
+  std::unique_ptr<Foam::dictionary> meshDict_;
 };
 
 #endif

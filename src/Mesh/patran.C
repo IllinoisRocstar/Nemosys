@@ -13,7 +13,7 @@
 
 #include "AuxiliaryFunctions.H"
 
-using nemAux::operator-;
+using nemAux::operator-;  // for vector subtraction.
 
 //////////////////////////////////
 // patran class 

@@ -10,6 +10,8 @@
 
 #include <gmsh.h>
 
+#include <vtkAppendFilter.h>
+
 namespace NEM {
 namespace MSH {
 
@@ -67,6 +69,20 @@ void geoMeshBase::takeGeoMesh(geoMeshBase *otherGeoMesh) {
       vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}};
   otherGeoMesh->resetNative();
   resetNative();
+}
+
+// Only merges vtkDataSets. Need to add merge for sideSets, and geometry
+void geoMeshBase::mergeGeoMesh(geoMeshBase *otherGeoMesh) {
+  vtkSmartPointer<vtkAppendFilter> appendFilter =
+      vtkSmartPointer<vtkAppendFilter>::New();
+  appendFilter->AddInputData(_geoMesh.mesh);
+  appendFilter->AddInputData(otherGeoMesh->_geoMesh.mesh);
+  appendFilter->MergePointsOn();
+  appendFilter->Update();
+  _geoMesh.mesh = appendFilter->GetOutput();
+  otherGeoMesh->_geoMesh = {
+      vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}};
+  otherGeoMesh->resetNative();
 }
 
 // Helper functions for geoMeshBase::get{Point, Cell, Field}DataArrayCopy
@@ -363,9 +379,7 @@ void geoMeshBase::GeoMesh::findSide2OrigCell() {
               }
             }
           }
-          if (foundMatch) {
-            break;
-          }
+          if (foundMatch) { break; }
         }
       }
       if (!foundMatch) {

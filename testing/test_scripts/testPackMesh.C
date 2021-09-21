@@ -5,11 +5,12 @@
 #include <string>
 #include <Drivers/NemDriver.H>
 #include <Drivers/PackMesh/PackMeshDriver.H>
+#include <Mesh/geoMeshFactory.H>
 #include <Mesh/meshBase.H>
 
 const char *inp_json;
-meshBase *mesh;
-meshBase *ref;
+NEM::MSH::geoMeshBase *mesh;
+NEM::MSH::geoMeshBase *ref;
 jsoncons::json inputjson;
 
 // Aux functions
@@ -54,30 +55,14 @@ int generate(const char *jsonF) {
 // TEST macros
 TEST(PackMeshing, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 
-// TEST(PackMeshing, NumberOfNodesnCellsPacks) {
-//   if (ref) delete ref;
-//   ref = meshBase::Create(inputjson["Pack Reference File"].as<std::string>());
-//   meshBase *cmp1 = meshBase::Create("geom_pack_mesh.vtu");
-//   EXPECT_TRUE((cmp1->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-//               (cmp1->getNumberOfCells() == ref->getNumberOfCells()));
-// }
-
-// TEST(PackMeshing, NumberOfNodesNodesnCellsSurrounding) {
-//   if (ref) delete ref;
-//   ref = meshBase::Create(
-//       inputjson["Surrounding Reference File"].as<std::string>());
-//   meshBase *cmp2 = meshBase::Create("geom_surrounding_mesh.vtu");
-//   EXPECT_TRUE((cmp2->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-//               (cmp2->getNumberOfCells() == ref->getNumberOfCells()));
-// }
-
 TEST(PackMeshing, NumberOfNodesNodesnCellsMerged) {
   if (ref) delete ref;
-  ref = meshBase::Create(
-      inputjson["Merged Reference File"].as<std::string>());
-  meshBase *cmp2 = meshBase::Create("packmesh.vtu");
+  ref = NEM::MSH::Read(inputjson["Merged Reference File"].as<std::string>());
+  auto *cmp2 = NEM::MSH::Read("packmesh.vtu");
   EXPECT_TRUE((cmp2->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
               (cmp2->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
+  cmp2->Delete();
+  ref->Delete();
 }
 
 // test constructor

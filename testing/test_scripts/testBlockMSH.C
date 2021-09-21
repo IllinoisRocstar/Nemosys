@@ -7,12 +7,12 @@
 #include <Drivers/NemDriver.H>
 #include <MeshGeneration/blockMeshGen.H>
 #include <MeshGeneration/blockMeshParams.H>
-#include <Mesh/meshBase.H>
+#include <Mesh/geoMeshFactory.H>
 #include <Mesh/vtkMesh.H>
 
 const char* inp_json;
-meshBase* mesh;
-meshBase* ref;
+NEM::MSH::geoMeshBase* mesh;
+NEM::MSH::geoMeshBase* ref;
 jsoncons::json inputjson;
 
 // Aux functions
@@ -59,10 +59,11 @@ int generate(const char* jsonF) {
   blockMeshGen generator{&paramsCopy};
   // Parameter not used
   generator.createMeshFromSTL(nullptr);
-  mesh = meshBase::Create(generator.getDataSet(), driver->getFiles().outputFile);
-  mesh->setFileName(driver->getFiles().outputFile);
-  mesh->report();
-  mesh->write();
+  auto* mshWriter = NEM::MSH::Read(".foam");
+  mesh = NEM::MSH::New(driver->getFiles().outputFile);
+  mesh->takeGeoMesh(mshWriter);
+  mesh->write(driver->getFiles().outputFile);
+  mshWriter->Delete();
 
   return 0;
 }
@@ -72,7 +73,7 @@ TEST(blockMesh, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 
 TEST(blockMesh, NumberOfNodesnCells) {
   if (ref) delete ref;
-  ref = meshBase::Create(inputjson["Reference File"].as<std::string>());
+  ref = NEM::MSH::Read(inputjson["Reference File"].as<std::string>());
   std::cout << mesh->getNumberOfPoints() << "," << ref->getNumberOfPoints()
             << std::endl;
   std::cout << mesh->getNumberOfCells() << "," << ref->getNumberOfCells()
@@ -96,7 +97,8 @@ int main(int argc, char** argv) {
   int res = RUN_ALL_TESTS();
 
   // clean up
-  if (mesh) delete mesh;
+  mesh->Delete();
+  ref->Delete();
 
   return res;
 }

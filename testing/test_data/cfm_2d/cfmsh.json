@@ -16,6 +16,49 @@
         "BoundaryLayers": {
           "NLayers": 4,
           "ThicknessRatio": 1.1
+        },
+        "RenameBoundary":
+        {
+          "DefaultName": "face",
+          "DefaultType": "patch",
+          "NewPatchNames": 
+          [
+            {
+              "Name": "left*",
+              "NewName": "left1",
+              "NewType": "wall"
+            },
+            {
+              "Name": "bottom*",
+              "NewName": "bottom",
+              "NewType": "wall"
+            },
+            {
+              "Name": "right*",
+              "NewName": "right",
+              "NewType": "wall"
+            },
+            {
+              "Name": "top0*",
+              "NewName": "top0",
+              "NewType": "wall"
+            },
+            {
+              "Name": "top1*",
+              "NewName": "top1",
+              "NewType": "wall"
+            },
+            {
+              "Name": "bottomEmptyFaces*",
+              "NewName": "bottomEmptyFaces",
+              "NewType": "empty"
+            },
+            {
+              "Name": "topEmptyFaces*",
+              "NewName": "topEmptyFaces",
+              "NewType": "empty"
+            }
+          ]
         }
       }
     }

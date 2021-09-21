@@ -66,6 +66,7 @@ set(OPNF_VALID_COMPONENTS
     extrudeModel
     fieldFunctionObjects
     fileFormats
+    finiteArea
     finiteVolume
     fluidThermophysicalModels
     forces
@@ -190,6 +191,7 @@ set(OPNF_INC_DIR_default
     ${OPNF_INST_DIR}/src/OSspecific/POSIX/lnInclude
     ${OPNF_INST_DIR}/src/OpenFOAM/lnInclude
     ${OPNF_INST_DIR}/src/finiteVolume/lnInclude
+    ${OPNF_INST_DIR}/src/finiteArea/lnInclude
     ${OPNF_INST_DIR}/src/meshTools/lnInclude
     ${OPNF_INST_DIR}/src/parallel/decompose/decompositionMethods/lnInclude
     ${OPNF_INST_DIR}/src/parallel/decompose/decompose/lnInclude
@@ -207,6 +209,8 @@ set(OPNF_INC_DIR_default
     ${OPNF_INST_DIR}/src/sampling/lnInclude
     ${OPNF_INST_DIR}/src/dynamicFvMesh/lnInclude
     ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
+    ${OPNF_INST_DIR}/src/conversion/vtk/adaptor
+    ${OPNF_INST_DIR}/src/conversion/vtk/output
 )
 if(OPNF_VERSION LESS_EQUAL 4)
   list(APPEND OPNF_INC_DIR_default ${OPNF_INST_DIR}/src/edgeMesh/lnInclude)

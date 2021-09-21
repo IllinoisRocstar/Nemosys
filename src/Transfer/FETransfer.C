@@ -526,8 +526,8 @@ void FETransfer::getClosestSourceCell(
         id = cellIds->GetId(i);
         localSource->getDataSet()->GetCell(id, closestCell);
         weights = new double[closestCell->GetNumberOfPoints()];
-        int result = closestCell->EvaluatePosition(x, closestPoint, subId,
-                                                   pcoords, minDist2, weights);
+        closestCell->EvaluatePosition(x, closestPoint, subId, pcoords, minDist2,
+                                      weights);
         if (minDist2 < 1e-9) {
           return;
         }

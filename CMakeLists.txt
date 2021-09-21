@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 60)
+set(NEMOSYS_MINOR_VERSION 61)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -395,6 +395,11 @@ if(ENABLE_EPIC)
   add_subdirectory(contrib/fast-cpp-csv-parser-75600d0)
 endif()
 
+if(ENABLE_CFMSH)
+  # Find foamutils
+  add_subdirectory(contrib/foamutils)
+endif()
+
 # Setting include files for CfMesh
 file(GLOB cfmsh_H_files contrib/cfmesh_headers/*.H)
 file(GLOB cfmsh_C_files contrib/cfmesh_headers/*.C)
@@ -687,9 +692,6 @@ if(ENABLE_CFMSH)
       include/MeshManipulationFoam/MeshManipulationFoam.H
       src/MeshManipulationFoam/MeshManipulationFoam.C
       include/MeshManipulationFoam/MeshManipulationFoamParams.H
-      src/MeshManipulationFoam/mergePolyMesh.H
-      src/MeshManipulationFoam/mergePolyMesh.C
-      src/MeshManipulationFoam/foamVTKTopo.C
 
       include/MeshQuality/cfmeshQualityParams.H
 
@@ -730,7 +732,9 @@ target_include_directories(Nemosys
 # Private headers
 target_include_directories(Nemosys PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-NEM_link_3p_targets(Nemosys PUBLIC MAdLib jsoncons omega_h eigen ${VTK_LIBRARIES})
+NEM_link_3p_targets(Nemosys PUBLIC MAdLib jsoncons omega_h eigen)
+# VTK targets are irregular and can't be parsed cleanly.
+target_link_libraries(Nemosys PUBLIC ${VTK_LIBRARIES})
 target_compile_definitions(Nemosys PUBLIC ${VTK_DEFINITIONS})
 target_link_libraries(Nemosys
     PUBLIC
@@ -824,7 +828,7 @@ endif()
 
 if(ENABLE_CFMSH)
   target_link_libraries(Nemosys
-      # PUBLIC cfmesh
+      PUBLIC foamutils # Link foamutils lib
       PUBLIC ${OPNF_LIBRARIES})
   NEM_include_3p_directories(Nemosys PUBLIC ${OPNF_INCLUDE_DIRS})
   NEM_include_3p_directories(Nemosys PUBLIC
@@ -929,7 +933,14 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   #    -Wmultiple-inheritance -Wvirtual-inheritance)
 elseif(MSVC)
   #target_compile_options(Nemosys PUBLIC /permissive-)
-  string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  if(POLICY CMP0092)
+    # CMP0092 introduced in CMake 3.15. Removes /W3 as default warning flag for
+    # MSVC-based compilers.
+    cmake_policy(SET CMP0092 NEW)
+    target_compile_options(Nemosys PUBLIC /W1)
+  else()
+    string(REGEX REPLACE "/W3" "/W1" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  endif()
 endif()
 
 # Generate export header #######################################################

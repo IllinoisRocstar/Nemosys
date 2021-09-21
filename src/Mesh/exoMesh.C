@@ -1322,7 +1322,7 @@ void exoMesh::mergeNodes(double tol) {
 }
 
 void exoMesh::scaleNodes(double sc) {
-  using namespace nemAux;
+  using nemAux::operator*;  // for vector multiplication.
   _xCrds = sc * _xCrds;
   _yCrds = sc * _yCrds;
   _zCrds = sc * _zCrds;
@@ -1437,6 +1437,7 @@ int exoMesh::getElmBlkIndex(int id) const {
   for (int i = 0; i < numElmBlks; ++i) {
     if (_elmBlks[i].id == id) return i;
   }
+  return -1;
 }
 
 int exoMesh::getElmBlkIndex(std::string name) const {
@@ -1444,6 +1445,7 @@ int exoMesh::getElmBlkIndex(std::string name) const {
   for (int i = 0; i < numElmBlks; ++i) {
     if (_elmBlks[i].name == name) return i;
   }
+  return -1;
 }
 
 int exoMesh::getElmBlkId(std::string ebName) const {

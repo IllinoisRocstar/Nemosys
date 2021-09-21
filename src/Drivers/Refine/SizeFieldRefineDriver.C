@@ -19,6 +19,7 @@ std::string SizeFieldRefineDriver::Opts::getMethodStr() const {
     case Method::VALUE: return valStr;
     case Method::GRADIENT: return gradStr;
   }
+  return "";
 }
 
 SizeFieldRefineDriver::SizeFieldRefineDriver(Files files, Opts opts)

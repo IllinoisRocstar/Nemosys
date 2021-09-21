@@ -21,8 +21,6 @@ namespace MSH {
 
 namespace {
 
-using namespace jsoncons;
-
 constexpr std::array<std::tuple<VTKCellType, const char *, int>, 5> vtk2inp{
     {{VTK_TRIANGLE, "CPS3", 2},
      {VTK_QUAD, "CPS4", 2},
@@ -154,10 +152,8 @@ class InpParser {
             continueNextLine ? Continue::KEYWORD : Continue::NONE;
       } else {
         // Pretend to parse sections w/ unknown keywords
-        if (this->currKw == Keyword::UNKNOWN) {
-          return;
-        }
-        json parsed = parseCSV(line);
+        if (this->currKw == Keyword::UNKNOWN) { return; }
+        jsoncons::json parsed = parseCSV(line);
         auto parsedRange = parsed.array_range();
         auto iter = parsedRange.begin();
         bool continueNextLine = (parsedRange.end() - 1)->is_null();
@@ -415,12 +411,13 @@ class InpParser {
    * @return JSON array - if line in file is continued, last entry will be null.
    * Keyword parameters split as arrays
    */
-  static json parseCSV(const std::string &line) {
-    return csv::decode_csv<json>(line, csv::basic_csv_options<char>{}
-                                           .assume_header(false)
-                                           .subfield_delimiter('=')
-                                           .unquoted_empty_value_is_null(true)
-                                           .trim(true))[0];
+  static jsoncons::json parseCSV(const std::string &line) {
+    return jsoncons::csv::decode_csv<jsoncons::json>(
+        line, jsoncons::csv::basic_csv_options<char>{}
+                  .assume_header(false)
+                  .subfield_delimiter('=')
+                  .unquoted_empty_value_is_null(true)
+                  .trim(true))[0];
   }
 };
 
@@ -459,9 +456,7 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
                 entArr ? static_cast<int>(entArr->GetComponent(i, 0)) : 0}]
         .emplace_back(i);
   }
-  if (!geo.empty()) {
-    gmsh::model::setCurrent(geo);
-  }
+  if (!geo.empty()) { gmsh::model::setCurrent(geo); }
   for (const auto &elems : elemBlocks) {
     auto cellType = elems.first.first;
     auto inpType = std::find_if(vtk2inp.begin(), vtk2inp.end(),
@@ -478,9 +473,7 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
                                  elems.first.second, elSet);
     }
     outStream << "*ELEMENT, TYPE=" << std::get<1>(*inpType);
-    if (!elSet.empty()) {
-      outStream << " ELSET=" << elSet;
-    }
+    if (!elSet.empty()) { outStream << " ELSET=" << elSet; }
     outStream << '\n';
     for (const auto &cellIdx : elems.second) {
       auto cell = data->GetCell(cellIdx);
@@ -675,15 +668,11 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
   SideSet sideSet{};
   std::string geoName{};
   std::string linkName{};
-  if (fileName.empty()) {
-    return {{mesh, {}, {}, {}}, {}};
-  }
+  if (fileName.empty()) { return {{mesh, {}, {}, {}}, {}}; }
   std::ifstream inFile(fileName);
   std::string line;
   InpParser parser{};
-  while (std::getline(inFile, line)) {
-    parser.parseLine(line);
-  }
+  while (std::getline(inFile, line)) { parser.parseLine(line); }
   auto parserMesh = parser.getMesh();
 
   std::map<vtkIdType, vtkIdType> nodeInpId2GMIdx;

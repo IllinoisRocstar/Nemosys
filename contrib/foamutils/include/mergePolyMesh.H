@@ -40,8 +40,7 @@ SourceFiles
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-namespace Foam
-{
+namespace Foam {
 
 // Forward declaration of classes
 
@@ -49,77 +48,65 @@ namespace Foam
                            Class mergePolyMesh Declaration
 \*---------------------------------------------------------------------------*/
 
-class mergePolyMesh
-:
-    public polyMesh
-{
-    // Private data
+class mergePolyMesh : public polyMesh {
+  // Private data
 
-        //- Topological change to accumulated all mesh changes
-        polyTopoChange meshMod_;
+  //- Topological change to accumulated all mesh changes
+  polyTopoChange meshMod_;
 
-        //- Patch names
-        DynamicList<word> patchNames_;
+  //- Patch names
+  DynamicList<word> patchNames_;
 
-        //- Patch dictionaries
-        DynamicList<dictionary> patchDicts_;
+  //- Patch dictionaries
+  DynamicList<dictionary> patchDicts_;
 
-        //- Point zone names
-        DynamicList<word> pointZoneNames_;
+  //- Point zone names
+  DynamicList<word> pointZoneNames_;
 
-        //- Face zone names
-        DynamicList<word> faceZoneNames_;
+  //- Face zone names
+  DynamicList<word> faceZoneNames_;
 
-        //- Cell zone names
-        DynamicList<word> cellZoneNames_;
+  //- Cell zone names
+  DynamicList<word> cellZoneNames_;
 
+  // Private Member Functions
 
-    // Private Member Functions
+  //- Disallow default bitwise copy construct
+  mergePolyMesh(const mergePolyMesh&);
 
-        //- Disallow default bitwise copy construct
-        mergePolyMesh(const mergePolyMesh&);
+  //- Disallow default bitwise assignment
+  void operator=(const mergePolyMesh&);
 
-        //- Disallow default bitwise assignment
-        void operator=(const mergePolyMesh&);
+  //- Return patch index given a name and type
+  label patchIndex(const polyPatch&);
 
+  //- Return zone index given a list of active zones and a name
+  label zoneIndex(DynamicList<word>&, const word&);
 
-        //- Return patch index given a name and type
-        label patchIndex(const polyPatch&);
+ public:
+  //- Runtime type information
+  TypeName("mergePolyMesh");
 
-        //- Return zone index given a list of active zones and a name
-        label zoneIndex(DynamicList<word>&, const word&);
+  // Constructors
 
+  //- Construct from IOobject
+  mergePolyMesh(const IOobject& io);
 
-public:
+  //- Destructor
+  virtual ~mergePolyMesh() {}
 
-    //- Runtime type information
-    TypeName("mergePolyMesh");
+  // Member Functions
 
+  //- Add a mesh
+  void addMesh(const polyMesh& m);
 
-    // Constructors
-
-        //- Construct from IOobject
-        mergePolyMesh(const IOobject& io);
-
-
-    //- Destructor
-    virtual ~mergePolyMesh()
-    {}
-
-
-    // Member Functions
-
-        //- Add a mesh
-        void addMesh(const polyMesh& m);
-
-        //- Merge meshes
-        void merge();
+  //- Merge meshes
+  void merge();
 };
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-} // End namespace Foam
+}  // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
