@@ -8,7 +8,7 @@ mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the NEMoSys library can also be enabled.
 
 ## Version ##
-Version 0.61.0
+Version 0.62.0
 
 NEMoSys follows semantic versioning. The versions will be major.minor.patch.
 We will:
@@ -129,7 +129,7 @@ are now deprecated. Instead, we publish the latest tested versions of TPLs used 
 project. The list includes following items:
 
 * Gmsh 4.5.1
-* Netgen v6.2-dev (commit hash a2f434ebbf)
+* Netgen v6.2.1905 (commit hash 099acc9)
 * OpenCASCADE 7.3.0
 * VTK 8.2.0
 * Boost 1.68.0
@@ -182,10 +182,7 @@ $ cd build
 $ cmake .. \
         -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
         -DBUILD_DOC_Overview=OFF \
-        -DBUILD_MODULE_Draw=OFF \
-        -DBUILD_MODULE_Visualization=OFF \
-        -DBUILD_MODULE_ApplicationFramework=OFF \
-        -DBUILD_LIBRARY_TYPE=STATIC
+        -DBUILD_SHARED_LIBS=ON
 $ make -j$(nproc)
 $ make install
 ```
@@ -201,7 +198,7 @@ $ cmake .. \
         -DCMAKE_PREFIX_PATH=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade \
         -DENABLE_BUILD_LIB=OFF -DENABLE_BUILD_SHARED=ON -DENABLE_PRIVATE_API=ON \
         -DDEFAULT=ON -DENABLE_CGNS=OFF -DENABLE_NETGEN=OFF -DENABLE_HXT=ON \
-        -DENABLE_FLTK=ON -DENABLE_OCC_STATIC=ON -DENABLE_BUILD_DYNAMIC=ON \
+        -DENABLE_FLTK=ON -DENABLE_BUILD_DYNAMIC=ON \
         -DENABLE_OPENMP=ON
 $ make -j$(nproc)
 $ make install -j$(nproc)
@@ -224,8 +221,10 @@ $ make install
 Build and install Netgen by running the following commands:
 ```
 $ mkdir build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
-        -DUSE_GUI=OFF ..
+$ cmake .. -DCMAKE_INSTALL_PREFIX=${NEMOSYS_DEPS_INSTALL_PATH}/netgen \
+        -DUSE_GUI=OFF -DUSE_PYTHON=OFF -DUSE_SUPERBUILD=OFF -DUSE_OCC=ON \
+        -DOCC_INCLUDE_DIR=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade/include/opencascade \
+        -DOCC_LIBRARY=${NEMOSYS_DEPS_INSTALL_PATH}/opencascade/lib/libTKernel.so
 $ make -j$(nproc)
 $ make install
 ```

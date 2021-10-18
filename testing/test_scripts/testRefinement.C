@@ -128,6 +128,7 @@ int MLAMRTest(const std::string MLName, const std::string MeshName) {
 }
 #endif
 
+#ifdef HAVE_GMSH
 TEST(RefinementDriverTest, RefineValue) {
   EXPECT_EQ(0, genTest(refineValueJSON, refineValueVTU, refineValueGoldVTU));
 }
@@ -136,6 +137,7 @@ TEST(RefinementDriverTest, RefineUniform) {
   EXPECT_EQ(0,
             genTest(refineUniformJSON, refineUniformVTU, refineUniformGoldVTU));
 }
+#endif
 
 #ifdef HAVE_CFMSH
 TEST(AdaptiveMeshRefinementTest, Refine_Unrefine) {

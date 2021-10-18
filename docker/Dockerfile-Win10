@@ -12,30 +12,25 @@ ENV TPL_DIR=${TPL_DIR}
 # Boost
 COPY .\boost_1_69_0 $TPL_DIR\boost_1_69_0
 
-# NEMoSys required dependencies
 # CGNS
 COPY .\cgns $TPL_DIR\cgns
 #  HDF5
-COPY .\hdf5 $TPL_DIR\hdf5
+COPY .\HDF5 $TPL_DIR\HDF5
 # VTK
 COPY .\vtk $TPL_DIR\vtk
+# OpenCASCADE
+COPY .\OpenCASCADE-7.3.0-vc14-64 $TPL_DIR\OpenCASCADE-7.3.0-vc14-64
 # GMSH
 COPY .\gmsh $TPL_DIR\gmsh
 
-# NEMoSys optional dependencies
 # EXODUS
 COPY .\exodusii $TPL_DIR\exodusii
-#  NETCDF
+# NETCDF
 COPY .\netcdf $TPL_DIR\netcdf
 # METIS
 COPY .\metis $TPL_DIR\metis
 # NETGEN
 COPY .\netgen $TPL_DIR\netgen
-#  ZLIB
-COPY .\zlib $TPL_DIR\zlib
-# SIMMETRIX
-#COPY .\simmetrix $TPL_DIR\simmetrix
-
 
 # Powershell required for some commands.
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
@@ -50,18 +45,6 @@ RUN setx /m WIX ('{0}\wix311-binaries' -f ${Env:TPL_DIR})
 
 
 ################################################################################
-# Intel ifortran redist
-################################################################################
-#COPY .\ww_icl_redist_ia32_2019.4.245.msi $TPL_DIR
-#RUN msiexec /i $TPL_DIR\ww_icl_redist_ia32_2019.4.245.msi /quiet /qn
-
-#COPY .\ia32_win $TPL_DIR\ia32_win
-#RUN setx /m PATH ('{0}\ia32_win\mpirt;{0}\ia32_win\compiler;{1}' -f ${Env:TPL_DIR}, ${Env:PATH})
-COPY .\intel64_win $TPL_DIR\intel64_win
-RUN setx /m PATH ('{0}\intel64_win\mpirt;{0}\intel64_win\compiler;{1}' -f ${Env:TPL_DIR}, ${Env:PATH})
-
-
-################################################################################
 # Python installation.
 # Taken directly from official Docker repository for Python-in-Docker:
 # https://github.com/docker-library/python/blob/master/3.7/windows/windowsservercore-1809/Dockerfile
@@ -73,7 +56,7 @@ ENV PYTHON_RELEASE 3.7.9
 # URL for 64bit
 RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}-amd64.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
 # URL for 32bit
-#RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
+# RUN $url = ('https://www.python.org/ftp/python/{0}/python-{1}.exe' -f $env:PYTHON_RELEASE, $env:PYTHON_VERSION); `
 	Write-Host ('Downloading {0} ...' -f $url); `
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
 	Invoke-WebRequest -Uri $url -OutFile 'python.exe'; `
@@ -128,9 +111,10 @@ RUN Write-Host ('Installing pip=={0} ...' -f $env:PYTHON_PIP_VERSION); `
 # Switch back after Python.
 SHELL ["cmd", "/S", "/C"]
 
+
 # Change ENTRYPOINT to x64
-ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat -arch=amd64 -host_arch=amd64 && powershell.exe -NoLogo -ExecutionPolicy Bypass
-#ENTRYPOINT ["C:\BuildTools\Common7\Tools\VsDevCmd.bat", "-arch=amd64", "-host_arch=amd64", "&&"]
+ENTRYPOINT C:\BuildTools\Common7\Tools\VsDevCmd.bat -arch=amd64 -host_arch=amd64 && %TPL_DIR%\OpenCASCADE-7.3.0-vc14-64\opencascade-7.3.0\env.bat && powershell.exe -NoLogo -ExecutionPolicy Bypass
+# ENTRYPOINT ["C:\BuildTools\Common7\Tools\VsDevCmd.bat", "-arch=amd64", "-host_arch=amd64", "&&"]
 
 # Default to PowerShell if no other command specified.
-#CMD ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
+# CMD ["powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]

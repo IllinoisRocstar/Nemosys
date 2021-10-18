@@ -7,7 +7,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::Vector4d;
-typedef Eigen::Matrix<double, 10, 1> Vector10d;
+using Vector10d = Eigen::Matrix<double, 10, 1>;
 
 
 polyApprox::polyApprox(const int _order,

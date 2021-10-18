@@ -387,7 +387,7 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
       }
       delete[] comps;
     }
-    container[i] = std::move(std::make_pair(gaussPnt, data));
+    container[i] = std::make_pair(gaussPnt, data);
   }
   return container;
 }

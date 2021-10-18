@@ -9,6 +9,7 @@ std::string inpMesh;
 std::string vtkMesh;
 }  // namespace
 
+#ifdef HAVE_GMSH
 TEST(inpGeoMesh, gmsh2Inp2GM) {
   auto gmshGM =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(gmshMesh));
@@ -21,6 +22,7 @@ TEST(inpGeoMesh, gmsh2Inp2GM) {
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(inpFile));
   EXPECT_EQ(0, NEM::MSH::diffMesh(inpGM, reRead, 1e-6, 1e-4));
 }
+#endif
 
 TEST(inpGeoMesh, inp2Vtk) {
   auto inpGM =

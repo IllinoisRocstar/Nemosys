@@ -1,13 +1,16 @@
 #ifndef NEMOSYS_EXOGEOMESH_H_
 #define NEMOSYS_EXOGEOMESH_H_
 
-#include <vtkExodusIIReader.h>
-#include <vtkMultiBlockDataSet.h>
+#include "nemosys_export.h"
+#include "Mesh/geoMeshBase.H"
+
 #include <map>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
-#include "Mesh/geoMeshBase.H"
+#include <vtkExodusIIReader.h>
 
 namespace NEM {
 namespace MSH {
@@ -19,14 +22,12 @@ namespace MSH {
  * @details Note that only the title, dimension, element blocks, element block
  * properties, element block variables, node variables, global variables, node
  * sets, and side sets (and the names of each of these fields) are read and
- * stored in an exoGeoMesh class. There is one possible exception: to
- * represent a large number of side sets, if there is a side set variable
- * named @c "NEM_SIDE_SET_ID" then sides are assigned to separate side sets
- * with side set IDs set according to this variable (and all side set names
- * are ignored). Side set sides are ignored if the source element does not have
- * the same dimensionality as the mesh.
+ * stored in an exoGeoMesh class. Side set sides are ignored if the source
+ * element does not have the same dimensionality as the mesh.
  */
 class NEMOSYS_EXPORT exoGeoMesh : public geoMeshBase {
+ public:
+  vtkSmartPointer<vtkPolyData> getSS() { return getGeoMesh().sideSet.sides; }
  public:
   static exoGeoMesh *New();
   vtkTypeMacro(exoGeoMesh, geoMeshBase)
@@ -324,7 +325,6 @@ class NEMOSYS_EXPORT exoGeoMesh : public geoMeshBase {
       const std::string &fileName, int timeStep = 1);
   static GeoMesh exoReader2GM(vtkSmartPointer<vtkExodusIIReader> reader);
   static const char *getExoIdArrName();
-  constexpr static const char *SIDE_SET_ID_VAR_NAME = "NEM_SIDE_SET_ID";
   /**
    * Clears element block names, element block properties.
    * Creates element blocks and sets the dimension based on the @c GeoMesh.

@@ -31,5 +31,15 @@ if(@ENABLE_CONSRV_SURFACE_TRANSFER@)  # ENABLE_CONSRV_SURFACE_TRANSFER
   find_dependency(IMPACT)
 endif()
 
+set(NEM_PREV_CMAKE_MODULE_PATH_ ${CMAKE_MODULE_PATH})
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_LIST_DIR})
+
+if(@ENABLE_GMSH@)  # ENABLE_GMSH
+  find_dependency(Gmsh)
+endif()
+
+set(CMAKE_MODULE_PATH ${NEM_PREV_CMAKE_MODULE_PATH_})
+unset(NEM_PREV_CMAKE_MODULE_PATH_)
+
 include("${CMAKE_CURRENT_LIST_DIR}/Nemosys.cmake")
 check_required_components(Nemosys)

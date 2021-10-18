@@ -19,12 +19,13 @@
 #include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
+#include <vtkStringArray.h>
 #include <vtkUnstructuredGrid.h>
 
 namespace NEM {
 namespace MSH {
 
-typedef std::int64_t nemId_t;
+using nemId_t = std::int64_t;
 
 /**
  * @class   GmshInterface
@@ -174,7 +175,7 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
    */
   std::array<double, 3> getPoint(nemId_t id) const {
     std::array<double, 3> x{};
-    this->getPoint(id, &x);
+    getPoint(id, &x);
     return x;
   }
   /**
@@ -208,7 +209,7 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
    */
   std::array<double, 6> getCellBounds(nemId_t cellId) const {
     std::array<double, 6> bounds{};
-    this->getCellBounds(cellId, &bounds);
+    getCellBounds(cellId, &bounds);
     return bounds;
   }
   /**
@@ -361,7 +362,7 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
   struct NEMOSYS_EXPORT SideSet {
     SideSet(vtkPolyData *sideSet, vtkIntArray *geoEnt,
             vtkIdTypeArray *origCell = nullptr, vtkIntArray *cellFace = nullptr,
-            vtkIdTypeArray *twin = nullptr);
+            vtkStringArray *setNames = nullptr);
     SideSet() = default;
     explicit SideSet(vtkPolyData *sides);
     /**
@@ -375,15 +376,15 @@ class NEMOSYS_EXPORT geoMeshBase : public vtkDataObject {
     void setOrigCellArr(vtkIdTypeArray *arr);
     vtkSmartPointer<vtkIntArray> getCellFaceArr() const;
     void setCellFaceArr(vtkIntArray *arr);
-    vtkSmartPointer<vtkIdTypeArray> getTwinArr() const;
-    void setTwinArr(vtkIdTypeArray *arr);
+    vtkSmartPointer<vtkStringArray> getSideSetNames() const;
+    void setSideSetNamesArr(vtkStringArray *arr);
 
    private:
     static constexpr auto GEO_ENT_NAME = "GeoEnt";
     // Set to match dataSetRegionSurfaceFilter
     static constexpr auto ORIG_CELL_NAME = "OrigCellIds";
     static constexpr auto CELL_FACE_NAME = "CellFaceIds";
-    static constexpr auto TWIN_NAME = "TwinIds";
+    static constexpr auto NAME_ARR_NAME = "Side Set Names";
   };
 
   struct NEMOSYS_EXPORT GeoMesh {

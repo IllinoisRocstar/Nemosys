@@ -2,9 +2,12 @@
 #include <Mesh/geoMeshFactory.H>
 
 #include <Mesh/vtkGeoMesh.H>
-#include <Mesh/gmshGeoMesh.H>
 #include <Mesh/oshGeoMesh.H>
 #include <Mesh/exoGeoMesh.H>
+
+#ifdef HAVE_GMSH
+#include <Mesh/gmshGeoMesh.H>
+#endif
 
 #ifdef HAVE_CFMSH
 #  include <Mesh/foamGeoMesh.H>
@@ -36,6 +39,7 @@ TEST(geoMeshFactory, ReadVTK) {
   delete vtk2;
 }
 
+#ifdef HAVE_GMSH
 TEST(geoMeshFactory, ReadGMSH) {
   NEM::MSH::geoMeshBase *gmsh1 = NEM::MSH::Read(arg_gmshMesh);
   EXPECT_TRUE(dynamic_cast<NEM::MSH::gmshGeoMesh *>(gmsh1));
@@ -46,6 +50,7 @@ TEST(geoMeshFactory, ReadGMSH) {
   EXPECT_TRUE(dynamic_cast<NEM::MSH::gmshGeoMesh *>(gmsh2));
   delete gmsh2;
 }
+#endif
 
 TEST(geoMeshFactory, ReadOSH) {
   NEM::MSH::geoMeshBase *osh1 = NEM::MSH::Read(arg_oshMesh);

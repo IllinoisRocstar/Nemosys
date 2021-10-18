@@ -8,7 +8,6 @@
 #include <set>
 #include <utility>
 
-#include <gmsh.h>
 #include <vtkGenericDataObjectReader.h>
 #include <vtkGenericDataObjectWriter.h>
 #include <vtkSTLReader.h>
@@ -16,6 +15,10 @@
 #include <vtkXMLGenericDataObjectReader.h>
 
 #include "AuxiliaryFunctions.H"
+
+#ifdef HAVE_GMSH
+#include <gmsh.h>
+#endif
 
 namespace NEM {
 namespace MSH {
@@ -112,9 +115,11 @@ void vtkGeoMesh::setVtkMesh(vtkUnstructuredGrid *vtkMesh) {
 geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
                                         const std::string &phyGrpArrayName) {
   std::string gmshMesh = "vtkGeoMesh_" + nemAux::getRandomString(6);
+#ifdef HAVE_GMSH
   GmshInterface::Initialize();
   gmsh::model::add(gmshMesh);
   gmsh::model::setCurrent(gmshMesh);
+#endif
 
   if (!vtkMesh ||                                                 // No mesh
       vtkMesh->GetNumberOfPoints() == 0 ||                        // No points
@@ -138,11 +143,13 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
       dim_phyGrp.insert({dim, phyGrp});
     }
 
+#ifdef HAVE_GMSH
     // then add. Each phyGrp gets its own geoEnt
     for (const auto &dp : dim_phyGrp) {
       gmsh::model::addDiscreteEntity(dp.first, dp.second);
       gmsh::model::addPhysicalGroup(dp.first, {dp.second}, dp.second);
     }
+#endif
   }
 
   /*

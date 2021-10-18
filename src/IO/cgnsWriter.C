@@ -301,7 +301,7 @@ int cgnsWriter::getNSections()
 }
 
 // Set local patch sections
-void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<cgsize_t>::v1d elmConn)
+void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect1d<cgsize_t> elmConn)
 {
   nSection++;
   sectionNames.push_back(sName);
@@ -312,7 +312,7 @@ void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vec
 }
 
 // Set global partition sections
-void cgnsWriter::setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst, vect<int>::v1d gelmConn)
+void cgnsWriter::setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst, vect1d<int> gelmConn)
 {
   gnSection++;
   gsectionNames.push_back(gsName);
@@ -385,7 +385,7 @@ void cgnsWriter::setGlobalNCell(int gnCl)
 }
 
 // Set grid coordinates, stored separately in x,y,z for CGNS
-void cgnsWriter::setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z)
+void cgnsWriter::setGridXYZ(vect1d<double> x, vect1d<double> y, vect1d<double> z)
 {
   xCrd.clear();
   xCrd.insert(xCrd.begin(), x.begin(), x.end());
@@ -415,7 +415,7 @@ void cgnsWriter::setPconnGhostDescriptor(int ghostDescriptor)
 }
 
 // Set entire Pane Connectivity vector
-void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
+void cgnsWriter::setPconnVec(const vect1d<int>& _pConnVec)
 {
   pConnVec = _pConnVec;
 }

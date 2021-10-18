@@ -226,7 +226,7 @@ void foamMesh::report() const {
     exit(1);
   }
 
-  typedef std::map<int, int> CellContainer;
+  using CellContainer = std::map<int, int>;
   // Generate a report
   std::cout << "Processing the dataset generated from " << filename << std::endl
             << " dataSet contains a " << dataSet->GetClassName() << " that has "

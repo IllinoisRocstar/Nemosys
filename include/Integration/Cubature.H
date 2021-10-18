@@ -22,9 +22,9 @@ extern double TET4[];
 extern double TET4W[];
 
 // pair type for coordinate and data there
-typedef std::pair<std::vector<double>, std::vector<double>> pntDataPair;
+using pntDataPair = std::pair<std::vector<double>, std::vector<double>>;
 // holds gauss points and data at these points as pairs
-typedef std::vector<pntDataPair> pntDataPairVec;
+using pntDataPairVec = std::vector<pntDataPair>;
 
 class NEMOSYS_EXPORT GaussCubature {
  public:
@@ -42,7 +42,7 @@ class NEMOSYS_EXPORT GaussCubature {
   /**
    * @brief Returns coordinates of gauss points and associated data at cell
    * @param cellId cell id
-   * @return pntDataPairVec (see typedef in Cubature.H)
+   * @return pntDataPairVec (see alias in Cubature.H)
    */
   pntDataPairVec getGaussPointsAndDataAtCell(int cellID);
   /**

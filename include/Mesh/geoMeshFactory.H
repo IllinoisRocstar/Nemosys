@@ -18,7 +18,8 @@ enum class NEMOSYS_EXPORT MeshType {
   OSH_GEO_MESH,  ///< Based on Omega_h::Mesh from Omega_h library.
   EXO_GEO_MESH,  ///< Interface to EXODUS II library.
   FOAM_GEO_MESH, ///< Based on fvMesh from OpenFOAM library.
-  INP_GEO_MESH   ///< Abaqus/CalculiX mesh input format
+  INP_GEO_MESH,  ///< Abaqus/CalculiX mesh input format
+  SMESH_GEO_MESH,///< Based on SMESH_Mesh from Salome SMESH (see contrib/)
 };
 
 /**

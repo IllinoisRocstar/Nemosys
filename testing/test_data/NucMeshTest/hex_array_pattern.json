@@ -1,0 +1,63 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "hex_array_pattern.vtu"
+  },
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "Hex",
+        "Type": "Circles And Polys",
+        "Number of Sides": 6,
+        "Rings": [
+          {"Shape Type": "Poly", "Radius": 0.2, "Mesh": {"Type": "T"}, "Rotation": 30, "Material": "B", "Sideset": "S"},
+          {
+            "Shape Type": "Poly",
+            "Radius": 0.3,
+            "Mesh": {"Type": "S", "Number of Elems": [2, 3]},
+            "Rotation": 30,
+            "Material": "C"
+          }
+        ]
+      },
+      {
+        "Name": "Hex2",
+        "Type": "Circles And Polys",
+        "Number of Sides": 6,
+        "Rings": [
+          {"Shape Type": "Poly", "Radius": 0.05, "Mesh": {"Type": "T"}, "Rotation": 30, "Material": "B"},
+          {
+            "Shape Type": "Poly",
+            "Radius": 0.3,
+            "Mesh": {"Type": "S", "Number of Elems": [2, 3]},
+            "Rotation": 30,
+            "Material": "D"
+          }
+        ]
+      }
+    ],
+    "Shapes": [
+      {
+        "Type": "Hexagonal Array",
+        "Center": [-1.5, 0, 0],
+        "Grid Distance": 0.619615,
+        "Pattern": [
+          [1, 1, 1],
+          [2, 2, 2, 2],
+          [1, 2, 0, 2, 1],
+          [2, 2, 2, 2],
+          [1, 1, 1]
+        ],
+        "Shapes": [
+          null,
+          {
+            "Saved Object": "Hex"
+          },
+          {
+            "Saved Object": "Hex2"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -2,24 +2,22 @@ FROM ubuntu:18.04
 
 RUN apt-get update --fix-missing
 
+RUN apt-get -y install apt-transport-https
+RUN apt-get update --fix-missing
+
 # Compilers and build tools.
-RUN apt-get -y install build-essential cmake gfortran libopenmpi-dev
-
-# System TPLs needed by NEMoSys dependencies.
-RUN apt-get -y install zlib1g-dev libfreetype6-dev "libfltk1.3-dev" libxmu-dev libxi-dev
-RUN apt-get -y install libhdf5-dev liblapack-dev libjpeg-dev
-
-# System TPLs needed by NEMoSys.
-RUN apt-get -y install libmetis-dev libexodusii-dev ssh
-RUN apt-get -y install "python3.7-dev" python3-pip "python2.7-dev" python-pip swig
+RUN apt-get -y install build-essential cmake gfortran libopenmpi-dev git
 
 # Install NEMoSys dependencies
+RUN apt-get -y install libmetis-dev libexodusii-dev libhdf5-dev
+RUN apt-get -y install python3-dev python3-pip swig
 RUN apt-get -y install libboost-filesystem-dev libboost-regex-dev
 
+# Install the package in non-interactive mode so that it ignores
+# the prompts that the package requests. (opencascade requires tzdata)
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata
+
 # Run setuptools upgrade twice in case of "distribute" switch
-RUN pip2 install --upgrade pip
-RUN pip2 install --upgrade setuptools
-RUN pip2 install --upgrade setuptools
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
@@ -29,27 +27,17 @@ RUN pip3 install --upgrade setuptools
 RUN apt-get -y install wget
 RUN sh -c "wget -O - http://dl.openfoam.org/gpg.key | apt-key add -"
 RUN apt-get update --fix-missing
-RUN apt-get -y install git software-properties-common apt-transport-https
+RUN apt-get -y install software-properties-common
 RUN add-apt-repository "http://dl.openfoam.org/ubuntu"
 RUN apt-get update
 RUN apt-get -y install openfoam7
 
-# Copy TPLs
-#COPY . /Nemosys/TPLs
+# Install custom-built dependencies
 RUN sh -c "wget -O - http://nemosys-repository.illinois.rocstar/nemosys-repository-pub.gpg | apt-key add -"
 RUN add-apt-repository "deb http://nemosys-repository.illinois.rocstar/ bionic main"
 RUN apt-get update
-
-# Install the previously built TPLs
-RUN apt-get -y install gmsh
-RUN apt-get -y install vtk
-# a dependency of netgen wishes to be configure via the commandline, which is not possible
-# when building the image. Install the package in non-interactive mode so that it ignores
-# the prompts that the package requests.
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install netgen
-# Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
-# results in a namespace collision
-RUN apt-get install cgns -y
+# Custom CGNS built with ENABLE_SCOPING
+RUN apt-get -y install vtk cgns opencascade netgen gmsh
 
 # Load OpenFOAM7 env variables
 RUN echo "source /opt/openfoam7/etc/bashrc" >> /etc/bashrc

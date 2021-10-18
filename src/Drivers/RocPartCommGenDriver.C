@@ -5,9 +5,11 @@
 #include "IO/cgnsWriter.H"
 #include "Mesh/meshBase.H"
 
+#include <cgnslib.h>
 #include <vtkAppendFilter.h>
 #include <vtkCellData.h>
 #include <vtkCleanPolyData.h>
+#include <vtkEdgeTable.h>
 #include <vtkGenericCell.h>
 #include <vtkPointData.h>
 #include <vtkPointLocator.h>
@@ -19,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <set>
 #include <vector>
 
 namespace NEM {
@@ -31,6 +34,7 @@ namespace {
  */
 class RocPartCommGenRunner {
  public:
+  /*
   RocPartCommGenRunner(
       std::shared_ptr<meshBase> vol, std::shared_ptr<meshBase> surf,
       std::shared_ptr<meshBase> volWithSol,
@@ -41,6 +45,7 @@ class RocPartCommGenRunner {
       const std::map<std::string, std::vector<int>> &surfacePatchTypes,
       bool _withC2CTransSmooth = false,
       const std::string &_prefix_path = std::string());
+  */
   RocPartCommGenRunner(const std::string &volname, const std::string &surfname,
                        int numPartitions);
   ~RocPartCommGenRunner();
@@ -296,6 +301,7 @@ class RocPartCommGenRunner {
   std::string getPatchType(int patchNo) const;
 };
 
+/*
 RocPartCommGenRunner::RocPartCommGenRunner(
     std::shared_ptr<meshBase> _mesh, std::shared_ptr<meshBase> _remeshedSurf,
     std::shared_ptr<meshBase> _volWithSol,
@@ -332,6 +338,7 @@ RocPartCommGenRunner::RocPartCommGenRunner(
   // running
   this->execute(numPartitions);
 }
+*/
 
 RocPartCommGenRunner::RocPartCommGenRunner(const std::string &volname,
                                            const std::string &surfname,

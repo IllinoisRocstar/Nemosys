@@ -1,5 +1,3 @@
-#ifdef HAVE_NGEN
-
 #include "MeshGeneration/netgenGen.H"
 #include "MeshGeneration/netgenParams.H"
 
@@ -146,5 +144,3 @@ int netgenGen::createMeshFromSTL(const char *fname)
   nglib::Ng_SaveMesh(mesh, nemAux::trim_fname(newfname, ".vol").c_str());
   return 0;
 }
-
-#endif

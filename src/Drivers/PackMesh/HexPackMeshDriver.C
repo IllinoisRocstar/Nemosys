@@ -4,8 +4,10 @@
 #include "AuxiliaryFunctions.H"
 #include "MeshManipulationFoam/MeshManipulationFoam.H"
 #include "MeshGeneration/blockMeshGen.H"
-#include "Geometry/rocPack.H"
 #include "MeshGeneration/snappymeshGen.H"
+#ifdef HAVE_GMSH
+#include "Geometry/rocPack.H"
+#endif
 
 namespace NEM {
 namespace DRV {
@@ -147,6 +149,7 @@ void HexPackMeshDriver::execute() const {
   // A rocpack method that creates stl and then moves it to triSurface using
   // boost.
   if (this->files_.isInputRocpackFile()) {
+#ifdef HAVE_GMSH
     std::string hexOutSTL = this->files_.getInputFile() + ".stl";
     auto objrocPck = std::unique_ptr<NEM::GEO::rocPack>(
         new NEM::GEO::rocPack(this->files_.getInputFile(), hexOutSTL));
@@ -163,6 +166,10 @@ void HexPackMeshDriver::execute() const {
 
     boost::filesystem::copy_file(
         dir11, dir2, boost::filesystem::copy_option::overwrite_if_exists);
+#else
+    std::cerr << "Cannot process rocPack input file without gmsh.\n";
+    std::exit(1);
+#endif
   } else {
     const std::string dir_path11 = this->files_.getInputFile();
     boost::filesystem::path dir11(dir_path11);

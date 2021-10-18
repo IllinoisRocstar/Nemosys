@@ -1,16 +1,8 @@
 #ifndef NEMOSYS_ROCPARTCOMMGENDRIVER_H_
 #define NEMOSYS_ROCPARTCOMMGENDRIVER_H_
 
-#include <unordered_set>
-
-#include <vtkEdgeTable.h>
-#include <vtkPolyData.h>
-
 #include "nemosys_export.h"
 #include "Drivers/NemDriver.H"
-#include "Mesh/meshBase.H"
-
-#include <cgnslib.h>
 
 namespace NEM {
 namespace DRV {

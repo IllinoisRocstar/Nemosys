@@ -1,10 +1,14 @@
 #if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
 #  define _USE_MATH_DEFINES
 #endif
+
 #include <gtest/gtest.h>
-#include <gmsh.h>
 
 #include <Mesh/geoMeshBase.H>
+
+#ifdef HAVE_GMSH
+#include <gmsh.h>
+#endif
 
 class testGeoMeshBase : public NEM::MSH::geoMeshBase {
   using geoMeshBase::geoMeshBase;
@@ -21,6 +25,7 @@ TEST(geoMeshBase, ConstructorDefault) {
 //  delete pgmb;
 }
 
+#ifdef HAVE_GMSH
 TEST(geoMeshBase, ConstructorDefaultGMSHValidity) {
   testGeoMeshBase gmb{};
   { testGeoMeshBase gmb2{}; }
@@ -39,6 +44,7 @@ TEST(geoMeshBase, ExternalGMSHValidity) {
 
   NEM::MSH::GmshInterface::Finalize();
 }
+#endif
 
 TEST(geoMeshBase, GetSetGeoEntArrayName) {
   testGeoMeshBase gmb{};

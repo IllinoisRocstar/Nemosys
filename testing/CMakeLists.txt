@@ -1,12 +1,9 @@
-cmake_minimum_required(VERSION 3.1)
-
-message(STATUS "ACCESSING TEST DIRECTORY: ${PROJECT_SOURCE_DIR}")
-
 # adding gtest subdir with its own cmake file
 if(WIN32)
   set(BUILD_SHARED_LIBS ON)
   add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
 endif()
+set(BUILD_GMOCK OFF)
 set(INSTALL_GTEST OFF)
 if(ENABLE_OMEGAH_CUDA)
   set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
@@ -14,13 +11,13 @@ endif()
 add_subdirectory(lib/gtest-1.8.1)
 
 # include gtest library. gtest_SOURCE_DIR is availble from subdir addition
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR}/include/gtest ${gtest_SOURCE_DIR})
-
 add_custom_target(unittests)
 
 # Set location of test scripts, test data, and run directory
-file(COPY test_data
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(GLOB_RECURSE test_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} test_data/*)
+foreach(test_file ${test_files})
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${test_file} ${CMAKE_CURRENT_BINARY_DIR}/${test_file} COPYONLY)
+endforeach()
 set(TEST_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts)
 set(TEST_DATA ${CMAKE_CURRENT_BINARY_DIR}/test_data)
 
@@ -30,10 +27,14 @@ if(WIN32)
   set(TEST_ENV_PATH_OPTIONS
       "PATH=${CMAKE_CURRENT_BINARY_DIR};\
 ${CMAKE_BINARY_DIR};\
+${CMAKE_BINARY_DIR}/contrib/ann-1.1.2;\
 ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0;\
-${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN;\
 ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src;\
 ${CMAKE_BINARY_DIR}/contrib/kmeans-5b9691d;\
+${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/Kernel;\
+${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/Geom;\
+${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/SMESH;\
+${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/NETGENPlugin;\
 ${gtest_BINARY_DIR};\
 ${VTK_LIB_DIR};\
 ${GMSH_LIB_PATH};\
@@ -69,6 +70,7 @@ ${VTK_LIB_DIR}:\
 ${GMSH_LIB_PATH}:\
 ${NETGEN_LIBRARY_DIR}:\
 ${OpenCASCADE_LIBRARY_DIR}:\
+${CGNS_LIB_PATH}:\
 $ENV{LD_LIBRARY_PATH}")
   set(TEST_ENVIRONMENT_VARS "${TEST_ENV_PATH_OPTIONS}" "${TEST_ENV_LD_OPTIONS}")
 endif()
@@ -84,8 +86,7 @@ message(STATUS "Test Env Options: ${TEST_ENVIRONMENT_VARS}")
 #  run<test_exe_name>Test                 = name of executable
 macro(NEM_add_test_executable TEST_EXE_NAME)
   add_executable(run${TEST_EXE_NAME}Test ${TEST_SCRIPTS}/test${TEST_EXE_NAME}.C)
-  target_link_libraries(run${TEST_EXE_NAME}Test gtest gtest_main Nemosys)
-  target_include_directories(run${TEST_EXE_NAME}Test SYSTEM PRIVATE ${Nemosys_NOWARN_DIRS})
+  target_link_libraries(run${TEST_EXE_NAME}Test gtest_main Nemosys)
   add_dependencies(unittests run${TEST_EXE_NAME}Test)
 endmacro()
 #-------------------------------------------------------------------------------
@@ -124,17 +125,12 @@ NEM_add_test_executable(MeshGen)
 NEM_add_test_executable(PNTGen)
 NEM_add_test_executable(AutoVerification)
 NEM_add_test_executable(Refinement)
-NEM_add_test_executable(GmshMesh)
-NEM_add_test_executable(RocPackPeriodic)
-NEM_add_test_executable(NucMesh)
-NEM_add_test_executable(GmshMeshGen)
 NEM_add_test_executable(ExoMesh)
 
 NEM_add_test_executable(GeoMeshBase)
 NEM_add_test_executable(GeoMeshFactory)
 
 NEM_add_test_executable(ExoGeoMesh)
-NEM_add_test_executable(GmshGeoMesh)
 NEM_add_test_executable(InpGeoMesh)
 NEM_add_test_executable(OshGeoMesh)
 NEM_add_test_executable(VtkGeoMesh)
@@ -159,7 +155,7 @@ if(ENABLE_CFMSH)
   NEM_add_test_executable(PackMesh)
   NEM_add_test_executable(FoamGeoMesh)
 endif()
-if(HAVE_HDF5)
+if(HAVE_HDF5 AND ENABLE_GMSH)
   NEM_add_test_executable(Proteus)
 endif()
 if(ENABLE_TEMPLATE_MESH)
@@ -176,6 +172,15 @@ if(ENABLE_OMEGAH_CUDA)
 endif()
 if(ENABLE_OPENMP)
   NEM_add_test_executable(Scaling)
+endif()
+if(ENABLE_GMSH)
+  NEM_add_test_executable(RocPackPeriodic)
+  NEM_add_test_executable(GmshMesh)
+  NEM_add_test_executable(GmshGeoMesh)
+  NEM_add_test_executable(GmshMeshGen)
+endif()
+if(ENABLE_OPENCASCADE)
+  NEM_add_test_executable(NucMesh)
 endif()
 
 # Define tests #################################################################
@@ -250,13 +255,6 @@ NEM_add_test(meshGen MeshGen MeshGenTest
     hingeGeomRef.vtu
     )
 
-NEM_add_test(gmshMeshGen GmshMeshGen gmshMeshGenTest
-    box_test.json
-    box_test_REF.vtu
-    pitzdaily_test.json
-    pitzdaily_test_REF.msh
-)
-
 NEM_add_test(refinement Refinement RefinementTest
     refine_value.json
     refined_beam_value.vtu
@@ -308,11 +306,6 @@ NEM_add_test(vtkGeoMesh VtkGeoMesh VtkGeoMeshTest
     vox8.vtu
     two_mesh.vtu
     )
-NEM_add_test(gmshGeoMesh GmshGeoMesh GmshGeoMeshTest
-    cube41.msh
-    cube_UnnamedPhyGrp.msh
-    cube_NamedPhyGrp.msh
-    )
 NEM_add_test(inpGeoMesh InpGeoMesh InpGeoMeshTest
     panel_problem_1_gmsh_native_solid.msh
     SOLID_Plate.inp
@@ -342,58 +335,54 @@ NEM_add_test(omegahRefineDriver OmegahRefineDriver OmegahRefineTest
     refined_test_27_5_0.vtu
     )
 
-# Disable in Win due to CI/CD being 32-bit.
-if(NOT WIN32) # TODO: Switch Win CI/CD to 64-bit to re-enable.
-  NEM_add_test(gmshMesh GmshMesh GmshMeshTest
-      cube2.msh
-      cube4.msh
-      cube41.msh
-      )
-endif() # Disable in Win
+if(ENABLE_OPENCASCADE)
+  set(NucMesh_ARGUMENTS
+      hex_array_pattern.json
+      hex_array_pattern_REF.vtu
+      circlesInPolys.json
+      circlesInPolys_REF.vtu
+      rectangular_array_pattern.json
+      rectangular_array_pattern_REF.vtu
+      cartesian_array.json
+      cartesian_array_REF.vtu)
+  if(ENABLE_NETGEN)
+    list(APPEND NucMesh_ARGUMENTS
+        simple_circles.json
+        simple_circles_REF.vtu
+        concentric_circles.json
+        concentric_circles_REF.vtu
+        concentric_circles_2.json
+        concentric_circles_2_REF.vtu
+        simple_polygons.json
+        simple_polygons_REF.vtu
+        concentric_polygons.json
+        concentric_polygons_REF.vtu
+        polar_array_rot_with_array.json
+        polar_array_rot_with_array_REF.vtu
+        threeD.json
+        threeD_REF.exo)
+  endif()
+  NEM_add_test(nucMesh NucMesh NucMeshTest ${NucMesh_ARGUMENTS})
+endif()
 
-# Disable in Win due to CI/CD's Gmsh lacking OpenCASCADE support.
-if(NOT WIN32) # TODO: Add OpenCASCADE-enabled Gmsh to Win CI/CD to re-enable.
-  NEM_add_test(nucMesh NucMesh NucMeshTest
-      simple_circles_test.json
-      simple_circles_test_REF.msh
-      concentric_circles_test.json
-      concentric_circles_test_REF.msh
-      concentric_circles_test_2.json
-      concentric_circles_test_2_REF.msh
-      simple_polygons_test.json
-      simple_polygons_test_REF.msh
-      concentric_polygons_test.json
-      concentric_polygons_test_REF.msh
-      circlesInPolys_test.json
-      circlesInPolys_test_REF.msh
-      rectangular_array_pattern_test.json
-      rectangular_array_pattern_REF.msh
-      polar_array_pattern_test.json
-      polar_array_pattern_test_REF.msh
-      hex_array_pattern_test.json
-      hex_array_pattern_test_REF.msh
-      cartesian_array_test.json
-      cartesian_array_test_REF.msh
-      mesh_area_conservation_test.json
-      mesh_area_conservation_test_REF.msh
-      threeD_test.json
-      threeD_test_REF.msh
-      include_test.json
-      include_test_REF.msh
-      )
-
-  nem_add_test(rocPackPeriodic RocPackPeriodic rocPackPeriodic
+if(ENABLE_GMSH)
+  NEM_add_test(rocPackPeriodic RocPackPeriodic rocPackPeriodic
       rocOut
       periodicGeom_ref.vtk
       )
+  NEM_add_test(gmshMesh GmshMesh GmshMeshTest
+    cube2.msh
+    cube4.msh
+    cube41.msh
+    )
+endif()
 
-  if(ENABLE_TEMPLATE_MESH)
-    nem_add_test(templateMesh TemplateMesh TemplateMeshTest
-        test_spiral_tape.json
-        spiral_test_REF.msh
-        )
-  endif()
-endif() # Disable in Win
+if(ENABLE_TEMPLATE_MESH)
+  NEM_add_test(templateMesh TemplateMesh TemplateMeshTest
+      test_spiral_tape.json
+      spiral_test_REF.msh
+      )
+endif()
 
 if(ENABLE_EPIC)
   NEM_add_test(ep16pre Ep16Pre ep16pre
@@ -414,8 +403,10 @@ if(ENABLE_CFMSH)
   # cfMesh Quality test
   NEM_add_test(cfm_qual CFMQual cfm_qual cfmsh.json cfmsh_qual.json)
 
-  # PackMesh test
-  NEM_add_test(packmesh PackMesh packmesh PackMsh_Master.json)
+  if(ENABLE_GMSH)
+    # PackMesh test
+    NEM_add_test(packmesh PackMesh packmesh PackMsh_Master.json)
+  endif()
 
   # snappyHeshMesh tests
   NEM_add_test(snappy_BoxPack SHM snappy_BoxPack shmsh.json)
@@ -450,6 +441,21 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
       targets/plane_target.vtk)
 endif()
 
+if(ENABLE_GMSH)
+  NEM_add_test(gmshGeoMesh GmshGeoMesh GmshGeoMeshTest
+    cube41.msh
+    cube_UnnamedPhyGrp.msh
+    cube_NamedPhyGrp.msh
+    )
+
+  NEM_add_test(gmshMeshGen GmshMeshGen gmshMeshGenTest
+    box_test.json
+    box_test_REF.vtu
+    pitzdaily_test.json
+    pitzdaily_test_REF.msh
+  )
+endif()
+
 if(ENABLE_OMEGAH_CUDA)
   enable_language(CUDA)
   NEM_add_test(oshGeoMeshCUDA OshGeoMeshCUDA "")
@@ -475,7 +481,7 @@ if(ENABLE_PYTHON_BINDINGS)
   endif()
 endif()
 
-if(HAVE_HDF5)
+if(HAVE_HDF5 AND ENABLE_GMSH)
   # Proteus testing
   NEM_add_test(proteus Proteus proteus
       bench02.json

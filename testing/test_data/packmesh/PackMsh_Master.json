@@ -31,10 +31,10 @@
             "nCellsBetweenLevels": 1,           // OPTIONAL
             "surfaceRefinementLvlMin": 0,       // OPTIONAL
             "surfaceRefinementLvlMax": 0,       // OPTIONAL
-            "resolveFeatureAngle": 60,          // OPTIONAL
-            "GeneralGapLevelIncrement": 1,      // OPTIONAL
-            "gapLevelIncrement": 1,             // OPTIONAL
-            "planarAngle": 60,                  // OPTIONAL
+            "resolveFeatureAngle": 30,          // OPTIONAL
+            "GeneralGapLevelIncrement": 0,      // OPTIONAL
+            "gapLevelIncrement": 0,             // OPTIONAL
+            "planarAngle": 30,                  // OPTIONAL
             "allowFreeStandingZoneFaces": true  // OPTIONAL
         },
         "Snapping Controls": {                  // OPTIONAL

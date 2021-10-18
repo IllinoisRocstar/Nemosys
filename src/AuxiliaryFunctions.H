@@ -26,7 +26,7 @@ namespace nemAux {
 // class wrapping around std::chrono for timing methods
 class Timer {
  private:
-  typedef std::chrono::time_point<std::chrono::system_clock> time_t;
+  using time_t = std::chrono::time_point<std::chrono::system_clock>;
 
  public:
   Timer() : startTime(), stopTime() {}

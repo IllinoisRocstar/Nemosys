@@ -10,7 +10,6 @@
 #include <MeshGeneration/snappymeshGen.H>
 #include <MeshGeneration/snappymeshParams.H>
 #include <Mesh/geoMeshFactory.H>
-#include <Mesh/vtkMesh.H>
 namespace fs = boost::filesystem;
 
 const char *inp_json;
@@ -67,7 +66,9 @@ void snappyLogistics() {
   const char cpydir_path[] = "./constant/polyMesh.Orig";
   boost::filesystem::path dir1(dir_path);
   boost::filesystem::path dir2(cpydir_path);
-  boost::filesystem::remove_all(dir1);
+  if (boost::filesystem::exists(dir1))
+    if (boost::filesystem::is_directory(dir1))
+      boost::filesystem::remove_all(dir1);
   copyDirectoryRecursively(dir2, dir1);
 
   return;
@@ -134,13 +135,13 @@ int main(int argc, char **argv) {
     std::cerr << "No input file defined" << std::endl;
   }
 
+  snappyLogistics(); // clean up and replace mesh
+
   int res = RUN_ALL_TESTS();
 
   // clean up
   mesh->Delete();
   ref->Delete();
-
-  snappyLogistics();  // clean up and replace mesh
 
   return res;
 }

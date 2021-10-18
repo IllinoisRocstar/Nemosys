@@ -75,12 +75,14 @@ TEST(Conversion, ConvertGmshToVTK)
   EXPECT_EQ(0,diffMesh(mesh.get(),refMesh.get())); 
 } 
 
+#ifdef HAVE_NGEN
 TEST(Conversion, ConvertVolToVTK)
 {
   std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(volName);
   std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(refVolVTUName);
   EXPECT_EQ(0,diffMesh(mesh.get(),refMesh.get()));
 }
+#endif
 
 TEST(Conversion, ConvertLegacyVTKToVTU)
 {

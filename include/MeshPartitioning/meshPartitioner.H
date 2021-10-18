@@ -13,12 +13,20 @@
 #ifdef HAVE_METIS
   #include <metis.h>
 #endif
+#ifdef HAVE_GMSH
 #include <MAdLib.h>
+#endif
 
 // forward declare cgnsAnalyzer to prevent gmsh name conflicts w/ simmetrix
 class cgnsAnalyzer;
 
-enum MeshType_t {MESH_TRI_3, MESH_QUAD_4, MESH_TETRA_4, MESH_HEX_8, MESH_MIXED};
+enum class MeshType_t {
+  MESH_TRI_3,
+  MESH_QUAD_4,
+  MESH_TETRA_4,
+  MESH_HEX_8,
+  MESH_MIXED
+};
 
 /* Defines class(es) for mesh partitioning */
 class NEMOSYS_EXPORT meshPartition
@@ -74,8 +82,10 @@ class NEMOSYS_EXPORT meshPartitioner
     // from CGNS object
     explicit meshPartitioner(cgnsAnalyzer *inCg);
     */
+#ifdef HAVE_GMSH
     // from MAdMesh object
     explicit meshPartitioner(MAd::pMesh inMesh);
+#endif
     // from meshBase object
     explicit meshPartitioner(const meshBase *inMB);
 

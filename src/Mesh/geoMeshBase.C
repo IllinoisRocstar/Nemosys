@@ -8,7 +8,9 @@
 #include <set>
 #include <utility>
 
+#ifdef HAVE_GMSH
 #include <gmsh.h>
+#endif
 
 #include <vtkAppendFilter.h>
 
@@ -16,15 +18,19 @@ namespace NEM {
 namespace MSH {
 
 GmshInterface::GmshInterface() {
+#ifdef HAVE_GMSH
   gmsh::initialize();
   gmsh::option::setNumber("General.Terminal", 1.0);  // Gmsh errors to stderr
   gmsh::option::setNumber("Mesh.SaveAll", 1);
   std::cout << "Gmsh initialized" << std::endl;
+#endif
 }
 
 GmshInterface::~GmshInterface() {
+#ifdef HAVE_GMSH
   gmsh::finalize();
   std::cout << "Gmsh finalized" << std::endl;
+#endif
 }
 
 std::shared_ptr<GmshInterface> GmshInterface::instance = nullptr;
@@ -46,13 +52,17 @@ geoMeshBase::geoMeshBase()
 geoMeshBase::geoMeshBase(GeoMesh inGeoMesh)
     : _geoMesh(std::move(inGeoMesh)), _angleThreshold(30.0 * M_PI / 180.0) {
   InitializeObjectBase();
+#ifdef HAVE_GMSH
   GmshInterface::Initialize();
+#endif
   std::cout << "geoMeshBase constructed" << std::endl;
 }
 
 geoMeshBase::~geoMeshBase() {
   this->ReferenceCount--;
+#ifdef HAVE_GMSH
   GmshInterface::Finalize();
+#endif
   std::cout << "geoMeshBase destructed" << std::endl;
 }
 
@@ -200,26 +210,13 @@ vtkSmartPointer<vtkAbstractArray> geoMeshBase::getFieldDataArrayCopy(
 
 geoMeshBase::SideSet::SideSet(vtkPolyData *sideSet, vtkIntArray *geoEnt,
                               vtkIdTypeArray *origCell, vtkIntArray *cellFace,
-                              vtkIdTypeArray *twin)
+                              vtkStringArray *setNames)
     : sides(sideSet) {
-  auto cellData = sideSet->GetCellData();
-  assert(geoEnt || cellData->HasArray(GEO_ENT_NAME));
-  if (geoEnt) {
-    geoEnt->SetName(GEO_ENT_NAME);
-    cellData->AddArray(geoEnt);
-  }
-  if (origCell) {
-    origCell->SetName(ORIG_CELL_NAME);
-    cellData->AddArray(origCell);
-  }
-  if (cellFace) {
-    cellFace->SetName(CELL_FACE_NAME);
-    cellData->AddArray(cellFace);
-  }
-  if (twin) {
-    twin->SetName(TWIN_NAME);
-    cellData->AddArray(twin);
-  }
+  assert(geoEnt || sideSet->GetCellData()->HasArray(GEO_ENT_NAME));
+  if (geoEnt) { setGeoEntArr(geoEnt); }
+  if (origCell) { setOrigCellArr(origCell); }
+  if (cellFace) { setCellFaceArr(cellFace); }
+  if (setNames) { setSideSetNamesArr(setNames); }
 }
 
 geoMeshBase::SideSet::SideSet(vtkPolyData *sides) : SideSet(sides, nullptr) {}
@@ -244,6 +241,8 @@ vtkSmartPointer<vtkIdTypeArray> geoMeshBase::SideSet::getOrigCellArr() const {
 
 void geoMeshBase::SideSet::setOrigCellArr(vtkIdTypeArray *arr) {
   if (arr) {
+    assert(arr->GetNumberOfTuples() == sides->GetNumberOfCells() &&
+           arr->GetNumberOfComponents() == 2);
     arr->SetName(ORIG_CELL_NAME);
     sides->GetCellData()->AddArray(arr);
   } else {
@@ -259,6 +258,8 @@ vtkSmartPointer<vtkIntArray> geoMeshBase::SideSet::getCellFaceArr() const {
 
 void geoMeshBase::SideSet::setCellFaceArr(vtkIntArray *arr) {
   if (arr) {
+    assert(arr->GetNumberOfTuples() == sides->GetNumberOfCells() &&
+           arr->GetNumberOfComponents() == 2);
     arr->SetName(CELL_FACE_NAME);
     sides->GetCellData()->AddArray(arr);
   } else {
@@ -266,18 +267,19 @@ void geoMeshBase::SideSet::setCellFaceArr(vtkIntArray *arr) {
   }
 }
 
-vtkSmartPointer<vtkIdTypeArray> geoMeshBase::SideSet::getTwinArr() const {
-  return sides ? vtkIdTypeArray::FastDownCast(
-                     sides->GetCellData()->GetAbstractArray(TWIN_NAME))
+vtkSmartPointer<vtkStringArray> geoMeshBase::SideSet::getSideSetNames() const {
+  return sides ? vtkStringArray::SafeDownCast(
+                     sides->GetFieldData()->GetAbstractArray(NAME_ARR_NAME))
                : nullptr;
 }
 
-void geoMeshBase::SideSet::setTwinArr(vtkIdTypeArray *arr) {
+void geoMeshBase::SideSet::setSideSetNamesArr(vtkStringArray *arr) {
   if (arr) {
-    arr->SetName(TWIN_NAME);
-    sides->GetCellData()->AddArray(arr);
+    assert(arr->GetNumberOfComponents() == 1);
+    arr->SetName(NAME_ARR_NAME);
+    sides->GetFieldData()->AddArray(arr);
   } else {
-    sides->GetCellData()->RemoveArray(TWIN_NAME);
+    sides->GetFieldData()->RemoveArray(NAME_ARR_NAME);
   }
 }
 
@@ -286,11 +288,15 @@ void geoMeshBase::GeoMesh::findSide2OrigCell() {
     vtkIdType numSides = sideSet.sides->GetNumberOfCells();
     auto entArr = sideSet.getGeoEntArr();
     vtkNew<vtkIdTypeArray> origCellArr;
+    origCellArr->SetNumberOfComponents(2);
     origCellArr->SetNumberOfTuples(numSides);
     origCellArr->FillTypedComponent(0, -1);
+    origCellArr->FillTypedComponent(1, -1);
     vtkNew<vtkIntArray> cellFaceArr;
+    cellFaceArr->SetNumberOfComponents(2);
     cellFaceArr->SetNumberOfTuples(numSides);
     cellFaceArr->FillTypedComponent(0, -1);
+    cellFaceArr->FillTypedComponent(1, -1);
     // Using points->cell, intersect the set of cells that have the same points
     // as the side cell
     mesh->BuildLinks();
@@ -353,8 +359,10 @@ void geoMeshBase::GeoMesh::findSide2OrigCell() {
         for (const auto &candIdx : candidates) {
           auto candOrigCell = mesh->GetCell(candIdx);
           auto dim = candOrigCell->GetCellDimension();
+          bool foundSide = false;
           for (int j = 0; j < (dim == 3 ? candOrigCell->GetNumberOfFaces()
-                                        : candOrigCell->GetNumberOfEdges());
+                                        : candOrigCell->GetNumberOfEdges()) &&
+                          !foundSide;
                ++j) {
             auto candSide =
                 dim == 3 ? candOrigCell->GetFace(j) : candOrigCell->GetEdge(j);
@@ -372,10 +380,15 @@ void geoMeshBase::GeoMesh::findSide2OrigCell() {
               if (std::equal(rotatedCandPoints.begin(), rotatedCandPoints.end(),
                              sidePoints->GetPointer(0))) {
                 foundMatch = true;
-              }
-              if (foundMatch) {
+                foundSide = true;
                 origCellArr->SetTypedComponent(i, 0, candIdx);
                 cellFaceArr->SetTypedComponent(i, 0, j);
+              } else if (std::equal(rotatedCandPoints.rbegin(),
+                                    rotatedCandPoints.rend(),
+                                    sidePoints->GetPointer(0))) {
+                foundSide = true;
+                origCellArr->SetTypedComponent(i, 1, candIdx);
+                cellFaceArr->SetTypedComponent(i, 1, j);
               }
             }
           }

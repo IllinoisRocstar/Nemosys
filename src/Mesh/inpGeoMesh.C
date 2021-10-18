@@ -4,7 +4,6 @@
 
 #include "Mesh/inpGeoMesh.H"
 
-#include <gmsh.h>
 #include <algorithm>
 #include <fstream>
 #include <jsoncons/json.hpp>
@@ -14,7 +13,12 @@
 #include <sstream>
 #include <string>
 #include <utility>
+
 #include "AuxiliaryFunctions.H"
+
+#ifdef HAVE_GMSH
+#  include <gmsh.h>
+#endif
 
 namespace NEM {
 namespace MSH {
@@ -357,7 +361,7 @@ class InpParser {
         auto &cellTypeStr = this->currKwParams.at("TYPE");
         auto cellTypeIter = std::find_if(
             vtk2inp.begin(), vtk2inp.end(),
-            [&](const decltype(vtk2inp)::value_type &x) {
+            [&cellTypeStr](const decltype(vtk2inp)::value_type &x) {
               auto cellType = std::get<1>(x);
               return std::equal(
                   cellType, cellType + std::char_traits<char>::length(cellType),
@@ -456,22 +460,29 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
                 entArr ? static_cast<int>(entArr->GetComponent(i, 0)) : 0}]
         .emplace_back(i);
   }
-  if (!geo.empty()) { gmsh::model::setCurrent(geo); }
+#ifdef HAVE_GMSH
+  if (!geo.empty()) {
+    gmsh::model::setCurrent(geo);
+  }
+#endif
   for (const auto &elems : elemBlocks) {
     auto cellType = elems.first.first;
-    auto inpType = std::find_if(vtk2inp.begin(), vtk2inp.end(),
-                                [=](const decltype(vtk2inp)::value_type &x) {
-                                  return std::get<0>(x) == cellType;
-                                });
+    auto inpType =
+        std::find_if(vtk2inp.begin(), vtk2inp.end(),
+                     [cellType](const decltype(vtk2inp)::value_type &x) {
+                       return std::get<0>(x) == cellType;
+                     });
     if (inpType == vtk2inp.end()) {
       std::cerr << "Unsupported element type" << cellType << '\n';
       continue;
     }
     std::string elSet{};
+#ifdef HAVE_GMSH
     if (!geo.empty()) {
       gmsh::model::getEntityName(gmsh::model::getDimension(),
                                  elems.first.second, elSet);
     }
+#endif
     outStream << "*ELEMENT, TYPE=" << std::get<1>(*inpType);
     if (!elSet.empty()) { outStream << " ELSET=" << elSet; }
     outStream << '\n';
@@ -497,6 +508,7 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
   }
 }
 
+#ifdef HAVE_GMSH
 /**
  * @brief Run @p func for each appearance of a cell in @p dataSet in each
  * physical group of the current gmsh model
@@ -510,7 +522,7 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
  */
 template <typename Func>
 void eachGmshPhyGroup(vtkDataSet *dataSet, vtkDataArray *entArr, int dim,
-                      Func func) {
+                      Func &&func) {
   std::map<int, std::vector<std::string>> ent2PhysGroup;
   {
     gmsh::vectorpair dimTags;
@@ -534,6 +546,7 @@ void eachGmshPhyGroup(vtkDataSet *dataSet, vtkDataArray *entArr, int dim,
     }
   }
 }
+#endif
 
 }  // namespace
 
@@ -631,6 +644,7 @@ void inpGeoMesh::resetNative() {
   // sets and node sets
   // Convert sideSet physical groups to surfaces and node sets
   auto gm = getGeoMesh();
+#ifdef HAVE_GMSH
   if (!gm.geo.empty()) {
     gmsh::model::setCurrent(gm.geo);
     if (!gm.link.empty() && gm.mesh->GetNumberOfCells() > 0) {
@@ -659,6 +673,7 @@ void inpGeoMesh::resetNative() {
           });
     }
   }
+#endif
 }
 
 std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
@@ -696,16 +711,23 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
   std::map<vtkIdType, vtkIdType> inpId2GMIdx;
   if (!parserMesh.elems.empty()) {
     mesh->Allocate(parserMesh.elems.size());
+#ifdef HAVE_GMSH
     GmshInterface::Initialize();
     geoName = "geoMesh_" + nemAux::getRandomString(6);
     gmsh::model::add(geoName);
     gmsh::model::setCurrent(geoName);
+#endif
     linkName = GEO_ENT_DEFAULT_NAME;
     vtkNew<vtkIntArray> geoEntArr;
     geoEntArr->SetName(linkName.c_str());
+#ifndef HAVE_GMSH
+    int entTag = 1;
+#endif
     for (const auto &elemSet : parserMesh.elems) {
+#ifdef HAVE_GMSH
       auto entTag = gmsh::model::addDiscreteEntity(parserMesh.maxDim);
       gmsh::model::setEntityName(parserMesh.maxDim, entTag, elemSet.first);
+#endif
       for (const auto &elem : elemSet.second) {
         auto points = elem.points;
         std::transform(points.begin(), points.end(), points.begin(),
@@ -718,6 +740,9 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
             mesh->InsertNextCell(elem.cellType, points.size(), points.data());
         geoEntArr->InsertNextValue(entTag);
       }
+#ifndef HAVE_GMSH
+      ++entTag;
+#endif
     }
     mesh->GetCellData()->AddArray(geoEntArr);
   }
@@ -736,14 +761,21 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
     sideSetPD->Allocate();
     vtkNew<vtkIntArray> entArr;
     vtkNew<vtkIdTypeArray> origCellArr;
+    origCellArr->SetNumberOfComponents(2);
     vtkNew<vtkIntArray> cellFaceArr;
+    cellFaceArr->SetNumberOfComponents(2);
+#ifndef HAVE_GMSH
+    int entTag = 1;
+#endif
     for (const auto &surf : parserMesh.surfaces) {
       auto &outSurface = outSurfaces[surf.first];
+#ifdef HAVE_GMSH
       auto entTag = gmsh::model::addDiscreteEntity(parserMesh.maxDim - 1);
       auto phyGroupTag =
           gmsh::model::addPhysicalGroup(parserMesh.maxDim - 1, {entTag});
       gmsh::model::setPhysicalName(parserMesh.maxDim - 1, phyGroupTag,
                                    surf.first);
+#endif
       for (const auto &side : surf.second) {
         auto iterCellIdxMap = inpId2GMIdx.find(side.first);
         if (iterCellIdxMap != inpId2GMIdx.end()) {
@@ -756,11 +788,14 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
           auto sideIdx = sideSetPD->InsertNextCell(sideCell->GetCellType(),
                                                    sideCell->GetPointIds());
           entArr->InsertTypedComponent(sideIdx, 0, entTag);
-          origCellArr->InsertTypedComponent(sideIdx, 0, iterCellIdxMap->second);
-          cellFaceArr->InsertTypedComponent(sideIdx, 0, vtkSide);
+          origCellArr->InsertTuple2(sideIdx, iterCellIdxMap->second, -1);
+          cellFaceArr->InsertTuple2(sideIdx, vtkSide, -1);
           outSurface.emplace(sideIdx);
         }
       }
+#ifndef HAVE_GMSH
+      ++entTag;
+#endif
     }
     sideSet = {sideSetPD, entArr, origCellArr, cellFaceArr};
   }

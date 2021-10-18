@@ -21,11 +21,17 @@
 
 #ifdef HAVE_CFMSH
 #  define IF_CFMSH(a) a,
-#  include "Drivers/Conversion/FoamToMshConversionDriver.H"
 #  include "Drivers/Conversion/FoamToVtkConversionDriver.H"
 #  include "Drivers/Conversion/VtkToFoamConversionDriver.H"
 #else
 #  define IF_CFMSH(a)
+#endif
+
+#if defined(HAVE_CFMSH) && defined(HAVE_GMSH)
+#  define IF_CFMSH_GMSH(a) a,
+#  include "Drivers/Conversion/FoamToMshConversionDriver.H"
+#else
+#  define IF_CFMSH_GMSH(a)
 #endif
 
 namespace NEM {
@@ -58,7 +64,7 @@ inline std::vector<int> rangeToVec(const std::pair<int, int> &input) {
 // ConversionDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_INTERMEDIATE(
     NEM::DRV::ConversionDriver,
-    (IF_CFMSH(NEM::DRV::FoamToMshConversionDriver)
+    (IF_CFMSH_GMSH(NEM::DRV::FoamToMshConversionDriver)
      IF_CFMSH(NEM::DRV::FoamToVtkConversionDriver)
      IF_CFMSH(NEM::DRV::VtkToFoamConversionDriver)
      NEM::DRV::GmshToExoConversionDriver, NEM::DRV::GmshToVtkConversionDriver,
@@ -75,6 +81,7 @@ NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_INTERMEDIATE(
      }))
 
 #ifdef HAVE_CFMSH
+#ifdef HAVE_GMSH
 // FoamToMshConversionDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
     NEM::DRV::FoamToMshConversionDriver, NEM::DRV::ConversionDriver, 2,
@@ -87,6 +94,7 @@ JSONCONS_ALL_MEMBER_NAME_TRAITS(
      [](const jsoncons::string_view &x) {
        return x == NEM::DRV::FoamToMshConversionDriver::Opts::methodName;
      }))
+#endif
 
 // FoamToVtkConversionDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
@@ -296,5 +304,6 @@ NEM_JSON_N_MEMBER_NAME_TRAITS_VAL(
 #undef PAIR_INT_DUMMY_FUNC
 
 #undef IF_CFMSH
+#undef IF_CFMSH_GMSH
 
 #endif  // NEMOSYS_CONVERSIONJSON_H_

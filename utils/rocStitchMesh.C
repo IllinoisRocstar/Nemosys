@@ -1,6 +1,6 @@
 // standard headers
 #include <cstring>
-#include <string.h>
+#include <sstream>
 #include <iostream>
 #include <memory>
 

@@ -6,10 +6,21 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 
 #include "Mesh/vtkGeoMesh.H"
-#include "Mesh/gmshGeoMesh.H"
 #include "Mesh/oshGeoMesh.H"
 #include "Mesh/exoGeoMesh.H"
 #include "Mesh/inpGeoMesh.H"
+
+#ifdef HAVE_CFMSH
+#  include "Mesh/foamGeoMesh.H"
+#endif
+
+#ifdef HAVE_GMSH
+#  include "Mesh/gmshGeoMesh.H"
+#endif
+
+#ifdef HAVE_OCC
+#  include "Mesh/smeshGeoMesh.H"
+#endif
 
 /* TODO:
  * nemInformation
@@ -82,13 +93,23 @@ int srvBase::RequestDataObject(vtkInformation *request,
     if (typeName == "vtkGeoMesh") {
       output = MSH::vtkGeoMesh::New();
     } else if (typeName == "gmshGeoMesh") {
+#ifdef HAVE_GMSH
       output = MSH::gmshGeoMesh::New();
+#endif
     } else if (typeName == "oshGeoMesh") {
       output = MSH::oshGeoMesh::New();
     } else if (typeName == "exoGeoMesh") {
       output = MSH::exoGeoMesh::New();
     } else if (typeName == "inpGeoMesh") {
       output = MSH::inpGeoMesh::New();
+    } else if (typeName == "foamGeoMesh") {
+#ifdef HAVE_CFMSH
+      output = MSH::foamGeoMesh::New();
+#endif
+    } else if (typeName == "smeshGeoMesh") {
+#ifdef HAVE_OCC
+      output = MSH::smeshGeoMesh::New();
+#endif
     } else if (typeName == "geoMeshBase") {
       if (i < this->GetNumberOfInputPorts() &&
           inputVector[i]->GetNumberOfInformationObjects() > 0) {

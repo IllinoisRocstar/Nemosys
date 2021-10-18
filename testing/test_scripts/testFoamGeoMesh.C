@@ -2,7 +2,6 @@
 #  define _USE_MATH_DEFINES
 #endif
 #include <gtest/gtest.h>
-#include <gmsh.h>
 
 #include <Mesh/foamGeoMesh.H>
 
