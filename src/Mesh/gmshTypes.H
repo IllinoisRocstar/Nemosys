@@ -5,18 +5,34 @@
  * The Gmsh types are taken from gmsh/GmshDefines.h header from Gmsh 4.4.1
  *
  * Useful regex when adding in bulk: (?<=MSH_\w*)\W*(?=[0-9]*$)
+ *
+ * Note: enums are UNSCOPED. This is to enable compatibility when using gmsh
+ * functions as they take the int as the argument.
  */
 enum GMSH_ALGO_TYPES {
   // Surface and Volume meshing algorithms
-  ALGO_SURF_MESHADAPT = 1,
-  ALGO_SURF_AUTO = 2,
-  ALGO_SURF_DELAUNAY = 5,
-  ALGO_SURF_FRONTAL = 6,
-  ALGO_SURF_FRONTALQUAD = 8,
-  ALGO_SURF_POP = 9,
-  ALGO_VOL_DELAUNAY = 1,
-  ALGO_VOL_FRONTAL = 4,
-  ALGO_VOL_HXT = 10
+  ALGO_2D_MESHADAPT = 1,
+  ALGO_2D_AUTO = 2,
+  ALGO_2D_DELAUNAY = 5,
+  ALGO_2D_FRONTAL = 6,  // gmsh default
+  ALGO_2D_BAMG = 7,
+  ALGO_2D_FRONTAL_QUAD = 8,
+  ALGO_2D_PACK_PRLGRMS = 9,
+  ALGO_2D_PACK_PRLGRMS_CSTR = 10,  // not in documentation
+};
+enum GMSH_ALGO_3D {
+  ALGO_3D_DELAUNAY = 1,  // gmsh default
+  ALGO_3D_FRONTAL = 4,
+  ALGO_3D_MMG3D = 7,
+  ALGO_3D_RTREE = 9,
+  ALGO_3D_HXT = 10,
+};
+// Not in GmshDefines.h
+enum GMSH_ALGO_RECOMBINATION {
+  ALGO_RECOMBINE_SIMPLE = 0,
+  ALGO_RECOMBINE_BLOSSOM = 1,  // gmsh default
+  ALGO_RECOMBINE_SIMPLE_FULLQUAD = 2,
+  ALGO_RECOMBINE_BLOSSOM_FULLQUAD = 3,
 };
 enum GMSH_MSH_TYPES {
   // Element types in .msh file format (numbers should not be changed)

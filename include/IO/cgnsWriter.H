@@ -3,9 +3,11 @@
 
 // Nemosys headers
 #include "nemosys_export.h"
-#include "IO/cgnsAnalyzer.H"  // for keyValueList typedef
 
 // third party
+#ifdef _MSC_VER
+#include <cwchar>  // include before cgnslib.h to avoid errors related to _stat
+#endif
 #include <cgnslib.h>
 
 // others
@@ -13,12 +15,12 @@
 #include <vector>
 #include <map>
 
-// typedefs
-template<class T>
-struct vect {
-  typedef std::vector<T> v1d;
-  typedef std::vector<std::vector<T>> v2d;
-};
+// aliases
+template <typename T>
+using vect1d = std::vector<T>;
+template <typename T>
+using vect2d = std::vector<std::vector<T>>;
+using keyValueList = std::map<int, std::string>;
 
 /* a class for writing CGNS files */
 // TODO: This writer is heavily specific to Rocstar. This is not the original
@@ -64,10 +66,10 @@ class NEMOSYS_EXPORT cgnsWriter {
     void setNCell(int nCl);
     void setGlobalNCell(int gnCl);
     void
-    setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z);
+    setGridXYZ(vect1d<double> x, vect1d<double> y, vect1d<double> z);
     void setCoordRind(int rind);
     void setVirtElmRind(int rind);
-    void setPconnVec(const vect<int>::v1d &pConnVec);
+    void setPconnVec(const vect1d<int> &pConnVec);
     void setPconnLimits(int pconnProcMin, int pconnProcMax);
     void setPatchNo(int patchNo);
     void setBcflag(int bcflag);
@@ -75,9 +77,9 @@ class NEMOSYS_EXPORT cgnsWriter {
     void setVolCellFacesNumber(int nVolCellFaces);
     void setPconnGhostDescriptor(int ghostDescriptor);
     void
-    setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<cgsize_t>::v1d elmConn);
+    setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect1d<cgsize_t> elmConn);
     void setGlobalSection(std::string sName, CGNS_ENUMT(ElementType_t) st,
-                          vect<int>::v1d elmConn);
+                          vect1d<int> elmConn);
     void setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst);
     void resetSections();
     void resetGlobalSections();
@@ -127,10 +129,10 @@ class NEMOSYS_EXPORT cgnsWriter {
     int virtElmRind;
     int pConnGhostDescriptor;
     int typeFlag;
-    vect<int>::v1d pConnVec;
+    vect1d<int> pConnVec;
     int pConnMin;
     int pConnMax;
-    vect<int>::v1d elmConn;
+    vect1d<int> elmConn;
     int patchNo;
     int bcflag;
     int cnstr_type;
@@ -149,17 +151,17 @@ class NEMOSYS_EXPORT cgnsWriter {
     int nTStep;
     double timeLabel;
     // mesh data
-    vect<double>::v1d xCrd, yCrd, zCrd;
-    vect<std::string>::v1d zoneNames;
-    vect<CGNS_ENUMT(ZoneType_t)>::v1d zoneTypes;
-    vect<std::string>::v1d sectionNames;
-    vect<std::string>::v1d gsectionNames;
-    vect<CGNS_ENUMT(ElementType_t)>::v1d sectionTypes;
-    vect<CGNS_ENUMT(ElementType_t)>::v1d gsectionTypes;
-    vect<cgsize_t>::v2d elmConns;
-    vect<int>::v2d gelmConns;
-    vect<int>::v1d nCells;
-    vect<int>::v1d gnCells;
+    vect1d<double> xCrd, yCrd, zCrd;
+    vect1d<std::string> zoneNames;
+    vect1d<CGNS_ENUMT(ZoneType_t)> zoneTypes;
+    vect1d<std::string> sectionNames;
+    vect1d<std::string> gsectionNames;
+    vect1d<CGNS_ENUMT(ElementType_t)> sectionTypes;
+    vect1d<CGNS_ENUMT(ElementType_t)> gsectionTypes;
+    vect2d<cgsize_t> elmConns;
+    vect2d<int> gelmConns;
+    vect1d<int> nCells;
+    vect1d<int> gnCells;
     // solution data
     int nSlnFld;
     int nVrtxSln;
@@ -167,13 +169,13 @@ class NEMOSYS_EXPORT cgnsWriter {
     int nVrtxFld;
     int nCellFld;
     std::map<std::string, int> slnNameNFld; // number of filed in the given solution name
-    vect<int>::v1d solutionIdx; // solution node indices
+    vect1d<int> solutionIdx; // solution node indices
     std::map<std::string, CGNS_ENUMT(GridLocation_t)> solutionNameLocMap;
     // maps sol node to index (eg. NodeData0.0=1,ElemData0.0=2)
     std::map<std::string, int> solutionNameSolIdxMap;
     std::map<int, std::pair<int, keyValueList> > solutionMap; // (#sln, <slnIdx, [fldIdx, fldName]>)
-    vect<std::string>::v1d solutionName;
-    vect<CGNS_ENUMT(GridLocation_t)>::v1d solutionGridLocation;
+    vect1d<std::string> solutionName;
+    vect1d<CGNS_ENUMT(GridLocation_t)> solutionGridLocation;
     // Rocstar variable units lookup dictionary
     std::map<std::string, std::string> fluidUnitsMap;
     std::map<std::string, std::vector<float>> fluidDimMap;

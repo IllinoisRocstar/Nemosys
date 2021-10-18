@@ -11,10 +11,10 @@
 #include <vector>
 #include "Drivers/NemJsonMacros.H"
 
-#include "Drivers/MeshGen/GmshMeshGenDriver.H"
 #include "Drivers/MeshGen/MeshGenDriver.H"
 
 #ifdef HAVE_CFMSH
+#  define HAVE_MSHGEN
 #  define IF_CFMSH(a) a,
 #  include "Drivers/MeshGen/BlockMeshMeshGenDriver.H"
 #  include "Drivers/MeshGen/CFMeshMeshGenDriver.H"
@@ -24,10 +24,23 @@
 #endif
 
 #ifdef HAVE_NGEN
+#  define HAVE_MSHGEN
 #  define IF_NGEN(a) a,
 #  include "Drivers/MeshGen/NetgenMeshGenDriver.H"
 #else
 #  define IF_NGEN(a)
+#endif
+
+#ifdef HAVE_GMSH
+#  define HAVE_MSHGEN
+#  define IF_GMSH(a) a,
+#  include "Drivers/MeshGen/GmshMeshGenDriver.H"
+#else
+#  define IF_GMSH(a)
+#endif
+
+#ifndef HAVE_MSHGEN
+#  error "No mesh generators enabled. Check configuration settings."
 #endif
 
 namespace NEM {
@@ -72,7 +85,8 @@ NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_INTERMEDIATE(
      IF_CFMSH(NEM::DRV::CFMeshMeshGenDriver)
      IF_CFMSH(NEM::DRV::SnappyMeshMeshGenDriver)
      IF_NGEN(NEM::DRV::NetgenMeshGenDriver)
-     NEM::DRV::GmshMeshGenDriver),
+     IF_GMSH(NEM::DRV::GmshMeshGenDriver)
+     void),
     NEM::DRV::NemDriver, 2,
     (, , NEM::DRV::JSON::meshFiles, NEM_JSON_RDONLY_OVERRIDE,
      NEM_JSON_CHECK_KEY_ONLY),
@@ -343,6 +357,7 @@ JSONCONS_N_MEMBER_NAME_TRAITS(
     (refine_without_geom, "refine_without_geometry_adaptation"))
 #endif
 
+#ifdef HAVE_GMSH
 // GmshMeshGenDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
     NEM::DRV::GmshMeshGenDriver, NEM::DRV::MeshGenDriver, 2,
@@ -500,8 +515,11 @@ template <>
 struct is_json_type_traits_declared<NEM::GEN::volSizeField>
     : public std::true_type {};
 }  // namespace jsoncons
+#endif
 
 #undef IF_CFMSH
 #undef IF_NGEN
+#undef IF_GMSH
+#undef HAVE_MSHGEN
 
 #endif  // NEMOSYS_MESHGENJSON_H_

@@ -5,13 +5,19 @@
 #include "Drivers/NemJsonMacros.H"
 
 #include "Drivers/PackMesh/PackMeshDriver.H"
-#include "Drivers/PackMesh/SurfacePackMeshDriver.H"
 
 #ifdef HAVE_CFMSH
 #  define IF_CFMSH(a) a,
 #  include "Drivers/PackMesh/HexPackMeshDriver.H"
 #else
 #  define IF_CFMSH(a)
+#endif
+
+#ifdef HAVE_GMSH
+#  define IF_GMSH(a) a,
+#  include "Drivers/PackMesh/SurfacePackMeshDriver.H"
+#else
+#  define IF_GMSH(a)
 #endif
 
 namespace NEM {
@@ -28,13 +34,15 @@ static constexpr auto packMeshOpts = "Pack Mesh Options";
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_INTERMEDIATE(
     NEM::DRV::PackMeshDriver,
     (IF_CFMSH(NEM::DRV::HexPackMeshDriver)
-     NEM::DRV::SurfacePackMeshDriver),
+     IF_GMSH(NEM::DRV::SurfacePackMeshDriver)
+     void),
     NEM::DRV::NemDriver, 1,
     (getProgramType, , NEM::DRV::JSON::programType, NEM_JSON_RDONLY_OVERRIDE,
      [](const jsoncons::string_view &x) {
        return x == NEM::DRV::PackMeshDriver::programType;
      }))
 
+#ifdef HAVE_GMSH
 // SurfacePackMeshDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
     NEM::DRV::SurfacePackMeshDriver, NEM::DRV::PackMeshDriver, 2,
@@ -79,6 +87,7 @@ JSONCONS_ENUM_NAME_TRAITS(NEM::DRV::SurfacePackMeshDriver::PhysGrpOpts,
 
 JSONCONS_ALL_MEMBER_NAME_TRAITS(NEM::DRV::SurfacePackMeshDriver::CustomDomain,
                                 (initial, "Initial"), (length, "Length"))
+#endif
 
 #ifdef HAVE_CFMSH
 // HexPackMeshDriver
@@ -166,5 +175,6 @@ JSONCONS_N_MEMBER_NAME_TRAITS(MeshManipulationFoamParams::CreatePatch, 0,
 #endif
 
 #undef IF_CFMSH
+#undef IF_GMSH
 
 #endif  // NEMOSYS_PACKMESHJSON_H_

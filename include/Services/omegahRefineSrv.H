@@ -4,7 +4,9 @@
 #include "Services/srvBase.H"
 
 #include <map>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <Omega_h_defines.hpp>
 

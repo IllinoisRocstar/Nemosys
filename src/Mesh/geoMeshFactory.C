@@ -2,14 +2,21 @@
 
 #include "AuxiliaryFunctions.H"
 
-#include "Mesh/inpGeoMesh.H"
 #include "Mesh/exoGeoMesh.H"
-#include "Mesh/gmshGeoMesh.H"
+#include "Mesh/inpGeoMesh.H"
 #include "Mesh/oshGeoMesh.H"
 #include "Mesh/vtkGeoMesh.H"
 
 #ifdef HAVE_CFMSH
-  #include "Mesh/foamGeoMesh.H"
+#  include "Mesh/foamGeoMesh.H"
+#endif
+
+#ifdef HAVE_GMSH
+#  include "Mesh/gmshGeoMesh.H"
+#endif
+
+#ifdef HAVE_OCC
+#  include "Mesh/smeshGeoMesh.H"
 #endif
 
 namespace NEM {
@@ -45,11 +52,19 @@ geoMeshBase *Read(const std::string &fileName) {
 geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
   switch (meshType) {
     case MeshType::VTK_GEO_MESH: return vtkGeoMesh::Read(fileName);
-    case MeshType::GMSH_GEO_MESH: return gmshGeoMesh::Read(fileName);
+    case MeshType::GMSH_GEO_MESH: {
+#ifdef HAVE_GMSH
+      return gmshGeoMesh::Read(fileName);
+#else
+      std::cerr << "Please build NEMoSys with ENABLE_GMSH=ON to use this"
+                << " feature!" << std::endl;
+      throw;
+#endif
+    }
     case MeshType::OSH_GEO_MESH: return oshGeoMesh::Read(fileName);
     case MeshType::EXO_GEO_MESH: return exoGeoMesh::Read(fileName);
     case MeshType::INP_GEO_MESH: return inpGeoMesh::Read(fileName);
-    case MeshType::FOAM_GEO_MESH:
+    case MeshType::FOAM_GEO_MESH: {
 #ifdef HAVE_CFMSH
       std::string fname = fileName;
       fname.erase(fname.find_last_of('.'));
@@ -59,18 +74,33 @@ geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
                 << " feature!" << std::endl;
       throw;
 #endif
+    }
+    case MeshType::SMESH_GEO_MESH: {
+      std::cerr << "Unsupported.\n";
+      throw;
+    }
   }
+  // Don't put inside switch statement so static analyzers can detect unhandled
+  // cases
   return nullptr;
 }
 
 geoMeshBase *New(MeshType meshType) {
   switch (meshType) {
     case MeshType::VTK_GEO_MESH: return vtkGeoMesh::New();
-    case MeshType::GMSH_GEO_MESH: return gmshGeoMesh::New();
+    case MeshType::GMSH_GEO_MESH: {
+#ifdef HAVE_GMSH
+      return gmshGeoMesh::New();
+#else
+      std::cerr << "Please build NEMoSys with ENABLE_GMSH=ON to use this"
+                << " feature!" << std::endl;
+      throw;
+#endif
+    }
     case MeshType::OSH_GEO_MESH: return oshGeoMesh::New();
     case MeshType::EXO_GEO_MESH: return exoGeoMesh::New();
     case MeshType::INP_GEO_MESH: return inpGeoMesh::New();
-    case MeshType::FOAM_GEO_MESH:
+    case MeshType::FOAM_GEO_MESH: {
 #ifdef HAVE_CFMSH
       return foamGeoMesh::New();
 #else
@@ -78,6 +108,15 @@ geoMeshBase *New(MeshType meshType) {
                 << " feature!" << std::endl;
       throw;
 #endif
+    }
+    case MeshType::SMESH_GEO_MESH: {
+#ifdef HAVE_OCC
+      return smeshGeoMesh::New();
+#else
+      std::cerr << "Requires ENABLE_OPENCASCADE=ON\n";
+      throw;
+#endif
+    }
   }
   return nullptr;
 }

@@ -3,7 +3,7 @@ find_package(SWIG REQUIRED)
 
 # setuptools should add Python include directories
 recurse_interface_includes(WRAPPER_INCLUDE_DIRS Nemosys)
-
+list(REMOVE_DUPLICATES WRAPPER_INCLUDE_DIRS)
 set(SETUP_PY "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
 set(SETUP_PY_IN_T "${CMAKE_CURRENT_BINARY_DIR}/setup.py.in")

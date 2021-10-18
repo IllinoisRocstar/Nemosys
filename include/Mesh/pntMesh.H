@@ -14,7 +14,7 @@
 
 namespace PNTMesh {
 
-typedef int idTyp;
+using idTyp = int;
 
 enum class elementType {
   BAR,
@@ -55,7 +55,7 @@ struct blockType {
   std::vector<std::vector<int>> eConn;
 };
 
-typedef std::vector<blockType> BlockMap;
+using BlockMap = std::vector<blockType>;
 
 VTKCellType p2vEMap(elementType et);
 elementType v2pEMap(VTKCellType vt);

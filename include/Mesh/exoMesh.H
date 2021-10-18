@@ -23,12 +23,19 @@ void NEMOSYS_EXPORT wrnErrMsg(int errCode, const std::string &errMsg = "None");
 /**
  * EXODUS Element Types.
  */
-enum NEMOSYS_EXPORT elementType { TRIANGLE, QUAD, TETRA, HEX, WEDGE, OTHER };
+enum class NEMOSYS_EXPORT elementType {
+  TRIANGLE,
+  QUAD,
+  TETRA,
+  HEX,
+  WEDGE,
+  OTHER
+};
 
 /**
  * Boundary condition types
  */
-enum NEMOSYS_EXPORT surfaceBCTag { FIXED, SYMMX, SYMMY, SYMMZ };
+enum class NEMOSYS_EXPORT surfaceBCTag { FIXED, SYMMX, SYMMY, SYMMZ };
 
 /**
  * Stores node set information.
@@ -68,9 +75,9 @@ struct NEMOSYS_EXPORT sdeSetType {
   int elmIdOffset;
 };
 
-typedef std::vector<ndeSetType> ndeSets;
-typedef std::vector<elmBlkType> elmBlks;
-typedef std::vector<sdeSetType> sdeSets;
+using ndeSets = std::vector<ndeSetType>;
+using elmBlks = std::vector<elmBlkType>;
+using sdeSets = std::vector<sdeSetType>;
 
 /**
  * Convert EXODUS element type to VTK cell type
@@ -98,7 +105,7 @@ surfaceBCTag NEMOSYS_EXPORT bcTagNum(std::string &tag);
  */
 
 // TODO: documentation
-std::string NEMOSYS_EXPORT bcTagStr(int tag);
+std::string NEMOSYS_EXPORT bcTagStr(surfaceBCTag tag);
 
 /**
  * Convert string to EXODUS element type

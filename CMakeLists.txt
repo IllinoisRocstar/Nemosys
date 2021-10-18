@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 61)
+set(NEMOSYS_MINOR_VERSION 62)
 set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
@@ -95,7 +95,6 @@ option(ENABLE_MPI "Enable MPI support" OFF)
 option(ENABLE_TESTING "Enable testing" ${DEFAULT})
 option(ENABLE_BUILD_UTILS "Build utilities" OFF)
 option(ENABLE_PYTHON_BINDINGS "Enable Python bindings" OFF)
-option(ENABLE_CFMSH "Enable cfMesh Meshing engine" OFF)
 option(ENABLE_CONSRV_SURFACE_TRANSFER "Enable Conservative Surface Transfer" OFF)
 option(ENABLE_CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 option(ENABLE_CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
@@ -106,9 +105,14 @@ option(ENABLE_NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 option(ENABLE_OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
 with CUDA and linked dynamically)" OFF)
 option(ENABLE_OPENCASCADE "Enable OpenCASCADE kernel support (Used by some GMSH builds)" ${DEFAULT})
-option(ENABLE_TEMPLATE_MESH "Enable meshing templates" ${DEFAULT})
 option(ENABLE_MLAMR "Enable machine learning module in AMR" OFF)
 option(ENABLE_OPENMP "Enable OpenMP" ${DEFAULT})
+
+option(ENABLE_GPL "Allow linking against GPL libraries, making combined project fall under GPL license requirements" OFF)
+option(ENABLE_CFMSH "Enable cfMesh Meshing engine" OFF)
+option(ENABLE_GMSH "Enable GMSH" OFF)
+option(ENABLE_TEMPLATE_MESH "Enable meshing templates (requires gmsh)" OFF)
+
 
 # Check for option interdependencies ###########################################
 
@@ -137,6 +141,19 @@ endif()
 
 if(ENABLE_CFMSH AND NOT ENABLE_OPENMP)
   message(FATAL_ERROR "cfMesh requires OpenMP.")
+endif()
+
+if(NOT ENABLE_GPL)
+  if(ENABLE_GMSH)
+    message(FATAL_ERROR "Linking against Gmsh requires ENABLE_GPL flag to be set to ON")
+  endif()
+  if(ENABLE_CFMSH)
+    message(FATAL_ERROR "Linking against cfMesh requires ENABLE_GPL flag to be set to ON")
+  endif()
+endif()
+
+if(ENABLE_TEMPLATE_MESH AND NOT ENABLE_GMSH)
+  message(FATAL_ERROR "Template mesh requires ENABLE_GMSH to be set to ON")
 endif()
 
 # Check system configuration ###################################################
@@ -174,15 +191,6 @@ list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
 message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
-# Find Gmsh
-find_library(GMSH_LIB gmsh HINTS lib)
-find_file(GMSH_HDR gmsh.h HINTS include)
-get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
-get_filename_component(GMSH_LIB_PATH ${GMSH_LIB} PATH)
-list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
-message(STATUS "gmsh include path ${GMSH_INCPATH}")
-message(STATUS "gmsh libs ${GMSH_LIB}")
-
 # Find ExodusII
 find_library(EXO_LIB NAMES exoIIv2 exodus exoIIv2c)
 find_file(EXO_HDR exodusII.h)
@@ -200,18 +208,25 @@ if(WIN32)
   message(STATUS "netcdf libs ${netCDF_LIB_DIR}")
 endif()
 
-# Find OpenCascade (used by Gmsh if build without ENABLE_OCC_STATIC)
+# Find OpenCascade
 if(ENABLE_OPENCASCADE)
+  get_directory_property(PRE_OCC_COMPILE_DEFS COMPILE_DEFINITIONS)
+  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "")
   find_package(OpenCASCADE REQUIRED)
   list(APPEND LIBRARY_DIRS ${OpenCASCADE_LIBRARY_DIR})
   message(STATUS "OpenCASCADE include path ${OpenCASCADE_INCLUDE_DIR}")
   message(STATUS "OpenCASCADE libs ${OpenCASCADE_LIBRARY_DIR}")
+  get_directory_property(OCC_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${PRE_OCC_COMPILE_DEFS}")
+endif()
 
-  # CMake 3.13 required for target_link_directories
-  link_directories(${OpenCASCADE_LIBRARY_DIR})
-  # /CMake 3.13
-
-  set(HAVE_OPENCASCADE TRUE)
+# Find Gmsh
+if(ENABLE_GMSH)
+  find_package(Gmsh REQUIRED)
+  get_filename_component(GMSH_LIB_PATH ${Gmsh_LIBRARIES} PATH)
+  list(APPEND LIBRARY_DIRS ${GMSH_LIB_PATH})
+  message(STATUS "gmsh include path ${Gmsh_INCLUDE_DIRS}")
+  message(STATUS "gmsh libs ${Gmsh_LIBRARIES}")
 endif()
 
 # Find CGNS
@@ -339,13 +354,6 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
   find_package(IMPACT REQUIRED)
 endif()
 
-# For some reason, older versions of cmake fail to find the local gmsh include
-# files when compiling MAdLib header references.
-# TODO: Is this still true in Gmsh 4.2+ and CMake 2.8+?
-#if(EXISTS ${GMSH_INCPATH})
-#  include_directories(AFTER ${GMSH_INCPATH}/../)
-#endif()
-
 # Setting compile and link options #############################################
 
 # Adding flags to Debug
@@ -372,10 +380,16 @@ endif()
 add_subdirectory(contrib/omega_h-9.31.2)
 list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src)
 
-# Find MAdLib and ANN
-add_subdirectory(contrib/madlib-1.3.0) # includes ANN
-list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
-list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
+# Find ANN
+add_subdirectory(contrib/ann-1.1.2)
+list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/ann-1.1.2)
+
+# Find MAdLib (make sure done after ANN)
+if(ENABLE_GMSH)
+  add_subdirectory(contrib/madlib-1.3.0) # includes ANN
+  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0)
+  list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/madlib-1.3.0/Contrib/ANN)
+endif()
 
 # Find jsoncons
 add_subdirectory(contrib/jsoncons-0.159.0)
@@ -395,15 +409,26 @@ if(ENABLE_EPIC)
   add_subdirectory(contrib/fast-cpp-csv-parser-75600d0)
 endif()
 
+if(ENABLE_OPENCASCADE)
+  add_subdirectory(contrib/smesh-9.6.0)
+  list(APPEND LIBRARY_DIRS
+          ${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/Kernel
+          ${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/Geom
+          ${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/SMESH)
+  if(ENABLE_NETGEN)
+    list(APPEND LIBRARY_DIRS ${CMAKE_BINARY_DIR}/contrib/smesh-9.6.0/NETGENPlugin)
+  endif()
+endif()
+
 if(ENABLE_CFMSH)
   # Find foamutils
   add_subdirectory(contrib/foamutils)
-endif()
 
-# Setting include files for CfMesh
-file(GLOB cfmsh_H_files contrib/cfmesh_headers/*.H)
-file(GLOB cfmsh_C_files contrib/cfmesh_headers/*.C)
-set(CFMSH_INC_FILES ${cfmsh_H_files} ${cfmsh_C_files})
+  # Setting include files for CfMesh
+  file(GLOB cfmsh_H_files contrib/cfmesh_headers/*.H)
+  file(GLOB cfmsh_C_files contrib/cfmesh_headers/*.C)
+  set(CFMSH_INC_FILES ${cfmsh_H_files} ${cfmsh_C_files})
+endif()
 
 # Setting library files ########################################################
 
@@ -411,220 +436,189 @@ set(CFMSH_INC_FILES ${cfmsh_H_files} ${cfmsh_C_files})
 # List both headers and source files. Listed headers that are in include/ will
 # be installed. Private headers should be in src/
 set(NEMOSYS_SRCS
-    src/Drivers/NemJsonMacros.H
-    src/Drivers/DriverJsonTypeTraits.H
-    include/Drivers/NemDriver.H
-    src/Drivers/NemDriver.C
+        src/Drivers/NemJsonMacros.H
+        src/Drivers/DriverJsonTypeTraits.H
+        include/Drivers/NemDriver.H
+        src/Drivers/NemDriver.C
 
-    src/Drivers/AutoVerificationJson.H
-    include/Drivers/AutoVerificationDriver.H
-    src/Drivers/AutoVerificationDriver.C
+        src/Drivers/AutoVerificationJson.H
+        include/Drivers/AutoVerificationDriver.H
+        src/Drivers/AutoVerificationDriver.C
 
-    src/Drivers/Conversion/ConversionJson.H
-    include/Drivers/Conversion/ConversionDriver.H
-    src/Drivers/Conversion/ConversionDriver.C
-    include/Drivers/Conversion/GmshToExoConversionDriver.H
-    src/Drivers/Conversion/GmshToExoConversionDriver.C
-    include/Drivers/Conversion/GmshToVtkConversionDriver.H
-    src/Drivers/Conversion/GmshToVtkConversionDriver.C
-    include/Drivers/Conversion/ManipExoConversionDriver.H
-    src/Drivers/Conversion/ManipExoConversionDriver.C
-    include/Drivers/Conversion/SmartConversionDriver.H
-    src/Drivers/Conversion/SmartConversionDriver.C
-    include/Drivers/Conversion/VtkHexToTetConversionDriver.H
-    src/Drivers/Conversion/VtkHexToTetConversionDriver.C
-    include/Drivers/Conversion/VtkToCobaltConversionDriver.H
-    src/Drivers/Conversion/VtkToCobaltConversionDriver.C
-    include/Drivers/Conversion/VtkToPatranConversionDriver.H
-    src/Drivers/Conversion/VtkToPatranConversionDriver.C
-    include/Drivers/Conversion/VtkToPntConversionDriver.H
-    src/Drivers/Conversion/VtkToPntConversionDriver.C
+        src/Drivers/Conversion/ConversionJson.H
+        include/Drivers/Conversion/ConversionDriver.H
+        src/Drivers/Conversion/ConversionDriver.C
+        include/Drivers/Conversion/GmshToExoConversionDriver.H
+        src/Drivers/Conversion/GmshToExoConversionDriver.C
+        include/Drivers/Conversion/GmshToVtkConversionDriver.H
+        src/Drivers/Conversion/GmshToVtkConversionDriver.C
+        include/Drivers/Conversion/ManipExoConversionDriver.H
+        src/Drivers/Conversion/ManipExoConversionDriver.C
+        include/Drivers/Conversion/SmartConversionDriver.H
+        src/Drivers/Conversion/SmartConversionDriver.C
+        include/Drivers/Conversion/VtkHexToTetConversionDriver.H
+        src/Drivers/Conversion/VtkHexToTetConversionDriver.C
+        include/Drivers/Conversion/VtkToCobaltConversionDriver.H
+        src/Drivers/Conversion/VtkToCobaltConversionDriver.C
+        include/Drivers/Conversion/VtkToPatranConversionDriver.H
+        src/Drivers/Conversion/VtkToPatranConversionDriver.C
+        include/Drivers/Conversion/VtkToPntConversionDriver.H
+        src/Drivers/Conversion/VtkToPntConversionDriver.C
 
-    src/Drivers/MeshGen/MeshGenJson.H
-    include/Drivers/MeshGen/MeshGenDriver.H
-    src/Drivers/MeshGen/MeshGenDriver.C
-    include/Drivers/MeshGen/GmshMeshGenDriver.H
-    src/Drivers/MeshGen/GmshMeshGenDriver.C
+        src/Drivers/MeshGen/MeshGenJson.H
+        include/Drivers/MeshGen/MeshGenDriver.H
+        src/Drivers/MeshGen/MeshGenDriver.C
+        src/Drivers/MeshQualityJson.H
+        include/Drivers/MeshQualityDriver.H
+        src/Drivers/MeshQualityDriver.C
+        src/Drivers/Refine/RefineJson.H
+        include/Drivers/Refine/RefineDriver.H
+        src/Drivers/Refine/RefineDriver.C
+        include/Drivers/Refine/OmegahRefineDriver.H
+        src/Drivers/Refine/OmegahRefineDriver.C
+        include/Drivers/TransferDriver.H
+        src/Drivers/TransferJson.H
+        src/Drivers/TransferDriver.C
 
-    src/Drivers/MeshQualityJson.H
-    include/Drivers/MeshQualityDriver.H
-    src/Drivers/MeshQualityDriver.C
+        src/Drivers/PackMesh/PackMeshJson.H
+        include/Drivers/PackMesh/PackMeshDriver.H
+        src/Drivers/PackMesh/PackMeshDriver.C
 
-    src/Drivers/NucMeshJson.H
-    include/Drivers/NucMeshDriver.H
-    src/Drivers/NucMeshDriver.C
+        include/Geometry/rocPackShape.H
+        src/Geometry/rocPackShape.C
+        include/Geometry/hmxShape.H
+        src/Geometry/hmxShape.C
+        include/Geometry/petnShape.H
+        src/Geometry/petnShape.C
+        include/Geometry/icosidodecahedronShape.H
+        src/Geometry/icosidodecahedronShape.C
 
-    src/Drivers/Refine/RefineJson.H
-    include/Drivers/Refine/RefineDriver.H
-    src/Drivers/Refine/RefineDriver.C
-    include/Drivers/Refine/SizeFieldRefineDriver.H
-    src/Drivers/Refine/SizeFieldRefineDriver.C
-    include/Drivers/Refine/UniformRefineDriver.H
-    src/Drivers/Refine/UniformRefineDriver.C
-    include/Drivers/Refine/Z2RefineDriver.H
-    src/Drivers/Refine/Z2RefineDriver.C
-    include/Drivers/Refine/OmegahRefineDriver.H
-    src/Drivers/Refine/OmegahRefineDriver.C
-    include/Drivers/TransferDriver.H
-    src/Drivers/TransferJson.H
-    src/Drivers/TransferDriver.C
+        include/InputGeneration/inputGen.H
+        src/InputGeneration/inputGen.C
 
-    src/Drivers/PackMesh/PackMeshJson.H
-    include/Drivers/PackMesh/PackMeshDriver.H
-    src/Drivers/PackMesh/PackMeshDriver.C
-    include/Drivers/PackMesh/SurfacePackMeshDriver.H
-    src/Drivers/PackMesh/SurfacePackMeshDriver.C
+        include/Integration/Cubature.H
+        src/Integration/Cubature.C
 
-    include/Geometry/rocPack.H
-    src/Geometry/rocPack.C
-    include/Geometry/rocPackShape.H
-    src/Geometry/rocPackShape.C
-    include/Geometry/hmxShape.H
-    src/Geometry/hmxShape.C
-    include/Geometry/petnShape.H
-    src/Geometry/petnShape.C
-    include/Geometry/icosidodecahedronShape.H
-    src/Geometry/icosidodecahedronShape.C
+        include/Mesh/meshBase.H
+        src/Mesh/meshBase.C
+        include/Mesh/geoMeshBase.H
+        src/Mesh/geoMeshBase.C
+        src/Mesh/geoMeshBaseReconstructGeo.C
+        include/Mesh/geoMeshFactory.H
+        src/Mesh/geoMeshFactory.C
+        include/Mesh/cobalt.H
+        src/Mesh/cobalt.C
+        include/Mesh/diffMesh.H
+        src/Mesh/diffMesh.C
+        include/Mesh/exoMesh.H
+        src/Mesh/exoMesh.C
+        include/Mesh/exoGeoMesh.H
+        src/Mesh/exoGeoMesh.C
+        include/Mesh/inpGeoMesh.H
+        src/Mesh/inpGeoMesh.C
+        include/Mesh/oshGeoMesh.H
+        src/Mesh/oshGeoMesh.C
+        include/Mesh/patran.H
+        src/Mesh/patran.C
+        include/Mesh/pntMesh.H
+        src/Mesh/pntMesh.C
+        include/Mesh/vtkGeoMesh.H
+        src/Mesh/vtkGeoMesh.C
+        include/Mesh/vtkMesh.H
+        src/Mesh/vtkMesh.C
 
-    include/InputGeneration/inputGen.H
-    src/InputGeneration/inputGen.C
+        include/MeshGeneration/meshingParams.H
+        include/MeshGeneration/meshGen.H
 
-    include/Integration/Cubature.H
-    src/Integration/Cubature.C
+        src/MeshOperation/dataSetRegionBoundaryFilter.H
+        src/MeshOperation/dataSetRegionBoundaryFilter.C
+        src/MeshOperation/mergeCells.H
+        src/MeshOperation/mergeCells.C
+        include/MeshOperation/meshSrch.H
+        src/MeshOperation/meshSrch.C
 
-    include/Mesh/meshBase.H
-    src/Mesh/meshBase.C
-    include/Mesh/geoMeshBase.H
-    src/Mesh/geoMeshBase.C
-    src/Mesh/geoMeshBaseReconstructGeo.C
-    include/Mesh/geoMeshFactory.H
-    src/Mesh/geoMeshFactory.C
-    include/Mesh/cobalt.H
-    src/Mesh/cobalt.C
-    include/Mesh/diffMesh.H
-    src/Mesh/diffMesh.C
-    include/Mesh/exoMesh.H
-    src/Mesh/exoMesh.C
-    include/Mesh/exoGeoMesh.H
-    src/Mesh/exoGeoMesh.C
-    src/Mesh/gmshTypes.H
-    include/Mesh/gmshMesh.H
-    src/Mesh/gmshMesh.C
-    include/Mesh/gmshGeoMesh.H
-    src/Mesh/gmshGeoMesh.C
-    include/Mesh/inpGeoMesh.H
-    src/Mesh/inpGeoMesh.C
-    include/Mesh/oshGeoMesh.H
-    src/Mesh/oshGeoMesh.C
-    include/Mesh/patran.H
-    src/Mesh/patran.C
-    include/Mesh/pntMesh.H
-    src/Mesh/pntMesh.C
-    include/Mesh/vtkGeoMesh.H
-    src/Mesh/vtkGeoMesh.C
-    include/Mesh/vtkMesh.H
-    src/Mesh/vtkMesh.C
+        include/MeshPartitioning/meshPartitioner.H
+        src/MeshPartitioning/meshPartitioner.C
 
-    include/MeshGeneration/meshGen.H
-    include/MeshGeneration/meshingParams.H
-    include/MeshGeneration/netgenGen.H
-    src/MeshGeneration/netgenGen.C
-    include/MeshGeneration/netgenParams.H
-    include/MeshGeneration/gmshGen.H
-    src/MeshGeneration/gmshGen.C
-    include/MeshGeneration/gmshParams.H
+        include/MeshQuality/MeshQuality.H
+        src/MeshQuality/MeshQuality.C
+        include/MeshQuality/meshQualityParams.H
 
-    src/MeshOperation/dataSetRegionSurfaceFilter.H
-    src/MeshOperation/dataSetRegionSurfaceFilter.C
-    src/MeshOperation/mergeCells.H
-    src/MeshOperation/mergeCells.C
-    include/MeshOperation/meshSrch.H
-    src/MeshOperation/meshSrch.C
+        include/PatchRecovery/orthoPoly1D.H
+        src/PatchRecovery/orthoPoly1D.C
+        include/PatchRecovery/orthoPoly3D.H
+        src/PatchRecovery/orthoPoly3D.C
+        include/PatchRecovery/patchRecovery.H
+        src/PatchRecovery/patchRecovery.C
+        include/PatchRecovery/polyApprox.H
+        src/PatchRecovery/polyApprox.C
 
-    include/MeshPartitioning/meshPartitioner.H
-    src/MeshPartitioning/meshPartitioner.C
+        include/Services/srvBase.H
+        src/Services/srvBase.C
+        include/Services/omegahRefineSrv.H
+        src/Services/omegahRefineSrv.C
 
-    include/MeshQuality/MeshQuality.H
-    src/MeshQuality/MeshQuality.C
-    include/MeshQuality/meshQualityParams.H
+        include/SizeFieldGeneration/SizeFieldGen.H
+        src/SizeFieldGeneration/SizeFieldGen.C
+        include/SizeFieldGeneration/GradSizeField.H
+        src/SizeFieldGeneration/GradSizeField.C
+        include/SizeFieldGeneration/ValSizeField.H
+        src/SizeFieldGeneration/ValSizeField.C
+        include/SizeFieldGeneration/Z2ErrorSizeField.H
+        src/SizeFieldGeneration/Z2ErrorSizeField.C
 
-    include/NucMesh/circles.H
-    src/NucMesh/circles.C
-    include/NucMesh/circlesInPolys.H
-    src/NucMesh/circlesInPolys.C
-    include/NucMesh/polygon.H
-    src/NucMesh/polygon.C
-    include/NucMesh/shape.H
-    src/NucMesh/shape.C
+        include/SolutionVerification/OrderOfAccuracy.H
+        src/SolutionVerification/OrderOfAccuracy.C
 
-    include/PatchRecovery/orthoPoly1D.H
-    src/PatchRecovery/orthoPoly1D.C
-    include/PatchRecovery/orthoPoly3D.H
-    src/PatchRecovery/orthoPoly3D.C
-    include/PatchRecovery/patchRecovery.H
-    src/PatchRecovery/patchRecovery.C
-    include/PatchRecovery/polyApprox.H
-    src/PatchRecovery/polyApprox.C
+        include/Transfer/TransferBase.H
+        src/Transfer/TransferBase.C
+        include/Transfer/FETransfer.H
+        src/Transfer/FETransfer.C
 
-    include/Refinement/Refine.H
-    src/Refinement/Refine.C
+        src/AuxiliaryFunctions.H
 
-    include/Services/srvBase.H
-    src/Services/srvBase.C
-    include/Services/omegahRefineSrv.H
-    src/Services/omegahRefineSrv.C
-
-    include/SizeFieldGeneration/SizeFieldGen.H
-    src/SizeFieldGeneration/SizeFieldGen.C
-    include/SizeFieldGeneration/GradSizeField.H
-    src/SizeFieldGeneration/GradSizeField.C
-    include/SizeFieldGeneration/ValSizeField.H
-    src/SizeFieldGeneration/ValSizeField.C
-    include/SizeFieldGeneration/Z2ErrorSizeField.H
-    src/SizeFieldGeneration/Z2ErrorSizeField.C
-
-    include/SolutionVerification/OrderOfAccuracy.H
-    src/SolutionVerification/OrderOfAccuracy.C
-
-    include/Transfer/TransferBase.H
-    src/Transfer/TransferBase.C
-    include/Transfer/FETransfer.H
-    src/Transfer/FETransfer.C
-
-    src/AuxiliaryFunctions.H
-)
+        )
 
 # Optional source files
 if(HAVE_CGNS)
   list(APPEND NEMOSYS_SRCS
-      src/Drivers/RocPartCommGenJson.H
-      include/Drivers/RocPartCommGenDriver.H
-      src/Drivers/RocPartCommGenDriver.C
+          src/Drivers/RocPartCommGenJson.H
+          include/Drivers/RocPartCommGenDriver.H
+          src/Drivers/RocPartCommGenDriver.C
 
-      include/IO/cgnsAnalyzer.H
-      src/IO/cgnsAnalyzer.C
-      include/IO/cgnsWriter.H
-      src/IO/cgnsWriter.C
-      include/IO/rocstarCgns.H
-      src/IO/rocstarCgns.C
+          include/IO/cgnsWriter.H
+          src/IO/cgnsWriter.C
+          )
+  if(ENABLE_GMSH)
+    list(APPEND NEMOSYS_SRCS
+            include/IO/cgnsAnalyzer.H
+            src/IO/cgnsAnalyzer.C
+            include/IO/rocstarCgns.H
+            src/IO/rocstarCgns.C
 
-      include/MeshPartitioning/meshStitcher.H
-      src/MeshPartitioning/meshStitcher.C
-  )
+            include/MeshPartitioning/meshStitcher.H
+            src/MeshPartitioning/meshStitcher.C
+            )
+  endif()
 endif()
 
-if(HAVE_HDF5)
+
+if(ENABLE_HDF5)
   list(APPEND NEMOSYS_SRCS
-      src/Drivers/ProteusJson.H
-      include/Drivers/ProteusDriver.H
-      src/Drivers/ProteusDriver.C
-
-      include/IO/hdf5Reader.H
-      src/IO/hdf5Reader.C
-      include/IO/proteusHdf5.H
-      src/IO/proteusHdf5.C
-  )
+          include/IO/hdf5Reader.H
+          src/IO/hdf5Reader.C
+          )
+  if(ENABLE_GMSH)
+    list(APPEND NEMOSYS_SRCS
+            src/Drivers/ProteusJson.H
+            include/Drivers/ProteusDriver.H
+            src/Drivers/ProteusDriver.C
+            include/IO/proteusHdf5.H
+            src/IO/proteusHdf5.C
+            )
+  endif()
 endif()
+
 
 if(ENABLE_EPIC)
   list(APPEND NEMOSYS_SRCS
@@ -642,9 +636,13 @@ endif()
 
 if(ENABLE_NETGEN)
   list(APPEND NEMOSYS_SRCS
-      include/Drivers/MeshGen/NetgenMeshGenDriver.H
-      src/Drivers/MeshGen/NetgenMeshGenDriver.C
-  )
+          include/Drivers/MeshGen/NetgenMeshGenDriver.H
+          src/Drivers/MeshGen/NetgenMeshGenDriver.C
+
+          include/MeshGeneration/netgenParams.H
+          include/MeshGeneration/netgenGen.H
+          src/MeshGeneration/netgenGen.C
+          )
 endif()
 
 if(ENABLE_TEMPLATE_MESH)
@@ -657,8 +655,6 @@ endif()
 
 if(ENABLE_CFMSH)
   list(APPEND NEMOSYS_SRCS
-      include/Drivers/Conversion/FoamToMshConversionDriver.H
-      src/Drivers/Conversion/FoamToMshConversionDriver.C
       include/Drivers/Conversion/FoamToVtkConversionDriver.H
       src/Drivers/Conversion/FoamToVtkConversionDriver.C
       include/Drivers/Conversion/VtkToFoamConversionDriver.H
@@ -698,6 +694,12 @@ if(ENABLE_CFMSH)
       include/Refinement/AMRFoam.H
       src/Refinement/AMRFoam.C
   )
+  if(ENABLE_GMSH)
+    list(APPEND NEMOSYS_SRCS
+            include/Drivers/Conversion/FoamToMshConversionDriver.H
+            src/Drivers/Conversion/FoamToMshConversionDriver.C
+            )
+  endif()
 endif()
 
 if(ENABLE_CONSRV_VOLUME_TRANSFER)
@@ -713,6 +715,75 @@ if(ENABLE_CONSRV_SURFACE_TRANSFER)
       src/Transfer/ConservativeSurfaceTransfer.C
   )
 endif()
+
+if(ENABLE_GMSH)
+  list(APPEND NEMOSYS_SRCS
+      include/Drivers/MeshGen/GmshMeshGenDriver.H
+      src/Drivers/MeshGen/GmshMeshGenDriver.C
+      include/Drivers/PackMesh/SurfacePackMeshDriver.H
+      src/Drivers/PackMesh/SurfacePackMeshDriver.C
+      include/Drivers/Refine/SizeFieldRefineDriver.H
+      src/Drivers/Refine/SizeFieldRefineDriver.C
+      include/Drivers/Refine/UniformRefineDriver.H
+      src/Drivers/Refine/UniformRefineDriver.C
+      include/Drivers/Refine/Z2RefineDriver.H
+      src/Drivers/Refine/Z2RefineDriver.C
+
+      include/Geometry/rocPack.H
+      src/Geometry/rocPack.C
+
+      src/Mesh/gmshTypes.H
+      include/Mesh/gmshMesh.H
+      src/Mesh/gmshMesh.C
+      include/Mesh/gmshGeoMesh.H
+      src/Mesh/gmshGeoMesh.C
+
+      include/MeshGeneration/gmshGen.H
+      include/MeshGeneration/gmshParams.H
+      src/MeshGeneration/gmshGen.C
+
+      include/Refinement/Refine.H
+      src/Refinement/Refine.C
+      )
+endif()
+
+
+if(ENABLE_OPENCASCADE)
+  list(APPEND NEMOSYS_SRCS
+      src/Drivers/NucMeshJson.H
+      include/Drivers/NucMeshDriver.H
+      src/Drivers/NucMeshDriver.C
+
+      include/Geometry/ShapeData.H
+      include/Geometry/GeoManager.H
+      src/Geometry/GeoManager.C
+
+      include/NucMesh/NucMeshGeo.H
+      src/NucMesh/NucMeshGeo.C
+      include/NucMesh/NucMeshShapeData.H
+      src/NucMesh/NucMeshShapeData.C
+      include/NucMesh/ShapeBase.H
+      src/NucMesh/ShapeBase.C
+      include/NucMesh/CirclesAndPolys.H
+      src/NucMesh/CirclesAndPolys.C
+      include/NucMesh/ShapesArray.H
+      src/NucMesh/ShapesArray.C
+      include/NucMesh/PolarArray.H
+      src/NucMesh/PolarArray.C
+      include/NucMesh/HexagonalArray.H
+      src/NucMesh/HexagonalArray.C
+      include/NucMesh/RectangularArray.H
+      src/NucMesh/RectangularArray.C
+
+      src/Mesh/smeshUtils.H
+      include/Mesh/smeshGeoMesh.H
+      src/Mesh/smeshGeoMesh.C
+
+      include/Services/NucMeshSrv.H
+      src/Services/NucMeshSrv.C
+          )
+endif()
+
 
 if(ENABLE_OMEGAH_CUDA)
   set_source_files_properties(src/Mesh/oshGeoMesh.C src/Services/omegahRefineSrv.C
@@ -732,7 +803,7 @@ target_include_directories(Nemosys
 # Private headers
 target_include_directories(Nemosys PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 
-NEM_link_3p_targets(Nemosys PUBLIC MAdLib jsoncons omega_h eigen)
+NEM_link_3p_targets(Nemosys PUBLIC ANN jsoncons omega_h eigen)
 # VTK targets are irregular and can't be parsed cleanly.
 target_link_libraries(Nemosys PUBLIC ${VTK_LIBRARIES})
 target_compile_definitions(Nemosys PUBLIC ${VTK_DEFINITIONS})
@@ -749,6 +820,11 @@ NEM_include_3p_directories(Nemosys PUBLIC
 if(WIN32)
   target_link_libraries(Nemosys PUBLIC netcdf)
 endif()
+
+if(ENABLE_GMSH)
+  NEM_link_3p_targets(Nemosys PUBLIC Gmsh::Gmsh MAdLib)
+endif()
+
 
 if(HAVE_CGNS)
   target_link_libraries(Nemosys PUBLIC ${CGNS_LIB})
@@ -778,9 +854,18 @@ if(HAVE_HDF5)
   endif()
 endif()
 
-if(HAVE_OPENCASCADE)
-  target_link_libraries(Nemosys PUBLIC TKernel)
+if(ENABLE_OPENCASCADE)
+  target_link_libraries(Nemosys PUBLIC TKG3d TKBRep)
+  target_link_libraries(Nemosys PRIVATE TKTopAlgo TKGeomBase TKMath TKBO)
+  # OpenCASCADE doesn't set INTERFACE_INCLUDE_DIRS
+  NEM_include_3p_directories(Nemosys PUBLIC ${OpenCASCADE_INCLUDE_DIR})
+  NEM_link_3p_targets(Nemosys PUBLIC SMESH StdMeshers SMDS)
+  NEM_link_3p_targets(Nemosys PRIVATE Controls)
+  if(ENABLE_NETGEN)
+    NEM_link_3p_targets(Nemosys PUBLIC NETGENPlugin)
+  endif()
 endif()
+
 
 # TODO: Appears unused.
 #if(NOT ${BUILD_SHARED_LIBS})
@@ -884,6 +969,15 @@ if(ENABLE_OPENMP)
       PUBLIC
       OpenMP::OpenMP_CXX)
 endif()
+
+if(ENABLE_GMSH)
+  target_compile_definitions(Nemosys PRIVATE HAVE_GMSH)
+endif()
+
+if(ENABLE_OPENCASCADE)
+  target_compile_definitions(Nemosys PRIVATE HAVE_OCC)
+endif()
+
 
 # Set warning level ############################################################
 
@@ -1005,7 +1099,7 @@ set(NEMOSYSRUN_SRCS utils/Nemosys.C)
 
 # TODO: clean up old utilities
 if(ENABLE_BUILD_UTILS)
-  if(HAVE_CGNS)
+  if(HAVE_CGNS AND ENABLE_GMSH)
     # Setting stitch cgns utility source
     set(ROCSTITCHMESH_SRCS utils/rocStitchMesh.C)
   endif()
@@ -1018,7 +1112,7 @@ add_executable(nemosysRun ${NEMOSYSRUN_SRCS})
 target_link_libraries(nemosysRun Nemosys)
 
 if(ENABLE_BUILD_UTILS)
-  if(HAVE_CGNS)
+  if(HAVE_CGNS AND ENABLE_GMSH)
     # Building stitch cgns utility
     add_executable(rocStitchMesh ${ROCSTITCHMESH_SRCS})
     target_link_libraries(rocStitchMesh Nemosys)
@@ -1038,7 +1132,7 @@ install(TARGETS nemosysRun
     GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
 if(ENABLE_BUILD_UTILS)
-  if(HAVE_CGNS)
+  if(HAVE_CGNS AND ENABLE_GMSH)
     install(TARGETS rocStitchMesh
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE

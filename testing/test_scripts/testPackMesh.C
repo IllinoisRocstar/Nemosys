@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -59,8 +60,10 @@ TEST(PackMeshing, NumberOfNodesNodesnCellsMerged) {
   if (ref) delete ref;
   ref = NEM::MSH::Read(inputjson["Merged Reference File"].as<std::string>());
   auto *cmp2 = NEM::MSH::Read("packmesh.vtu");
-  EXPECT_TRUE((cmp2->getNumberOfPoints() >= ref->getNumberOfPoints() * 0.90) &&
-              (cmp2->getNumberOfPoints() <= ref->getNumberOfPoints() * 1.1));
+  EXPECT_TRUE(std::fabs(cmp2->getNumberOfPoints() / ref->getNumberOfPoints() -
+                        1) < 0.03);
+  EXPECT_TRUE(
+      std::fabs(cmp2->getNumberOfCells() / ref->getNumberOfCells() - 1) < 0.03);
   cmp2->Delete();
   ref->Delete();
 }

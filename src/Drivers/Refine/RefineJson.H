@@ -6,9 +6,6 @@
 
 #include "Drivers/Refine/OmegahRefineDriver.H"
 #include "Drivers/Refine/RefineDriver.H"
-#include "Drivers/Refine/SizeFieldRefineDriver.H"
-#include "Drivers/Refine/UniformRefineDriver.H"
-#include "Drivers/Refine/Z2RefineDriver.H"
 
 #ifdef HAVE_CFMSH
 #  define IF_CFMSH(a) a,
@@ -21,6 +18,15 @@
 #  define IF_MLAMR_CFMSH(a) a,
 #else
 #  define IF_MLAMR_CFMSH(a)
+#endif
+
+#if defined(HAVE_GMSH)
+#  define IF_GMSH(a) a,
+#  include "Drivers/Refine/SizeFieldRefineDriver.H"
+#  include "Drivers/Refine/UniformRefineDriver.H"
+#  include "Drivers/Refine/Z2RefineDriver.H"
+#else
+#  define IF_GMSH(a)
 #endif
 
 namespace NEM {
@@ -41,8 +47,10 @@ NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_INTERMEDIATE(
     NEM::DRV::RefineDriver,
     (IF_MLAMR_CFMSH(NEM::DRV::FoamMLRefineDriver)
      IF_CFMSH(NEM::DRV::FoamRefineDriver)
-     NEM::DRV::OmegahRefineDriver, NEM::DRV::SizeFieldRefineDriver,
-     NEM::DRV::UniformRefineDriver, NEM::DRV::Z2RefineDriver),
+     IF_GMSH(NEM::DRV::SizeFieldRefineDriver)
+     IF_GMSH(NEM::DRV::UniformRefineDriver)
+     IF_GMSH(NEM::DRV::Z2RefineDriver)
+     NEM::DRV::OmegahRefineDriver),
     NEM::DRV::NemDriver, 2, (getFiles, setFiles, NEM::DRV::JSON::meshFiles),
     (, , NEM::DRV::JSON::refOpts, NEM_JSON_RDONLY_OVERRIDE,
      NEM_JSON_CHECK_KEY_ONLY),
@@ -177,6 +185,7 @@ JSONCONS_N_MEMBER_NAME_TRAITS(NEM::DRV::OmegahRefineDriver::VarCompare, 1,
                               (tolerance, "Tolerance"), (floor, "Floor"))
 
 // SizeFieldRefineDriver
+#ifdef HAVE_GMSH
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
     NEM::DRV::SizeFieldRefineDriver, NEM::DRV::RefineDriver, 1,
     (getOpts, setOpts, NEM::DRV::JSON::refOpts, JSONCONS_RDWR))
@@ -219,8 +228,10 @@ JSONCONS_ALL_MEMBER_NAME_TRAITS(
      }),
     (transferData, NEM::DRV::JSON::refTransferData), (arrayName, "Array Name"),
     (order, "Order"))
+#endif
 
 #undef IF_CFMSH
 #undef IF_MLAMR_CFMSH
+#undef IF_GMSH
 
 #endif  // NEMOSYS_REFINEJSON_H_

@@ -10,10 +10,11 @@
 #include <string>
 #include <utility>
 
-#include <gmsh.h>
+#ifdef HAVE_GMSH
+#  include <gmsh.h>
+#endif
 #include <vtkDataArray.h>
 #include <vtkDoubleArray.h>
-#include <vtkGenericCell.h>
 #include <vtkIdList.h>
 #include <vtkStringArray.h>
 
@@ -22,7 +23,6 @@
 #include <cellZoneSet.H>
 #include <fileName.H>
 #include <foamVtkVtuAdaptor.H>
-#include <fvMesh.H>
 #include <globalMeshData.H>
 #include <timeSelector.H>
 #include <topoSetSource.H>
@@ -140,7 +140,7 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
     Foam::labelList sideSetOnlyFaceLabels(nonInternalFaces);
     Foam::labelList sideSetOnlyOwners(nonInternalFaces);
     int indx = 0;
-    for (int i = 0; i < (int)face_patch_map.size(); i++) {
+    for (int i = 0; i < static_cast<int>(face_patch_map.size()); i++) {
       if (face_patch_map[i] != -1) {
         sideSetOnlyFaces[indx] = allFaces[i];
         sideSetOnlyOwners[indx] = faceOwners[i];
@@ -189,9 +189,11 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
 
     auto sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
     sideSetOrigCellId->SetName("OrigCellIds");
+    sideSetOrigCellId->SetNumberOfComponents(2);
 
     auto sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
     sideSetCellFaceId->SetName("CellFaceIds");
+    sideSetCellFaceId->SetNumberOfComponents(2);
 
     auto sideSetPatchId = vtkSmartPointer<vtkIntArray>::New();
     sideSetPatchId->SetName("PatchIds");
@@ -202,15 +204,15 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
     for (int i = 0; i < sideSetOnlyFaces.size(); i++) {
       sideSetEntities->InsertNextValue(
           static_cast<int>(physGrps[sideSetOnlyOwners[i]]));
-      sideSetOrigCellId->InsertNextValue(sideSetOnlyOwners[i]);
+      sideSetOrigCellId->InsertNextTuple2(sideSetOnlyOwners[i],-1);
     }
 
-    const Foam::cellShapeList &cellShapes = foamMesh->cellShapes();
     for (int i = 0; i < sideSetOnlyOwners.size(); i++) {
-      Foam::faceList fcs = cellShapes[sideSetOnlyOwners[i]].faces();
-      for (int j = 0; j < fcs.size(); j++) {
-        if (fcs[j] == sideSetOnlyFaces[i])
-          sideSetCellFaceId->InsertNextValue(j);
+      const Foam::cell& facesCell = foamMesh->cells()[sideSetOnlyOwners[i]];
+      for (int j = 0; j < facesCell.size(); j++) {
+        if (foamMesh->faces()[facesCell[j]] == sideSetOnlyFaces[i]) {
+          sideSetCellFaceId->InsertNextTuple2(j,-1);
+        }
       }
     }
 
@@ -229,6 +231,7 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
         SideSet(sideSet, sideSetEntities, sideSetOrigCellId, sideSetCellFaceId);
 
     std::string gmshMesh = "foamGeoMesh_" + nemAux::getRandomString(6);
+#ifdef HAVE_GMSH
     GmshInterface::Initialize();
     gmsh::model::add(gmshMesh);
     gmsh::model::setCurrent(gmshMesh);
@@ -258,7 +261,7 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
         }
       }
     }
-
+#endif
     return {vtkdataSet, gmshMesh, phyGrpArrayName, sideSetStruct};
   }
 }
@@ -266,8 +269,8 @@ geoMeshBase::GeoMesh foamGeoMesh::foam2GM(Foam::fvMesh *foamMesh,
 std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     const GeoMesh &geoMesh, Foam::Time *runTime,
     const std::string &phyGrpArrayName) {
-  int numPoints = (int)geoMesh.mesh->GetNumberOfPoints();
-  int numCells = (int)geoMesh.mesh->GetNumberOfCells();
+  int numPoints = static_cast<int>(geoMesh.mesh->GetNumberOfPoints());
+  int numCells = static_cast<int>(geoMesh.mesh->GetNumberOfCells());
 
   Foam::pointField pointData(numPoints);
   Foam::pointField pointData2(numPoints);
@@ -303,9 +306,9 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     for (int i = 0; i < numCells; i++) {
       vtkIdList *ptIds = vtkIdList::New();
       geoMesh.mesh->GetCellPoints(i, ptIds);
-      int numIds = (int)ptIds->GetNumberOfIds();
+      int numIds = static_cast<int>(ptIds->GetNumberOfIds());
       cellIds[i].resize(numIds);
-      for (int j = 0; j < numIds; j++) cellIds[i][j] = (int)(ptIds->GetId(j));
+      for (int j = 0; j < numIds; j++) cellIds[i][j] = static_cast<int>(ptIds->GetId(j));
       Foam::labelList meshPoints(numIds);
       for (int k = 0; k < numIds; k++) meshPoints[k] = cellIds[i][k];
       typeCell[i] = geoMesh.mesh->GetCellType(i);
@@ -368,7 +371,7 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
         ptchNameIDMap[id_p] = nm;
       }
 
-      totalPatches = (int)ptchNameIDMap.size();
+      totalPatches = static_cast<int>(ptchNameIDMap.size());
       std::vector<int> faceCounts(totalPatches,
                                   0);  // Counts faces for each patch
       std::vector<std::vector<int>> facePatchIds;
@@ -402,11 +405,11 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
         for (int j : facePatchIds[i]) {
           vtkIdList *ptIds = vtkIdList::New();
           geoMesh.sideSet.sides->GetCellPoints(j, ptIds);
-          int numIds = (int)ptIds->GetNumberOfIds();
+          int numIds = static_cast<int>(ptIds->GetNumberOfIds());
           Foam::labelList lstLbl(0);
           lstLbl.clear();
           for (int k = 0; k < numIds; k++) {
-            lstLbl.append((int)ptIds->GetId(k));
+            lstLbl.append(static_cast<int>(ptIds->GetId(k)));
           }
           if (!lstLbl.empty()) thisPatch.append(Foam::face(lstLbl));
         }
@@ -471,14 +474,16 @@ std::unique_ptr<Foam::fvMesh> foamGeoMesh::GM2foam(
     std::sort(scratchVec.begin(), scratchVec.end());
     scratchVec.erase(unique(scratchVec.begin(), scratchVec.end()),
                      scratchVec.end());
-    int totalGroups = (int)scratchVec.size();
+    int totalGroups = static_cast<int>(scratchVec.size());
 
     // Create cellZones
     Foam::label zoneI;
     for (int i = 0; i < totalGroups; i++) {
       Foam::labelList currentGroupList;
-      for (int j = 0; j < (int)allGroups.size(); j++)
-        if (int(allGroups[j]) == i) currentGroupList.append(j);
+      //for (int j : allGroups) {
+      for (int j = 0; j < static_cast<int>(allGroups.size()); j++) {
+        if (static_cast<int>(allGroups[j]) == i) currentGroupList.append(j);
+      }
 
       const Foam::cellZoneMesh &cellZones = fm->cellZones();
       zoneI = cellZones.size();
@@ -647,3 +652,4 @@ void foamGeoMesh::InitializeFoam() {
 
 }  // namespace MSH
 }  // namespace NEM
+

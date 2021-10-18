@@ -93,7 +93,7 @@ else \
  /**/
 
 #define NEM_JSON_POLYMORPHIC_AS_RAW_PTR(BaseClass, P2, P3, DerivedClass, Count) NEM_JSON_POLYMORPHIC_AS_RAW_PTR_LAST(BaseClass, P2, P3, DerivedClass, Count)
-#define NEM_JSON_POLYMORPHIC_AS_RAW_PTR_LAST(BaseClass, P2, P3, DerivedClass, Count)  if (ajson.template is<DerivedClass *>()) return ajson.template as<DerivedClass *>();
+#define NEM_JSON_POLYMORPHIC_AS_RAW_PTR_LAST(BaseClass, P2, P3, DerivedClass, Count)  if (ajson.template is<DerivedClass *>()) return static_cast<BaseClass *>(ajson.template as<DerivedClass *>());
 
 #define NEM_JSON_POLYMORPHIC_TO_JSON(BaseClass, P2, P3, DerivedClass, Count) NEM_JSON_POLYMORPHIC_TO_JSON_LAST(BaseClass, P2, P3, DerivedClass, Count)
 #define NEM_JSON_POLYMORPHIC_TO_JSON_LAST(BaseClass, P2, P3, DerivedClass, Count) { auto p = dynamic_cast<const DerivedClass *>(ptr); if (p) { return Json(const_cast<DerivedClass *>(p)); } }

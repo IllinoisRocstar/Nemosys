@@ -22,13 +22,16 @@
 #include "AuxiliaryFunctions.H"
 #include "Integration/Cubature.H"
 #include "MeshQuality/MeshQuality.H"
-#include "Refinement/Refine.H"
 #include "SizeFieldGeneration/SizeFieldGen.H"
 #include "Mesh/exoMesh.H"
 #include "MeshGeneration/meshGen.H"
 #include "MeshPartitioning/meshPartitioner.H"
 #include "Mesh/pntMesh.H"
 #include "Mesh/vtkMesh.H"
+
+#ifdef HAVE_GMSH
+#include "Refinement/Refine.H"
+#endif
 
 // netgen
 #ifdef HAVE_NGEN
@@ -1535,21 +1538,31 @@ void meshBase::refineMesh(const std::string &method, int arrayID,
                           double dev_mult, bool maxIsmin, double edge_scale,
                           const std::string &ofname, bool transferData,
                           double sizeFactor, bool constrainBoundary) {
+#ifdef HAVE_GMSH
   std::unique_ptr<NEM::ADP::Refine> refineobj =
       std::unique_ptr<NEM::ADP::Refine>(
           new NEM::ADP::Refine(this, method, arrayID, dev_mult, maxIsmin,
                                edge_scale, ofname, sizeFactor));
   refineobj->run(transferData, constrainBoundary);
+#else
+  std::cerr << "Cannot use meshBase::refineMesh without Gmsh. Please configure "
+               "with ENABLE_GMSH=ON.\n";
+#endif
 }
 
 /**
  **/
 void meshBase::refineMesh(const std::string &method, int arrayID, int _order,
                           const std::string &ofname, bool transferData) {
+#ifdef HAVE_GMSH
   std::unique_ptr<NEM::ADP::Refine> refineobj =
       std::unique_ptr<NEM::ADP::Refine>(new NEM::ADP::Refine(
           this, method, arrayID, 0.0, false, 0.0, ofname, 1.0, _order));
   refineobj->run(transferData);
+#else
+  std::cerr << "Cannot use meshBase::refineMesh without Gmsh. Please configure "
+               "with ENABLE_GMSH=ON.\n";
+#endif
 }
 
 /** edge_scale is for uniform refinement and is ignored in calls where

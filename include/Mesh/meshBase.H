@@ -20,7 +20,7 @@
 
 #include "nemosys_export.h"
 
-typedef std::size_t nemId_t;
+using nemId_t = std::size_t;
 
 /** @brief A brief description of meshBase.
     @note Virtual methods are usually implemented in vtkMesh.C. We use that
@@ -748,7 +748,6 @@ struct NEMOSYS_EXPORT sortNemId_tVec_compare {
 **/
 NEMOSYS_EXPORT int diffMesh(meshBase *mesh1, meshBase *mesh2);
 
-#ifndef SWIG
 /** @brief write patch map file for roc prep (trivial identity mapping)
     @param mapFile <>
     @param patchMap <>
@@ -762,6 +761,5 @@ NEMOSYS_EXPORT void writePatchMap(const std::string &mapFile,
 **/
 NEMOSYS_EXPORT void writePatchMap(std::ofstream &outputStream,
                                   const std::map<int, int> &patchMap);
-#endif  // SWIG
 
 #endif  // NEMOSYS_MESHBASE_H_

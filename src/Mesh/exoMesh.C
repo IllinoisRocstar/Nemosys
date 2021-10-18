@@ -55,12 +55,14 @@ surfaceBCTag bcTagNum(std::string &tag) {
   throw;
 }
 
-std::string bcTagStr(int tag) {
-  if (tag == FIXED) return "FIXED";
-  if (tag == SYMMX) return "SYMMX";
-  if (tag == SYMMY) return "SYMMY";
-  if (tag == SYMMZ) return "SYMMZ";
-  std::cerr << "Unknown surface tag " << tag << std::endl;
+std::string bcTagStr(surfaceBCTag tag) {
+  switch (tag) {
+    case surfaceBCTag::FIXED: return "FIXED";
+    case surfaceBCTag::SYMMX: return "SYMMX";
+    case surfaceBCTag::SYMMY: return "SYMMY";
+    case surfaceBCTag::SYMMZ: return "SYMMZ";
+  }
+  std::cerr << "Unknown surface tag." << std::endl;
   throw;
 }
 
@@ -116,18 +118,21 @@ int elmNumNde(elementType tag, int order) {
   if (tag == elementType::HEX && order == 2) return 21;
   if (tag == elementType::WEDGE && order == 1) return 6;
   if (tag == elementType::WEDGE && order == 2) return 16;
-  std::cerr << "Unknown element/order combination " << tag << " " << order
+  std::cerr << "Unknown element/order combination " << elmTypeStr(tag) << " " << order
             << "\n";
   throw;
 }
 
 int elmNumSrf(elementType tag) {
-  if (tag == elementType::TRIANGLE) return 3;
-  if (tag == elementType::QUAD) return 4;
-  if (tag == elementType::TETRA) return 4;
-  if (tag == elementType::HEX) return 8;
-  if (tag == elementType::WEDGE) return 5;
-  std::cerr << "Unknown element type " << tag << "\n";
+  switch (tag) {
+    case elementType::TRIANGLE: return 3;
+    case elementType::QUAD: return 4;
+    case elementType::TETRA: return 4;
+    case elementType::HEX: return 8;
+    case elementType::WEDGE: return 5;
+    case elementType::OTHER: break;
+  }
+  std::cerr << "Unknown element type " << elmTypeStr(tag) << "\n";
   throw;
 }
 
@@ -620,15 +625,15 @@ void exoMesh::combineElmBlks(const std::vector<int> &blkIdLst,
         std::vector<int> elmConn = glbConn[elmID - 1];
         std::vector<int> faceConn;
         // With the faceID get the local connectivity (map)
-        if (elmtype == TETRA)
+        if (elmtype == elementType::TETRA)
           faceConn = tet_face_conn_map[faceID];
-        else if (elmtype == HEX)
+        else if (elmtype == elementType::HEX)
           faceConn = hex_face_conn_map[faceID];
-        else if (elmtype == WEDGE)
+        else if (elmtype == elementType::WEDGE)
           faceConn = wedge_face_conn_map[faceID];
-        else if (elmtype == TRIANGLE)
+        else if (elmtype == elementType::TRIANGLE)
           faceConn = tri_face_conn_map[faceID];
-        else if (elmtype == QUAD)
+        else if (elmtype == elementType::QUAD)
           faceConn = quad_face_conn_map[faceID];
         else {
           std::cerr << "Error: Mesh element type not supported." << std::endl;

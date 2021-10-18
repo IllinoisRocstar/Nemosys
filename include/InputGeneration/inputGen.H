@@ -10,9 +10,7 @@
 
 class meshBase;
 
-enum inpFileType {
-  INPGEN_TXT, INPGEN_CGNS, INPGEN_VTK
-};
+enum class inpFileType { INPGEN_TXT, INPGEN_CGNS, INPGEN_VTK };
 
 // class declarations
 // inputGen is an abstract class that provides a general-purpose,
@@ -89,16 +87,16 @@ class NEMOSYS_EXPORT inputGen {
   protected:
     virtual void _write(std::stringstream &ss)
     {
-      auto key_it = this->_inp.find(_key);
-      if (key_it == this->_inp.end())
-        this->_inp.insert(
+      auto key_it = _inp.find(_key);
+      if (key_it == _inp.end())
+        _inp.insert(
             std::pair<std::string, std::stringstream *>(
                 _key,
                 new std::stringstream()
             )
         );
 
-      *(this->_inp.at(_key)) << ss.str() << std::endl;
+      *(_inp.at(_key)) << ss.str() << std::endl;
       ss.clear();
       ss.str(std::string());
     };

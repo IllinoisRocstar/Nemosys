@@ -10,7 +10,6 @@
 #include "Drivers/MeshGen/MeshGenDriver.H"
 #include "Drivers/MeshQualityDriver.H"
 #include "Drivers/NemDriver.H"
-#include "Drivers/NucMeshDriver.H"
 #include "Drivers/PackMesh/PackMeshDriver.H"
 #include "Drivers/Refine/RefineDriver.H"
 #include "Drivers/TransferDriver.H"
@@ -29,11 +28,11 @@
 #  define IF_EPIC(a)
 #endif
 
-#ifdef HAVE_HDF5
-#  define IF_HDF5(a) a,
+#if defined(HAVE_HDF5) && defined(HAVE_GMSH)
+#  define IF_HDF5_GMSH(a) a,
 #  include "Drivers/ProteusDriver.H"
 #else
-#  define IF_HDF5(a)
+#  define IF_HDF5_GMSH(a)
 #endif
 
 #ifdef HAVE_TEMPLATE_MESH
@@ -41,6 +40,13 @@
 #  include "Drivers/TemplateMeshDriver.H"
 #else
 #  define IF_TEMPLATE_MESH(a)
+#endif
+
+#ifdef HAVE_OCC
+#  define IF_OCC(a) a,
+#  include "Drivers/NucMeshDriver.H"
+#else
+#  define IF_OCC(a)
 #endif
 
 namespace NEM {
@@ -62,12 +68,13 @@ static constexpr auto smParams = "snappyHexMesh Parameters";
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_BASE(
     NEM::DRV::NemDriver,
     (IF_EPIC(NEM::DRV::InputGenDriver)
-     IF_HDF5(NEM::DRV::ProteusDriver)
+     IF_HDF5_GMSH(NEM::DRV::ProteusDriver)
      IF_CGNS(NEM::DRV::RocPartCommGenDriver)
      IF_TEMPLATE_MESH(NEM::DRV::TemplateMeshDriver)
+     IF_OCC(NEM::DRV::NucMeshDriver)
      NEM::DRV::AutoVerificationDriver, NEM::DRV::ConversionDriver,
      NEM::DRV::MeshGenDriver, NEM::DRV::MeshQualityDriver,
-     NEM::DRV::NucMeshDriver, NEM::DRV::PackMeshDriver, NEM::DRV::RefineDriver,
+     NEM::DRV::PackMeshDriver, NEM::DRV::RefineDriver,
      NEM::DRV::TransferDriver),
     1,
     (getProgramType, , NEM::DRV::JSON::programType, JSONCONS_RDONLY,
@@ -83,15 +90,27 @@ JSONCONS_ALL_MEMBER_NAME_TRAITS(NEM::DRV::DriverInOutFiles,
                                 (inputMeshFile, NEM::DRV::JSON::inMeshFile),
                                 (outputMeshFile, NEM::DRV::JSON::outMeshFile))
 
+namespace jsoncons {
+template <typename Json>
+struct json_type_traits<Json, void *> {
+  static constexpr bool is(const Json &ajson) { return false; }
+  static void *as(const Json &ajson) { return nullptr; }
+  static Json to_json(const void *&aval) { return Json::null(); }
+};
+template <>
+struct is_json_type_traits_declared<void *> : public std::true_type {};
+}  // namespace jsoncons
+
 #undef IF_CGNS
 #undef IF_EPIC
 #undef IF_HDF5
 #undef IF_TEMPLATE_MESH
+#undef IF_OCC
 
 #ifdef HAVE_EPIC
 #  include "Drivers/InputGenJson.H"
 #endif
-#ifdef HAVE_HDF5
+#if defined(HAVE_HDF5) && defined(HAVE_GMSH)
 #  include "Drivers/ProteusJson.H"
 #endif
 #ifdef HAVE_CGNS
@@ -100,11 +119,13 @@ JSONCONS_ALL_MEMBER_NAME_TRAITS(NEM::DRV::DriverInOutFiles,
 #ifdef HAVE_TEMPLATE_MESH
 #  include "Drivers/TemplateMeshJson.H"
 #endif
+#ifdef HAVE_OCC
+#  include "Drivers/NucMeshJson.H"
+#endif
 #include "Drivers/AutoVerificationJson.H"
 #include "Drivers/Conversion/ConversionJson.H"
 #include "Drivers/MeshGen/MeshGenJson.H"
 #include "Drivers/MeshQualityJson.H"
-#include "Drivers/NucMeshJson.H"
 #include "Drivers/PackMesh/PackMeshJson.H"
 #include "Drivers/Refine/RefineJson.H"
 #include "Drivers/TransferJson.H"

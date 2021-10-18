@@ -2,18 +2,30 @@ stages:
   - test
   - deploy
 
-test:ubuntu18:
+.ubuntu18-test-base:
   image: ilrocstar/nemosys-test-img-ubuntu18:v8
   tags:
     - nemosys
+  artifacts:
+    when: always
+    reports:
+      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
+    paths:
+      - "/builds/Nemosys/Nemosys/build/*.deb"
+
+.ubuntu18-post-config:
+  - make -j$(nproc)
+  - make install
+  - ctest --output-on-failure
+  - cpack -G DEB
+
+test:ubuntu18-gpl:
+  extends: .ubuntu18-test-base
   script:
     - mkdir build && cd build
-    - CC=mpicc
-    - CXX=mpicxx
     - >
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="/Nemosys-Deps/opencascade/;/Nemosys-Deps/gmsh/;/Nemosys-Deps/netgen/;/Nemosys-Deps/vtk/;/opt/openfoam7/;"
       -DCMAKE_INSTALL_PREFIX=../install
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=OFF
@@ -23,20 +35,36 @@ test:ubuntu18:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CFMSH=ON
-      -DENABLE_CGNS=OFF
-      -DENABLE_HDF5=OFF
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
       -DENABLE_OPENCASCADE=ON
-    - make -j$(nproc)
-    - make install
-    - ctest --output-on-failure
-    - cpack -G DEB
-  artifacts:
-    when: always
-    reports:
-      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
-    paths:
-      - "/builds/Nemosys/Nemosys/build/*.deb"
+      -DENABLE_GPL=ON
+      -DENABLE_GMSH=ON
+      -DENABLE_TEMPLATE_MESH=ON
+      -DENABLE_CFMSH=ON
+    - !reference [.ubuntu18-post-config]
+
+test:ubuntu18-lgpl:
+  extends: .ubuntu18-test-base
+  script:
+    - mkdir build && cd build
+    - >
+      cmake ..
+      -DCMAKE_BUILD_TYPE=Release
+      -DCMAKE_INSTALL_PREFIX=../install
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=OFF
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
+      -DENABLE_OPENCASCADE=ON
+      -DENABLE_GPL=OFF
+    - !reference [.ubuntu18-post-config]
 
 deploy:all:
   stage: deploy
@@ -56,8 +84,8 @@ deploy:all:
     - scp -r /builds/Nemosys/Nemosys/build/*.deb nemosys@192.168.1.122:/home/nemosys/repo
     - scp -r /builds/Nemosys/Nemosys/build/*.rpm nemosys@192.168.1.122:/home/nemosys/rpmrepo
   dependencies:
-    - test:ubuntu18
-    - test:centos7
+    - test:ubuntu18-gpl
+    - test:centos7-gpl
 
 deploy:public:
   stage: deploy
@@ -77,28 +105,48 @@ deploy:public:
     - scp -r /builds/Nemosys/Nemosys/build/*.deb repoman@50.244.52.204:/home/repoman/ubuntu18-repo
     - scp -r /builds/Nemosys/Nemosys/build/*.rpm repoman@50.244.52.204:/home/repoman/centos7-repo
   dependencies:
-    - test:ubuntu18
-    - test:centos7
+    - test:ubuntu18-gpl
+    - test:centos7-gpl
 
-test:win10:
-  image: ilrocstar/nemosys-test-img-win:v3
+.win10-test-base:
+  image: ilrocstar/nemosys-test-img-win:v4
   tags:
     - windows
+  after_script:
+    - Copy-Item "$HOME\build\testing\junit\*.xml"
+  artifacts:
+    when: always
+    reports:
+      junit: "*.xml"
+    paths:
+      - "*.msi"
+
+.win10-pre-config:
+  - Remove-Item env:CSF_*  # Environment variables have to be less than 32KB for WiX
+  - Set-Variable -Name "NEM_DIR" -Value "$(pwd)"
+  - cd $HOME
+  - md build
+  - cd build
+
+.win10-post-config:
+  - ninja -j ${Env:NUMBER_OF_PROCESSORS}
+  - ninja install
+  - ctest --output-on-failure
+  - cpack -G WIX
+  - Copy-Item "*.msi" -Destination "$NEM_DIR"
+
+# TODO: Disable win test till OCC versioning is addressed.
+.test:win10-gpl:
+  extends: .win10-test-base
   script:
-    - Set-Variable -Name "NEM_DIR" -Value "$(pwd)"
-    - Copy-Item "$NEM_DIR" -Destination "$HOME\Nemosys" -Recurse
-    - cd "$HOME\Nemosys"
-    - md build
-    - md install
-    - cd build
+    - !reference [.win10-pre-config]
     - >
-      cmake ..
+      cmake $NEM_DIR
       -G "Ninja"
       -DCMAKE_BUILD_TYPE=Release
-      -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\gmsh;C:\Nemosys\hdf5\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\vtk;C:\Nemosys\zlib"
-      -DZLIB_ROOT="C:\Nemosys\zlib"
+      -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\gmsh;C:\Nemosys\HDF5\1.10.4\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\vtk;C:\Nemosys\OpenCASCADE-7.3.0-vc14-64\opencascade-7.3.0"
+      -DZLIB_ROOT="C:\netgen"
       -DCMAKE_INSTALL_PREFIX="C:\install"
-      -DCMAKE_BUILD_TYPE=Release
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=OFF
       -DENABLE_EPIC=ON
@@ -107,29 +155,68 @@ test:win10:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CFMSH=OFF
-      -DENABLE_OPENCASCADE=OFF
       -DENABLE_CGNS=ON
       -DENABLE_HDF5=ON
+      -DENABLE_OPENCASCADE=ON
+      -DENABLE_GPL=ON
+      -DENABLE_GMSH=ON
+      -DENABLE_CFMSH=OFF
+      -DENABLE_TEMPLATE_MESH=OFF
       -DPYTHON_EXECUTABLE="C:\Python\python.exe"
       -DSWIG_EXECUTABLE="C:\Nemosys\swigwin-3.0.12\swig.exe"
-    - ninja -j ${Env:NUMBER_OF_PROCESSORS}
-    - ninja install
-    - ctest --output-on-failure
-    - cpack -G WIX
-    - Copy-Item "*.msi" -Destination "$NEM_DIR"
-    - Copy-Item "testing\junit\*.xml" -Destination "$NEM_DIR"
-  artifacts:
-    when: always
-    reports:
-      junit: "*.xml"
-    paths:
-      - "*.msi"
+      -DCMAKE_SHARED_LINKER_FLAGS="$env:OPT_LIB64"
+      -DCMAKE_EXE_LINKER_FLAGS="$env:OPT_LIB64"
+    - !reference [.win10-post-config]
 
-test:centos7:
+# TODO: Disable win test till OCC versioning is addressed.
+.test:win10-lgpl:
+  extends: .win10-test-base
+  script:
+    - !reference [.win10-pre-config]
+    - >
+      cmake $NEM_DIR
+      -G "Ninja"
+      -DCMAKE_BUILD_TYPE=Release
+      -DCMAKE_PREFIX_PATH="C:\Nemosys\boost_1_69_0;C:\Nemosys\cgns;C:\Nemosys\exodusii;C:\Nemosys\HDF5\1.10.4\cmake\hdf5;C:\Nemosys\metis;C:\Nemosys\netcdf;C:\Nemosys\netgen;C:\Nemosys\vtk;C:\Nemosys\OpenCASCADE-7.3.0-vc14-64\opencascade-7.3.0"
+      -DZLIB_ROOT="C:\netgen"
+      -DCMAKE_INSTALL_PREFIX="C:\install"
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=OFF
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_CGNS=ON
+      -DENABLE_HDF5=ON
+      -DENABLE_OPENCASCADE=ON
+      -DENABLE_GPL=OFF
+      -DPYTHON_EXECUTABLE="C:\Python\python.exe"
+      -DSWIG_EXECUTABLE="C:\Nemosys\swigwin-3.0.12\swig.exe"
+      -DCMAKE_SHARED_LINKER_FLAGS="$env:OPT_LIB64"
+      -DCMAKE_EXE_LINKER_FLAGS="$env:OPT_LIB64"
+    - !reference [.win10-post-config]
+
+.centos7-test-base:
   image: ilrocstar/nemosys-centos7:v7
   tags:
     - nemosys
+  artifacts:
+    when: always
+    reports:
+      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
+    paths:
+      - "/builds/Nemosys/Nemosys/build/*.rpm"
+
+.centos7-post-config:
+  - make -j$(nproc)
+  - make install
+  - ctest3 --output-on-failure
+  - cpack3 -G RPM
+
+test:centos7-gpl:
+  extends: .centos7-test-base
   script:
     - mkdir build && cd build
     - >
@@ -144,22 +231,41 @@ test:centos7:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CFMSH=ON
+      -DENABLE_HDF5=ON
+      -DENABLE_CGNS=ON
       -DENABLE_OPENCASCADE=ON
-      -DENABLE_HDF5=OFF
-      -DENABLE_CGNS=OFF
+      -DENABLE_GPL=ON
+      -DENABLE_CFMSH=ON
+      -DENABLE_GMSH=ON
+      -DENABLE_TEMPLATE_MESH=ON
       -DPYTHON_EXECUTABLE=/usr/bin/python3.6
       -DBoost_INCLUDE_DIR=/usr/include/boost169/
       -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
       -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
-    - make -j$(nproc)
-    - make install
-    - ctest3 --output-on-failure
-    - cpack3 -G RPM
-    - ls /builds/Nemosys/Nemosys/build/
-  artifacts:
-    when: always
-    reports:
-      junit: "/builds/Nemosys/Nemosys/build/testing/junit/*.xml"
-    paths:
-      - "/builds/Nemosys/Nemosys/build/*.rpm"
+    - !reference [.centos7-post-config]
+
+test:centos7-lgpl:
+  extends: .centos7-test-base
+  script:
+    - mkdir build && cd build
+    - >
+      cmake3 ..
+      -DCMAKE_BUILD_TYPE=Release
+      -DCMAKE_INSTALL_PREFIX="../Install"
+      -DBUILD_SHARED_LIBS=ON
+      -DENABLE_MPI=OFF
+      -DENABLE_EPIC=ON
+      -DENABLE_PYTHON_BINDINGS=ON
+      -DENABLE_TESTING=ON
+      -DENABLE_BUILD_UTILS=ON
+      -DENABLE_METIS=ON
+      -DENABLE_NETGEN=ON
+      -DENABLE_HDF5=ON
+      -DENABLE_CGNS=ON
+      -DENABLE_OPENCASCADE=ON
+      -DENABLE_GPL=OFF
+      -DPYTHON_EXECUTABLE=/usr/bin/python3.6
+      -DBoost_INCLUDE_DIR=/usr/include/boost169/
+      -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
+      -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
+    - !reference [.centos7-post-config]

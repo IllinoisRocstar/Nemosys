@@ -5,9 +5,12 @@
 
 #include <vtkAlgorithm.h>
 
-#include "Mesh/geoMeshBase.H"
-
 namespace NEM {
+
+namespace MSH {
+class geoMeshBase;
+}
+
 namespace SRV {
 
 /**

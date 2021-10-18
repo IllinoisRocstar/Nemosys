@@ -90,7 +90,7 @@ void ep16Prep::readJSON()
 
   // order definition
   _set_key(_fname);
-  setNameType(_fname, INPGEN_TXT);
+  setNameType(_fname, inpFileType::INPGEN_TXT);
   std::vector<std::string> order;
 
   // ordering the process based on type

@@ -755,7 +755,7 @@ void vtkMesh::report() const {
     exit(1);
   }
 
-  typedef std::map<int, nemId_t> CellContainer;
+  using CellContainer = std::map<int, nemId_t>;
   // Generate a report
   std::cout << "Processing the dataset generated from " << filename << std::endl
             << " dataset contains a " << dataSet->GetClassName() << " that has "

@@ -53,6 +53,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(outerclass, otherInnerClasses);
 
 %template(ArrArrDouble_3_3) std::array<std::array<double, 3>, 3>;
 %template(ArrDouble_3) std::array<double, 3>;
+%template(ArrInt_2) std::array<int, 2>;
 %template(ArrInt_3) std::array<int, 3>;
 %template(ArrStr_3) std::array<std::string, 3>;
 %template(MapArrInt_3Str) std::map<std::array<int, 3>, std::string>;
@@ -138,12 +139,12 @@ enum_class = get_renamed_enum(#enum_class)
 // and (2) SWIG names extended member functions by joining the class and the function name with an underscore.
 %define CUSTOM_PROPERTY(module, fullclass, renamedclass, setter, member)
 %extend fullclass {
-    void setter(decltype(fullclass::member) other) {
-      $self->member = std::move(other);
-    };
-    %pythoncode {
-      member = property(member.fget, module.renamedclass ## _ ## setter)
-    };
+  void setter(decltype(fullclass::member) other) {
+    $self->member = std::move(other);
+  };
+  %pythoncode {
+    member = property(member.fget, module.renamedclass ## _ ## setter)
+  };
 };
 %enddef
 
@@ -189,11 +190,17 @@ CUSTOM_PROPERTIES_INNER(class, innerclass, otherMembers)
 %{
 #include <Drivers/InputGenDriver.H>
 %}
-// See NucMesh wrapping for details about the following workarounds for Opts being jsoncons::json
+// Instead of wrapping jsoncons::json, pass C++ <-> Python via strings by:
+// (1) don't wrap the original functions (including the ctor)
+// (2) instruct SWIG to extend the C++ class with getters and setters that take strings
+// (3) instruct SWIG to inject some code around/before via shadow/pythonprepend that uses Python's json to convert
+//     from Python data structures to strings.
 %ignore NEM::DRV::InputGenDriver::getOpts;
 %ignore NEM::DRV::InputGenDriver::setOpts(jsoncons::json);
 %ignore NEM::DRV::InputGenDriver::InputGenDriver(std::string, jsoncons::json);
 %include <Drivers/InputGenDriver.H>
+// The previous lines ignore the actual C++ member functions, but we don't want to ignore the below members with the
+// same names
 %rename("%s") NEM::DRV::InputGenDriver::getOpts;
 %pythonprepend NEM::DRV::InputGenDriver::InputGenDriver{
     opts = _json.dumps(opts)
@@ -207,29 +214,30 @@ def getOpts(self):
     return _json.loads($action(self))
 };
 %extend NEM::DRV::InputGenDriver {
-    InputGenDriver(std::string service, const std::string &opts) {
-      return new NEM::DRV::InputGenDriver(std::move(service), jsoncons::json::parse(opts));
-    }
-    std::string getOpts() const {
-      return $self->getOpts().to_string();
-    }
-    void setOpts(const std::string &opts) {
-      $self->setOpts(jsoncons::json::parse(opts));
-    }
+  InputGenDriver(std::string service, const std::string &opts) {
+    return new NEM::DRV::InputGenDriver(std::move(service), jsoncons::json::parse(opts));
+  }
+  std::string getOpts() const {
+    return $self->getOpts().to_string();
+  }
+  void setOpts(const std::string &opts) {
+    $self->setOpts(jsoncons::json::parse(opts));
+  }
 };
+// SWIG does its best to add Python type annotations, but this will now be wrong, so just remove it.
 %pythoncode {
 if hasattr(InputGenDriver.__init__, '__annotations__'):
     InputGenDriver.__init__.__annotations__.pop('opts', None)
 };
 #endif  // HAVE_EPIC
 
-#ifdef HAVE_HDF5
+#if defined(HAVE_HDF5) && defined(HAVE_GMSH)
 %{
 #include <Drivers/ProteusDriver.H>
 %}
 %include <Drivers/ProteusDriver.H>
 EXPOSE_FLATNESTED_PY_CLASSES(ProteusDriver, Files, Opts)
-#endif  // HAVE_HDF5
+#endif  // defined(HAVE_HDF5) && defined(HAVE_GMSH)
 
 #ifdef HAVE_TEMPLATE_MESH
 %{
@@ -247,12 +255,12 @@ def _setTemplateParams(self, templateParams):
     return $action(self, _json.dumps(templateParams))
 };
 %extend NEM::DRV::TemplateMeshDriver::Opts {
-    std::string _getTemplateParams() const {
-      return $self->templateParams.to_string();
-    }
-    void _setTemplateParams(const std::string &opts) {
-      $self->templateParams = (jsoncons::json::parse(opts));
-    }
+  std::string _getTemplateParams() const {
+    return $self->templateParams.to_string();
+  }
+  void _setTemplateParams(const std::string &opts) {
+    $self->templateParams = (jsoncons::json::parse(opts));
+  }
 };
 %pythoncode {
 TemplateMeshDriver.Files = DriverOutFile
@@ -274,6 +282,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(AutoVerificationDriver, Files, Opts);
 %include <Drivers/Conversion/ConversionDriver.H>
 
 #ifdef HAVE_CFMSH
+#ifdef HAVE_GMSH
 %{
 #include <Drivers/Conversion/FoamToMshConversionDriver.H>
 %}
@@ -282,6 +291,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(AutoVerificationDriver, Files, Opts);
 %pythoncode {
 FoamToMshConversionDriver.Files = DriverOutFile
 };
+#endif  // HAVE_GMSH
 
 %{
 #include <Drivers/Conversion/FoamToVtkConversionDriver.H>
@@ -479,6 +489,7 @@ NetgenMeshGenDriver.Files = MeshGenDriver.MeshGenFiles
 %include <MeshGeneration/netgenParams.H>
 #endif  // HAVE_NGEN
 
+#ifdef HAVE_GMSH
 %{
 #include <Drivers/MeshGen/GmshMeshGenDriver.H>
 %}
@@ -494,6 +505,7 @@ GmshMeshGenDriver.Files = MeshGenDriver.MeshGenFiles
 CUSTOM_PROPERTIES_NS(NEM::GEN, volSizeField, params, num_list_params, strg_list_params)
 CUSTOM_PROPERTIES_NS(NEM::GEN, TransfiniteBlock, axis, vert, type, coef)
 CUSTOM_PROPERTIES_NS(NEM::GEN, gmshParams, sizeFields, color2groupMap, transfiniteBlocks)
+#endif  // HAVE_GMSH
 
 %{
 #include <Drivers/MeshQualityDriver.H>
@@ -502,56 +514,61 @@ CUSTOM_PROPERTIES_NS(NEM::GEN, gmshParams, sizeFields, color2groupMap, transfini
 #ifdef HAVE_CFMSH
 %template(VecCfmeshQualityParams) std::vector<cfmeshQualityParams>;
 %ignore NEM::DRV::OptimizeMeshQualDriver::Opts;
-#endif
+#endif  // HAVE_CFMSH
 %include <Drivers/MeshQualityDriver.H>
 EXPOSE_FLATNESTED_PY_CLASSES(CheckMeshQualDriver, Files)
 #ifdef HAVE_CFMSH
 %include <MeshQuality/cfmeshQualityParams.H>
-#endif
+#endif  // HAVE_CFMSH
 
 %{
+#include <NucMesh/ShapeBase.H>
+#include <NucMesh/CirclesAndPolys.H>
+#include <NucMesh/ShapesArray.H>
+#include <NucMesh/PolarArray.H>
+#include <NucMesh/RectangularArray.H>
+#include <NucMesh/HexagonalArray.H>
+%}
+%include <NucMesh/ShapeBase.H>
+%shared_ptr(NEM::NUCMESH::ShapeBase);
+%include <NucMesh/CirclesAndPolys.H>
+%shared_ptr(NEM::NUCMESH::CirclesAndPolys);
+%ignore std::vector<NEM::NUCMESH::Ring>::vector(size_type);
+%ignore std::vector<NEM::NUCMESH::Ring>::resize(size_type);
+%template(VecNucMeshRing) std::vector<NEM::NUCMESH::Ring>;
+%ignore std::vector<NEM::NUCMESH::PolyRing>::vector(size_type);
+%ignore std::vector<NEM::NUCMESH::PolyRing>::resize(size_type);
+%template(VecNucMeshPolyRing) std::vector<NEM::NUCMESH::PolyRing>;
+RENAME_INNER_ENUM(RingMeshOption, MeshingType)
+RENAME_INNER_ENUM(PolyRing, ShapeType)
+%include <NucMesh/ShapesArray.H>
+%shared_ptr(NEM::NUCMESH::ShapesArray);
+%template(VecNucMeshShapes) std::vector<std::shared_ptr<NEM::NUCMESH::ShapeBase>>;
+%include <NucMesh/PolarArray.H>
+%shared_ptr(NEM::NUCMESH::PolarArray);
+%include <NucMesh/RectangularArray.H>
+%shared_ptr(NEM::NUCMESH::RectangularArray);
+%include <NucMesh/HexagonalArray.H>
+%shared_ptr(NEM::NUCMESH::HexagonalArray);
+
+%{
+#include <Services/NucMeshSrv.H>
 #include <Drivers/NucMeshDriver.H>
 %}
-%ignore NEM::DRV::NucMeshRunner;
-// Instead of wrapping jsoncons::json, pass C++ <-> Python via strings by:
-// (1) don't wrap the original functions (including the ctor)
-// (2) instruct SWIG to extend the C++ class with getters and setters that take strings
-// (3) instruct SWIG to inject some code around/before via shadow/pythonprepend that uses Python's json to convert
-//     from Python data structures to strings.
-%ignore NEM::DRV::NucMeshDriver::getGeometryAndMesh;
-%ignore NEM::DRV::NucMeshDriver::setGeometryAndMesh(jsoncons::json);
-%ignore NEM::DRV::NucMeshDriver::NucMeshDriver(NEM::DRV::NucMeshDriver::Files, jsoncons::json);
+%ignore NEM::SRV::NucMeshConf::insertShape;
+%ignore NEM::SRV::NucMeshConf::makeShape;
+%ignore NEM::SRV::NucMeshSrv;
+%include <Services/NucMeshSrv.H>
+%extend NEM::SRV::NucMeshConf {
+  void addShape(const std::shared_ptr<NEM::NUCMESH::ShapeBase> &shape) {
+    $self->geometryAndMesh.emplace_back(shape);
+  }
+};
+CUSTOM_PROPERTIES_NS(NEM::SRV, NucMeshConf, extrudeSteps)
 %include <Drivers/NucMeshDriver.H>
-// The previous liness ignore the actual C++ member functions, but we don't want to ignore the below members with the
-// same names
-%rename("%s") NEM::DRV::NucMeshDriver::getGeometryAndMesh;
-%pythonprepend NEM::DRV::NucMeshDriver::NucMeshDriver{
-    geometryAndMesh = _json.dumps(geometryAndMesh)
-};
-%feature("shadow") NEM::DRV::NucMeshDriver::setGeometryAndMesh {
-def setGeometryAndMesh(self, geometryAndMesh):
-    return $action(self, _json.dumps(geometryAndMesh))
-};
-%feature("shadow") NEM::DRV::NucMeshDriver::getGeometryAndMesh {
-def getGeometryAndMesh(self):
-    return _json.loads($action(self))
-};
-%extend NEM::DRV::NucMeshDriver {
-    NucMeshDriver(Files files, const std::string &geometryAndMesh) {
-      return new NEM::DRV::NucMeshDriver(std::move(files), jsoncons::json::parse(geometryAndMesh));
-    }
-    std::string getGeometryAndMesh() const {
-      return $self->getGeometryAndMesh().to_string();
-    }
-    void setGeometryAndMesh(const std::string &geometryAndMesh) {
-      $self->setGeometryAndMesh(jsoncons::json::parse(geometryAndMesh));
-    }
-};
-// SWIG does its best to add Python type annotations, but this will now be wrong, so just remove it.
 %pythoncode {
-if hasattr(NucMeshDriver.__init__, '__annotations__'):
-    NucMeshDriver.__init__.__annotations__.pop('geometryAndMesh', None)
-};
+NucMeshDriver.Opts = NucMeshConf;
+}
 
 %{
 #include <Drivers/PackMesh/PackMeshDriver.H>
@@ -569,6 +586,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(MeshManipulationFoamParams, SurfaceLambdaMuSmooth, 
 CUSTOM_PROPERTIES_INNER(MeshManipulationFoamParams, SurfaceSplitByManifold, pckRegionNames)
 #endif  // HAVE_CFMSH
 
+#ifdef HAVE_GMSH
 %{
 #include <Drivers/PackMesh/SurfacePackMeshDriver.H>
 %}
@@ -580,6 +598,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(SurfacePackMeshDriver, Files, CustomDomain, Periodi
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, SurfacePackMeshDriver, CustomDomain, initial, length)
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, SurfacePackMeshDriver, Periodic3DOpts, customDomain, transferMesh)
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, SurfacePackMeshDriver, Opts, periodic3DOpts)
+#endif  // HAVE_GMSH
 
 %{
 #include <Drivers/Refine/RefineDriver.H>
@@ -651,6 +670,7 @@ RENAME_ENUM(Omega_h_Scales)
 EXPOSE_FLATNESTED_PY_CLASSES(OmegahRefineDriver, Opts, Transfer, VarCompare)
 CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, OmegahRefineDriver, Opts, MetricSources, TransferOpts, TransferOptsIntegralDiffuse)
 
+#ifdef HAVE_GMSH
 %{
 #include <Drivers/Refine/SizeFieldRefineDriver.H>
 %}
@@ -669,6 +689,7 @@ EXPOSE_FLATNESTED_PY_CLASSES(UniformRefineDriver, Opts)
 %}
 %include <Drivers/Refine/Z2RefineDriver.H>
 EXPOSE_FLATNESTED_PY_CLASSES(Z2RefineDriver, Opts)
+#endif
 
 %{
 #include <Drivers/TransferDriver.H>
@@ -684,6 +705,7 @@ CUSTOM_PROPERTIES_INNER_NS(NEM::DRV, TransferDriver, Opts, arrayNames)
 %ignore meshBase::CreateUnique;
 %newobject meshBase::Create;
 %ignore sortNemId_tVec_compare;
+%ignore writePatchMap;
 %include <Mesh/meshBase.H>
 
 %{

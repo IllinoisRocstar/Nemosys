@@ -3,23 +3,23 @@ FROM centos:7
 RUN yum update -y
 RUN yum upgrade -y
 
-RUN yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
+RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 RUN yum groupinstall -y "Development Tools"
 
 # Compilers and build tools.
-RUN yum install -y cmake3 gcc-c++.x86_64 make freetype-devel.x86_64 fltk-devel.x86_64
-RUN yum install -y hdf5-devel hdf-devel.x86_64 boost169-devel.x86_64
-RUN yum install metis-devel.x86_64 lapack-devel exodusii-devel.x86_64 -y
-RUN yum install libXmu-devel libXi-devel.x86_64 python3-devel.x86_64 -y 
-RUN yum remove swig -y 
-RUN yum install swig3.x86_64 rh-python36-python-pip.noarch -y
+RUN yum install -y cmake3
+RUN yum install -y hdf5-devel boost169-devel
+RUN yum install -y metis-devel exodusii-devel
+RUN yum install -y python3-devel
+RUN yum remove -y swig
+RUN yum install -y swig3
 
 # Run setuptools upgrade twice in case of "distribute" switch
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
 
-# Enable gcc-7 compilers 
+# Enable gcc-7 compilers
 RUN yum install centos-release-scl scl-utils -y
 RUN yum install devtoolset-7 -y
 RUN echo "source /opt/rh/devtoolset-7/enable" >> /etc/skel/.bashrc

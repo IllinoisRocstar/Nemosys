@@ -1430,7 +1430,7 @@ template <class T>
 void AMRFoam::mapNewInternalFaces(
     const labelList &faceMap,
     GeometricField<T, fvsPatchField, surfaceMesh> &sFld) {
-  typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
+  using GeoField = GeometricField<T, fvsPatchField, surfaceMesh>;
 
   //- Make flat field for ease of looping
   Field<T> tsFld(this->nFaces(), Zero);
@@ -1480,7 +1480,7 @@ void AMRFoam::mapNewInternalFaces(
 
 template <class T>
 void AMRFoam::mapNewInternalFaces(const labelList &faceMap) {
-  typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
+  using GeoField = GeometricField<T, fvsPatchField, surfaceMesh>;
   HashTable<GeoField *> sFlds(this->objectRegistry::lookupClass<GeoField>());
 
   forAllIters(sFlds, iter) {
@@ -1506,7 +1506,7 @@ template <class T>
 void AMRFoam::mapNewInternalFaces(const surfaceVectorField &Sf,
                                   const surfaceScalarField &magSf,
                                   const labelList &faceMap) {
-  typedef GeometricField<T, fvsPatchField, surfaceMesh> GeoField;
+  using GeoField = GeometricField<T, fvsPatchField, surfaceMesh>;
   HashTable<GeoField *> sFlds(this->objectRegistry::lookupClass<GeoField>());
 
   forAllIters(sFlds, iter) {
@@ -1526,9 +1526,9 @@ void AMRFoam::mapNewInternalFaces(const surfaceVectorField &Sf,
         // Assume any oriented field is face area weighted (i.e. a flux)
         // Convert to intensive (& oriented) before mapping. Untested.
 
-        typedef GeometricField<typename outerProduct<vector, T>::type,
-                               fvsPatchField, surfaceMesh>
-            NormalGeoField;
+        using NormalGeoField =
+            GeometricField<typename outerProduct<vector, T>::type,
+                           fvsPatchField, surfaceMesh>;
 
         // Convert to intensive and non oriented
         NormalGeoField fFld(sFld * Sf / Foam::sqr(magSf));

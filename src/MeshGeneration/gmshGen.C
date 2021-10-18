@@ -164,19 +164,19 @@ void gmshGen::globalOptions() {
                           meshParams->subdivisionAlg);
 
   std::string algo = meshParams->algo2D;
-  int a = ALGO_SURF_FRONTAL;  // default: "Frontal"
+  int a = ALGO_2D_FRONTAL;  // default: "Frontal"
   if (algo == "Frontal")
-    a = ALGO_SURF_FRONTAL;
+    a = ALGO_2D_FRONTAL;
   else if (algo == "MeshAdapt")
-    a = ALGO_SURF_MESHADAPT;
+    a = ALGO_2D_MESHADAPT;
   else if (algo == "Automatic")
-    a = ALGO_SURF_AUTO;
+    a = ALGO_2D_AUTO;
   else if (algo == "Delaunay")
-    a = ALGO_SURF_DELAUNAY;
+    a = ALGO_2D_DELAUNAY;
   else if (algo == "Frontal Quads" || algo == "Frontal Quad")
-    a = ALGO_SURF_FRONTALQUAD;
+    a = ALGO_2D_FRONTAL_QUAD;
   else if (algo == "Packing of Parallelograms")
-    a = ALGO_SURF_POP;
+    a = ALGO_2D_PACK_PRLGRMS;
   else {
     std::cerr << "Warning: Surface algorithm " << algo << " not supported. \n"
               << "Using default Frontal algorithm." << std::endl;
@@ -184,13 +184,13 @@ void gmshGen::globalOptions() {
   gmsh::option::setNumber("Mesh.Algorithm", a);
 
   algo = meshParams->algo3D;
-  a = ALGO_VOL_DELAUNAY;
+  a = ALGO_3D_DELAUNAY;
   if (algo == "Delaunay")
-    a = ALGO_VOL_DELAUNAY;
+    a = ALGO_3D_DELAUNAY;
   else if (algo == "Frontal")
-    a = ALGO_VOL_FRONTAL;
+    a = ALGO_3D_FRONTAL;
   else if (algo == "HXT")
-    a = ALGO_VOL_HXT;
+    a = ALGO_3D_HXT;
   else {
     std::cerr << "Warning: Volume algorithm " << algo << " not supported. \n"
               << "Using default Delaunay algorithm." << std::endl;

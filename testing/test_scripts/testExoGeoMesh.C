@@ -48,8 +48,6 @@ TEST(exoGeoMesh, Stitch) {
   mesh2->reconstructGeo();
   mesh1->stitch(*mesh2);
   mesh1->reconstructGeo();
-  // If test case gets replaced, make sure some test uses large # of side sets
-  EXPECT_GT(mesh1->getSideSetIds().size(), 1024);
   EXPECT_EQ(mesh1->getNumberOfCells(), mesh1Cells + mesh2Cells);
   EXPECT_LE(mesh1->getNumberOfPoints(), mesh1Points + mesh2Points);
   EXPECT_GT(mesh1->getNumberOfPoints(), mesh1Points);
@@ -232,6 +230,7 @@ TEST(exoGeoMesh, ReadWriteNodeData) {
   EXPECT_EQ(0, NEM::MSH::diffMesh(exoGM, meshCopy));
 }
 
+#ifdef HAVE_GMSH
 TEST(exoGeoMesh, TakeGeoMesh) {
   auto mesh =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(arg_fName5));
@@ -241,6 +240,7 @@ TEST(exoGeoMesh, TakeGeoMesh) {
   EXPECT_EQ(6, exoGM->getSideSetIds().size());
   EXPECT_FALSE(exoGM->getPhysGrpPropertyName().empty());
 }
+#endif
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

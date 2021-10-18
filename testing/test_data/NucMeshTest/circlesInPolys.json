@@ -1,0 +1,35 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "circlesInPolys.vtu"
+  },
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "CIP",
+        "Type": "Circles And Polys",
+        "Number of Sides": 6,
+        "Rings": [
+          {"Shape Type": "Circle", "Radius": 0.1, "Mesh": {"Type": "T"}, "Material": "B"},
+          {"Shape Type": "Circle", "Radius": 0.4, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "C"},
+          {"Shape Type": "Circle", "Radius": 0.6, "Mesh": {"Type": "S", "Number of Elems": [1, 7]}, "Material": "D"},
+          {"Shape Type": "Poly", "Radius": 1.0, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "E"}
+        ]
+      }
+    ],
+    "Shapes": [
+      {"Saved Object": "CIP"},
+      {
+        "Type": "Circles And Polys",
+        "Center": [0, 3, 0],
+        "Number of Sides": 4,
+        "Rings": [
+          {"Shape Type": "Circle", "Radius": 0.1, "Mesh": {"Type": "T"}, "Material": "B"},
+          {"Shape Type": "Circle", "Radius": 0.4, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "C"},
+          {"Shape Type": "Circle", "Radius": 0.6, "Mesh": {"Type": "S", "Number of Elems": [1, 7]}, "Material": "D"},
+          {"Shape Type": "Poly", "Radius": 1.0, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "E"}
+        ]
+      }
+    ]
+  }
+}

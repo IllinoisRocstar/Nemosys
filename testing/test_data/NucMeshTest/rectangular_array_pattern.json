@@ -1,0 +1,45 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {"Output Mesh File": "rectangular_array_pattern.vtu"},
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "Circle 2",
+        "Type": "Circles",
+        "Rings": [
+          {"Radius": 0.02, "Mesh": {"Type": "T"}, "Material": "B"},
+          {"Radius": 0.2, "Mesh": {"Type": "S", "Number of Elems": [1, 6]}, "Material": "F"}
+        ]
+      }
+    ],
+    "Shapes": [
+      {
+        "Type": "Rectangular Array",
+        "Grid Distance": [1.1, 1.1],
+        "Pattern": [
+          [0, 2, 2, 2, 2],
+          [1, 0, 2, 2, 2],
+          [1, 1, 0, 2, 2],
+          [1, 1, 1, 0, 2],
+          [1, 1, 1, 1, 0]
+        ],
+        "Shapes": [
+          null,
+          {
+            "Type": "Circles", "Center": [-3, -5, 0], "Rings": [
+            {"Radius": 0.05, "Mesh": {"Type": "T"}, "Material": "A"},
+            {"Radius": 0.5, "Mesh": {"Type": "S", "Number of Elems": [1, 20]}, "Material": "E"}
+          ]
+          },
+          {
+            "Type": "Circles", "Center": [-3, -5, 0], "Rings": [
+            {"Radius": 0.2, "Mesh": {"Type": "T"}, "Material": "C"},
+            {"Radius": 0.5, "Mesh": {"Type": "S", "Number of Elems": [1, 20]}, "Material": "E"}
+          ]
+          },
+          {"Saved Object": "Circle 2", "Center": [-3, -5, 0]}
+        ]
+      }
+    ]
+  }
+}

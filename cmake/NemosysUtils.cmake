@@ -15,27 +15,25 @@ endmacro()
 
 # For third party targets, add INTERFACE_INCLUDE_DIRECTORIES as to ${target_}_NOWARN_DIRS
 # TODO: Should headers of transitive dependencies also be added as SYSTEM headers?
-macro(NEM_link_3p_targets target_ scope_)
+function(NEM_link_3p_targets target_ scope_)
   if("${scope_}" STREQUAL "PRIVATE" OR "${scope_}" STREQUAL "PUBLIC")  # but not INTERFACE
     foreach(dep_target_ IN ITEMS ${ARGN})
       get_target_property(dependency_include_dirs_ ${dep_target_} INTERFACE_INCLUDE_DIRECTORIES)
       if(dependency_include_dirs_)
         target_include_directories(${target_} SYSTEM PRIVATE ${dependency_include_dirs_})
-      else()
-        message(AUTHOR_WARNING "INTERFACE_INCLUDE_DIRECTORIES for ${dep_target_} not found")
       endif()
     endforeach()
   endif()
   target_link_libraries(${target_} ${scope_} ${ARGN})
-endmacro()
+endfunction()
 
 # For directories, append include directories needed for compilation to ${target_}_NOWARN_DIRS
-macro(NEM_include_3p_directories target_ scope_)
+function(NEM_include_3p_directories target_ scope_)
   if("${scope_}" STREQUAL "PRIVATE" OR "${scope_}" STREQUAL "PUBLIC")  # but not INTERFACE
     target_include_directories(${target_} SYSTEM PRIVATE ${ARGN})
   endif()
   target_include_directories(${target_} ${scope_} ${ARGN})
-endmacro()
+endfunction()
 
 # Circular dependencies WILL cause infinite loop
 function(recurse_interface_includes out_var target)

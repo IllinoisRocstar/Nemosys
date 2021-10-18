@@ -148,23 +148,24 @@ file(COPY ${CMAKE_CURRENT_BINARY_DIR}/madlib_export.h
 
 # Link ANN library
 if(ENABLE_ANN)
-  add_subdirectory(Contrib/ANN)
-  target_link_libraries(MAdLib PUBLIC ANN)
+  if(TARGET ANN)
+    target_link_libraries(MAdLib PUBLIC ANN)
+  else()
+    message(AUTHOR_WARNING "ANN not configured prior to MAdLib")
+    add_subdirectory(../contrib/ann-1.1.2)
+    target_link_libraries(MAdLib PUBLIC ANN)
+  endif()
   target_compile_definitions(MAdLib PUBLIC _HAVE_ANN_)
 endif()
 
 # Link Gmsh library
 if(ENABLE_GMSH)
-  find_library(GMSH_LIB gmsh HINTS lib)
-  find_file(GMSH_HDR gmsh.h HINTS include)
-  get_filename_component(GMSH_INCPATH ${GMSH_HDR} PATH)
-  message(STATUS "gmsh include path ${GMSH_INCPATH}")
-  message(STATUS "gmsh libs ${GMSH_LIB}")
+  find_package(Gmsh REQUIRED)
 
 #  find_package(OpenCASCADE REQUIRED) # Used by Gmsh
 
-  target_link_libraries(MAdLib PRIVATE ${GMSH_LIB})
-  target_include_directories(MAdLib SYSTEM PRIVATE ${GMSH_INCPATH})
+  target_link_libraries(MAdLib PRIVATE ${Gmsh_LIBRARIES})
+  target_include_directories(MAdLib SYSTEM PRIVATE ${Gmsh_INCLUDE_DIRS})
   target_compile_definitions(MAdLib PUBLIC _HAVE_GMSH_)
 endif()
 

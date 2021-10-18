@@ -8,10 +8,10 @@
 #include <Eigen/Core>
 
 // pair type for coordinate and data there
-//typedef std::pair<std::vector<double>, std::vector<double>> pntDataPair;
+//using pntDataPair = std::pair<std::vector<double>, std::vector<double>>;
 
 // holds gauss points and data at these points as pairs
-//typedef std::vector<pntDataPair> pntDataPairVec;
+//using pntDataPairVec = std::vector<pntDataPair>;
 
 class NEMOSYS_EXPORT PatchRecovery
 {

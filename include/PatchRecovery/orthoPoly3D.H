@@ -29,8 +29,8 @@
 
 // defines dynamically sized matrix type with row-major storage
 // this is used to optimize computations involving access to entire rows
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-    MatrixXdRM;
+using MatrixXdRM =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 // remove given row from matrix
 void removeRow(Eigen::MatrixXd &matrix, unsigned int rowToRemove);
