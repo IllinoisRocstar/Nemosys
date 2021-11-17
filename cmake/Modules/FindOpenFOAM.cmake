@@ -155,7 +155,7 @@ if(EXISTS $ENV{FOAM_SRC})
   set(OPNF_INST_DIR $ENV{WM_PROJECT_DIR})
   set(OPNF_SRC_DIR $ENV{FOAM_SRC})
   set(OPNF_LIB_DIR $ENV{FOAM_LIBBIN})
-  list( APPEND OPNF_LIB_DIR $ENV{FOAM_USER_LIBBIN})
+  list(APPEND OPNF_LIB_DIR $ENV{FOAM_USER_LIBBIN})
   set(OPNF_APP_DIR $ENV{FOAM_APPBIN})
   set(OPNF_SITE_APP_DIR $ENV{FOAM_SITE_APPBIN})
   set(OPNF_SITE_LIB_DIR $ENV{FOAM_SITE_LIBBIN})
@@ -212,6 +212,7 @@ set(OPNF_INC_DIR_default
     ${OPNF_INST_DIR}/src/conversion/vtk/adaptor
     ${OPNF_INST_DIR}/src/conversion/vtk/output
 )
+
 if(OPNF_VERSION LESS_EQUAL 4)
   list(APPEND OPNF_INC_DIR_default ${OPNF_INST_DIR}/src/edgeMesh/lnInclude)
 else()

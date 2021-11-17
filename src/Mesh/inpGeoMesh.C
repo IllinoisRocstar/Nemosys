@@ -5,20 +5,21 @@
 #include "Mesh/inpGeoMesh.H"
 
 #include <algorithm>
+#include <cassert>
 #include <fstream>
-#include <jsoncons/json.hpp>
-#include <jsoncons_ext/csv/csv.hpp>
 #include <map>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 
-#include "AuxiliaryFunctions.H"
-
+#include <jsoncons/json.hpp>
+#include <jsoncons_ext/csv/csv.hpp>
 #ifdef HAVE_GMSH
 #  include <gmsh.h>
 #endif
+
+#include "AuxiliaryFunctions.H"
 
 namespace NEM {
 namespace MSH {
@@ -534,8 +535,19 @@ void eachGmshPhyGroup(vtkDataSet *dataSet, vtkDataArray *entArr, int dim,
       for (const auto &phyGrp : phyGrpIds) {
         auto &phyGrpNameVec = ent2PhysGroup[dimTag.second];
         phyGrpNameVec.emplace_back();
-        gmsh::model::getPhysicalName(dimTag.first, phyGrp,
-                                     phyGrpNameVec.back());
+        auto &phyGrpName = phyGrpNameVec.back();
+        gmsh::model::getPhysicalName(dimTag.first, phyGrp, phyGrpName);
+        if (phyGrpName.empty()) {
+          if (dim == 3) {
+            phyGrpName = "PhysicalVolume";
+          } else if (dim == 2) {
+            phyGrpName = "PhysicalSurface";
+          } else {
+            phyGrpName = "PhysicalGroup";
+          }
+          phyGrpName += std::to_string(phyGrp);
+          gmsh::model::setPhysicalName(dimTag.first, phyGrp, phyGrpName);
+        }
       }
     }
   }
