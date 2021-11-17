@@ -19,20 +19,6 @@ namespace MSH {
  * dimension are turned into SURFACEs and NSETs.
  */
 class NEMOSYS_EXPORT inpGeoMesh : public geoMeshBase {
- public:
-  static inpGeoMesh *New();
-  static inpGeoMesh *Read(const std::string &fileName);
-  vtkTypeMacro(inpGeoMesh, geoMeshBase)
-
-  void write(const std::string &fileName) override;
-  void report(std::ostream &out) const override;
-
- protected:
-  inpGeoMesh();
-  explicit inpGeoMesh(const std::string &fileName);
-
-  void reconstructGeo() override;
-
  private:
   struct NEMOSYS_NO_EXPORT InpSets {
     /**
@@ -48,6 +34,26 @@ class NEMOSYS_EXPORT inpGeoMesh : public geoMeshBase {
      */
     std::map<std::string, std::set<vtkIdType>> surfaces;
   };
+
+ public:
+  static inpGeoMesh *New();
+  static inpGeoMesh *Read(const std::string &fileName);
+  vtkTypeMacro(inpGeoMesh, geoMeshBase)
+
+  void write(const std::string &fileName) override;
+  void report(std::ostream &out) const override;
+
+  decltype(InpSets::nodeSets) &getNSets() { return inpSets_.nodeSets; }
+  decltype(InpSets::elSets) &getElSets() { return inpSets_.elSets; }
+  decltype(InpSets::surfaces) &getSurfaces() { return inpSets_.surfaces; }
+
+ protected:
+  inpGeoMesh();
+  explicit inpGeoMesh(const std::string &fileName);
+
+  void reconstructGeo() override;
+
+ private:
   /**
    * @brief Ctor meant for ease of delegating to geoMeshBase ctor
    * @param mesh from parsing a .inp mesh file
