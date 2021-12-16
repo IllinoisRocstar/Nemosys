@@ -35,7 +35,7 @@ test:ubuntu18-gpl:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_HDF5=ON
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=ON
@@ -60,7 +60,7 @@ test:ubuntu18-lgpl:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_HDF5=ON
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=OFF
@@ -155,7 +155,7 @@ deploy:public:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_HDF5=ON
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=ON
@@ -188,7 +188,7 @@ deploy:public:
       -DENABLE_BUILD_UTILS=ON
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_HDF5=ON
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=OFF
@@ -232,13 +232,15 @@ test:centos7-gpl:
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
       -DENABLE_HDF5=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=ON
       -DENABLE_CFMSH=ON
       -DENABLE_GMSH=ON
       -DENABLE_TEMPLATE_MESH=ON
       -DPYTHON_EXECUTABLE=/usr/bin/python3.6
+      -DEXO_LIB=/usr/lib64/libvtkexodusII-8.2.so 
+      -DEXO_HDR=/usr/include/vtk-8.2/vtkexodusII/include/exodusII.h
       -DBoost_INCLUDE_DIR=/usr/include/boost169/
       -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
       -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
@@ -261,10 +263,12 @@ test:centos7-lgpl:
       -DENABLE_METIS=ON
       -DENABLE_NETGEN=ON
       -DENABLE_HDF5=ON
-      -DENABLE_CGNS=ON
+      -DENABLE_CGNS=OFF
       -DENABLE_OPENCASCADE=ON
       -DENABLE_GPL=OFF
       -DPYTHON_EXECUTABLE=/usr/bin/python3.6
+      -DEXO_LIB=/usr/lib64/libvtkexodusII-8.2.so 
+      -DEXO_HDR=/usr/include/vtk-8.2/vtkexodusII/include/exodusII.h
       -DBoost_INCLUDE_DIR=/usr/include/boost169/
       -DBoost_FILESYSTEM_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_filesystem.so
       -DBoost_REGEX_LIBRARY_RELEASE=/usr/lib64/boost169/libboost_regex.so
