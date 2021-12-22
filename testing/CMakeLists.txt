@@ -359,6 +359,10 @@ if(ENABLE_OPENCASCADE)
         concentric_polygons_REF.vtu
         polar_array_rot_with_array.json
         polar_array_rot_with_array_REF.vtu
+        N_mesh.json
+        N_mesh_REF.vtu
+        e_mesh.json
+        e_mesh_REF.vtu
         threeD.json
         threeD_REF.exo)
   endif()

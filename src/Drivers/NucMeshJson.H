@@ -261,7 +261,7 @@ construct_helper<NEM::NUCMESH::RectangularArray>(
         &savedShapes) {
   auto patternJson = json.at("Pattern").array_value();
   auto shape = new NEM::NUCMESH::RectangularArray{
-      {patternJson.size(), patternJson[0].size()}, {}};
+      {patternJson[0].size(), patternJson.size()}, {}};
   std::unique_ptr<NEM::NUCMESH::ShapeBase> out{shape};
   modify_helper(json, *shape, savedShapes, true);
   return out;
@@ -287,7 +287,7 @@ void modify_helper(
     }
   } else if (checkRequired) {
     throw jsoncons::convert_error(jsoncons::convert_errc::conversion_failed,
-                                  "Not a NEM::NUCMESH::RectangularArray");
+                                  "Not a NEM::NUCMESH::HexagonalArray");
   }
   modify_helper(json, dynamic_cast<NEM::NUCMESH::ShapesArray &>(shape),
                 savedShapes, checkRequired);

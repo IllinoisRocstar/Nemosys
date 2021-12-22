@@ -1,0 +1,31 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "e_mesh_REF.vtu"
+  },
+  "NucMesh Options": {
+    "Shapes": [
+      {
+        "Type": "Hexagonal Array",
+        "Grid Distance": 1.0,
+        "Pattern": [
+           [1, 1, 1, 1],
+           [1, 0, 0, 0, 1],
+           [1, 0, 0, 0, 0, 1],
+           [1, 1, 1, 1, 1, 1, 1],
+           [1, 0, 0, 0, 0, 0],
+           [1, 0, 0, 0, 0],
+           [1, 1, 1, 1]
+         ],
+        "Shapes": [
+          null,
+          {
+            "Type": "Circles And Polys",
+            "Number of Sides": 6,
+            "Rings": [{"Shape Type": "Poly", "Radius": 0.57735026919, "Mesh": {"Type": "T"}, "Rotation": 30, "Material": "A"}]
+          }
+        ]
+      }
+    ]
+  }
+}
