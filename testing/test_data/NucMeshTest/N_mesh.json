@@ -1,0 +1,41 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "N_mesh.vtu"
+  },
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "N_base",
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Rings": [{"Shape Type": "Poly", "Radius": 0.70710678118, "Mesh": {"Type": "T"}, "Material": "N"}]
+      }
+    ],
+    "Shapes": [
+      {
+        "Type": "Rectangular Array",
+        "Grid Distance": [1.0, 1.0],
+        "Pattern": [
+          [1, 1, 0, 0, 1],
+          [1, 1, 0, 0, 1],
+          [1, 1, 1, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 0, 1, 1, 1],
+          [1, 0, 0, 1, 1],
+          [1, 0, 0, 0, 1]
+          ],
+        "Shapes": [
+          null,
+          {
+            "Type": "Circles And Polys",
+            "Number of Sides": 4,
+            "Rings": [{"Shape Type": "Poly", "Radius": 0.70710678118, "Mesh": {"Type": "T"}, "Material": "1"}]
+          }
+        ]
+      }
+    ]
+  }
+}
+        
+             

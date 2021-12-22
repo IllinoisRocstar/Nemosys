@@ -12,38 +12,47 @@ namespace NUCMESH {
 namespace {
 
 std::size_t coordsToSpiralFlat(int right, int rightUp) {
-  int ring;
-  int corner;
-  int offset;
+  /*
+   * This converts (right, rightUp) coordinates to a flattened spiral.
+   *
+   * The value returned is the number of coordinates "dealt with" once
+   * that coordinate has been reached, if you start at the center and
+   * spiral outwards counterclockwise.
+   */
+  int ring;     // 0-indexed ring number, counting from the center
+  int corner;   // reference corner from which offset is figured
+  int offset;   // how far into a side you've gone
   if (right >= 0) {
     if (rightUp >= 0) {
-      corner = 0;
+      corner = 0; // start at corner 0 (center-right)
       ring = right + rightUp;
-      offset = rightUp;
+      offset = rightUp; // count upwards
+      if (ring == 0) offset = -1; // special case for middle point
     } else if (right <= -rightUp) {
-      corner = 4;
+      corner = 4; // start at corner 4 (bottom-left)
       ring = -rightUp;
-      offset = right;
+      offset = right; //count rightwards
     } else {
-      corner = 0;
+      corner = 0; // start at corner 0 (center-right)
       ring = right + 1;
-      offset = rightUp;
+      offset = rightUp; // count downwards
     }
   } else {
     if (rightUp <= 0) {
-      corner = 3;
+      corner = 3; // start from corner 3 (center-left)
       ring = -(right + rightUp);
-      offset = -rightUp;
+      offset = -rightUp; // count (negative) downward
     } else if (-right <= rightUp) {
-      corner = 1;
+      corner = 1; // start from corner 1 (top-right)
       ring = rightUp;
-      offset = -right;
+      offset = -right; // count (negative) rightwards
     } else {
-      corner = 3;
+      corner = 3; // start from corner 3 (center-left)
       ring = -right;
-      offset = -rightUp;
+      offset = -rightUp; // count (negative) downward
     }
   }
+  // note that 3*N(N-1)+1 is the Nth hexagonal number
   return 3 * ring * (ring - 1) + 1 + corner * ring + offset;
 }
 
