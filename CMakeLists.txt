@@ -5,12 +5,12 @@ cmake_minimum_required(VERSION 3.9)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 62)
-set(NEMOSYS_PATCH_VERSION 2)
+set(NEMOSYS_PATCH_VERSION 3)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
     "${NEMOSYS_VERSION}.${NEMOSYS_PATCH_VERSION}${NEMOSYS_EXTRA_VERSION}")
-set(NEMOSYS_SHORT_LICENSE "GNU General Public License v2 or later (GPLv2+)")
+set(NEMOSYS_SHORT_LICENSE "GNU Lesser General Public License v3 or later (LGPLv3+)")
 set(NEMOSYS_HOMEPAGE_URL "http://promesh.com")
 set(NEMOSYS_AUTHOR
     "Alessandro Gondolo"
@@ -24,7 +24,7 @@ set(NEMOSYS_AUTHOR
 set(NEMOSYS_AUTHOR_EMAIL "promesh@illinoisrocstar.com")
 set(NEMOSYS_PYTHON_CLASSIFIERS
     "Development Status :: 2 - Pre-Alpha"
-    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)"
     "Natural Language :: English"
     "Operating System :: Microsoft :: Windows :: Windows 10"
     "Operating System :: POSIX"
@@ -1198,7 +1198,7 @@ set(CPACK_PACKAGE_HOMEPAGE_URL "${NEMOSYS_HOMEPAGE_URL}")
 set(CPACK_PACKAGE_CONTACT "${NEMOSYS_AUTHOR_EMAIL}")
 #set(CPACK_PACKAGE_INSTALL_DIRECTORY "") # Use default location.
 #set(CPACK_PACKAGE_ICON "") # image used by GUI installers
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING.LESSER")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/README.md")
 
 if(WIN32)
