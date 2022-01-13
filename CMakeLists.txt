@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.9)
 
 set(NEMOSYS_MAJOR_VERSION 0)
 set(NEMOSYS_MINOR_VERSION 62)
-set(NEMOSYS_PATCH_VERSION 1)
+set(NEMOSYS_PATCH_VERSION 2)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -188,12 +188,13 @@ find_package(VTK 8.2.0 REQUIRED)
 #include(${VTK_USE_FILE})
 set(VTK_LIB_DIR ${vtksys_RUNTIME_LIBRARY_DIRS})
 list(APPEND LIBRARY_DIRS ${VTK_LIB_DIR})
-message(STATUS "vtk include path: ${VTK_INCLUDE_DIRS}")
+message(STATUS "vtk include paths ${VTK_INCLUDE_DIRS}")
 message(STATUS "vtk libs ${VTK_LIB_DIR}")
 
-# Find ExodusII
-find_library(EXO_LIB NAMES exoIIv2 exodus exoIIv2c)
-find_file(EXO_HDR exodusII.h)
+# Find VTK's ExodusII
+find_library(EXO_LIB NAMES vtkexodusII-8.2)
+list(GET VTK_INCLUDE_DIRS 0 _VTK_INCLUDE_DIR)
+find_file(EXO_HDR exodusII.h HINTS "${_VTK_INCLUDE_DIR}/vtkexodusII/include")
 get_filename_component(EXO_LIB_PATH ${EXO_LIB} PATH)
 get_filename_component(EXO_INCPATH ${EXO_HDR} PATH)
 list(APPEND LIBRARY_DIRS ${EXO_LIB_PATH})
