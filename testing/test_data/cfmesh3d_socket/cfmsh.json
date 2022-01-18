@@ -1,12 +1,12 @@
 [
   {
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "cfmesh",
     "Mesh File Options": {
       "Input Geometry File": "socket.fms",
       "Output Mesh File": "socket_mesh.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "cfmesh",
       "CFMesh Parameters": {
         "Generator": "tetMesh",
         "MaxCellSize": 9.0,

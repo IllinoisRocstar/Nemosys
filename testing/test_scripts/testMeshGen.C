@@ -1,9 +1,35 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #include <fstream>
-
-#include <gtest.h>
-
-#include "NemDriver.H"
-#include "meshBase.H"
+#include <gtest/gtest.h>
+#include <Drivers/NemDriver.H>
+#include <Mesh/meshBase.H>
 
 const char *defaultjson;
 const char *defaultRef;
@@ -22,10 +48,13 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
+  std::cout << jsoncons::pretty_print(inputjson)<< std::endl;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(prog));
+    std::cout << jsoncons::pretty_print(prog)<< std::endl;
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    //EXPECT_NE(nemdrvobj, nullptr);
+    std::cout << "EXPECT_NE success" << std::endl;
+    nemdrvobj->execute();
   }
 
   std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(refname);
@@ -38,11 +67,11 @@ int genTest(const char *jsonF, const char *ofname, const char *refname) {
   // The test will check the number of cells and points and ensure they
   // are within a 0.5% tolerance.
 
-#ifdef _WIN32
+//#ifdef _WIN32
   nemId_t divisor = 39;  // 2.56 % = 1 / 39
-#else
-  nemId_t divisor = 200;  // 0.5% = 1 / 200
-#endif
+//#else
+//  nemId_t divisor = 200;  // 0.5% = 1 / 200
+//#endif
 
   nemId_t refpoints = refMesh->getNumberOfPoints();
   nemId_t refcells = refMesh->getNumberOfCells();

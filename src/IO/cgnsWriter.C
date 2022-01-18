@@ -1,5 +1,33 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 /* Implementation of CGNSWriter class */
-#include "cgnsWriter.H"
+#include "IO/cgnsWriter.H"
 
 #include <iostream>
 #include <cstring>
@@ -301,7 +329,7 @@ int cgnsWriter::getNSections()
 }
 
 // Set local patch sections
-void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect<cgsize_t>::v1d elmConn)
+void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vect1d<cgsize_t> elmConn)
 {
   nSection++;
   sectionNames.push_back(sName);
@@ -312,7 +340,7 @@ void cgnsWriter::setSection(std::string sName, CGNS_ENUMT(ElementType_t) st, vec
 }
 
 // Set global partition sections
-void cgnsWriter::setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst, vect<int>::v1d gelmConn)
+void cgnsWriter::setGlobalSection(std::string gsName, CGNS_ENUMT(ElementType_t) gst, vect1d<int> gelmConn)
 {
   gnSection++;
   gsectionNames.push_back(gsName);
@@ -385,7 +413,7 @@ void cgnsWriter::setGlobalNCell(int gnCl)
 }
 
 // Set grid coordinates, stored separately in x,y,z for CGNS
-void cgnsWriter::setGridXYZ(vect<double>::v1d x, vect<double>::v1d y, vect<double>::v1d z)
+void cgnsWriter::setGridXYZ(vect1d<double> x, vect1d<double> y, vect1d<double> z)
 {
   xCrd.clear();
   xCrd.insert(xCrd.begin(), x.begin(), x.end());
@@ -415,7 +443,7 @@ void cgnsWriter::setPconnGhostDescriptor(int ghostDescriptor)
 }
 
 // Set entire Pane Connectivity vector
-void cgnsWriter::setPconnVec(const vect<int>::v1d& _pConnVec)
+void cgnsWriter::setPconnVec(const vect1d<int>& _pConnVec)
 {
   pConnVec = _pConnVec;
 }

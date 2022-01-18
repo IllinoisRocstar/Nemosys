@@ -1,16 +1,45 @@
-#include <gtest.h>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <gtest/gtest.h>
 #include <algorithm>
-#include <boost/filesystem.hpp>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <string>
-#include "PackMeshDriver.H"
-#include "NemDriver.H"
-#include "meshBase.H"
+#include <Drivers/NemDriver.H>
+#include <Drivers/PackMesh/PackMeshDriver.H>
+#include <Mesh/geoMeshFactory.H>
+#include <Mesh/meshBase.H>
 
 const char *inp_json;
-meshBase *mesh;
-meshBase *ref;
+NEM::MSH::geoMeshBase *mesh;
+NEM::MSH::geoMeshBase *ref;
 jsoncons::json inputjson;
 
 // Aux functions
@@ -46,7 +75,8 @@ int generate(const char *jsonF) {
   inputjson = inputjson_tmp[0];
 
   // Call packmesh readjson
-  auto pckmshdrvObj = NEM::DRV::PackMeshDriver::readJSON(inputjson);
+  auto pckmshdrvObj = NEM::DRV::NemDriver::readJSON(inputjson);
+  pckmshdrvObj->execute();
 
   return 0;
 }
@@ -54,30 +84,16 @@ int generate(const char *jsonF) {
 // TEST macros
 TEST(PackMeshing, Generation) { EXPECT_EQ(0, generate(inp_json)); }
 
-// TEST(PackMeshing, NumberOfNodesnCellsPacks) {
-//   if (ref) delete ref;
-//   ref = meshBase::Create(inputjson["Pack Reference File"].as<std::string>());
-//   meshBase *cmp1 = meshBase::Create("geom_pack_mesh.vtu");
-//   EXPECT_TRUE((cmp1->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-//               (cmp1->getNumberOfCells() == ref->getNumberOfCells()));
-// }
-
-// TEST(PackMeshing, NumberOfNodesNodesnCellsSurrounding) {
-//   if (ref) delete ref;
-//   ref = meshBase::Create(
-//       inputjson["Surrounding Reference File"].as<std::string>());
-//   meshBase *cmp2 = meshBase::Create("geom_surrounding_mesh.vtu");
-//   EXPECT_TRUE((cmp2->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-//               (cmp2->getNumberOfCells() == ref->getNumberOfCells()));
-// }
-
 TEST(PackMeshing, NumberOfNodesNodesnCellsMerged) {
   if (ref) delete ref;
-  ref = meshBase::Create(
-      inputjson["Merged Reference File"].as<std::string>());
-  meshBase *cmp2 = meshBase::Create("packmesh.vtu");
-  EXPECT_TRUE((cmp2->getNumberOfPoints() == ref->getNumberOfPoints()) &&
-              (cmp2->getNumberOfCells() == ref->getNumberOfCells()));
+  ref = NEM::MSH::Read(inputjson["Merged Reference File"].as<std::string>());
+  auto *cmp2 = NEM::MSH::Read("packmesh.vtu");
+  EXPECT_TRUE(std::fabs(cmp2->getNumberOfPoints() / ref->getNumberOfPoints() -
+                        1) < 0.03);
+  EXPECT_TRUE(
+      std::fabs(cmp2->getNumberOfCells() / ref->getNumberOfCells() - 1) < 0.03);
+  cmp2->Delete();
+  ref->Delete();
 }
 
 // test constructor

@@ -1,6 +1,34 @@
-#include <NemDriver.H>
-#include <exoMesh.H>
-#include <gtest.h>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <Drivers/NemDriver.H>
+#include <Mesh/exoMesh.H>
+#include <gtest/gtest.h>
 #include <fstream>
 
 const char *bench1_json;
@@ -46,9 +74,9 @@ int exoTestConv(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(prog));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
 
   rm = new NEM::MSH::EXOMesh::exoMesh(std::string(refname));
@@ -101,9 +129,9 @@ int epTestInputGen(const char *jsonF, const char *ofname, const char *refname) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::NemDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::NemDriver>(
-            NEM::DRV::NemDriver::readJSON(prog));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(nemdrvobj, nullptr);
+    nemdrvobj->execute();
   }
 
   return 0;

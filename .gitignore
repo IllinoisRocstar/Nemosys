@@ -2,6 +2,7 @@
 Build.dat
 *build*/
 *install*/
+*.idea/
 *.swp
 *.swo
 lnInclude/
@@ -45,7 +46,8 @@ compile_commands.json
 
 # Executables
 *.exe
-*.out
+# Keep Patran files, ignore executables
+a.out
 *.app
 
 ### Win32 build stuff

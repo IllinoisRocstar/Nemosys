@@ -1,14 +1,41 @@
-#include <RefineDriver.H>
-#include <gtest.h>
-
-#include "meshBase.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <Drivers/Refine/RefineDriver.H>
+#include <gtest/gtest.h>
+#include <Mesh/meshBase.H>
 
 #ifdef HAVE_CFMSH
-#  include "AMRFoam.H"
+#  include <Refinement/AMRFoam.H>
 #endif
 #ifdef MLAMR
 #  include <fdeep/fdeep.hpp>
-#  include "vtkMesh.H"
+#  include <Mesh/vtkMesh.H>
 #endif
 
 const char *refineValueJSON;
@@ -31,9 +58,9 @@ int genTest(const char *jsonF, const char *newName, const char *goldName) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
-      std::unique_ptr<NEM::DRV::RefineDriver>(
-          NEM::DRV::RefineDriver::readJSON(inputjson));
+  auto refineDrv = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(dynamic_cast<NEM::DRV::RefineDriver *>(refineDrv.get()), nullptr);
+  refineDrv->execute();
 
   std::unique_ptr<meshBase> goldMesh = meshBase::CreateUnique(goldName);
   std::unique_ptr<meshBase> newMesh = meshBase::CreateUnique(newName);
@@ -53,9 +80,9 @@ int AMRTest(const char *jsonF2) {
 
   jsoncons::json inputjson;
   inputStream >> inputjson;
-  std::unique_ptr<NEM::DRV::RefineDriver> refineDriver =
-      std::unique_ptr<NEM::DRV::RefineDriver>(
-          NEM::DRV::RefineDriver::readJSON(inputjson));
+  auto refineDrv = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(dynamic_cast<NEM::DRV::RefineDriver *>(refineDrv.get()), nullptr);
+  refineDrv->execute();
 
   std::unique_ptr<meshBase> genMesh = meshBase::CreateUnique("refined_AMR.vtu");
   std::unique_ptr<meshBase> refMesh =
@@ -129,6 +156,7 @@ int MLAMRTest(const std::string MLName, const std::string MeshName) {
 }
 #endif
 
+#ifdef HAVE_GMSH
 TEST(RefinementDriverTest, RefineValue) {
   EXPECT_EQ(0, genTest(refineValueJSON, refineValueVTU, refineValueGoldVTU));
 }
@@ -137,6 +165,7 @@ TEST(RefinementDriverTest, RefineUniform) {
   EXPECT_EQ(0,
             genTest(refineUniformJSON, refineUniformVTU, refineUniformGoldVTU));
 }
+#endif
 
 #ifdef HAVE_CFMSH
 TEST(AdaptiveMeshRefinementTest, Refine_Unrefine) {
@@ -162,5 +191,6 @@ int main(int argc, char **argv) {
   AMRValueJSON = argv[7];
   mlPredictVTU = argv[8];
   mlModelFile = argv[9];
+
   return RUN_ALL_TESTS();
 }

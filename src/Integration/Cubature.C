@@ -1,4 +1,32 @@
-#include "Cubature.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Integration/Cubature.H"
 
 #include <vtkQuadraturePointsGenerator.h>
 #include <vtkMeshQuality.h>
@@ -7,7 +35,7 @@
 #include <vtkCellTypes.h>
 #include <vtkInformation.h>
 #include <vtkXMLPolyDataWriter.h>
-#include <vtkMesh.H> // for writeVTFile
+#include "Mesh/vtkMesh.H" // for writeVTFile
 
 #ifdef HAVE_OPENMP
 #include <omp.h>
@@ -166,6 +194,7 @@ void GaussCubature::constructGaussMesh()
   offsets->SetName(basename.c_str());
   auto info = vtkSmartPointer<vtkInformation>::New();
   info = offsets->GetInformation();
+
   for (int typeId = 0; typeId < nCellTypes; ++typeId)
   {
     int cellType = cellTypes->GetCellType(typeId);
@@ -349,6 +378,7 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
     std::cerr << "no array have been selected for interpolation" << std::endl;
     exit(1);
   }
+
   int numDataArr = gaussMesh->GetPointData()->GetNumberOfArrays();
 
   if (numDataArr == 0)
@@ -385,7 +415,7 @@ pntDataPairVec GaussCubature::getGaussPointsAndDataAtCell(int cellID)
       }
       delete[] comps;
     }
-    container[i] = std::move(std::make_pair(gaussPnt, data));
+    container[i] = std::make_pair(gaussPnt, data);
   }
   return container;
 }
@@ -441,6 +471,7 @@ void GaussCubature::interpolateToGaussPoints()
     std::cerr << "no arrays selected for interpolation" << std::endl;
     exit(1);
   }
+
   std::vector<vtkSmartPointer<vtkDoubleArray>> daGausses(arrayIDs.size());
   std::vector<vtkSmartPointer<vtkDataArray>> das(arrayIDs.size());
   numComponents.resize(arrayIDs.size());
@@ -671,6 +702,7 @@ std::vector<std::vector<double>> GaussCubature::integrateOverAllCells()
   {
     interpolateToGaussPoints();
   }
+
   vtkSmartPointer<vtkPointData> pd = gaussMesh->GetPointData();
   std::vector<vtkSmartPointer<vtkDoubleArray>> cellIntegralData(arrayIDs.size());
   std::vector<std::vector<double>> totalIntegralData(arrayIDs.size());

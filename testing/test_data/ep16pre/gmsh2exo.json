@@ -1,0 +1,35 @@
+[
+  {
+    "Program Type": "Conversion",
+    "Mesh File Options": {
+      "Output Mesh File": "bctest.g"
+    },
+    "Conversion Options": {
+      "Method": "GMSH->EXO",
+      "Number of Mesh": 2,
+      "Mesh Data": [
+        {
+          "File": "prj.msh",
+          "Name": "PRJ_01",
+          "Use Physical Groups": true,
+          "Node Sets": [],
+          "Element Blocks": []
+        },
+        {
+          "File": "trg.msh",
+          "Name": "TRG_01",
+          "Use Physical Groups": false,
+          "Node Sets": [],
+          "Element Blocks": []
+        }
+      ],
+      "Post Processing": true,
+      "Number of Tasks": 1,
+      "Tasks": [
+        {
+          "File": "bcs.json"
+        }
+      ]
+    }
+  }
+]

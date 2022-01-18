@@ -1,7 +1,37 @@
-#include <meshBase.H>
-#include <foamMesh.H>
-#include <gtest.h>
-
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <Mesh/exoMesh.H>
+#include <Mesh/foamMesh.H>
+#include <Mesh/meshBase.H>
+#include <Drivers/NemDriver.H>
+#include <Drivers/Conversion/ManipExoConversionDriver.H>
+#include <gtest/gtest.h>
 const char* mshName;
 const char* volName;
 const char* refMshVTUName;
@@ -23,6 +53,48 @@ const char* packConv;
 const char* packConv_ref;
 const char* buildingTet;
 const char* buildingTet_ref;
+const char* combineBlocks_json;
+
+std::string combine_blocks(const char *jsonF) {
+  std::string fname(jsonF);
+  std::ifstream inputStream(fname);
+  if (!inputStream.good()) {
+    std::cerr << "Error opening file " << jsonF << std::endl;
+    exit(1);
+  }
+  jsoncons::json inputjson;
+  inputStream >> inputjson;
+
+  auto nemdrvobj = NEM::DRV::NemDriver::readJSON(inputjson);
+  EXPECT_NE(nemdrvobj, nullptr);
+  nemdrvobj->execute();
+
+  std::string ofname =
+      dynamic_cast<NEM::DRV::ManipExoConversionDriver *>(nemdrvobj.get())
+          ->getFiles()
+          .outputMeshFile;
+  return ofname;
+}
+
+TEST(Conversion, ConvertEXOtoEXO) {
+  auto mesh = combine_blocks(combineBlocks_json);
+  auto em = new NEM::MSH::EXOMesh::exoMesh(mesh);
+  em->read(mesh);
+
+  int numBlks = em->getNumberOfElementBlocks();
+  std::cout << "Number of element blocks " << numBlks << std::endl;
+  int numSdes = em->getNumSdesInSdeSetById(4);
+  std::cout << "Number of sides in sideset " << numSdes << std::endl;
+
+  int ret;
+  if (numBlks != 3 || numSdes != 52) {
+    std::cout << "Expected number of blocks to be 3 and sides to be 52."
+              << std::endl;
+    ret = 1;
+  } else
+    ret = 0;
+  EXPECT_EQ(0, ret);
+}
 
 TEST(Conversion, ConvertGmshToVTK)
 {
@@ -31,12 +103,14 @@ TEST(Conversion, ConvertGmshToVTK)
   EXPECT_EQ(0,diffMesh(mesh.get(),refMesh.get())); 
 } 
 
+#ifdef HAVE_NGEN
 TEST(Conversion, ConvertVolToVTK)
 {
   std::unique_ptr<meshBase> mesh = meshBase::CreateUnique(volName);
   std::unique_ptr<meshBase> refMesh = meshBase::CreateUnique(refVolVTUName);
   EXPECT_EQ(0,diffMesh(mesh.get(),refMesh.get()));
 }
+#endif
 
 TEST(Conversion, ConvertLegacyVTKToVTU)
 {
@@ -48,9 +122,7 @@ TEST(Conversion, ConvertLegacyVTKToVTU)
   std::cout << mesh_ref->getNumberOfCells() << std::endl;
   std::cout << mesh1->getNumberOfCells() << std::endl;
   std::cout << mesh1_ref->getNumberOfCells() << std::endl;
-  std::cout << __FILE__ << __LINE__ << std::endl;
   EXPECT_EQ(0, diffMesh(mesh.get(), mesh_ref.get()));
-  std::cout << __FILE__ << __LINE__ << std::endl;
   EXPECT_EQ(0, diffMesh(mesh1.get(), mesh1_ref.get()));
 }
 
@@ -161,7 +233,7 @@ TEST(Conversion, ConvertVTKHexToTet)
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  assert(argc == 22);
+  assert(argc == 23);
   refMshVTUName = argv[1];
   mshName = argv[2];
   refVolVTUName = argv[3];
@@ -183,6 +255,7 @@ int main(int argc, char** argv) {
   packConv_ref = argv[19];
   buildingTet = argv[20];
   buildingTet_ref = argv[21];
+  combineBlocks_json = argv[22];
   return RUN_ALL_TESTS();
 }
 

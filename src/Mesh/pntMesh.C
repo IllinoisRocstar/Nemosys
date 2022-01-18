@@ -1,10 +1,39 @@
-#include "pntMesh.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Mesh/pntMesh.H"
 
 #include "AuxiliaryFunctions.H"
 
 #include <vtkCell.h>
 
 #include <sstream>
+#include <type_traits>
 
 VTKCellType PNTMesh::p2vEMap(elementType et)
 {
@@ -56,11 +85,12 @@ PNTMesh::surfaceBCTag PNTMesh::bcTagNum(const std::string &_tag)
   throw;
 }
 
-std::string PNTMesh::bcTagStr(int tag)
+std::string PNTMesh::bcTagStr(surfaceBCTag tag)
 {
-  if (tag == REFLECTIVE) return "REFLECTIVE";
-  if (tag == VOID) return "VOID";
-  std::cerr << "Unknown surface tag " << tag << std::endl;
+  switch (tag) {
+    case surfaceBCTag::REFLECTIVE: return "REFLECTIVE";
+    case surfaceBCTag::VOID: return "VOID";
+  }
   throw;
 }
 
@@ -348,6 +378,7 @@ PNTMesh::pntMesh::pntMesh(const meshBase *imb, int dim, int nBlk,
     for (int j = 0; j < numComponent; ++j)
       cn[j] = point_ids->GetId(j);
     elmConn[i] = cn;
+
     VTKCellType type_id = static_cast<VTKCellType>(imb->getDataSet()->GetCellType(i));
     elmTyp[i] = v2pEMap(type_id);
   }
@@ -439,7 +470,7 @@ PNTMesh::pntMesh::getPntConn(std::vector<int> &ci, elementType et, int eo) const
 {
   std::vector<int> co;
   co = ci;
-  if (et == TRIANGLE && eo == 2)
+  if (et == elementType::TRIANGLE && eo == 2)
   {
     co[0] = ci[0];
     co[2] = ci[1];
@@ -448,8 +479,9 @@ PNTMesh::pntMesh::getPntConn(std::vector<int> &ci, elementType et, int eo) const
     co[3] = ci[4];
     co[5] = ci[5];
   }
-  else if ((et == HEXAGON || et == LAGRANGE_BRICK || et == BRICK)
-           && eo == 2)
+  else if ((et == elementType::HEXAGON || et == elementType::LAGRANGE_BRICK ||
+              et == elementType::BRICK) &&
+             eo == 2)
   {
     co[0] = ci[0];
     co[2] = ci[1];
@@ -567,7 +599,9 @@ VTKCellType PNTMesh::pntMesh::getVtkCellTag(elementType et, int order) const
       default: return VTK_HIGHER_ORDER_WEDGE;
     }
 
-  std::cerr << "Unknown element type " << et << " order " << order << std::endl;
+  std::cerr << "Unknown element type "
+            << static_cast<std::underlying_type<elementType>::type>(et)
+            << " order " << order << std::endl;
   throw;
 }
 

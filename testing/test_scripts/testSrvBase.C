@@ -1,13 +1,40 @@
-#include <gtest.h>
-
-#include "srvBase.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <gtest/gtest.h>
+#include <Services/srvBase.H>
 
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkSmartPointer.h>
 
-#include "geoMeshBase.H"
+#include <Mesh/geoMeshBase.H>
 
 // Tests for NEM::SRV::srvBase using minimal child class testSrvBase
 
@@ -30,12 +57,11 @@ class testSrvBase : public NEM::SRV::srvBase {
  public:
   static testSrvBase *New();
 
+ protected:
   testSrvBase() {
     this->SetNumberOfInputPorts(1);
     this->SetNumberOfOutputPorts(1);
   }
-
- protected:
   int RequestDataObject(vtkInformation *vtkNotUsed(request),
                         vtkInformationVector **vtkNotUsed(inputVector),
                         vtkInformationVector *outputVector) override {
@@ -89,8 +115,6 @@ class testSrvBase : public NEM::SRV::srvBase {
 
 vtkStandardNewMacro(testSrvBase)
 
-TEST(srvBase, ConstructorDefault) { testSrvBase sb{}; }
-
 TEST(srvBase, ExecuteVtkSmartPointer) {
   auto sb = vtkSmartPointer<testSrvBase>::New();
   auto in = vtkSmartPointer<testGeoMeshBase>::New();
@@ -113,14 +137,13 @@ TEST(srvBase, ExecuteVtkNewVtkDelete) {
 }
 
 TEST(srvBase, ExecuteNewVtkDelete) {
-  auto *sb = new testSrvBase;
+  vtkNew<testSrvBase> sb;
   auto *in = new testGeoMeshBase;
 
   sb->SetInputDataObject(in);
   sb->Update();
   testGeoMeshBase::SafeDownCast(sb->GetOutputDataObject(0));
 
-  sb->Delete();
   in->Delete();
 }
 

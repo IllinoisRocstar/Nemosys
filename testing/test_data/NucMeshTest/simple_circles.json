@@ -1,0 +1,10 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {"Output Mesh File": "simple_circles.vtu"},
+  "NucMesh Options": {
+    "Shapes": [
+      {"Type": "Circles", "Rings": [{"Radius": 5, "Mesh": {"Type": "T"}, "Material": "A"}]},
+      {"Type": "Circles", "Center": [12.5, 0, 0], "Rings": [{"Radius": 5, "Mesh": {"Type": "Q"}, "Material": "B"}]}
+    ]
+  }
+}

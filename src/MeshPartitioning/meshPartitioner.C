@@ -1,11 +1,39 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 /* implementation of mesh partition class(es) */
 
-#include "meshPartitioner.H"
+#include "MeshPartitioning/meshPartitioner.H"
 
 /* disable -- AEG
-#include "cgnsAnalyzer.H"
+#include "IO/cgnsAnalyzer.H"
 */
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 #include <vtkCellTypes.h>
 
@@ -20,9 +48,9 @@ meshPartition::meshPartition(int pidx,
   pIdx = pidx;
   nNde = 0;
   nElm = 0;
-  if (mshType == MESH_TETRA_4)
+  if (mshType == MeshType_t::MESH_TETRA_4)
     nNdeElm = 4;
-  else if (mshType == MESH_TRI_3)
+  else if (mshType == MeshType_t::MESH_TRI_3)
     nNdeElm = 3;
   // finding partition elements
   int glbElmIdx = 1;
@@ -165,16 +193,19 @@ meshPartitioner::meshPartitioner(const meshBase *inMB)
   }
   nElm = inMB->getNumberOfCells();
   if (celltypes->IsType(VTK_TETRA))
-    meshType = MESH_TETRA_4;
+    meshType = MeshType_t::MESH_TETRA_4;
   else if (celltypes->IsType(VTK_TRIANGLE))
-    meshType = MESH_TRI_3;
+    meshType = MeshType_t::MESH_TRI_3;
   else {
     std::cerr << "Mesh with unsupported element types." << std::endl;
     exit(-1);
   }
   nPart = 0;
   std::cout << " ------------------- Partitioner Stats ---------------------\n";
-  std::cout << "Mesh type : " << (meshType == 0 ? "Triangular" : "Tetrahedral") << "\n";
+  std::cout << "Mesh type : "
+            << (meshType == MeshType_t::MESH_TRI_3 ? "Triangular"
+                                                   : "Tetrahedral")
+            << "\n";
   std::cout << "Number of nodes = " << nNde << "\n"
             << "Number of elements = " << nElm << "\n";
   std::cout << "Size of elmConn = " << elmConnVec.size() << "\n";
@@ -186,7 +217,7 @@ meshPartitioner::meshPartitioner(const meshBase *inMB)
             << std::endl;
 }
 
-
+#ifdef HAVE_GMSH
 meshPartitioner::meshPartitioner(MAd::pMesh inMesh)
 {
   // only implemented for TETRA_4 elements
@@ -209,12 +240,12 @@ meshPartitioner::meshPartitioner(MAd::pMesh inMesh)
   if (M_numTets(inMesh) > 0)
   {
     nElm = MAd::M_numRegions(inMesh);
-    meshType = MESH_TETRA_4;
+    meshType = MeshType_t::MESH_TETRA_4;
   }
   else if (M_numTriangles(inMesh) > 0)
   {
     nElm = MAd::M_numTriangles(inMesh);
-    meshType = MESH_TRI_3;
+    meshType = MeshType_t::MESH_TRI_3;
   }
   else
   {
@@ -223,7 +254,7 @@ meshPartitioner::meshPartitioner(MAd::pMesh inMesh)
   }
   nPart = 0;
   std::cout << " ------------------- Partitioner Stats ---------------------\n";
-  std::cout << "Mesh type : " << (meshType == 0 ? "Triangular" : "Tetrahedral") << "\n";
+  std::cout << "Mesh type : " << (meshType == MeshType_t::MESH_TRI_3 ? "Triangular" : "Tetrahedral") << "\n";
   std::cout << "Number of nodes = " << nNde << "\n"
             << "Number of elements = " << nElm << "\n";
   std::cout << "Size of elmConn = " << elmConnVec.size() << "\n";
@@ -234,7 +265,7 @@ meshPartitioner::meshPartitioner(MAd::pMesh inMesh)
   std::cout << " -----------------------------------------------------------"
             << std::endl;
 }
-
+#endif
 
 int meshPartitioner::partition(int nPartition)
 {
@@ -261,13 +292,13 @@ int meshPartitioner::partition()
   int ncommon = 1;
   switch (meshType)
   {
-    case MESH_TETRA_4:
+    case MeshType_t::MESH_TETRA_4:
       eptr[0] = 0;
       for (int iElm = 1; iElm <= nElm; iElm++)
         eptr[iElm] = iElm * 4;
       ncommon = 3;
       break;
-    case MESH_TRI_3:
+    case MeshType_t::MESH_TRI_3:
       eptr[0] = 0;
       for (int iElm = 1; iElm <= nElm; iElm++)
         eptr[iElm] = iElm * 3;

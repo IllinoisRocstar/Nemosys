@@ -1,9 +1,37 @@
-#include "exoMesh.H"
-#include <ProteusDriver.H>
-#include <gtest.h>
-#include <meshBase.H>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <gtest/gtest.h>
 #include <stdlib.h>
 #include <vtkPointData.h>
+#include <Drivers/ProteusDriver.H>
+#include <Mesh/meshBase.H>
+#include <Mesh/exoMesh.H>
 
 const char *arg_jsonFile1;
 std::string arg_vtuFile1;
@@ -22,9 +50,10 @@ int convert(const char *jsonF) {
   jsoncons::json inputjson;
   inputStream >> inputjson;
   for (const auto &prog : inputjson.array_range()) {
-    std::unique_ptr<NEM::DRV::ProteusDriver> nemdrvobj =
-        std::unique_ptr<NEM::DRV::ProteusDriver>(
-            NEM::DRV::ProteusDriver::readJSON(prog));
+    auto nemdrvobj = NEM::DRV::NemDriver::readJSON(prog);
+    EXPECT_NE(dynamic_cast<NEM::DRV::ProteusDriver *>(nemdrvobj.get()),
+              nullptr);
+    nemdrvobj->execute();
   }
 
   return 0;

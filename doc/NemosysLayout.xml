@@ -4,7 +4,7 @@
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
     <tab type="pages" visible="yes" title="" intro=""/>
-    <tab type="modules" visible="yes" title="" intro=""/>
+    <tab type="modules" visible="no" title="" intro=""/>
     <tab type="namespaces" visible="yes" title="">
       <tab type="namespacelist" visible="yes" title="" intro=""/>
       <tab type="namespacemembers" visible="yes" title="" intro=""/>
@@ -112,7 +112,7 @@
   <!-- Layout definition for a file page -->
   <file>
     <briefdescription visible="yes"/>
-    <detaileddescription title=""/> <!-- added!!! -->
+    <detaileddescription visible="yes" title=""/> <!-- added!!! -->
     <includes visible="$SHOW_INCLUDE_FILES"/>
     <includegraph visible="$INCLUDE_GRAPH"/>
     <includedbygraph visible="$INCLUDED_BY_GRAPH"/>
@@ -124,18 +124,18 @@
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
-      <functions title=""/>
-      <variables title=""/>
+      <functions visible="yes" title=""/>
+      <variables visible="yes" title=""/>
       <membergroups visible="yes"/>
     </memberdecl>
     <!-- <detaileddescription title=""/> -->
     <memberdef>
-      <inlineclasses title=""/>
+      <inlineclasses visible="yes" title=""/>
       <defines title=""/>
       <typedefs title=""/>
       <enums title=""/>
-      <functions title=""/>
-      <variables title=""/>
+      <functions visible="yes" title=""/>
+      <variables visible="yes" title=""/>
     </memberdef>
     <authorsection/>
   </file>

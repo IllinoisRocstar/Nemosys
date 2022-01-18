@@ -2,11 +2,8 @@
   {
     "Program Type": "Conversion",
     "Mesh File Options": {
-      "Input Mesh Files": {
-        "Source Mesh": "bench1.vtu",
-        "Target Mesh": "bench1_conv.pntmesh"
-      },
-      "Output Mesh File": ""
+      "Input Mesh File": "bench1.vtu",
+      "Output Mesh File": "bench1_conv.pntmesh"
     },
     "Conversion Options": {
       "Method": "VTK->PNT",

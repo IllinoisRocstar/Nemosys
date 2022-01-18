@@ -1,0 +1,11 @@
+{
+  "Program Type": "Conversion",
+  "Mesh File Options": {
+    "Input Mesh File": "fullfluid.vtu",
+    "Output Mesh File": "fullfluid.cgr",
+    "Output Patch Map File": "fullfluid.cgi"
+  },
+  "Conversion Options": {
+    "Method": "VTK->COBALT"
+  }
+}

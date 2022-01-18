@@ -1,88 +1,48 @@
-#include "NemDriver.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Drivers/NemDriver.H"
 
-#include <iostream>
-#include <string>
-
-#include "AutoVerificationDriver.H"
-#include "ConversionDriver.H"
-#include "InputGenDriver.H"
-#include "MeshGenDriver.H"
-#include "MeshQualityDriver.H"
-#include "RefineDriver.H"
-#include "TransferDriver.H"
-
-#include "NucMeshDriver.H"
-#include "PackMeshDriver.H"
-#ifdef HAVE_HDF5
-#  include "ProteusDriver.H"
-#endif
-#ifdef HAVE_CGNS
-#  include "RocPartCommGenDriver.H"
-#endif
+#include "Drivers/DriverJsonTypeTraits.H"
 
 namespace NEM {
 namespace DRV {
 
 //---------------------------- Factory of Drivers ----------------------------//
-NemDriver *NemDriver::readJSON(const jsoncons::json &inputjson) {
-  std::string program_type = inputjson["Program Type"].as<std::string>();
-  if (program_type == "Transfer") {
-    return TransferDriver::readJSON(inputjson);
-  } else if (program_type == "Refinement") {
-    return RefineDriver::readJSON(inputjson);
-  } else if (program_type == "Mesh Generation") {
-    return MeshGenDriver::readJSON(inputjson);
-  } else if (program_type == "Mesh Quality") {
-    return MeshQualityDriver::readJSON(inputjson);
-  } else if (program_type == "Verification") {
-    return AutoVerificationDriver::readJSON(inputjson);
-  } else if (program_type == "Conversion") {
-    return ConversionDriver::readJSON(inputjson);
-  } else if (program_type == "Input Generation") {
-    return InputGenDriver::readJSON(inputjson);
-  } else if (program_type == "NucMesh Generation") {
-    return NucMeshDriver::readJSON(inputjson);
-  } else if (program_type == "Pack Mesh Generation") {
-    return PackMeshDriver::readJSON(inputjson);
-  } else if (program_type == "Rocstar Remeshing") {
-#ifdef HAVE_SIMMETRIX
-    return RemeshDriver::readJSON(inputjson);
-#else
-    std::cerr << "Program Type " << program_type
-              << " is not enabled. Build NEMoSys with Simmetrix capabilities."
-              << std::endl;
-    exit(1);
-#endif  // HAVE_SIMMETRIX
-    /*
-  } else if (program_type == "Post Rocstar Remeshing") {
-    return RocRestartDriver::readJSON(inputjson);
-  } else if (program_type == "Rocstar Communication Generation") {
-    return RocPrepDriver::readJSON(inputjson);
-    */
-  } else if (program_type == "Rocstar Communication Generation") {
-#ifdef HAVE_CGNS
-    return RocPartCommGenDriver::readJSON(inputjson);
-#else
-    std::cerr << "Program Type " << program_type
-              << " is not enabled. Build NEMoSys with CGNS capabilities."
-              << std::endl;
-    exit(1);
-#endif  // HAVE_CGNS
-  } else if (program_type == "Proteus") {
-#ifdef HAVE_HDF5
-    return ProteusDriver::readJSON(inputjson);
-#else
-    std::cerr << "Program Type " << program_type
-              << " is not enabled. Build NEMoSys with HDF5 capabilities."
-              << std::endl;
-    exit(1);
-#endif  // HAVE_HDF5
-  } else {
-    std::cerr << "Program Type " << program_type
-              << " is not supported by NEMoSys." << std::endl;
-    exit(1);
-  }
+std::unique_ptr<NemDriver> NemDriver::readJSON(const jsoncons::json &inputjson) {
+  return inputjson.as<std::unique_ptr<NemDriver>>();
 }
+
+DriverOutFile::DriverOutFile(std::string output)
+    : outputFile(std::move(output)) {}
+
+DriverInOutFiles::DriverInOutFiles(std::string input, std::string output)
+    : inputMeshFile(std::move(input)), outputMeshFile(std::move(output)) {}
 
 }  // namespace DRV
 }  // namespace NEM

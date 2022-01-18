@@ -1,16 +1,44 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #define _USE_MATH_DEFINES
 
 #include <ANN/ANN.h>
-#include <AuxiliaryFunctions.H>
-#include <hmxShape.H>
-#include <icosidodecahedronShape.H>
-#include <petnShape.H>
-#include <rocPack.H>
-#include <rocPackShape.H>
 #include <stdlib.h>
 #include <vtkCell.h>
 #include <vtkCell3D.h>
-#include <vtkMesh.H>
+#include "AuxiliaryFunctions.H"
+#include "Geometry/hmxShape.H"
+#include "Geometry/icosidodecahedronShape.H"
+#include "Geometry/petnShape.H"
+#include "Geometry/rocPack.H"
+#include "Geometry/rocPackShape.H"
+#include "Mesh/vtkMesh.H"
 
 #include <Eigen/Geometry>
 #include <chrono>
@@ -21,7 +49,7 @@
 #include <string>
 #include <vector>
 
-#include "meshBase.H"
+#include "Mesh/meshBase.H"
 
 // GMSH Header
 #include <gmsh.h>
@@ -377,9 +405,7 @@ void rocPack::rocToGeom() {
 
   for (int i = 0; i < nameOfPcks.size(); i++) {
     if (filteredGeoms[i] == 1) {
-      if (nameOfPcks[i] == "sphere") {
-        makeSphere(i);
-      }
+      if (nameOfPcks[i] == "sphere") { makeSphere(i); }
 
       if (uniqueNames.size() > 0) {
         for (int j = 0; j < uniqueNames.size(); j++) {
@@ -549,10 +575,12 @@ void rocPack::geomToMsh(const std::string &writeFile) {
 
 void rocPack::makePeriodic(const bool rmbPacks) {
   if (rmbPacks == false) {
+    /*
     // To get processor clocktime
     std::clock_t start;
     double duration;
     start = std::clock();
+    */
 
     std::vector<double> xTranslate;
     std::vector<double> yTranslate;
@@ -1988,9 +2016,9 @@ void rocPack::writePeriodicNodes() {
   periodicEquation << "*equation" << std::endl;
 
   // X Direction (Master(Right) -> Slave(Left))
-  int forSurfTestX = round(randomSurfTest * volSurfLinksX.size() / 100);
-  int forSurfTestY = round(randomSurfTest * volSurfLinksY.size() / 100);
-  int forSurfTestZ = round(randomSurfTest * volSurfLinksZ.size() / 100);
+  int forSurfTestX = randomSurfTest * volSurfLinksX.size() / 100;
+  int forSurfTestY = randomSurfTest * volSurfLinksY.size() / 100;
+  int forSurfTestZ = randomSurfTest * volSurfLinksZ.size() / 100;
   for (int srf = 0; srf < volSurfLinksX.size(); srf++) {
     int masterSurfTag;
     std::vector<std::size_t> slaveNodes;
@@ -2000,15 +2028,17 @@ void rocPack::writePeriodicNodes() {
                                         masterSurfTag, slaveNodes, masterNodes,
                                         affineTransformData);
 
+    /*
     int volSlave = volSurfLinksX[srf].first;
     int surfSlave = volSurfLinksX[srf].second;
 
     auto mapIterator = masterLinksX.find(masterSurfTag);
     int volMaster = mapIterator->second;
     int surfMaster = masterSurfTag;
+    */
 
     if (srf == forSurfTestX && masterNodes.size() != 0) {
-      int indReturn = round(randomNodeX * masterNodes.size() / 100);
+      int indReturn = randomNodeX * masterNodes.size() / 100;
       std::vector<double> Mcoords;
       std::vector<double> Scoords;
       std::vector<double> paramCoords;
@@ -2078,15 +2108,17 @@ void rocPack::writePeriodicNodes() {
                                         masterSurfTag, slaveNodes, masterNodes,
                                         affineTransformData);
 
+    /*
     int volSlave = volSurfLinksY[srf].first;
     int surfSlave = volSurfLinksY[srf].second;
 
     auto mapIterator = masterLinksY.find(masterSurfTag);
     int volMaster = mapIterator->second;
     int surfMaster = masterSurfTag;
+    */
 
     if (srf == forSurfTestY && masterNodes.size() != 0) {
-      int indReturn = round(randomNodeY * masterNodes.size() / 100);
+      int indReturn = randomNodeY * masterNodes.size() / 100;
       std::vector<double> Mcoords;
       std::vector<double> Scoords;
       std::vector<double> paramCoords;
@@ -2157,15 +2189,17 @@ void rocPack::writePeriodicNodes() {
                                         masterSurfTag, slaveNodes, masterNodes,
                                         affineTransformData);
 
+    /*
     int volSlave = volSurfLinksZ[srf].first;
     int surfSlave = volSurfLinksZ[srf].second;
 
     auto mapIterator = masterLinksZ.find(masterSurfTag);
     int volMaster = mapIterator->second;
     int surfMaster = masterSurfTag;
+    */
 
     if (srf == forSurfTestZ && masterNodes.size() != 0) {
-      int indReturn = round(randomNodeZ * masterNodes.size() / 100);
+      int indReturn = randomNodeZ * masterNodes.size() / 100;
       std::vector<double> Mcoords;
       std::vector<double> Scoords;
       std::vector<double> paramCoords;
@@ -2474,7 +2508,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
   // nodes with duplicate nodes when the selected cells are encountered.
   for (int i = 0; i < numCells; i++) {
     vtkCell *cell;
-    vtkPoints *fp;
+    // vtkPoints *fp;
     if (cellIdentification[i] == 1) {
       cell = dataSetSurr->GetCell(i);
       vtkIdList *pts = cell->GetPointIds();
@@ -2497,7 +2531,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
   std::vector<int> seqNodeMap;
   std::vector<int> cellFinal;
   std::vector<int> cellsNotPicked;
-  int numOfCohElm = 0;
+  // int numOfCohElm = 0;
 
   for (int i = 0; i < pickCells.size(); i++) {
     vtkCell *cell;
@@ -2505,7 +2539,7 @@ void rocPack::createCohesiveElements(const std::string &filename,
     vtkIdList *pts = cell->GetPointIds();
     vtkCell3D *cell3d = static_cast<vtkCell3D *>(cell);
 
-    int atleastOne = 0;
+    // int atleastOne = 0;
     // Looping through all faces of current cell
     for (int j = 0; j < 4; j++) {
       std::vector<int> tmpSeqStore;

@@ -1,12 +1,39 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "oshGeoMesh.H"
+#include "Mesh/oshGeoMesh.H"
 
 #include <array>
 
-#include <gmsh.h>
 #include <vtkCellIterator.h>
 #include <vtkCellTypes.h>
 #include <vtkCharArray.h>
@@ -98,7 +125,7 @@ void oshGeoMesh::takeGeoMesh(geoMeshBase *otherGeoMesh) {
   if (otherOshGM) {
     setGeoMesh(otherOshGM->getGeoMesh());
     otherOshGM->setGeoMesh(
-        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, nullptr});
+        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}});
     _oshMesh = std::move(otherOshGM->_oshMesh);
     otherOshGM->resetNative();
   } else {
@@ -113,7 +140,7 @@ void oshGeoMesh::reconstructGeo() {
   auto sideSet = getGeoMesh().sideSet;
   auto oshFamily = _oshMesh->family();
   auto oshDim = _oshMesh->dim();
-  if (sideSet && sideSet->GetNumberOfCells() > 0) {
+  if (sideSet.sides && sideSet.sides->GetNumberOfCells() > 0) {
     for (int i = 0; i <= oshDim; ++i) {
       if (_oshMesh->has_tag(i, "class_dim")) {
         _oshMesh->remove_tag(i, "class_dim");
@@ -142,28 +169,26 @@ void oshGeoMesh::reconstructGeo() {
       }
     }
     {  // Set class_dim and class_id for dimension oshDim - 1
-      auto it = sideSet->NewCellIterator();
+      auto it = vtkSmartPointer<vtkCellIterator>::Take(
+          sideSet.sides->NewCellIterator());
       auto numNodes =
           Omega_h::element_degree(oshFamily, oshDim - 1, Omega_h::VERT);
       Omega_h::HostWrite<Omega_h::LO> ev2v(numNodes *
-                                           sideSet->GetNumberOfCells());
-      int i = 0;
-      for (it->InitTraversal(); !it->IsDoneWithTraversal();
-           it->GoToNextCell()) {
+                                           sideSet.sides->GetNumberOfCells());
+      for (int i = (it->InitTraversal(), 0); !it->IsDoneWithTraversal();
+           it->GoToNextCell(), ++i) {
         auto ids = it->GetPointIds();
         for (Omega_h::Int d = 0; d < numNodes; ++d) {
           ev2v[numNodes * i + d] = ids->GetId(d);
         }
-        ++i;
       }
-      it->Delete();
       Omega_h::LOs eqv2v(ev2v);
       // If we have a non-empty sideSet, we should have a non-empty geo ent
       // array
-      Omega_h::HostWrite<Omega_h::LO> h_class_id(sideSet->GetNumberOfCells());
-      auto geoEntArr = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
-      for (i = 0; i < h_class_id.size(); ++i) {
+      Omega_h::HostWrite<Omega_h::LO> h_class_id(
+          sideSet.sides->GetNumberOfCells());
+      auto geoEntArr = sideSet.getGeoEntArr();
+      for (Omega_h::LO i = 0; i < h_class_id.size(); ++i) {
         h_class_id[i] = geoEntArr->GetValue(i);
       }
       Omega_h::classify_equal_order(_oshMesh.get(), oshDim - 1, eqv2v,
@@ -305,7 +330,7 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
                                         const std::string &link) {
   auto vtkMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  if (!oshMesh || !oshMesh->is_valid()) return {vtkMesh, "", "", nullptr};
+  if (!oshMesh || !oshMesh->is_valid()) return {vtkMesh, "", "", {}};
   // Omega_h dimension is important to read its data.
   //
   // It stores 2D mesh without a z-coordinate while VTK always requires 3D. A
@@ -324,18 +349,6 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
   Omega_h_Family family = oshMesh->family();
   VTKCellType vtk_type = getVTKTypeFromOmega_hFamilyDim(family, dim);
 
-  // If the geometry exists or oshMesh has enough information to create it, we
-  // should add it.
-  auto geoName = geo;
-  int dummy_ent_tag;
-  if (geo.empty()) {
-    GmshInterface::Initialize();
-    geoName = "geoMesh_" + nemAux::getRandomString(6);
-    // Documentation is wrong. Add does not set as current model.
-    gmsh::model::add(geoName);
-    gmsh::model::setCurrent(geoName);
-    dummy_ent_tag = gmsh::model::addDiscreteEntity(0);
-  }
   auto linkName = link;
   if (link.empty()) {
     linkName = GEO_ENT_DEFAULT_NAME;
@@ -347,27 +360,16 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
         vtkSmartPointer<vtkPoints>::Take(vtkPoints::New(VTK_DOUBLE));
     points->Allocate(oshMesh->nverts());
     std::vector<double> nodes;
-    if (geo.empty()) {
-      nodes.reserve(3 * oshMesh->nverts());
-    }
 
     Omega_h::HostRead<Omega_h::Real> h_coord(oshMesh->coords());
 
     for (Omega_h::LO i = 0; i < oshMesh->nverts(); ++i) {
       points->InsertNextPoint(h_coord[i * dim + 0], h_coord[i * dim + 1],
                               dim == 2 ? 0 : h_coord[i * dim + 2]);
-      if (geo.empty()) {
-        nodes.emplace_back(h_coord[i * dim]);
-        nodes.emplace_back(h_coord[i * dim + 1]);
-        nodes.emplace_back(dim == 2 ? 0 : h_coord[i * dim + 2]);
-      }
     }
     // Because we add them in order, the indices should be the same.
     vtkMesh->SetPoints(points);
     std::vector<size_t> nodeTags;
-    if (geo.empty()) {
-      gmsh::model::mesh::addNodes(0, dummy_ent_tag, nodeTags, nodes);
-    }
   }
 
   {  // Add cells
@@ -416,32 +418,23 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
 
   // Add boundary elements (of one lower dimension), if they exist, so we don't
   // have to reconstruct geometry.
-  auto sideSet = vtkSmartPointer<vtkPolyData>::New();
-  sideSet->SetPoints(vtkMesh->GetPoints());
+  auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+  sideSetPD->SetPoints(vtkMesh->GetPoints());
+  sideSetPD->Allocate();
   auto sideSetEntities = vtkSmartPointer<vtkIntArray>::New();
-  sideSetEntities->SetName(SIDE_SET_GEO_ENT_NAME);
   auto sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
-  sideSetOrigCellId->SetName(SIDE_SET_ORIG_CELL_NAME);
+  sideSetOrigCellId->SetNumberOfComponents(2);
   auto sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
-  sideSetCellFaceId->SetName(SIDE_SET_CELL_FACE_NAME);
-  auto sideSetTwinId = vtkSmartPointer<vtkIdTypeArray>::New();
-  sideSetTwinId->SetName(SIDE_SET_TWIN_NAME);
+  sideSetCellFaceId->SetNumberOfComponents(2);
   // Map from highest dimensional entities to bounding entities of one lower
-  // dimension, using "class_id" indexing.
-  std::map<Omega_h::ClassId, std::vector<Omega_h::ClassId>> entities;
-  // List of bounding entities of one lower dimension.
+  // dimension (by "class_id").
+  std::map<Omega_h::ClassId, std::set<Omega_h::ClassId>> entities;
+  // List of bounding entities of one lower dimension (by "class_id").
   std::vector<Omega_h::ClassId> entities_boundary;
   Omega_h::HostRead<Omega_h::ClassId> arr_id;
   {  // Add all entities of max dimension
     if (oshMesh->has_tag(dim, "class_id")) {
       arr_id = oshMesh->get_array<Omega_h::ClassId>(dim, "class_id");
-      for (Omega_h::LO i = 0; i < arr_id.size(); ++i) {
-        auto id = arr_id[i];
-        auto entity = entities.find(id);
-        if (entity == entities.end()) {
-          entities[id] = std::vector<Omega_h::ClassId>();
-        }
-      }
     } else {
       validSideSet = false;
     }
@@ -450,7 +443,6 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
   // entities (of dimension dim - 1) for the entities of highest dimension
   if (validSideSet && oshMesh->has_tag(dim - 1, "class_id") &&
       oshMesh->has_tag(dim - 1, "class_dim")) {
-    std::vector<Omega_h::LO> boundary_elem_idx;
     Omega_h::HostRead<Omega_h::ClassId> arr_id_boundary =
         oshMesh->get_array<Omega_h::ClassId>(dim - 1, "class_id");
     Omega_h::HostRead<Omega_h::I8> arr_dim =
@@ -462,110 +454,47 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
     for (Omega_h::LO i = 0; i < arr_dim.size(); ++i) {
       if (arr_dim[i] == dim - 1) {
         bool newEntityBoundary = false;
-        auto entity = std::find(entities_boundary.begin(),
-                                entities_boundary.end(), arr_id_boundary[i]);
-        if (entity == entities_boundary.end()) {
-          entities_boundary.emplace_back(arr_id_boundary[i]);
+        auto oshEntity = arr_id_boundary[i];
+        auto entityIter = std::find(entities_boundary.begin(),
+                                entities_boundary.end(), oshEntity);
+        if (entityIter == entities_boundary.end()) {
+          entities_boundary.emplace_back(oshEntity);
           newEntityBoundary = true;
         }
-        int twin_num = 0;  // First twin or second twin.
-        for (auto ab = parent_a2ab[i]; ab < parent_a2ab[i + 1]; ++ab) {
-          // Insert into the side set once for each interface
-          boundary_elem_idx.emplace_back(i);
+        std::array<vtkIdType, 2> origCell{-1, -1};
+        std::array<int, 2> cellFace{-1, -1};
+        Omega_h::ClassId firstParentEnt = -1;
+        for (int j = 0; j < parent_a2ab[i + 1] - parent_a2ab[i]; ++j) {
+          auto ab = parent_ab2b[i + j];
           auto b = parent_ab2b[ab];
-          if (newEntityBoundary) {
-            entities[arr_id[b]].emplace_back(arr_id_boundary[i]);
+          if (j == 0) {
+            firstParentEnt = arr_id[b];
           }
-          sideSetOrigCellId->InsertNextValue(b);
+          if (newEntityBoundary) {
+            entities[arr_id[b]].emplace(oshEntity);
+          }
           auto code = parent_codes[ab];
           auto oshFace = Omega_h::code_which_down(code);
-          sideSetCellFaceId->InsertNextValue(
-              oshFace2vtkFace(oshFace, family, dim));
-          ++twin_num;
-          if (twin_num == 2) {
-            // First twin points to this one
-            sideSetTwinId->InsertNextValue(boundary_elem_idx.size() - 1);
-            // This twin points to the previous one.
-            sideSetTwinId->InsertNextValue(boundary_elem_idx.size() - 2);
+          if (j == 0 || (j == 1 && arr_id[b] < firstParentEnt)) {
+            origCell[1] = origCell[0];
+            cellFace[1] = cellFace[0];
+            origCell[0] = b;
+            cellFace[0] = oshFace2vtkFace(oshFace, family, dim);
+          } else {
+            origCell[1] = b;
+            cellFace[1] = oshFace2vtkFace(oshFace, family, dim);
           }
         }
-        if (twin_num == 1) {
-          sideSetTwinId->InsertNextValue(-1);
-        }
+        auto side = dim == 2
+                        ? vtkMesh->GetCell(origCell[0])->GetEdge(cellFace[0])
+                        : vtkMesh->GetCell(origCell[0])->GetFace(cellFace[0]);
+        sideSetPD->InsertNextCell(side->GetCellType(), side->GetPointIds());
+        sideSetOrigCellId->InsertNextTypedTuple(origCell.data());
+        sideSetCellFaceId->InsertNextTypedTuple(cellFace.data());
+        sideSetEntities->InsertNextValue(oshEntity);
       }
     }
-    // oshClassId2gmshTag[0] is a map from osh class_id to gmsh entity tag
-    // for dimension dim - 1; oshClassId2gmshTag[1] is a map from osh class_id
-    // to gmsh entity tag for dimension dim. Unused if geometry already exists.
-    std::vector<std::map<Omega_h::ClassId, int>> oshClassId2gmshTag(2);
-    vtk_type = getVTKTypeFromOmega_hFamilyDim(family, dim - 1);
-    auto gmsh_type = getGmshTypeFromVTKType(vtk_type);
-    auto numNodes = Omega_h::element_degree(family, dim - 1, Omega_h::VERT);
     Omega_h::HostRead<Omega_h::LO> point_id = oshMesh->ask_verts_of(dim - 1);
-    if (!boundary_elem_idx.empty()) {
-      sideSet->Allocate(boundary_elem_idx.size());
-      // Some of the class_id could be non-positive, but gmsh requires
-      // positive
-      std::map<int, std::vector<std::size_t>> gmshTag2nodeTags;
-      if (geo.empty()) {
-        for (const auto &entity : entities_boundary) {
-          auto gmshTag = gmsh::model::addDiscreteEntity(dim - 1);
-          oshClassId2gmshTag[0][entity] = gmshTag;
-          gmshTag2nodeTags[gmshTag] = std::vector<std::size_t>();
-        }
-      }
-      for (std::size_t i = 0; i < boundary_elem_idx.size(); ++i) {
-        auto elem = boundary_elem_idx[i];
-        auto entity = arr_id_boundary[elem];
-        if (geo.empty()) {
-          entity = oshClassId2gmshTag[0][entity];
-        }
-        vtkSmartPointer<vtkIdList> ptIds;
-        ptIds = vtkSmartPointer<vtkIdList>::New();
-        ptIds->Allocate(numNodes);
-        for (int j = 0; j < numNodes; ++j) {
-          // Note assumption that the nodes have the same id in oshMesh and
-          // vtkMesh and are offset by 1 in gmsh.
-          // Note we only want to add one of the twins to gmsh.
-          auto twin = sideSetTwinId->GetValue(i);
-          if (geo.empty() && (twin < 0 || twin > i)) {
-            gmshTag2nodeTags[entity].push_back(point_id[elem * numNodes + j] +
-                                               1);
-          }
-          ptIds->InsertNextId(point_id[elem * numNodes + j]);
-        }
-        sideSet->InsertNextCell(vtk_type, ptIds);
-        sideSetEntities->InsertNextValue(entity);
-      }
-      if (geo.empty()) {
-        for (const auto &entNodeTag : gmshTag2nodeTags) {
-          gmsh::model::mesh::addElementsByType(entNodeTag.first, gmsh_type,
-                                               std::vector<size_t>(),
-                                               entNodeTag.second);
-        }
-      }
-    }
-    // We have boundary information for entities of highest dimension
-    if (geo.empty()) {
-      for (const auto &entity : entities) {
-        std::vector<int> boundary;
-        boundary.reserve(entity.second.size());
-        for (auto boundary_ent : entity.second) {
-          boundary.emplace_back(oshClassId2gmshTag[0][boundary_ent]);
-        }
-        auto gmshTag = gmsh::model::addDiscreteEntity(dim, -1, boundary);
-        auto phyGrpTag = gmsh::model::addPhysicalGroup(dim, {gmshTag});
-        gmsh::model::setPhysicalName(dim, phyGrpTag,
-                                     std::to_string(entity.first));
-        oshClassId2gmshTag[1][entity.first] = gmshTag;
-      }
-      gmsh::model::mesh::reclassifyNodes();
-      gmsh::vectorpair dummy_ent_vp{std::make_pair(0, dummy_ent_tag)};
-      gmsh::model::removeEntities(dummy_ent_vp);
-      gmsh::model::mesh::createTopology();
-      gmsh::model::mesh::createGeometry();
-      gmsh::model::mesh::clear();
-    }
     // It might be more efficient to get the underlying array pointer
     // and use std::copy.
     auto vtkEntities = vtkSmartPointer<vtkIntArray>::New();
@@ -576,16 +505,12 @@ geoMeshBase::GeoMesh oshGeoMesh::osh2GM(Omega_h::Mesh *oshMesh,
       vtkEntities->SetValue(i, arr_id[i]);
     }
     vtkMesh->GetCellData()->AddArray(vtkEntities);
-    sideSet->GetCellData()->AddArray(sideSetEntities);
-    sideSet->GetCellData()->AddArray(sideSetOrigCellId);
-    sideSet->GetCellData()->AddArray(sideSetCellFaceId);
-    sideSet->GetCellData()->AddArray(sideSetTwinId);
-    return {vtkMesh, geoName, linkName, sideSet};
+    return {vtkMesh,
+            {},
+            linkName,
+            {sideSetPD, sideSetEntities, sideSetOrigCellId, sideSetCellFaceId}};
   } else {
-    if (geo.empty()) {
-      gmsh::model::remove();
-    }
-    return {vtkMesh, geo.empty() ? "" : geo, "", nullptr};
+    return {vtkMesh, {}, "", {}};
   }
 }
 
@@ -784,12 +709,12 @@ Omega_h::Mesh *oshGeoMesh::GM2osh(const GeoMesh &geoMesh,
       }
     }
     // Add cells of dimension oshDim - 1 from the sideSet
-    if (sideSet && sideSet->GetNumberOfCells() > 0) {
-      auto it = sideSet->NewCellIterator();
+    if (sideSet.sides && sideSet.sides->GetNumberOfCells() > 0) {
+      auto it = sideSet.sides->NewCellIterator();
       auto numNodes =
           Omega_h::element_degree(oshFamily, oshDim - 1, Omega_h::VERT);
       Omega_h::HostWrite<Omega_h::LO> ev2v(numNodes *
-                                           sideSet->GetNumberOfCells());
+                                           sideSet.sides->GetNumberOfCells());
       int i = 0;
       for (it->InitTraversal(); !it->IsDoneWithTraversal();
            it->GoToNextCell()) {
@@ -803,9 +728,9 @@ Omega_h::Mesh *oshGeoMesh::GM2osh(const GeoMesh &geoMesh,
       Omega_h::LOs eqv2v(ev2v);
       // If we have a non-empty sideSet, we should have a non-empty geo ent
       // array
-      Omega_h::HostWrite<Omega_h::LO> h_class_id(sideSet->GetNumberOfCells());
-      auto geoEntArr = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
+      Omega_h::HostWrite<Omega_h::LO> h_class_id(
+          sideSet.sides->GetNumberOfCells());
+      auto geoEntArr = geoMesh.sideSet.getGeoEntArr();
       for (i = 0; i < h_class_id.size(); ++i) {
         h_class_id[i] = geoEntArr->GetValue(i);
       }

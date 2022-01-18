@@ -34,8 +34,8 @@
 # See the License for more information.
 #===============================================================================
 
-include(${CMAKE_ROOT}/Modules/SelectLibraryConfigurations.cmake)
-include(${CMAKE_ROOT}/Modules/FindPackageHandleStandardArgs.cmake)
+include(SelectLibraryConfigurations)
+include(FindPackageHandleStandardArgs)
 
 # List of minimum required OpenFOAM library components
 set(OPNF_COMPONENT_BINDINGS)
@@ -61,15 +61,14 @@ set(OPNF_VALID_COMPONENTS
     DSMC
     dynamicFvMesh
     dynamicMesh
-    edgeMesh
     engine
     extrude2DMesh
     extrudeModel
     fieldFunctionObjects
     fileFormats
+    finiteArea
     finiteVolume
     fluidThermophysicalModels
-    foamToVTK
     forces
     fvMotionSolvers
     fvOptions
@@ -88,6 +87,7 @@ set(OPNF_VALID_COMPONENTS
     liquidMixtureProperties
     liquidProperties
     meshTools
+    meshLibrary
     molecularMeasurements
     molecule
     multiphaseInterFoam
@@ -138,7 +138,6 @@ set(OPNF_VALID_COMPONENTS
     thermalBaffleModels
     thermophysicalFunctions
     topoChangerFvMesh
-    triSurface
     turbulenceModels
     twoPhaseMixture
     twoPhaseMixtureThermo
@@ -156,6 +155,7 @@ if(EXISTS $ENV{FOAM_SRC})
   set(OPNF_INST_DIR $ENV{WM_PROJECT_DIR})
   set(OPNF_SRC_DIR $ENV{FOAM_SRC})
   set(OPNF_LIB_DIR $ENV{FOAM_LIBBIN})
+  list(APPEND OPNF_LIB_DIR $ENV{FOAM_USER_LIBBIN})
   set(OPNF_APP_DIR $ENV{FOAM_APPBIN})
   set(OPNF_SITE_APP_DIR $ENV{FOAM_SITE_APPBIN})
   set(OPNF_SITE_LIB_DIR $ENV{FOAM_SITE_LIBBIN})
@@ -187,20 +187,20 @@ endif()
 # compilation of the current project's OpenFOAM dependent modules. If used for
 # outside this project these lines should be changed to include the
 # dependenices needed.
-set(OPNF_INC_DIR
+set(OPNF_INC_DIR_default
     ${OPNF_INST_DIR}/src/OSspecific/POSIX/lnInclude
     ${OPNF_INST_DIR}/src/OpenFOAM/lnInclude
     ${OPNF_INST_DIR}/src/finiteVolume/lnInclude
+    ${OPNF_INST_DIR}/src/finiteArea/lnInclude
     ${OPNF_INST_DIR}/src/meshTools/lnInclude
-    ${OPNF_INST_DIR}/src/triSurface/lnInclude
     ${OPNF_INST_DIR}/src/parallel/decompose/decompositionMethods/lnInclude
+    ${OPNF_INST_DIR}/src/parallel/decompose/decompose/lnInclude
+    ${OPNF_INST_DIR}/src/parallel/reconstruct/reconstruct/lnInclude
     ${OPNF_INST_DIR}/src/mesh/snappyHexMesh/lnInclude
     ${OPNF_INST_DIR}/src/fileFormats/lnInclude
     ${OPNF_INST_DIR}/src/surfMesh/lnInclude
     ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
-    ${OPNF_INST_DIR}/src/lagrangian/basics/lnInclude
-    ${OPNF_INST_DIR}/applications/utilities/postProcessing/dataConversion/foamToVTK/foamToVTK/lnInclude
-    ${OPNF_INST_DIR}/src/edgeMesh/lnInclude
+    ${OPNF_INST_DIR}/src/lagrangian/basic/lnInclude
     ${OPNF_INST_DIR}/src/mesh/blockMesh/lnInclude
     ${OPNF_INST_DIR}/src/TurbulenceModels/turbulenceModels/lnInclude
     ${OPNF_INST_DIR}/src/TurbulenceModels/incompressible/lnInclude
@@ -209,7 +209,26 @@ set(OPNF_INC_DIR
     ${OPNF_INST_DIR}/src/sampling/lnInclude
     ${OPNF_INST_DIR}/src/dynamicFvMesh/lnInclude
     ${OPNF_INST_DIR}/src/dynamicMesh/lnInclude
+    ${OPNF_INST_DIR}/src/conversion/vtk/adaptor
+    ${OPNF_INST_DIR}/src/conversion/vtk/output
 )
+
+if(OPNF_VERSION LESS_EQUAL 4)
+  list(APPEND OPNF_INC_DIR_default ${OPNF_INST_DIR}/src/edgeMesh/lnInclude)
+else()
+  list(APPEND OPNF_INC_DIR_default ${OPNF_INST_DIR}/src/meshTools/lnInclude)
+endif()
+
+set(all_opnf_dirs_exist_ TRUE)
+foreach(opnf_dir_ IN LISTS OPNF_INC_DIR_default)
+  if(NOT EXISTS ${opnf_dir_})
+    set(all_opnf_dirs_exist_ FALSE)
+  endif()
+endforeach()
+if(all_opnf_dirs_exist_)
+  # CACHE variable so it can be overriden by user
+  set(OPNF_INC_DIR ${OPNF_INC_DIR_default} CACHE STRING "List of directories containing OpenFOAM headers to include")
+endif()
 
 # OpenFOAM has custom compiler definitions. All sourced from the OpenFOAM env.
 set(OPNF_COMPILE_DEFINITIONS
@@ -222,8 +241,6 @@ set(OPNF_COMPILE_DEFINITIONS
 )
 
 # setting the output variables
-set(OPNF_INCLUDE_DIRS ${OPNF_INC_DIR})
-set(OPNF_LIBRARIES ${OPNF_COMPONENT_BINDINGS})
 set(OPNF_LIBRARY_DIRS ${OPNF_LIB_DIR})
 
 # We may have picked up some duplicates in various lists during the above
@@ -240,9 +257,6 @@ macro(_remove_duplicates_from_beginning _list_name)
   list(REVERSE ${_list_name})
 endmacro()
 
-if(OPNF_INCLUDE_DIRS)
-  _remove_duplicates_from_beginning(OPNF_INCLUDE_DIRS)
-endif()
 if(OPNF_LIBRARY_DIRS)
   _remove_duplicates_from_beginning(OPNF_LIBRARY_DIRS)
 endif()
@@ -250,5 +264,11 @@ endif()
 # final processing
 message(STATUS "OpenFOAM library location ${OPNF_LIBRARY_DIRS}")
 find_package_handle_standard_args(OpenFOAM
-    REQUIRED_VARS OPNF_LIBRARIES OPNF_INCLUDE_DIRS
+    REQUIRED_VARS OPNF_COMPONENT_BINDINGS OPNF_INC_DIR
     VERSION_VAR OPNF_VERSION)
+
+if(OpenFOAM_FOUND)
+  set(OPNF_INCLUDE_DIRS ${OPNF_INC_DIR})
+  _remove_duplicates_from_beginning(OPNF_INCLUDE_DIRS)
+  set(OPNF_LIBRARIES ${OPNF_COMPONENT_BINDINGS})
+endif()

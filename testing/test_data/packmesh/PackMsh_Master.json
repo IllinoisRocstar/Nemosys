@@ -4,44 +4,39 @@
     "Surrounding Reference File": "geom_surrounding_mesh_ref.vtu",
     "Merged Reference File": "packmesh_ref.vtu",
     "Program Type": "Pack Mesh Generation",
-    "Mesh Generation Engine": "packmesh",
-    "Mesh Type": "hexahedral",
     "Mesh File Options": {
-      //"Input Geometry File": "packs_roc.stl",
       "Input Rocpack File":"packs_roc",
       "Output Pack Mesh File": "geom_pack_mesh.vtu",
       "Output Surrounding Mesh File": "geom_surrounding_mesh.vtu",
       "Output Combined Mesh File": "packmesh.vtu"
     },
-    "Meshing Parameters": {                     // Required
+    "Pack Mesh Options": {
+      "Type": "hexahedral",
+      "Engine": "packmesh",
       "snappyHexMesh Parameters": {             // Required
         "Castellated Mesh": true,               // Required
         "Snapping": true,                       // Required
         "Layer Addition": false,                // Required
-
         "Geometry Definition": {                // Required
             "Enable Multi Patches": false,      // Required
             "InputPatchName": "domain100"    // Required
         },
-
         "Castellated Mesh Controls": {
             "CellZones": true,                  // Required
             "RegionRefine": false,              // Required
             "SurfaceRefine": false,             // Required
-
             "maxLocalCells": 2000000,           // OPTIONAL
             "maxGlobalCells": 4000000,          // OPTIONAL
             "minRefCells": 0,                   // OPTIONAL
-            "nCellsBetweenLevels": 3,           // OPTIONAL
+            "nCellsBetweenLevels": 1,           // OPTIONAL
             "surfaceRefinementLvlMin": 0,       // OPTIONAL
             "surfaceRefinementLvlMax": 0,       // OPTIONAL
-            "resolveFeatureAngle": 60,          // OPTIONAL
-            "GeneralGapLevelIncrement": 1,      // OPTIONAL
-            "gapLevelIncrement": 2,             // OPTIONAL
-            "planarAngle": 60,                  // OPTIONAL
+            "resolveFeatureAngle": 30,          // OPTIONAL
+            "GeneralGapLevelIncrement": 0,      // OPTIONAL
+            "gapLevelIncrement": 0,             // OPTIONAL
+            "planarAngle": 30,                  // OPTIONAL
             "allowFreeStandingZoneFaces": true  // OPTIONAL
         },
-
         "Snapping Controls": {                  // OPTIONAL
             "nSmoothPatch": 4,                  // OPTIONAL
             "tolerance": 1.5,                   // OPTIONAL
@@ -52,27 +47,25 @@
             "explicitFeatureSnap":false,        // OPTIONAL
             "multiRegionFeatureSnap":false      // OPTIONAL
         },
-
         "Mesh Layers Controls": {               // OPTIONAL
-            "relativeSizes": true,              // OPTIONAL
+            "relativeSizes": false,             // OPTIONAL
             "expansionRatio": 1.3,              // OPTIONAL
             "finalLayerThickness": 1.0,         // OPTIONAL
             "minThickness": 0.1,                // OPTIONAL
             "nGrow": 0,                         // OPTIONAL
             "featureAngle": 30,                 // OPTIONAL
-            "maxFaceThicknessRatio": 0.5,       // OPTIONAL
-            "nSmoothSurfaceNormals": 1,         // OPTIONAL
-            "nSmoothThickness": 2,              // OPTIONAL
-            "minMedialAxisAngle": 90,           // OPTIONAL
-            "maxThicknessToMedialRatio": 1.0,   // OPTIONAL
-            "nSmoothNormals": 3,                // OPTIONAL
-            "slipFeatureAngle": 30,             // OPTIONAL
             "nRelaxIter": 3,                    // OPTIONAL
+            "nSmoothSurfaceNormals": 1,         // OPTIONAL
+            "nSmoothNormals": 3,                // OPTIONAL
+            "nSmoothThickness": 2,              // OPTIONAL
+            "maxFaceThicknessRatio": 0.5,       // OPTIONAL
+            "maxThicknessToMedialRatio": 1.0,   // OPTIONAL
+            "minMedialAxisAngle": 90,           // OPTIONAL
             "nBufferCellsNoExtrude": 0,         // OPTIONAL
             "nLayerIter": 50,                   // OPTIONAL
+            "slipFeatureAngle": 30,             // OPTIONAL
             "nRelaxedIter": 20                  // OPTIONAL
         },
-
          "Mesh Quality Controls": {             // OPTIONAL
             "maxNonOrtho": 65,                  // OPTIONAL
             "maxBoundarySkewness": 20,          // OPTIONAL
@@ -93,47 +86,28 @@
       },
       "blockMesh Parameters": {                 // Required
         "Input Dict File": false,               // Required
-        "Block Geometry": true,                 // Required
-        "Sphere Geometry": false,               // Required
-        "Cylinder/Tapered_Cone Geometry": false,// Required
         "scaleToMeters": 1,                     // Required
-        "XdirectionCells": 15,                  // Required
-        "YdirectionCells": 15,                  // Required
-        "ZdirectionCells": 15,                  // Required
+        "NumCells": [15, 15, 15],               // Required
         "Block Parameters": {                   // Required
-          // "X1": -0.25,          // Required if not "Auto_Generate"
-          // "Y1": -0.35,          // Required if not "Auto_Generate"
-          // "Z1": -0.35,          // Required if not "Auto_Generate"
-          // "LengthX": 0.45,      // Required if not "Auto_Generate"
-          // "LengthY": 0.65,      // Required if not "Auto_Generate"
-          // "LengthZ": 0.5,       // Required if not "Auto_Generate"
-          "GradingXdir": 1,                     // OPTIONAL
-          "GradingYdir": 1,                     // OPTIONAL
-          "GradingZdir": 1,                     // OPTIONAL
-          "Auto_Generate": {       // Required if X1, Y1, Z1, & Lengths are not provided
-            "Offset_XDir":0.15,    // Required if X1, Y1, Z1, & Lengths are not provided
-            "Offset_YDir":0.15,    // Required if X1, Y1, Z1, & Lengths are not provided
-            "Offset_ZDir":0.15     // Required if X1, Y1, Z1, & Lengths are not provided
+          // "InitialPoint": [-0.25, -0.35, -0.35], // Required if not "Auto_Generate"
+          // "Length": [0.45, 0.65, 0.5],           // Required if not "Auto_Generate"
+          "Grading": [1, 1, 1],                 // OPTIONAL
+          "Auto_Generate": {             // Required if X1, Y1, Z1, & Lengths are not provided
+            "Offset": [0.15, 0.15, 0.15] // Required if X1, Y1, Z1, & Lengths are not provided
           }
         }
       },
-      "MeshManipulation Parameters": {         // OPTIONAL
-        "mergeMeshes Parameters": {            // OPTIONAL
-          "Master Region Path": ".",           // OPTIONAL
-          "Add Region Path": ".",              // OPTIONAL
-          "overwrite?": true                   // OPTIONAL
-        },
-        "splitMeshRegions Parameters": {       //OPTIONAL
-          "overwrite?": true,                  //OPTIONAL
-          "useCellZones?": true                //OPTIONAL
-        },
-        "createPatch Parameters": {            // OPTIONAL
-          "Surrounding PatchName": "Soil",     // OPTIONAL
-          "Packs PatchName": "Rocks",          // OPTIONAL
-          "Surrounding PatchType": "wall",     // OPTIONAL
-          "Packs PatchType": "wall",           // OPTIONAL
-          "overwrite?": true                   // OPTIONAL
-        }
+      "MeshManipulation mergeMeshes Parameters": { // OPTIONAL
+        "Master Region Path": ".",                 // OPTIONAL
+        "Add Region Path": ".",                    // OPTIONAL
+        "overwrite?": true                         // OPTIONAL
+      },
+      "MeshManipulation createPatch Parameters": { // OPTIONAL
+        "Surrounding PatchName": "Soil",           // OPTIONAL
+        "Packs PatchName": "Rocks",                // OPTIONAL
+        "Surrounding PatchType": "wall",           // OPTIONAL
+        "Packs PatchType": "wall",                 // OPTIONAL
+        "overwrite?": true                         // OPTIONAL
       }
     }
   }

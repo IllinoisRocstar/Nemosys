@@ -10,29 +10,26 @@ else:
 pyNemosys = Extension(
     '_pyNemosys',
     sources='${WRAPPER_SOURCE_FILES}'.split(';'),
-    include_dirs=list(filter(None, (
-        '${WRAPPER_INCLUDE_DIRS}'.split(';')
-    ))),
+    include_dirs=list(filter(None, '${WRAPPER_INCLUDE_DIRS}'.split(';'))),
     libraries=(
         ['Nemosys',
-         '${VTK_COMMON_CORE_LIB}'
+         '${VTK_COMMON_CORE_LIB}',
+         'omega_h',
          ]
     ),
     library_dirs=(
         ['${CMAKE_BINARY_DIR}',
          '${VTK_LIB_DIR}',
-         '${VTK_LIB_DIR}/../lib'
+         '${VTK_LIB_DIR}/../lib',
+         '${CMAKE_BINARY_DIR}/contrib/omega_h-9.31.2/src',
          ]
     ),
     runtime_library_dirs=runtime_lib_dirs,
-    swig_opts=list(filter(None, (
-            ['-c++', '-DNEMOSYS_EXPORT=', '-DNEMOSYS_DEPRECATED_EXPORT=']
-            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
-    ))),
-    extra_compile_args=list(filter(None, (
-            ['-std=c++11', '-w']
-            + ['-D' + arg for arg in '${WRAPPER_COMPILE_ARGS}'.split(';')]
-    )))
+    swig_opts=('${SWIG_FLAGS}'.split(';')
+               + ['-D' + arg for arg in '${SWIG_DEFS}'.split(';')]
+               + ['-I' + inc_dir for inc_dir in filter(None, '${SWIG_INCLUDE_DIRS}'.split(';'))]),
+    extra_compile_args=('${WRAPPER_COMPILE_FLAGS}'.split(';')
+                        + ['-D' + arg for arg in '${WRAPPER_DEFS}'.split(';')]),
 )
 
 setup(
@@ -46,5 +43,5 @@ setup(
     description='${NEMOSYS_DESCRIPTION}',
     py_modules=['pyNemosys'],
     ext_modules=[pyNemosys],
-    test_suite='test_pyNemosys27'
+    test_suite='test_pyNemosys'
 )

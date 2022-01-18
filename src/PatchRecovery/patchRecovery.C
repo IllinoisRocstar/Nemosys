@@ -1,7 +1,37 @@
-#include "patchRecovery.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "PatchRecovery/patchRecovery.H"
 
-#include "polyApprox.H"
-#include "orthoPoly3D.H"
+#include "PatchRecovery/polyApprox.H"
+#include "PatchRecovery/orthoPoly3D.H"
+
+using Eigen::VectorXd;
 
 //TODO: To define orthogonal polynomials over patches of a structured grid that has
 //      deformed from a rectilinear grid, a conformal mapping must be applied to transform
@@ -100,6 +130,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
   int totalComponents = cubature->getTotalComponents();
   // storage for new point data
   std::vector<vtkSmartPointer<vtkDoubleArray>> newPntData(numComponents.size());
+
   // initializing double arrays for new data
   for (int i = 0; i < numComponents.size(); ++i)
   {
@@ -208,6 +239,7 @@ void PatchRecovery::recoverNodalSolution(bool ortho)
     dataSet->GetPointData()->AddArray(newPntData[k]);
   }
 }
+
 
 // TODO: check for whether recovered solution exists
 std::vector<std::vector<double>> PatchRecovery::computeNodalError()

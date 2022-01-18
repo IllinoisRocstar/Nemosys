@@ -2,19 +2,16 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "snappyHexMesh",
     "Mesh File Options": {
       "Input Geometry File": "bullet.stl",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Modules Options": {
-    },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "snappyHexMesh",
       "snappyHexMesh Parameters": {
         "Castellated Mesh": true,
         "Snapping": true,
         "Layer Addition": false,
-
         "Geometry Definition": {
             "Enable Multi Patches": false,
             "InputPatchName": "bullet", // Optional and only used if whole STL is one solid
@@ -22,23 +19,20 @@
                 {
                     "Custom Patch Name": "refine2",
                     "Searchable Shape": "searchableCylinder",
-                    "Axis Point 1": "(0 0 0)",
-                    "Axis Point 2": "(0 0 0.03)",
+                    "Axis Point 1": [0, 0, 0],
+                    "Axis Point 2": [0, 0, 0.03],
                     "Radius": 0.0075
                 },
                 {
                     "Custom Patch Name": "refine1",
                     "Searchable Shape": "searchableSphere",
-                    "Center": "(0 0 0.0025)",
+                    "Center": [0, 0, 0.0025],
                     "Radius": 0.0075
                 }
             ]
         },
-
         "Castellated Mesh Controls": {
             "CellZones": false,
-            "RegionRefine": true,
-            "SurfaceRefine": true,
             "maxLocalCells": 1000000,
             "maxGlobalCells": 10000000,
             "minRefCells": 10,
@@ -49,9 +43,7 @@
             "GeneralGapLevelIncrement": 1,
             "gapLevelIncrement": 2,
             "planarAngle": 30,
-            "locationInMeshX": 0,
-            "locationInMeshY": 0,
-            "locationInMeshZ": -10e-3,
+            "locationInMesh": [0, 0, -10e-3],
             "allowFreeStandingZoneFaces": false,
             "GeomRefinementRegions": [
                 {
@@ -68,7 +60,6 @@
                 }
             ]
         },
-
         "Snapping Controls": {
             "nSmoothPatch": 3,
             "tolerance": 4.0,
@@ -79,7 +70,6 @@
             "explicitFeatureSnap":false,
             "multiRegionFeatureSnap":false
         },
-        
         "Mesh Layers Controls": {
             "relativeSizes": true,
             "expansionRatio": 1.0,
@@ -87,19 +77,18 @@
             "minThickness": 0.25,
             "nGrow": 0,
             "featureAngle": 30,
-            "maxFaceThicknessRatio": 0.5,
+            "nRelaxIter": 3,
             "nSmoothSurfaceNormals": 1,
+            "nSmoothNormals": 3,
             "nSmoothThickness": 10,
+            "maxFaceThicknessRatio": 0.5,
             "minMedialAxisAngle": 90,
             "maxThicknessToMedialRatio": 0.3,
-            "nSmoothNormals": 3,
             "slipFeatureAngle": 30,
-            "nRelaxIter": 3,
             "nBufferCellsNoExtrude": 0,
             "nLayerIter": 50,
             "nRelaxedIter": 0
         },
-
         "Mesh Quality Controls": {
             "maxNonOrtho": 65,
             "maxBoundarySkewness": 20,
@@ -116,7 +105,6 @@
             "qcnSmoothScale": 4,
             "errorReduction": 0.75
         },
-
         "mergeTolerance": 1e-06
       }
     }

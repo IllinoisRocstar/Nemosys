@@ -1,4 +1,32 @@
-#include "exoMesh.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Mesh/exoMesh.H"
 
 #include <algorithm>
 #include <cmath>
@@ -55,12 +83,14 @@ surfaceBCTag bcTagNum(std::string &tag) {
   throw;
 }
 
-std::string bcTagStr(int tag) {
-  if (tag == FIXED) return "FIXED";
-  if (tag == SYMMX) return "SYMMX";
-  if (tag == SYMMY) return "SYMMY";
-  if (tag == SYMMZ) return "SYMMZ";
-  std::cerr << "Unknown surface tag " << tag << std::endl;
+std::string bcTagStr(surfaceBCTag tag) {
+  switch (tag) {
+    case surfaceBCTag::FIXED: return "FIXED";
+    case surfaceBCTag::SYMMX: return "SYMMX";
+    case surfaceBCTag::SYMMY: return "SYMMY";
+    case surfaceBCTag::SYMMZ: return "SYMMZ";
+  }
+  std::cerr << "Unknown surface tag." << std::endl;
   throw;
 }
 
@@ -68,10 +98,12 @@ elementType elmTypeNum(std::string tag) {
   nemAux::toLower(tag);
   if (tag == "triangle") return elementType::TRIANGLE;
   if (tag == "tri") return elementType::TRIANGLE;
+  if (tag == "tri3") return elementType::TRIANGLE;
   if (tag == "trishell3") return elementType::TRIANGLE;
 
   if (tag == "quadrilateral") return elementType::QUAD;
   if (tag == "quad") return elementType::QUAD;
+  if (tag == "quad4") return elementType::QUAD;
   if (tag == "shell4") return elementType::QUAD;
 
   if (tag == "tetrahedron") return elementType::TETRA;
@@ -114,18 +146,21 @@ int elmNumNde(elementType tag, int order) {
   if (tag == elementType::HEX && order == 2) return 21;
   if (tag == elementType::WEDGE && order == 1) return 6;
   if (tag == elementType::WEDGE && order == 2) return 16;
-  std::cerr << "Unknown element/order combination " << tag << " " << order
+  std::cerr << "Unknown element/order combination " << elmTypeStr(tag) << " " << order
             << "\n";
   throw;
 }
 
 int elmNumSrf(elementType tag) {
-  if (tag == elementType::TRIANGLE) return 3;
-  if (tag == elementType::QUAD) return 4;
-  if (tag == elementType::TETRA) return 4;
-  if (tag == elementType::HEX) return 8;
-  if (tag == elementType::WEDGE) return 5;
-  std::cerr << "Unknown element type " << tag << "\n";
+  switch (tag) {
+    case elementType::TRIANGLE: return 3;
+    case elementType::QUAD: return 4;
+    case elementType::TETRA: return 4;
+    case elementType::HEX: return 8;
+    case elementType::WEDGE: return 5;
+    case elementType::OTHER: break;
+  }
+  std::cerr << "Unknown element type " << elmTypeStr(tag) << "\n";
   throw;
 }
 
@@ -179,7 +214,6 @@ void exoMesh::write() {
   // preparing database
   // regardless we update it
   exoPopulate(true);
-  std::cout << "nNodes = " << _numNdes << std::endl;
 
   // writing to file
   int comp_ws = 8;
@@ -303,7 +337,7 @@ void exoMesh::exoPopulate(bool updElmLst) {
   // updating element blocks
   int blkId = 0;  // Reindex the blocks.
   for (auto &&ieb : _elmBlks) {
-    ieb.id = ++blkId;
+    if (_reindexBlks) ieb.id = ++blkId;
     _elmBlkNames.emplace_back(ieb.name);
 
     // offsetting element connectivities
@@ -320,7 +354,7 @@ void exoMesh::exoPopulate(bool updElmLst) {
         std::vector<int> elmConn;
         for (int idx = elmIdx * nn; idx < (elmIdx + 1) * nn; ++idx)
           elmConn.emplace_back(ieb.conn[idx]);
-        ieb.elmIds.emplace_back(_numElms + elmIdx);
+        ieb.elmIds.emplace_back(_numElms + elmIdx + 1);
         glbConn.emplace_back(elmConn);
       }
 
@@ -359,7 +393,7 @@ void exoMesh::exoPopulate(bool updElmLst) {
     iss.id = ++ssetId;
     _sdeSetNames.emplace_back(iss.name);
 
-    // offsetting node ids
+    // offsetting element ids
     if (iss.elmIdOffset != 0) {
       for (auto &&elm : iss.elmIds) elm += iss.elmIdOffset;
       iss.elmIdOffset = 0;
@@ -407,6 +441,318 @@ void exoMesh::report() const {
                 << std::setw(20) << iss.name << "\n";
   }
   std::cout << std::flush;
+}
+
+//***************** Combine Element Blocks ***************//
+//********************************************************//
+void exoMesh::combineElmBlks(const std::vector<int> &blkIdLst,
+                             const std::string &newName) {
+  nemAux::Timer T;
+  T.start();
+  // Check for duplicate entries in blkIdLst
+  if (findDuplicates(blkIdLst).size() != 0) {
+    std::cerr << "Error: Duplicate block IDs defined." << std::endl;
+    throw;
+  }
+  // Check there is more than one id in list
+  if (blkIdLst.size() < 2) {
+    std::cerr << "Error: More than one block ID is needed." << std::endl;
+    throw;
+  }
+  // Check that block ID exists
+  elementType elmtype;
+  std::vector<elementType> eType_vec;
+  for (auto &id : blkIdLst) {
+    auto it = std::find(_elmBlkIds.begin(), _elmBlkIds.end(), id);
+    if (it == _elmBlkIds.end()) {
+      std::cerr << "Error: Block ID " << id << " does not exist." << std::endl;
+      throw;
+    }
+    // Check element types for each ID
+    elmtype = getElmBlkTypeById(id);
+    eType_vec.push_back(elmtype);
+  }
+  // Check that element type in each block is the same
+  for (int i = 0; i < eType_vec.size(); ++i) {
+    elementType e;
+    if (i == 0)
+      e = eType_vec[i];
+    else if (eType_vec[i] != e) {
+      std::cerr << "Error: Block element types are not the same. Cannot "
+                   "combine blocks."
+                << std::endl;
+      throw;
+    }
+  }
+
+  // Loop through registered blocks and make vector list
+  std::vector<int> blkIds;
+  for (auto &blk : _elmBlks) {
+    blkIds.push_back(blk.id);
+  }
+
+  std::vector<int> arrange_list;
+  // Get the first id in combine block list
+  int first = blkIdLst[0];
+  // Loop through blkIds and insert into new vector
+  arrange_list.push_back(blkIds[0]);
+  for (int &id : blkIds) {
+    if (id != first) {
+      // Check if id is already in arrange_list,
+      // if so, don't insert
+      auto it = std::find(arrange_list.begin(), arrange_list.end(), id);
+      if (it == arrange_list.end()) arrange_list.push_back(id);
+    } else {
+      // Check if each combine list item is in arrange_list
+      // if so, remove from arrange_list
+      for (const int &comId : blkIdLst) {
+        for (int i = 0; i < arrange_list.size(); ++i) {
+          if (comId == arrange_list[i]) {
+            arrange_list.erase(arrange_list.begin() + i);
+          }
+        }
+      }
+      // Insert entire combine list into arrange_list
+      for (const int &j : blkIdLst) {
+        arrange_list.push_back(j);
+      }
+    }
+  }
+
+  // Populate old to new element ids map
+  std::map<int, int> old2NewElmIds;
+  int i = 0;
+  int numElms = getNumberOfElements();
+  for (int &id : arrange_list) {
+    for (auto &elmBlk : _elmBlks) {
+      if (id == elmBlk.id) {
+        for (auto &eid : elmBlk.elmIds) {
+          i++;
+          old2NewElmIds.insert(std::pair<int, int>(eid, i));
+        }
+      }
+    }
+  }
+
+  //**************************************************************//
+  // Any part of a side set that is between the blocks being
+  // combined should be deleted. Therefore, delete these parts
+  // before combining the blocks by:
+  //
+  // Find all node IDs common between combining blocks (blkIdLst).
+  // Build combining blocks point kdTree.
+  // Go block by block and insert points into tree.
+  // Find elements that have these common node IDs.
+  // Find those elements in the side sets and compare common nodes
+  // to the face nodes.
+  //**************************************************************//
+  std::cout << "\nModifying sidesets..." << std::flush;
+  // Get the number nodes in block to be combined
+  int numNodes = 0;
+  for (auto &id : blkIdLst) {
+    int idx = getElmBlkIndex(id);
+    numNodes += _elmBlks[idx].ndeCoords.size();
+  }
+
+  // Build kdtree from node coords in each block
+  // This will create duplicate nodes in the kdtree
+  // which is desired to find common nodes b/w blocks
+  int nDim = 3;
+  std::map<int, int> tree_ndeId_map;
+  ANNpointArray pntCrd;
+  pntCrd = annAllocPts(numNodes, nDim);
+  int ipts = 0;
+  for (auto &id : blkIdLst) {
+    int idx = getElmBlkIndex(id);
+    auto it = _elmBlks[idx].ndeCoords.begin();
+    while (it != _elmBlks[idx].ndeCoords.end()) {
+      pntCrd[ipts][0] = it->second[0];
+      pntCrd[ipts][1] = it->second[1];
+      pntCrd[ipts][2] = it->second[2];
+      tree_ndeId_map[ipts] = it->first;
+      ipts++;
+      it++;
+    }
+  }
+  ANNkd_tree *kdTree = new ANNkd_tree(pntCrd, numNodes, nDim);
+
+  // Finding duplicate node ids
+  std::set<int> commonNodes;
+  int nNib = 2;
+  ANNpoint qryPnt;
+  ANNidxArray nnIdx = new ANNidx[nNib];
+  ANNdistArray dists = new ANNdist[nNib];
+  qryPnt = annAllocPt(nDim);
+
+  for (int iNde = 0; iNde < _numNdes; iNde++) {
+    qryPnt[0] = _xCrds[iNde];
+    qryPnt[1] = _yCrds[iNde];
+    qryPnt[2] = _zCrds[iNde];
+    kdTree->annkSearch(qryPnt, nNib, nnIdx, dists);
+
+    if (dists[1] <= 1e-12) {
+      int id1 = tree_ndeId_map[nnIdx[0]];
+      int id2 = tree_ndeId_map[nnIdx[1]];
+      commonNodes.insert(id1);
+      commonNodes.insert(id2);
+    }
+  }
+  delete kdTree;
+
+  // Find all elements that have commonNodes
+  std::set<int> commonElms;
+  int idx, num_nodes_per_elem, ndeID, c;
+  numElms = 0;
+  for (auto &id : blkIdLst) {
+    idx = getElmBlkIndex(id);
+    numElms = _elmBlks[idx].nElm;
+    num_nodes_per_elem = _elmBlks[idx].ndePerElm;
+    c = 0;
+    for (int el = 0; el < numElms; ++el) {
+      for (int n = 0; n < num_nodes_per_elem; ++n) {
+        c = el * num_nodes_per_elem + n;
+        ndeID = _elmBlks[idx].conn[c];
+        auto pos = commonNodes.find(ndeID);
+        if (pos != commonNodes.end())
+          commonElms.insert(_elmBlks[idx].elmIds[el]);
+      }
+    }
+  }
+
+  // Face to local element connectivity maps
+  std::map<int, std::vector<int>> tri_face_conn_map = {
+      {1, {1, 2}}, {2, {2, 3}}, {3, {3, 1}}};
+  std::map<int, std::vector<int>> quad_face_conn_map = {
+      {1, {1, 2}}, {2, {2, 3}}, {3, {3, 4}}, {4, {4, 1}}};
+  std::map<int, std::vector<int>> tet_face_conn_map = {
+      {1, {1, 2, 4}}, {2, {2, 3, 4}}, {3, {1, 4, 3}}, {4, {1, 3, 2}}};
+  std::map<int, std::vector<int>> hex_face_conn_map = {
+      {1, {1, 2, 6, 5}}, {2, {2, 3, 7, 6}}, {3, {3, 4, 8, 7}},
+      {4, {1, 5, 8, 4}}, {5, {1, 4, 3, 2}}, {6, {5, 6, 7, 8}}};
+  std::map<int, std::vector<int>> wedge_face_conn_map = {{1, {1, 2, 5, 4}},
+                                                         {2, {2, 3, 6, 5}},
+                                                         {3, {3, 1, 4, 6}},
+                                                         {4, {1, 2, 3}},
+                                                         {5, {4, 5, 6}}};
+
+  int numCommon = 0;
+  // Find commonElms in sides sets
+  for (auto &sdeSet : _sdeSets) {
+    // Iterators for face id vector
+    auto itf = sdeSet.sdeIds.begin();
+    int loc = 0;
+    int elmID = 0;
+    for (auto ite = sdeSet.elmIds.begin(); ite != sdeSet.elmIds.end();) {
+      loc = ite - sdeSet.elmIds.begin();
+      elmID = sdeSet.elmIds[loc];
+      auto pos = commonElms.find(elmID);
+      if (pos != commonElms.end()) {
+        int faceID = sdeSet.sdeIds[loc];
+
+        // Use the elmID to get the connectivity
+        std::vector<int> elmConn = glbConn[elmID - 1];
+        std::vector<int> faceConn;
+        // With the faceID get the local connectivity (map)
+        if (elmtype == elementType::TETRA)
+          faceConn = tet_face_conn_map[faceID];
+        else if (elmtype == elementType::HEX)
+          faceConn = hex_face_conn_map[faceID];
+        else if (elmtype == elementType::WEDGE)
+          faceConn = wedge_face_conn_map[faceID];
+        else if (elmtype == elementType::TRIANGLE)
+          faceConn = tri_face_conn_map[faceID];
+        else if (elmtype == elementType::QUAD)
+          faceConn = quad_face_conn_map[faceID];
+        else {
+          std::cerr << "Error: Mesh element type not supported." << std::endl;
+          throw;
+        }
+
+        // Compare the local(face) nodes with commonNodes
+        bool allCommon = false;
+        for (int i = 0; i < faceConn.size(); ++i) {
+          // This is the node ID on the face
+          int ndeID = elmConn[faceConn[i] - 1];
+          auto pos = commonNodes.find(ndeID);
+          if (pos == commonNodes.end()) {
+            // If a commonNode is not found, break
+            allCommon = false;
+            break;
+          } else
+            allCommon = true;
+        }
+        if (allCommon) {
+          ite = sdeSet.elmIds.erase(ite);
+          itf = sdeSet.sdeIds.erase(itf);
+          sdeSet.nSde--;
+          numCommon++;
+        } else {
+          ++ite;
+          ++itf;
+        }
+      } else {
+        ++ite;
+        ++itf;
+      }
+    }
+  }
+  std::cout << "done." << std::endl;
+
+  //**************************************************************//
+  // Combine the blocks
+  //**************************************************************//
+  std::cout << "Combining blocks..." << std::flush;
+  int firstBlk = getElmBlkIndex(blkIdLst[0]);
+  // Combine the blocks
+  for (int i = 0; i < blkIdLst.size(); ++i) {
+    if (i > 0) {
+      int idx = getElmBlkIndex(blkIdLst[i]);
+      int ei = -1;
+      for (const auto &eid : _elmBlks[idx].elmIds) {
+        ei++;
+        _elmBlks[firstBlk].elmIds.emplace_back(eid);
+        _elmBlks[firstBlk].nElm++;
+
+        for (int ni = ei * _elmBlks[idx].ndePerElm;
+             ni < (ei + 1) * _elmBlks[idx].ndePerElm; ni++) {
+          _elmBlks[firstBlk].conn.emplace_back(_elmBlks[idx].conn[ni]);
+        }
+      }
+      // Set new block name, if given
+      if (newName != "") _elmBlks[firstBlk].name = newName;
+    }
+  }
+  std::cout << "done." << std::endl;
+  std::cout << "Updating sideset element IDs..." << std::flush;
+  // Update sides sets
+  updateSidesets(old2NewElmIds);
+  std::cout << "done." << std::endl;
+
+  // Remove blocks, don't reindex blocks
+  _reindexBlks = false;
+  for (int i = 0; i < blkIdLst.size(); ++i) {
+    if (i > 0) removeElmBlkById(blkIdLst[i]);
+  }
+  T.stop();
+
+  std::cout << "Combined blocks and updated sidesets in "
+            << T.elapsed() / 1000.0 << " seconds.\n"
+            << std::endl;
+}
+
+//******************** Update Sidesets *******************//
+//********************************************************//
+void exoMesh::updateSidesets(const std::map<int, int> &old2NewElmIds) {
+  // Loop through side sets, update elem ids with map
+  for (auto &sSet : _sdeSets) {
+    for (auto &elmId : sSet.elmIds) {
+      auto it = old2NewElmIds.find(elmId);
+      if (it != old2NewElmIds.end())
+        elmId = it->second;
+      else
+        std::cerr << "Error: element not found in sideset" << std::endl;
+    }
+  }
 }
 
 void exoMesh::removeByElmIdLst(int blkIdx, const std::vector<int> &idLst) {
@@ -558,6 +904,18 @@ void exoMesh::removeElmBlkByName(const std::string &blkName) {
   std::vector<elmBlkType> nebs;
   for (const auto &ieb : _elmBlks)
     if (ieb.name != blkName)
+      nebs.emplace_back(ieb);
+    else
+      _isPopulated = false;
+  _elmBlks = nebs;
+
+  exoPopulate(true);
+}
+
+void exoMesh::removeElmBlkById(int id) {
+  std::vector<elmBlkType> nebs;
+  for (const auto &ieb : _elmBlks)
+    if (ieb.id != id)
       nebs.emplace_back(ieb);
     else
       _isPopulated = false;
@@ -720,6 +1078,10 @@ void exoMesh::read(const std::string &ifname) {
   if (numElmBlks > 0) {
     _exErr = ex_get_elem_blk_ids(_fid, elmBlkIds.data());
     wrnErrMsg(_exErr, "Problem reading element block ids.\n");
+
+    for (int i = 0; i < numElmBlks; ++i) {
+      _elmBlkIds.push_back(elmBlkIds[i]);
+    }
   }
 
   std::vector<int> ndeSetIds(numNdeSets, 0);
@@ -744,8 +1106,8 @@ void exoMesh::read(const std::string &ifname) {
     wrnErrMsg(_exErr, "Problem reading element block names.\n");
     blk_name.erase(std::remove(blk_name.begin(), blk_name.end(), '\0'),
                    blk_name.end());
-    std::cout << "debugging" << std::endl;
-    std::cout << blk_id << " " << blk_name << std::endl;
+    // std::cout << "debugging" << std::endl;
+    // std::cout << blk_id << " " << blk_name << std::endl;
     _elmBlkNames.push_back(blk_name);
   }
 
@@ -802,11 +1164,30 @@ void exoMesh::read(const std::string &ifname) {
     _exErr = ex_get_elem_conn(_fid, elmBlkIds[iEB], eb.conn.data());
     wrnErrMsg(_exErr, "Problem reading element block connectivities.\n");
 
+    double x, y, z;
+    // get node coords for each block
+    for (int &ndeId : eb.conn) {
+      x = _xCrds[ndeId];
+      y = _yCrds[ndeId];
+      z = _zCrds[ndeId];
+      eb.ndeCoords.insert(
+          std::pair<int, std::vector<double>>(ndeId, {x, y, z}));
+    }
+
     // fill element ids
     eb.elmIds.clear();
     eb.elmIds.resize(num_el_in_blk);
     std::iota(eb.elmIds.begin(), eb.elmIds.end(), elmId);
     elmId += num_el_in_blk;
+
+    // global connectivity
+    int nn = eb.ndePerElm;
+    for (int elmIdx = 0; elmIdx < eb.nElm; ++elmIdx) {
+      std::vector<int> elmConn;
+      for (int idx = elmIdx * nn; idx < (elmIdx + 1) * nn; ++idx)
+        elmConn.emplace_back(eb.conn[idx]);
+      glbConn.emplace_back(elmConn);
+    }
 
     _elmBlks.push_back(eb);
   }
@@ -974,7 +1355,7 @@ void exoMesh::mergeNodes(double tol) {
 }
 
 void exoMesh::scaleNodes(double sc) {
-  using namespace nemAux;
+  using nemAux::operator*;  // for vector multiplication.
   _xCrds = sc * _xCrds;
   _yCrds = sc * _yCrds;
   _zCrds = sc * _zCrds;
@@ -1019,7 +1400,20 @@ void exoMesh::stitch(const exoMesh &otherMesh) {
   exoPopulate(true);
 }
 
-elementType exoMesh::getElmBlkType(std::string ebName) const {
+elementType exoMesh::getElmBlkTypeById(int id) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->id == id) return (eb->eTpe);
+
+  // warning if the element block id is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with id " << id
+              << std::endl;
+
+  return (NEM::MSH::EXOMesh::elementType::OTHER);
+}
+
+elementType exoMesh::getElmBlkType(const std::string &ebName) const {
   auto eb = _elmBlks.begin();
   for (; eb != _elmBlks.end(); eb++)
     if (eb->name == ebName) return (eb->eTpe);
@@ -1030,6 +1424,188 @@ elementType exoMesh::getElmBlkType(std::string ebName) const {
               << std::endl;
 
   return (NEM::MSH::EXOMesh::elementType::OTHER);
+}
+
+int exoMesh::getNumElmsInBlk(const std::string &ebName) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->name == ebName) return (eb->nElm);
+
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with name " << ebName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNumElmsInBlkById(int id) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->id == id) return (eb->nElm);
+
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with ID " << id
+              << std::endl;
+
+  return -1;
+}
+
+const std::string exoMesh::getElmBlkNameById(int id) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->id == id) return (eb->name);
+
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with ID " << id
+              << std::endl;
+
+  return "";
+}
+
+int exoMesh::getElmBlkIndex(int id) const {
+  int numElmBlks = getNumberOfElementBlocks();
+  for (int i = 0; i < numElmBlks; ++i) {
+    if (_elmBlks[i].id == id) return i;
+  }
+  return -1;
+}
+
+int exoMesh::getElmBlkIndex(std::string name) const {
+  int numElmBlks = getNumberOfElementBlocks();
+  for (int i = 0; i < numElmBlks; ++i) {
+    if (_elmBlks[i].name == name) return i;
+  }
+  return -1;
+}
+
+int exoMesh::getElmBlkId(std::string ebName) const {
+  auto eb = _elmBlks.begin();
+  for (; eb != _elmBlks.end(); eb++)
+    if (eb->name == ebName) return (eb->id);
+
+  // warning if the element block name is not registered
+  if (eb == _elmBlks.end())
+    std::cerr << "Warning: There is no element block with name " << ebName
+              << std::endl;
+
+  return -1;
+}
+
+std::string exoMesh::getNdeSetNameById(int id) const {
+  auto ns = _ndeSets.begin();
+  for (; ns != _ndeSets.end(); ns++)
+    if (ns->id == id) return (ns->name);
+
+  // warning if the element block name is not registered
+  if (ns == _ndeSets.end())
+    std::cerr << "Warning: There is no nodeset with ID " << id << std::endl;
+
+  return "";
+}
+
+int exoMesh::getNumNdesInNdeSet(const std::string &nsName) const {
+  auto ns = _ndeSets.begin();
+  for (; ns != _ndeSets.end(); ns++)
+    if (ns->name == nsName) return (ns->nNde);
+
+  // warning if the element block name is not registered
+  if (ns == _ndeSets.end())
+    std::cerr << "Warning: There is no nodeset with name " << nsName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNumNdesInNdeSetById(int id) const {
+  auto ns = _ndeSets.begin();
+  for (; ns != _ndeSets.end(); ns++)
+    if (ns->id == id) return (ns->nNde);
+
+  // warning if the element block name is not registered
+  if (ns == _ndeSets.end())
+    std::cerr << "Warning: There is no nodeset with ID " << id << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNdeSetId(const std::string &nsName) const {
+  auto ns = _ndeSets.begin();
+  for (; ns != _ndeSets.end(); ns++)
+    if (ns->name == nsName) return (ns->id);
+
+  // warning if the element block name is not registered
+  if (ns == _ndeSets.end())
+    std::cerr << "Warning: There is no nodeset with name " << nsName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNdeSetIndex(const std::string &nsName) const {
+  auto ns = _ndeSets.begin();
+  for (; ns != _ndeSets.end(); ns++)
+    if (ns->name == nsName) return ns - _ndeSets.begin();
+
+  // warning if the element block name is not registered
+  if (ns == _ndeSets.end())
+    std::cerr << "Warning: There is no nodeset with name " << nsName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getSdeSetId(const std::string &ssName) const {
+  auto ss = _sdeSets.begin();
+  for (; ss != _sdeSets.end(); ss++)
+    if (ss->name == ssName) return (ss->id);
+
+  // warning if the sideset name is not registered
+  if (ss == _sdeSets.end())
+    std::cerr << "Warning: There is no sideset with name " << ssName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getSdeSetIndex(const std::string &ssName) const {
+  auto ss = _sdeSets.begin();
+  for (; ss != _sdeSets.end(); ss++)
+    if (ss->name == ssName) return ss - _sdeSets.begin();
+
+  // warning if the sideset name is not registered
+  if (ss == _sdeSets.end())
+    std::cerr << "Warning: There is no sideset with name " << ssName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNumSdesInSdeSet(const std::string &ssName) const {
+  auto ss = _sdeSets.begin();
+  for (; ss != _sdeSets.end(); ss++)
+    if (ss->name == ssName) return (ss->nSde);
+
+  // warning if the element block name is not registered
+  if (ss == _sdeSets.end())
+    std::cerr << "Warning: There is no sideset with name " << ssName
+              << std::endl;
+
+  return -1;
+}
+
+int exoMesh::getNumSdesInSdeSetById(int id) const {
+  auto ss = _sdeSets.begin();
+  for (; ss != _sdeSets.end(); ss++)
+    if (ss->id == id) return (ss->nSde);
+
+  // warning if the element block name is not registered
+  if (ss == _sdeSets.end())
+    std::cerr << "Warning: There is no sideset with ID " << id << std::endl;
+
+  return -1;
 }
 
 }  // namespace EXOMesh

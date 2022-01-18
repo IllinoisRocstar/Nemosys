@@ -1,4 +1,32 @@
-#include "meshBase.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Mesh/meshBase.H"
 
 #include <exodusII.h>
 #include <vtkAppendFilter.h>
@@ -17,18 +45,21 @@
 #include <vtkSelectionNode.h>
 #include <vtkUnstructuredGrid.h>
 
-//#include "cobalt.H"
-//#include "patran.H"
+//#include "Mesh/cobalt.H"
+//#include "Mesh/patran.H"
 #include "AuxiliaryFunctions.H"
-#include "Cubature.H"
-#include "MeshQuality.H"
-#include "Refine.H"
-#include "SizeFieldGen.H"
-#include "exoMesh.H"
-#include "meshGen.H"
-#include "meshPartitioner.H"
-#include "pntMesh.H"
-#include "vtkMesh.H"
+#include "Integration/Cubature.H"
+#include "MeshQuality/MeshQuality.H"
+#include "SizeFieldGeneration/SizeFieldGen.H"
+#include "Mesh/exoMesh.H"
+#include "MeshGeneration/meshGen.H"
+#include "MeshPartitioning/meshPartitioner.H"
+#include "Mesh/pntMesh.H"
+#include "Mesh/vtkMesh.H"
+
+#ifdef HAVE_GMSH
+#include "Refinement/Refine.H"
+#endif
 
 // netgen
 #ifdef HAVE_NGEN
@@ -63,7 +94,8 @@ meshBase *meshBase::Create(const std::string &fname) {
     std::cout << "Processing the file ...." << std::endl;
     return exportPntToVtk(fname);
   } else if (fname.find(".g") != std::string::npos ||
-             fname.find(".exo") != std::string::npos) {
+             fname.find(".exo") != std::string::npos ||
+             fname.find(".e") != std::string::npos) {
     std::cout << "Detected file in Exodus II format" << std::endl;
     std::cout << "Processing the file ...." << std::endl;
     return exportExoToVtk(fname);
@@ -157,55 +189,6 @@ std::shared_ptr<meshBase> meshBase::CreateShared(
  **/
 std::unique_ptr<meshBase> meshBase::CreateUnique(const std::string &fname) {
   return std::unique_ptr<meshBase>(meshBase::Create(fname));
-}
-
-/** Caller must delete object after use.
- **/
-meshBase *meshBase::generateMesh(const std::string &fname,
-                                 const std::string &meshEngine,
-                                 meshingParams *params) {
-  // TODO: this method should change to incorporate STEP files
-  // if ((fname.find(".stl") == -1) && (fname.find(".fms") == -1)) {
-  //   std::cerr << "Only CAD files in STL or FMS format are supported"
-  //             << std::endl;
-  //   exit(1);
-  // }
-
-  meshGen *generator = meshGen::Create(fname, meshEngine, params);
-  if (generator) {
-    int status = generator->createMeshFromSTL(&fname[0u]);
-    meshBase *ret = nullptr;
-    if (!status) {
-      if (meshEngine == "netgen") {
-        std::string newname = nemAux::trim_fname(fname, ".vol");
-        ret = exportVolToVtk(newname);
-      } else if (meshEngine == "gmsh") {
-        std::string newname = nemAux::trim_fname(fname, ".msh");
-        ret = exportGmshToVtk(newname);
-      } else if (meshEngine == "cfmesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      } else if (meshEngine == "snappyHexMesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      } else if (meshEngine == "blockMesh") {
-        std::string newname = nemAux::trim_fname(fname, ".vtu");
-        ret = Create(generator->getDataSet(), newname);
-      }
-    }
-    delete generator;
-
-    if (ret) {
-      return ret;
-    } else {
-      std::cerr << "Mesh Engine " << meshEngine << " not recognized"
-                << std::endl;
-      exit(1);
-    }
-  } else {
-    std::cerr << "Could not create mesh generator" << std::endl;
-    exit(1);
-  }
 }
 
 /** Caller must delete object after use.
@@ -1022,6 +1005,13 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
   // Connectivities
   // allocating space for cell connectivities
   dataSet_tmp->Allocate(numVolCells);
+
+  // VTK int array for block IDs
+  vtkSmartPointer<vtkIntArray> blocks = vtkSmartPointer<vtkIntArray>::New();
+  blocks->SetNumberOfValues(numVolCells);
+  blocks->SetName("BlockId");
+
+  int count = 0;
   // read element blocks
   for (int iEB = 1; iEB <= numElmBlk; iEB++) {
     int num_el_in_blk, num_nod_per_el, num_attr /*, *connect*/;
@@ -1044,6 +1034,7 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
     //_exErr = ex_get_elem_attr (fid, iEB, &attrib[0]);
     // EXOMesh::wrnErrMsg(_exErr, "Problem reading element block
     // attributes.\n");
+
     for (int iEl = 0; iEl < num_el_in_blk; ++iEl) {
       vtkSmartPointer<vtkIdList> vtkcellIds = vtkSmartPointer<vtkIdList>::New();
       VTKCellType vct =
@@ -1055,18 +1046,24 @@ meshBase *meshBase::exportExoToVtk(const std::string &fname) {
       }
       // insert connectivities
       dataSet_tmp->InsertNextCell(vct, vtkcellIds);
+
+      vtkIdType i = count;
+      blocks->SetValue(i, iEB);
+      count++;
     }
   }
-
-  std::cout << "Trimmed name = " << nemAux::trim_fname(fname, ".vtu")
-            << std::endl;
+  // std::cout << "Trimmed name = " << nemAux::trim_fname(fname, ".vtu")
+  //          << std::endl;
 
   vtkMesh *vtkmesh = new vtkMesh();
   vtkmesh->dataSet = dataSet_tmp;
   vtkmesh->numCells = vtkmesh->dataSet->GetNumberOfCells();
   vtkmesh->numPoints = vtkmesh->dataSet->GetNumberOfPoints();
-  vtkmesh->setFileName(nemAux::trim_fname(fname, ".vtu"));
-  // vtkmesh->write();
+
+  vtkmesh->dataSet->GetCellData()->AddArray(blocks);
+
+  vtkmesh->setFileName("vtkWithIds.vtu");
+  vtkmesh->write();
   std::cout << "vtkMesh constructed" << std::endl;
 
   // closing the file
@@ -1138,6 +1135,11 @@ void meshBase::writeMSH(std::ofstream &outputStream) {
         {
           outputStream << 3 << " " << 2 << " " << 1 << " " << 1 << " ";
           break;
+        } else
+        {
+          std::cerr << "Cells with 4 components must be tet or quad."
+                    << std::endl;
+          exit(1);
         }
       }
 
@@ -1298,9 +1300,8 @@ void meshBase::writeMSH(std::ofstream &outputStream,
   for (int i = 0; i < numPoints; ++i) {
     std::vector<double> pntcrds = getPoint(i);
     outputStream << i + 1 << " ";
-    outputStream << std::setprecision(16)
-                 << pntcrds[0] << " " << pntcrds[1] << " " << pntcrds[2]
-                 << " " << std::endl;
+    outputStream << std::setprecision(16) << pntcrds[0] << " " << pntcrds[1]
+                 << " " << pntcrds[2] << " " << std::endl;
   }
   outputStream << "$EndNodes" << std::endl;
 
@@ -1426,7 +1427,7 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
       faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkStaticCellLocator> surfCellLocator =
-    surfWithPatches->buildStaticCellLocator();
+      surfWithPatches->buildStaticCellLocator();
   // maximum number of vertices per face (to be found in proceeding loop)
   int nVerticesPerFaceMax = 0;
   // maximum number of faces per cell (to be found in proceeding loop)
@@ -1507,6 +1508,7 @@ void meshBase::writeCobalt(meshBase *surfWithPatches,
     outputStream << std::setw(21) << std::fixed << std::setprecision(15)
                  << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
   }
+
   auto it = faceMap.begin();
   while (it != faceMap.end()) {
     outputStream << it->first.size() << " ";
@@ -1564,21 +1566,31 @@ void meshBase::refineMesh(const std::string &method, int arrayID,
                           double dev_mult, bool maxIsmin, double edge_scale,
                           const std::string &ofname, bool transferData,
                           double sizeFactor, bool constrainBoundary) {
+#ifdef HAVE_GMSH
   std::unique_ptr<NEM::ADP::Refine> refineobj =
       std::unique_ptr<NEM::ADP::Refine>(
           new NEM::ADP::Refine(this, method, arrayID, dev_mult, maxIsmin,
                                edge_scale, ofname, sizeFactor));
   refineobj->run(transferData, constrainBoundary);
+#else
+  std::cerr << "Cannot use meshBase::refineMesh without Gmsh. Please configure "
+               "with ENABLE_GMSH=ON.\n";
+#endif
 }
 
 /**
  **/
 void meshBase::refineMesh(const std::string &method, int arrayID, int _order,
                           const std::string &ofname, bool transferData) {
+#ifdef HAVE_GMSH
   std::unique_ptr<NEM::ADP::Refine> refineobj =
       std::unique_ptr<NEM::ADP::Refine>(new NEM::ADP::Refine(
           this, method, arrayID, 0.0, false, 0.0, ofname, 1.0, _order));
   refineobj->run(transferData);
+#else
+  std::cerr << "Cannot use meshBase::refineMesh without Gmsh. Please configure "
+               "with ENABLE_GMSH=ON.\n";
+#endif
 }
 
 /** edge_scale is for uniform refinement and is ignored in calls where
@@ -1651,7 +1663,7 @@ void meshBase::checkMesh(const std::string &ofname) const {
 /**
  **/
 int diffMesh(meshBase *mesh1, meshBase *mesh2) {
-  //double tol = 1e-14;
+  // double tol = 1e-14;
   double tol = 3e-2;
 
   if (mesh1->getNumberOfPoints() != mesh2->getNumberOfPoints() ||
@@ -1665,7 +1677,7 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     std::vector<double> coord1 = mesh1->getPoint(i);
     std::vector<double> coord2 = mesh2->getPoint(i);
     for (int j = 0; j < 3; ++j) {
-      if (std::fabs((coord1[j] - coord2[j])/coord2[j]) > tol) {
+      if (std::fabs((coord1[j] - coord2[j]) / coord2[j]) > tol) {
         std::cerr << "Meshes differ in point coordinates" << std::endl;
         std::cerr << "Index " << i << " Component " << j << std::endl;
         std::cerr << "Coord 1 " << std::setprecision(15) << coord1[j]
@@ -1686,7 +1698,7 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
     }
     for (int j = 0; j < cell1.size(); ++j) {
       for (int k = 0; k < 3; ++k) {
-        if (std::fabs((cell1[j][k] - cell2[j][k])/cell2[j][k]) > tol) {
+        if (std::fabs((cell1[j][k] - cell2[j][k]) / cell2[j][k]) > tol) {
           std::cerr << "Meshes differ in cells" << std::endl;
           return 1;
         }
@@ -1725,17 +1737,15 @@ int diffMesh(meshBase *mesh1, meshBase *mesh2) {
         da1->GetRange(range, k);
         abs_error = std::fabs(comps1[k] - comps2[k]);
         double max_val = std::max(std::abs(range[0]), std::abs(range[1]));
-        rel_error = abs_error/std::max(1.0, max_val);
+        rel_error = abs_error / std::max(1.0, max_val);
         if (rel_error > tol) {
           std::cerr << "For point data array " << da1->GetName() << std::endl;
           std::cerr << "Meshes differ in point data values at point " << j
                     << " component " << k << std::endl;
-          std::cerr << std::setprecision(15)
-                    << "Mesh 1 value : "
-                    << comps1[k] << std::endl;
-          std::cerr << std::setprecision(15)
-                    << "Mesh 2 value : "
-                    << comps2[k] << std::endl;
+          std::cerr << std::setprecision(15) << "Mesh 1 value : " << comps1[k]
+                    << std::endl;
+          std::cerr << std::setprecision(15) << "Mesh 2 value : " << comps2[k]
+                    << std::endl;
           return 1;
         }
       }

@@ -1,5 +1,10 @@
 {
-    "Program Type": "Mesh Quality",
+  "Program Type": "Mesh Quality",
+  "Mesh File Options": {
     "Input Mesh File": "refined_uniform_hinge.vtu",
     "Output File": "meshQual.txt"
+  },
+  "Mesh Quality Options": {
+    "Mesh Quality Engine": "default"
+  }
 }
