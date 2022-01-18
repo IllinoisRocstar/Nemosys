@@ -92,8 +92,7 @@ struct NEMOSYS_EXPORT shmSearchableSphere : public shmSearchableShape {
     @brief A structure to represent geometry surface
           refining capability in snappymeshgGen
 **/
-struct NEMOSYS_EXPORT
-    shmSurfRefine  // Surface Refinement (Add all shapes and their controls)
+struct NEMOSYS_EXPORT shmSurfRefine  // Surface Refinement
 {
   std::string refPatchName;    /**< Refining region patch name */
   std::string patchType{"NO"}; /** < Patch Type in Mesh */

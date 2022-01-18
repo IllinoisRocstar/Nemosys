@@ -314,7 +314,7 @@ class NEMOSYS_EXPORT rocPack {
              zero (i.e \f$ v = 0 + x i + y j + z k \f$). Then performs
              transformation using \f$ v_{'} = q.v.q\textsuperscript{-1} \f$.
              if we write quaternion in this form \f$ q = w + p(x,y,z) \f$,
-             then \f$ v_{'} = 2\(p.v\)p + \(w_2 - p.p\)v + 2w\(p\timesv\) \f$.
+             then \f$ v_{'} = 2\(p.v\)p + \(w_2 - p.p\)v + 2w\(p\times v\) \f$.
              This method is computationally efficient compared to performing
              direct quaternion products (i.e
              \f$ v_{'} = q.v.q\textsuperscript{-1} \f$)

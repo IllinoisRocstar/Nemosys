@@ -57,6 +57,7 @@ enum class NEMOSYS_EXPORT MeshType {
  * @return pointer to base mesh class
  */
 NEMOSYS_EXPORT geoMeshBase *Read(const std::string &fileName, MeshType type);
+
 /**
  * Read a mesh from file. Determines mesh type from file extension.
  * @param fileName name of file

@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.9)
 # Set project metadata #########################################################
 
 set(NEMOSYS_MAJOR_VERSION 0)
-set(NEMOSYS_MINOR_VERSION 62)
-set(NEMOSYS_PATCH_VERSION 3)
+set(NEMOSYS_MINOR_VERSION 63)
+set(NEMOSYS_PATCH_VERSION 0)
 set(NEMOSYS_EXTRA_VERSION "" CACHE STRING "NEMoSys extra version string")
 set(NEMOSYS_VERSION "${NEMOSYS_MAJOR_VERSION}.${NEMOSYS_MINOR_VERSION}")
 set(NEMOSYS_VERSION
@@ -18,6 +18,7 @@ set(NEMOSYS_AUTHOR
     "Sachin Natesh"
     "Akash Patel"
     "Seth Pemberton"
+    "Nora Quillman"
     "Masoud Safdari"
     "Pavle Simonovic"
     "Taiyo Wilson")
@@ -37,7 +38,7 @@ systems as well as distributed web-services environments. The project focus is \
 providing a framework for robust, automated mesh generation, mesh quality \
 analysis, adaptive mesh refinement, and data transfer between arbitrary \
 meshes.")
-set(PROJECT_NAME "NEMoSys version ${NEMOSYS_VERSION}")
+set(PROJECT_NAME "NEMoSys")
 project(${PROJECT_NAME} CXX C)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -91,6 +92,7 @@ list(APPEND CMAKE_BUILD_TYPE_OPTIONS
     "None" "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 
 # set to ${DEFAULT} to use by DEFAULT
+option(ENABLE_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" ${DEFAULT})
 option(ENABLE_MPI "Enable MPI support" OFF)
 option(ENABLE_TESTING "Enable testing" ${DEFAULT})
 option(ENABLE_BUILD_UTILS "Build utilities" OFF)
@@ -100,7 +102,7 @@ option(ENABLE_CONSRV_VOLUME_TRANSFER "Enable Conservative Volume Transfer" OFF)
 option(ENABLE_CGNS "Enable CGNS extensions (Used for Rocstar utilities)" OFF)
 option(ENABLE_EPIC "Enable EPIC preprocessor" OFF)
 option(ENABLE_HDF5 "ENABLE HDF5 extensions (Used by some CGNS and Netgen builds)" OFF)
-option(ENABLE_METIS "Enable METIS partitioner" ${DEFAULT})
+option(ENABLE_METIS "Enable METIS partitioner" OFF)
 option(ENABLE_NETGEN "Enable Netgen meshing engine" ${DEFAULT})
 option(ENABLE_OMEGAH_CUDA "Enable GPU acceleration for Omega_h (Requires Kokkos built \
 with CUDA and linked dynamically)" OFF)
@@ -1150,8 +1152,7 @@ endif()
 # Building documentation #######################################################
 # TODO: revamp the documentation
 
-option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" OFF)
-if(BUILD_DOCUMENTATION)
+if(ENABLE_DOCUMENTATION)
   find_package(Doxygen)
   if(NOT DOXYGEN_FOUND)
     message(FATAL_ERROR "Doxygen is needed to build the documentation.")
@@ -1165,7 +1166,7 @@ if(BUILD_DOCUMENTATION)
       MAIN_DEPENDENCY ${doxyfile} ${doxyfile_in}
       DEPENDS Nemosys ${doxy_extra_files}
       COMMENT "Generating documentation")
-  add_custom_target(docs DEPENDS ${documentation})
+  add_custom_target(docs ALL DEPENDS ${documentation})
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs DESTINATION ${CMAKE_INSTALL_DATAROOTDIR})
 endif()
 

@@ -26,6 +26,7 @@
 * along with this program. If not, see <https://www.gnu.org/licenses/>.        *
 *                                                                              *
 *******************************************************************************/
+
 #ifndef NEMOSYS_BLOCKMESHPARAMS_H_
 #define NEMOSYS_BLOCKMESHPARAMS_H_
 
@@ -40,26 +41,28 @@
 #include <tuple>
 #include <jsoncons/config/jsoncons_config.hpp>  // for jsoncons::optional
 
-//***********************************************************************************************//
 
-// TODO
-// 1. Let user define patch names and types
-// 2. Let user select how they want to define Box parameters
-//    (i.e. 2 points, 1 point and lengths, center and lengths)
-
+//
 // In Development
-/*struct bmshPatchDefine
-{
-  bool _isPatch;      // if given patch is a patch
-  bool _isWall;     // if given patch is a wall
-  bool _isSymmPlane;    // if given patch is a symmetric plane
-  bool _isEmptyPtch;    // if given patch is an empty patch
-  std::string ptchName;  // Patch Name
-};*/
+// struct bmshPatchDefine
+// {
+//   bool _isPatch;      // if given patch is a patch
+//   bool _isWall;     // if given patch is a wall
+//   bool _isSymmPlane;    // if given patch is a symmetric plane
+//   bool _isEmptyPtch;    // if given patch is an empty patch
+//  std::string ptchName;  // Patch Name
+// };
+//
 
 // --- All blockMesh parameters are accepted in meters
 
 // --- Base class for blockmesh shape options
+
+/** @brief bmshape desc.
+ * 
+ *  Longer description 
+ */
+
 struct NEMOSYS_EXPORT bmShape {
   virtual ~bmShape() = default;
 
