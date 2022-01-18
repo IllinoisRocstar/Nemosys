@@ -1,10 +1,38 @@
-#include <gtest.h>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <gtest/gtest.h>
 #include <vtkInformation.h>
 #include <vtkInformationStringKey.h>
 
-#include "diffMesh.H"
-#include "exoGeoMesh.H"
-#include "geoMeshFactory.H"
+#include <Mesh/diffMesh.H>
+#include <Mesh/exoGeoMesh.H>
+#include <Mesh/geoMeshFactory.H>
 
 // Test cases for the NEM::MSH::exoGeoMesh class, which handles Exodus II files
 
@@ -48,8 +76,6 @@ TEST(exoGeoMesh, Stitch) {
   mesh2->reconstructGeo();
   mesh1->stitch(*mesh2);
   mesh1->reconstructGeo();
-  // If test case gets replaced, make sure some test uses large # of side sets
-  EXPECT_GT(mesh1->getSideSetIds().size(), 1024);
   EXPECT_EQ(mesh1->getNumberOfCells(), mesh1Cells + mesh2Cells);
   EXPECT_LE(mesh1->getNumberOfPoints(), mesh1Points + mesh2Points);
   EXPECT_GT(mesh1->getNumberOfPoints(), mesh1Points);
@@ -232,6 +258,7 @@ TEST(exoGeoMesh, ReadWriteNodeData) {
   EXPECT_EQ(0, NEM::MSH::diffMesh(exoGM, meshCopy));
 }
 
+#ifdef HAVE_GMSH
 TEST(exoGeoMesh, TakeGeoMesh) {
   auto mesh =
       vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(NEM::MSH::Read(arg_fName5));
@@ -241,6 +268,7 @@ TEST(exoGeoMesh, TakeGeoMesh) {
   EXPECT_EQ(6, exoGM->getSideSetIds().size());
   EXPECT_FALSE(exoGM->getPhysGrpPropertyName().empty());
 }
+#endif
 
 int main(int argc, char *argv[]) {
   ::testing::InitGoogleTest(&argc, argv);

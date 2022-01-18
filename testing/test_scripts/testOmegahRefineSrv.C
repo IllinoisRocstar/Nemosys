@@ -1,27 +1,71 @@
-#include <gtest.h>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <gtest/gtest.h>
+#include <Services/omegahRefineSrv.H>
 
-#include "omegahRefineSrv.H"
-
-#include <geoMeshFactory.H>
+#include <Mesh/geoMeshFactory.H>
 #include <vtkSmartPointer.h>
+#include <vtkExecutive.h>
+#include <vtkCommand.h>
 #include <Omega_h_build.hpp>
 
-#include "diffMesh.H"
-#include "oshGeoMesh.H"
-#include "vtkGeoMesh.H"
+#include <Mesh/diffMesh.H>
+#include <Mesh/oshGeoMesh.H>
+#include <Mesh/vtkGeoMesh.H>
 
 // Test cases for NEM::SRV::omegahRefineSrv
 
-TEST(omegahRefineSrv, ConstructorDefault) { NEM::SRV::omegahRefineSrv sb{}; }
+class ErrorObserver : public vtkCommand {
+ public:
+  static ErrorObserver *New() { return new ErrorObserver; }
+  void Execute(vtkObject *caller, unsigned long event,
+               void *calldata) override {
+    if (event == vtkCommand::ErrorEvent) {
+      error = true;
+      errorMsg = static_cast<const char *>(calldata);
+    }
+  }
+  bool error{false};
+  std::string errorMsg{};
+};
 
 TEST(omegahRefineSrv, ExecuteEmptyMesh) {
   auto sb = vtkSmartPointer<NEM::SRV::omegahRefineSrv>::New();
   auto in = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
-  auto out = vtkSmartPointer<NEM::MSH::oshGeoMesh>::New();
+  vtkNew<ErrorObserver> observer;
 
   sb->SetInputDataObject(in);
+  sb->GetExecutive()->AddObserver(vtkCommand::AnyEvent, observer);
   sb->Update();
-  out = NEM::MSH::oshGeoMesh::SafeDownCast(sb->GetOutputDataObject(0));
+  EXPECT_TRUE(observer->error);
+  EXPECT_NE(NEM::MSH::oshGeoMesh::SafeDownCast(sb->GetOutputDataObject(0)),
+            nullptr);
 }
 
 TEST(omegahRefineSrv, Execute) {

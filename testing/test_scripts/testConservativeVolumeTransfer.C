@@ -1,12 +1,40 @@
-#include <meshBase.H>
-#include <vtkMesh.H>
-#include <gtest.h>
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include <Mesh/meshBase.H>
+#include <Mesh/vtkMesh.H>
+#include <gtest/gtest.h>
+#include <Drivers/TransferDriver.H>
+#include <Transfer/ConservativeVolumeTransfer.H>
+#include <Transfer/ConservativeSurfaceTransfer.H>
+#include <Mesh/vtkMesh.H>
 
-#include "AuxiliaryFunctions.H"
-#include "TransferDriver.H"
-#include "ConservativeVolumeTransfer.H"
-#include "ConservativeSurfaceTransfer.H"
-#include "vtkMesh.H"
+#include <chrono>
 
 #include "vtkPointData.h"
 #include "vtkDoubleArray.h"
@@ -20,7 +48,7 @@ vtkMesh * sourceMesh;
 vtkMesh * targetMesh;
 ConservativeVolumeTransfer * volumeTransfer;
 
-nemAux::Timer totalTransferTimer;
+std::chrono::time_point start_time;
 
 TEST(ConservativeVolumeTransferTest, driverTest)
 {
@@ -34,7 +62,7 @@ TEST(ConservativeVolumeTransferTest, driverTest)
 
 TEST(ConservativeVolumeTransferTest, constructionTest)
 {
-  totalTransferTimer.start();
+  start_time = std::chrono::system_clock::now();
   sourceMesh = new vtkMesh(sourceFile);
   targetMesh = new vtkMesh(targetFile);
 
@@ -84,9 +112,12 @@ TEST(ConservativeVolumeTransferTest, transferScalarTest)
   std::vector<int> arrayIds = { 0 };
   volumeTransfer->transferPointData(arrayIds);
 
-  totalTransferTimer.stop();
+  auto end_time = std::chrono::system_clock::now();
+  auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        end_time - start_time)
+                        .count();
 
-  std::cout << "TOTAL TRANSFER TIME : " << totalTransferTimer.elapsed() << std::endl;
+  std::cout << "TOTAL TRANSFER TIME : " << elapsed_ms << std::endl;
 
   auto targetGrid = volumeTransfer->getTargetGrid();
 

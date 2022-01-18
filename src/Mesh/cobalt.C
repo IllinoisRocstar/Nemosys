@@ -1,4 +1,32 @@
-#include "cobalt.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Mesh/cobalt.H"
 
 // VTK
 #include <vtkCellTypes.h>
@@ -7,6 +35,10 @@
 #include <vtkGeometryFilter.h>
 #include <vtkGenericCell.h>
 #include <vtkUnstructuredGrid.h>
+
+#include "AuxiliaryFunctions.H"
+
+using nemAux::operator-;  // for vector subtraction.
 
 //////////////////////////////////
 // cobalt class 
@@ -94,17 +126,26 @@ void COBALT::cobalt::write() const
     std::cout << "surface mesh is empty!" << std::endl;
     exit(1);
   }
-  if (surfMeshBase->IsArrayName("patchNo", true) == -1)
-  {
-    std::cout << "surface mesh must have patchNo cell array" << std::endl;
-    exit(1);
+  auto surfPatchNoArr =
+      surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo");
+  if (!surfPatchNoArr) {
+    surfPatchNoArr =
+        surfMeshBase->getDataSet()->GetCellData()->GetArray("PhysGrpId");
+    if (!surfPatchNoArr) {
+      std::cout << "surface mesh must have cell array with name \"patchNo\" or "
+                   "\"PhysGrpId\" denoting patch number."
+                << std::endl;
+      exit(1);
+    }
   }
+
   vtkSmartPointer<vtkIdList> facePtIds;
   vtkSmartPointer<vtkIdList> sharedCellPtIds = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell1 = vtkSmartPointer<vtkGenericCell>::New();
   vtkSmartPointer<vtkGenericCell> genCell2 = vtkSmartPointer<vtkGenericCell>::New();
+  // Signed to represent patch numbers as negative integers
   std::map<std::vector<nemId_t>,
-           std::pair<nemId_t, nemId_t>,
+           std::pair<nemId_t, long long int>,
            sortNemId_tVec_compare> faceMap;
   // building cell locator for looking up patch number in remeshed surface mesh
   vtkSmartPointer<vtkStaticCellLocator> surfCellLocator = surfMeshBase->buildStaticCellLocator();
@@ -141,46 +182,46 @@ void COBALT::cobalt::write() const
       }
       if (sharedCellPtIds->GetNumberOfIds())
       {
-        faceMap.insert(
-            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
-                facePntIds,
-                std::make_pair(
-                    i + 1,
-                    sharedCellPtIds->GetId(0) + 1
-                )
-            )
-        );
+        faceMap.emplace(facePntIds, std::pair<nemId_t, long long int>(
+                                        i + 1, sharedCellPtIds->GetId(0) + 1));
       }
       else
       {
-        double p1[3], p2[3], p3[3];
-        face->GetPoints()->GetPoint(0, p1);
-        face->GetPoints()->GetPoint(1, p2);
-        face->GetPoints()->GetPoint(2, p3);
-        double faceCenter[3];
-        for (vtkIdType k = 0; k < numVerts; ++k)
-        {
-          faceCenter[k] = (p1[k] + p2[k] + p3[k]) / 3.0;
-        }
+        double bounds[6];
+        face->GetBounds(bounds);
+        auto cellIds = vtkSmartPointer<vtkIdList>::New();
+        surfCellLocator->FindCellsWithinBounds(bounds, cellIds);
         vtkIdType closestCellId;
-        int subId;
-        double minDist2;
-        double closestPoint[3];
-        // find closest point and closest cell to faceCenter
-        surfCellLocator->FindClosestPoint(
-            faceCenter, closestPoint, genCell2, closestCellId, subId, minDist2);
-        double patchNo[1];
-        surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo")
-            ->GetTuple(closestCellId, patchNo);
-        faceMap.insert(
-            std::pair<std::vector<nemId_t>, std::pair<nemId_t, nemId_t>>(
-                facePntIds,
-                std::make_pair(
-                    i + 1,
-                    -1 * patchNo[0]
-                )
-            )
-        );
+        if (cellIds->GetNumberOfIds() == 0) {
+          std::cerr << "No surface cell found." << std::endl;
+          continue;
+        } else {
+          closestCellId = cellIds->GetId(0);
+          if (cellIds->GetNumberOfIds() > 1) {
+            double p1[3], p2[3], p3[3];
+            face->GetPoints()->GetPoint(0, p1);
+            face->GetPoints()->GetPoint(1, p2);
+            face->GetPoints()->GetPoint(2, p3);
+            std::vector<double> faceCenter(3);
+            for (vtkIdType k = 0; k < numVerts; ++k) {
+              faceCenter[k] = (p1[k] + p2[k] + p3[k]) / 3.0;
+            }
+            double minDist = nemAux::l2_Norm(
+                faceCenter - surfMeshBase->getCellCenter(cellIds->GetId(0)));
+            for (vtkIdType k = 1; k < cellIds->GetNumberOfIds(); ++k) {
+              auto candidateCellCenter =
+                  surfMeshBase->getCellCenter(cellIds->GetId(k));
+              auto dist = nemAux::l2_Norm(faceCenter - candidateCellCenter);
+              if (dist < minDist) {
+                minDist = dist;
+                closestCellId = cellIds->GetId(k);
+              }
+            }
+          }
+        }
+        double patchNo = surfPatchNoArr->GetComponent(closestCellId, 0);
+        faceMap.emplace(facePntIds,
+                        std::pair<nemId_t, long long int>(i + 1, -1 * patchNo));
       }
     }
   }
@@ -189,8 +230,7 @@ void COBALT::cobalt::write() const
   for (nemId_t i = 0; i < surfMeshBase->getNumberOfCells(); ++i)
   {
     double patchNo[1];
-    surfMeshBase->getDataSet()->GetCellData()->GetArray("patchNo")
-        ->GetTuple(i, patchNo);
+    surfPatchNoArr->GetTuple(i, patchNo);
     patchMap.insert(std::pair<nemId_t, nemId_t>(patchNo[0], i));
   }
 
@@ -207,6 +247,7 @@ void COBALT::cobalt::write() const
     outputStream << std::setw(21) << std::fixed << std::setprecision(15)
                  << pnt[0] << "   " << pnt[1] << "   " << pnt[2] << std::endl;
   }
+
   auto it = faceMap.begin();
   while (it != faceMap.end())
   {

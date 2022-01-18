@@ -3,31 +3,31 @@ FROM centos:7
 RUN yum update -y
 RUN yum upgrade -y
 
-RUN yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm -y
+RUN yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 RUN yum groupinstall -y "Development Tools"
 
-# Compilers and build tools.
-RUN yum install -y cmake3 gcc-c++.x86_64 make freetype-devel.x86_64 fltk-devel.x86_64
-RUN yum install -y hdf5-devel hdf-devel.x86_64 boost169-devel.x86_64
-RUN yum install metis-devel.x86_64 lapack-devel exodusii-devel.x86_64 -y
-RUN yum install libXmu-devel libXi-devel.x86_64 python3-devel.x86_64 -y 
-RUN yum remove swig -y 
-RUN yum install swig3.x86_64 rh-python36-python-pip.noarch -y
+RUN yum install -y cmake3
+RUN yum install -y hdf5-devel metis-devel boost169-devel
+RUN yum install -y fontconfig-devel mesa-libGL-devel
+RUN yum install -y libX11-devel libXext-devel libXmu-devel libXi-devel
+RUN yum install -y python3-devel
+RUN yum remove -y swig
+RUN yum install -y swig3
 
 # Run setuptools upgrade twice in case of "distribute" switch
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
 
-# Enable gcc-7 compilers 
-RUN yum install centos-release-scl scl-utils -y
-RUN yum install devtoolset-7 -y
-RUN echo "source /opt/rh/devtoolset-7/enable" >> /etc/skel/.bashrc
-
 # load OpenMPI module
 RUN yum install openmpi-devel -y
 RUN echo "source /etc/profile.d/modules.sh" >> /etc/skel/.bashrc
 RUN echo "module load mpi/openmpi-x86_64" >> /etc/skel/.bashrc
+
+# Enable gcc-7 compilers
+RUN yum install -y centos-release-scl scl-utils
+RUN yum install -y devtoolset-7
+RUN echo "source /opt/rh/devtoolset-7/enable" >> /etc/skel/.bashrc
 
 RUN echo -e "[NEMoSys] \n\
 name=NEMoSys \n\
@@ -36,21 +36,25 @@ enabled=1 \n\
 gpgcheck=0 \n\
 " >> /etc/yum.repos.d/nemosys.repo
 
-# Install previously built packages
-RUN yum install gmsh -y
-RUN yum install openfoam7 -y
-RUN yum install vtk -y
-RUN yum install netgen -y
-# Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
-# results in a namespace collision
-RUN yum install cgns -y
+# Install internal packages
+RUN yum install -y vtk-8.2.0
+RUN yum install -y opencascade
+RUN yum install -y gmsh
+RUN yum install -y netgen-6.2.1910
+RUN yum install -y openfoam2006-devel
 
-RUN echo "source /opt/OpenFOAM-7/etc/bashrc" >> /etc/skel/.bashrc
+# Install tensorflow
+RUN yum install -y wget
+RUN wget -q https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz --directory-prefix /usr/local && \
+    tar -xzf /usr/local/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz -C /usr/local && \
+    rm -f /usr/local/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz;
+
+RUN echo "source /usr/lib/openfoam/openfoam2006/etc/bashrc" >> /etc/skel/.bashrc
 
 ENV BASH_ENV "/etc/skel/.bashrc"
 
 RUN useradd -U --shell /bin/bash -m -k /etc/skel -d /home/user -u 35553 -c "Build Account" build
 USER build
 
-WORKDIR /home/user/
+WORKDIR /home/user
 ENTRYPOINT /bin/bash

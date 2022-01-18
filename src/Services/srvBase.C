@@ -1,10 +1,54 @@
-#include "srvBase.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Services/srvBase.H"
 
+#include <vtkInformationExecutivePortKey.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
-#include "vtkGeoMesh.H"
+#include "Mesh/vtkGeoMesh.H"
+#include "Mesh/oshGeoMesh.H"
+#include "Mesh/exoGeoMesh.H"
+#include "Mesh/inpGeoMesh.H"
+
+#ifdef HAVE_CFMSH
+#  include "Mesh/foamGeoMesh.H"
+#endif
+
+#ifdef HAVE_GMSH
+#  include "Mesh/gmshGeoMesh.H"
+#endif
+
+#ifdef HAVE_OCC
+#  include "Mesh/smeshGeoMesh.H"
+#endif
 
 /* TODO:
  * nemInformation
@@ -22,7 +66,6 @@ srvBase::srvBase() {
 }
 
 srvBase::~srvBase() {
-  this->ReferenceCount--;  // Prevents VTK warning regarding loose reference.
   std::cout << "srvBase destructed" << std::endl;
 }
 
@@ -51,10 +94,9 @@ int srvBase::ProcessRequest(vtkInformation *request,
   return this->Superclass::ProcessRequest(request, inputVector, outputVector);
 }
 
-int srvBase::RequestInformation(
-    vtkInformation *vtkNotUsed(request),
-    vtkInformationVector **vtkNotUsed(inputVector),
-    vtkInformationVector *vtkNotUsed(outputVector)) {
+int srvBase::RequestInformation(vtkInformation *request,
+                                vtkInformationVector **inputVector,
+                                vtkInformationVector *outputVector) {
   // do nothing let subclasses handle it
   return 1;
 }
@@ -65,15 +107,62 @@ NEM::MSH::geoMeshBase *srvBase::GetOutput(int port) {
   return NEM::MSH::geoMeshBase::SafeDownCast(this->GetOutputDataObject(port));
 }
 
-int srvBase::RequestDataObject(vtkInformation *vtkNotUsed(request),
-                               vtkInformationVector **vtkNotUsed(inputVector),
-                               vtkInformationVector *vtkNotUsed(outputVector)) {
-  return 0;
+int srvBase::RequestDataObject(vtkInformation *request,
+                               vtkInformationVector **inputVector,
+                               vtkInformationVector *outputVector) {
+  for (int i = 0; i < outputVector->GetNumberOfInformationObjects(); ++i) {
+    auto outInfo = outputVector->GetInformationObject(i);
+    auto outAlgInfo = this->GetOutputPortInformation(i);
+    if (!outAlgInfo->Has(vtkDataObject::DATA_TYPE_NAME())) {
+      return 0;
+    }
+    std::string typeName = outAlgInfo->Get(vtkDataObject::DATA_TYPE_NAME());
+    MSH::geoMeshBase *output = nullptr;
+    if (typeName == "vtkGeoMesh") {
+      output = MSH::vtkGeoMesh::New();
+    } else if (typeName == "gmshGeoMesh") {
+#ifdef HAVE_GMSH
+      output = MSH::gmshGeoMesh::New();
+#endif
+    } else if (typeName == "oshGeoMesh") {
+      output = MSH::oshGeoMesh::New();
+    } else if (typeName == "exoGeoMesh") {
+      output = MSH::exoGeoMesh::New();
+    } else if (typeName == "inpGeoMesh") {
+      output = MSH::inpGeoMesh::New();
+    } else if (typeName == "foamGeoMesh") {
+#ifdef HAVE_CFMSH
+      output = MSH::foamGeoMesh::New();
+#endif
+    } else if (typeName == "smeshGeoMesh") {
+#ifdef HAVE_OCC
+      output = MSH::smeshGeoMesh::New();
+#endif
+    } else if (typeName == "geoMeshBase") {
+      if (i < this->GetNumberOfInputPorts() &&
+          inputVector[i]->GetNumberOfInformationObjects() > 0) {
+        auto inObj = inputVector[i]
+                ->GetInformationObject(0)
+                ->Get(vtkDataObject::DATA_OBJECT());
+        if (inObj) {
+          output = MSH::geoMeshBase::SafeDownCast(inObj->NewInstance());
+        }
+      }
+    }
+    if (!output) {
+      return 0;
+    }
+    outInfo->Set(vtkDataObject::DATA_OBJECT(), output);
+    output->FastDelete();
+    this->GetOutputPortInformation(i)->Set(
+        vtkDataObject::DATA_EXTENT_TYPE(), output->GetExtentType());
+  }
+  return 1;
 }
 
-int srvBase::RequestUpdateExtent(
-    vtkInformation *vtkNotUsed(request), vtkInformationVector **inputVector,
-    vtkInformationVector *vtkNotUsed(outputVector)) {
+int srvBase::RequestUpdateExtent(vtkInformation *request,
+                                 vtkInformationVector **inputVector,
+                                 vtkInformationVector *outputVector) {
   int numInputPorts = this->GetNumberOfInputPorts();
   for (int i = 0; i < numInputPorts; i++) {
     int numInputConnections = this->GetNumberOfInputConnections(i);
@@ -83,12 +172,6 @@ int srvBase::RequestUpdateExtent(
     }
   }
   return 1;
-}
-
-int srvBase::RequestData(vtkInformation *vtkNotUsed(request),
-                         vtkInformationVector **vtkNotUsed(inputVector),
-                         vtkInformationVector *vtkNotUsed(outputVector)) {
-  return 0;
 }
 
 }  // namespace SRV

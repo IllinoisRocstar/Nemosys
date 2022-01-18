@@ -1,0 +1,72 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "concentric_polygons.vtu"
+  },
+  "NucMesh Options": {
+    "Shapes": [
+      {
+        "Type": "Circles And Polys", "Number of Sides": 3, "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "T"}, "Material": "A"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [1, 4]}, "Material": "B"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 4, "Center": [2.5, 0, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "Q"}, "Material": "A", "Rotation": 20},
+        {
+          "Shape Type": "Poly",
+          "Radius": 1,
+          "Mesh": {"Type": "S", "Number of Elems": [2, 5]},
+          "Material": "C",
+          "Rotation": 20
+        }
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 5, "Center": [5, 0, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "T"}, "Material": "C"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "D"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 6, "Center": [7.5, 0, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.1, "Mesh": {"Type": "Q"}, "Material": "D"},
+        {"Shape Type": "Poly", "Radius": 0.3, "Mesh": {"Type": "T"}, "Material": "E"},
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "S", "Number of Elems": [1, 6]}, "Material": "D"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [1, 6]}, "Material": "E"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 7, "Center": [0, 2.5, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "T"}, "Material": "E", "Rotation": 40},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "F", "Rotation": 40}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 8, "Center": [2.5, 2.5, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "Q"}, "Material": "F"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [1, 3]}, "Material": "G"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 9, "Center": [5, 2.5, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "Q"}, "Material": "G"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "H"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 12, "Center": [7.5, 2.5, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "T"}, "Material": "H"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "I"}
+      ]
+      },
+      {
+        "Type": "Circles And Polys", "Number of Sides": 20, "Center": [7.5, 5, 0], "Rings": [
+        {"Shape Type": "Poly", "Radius": 0.6, "Mesh": {"Type": "T"}, "Material": "I"},
+        {"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [1, 2]}, "Material": "D"}
+      ]
+      }
+    ]
+  }
+}

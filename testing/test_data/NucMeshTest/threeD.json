@@ -1,0 +1,13 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "threeD.exo"
+  },
+  "NucMesh Options": {
+    "Shapes": [
+      {"Type": "Circles", "Rings": [{"Radius": 1, "Mesh": {"Type": "T"}, "Material": "A", "Sideset": "S"}]},
+      {"Type": "Circles", "Center": [2.5, 0, 0], "Rings": [{"Radius": 1, "Mesh": {"Type": "Q"}, "Material": "B"}]}
+    ],
+    "Extrude": [0.5, 0.5, 0.25, 0.25, 0.25, 0.25]
+  }
+}

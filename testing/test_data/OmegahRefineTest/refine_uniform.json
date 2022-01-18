@@ -5,6 +5,11 @@
     "Output Mesh File": "refined_beam_uniform.vtu"
   },
   "Refinement Options": {
-    "Refinement Method": "Omega_h"
+    "Refinement Method": "Omega_h",
+    "Metric Sources": [
+      {
+        "Type": "Implied"
+      }
+    ]
   }
 }

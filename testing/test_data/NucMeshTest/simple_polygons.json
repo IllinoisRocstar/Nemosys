@@ -1,0 +1,63 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "simple_polygons.vtu"
+  },
+  "NucMesh Options": {
+    "Shapes": [
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 3,
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "A"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Center": [2.5, 0, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "B"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 5,
+        "Center": [5, 0, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "C"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 6,
+        "Center": [7.5, 0, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "D"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 7,
+        "Center": [0, 2.5, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "E"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 8,
+        "Center": [2.5, 2.5, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "F"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 9,
+        "Center": [5, 2.5, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "Q"}, "Material": "G"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 12,
+        "Center": [7.5, 2.5, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "H"}]
+      },
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 20,
+        "Center": [7.5, 5, 0],
+        "Rings": [{"Shape Type": "Poly", "Radius": 1, "Mesh": {"Type": "T"}, "Material": "I"}]
+      }
+    ]
+  }
+}

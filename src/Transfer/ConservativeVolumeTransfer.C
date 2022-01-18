@@ -1,20 +1,48 @@
-#include "ConservativeVolumeTransfer.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Transfer/ConservativeVolumeTransfer.H"
 
 #include "AuxiliaryFunctions.H"
-#include "vtkMesh.H"
+#include "Mesh/vtkMesh.H"
 
-#include "libsupermesh-c.h"
+#include <libsupermesh-c.h>
 
-#include "vtkCell.h"
-#include "vtkCellArray.h"
-#include "vtkCellData.h"
-#include "vtkCellType.h"
-#include "vtkDataSetSurfaceFilter.h"
-#include "vtkDoubleArray.h"
-#include "vtkMergePoints.h"
-#include "vtkMeshQuality.h"
-#include "vtkPointData.h"
-#include "vtkTetra.h"
+#include <vtkCell.h>
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkCellType.h>
+#include <vtkDataSetSurfaceFilter.h>
+#include <vtkDoubleArray.h>
+#include <vtkMergePoints.h>
+#include <vtkMeshQuality.h>
+#include <vtkPointData.h>
+#include <vtkTetra.h>
 
 ConservativeVolumeTransfer::ConservativeVolumeTransfer(meshBase *_source,
                                                        meshBase *_target) {
@@ -169,7 +197,7 @@ int ConservativeVolumeTransfer::constructSupermesh() {
   libsupermesh_tree_intersection_finder_get_output(&nelements, &nindices,
                                                    indices, ind_ptr);
 
-  auto getTet = [&](long i, long *enlist, double *positions) -> double * {
+  auto getTet = [](long i, long *enlist, double *positions) -> double * {
     double *tet = new double[3 * 4];
     for (int j = 0; j < 4; ++j) {
       // i*4 + j : index of node j in tet i
@@ -187,10 +215,11 @@ int ConservativeVolumeTransfer::constructSupermesh() {
 
   double *tets_c_buf = new double[1000];
 
-  auto pushData = [&](std::vector<double> tet_c, long parent_a, long parent_b) {
-    tets_c.push_back(tet_c);
-    parents_a.push_back(parent_a);
-    parents_b.push_back(parent_b);
+  auto pushData = [this](std::vector<double> tet_c, long parent_a,
+                         long parent_b) {
+    this->tets_c.push_back(tet_c);
+    this->parents_a.push_back(parent_a);
+    this->parents_b.push_back(parent_b);
   };
 
   for (long ai = 0; ai < nelements_a; ++ai) // cells in A
@@ -255,8 +284,8 @@ int ConservativeVolumeTransfer::constructMassMatrix() {
 
   const double *weights = quadrature->GetQuadratureWeights();
 
-  typedef Eigen::Triplet<double> Triplet;
-  std::vector<Triplet> tripletList;
+  using Tripletd = Eigen::Triplet<double>;
+  std::vector<Tripletd> tripletList;
 
   // TODO start from initTargetTetId
   for (long cellId = initTargetTetId; cellId < targetGrid->GetNumberOfCells();
@@ -277,7 +306,7 @@ int ConservativeVolumeTransfer::constructMassMatrix() {
           long rGlob = tet->GetPointId(r);
           long sGlob = tet->GetPointId(s);
           tripletList.push_back(
-              Triplet(rGlob, sGlob, wi * psi[r] * psi[s] * detJ));
+              Tripletd(rGlob, sGlob, wi * psi[r] * psi[s] * detJ));
         }
       }
     }
@@ -299,8 +328,8 @@ int ConservativeVolumeTransfer::constructMixedMassMatrix() {
 
   const double *weights = quadrature->GetQuadratureWeights();
 
-  typedef Eigen::Triplet<double> Triplet;
-  std::vector<Triplet> tripletList(tets_c.size());
+  using Tripletd = Eigen::Triplet<double>;
+  std::vector<Tripletd> tripletList(tets_c.size());
 
   for (long subCellIdx = 0; subCellIdx < tets_c.size(); ++subCellIdx) {
     std::vector<double> childTet = tets_c[subCellIdx];
@@ -373,7 +402,7 @@ int ConservativeVolumeTransfer::constructMixedMassMatrix() {
           long rGlobal = targetParentTet->GetPointId(r);
           long sGlobal = sourceParentTet->GetPointId(s);
           tripletList.push_back(
-              Triplet(rGlobal, sGlobal, wi * tgtPsi[r] * srcPsi[s] * detJ));
+              Tripletd(rGlobal, sGlobal, wi * tgtPsi[r] * srcPsi[s] * detJ));
         }
       }
     }

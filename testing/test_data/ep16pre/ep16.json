@@ -1,39 +1,53 @@
 [
   {
+    // Sample input file for EPIC 2016 with BCs
     "Program Type": "Input Generation",
     "Service": "EPIC_2016",
-    "Description": "Sample input file for EPIC 2016 with BCs",
-    "File Name": "bctest_ref.dat",
-    "Case": {
-      "Type": 902,
-      "Id": 100,
-      "Description": "Boundary conditions assignment test"
-    },
-    "Run": {
-      "Mode": 1,
-      "Unit": 1,
-      "Tmax": 100.0E-6
-    },
-    "Mesh": {
-      "File": "bctest_ref.g"
-    },
-    "Material": {
-      "PRJ_01_PhysGrp_1": 158,
-      "PRJ_01_PhysGrp_2": 53,
-      "TRG_01_4": 14
-    },
-    "Boundary Condition": {
-      "TRG_F1": "Fixed",
-      "TRG_F2": "Fixed",
-      "TRG_E1": "Fixed",
-      "TRG_E2": "Fixed"
-    },
-    "Velocity": {
-      "Projectile": [0, 0, -5.0E4],
-      "Target": [0, 0, 0]
-    },
-    "Detonation": {
-      "Coordinate": [5.0, 4.68, 3.05]
+    "Input Generation Options": {
+      "File Name": "bctest_ref.dat",
+      "Case": {
+        "Type": 902,
+        "Id": 100,
+        "Description": "Boundary conditions assignment test"
+      },
+      "Run": {
+        "Mode": 1,
+        "Unit": 1,
+        "Tmax": 100.0E-6
+      },
+      "Mesh": {
+        "File": "bctest_ref.g"
+      },
+      "Material": {
+        "PRJ_01_PhysGrp_1": 158,
+        "PRJ_01_PhysGrp_2": 53,
+        "TRG_01_4": 14
+      },
+      "Boundary Condition": {
+        "TRG_F1": "Fixed",
+        "TRG_F2": "Fixed",
+        "TRG_E1": "Fixed",
+        "TRG_E2": "Fixed"
+      },
+      "Velocity": {
+        "Projectile": [
+          0,
+          0,
+          -5.0E4
+        ],
+        "Target": [
+          0,
+          0,
+          0
+        ]
+      },
+      "Detonation": {
+        "Coordinate": [
+          5.0,
+          4.68,
+          3.05
+        ]
+      }
     }
   }
 ]

@@ -1,14 +1,41 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "vtkGeoMesh.H"
+#include "Mesh/vtkGeoMesh.H"
 
 #include <iostream>
 #include <set>
 #include <utility>
 
-#include <gmsh.h>
 #include <vtkGenericDataObjectReader.h>
 #include <vtkGenericDataObjectWriter.h>
 #include <vtkSTLReader.h>
@@ -16,6 +43,10 @@
 #include <vtkXMLGenericDataObjectReader.h>
 
 #include "AuxiliaryFunctions.H"
+
+#ifdef HAVE_GMSH
+#include <gmsh.h>
+#endif
 
 namespace NEM {
 namespace MSH {
@@ -112,15 +143,17 @@ void vtkGeoMesh::setVtkMesh(vtkUnstructuredGrid *vtkMesh) {
 geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
                                         const std::string &phyGrpArrayName) {
   std::string gmshMesh = "vtkGeoMesh_" + nemAux::getRandomString(6);
+#ifdef HAVE_GMSH
   GmshInterface::Initialize();
   gmsh::model::add(gmshMesh);
   gmsh::model::setCurrent(gmshMesh);
+#endif
 
   if (!vtkMesh ||                                                 // No mesh
       vtkMesh->GetNumberOfPoints() == 0 ||                        // No points
       !vtkMesh->GetCellData()->HasArray(phyGrpArrayName.c_str())  // No geometry
   )
-    return {vtkMesh, "", "", nullptr};
+    return {vtkMesh, "", "", {}};
 
   {  // Add geometric entities and physical groups
     std::set<std::pair<int, int>> dim_phyGrp;
@@ -138,11 +171,13 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
       dim_phyGrp.insert({dim, phyGrp});
     }
 
+#ifdef HAVE_GMSH
     // then add. Each phyGrp gets its own geoEnt
     for (const auto &dp : dim_phyGrp) {
       gmsh::model::addDiscreteEntity(dp.first, dp.second);
       gmsh::model::addPhysicalGroup(dp.first, {dp.second}, dp.second);
     }
+#endif
   }
 
   /*
@@ -162,7 +197,7 @@ geoMeshBase::GeoMesh vtkGeoMesh::vtk2GM(vtkUnstructuredGrid *vtkMesh,
   }
   */
 
-  return {vtkMesh, gmshMesh, phyGrpArrayName, nullptr};
+  return {vtkMesh, gmshMesh, phyGrpArrayName, {}};
 }
 
 void vtkGeoMesh::resetNative() {}

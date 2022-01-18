@@ -2,31 +2,21 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "blockMesh",
     "Mesh File Options": {
-      "Input Geometry File": "dummy_name.stl",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "blockMesh",
       "blockMesh Parameters": {
-        "Input Dict File": 0,
-        "Block Geometry": 0,
-        "Sphere Geometry": 0,
-        "Cylinder/Tapered_Cone Geometry": 1,
+        "Input Dict File": false,
         "scaleToMeters": 1,
-        "XdirectionCells": 10,
-        "YdirectionCells": 10,
-        "ZdirectionCells": 10,
+        "NumCells": [10, 10, 10],
         "Cylinder/Tapered_Cone Parameters": {
-          "Center X": 1,
-          "Center Y": 1,
-          "Center Z": 1,
+          "Center": [1, 1, 1],
           "Radius1": 1.5,
           "Radius2": 0.6,
           "Height": 2.5,
-          "GradingXdir": 1,
-          "GradingYdir": 1,
-          "GradingZdir": 1
+          "Grading": [1, 1, 1]
         }
       }
     }

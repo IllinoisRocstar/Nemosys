@@ -2,11 +2,11 @@
   "Program Type": "Refinement",
   "Mesh File Options": {
     "Input Mesh File": "unrefined_beam_tet.vtu",
-    "Output Mesh File": "refined_beam_value.vtu",
-    "Reconstruct Geometry": 1
+    "Output Mesh File": "refined_beam_value.vtu"
   },
   "Refinement Options": {
     "Refinement Method": "Omega_h",
+    "Reconstruct Geometry": true,
     "Metric Sources": [
       {
         "Type": "Variation",

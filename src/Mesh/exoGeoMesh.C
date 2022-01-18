@@ -1,11 +1,38 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #if defined(_MSC_VER) && !defined(_USE_MATH_DEFINES)
 #  define _USE_MATH_DEFINES
 #endif
 
-#include "exoGeoMesh.H"
+#include "Mesh/exoGeoMesh.H"
 
 #include <exodusII.h>
-#include <gmsh.h>
 #include <vtkCellIterator.h>
 #include <vtkCompositeDataIterator.h>
 #include <vtkEmptyCell.h>
@@ -18,7 +45,11 @@
 #include <unordered_set>
 
 #include "AuxiliaryFunctions.H"
-#include "mergeCells.H"
+#include "MeshOperation/mergeCells.H"
+
+#ifdef HAVE_GMSH
+#include <gmsh.h>
+#endif
 
 namespace NEM {
 namespace MSH {
@@ -195,6 +226,22 @@ mergeMeshes(vtkUnstructuredGrid *mesh1, vtkUnstructuredGrid *mesh2,
   return {nodeMap1, nodeMap2};
 }
 
+void resetSideSetPoints(vtkUnstructuredGrid *mesh, vtkPolyData *sideSet,
+                        vtkIdTypeArray *nodeMap) {
+  if (sideSet) {
+    sideSet->SetPoints(mesh->GetPoints());
+    for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+      auto oldCell = sideSet->GetCell(i);
+      auto numPoints = oldCell->GetNumberOfPoints();
+      auto oldPoints = oldCell->GetPointIds();
+      for (int j = 0; j < numPoints; ++j) {
+        oldPoints->SetId(j, nodeMap->GetValue(oldPoints->GetId(j)));
+      }
+      sideSet->ReplaceCell(i, numPoints, oldPoints->GetPointer(0));
+    }
+  }
+}
+
 }  // namespace
 
 vtkStandardNewMacro(exoGeoMesh)
@@ -215,7 +262,6 @@ exoGeoMesh::exoGeoMesh(const vtkSmartPointer<vtkExodusIIReader> &reader)
       reader->GetOutput()->GetNumberOfBlocks() == 8) {
     auto mbds = reader->GetOutput();
     _title = reader->GetTitle();
-    _dim = reader->GetDimensionality();
     auto elemBlocks = vtkMultiBlockDataSet::SafeDownCast(mbds->GetBlock(0));
     for (unsigned int i = 0; i < elemBlocks->GetNumberOfBlocks(); ++i) {
       std::string elemBlockName =
@@ -241,29 +287,10 @@ exoGeoMesh::exoGeoMesh(const vtkSmartPointer<vtkExodusIIReader> &reader)
     }
     auto sideSets = vtkMultiBlockDataSet::SafeDownCast(mbds->GetBlock(4));
     if (sideSets->GetNumberOfBlocks() >= 1) {
-      bool overrideSideSetIds = false;
-      for (int i = 0; i < reader->GetNumberOfSideSetResultArrays(); ++i) {
-        if (strcmp(reader->GetSideSetResultArrayName(i),
-                   SIDE_SET_ID_VAR_NAME) == 0) {
-          overrideSideSetIds = true;
-        }
-      }
-      if (!overrideSideSetIds) {
-        for (int i = 0; i < sideSets->GetNumberOfBlocks(); ++i) {
-          auto sideSetName = reader->GetSideSetArrayName(i);
-          auto sideSetId = reader->GetObjectId(vtkExodusIIReader::SIDE_SET, i);
-          auto &sideSet = _sideSetNames[sideSetId];
-          if (sideSetName) {
-            sideSet.assign(sideSetName);
-          }
-        }
-      } else {
-        auto gmSideSet = getGeoMesh().sideSet;
-        auto sideSetExoId = vtkIntArray::FastDownCast(
-            gmSideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-        for (vtkIdType i = 0; i < gmSideSet->GetNumberOfCells(); ++i) {
-          _sideSetNames[sideSetExoId->GetValue(i)];
-        }
+      for (int i = 0; i < sideSets->GetNumberOfBlocks(); ++i) {
+        auto sideSetName = reader->GetSideSetArrayName(i);
+        auto sideSetId = reader->GetObjectId(vtkExodusIIReader::SIDE_SET, i);
+        _sideSetNames[sideSetId] = sideSetName ? sideSetName : "";
       }
     }
 
@@ -361,9 +388,9 @@ void exoGeoMesh::write(const std::string &fileName) {
     int exoid = ex_create(fileName.c_str(), EX_CLOBBER, &comp_ws, &io_ws);
     checkExodusErr(exoid, true);
 
-    auto mesh = this->getGeoMesh().mesh;
-    auto link = this->getGeoMesh().link;
-    auto sideSet = this->getGeoMesh().sideSet;
+    auto geoMesh = this->getGeoMesh();
+    auto mesh = geoMesh.mesh;
+    auto sideSet = geoMesh.sideSet;
     if (!mesh || mesh->GetNumberOfCells() == 0) {
       std::cerr << "No mesh information to write." << std::endl;
       return;
@@ -479,36 +506,12 @@ void exoGeoMesh::write(const std::string &fileName) {
     // Have to make sure no empty side sets; might as well get the
     // indices now.
     std::map<int, std::vector<vtkIdType>> exoSideSets;
-    bool concatSideSets = false;
-    if (sideSet) {
+    if (sideSet.sides) {
       auto sideSetExoId = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-      for (const auto &exoSideSet : _sideSetNames) {
-        exoSideSets[exoSideSet.first];
-      }
-      for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+          sideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
+      for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
         auto entity = sideSetExoId->GetValue(i);
-        auto it = exoSideSets.insert({entity, {i}});
-        if (!it.second) {
-          it.first->second.emplace_back(i);
-        }
-      }
-      for (auto it = exoSideSets.begin(); it != exoSideSets.end();) {
-        if (it->second.empty()) {
-          it = exoSideSets.erase(it);
-        } else {
-          ++it;
-        }
-      }
-      if (exoSideSets.size() > 900) {
-        std::cout << "Large number of side sets. Concatenating side sets and "
-                     "adding variable "
-                  << SIDE_SET_ID_VAR_NAME << '\n';
-        concatSideSets = true;
-        exoSideSets.clear();
-        auto &vec = exoSideSets[1];
-        vec.resize(sideSet->GetNumberOfCells());
-        std::iota(vec.begin(), vec.end(), 0);
+        exoSideSets[entity].emplace_back(i);
       }
     }
 
@@ -520,7 +523,7 @@ void exoGeoMesh::write(const std::string &fileName) {
           return a + (!b.second.nodes.empty());
         });
 
-    auto err = ex_put_init(exoid, _title.c_str(), _dim,
+    auto err = ex_put_init(exoid, _title.c_str(), geoMesh.getDimension(),
                            mesh->GetNumberOfPoints(), mesh->GetNumberOfCells(),
                            elemBlocks.size(), numNodeSets, exoSideSets.size());
     checkExodusErr(err);
@@ -536,8 +539,7 @@ void exoGeoMesh::write(const std::string &fileName) {
       err = ex_put_variable_param(exoid, EX_GLOBAL, numGlobalVars);
       checkExodusErr(err);
     }
-    if (numElemVars > 0 || numNodeVars > 0 || numGlobalVars > 0 ||
-        concatSideSets) {
+    if (numElemVars > 0 || numNodeVars > 0 || numGlobalVars > 0) {
       double time = 0;
       err = ex_put_time(exoid, timeStep, &time);
       checkExodusErr(err);
@@ -588,11 +590,9 @@ void exoGeoMesh::write(const std::string &fileName) {
       }
     }
 
-    if (sideSet) {
-      auto sideSetOrigCellId = vtkIdTypeArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-      auto sideSetCellFaceId = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_CELL_FACE_NAME));
+    if (sideSet.sides) {
+      auto sideSetOrigCellId = geoMesh.sideSet.getOrigCellArr();
+      auto sideSetCellFaceId = geoMesh.sideSet.getCellFaceArr();
       for (const auto &exoSideSet : exoSideSets) {
         err = ex_put_set_param(exoid, EX_SIDE_SET, exoSideSet.first,
                                exoSideSet.second.size(), 0);
@@ -601,10 +601,10 @@ void exoGeoMesh::write(const std::string &fileName) {
         sideSetElem.reserve(exoSideSet.second.size());
         sideSetSide.reserve(exoSideSet.second.size());
         for (auto sideIdx : exoSideSet.second) {
-          auto parentCellIdx = sideSetOrigCellId->GetValue(sideIdx);
+          auto parentCellIdx = sideSetOrigCellId->GetTypedComponent(sideIdx, 0);
           sideSetElem.emplace_back(vtkIdMap[parentCellIdx]);
           sideSetSide.emplace_back(
-              vtkSide2exoSide(sideSetCellFaceId->GetValue(sideIdx),
+              vtkSide2exoSide(sideSetCellFaceId->GetTypedComponent(sideIdx, 0),
                               mesh->GetCell(parentCellIdx)->GetCellType()));
         }
         err = ex_put_set(exoid, EX_SIDE_SET, exoSideSet.first,
@@ -616,24 +616,6 @@ void exoGeoMesh::write(const std::string &fileName) {
                             foundName->second.c_str());
           checkExodusErr(err);
         }
-      }
-      if (concatSideSets) {
-        // We know that all of the side set sides are in a single side set
-        // with side set id == 1.
-        err = ex_put_variable_param(exoid, EX_SIDE_SET, 1);
-        checkExodusErr(err);
-        err = ex_put_variable_name(exoid, EX_SIDE_SET, 1, SIDE_SET_ID_VAR_NAME);
-        checkExodusErr(err);
-        std::vector<double> sideSetIds;
-        sideSetIds.reserve(sideSet->GetNumberOfCells());
-        auto sideSetExoId = vtkIntArray::FastDownCast(
-            sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-        for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
-          sideSetIds.emplace_back(sideSetExoId->GetValue(i));
-        }
-        err = ex_put_var(exoid, 1, EX_SIDE_SET, 1, 1,
-                         sideSet->GetNumberOfCells(), sideSetIds.data());
-        checkExodusErr(err);
       }
     }
 
@@ -788,7 +770,6 @@ void exoGeoMesh::write(const std::string &fileName) {
 void exoGeoMesh::report(std::ostream &out) const {
   geoMeshBase::report(out);
   out << "Title:\t" << _title << '\n';
-  out << "Dimension:\t" << _dim << '\n';
   out << "Element Blocks:\t" << _elemBlocks.size() << '\n';
   out << "Side Sets:\t" << _sideSetNames.size() << '\n';
   out << "Node Sets:\t" << _nodeSets.size() << '\n';
@@ -799,14 +780,13 @@ void exoGeoMesh::takeGeoMesh(geoMeshBase *otherGeoMesh) {
   if (otherExoGM) {
     setGeoMesh(otherExoGM->getGeoMesh());
     otherExoGM->setGeoMesh(
-        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, nullptr});
+        {vtkSmartPointer<vtkUnstructuredGrid>::New(), {}, {}, {}});
     _title = std::move(otherExoGM->_title);
     _elemBlocks = std::move(otherExoGM->_elemBlocks);
     _sideSetNames = std::move(otherExoGM->_sideSetNames);
     _nodeSets = std::move(otherExoGM->_nodeSets);
     _elemBlockPropNames = std::move(otherExoGM->_elemBlockPropNames);
     _physGrpName = std::move(otherExoGM->_physGrpName);
-    _dim = otherExoGM->_dim;
     otherExoGM->resetNative();
   } else {
     geoMeshBase::takeGeoMesh(otherGeoMesh);
@@ -850,8 +830,9 @@ std::map<int, std::string> exoGeoMesh::getElemBlockNames() const {
   std::map<int, std::string> names;
   std::transform(_elemBlocks.begin(), _elemBlocks.end(),
                  std::inserter(names, names.begin()),
-                 [](const std::pair<int, elemBlock> &block) {
-                   return std::make_pair(block.first, block.second.name);
+                 [](const decltype(_elemBlocks)::value_type &block)
+                     -> decltype(names)::value_type {
+                   return {block.first, block.second.name};
                  });
   return names;
 }
@@ -930,11 +911,13 @@ int exoGeoMesh::addElemBlock(vtkUnstructuredGrid *elements,
     auto mesh = getGeoMesh().mesh;
     if (mesh->GetNumberOfCells() == 0) {
       mesh->DeepCopy(elements);
+#ifdef HAVE_GMSH
       if (!getGeoMesh().geo.empty()) {
         gmsh::model::setCurrent(getGeoMesh().geo);
         gmsh::model::remove();
       }
-      setGeoMesh({mesh, "", "", nullptr});
+#endif
+      setGeoMesh({mesh, "", "", {}});
       resetNative();
       // Assumption that there is exactly one element block now.
       return _elemBlocks.begin()->first;
@@ -993,17 +976,19 @@ void exoGeoMesh::addCellsToBlock(vtkUnstructuredGrid *elements, int blockId,
     newBlockIdArr->SetNumberOfValues(elements->GetNumberOfCells());
     newBlockIdArr->FillComponent(0, blockId);
     elements->GetCellData()->AddArray(newBlockIdArr);
+#ifdef HAVE_GMSH
     if (!getGeoMesh().geo.empty()) {
       gmsh::model::setCurrent(getGeoMesh().geo);
       gmsh::model::remove();
       setGeoMesh({mesh, "", "", getGeoMesh().sideSet});
     }
+#endif
     auto newMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
     auto nodeMaps = mergeMeshes(mesh, elements, newMesh, tol);
     setGeoMesh(
         {newMesh, getGeoMesh().geo, getGeoMesh().link, getGeoMesh().sideSet});
     resetNodeSetPoints(nodeMaps.first);
-    resetSideSetPoints(nodeMaps.first);
+    resetSideSetPoints(newMesh, getGeoMesh().sideSet.sides, nodeMaps.first);
     elements->GetCellData()->RemoveArray(getExoIdArrName());
     if (oldBlockIdArr) {
       elements->GetCellData()->AddArray(oldBlockIdArr);
@@ -1038,11 +1023,13 @@ int exoGeoMesh::reassignCells(const std::vector<vtkIdType> &cells,
     for (const auto &cell : cells) {
       elemBlockIdArr->SetValue(cell, blockId);
     }
+#ifdef HAVE_GMSH
     if (!getGeoMesh().geo.empty()) {
       gmsh::model::setCurrent(getGeoMesh().geo);
       gmsh::model::remove();
       setGeoMesh({mesh, "", "", getGeoMesh().sideSet});
     }
+#endif
     return blockId;
   } else {
     std::cerr << "No cells to add." << std::endl;
@@ -1140,17 +1127,16 @@ std::pair<std::vector<vtkIdType>, std::vector<int>> exoGeoMesh::getSideSet(
   if (_sideSetNames.find(sideSetId) == _sideSetNames.end()) {
     std::cerr << "No side set found with id: " << sideSetId << std::endl;
   }
-  auto sideSet = getGeoMesh().sideSet;
+  auto geoMesh = getGeoMesh();
+  auto sideSet = geoMesh.sideSet;
   auto sideSetExoId = vtkIntArray::FastDownCast(
-      sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-  auto sideSetOrigCellId = vtkIdTypeArray::FastDownCast(
-      sideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-  auto sideSetCellFaceId = vtkIntArray::FastDownCast(
-      sideSet->GetCellData()->GetAbstractArray(SIDE_SET_CELL_FACE_NAME));
-  for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+      sideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
+  auto sideSetOrigCellId = geoMesh.sideSet.getOrigCellArr();
+  auto sideSetCellFaceId = geoMesh.sideSet.getCellFaceArr();
+  for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
     if (sideSetExoId->GetValue(i) == sideSetId) {
-      cellIdVec.emplace_back(sideSetOrigCellId->GetValue(i));
-      sideVec.emplace_back(sideSetCellFaceId->GetValue(i));
+      cellIdVec.emplace_back(sideSetOrigCellId->GetTypedComponent(i, 0));
+      sideVec.emplace_back(sideSetCellFaceId->GetTypedComponent(i, 0));
     }
   }
   return {cellIdVec, sideVec};
@@ -1161,39 +1147,38 @@ int exoGeoMesh::addSideSet(const std::vector<vtkIdType> &elements,
                            const std::string &name) {
   if (!elements.empty() && elements.size() == sides.size()) {
     auto newId = nemAux::leastUnusedKey(_sideSetNames);
-    auto sideSet = getGeoMesh().sideSet;
-    if (!sideSet) {
-      sideSet = vtkSmartPointer<vtkPolyData>::New();
-      sideSet->Allocate();
-      sideSet->SetPoints(getGeoMesh().mesh->GetPoints());
+    auto gm = getGeoMesh();
+    if (!gm.sideSet.sides) {
+      auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+      sideSetPD->Allocate();
+      sideSetPD->SetPoints(getGeoMesh().mesh->GetPoints());
       auto sideSetExoId = vtkSmartPointer<vtkIntArray>::New();
       sideSetExoId->SetName(getExoIdArrName());
+      sideSetPD->GetCellData()->AddArray(sideSetExoId);
       auto sideSetEntities = vtkSmartPointer<vtkIntArray>::New();
-      sideSetEntities->SetName(SIDE_SET_GEO_ENT_NAME);
       auto sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
-      sideSetOrigCellId->SetName(SIDE_SET_ORIG_CELL_NAME);
+      sideSetOrigCellId->SetNumberOfComponents(2);
       auto sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
-      sideSetCellFaceId->SetName(SIDE_SET_CELL_FACE_NAME);
-      sideSet->GetCellData()->AddArray(sideSetExoId);
-      sideSet->GetCellData()->AddArray(sideSetEntities);
-      sideSet->GetCellData()->AddArray(sideSetOrigCellId);
-      sideSet->GetCellData()->AddArray(sideSetCellFaceId);
+      sideSetCellFaceId->SetNumberOfComponents(2);
       setGeoMesh(
-          {getGeoMesh().mesh, getGeoMesh().geo, getGeoMesh().link, sideSet});
+          {getGeoMesh().mesh,
+           getGeoMesh().geo,
+           getGeoMesh().link,
+           {sideSetPD, sideSetEntities, sideSetOrigCellId, sideSetCellFaceId}});
     }
+    auto sideSet = getGeoMesh().sideSet;
     auto sideSetExoId = vtkIntArray::FastDownCast(
-        sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-    sideSetExoId->Resize(sideSet->GetNumberOfCells() + elements.size());
-    auto sideSetEntities = vtkIntArray::FastDownCast(
-        sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
-    sideSetEntities->Resize(sideSet->GetNumberOfCells() + elements.size());
-    auto sideSetOrigCellId = vtkIdTypeArray::FastDownCast(
-        sideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-    sideSetOrigCellId->Resize(sideSet->GetNumberOfCells() + elements.size());
-    auto sideSetCellFaceId = vtkIntArray::FastDownCast(
-        sideSet->GetCellData()->GetAbstractArray(SIDE_SET_CELL_FACE_NAME));
-    sideSetCellFaceId->Resize(sideSet->GetNumberOfCells() + elements.size());
-    sideSet->GetCellData()->RemoveArray(SIDE_SET_TWIN_NAME);
+        sideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
+    sideSetExoId->Resize(sideSet.sides->GetNumberOfCells() + elements.size());
+    auto sideSetEntities = sideSet.getGeoEntArr();
+    sideSetEntities->Resize(sideSet.sides->GetNumberOfCells() +
+                            elements.size());
+    auto sideSetOrigCellId = sideSet.getOrigCellArr();
+    sideSetOrigCellId->Resize(sideSet.sides->GetNumberOfCells() +
+                              elements.size());
+    auto sideSetCellFaceId = sideSet.getCellFaceArr();
+    sideSetCellFaceId->Resize(sideSet.sides->GetNumberOfCells() +
+                              elements.size());
 
     auto mesh = getGeoMesh().mesh;
     auto elemIt = elements.begin();
@@ -1204,29 +1189,13 @@ int exoGeoMesh::addSideSet(const std::vector<vtkIdType> &elements,
         std::cerr << "No cell found with index " << *elemIt << std::endl;
         continue;
       }
-      if (_dim == parent->GetCellDimension()) {
-        if (_dim == 2) {
-          auto edge = parent->GetEdge(*sidesIt);
-          if (!edge) {
-            std::cerr << "Cell " << *elemIt << " does not have side "
-                      << *sidesIt << std::endl;
-            continue;
-          }
-          sideSet->InsertNextCell(edge->GetCellType(), edge->GetPointIds());
-        } else if (_dim == 3) {
-          auto face = parent->GetFace(*sidesIt);
-          if (!face) {
-            std::cerr << "Cell " << *elemIt << " does not have side "
-                      << *sidesIt << std::endl;
-            continue;
-          }
-          sideSet->InsertNextCell(face->GetCellType(), face->GetPointIds());
-        }
-        sideSetExoId->InsertNextValue(newId);
-        sideSetEntities->InsertNextValue(newId);
-        sideSetOrigCellId->InsertNextValue(*elemIt);
-        sideSetCellFaceId->InsertNextValue(*sidesIt);
-      }
+      auto side = parent->GetCellDimension() == 2 ? parent->GetEdge(*sidesIt)
+                                                  : parent->GetFace(*sidesIt);
+      sideSet.sides->InsertNextCell(side->GetCellType(), side->GetPointIds());
+      sideSetExoId->InsertNextValue(newId);
+      sideSetEntities->InsertNextValue(newId);
+      sideSetOrigCellId->InsertNextTuple2(*elemIt, -1);
+      sideSetCellFaceId->InsertNextTuple2(*sidesIt, -1);
     }
 
     _sideSetNames[newId] = name;
@@ -1336,6 +1305,11 @@ void exoGeoMesh::stitch(const exoGeoMesh &otherGM, float tol) {
               << std::endl;
     exit(1);
   }
+  if (this->getGeoMesh().getDimension() !=
+      otherGM.getGeoMesh().getDimension()) {
+    std::cerr << "Dimension of meshes does not match." << std::endl;
+    exit(1);
+  }
   auto numOrigCells = mesh->GetNumberOfCells();
   auto otherMesh = otherGM.getGeoMesh().mesh;
   std::map<int, int> old2newElemBlock;
@@ -1375,16 +1349,16 @@ void exoGeoMesh::stitch(const exoGeoMesh &otherGM, float tol) {
   }
   otherMesh->GetCellData()->AddArray(newOtherBlockIdArr);
 
+#ifdef HAVE_GMSH
   if (!this->getGeoMesh().geo.empty()) {
     gmsh::model::setCurrent(this->getGeoMesh().geo);
     gmsh::model::remove();
     mesh->GetCellData()->RemoveArray(this->getGeoMesh().link.c_str());
     this->setGeoMesh({mesh, "", "", this->getGeoMesh().sideSet});
   }
+#endif
   auto newMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
   auto nodeMaps = mergeMeshes(mesh, otherMesh, newMesh, tol);
-  setGeoMesh(
-      {newMesh, getGeoMesh().geo, getGeoMesh().link, getGeoMesh().sideSet});
   resetNodeSetPoints(nodeMaps.first);
   if (!otherGM._nodeSets.empty()) {
     auto nextNodeSetId = nemAux::leastUnusedKey(_nodeSets);
@@ -1392,61 +1366,54 @@ void exoGeoMesh::stitch(const exoGeoMesh &otherGM, float tol) {
       auto &nodeSet = _nodeSets[nextNodeSetId];
       nodeSet.name = otherNodeSet.second.name;
       nodeSet.nodes.reserve(otherNodeSet.second.nodes.size());
-      std::transform(otherNodeSet.second.nodes.begin(),
-                     otherNodeSet.second.nodes.end(),
-                     std::back_inserter(nodeSet.nodes),
-                     [&](vtkIdType x) { return nodeMaps.second->GetValue(x); });
+      std::transform(
+          otherNodeSet.second.nodes.begin(), otherNodeSet.second.nodes.end(),
+          std::back_inserter(nodeSet.nodes),
+          [&nodeMaps](vtkIdType x) { return nodeMaps.second->GetValue(x); });
       nextNodeSetId = nemAux::leastUnusedKey(_nodeSets, nextNodeSetId);
     }
   }
-
-  this->_dim = std::max(this->_dim, otherGM._dim);
-  resetSideSetPoints(nodeMaps.first);
-  if (otherGM.getGeoMesh().sideSet) {
-    auto otherSideSet = otherGM.getGeoMesh().sideSet;
+  resetSideSetPoints(newMesh, getGeoMesh().sideSet.sides, nodeMaps.first);
+  setGeoMesh(
+      {newMesh, getGeoMesh().geo, getGeoMesh().link, getGeoMesh().sideSet});
+  auto otherGeoMesh = otherGM.getGeoMesh();
+  if (otherGeoMesh.sideSet.sides) {
+    auto otherSideSet = otherGeoMesh.sideSet;
     auto otherExoIdArr = vtkIntArray::FastDownCast(
-        otherSideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-    auto otherEntitiesArr = vtkIntArray::FastDownCast(
-        otherSideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
-    auto otherOrigCellIdArr = vtkIdTypeArray::FastDownCast(
-        otherSideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-    auto otherCellFaceIdArr = vtkIntArray::FastDownCast(
-        otherSideSet->GetCellData()->GetAbstractArray(SIDE_SET_CELL_FACE_NAME));
-    auto sideSet = this->getGeoMesh().sideSet;
+        otherSideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
+    auto otherEntitiesArr = otherGeoMesh.sideSet.getGeoEntArr();
+    auto otherOrigCellIdArr = otherGeoMesh.sideSet.getOrigCellArr();
+    auto otherCellFaceIdArr = otherGeoMesh.sideSet.getCellFaceArr();
+    auto geoMesh = this->getGeoMesh();
+    auto sideSet = geoMesh.sideSet;
     vtkSmartPointer<vtkIntArray> sideSetExoId;
     vtkSmartPointer<vtkIntArray> sideSetEntities;
     vtkSmartPointer<vtkIdTypeArray> sideSetOrigCellId;
     vtkSmartPointer<vtkIntArray> sideSetCellFaceId;
-    if (sideSet) {
+    if (sideSet.sides) {
       sideSetExoId = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
-      sideSetEntities = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
-      sideSetOrigCellId = vtkIdTypeArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-      sideSetCellFaceId = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_CELL_FACE_NAME));
-      sideSet->GetCellData()->RemoveArray(SIDE_SET_TWIN_NAME);
+          sideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
+      sideSetEntities = geoMesh.sideSet.getGeoEntArr();
+      sideSetOrigCellId = geoMesh.sideSet.getOrigCellArr();
+      sideSetCellFaceId = geoMesh.sideSet.getCellFaceArr();
     } else {
-      sideSet = vtkSmartPointer<vtkPolyData>::New();
-      sideSet->Allocate(otherSideSet);
+      auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+      sideSetPD->Allocate(otherSideSet.sides);
       sideSetExoId = vtkSmartPointer<vtkIntArray>::New();
       sideSetExoId->SetName(getExoIdArrName());
-      sideSetExoId->Allocate(otherSideSet->GetNumberOfCells());
+      sideSetExoId->Allocate(otherSideSet.sides->GetNumberOfCells());
+      sideSet.sides->GetCellData()->AddArray(sideSetExoId);
       sideSetEntities = vtkSmartPointer<vtkIntArray>::New();
-      sideSetEntities->SetName(SIDE_SET_GEO_ENT_NAME);
-      sideSetEntities->Allocate(otherSideSet->GetNumberOfCells());
+      sideSetEntities->Allocate(otherSideSet.sides->GetNumberOfCells());
       sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
-      sideSetOrigCellId->SetName(SIDE_SET_ORIG_CELL_NAME);
-      sideSetOrigCellId->Allocate(otherSideSet->GetNumberOfCells());
+      sideSetOrigCellId->SetNumberOfComponents(2);
+      sideSetOrigCellId->Allocate(otherSideSet.sides->GetNumberOfCells());
       sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
-      sideSetCellFaceId->SetName(SIDE_SET_CELL_FACE_NAME);
-      sideSetCellFaceId->Allocate(otherSideSet->GetNumberOfCells());
-      sideSet->GetCellData()->AddArray(sideSetExoId);
-      sideSet->GetCellData()->AddArray(sideSetEntities);
-      sideSet->GetCellData()->AddArray(sideSetOrigCellId);
-      sideSet->GetCellData()->AddArray(sideSetCellFaceId);
-      this->setGeoMesh({this->getGeoMesh().mesh, this->getGeoMesh().geo,
+      sideSetCellFaceId->SetNumberOfComponents(2);
+      sideSetCellFaceId->Allocate(otherSideSet.sides->GetNumberOfCells());
+      sideSet = {sideSetPD, sideSetEntities, sideSetOrigCellId,
+                 sideSetCellFaceId};
+      this->setGeoMesh({newMesh, this->getGeoMesh().geo,
                         this->getGeoMesh().link, sideSet});
     }
     std::map<int, int> old2newSideSet;
@@ -1457,37 +1424,30 @@ void exoGeoMesh::stitch(const exoGeoMesh &otherGM, float tol) {
       newSideSetId = nemAux::leastUnusedKey(this->_sideSetNames, newSideSetId);
     }
     std::map<int, int> old2newGeoEnt;
-    for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+    for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
       old2newGeoEnt[sideSetEntities->GetValue(i)] = -1;
     }
     int nextSideSetEntId = nemAux::leastUnusedKey(old2newGeoEnt);
-    for (vtkIdType i = 0; i < otherSideSet->GetNumberOfCells(); ++i) {
-      auto origCellId = otherOrigCellIdArr->GetValue(i) + numOrigCells;
-      auto cellFaceId = otherCellFaceIdArr->GetValue(i);
+    for (vtkIdType i = 0; i < otherSideSet.sides->GetNumberOfCells(); ++i) {
+      auto origCellId = otherOrigCellIdArr->GetTypedComponent(i, 0) + numOrigCells;
+      auto cellFaceId = otherCellFaceIdArr->GetTypedComponent(i, 0);
       auto parent = newMesh->GetCell(origCellId);
-      if (_dim == parent->GetCellDimension()) {
-        if (_dim == 2) {
-          auto edge = parent->GetEdge(cellFaceId);
-          sideSet->InsertNextCell(edge->GetCellType(), edge->GetPointIds());
-        } else if (_dim == 3) {
-          auto face = parent->GetFace(cellFaceId);
-          sideSet->InsertNextCell(face->GetCellType(), face->GetPointIds());
+      auto side = parent->GetCellDimension() == 2 ? parent->GetEdge(cellFaceId)
+                                                  : parent->GetFace(cellFaceId);
+      sideSet.sides->InsertNextCell(side->GetCellType(), side->GetPointIds());
+      int newEntId = otherEntitiesArr->GetValue(i);
+      auto insertIter = old2newGeoEnt.insert({newEntId, nextSideSetEntId});
+      if (insertIter.second || insertIter.first->second == -1) {
+        if (insertIter.first->second == -1) {
+          insertIter.first->second = nextSideSetEntId;
         }
-        int newEntId = otherEntitiesArr->GetValue(i);
-        auto insertIter = old2newGeoEnt.insert({newEntId, nextSideSetEntId});
-        if (insertIter.second || insertIter.first->second == -1) {
-          if (insertIter.first->second == -1) {
-            insertIter.first->second = nextSideSetEntId;
-          }
-          nextSideSetEntId =
-              nemAux::leastUnusedKey(old2newGeoEnt, nextSideSetEntId);
-        }
-        sideSetExoId->InsertNextValue(
-            old2newSideSet[otherExoIdArr->GetValue(i)]);
-        sideSetEntities->InsertNextValue(insertIter.first->second);
-        sideSetOrigCellId->InsertNextValue(origCellId);
-        sideSetCellFaceId->InsertNextValue(cellFaceId);
+        nextSideSetEntId =
+            nemAux::leastUnusedKey(old2newGeoEnt, nextSideSetEntId);
       }
+      sideSetExoId->InsertNextValue(old2newSideSet[otherExoIdArr->GetValue(i)]);
+      sideSetEntities->InsertNextValue(insertIter.first->second);
+      sideSetOrigCellId->InsertNextTuple2(origCellId, -1);
+      sideSetCellFaceId->InsertNextTuple2(cellFaceId, -1);
     }
   }
   otherMesh->GetCellData()->RemoveArray(getExoIdArrName());
@@ -1503,8 +1463,8 @@ void exoGeoMesh::scaleNodes(double scale) {
   transformFilter->Update();
   auto mesh = vtkUnstructuredGrid::SafeDownCast(transformFilter->GetOutput());
   auto sideSet = getGeoMesh().sideSet;
-  if (sideSet) {
-    sideSet->SetPoints(mesh->GetPoints());
+  if (sideSet.sides) {
+    sideSet.sides->SetPoints(mesh->GetPoints());
   }
   setGeoMesh({mesh, getGeoMesh().geo, getGeoMesh().link, getGeoMesh().sideSet});
 }
@@ -1512,9 +1472,9 @@ void exoGeoMesh::scaleNodes(double scale) {
 geoMeshBase::GeoMesh exoGeoMesh::exoReader2GM(
     vtkSmartPointer<vtkExodusIIReader> reader) {
   auto mesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
-  vtkSmartPointer<vtkPolyData> sideSet;
+  SideSet sideSet{};
   if (!reader) {
-    return {mesh, "", "", sideSet};
+    return {mesh, "", "", {}};
   }
 
   auto mbds = reader->GetOutput();
@@ -1564,17 +1524,16 @@ geoMeshBase::GeoMesh exoGeoMesh::exoReader2GM(
   }
   if (reader->GetNumberOfSideSetArrays() > 0 &&
       reader->GetDimensionality() >= 2) {
-    sideSet = vtkSmartPointer<vtkPolyData>::New();
-    sideSet->SetPoints(mesh->GetPoints());
-    sideSet->Allocate();
+    auto sideSetPD = vtkSmartPointer<vtkPolyData>::New();
+    sideSetPD->SetPoints(mesh->GetPoints());
+    sideSetPD->Allocate();
     auto sideSetExoId = vtkSmartPointer<vtkIntArray>::New();
     sideSetExoId->SetName(getExoIdArrName());
     auto sideSetEntities = vtkSmartPointer<vtkIntArray>::New();
-    sideSetEntities->SetName(SIDE_SET_GEO_ENT_NAME);
     auto sideSetOrigCellId = vtkSmartPointer<vtkIdTypeArray>::New();
-    sideSetOrigCellId->SetName(SIDE_SET_ORIG_CELL_NAME);
+    sideSetOrigCellId->SetNumberOfComponents(2);
     auto sideSetCellFaceId = vtkSmartPointer<vtkIntArray>::New();
-    sideSetCellFaceId->SetName(SIDE_SET_CELL_FACE_NAME);
+    sideSetCellFaceId->SetNumberOfComponents(2);
 
     int comp_ws = sizeof(double);
     int io_ws = 0;
@@ -1593,9 +1552,6 @@ geoMeshBase::GeoMesh exoGeoMesh::exoReader2GM(
           exoSideSet->GetCellData()->GetAbstractArray(
               reader->GetSideSetSourceElementIdArrayName()));
       auto objectIdArr = exoSideSet->GetCellData()->GetArray(getExoIdArrName());
-      if (exoSideSet->GetCellData()->HasArray(SIDE_SET_ID_VAR_NAME)) {
-        objectIdArr = exoSideSet->GetCellData()->GetArray(SIDE_SET_ID_VAR_NAME);
-      }
       // Because the element ids are off by 1 compared to GlobalElementId,
       // the side number is off because the wrong parent cell type is used to
       // convert Exodus side index to VTK side index. Thus we do not use
@@ -1622,25 +1578,24 @@ geoMeshBase::GeoMesh exoGeoMesh::exoReader2GM(
         if (reader->GetDimensionality() == parent->GetCellDimension()) {
           if (reader->GetDimensionality() == 2) {
             auto edge = parent->GetEdge(cellFaceId);
-            sideSet->InsertNextCell(edge->GetCellType(), edge->GetPointIds());
+            sideSetPD->InsertNextCell(edge->GetCellType(), edge->GetPointIds());
           } else if (reader->GetDimensionality() == 3) {
             auto face = parent->GetFace(cellFaceId);
-            sideSet->InsertNextCell(face->GetCellType(), face->GetPointIds());
+            sideSetPD->InsertNextCell(face->GetCellType(), face->GetPointIds());
           }
           sideSetExoId->InsertNextValue(
               static_cast<int>(objectIdArr->GetComponent(j, 0)));
           sideSetEntities->InsertNextValue(
               static_cast<int>(objectIdArr->GetComponent(j, 0)));
-          sideSetOrigCellId->InsertNextValue(origCellId);
-          sideSetCellFaceId->InsertNextValue(cellFaceId);
+          sideSetOrigCellId->InsertNextTuple2(origCellId, -1);
+          sideSetCellFaceId->InsertNextTuple2(cellFaceId, -1);
         }
       }
     }
-    sideSet->GetCellData()->AddArray(sideSetExoId);
-    sideSet->GetCellData()->AddArray(sideSetEntities);
-    sideSet->GetCellData()->AddArray(sideSetOrigCellId);
-    sideSet->GetCellData()->AddArray(sideSetCellFaceId);
-    sideSet->Squeeze();
+    sideSetPD->GetCellData()->AddArray(sideSetExoId);
+    sideSetPD->Squeeze();
+    sideSet = {sideSetPD, sideSetEntities, sideSetOrigCellId,
+               sideSetCellFaceId};
     auto err = ex_close(exoid);
     checkExodusErr(err);
   }
@@ -1649,15 +1604,7 @@ geoMeshBase::GeoMesh exoGeoMesh::exoReader2GM(
 
 vtkSmartPointer<vtkExodusIIReader> exoGeoMesh::getExoReader(
     const std::string &fileName, int timeStep) {
-  if (fileName.empty()) {
-    return nullptr;
-  }
-  auto reader = vtkSmartPointer<vtkExodusIIReader>::New();
-  reader->SetFileName(fileName.c_str());
-  // time steps are 1-indexed in Exodus
-  reader->SetTimeStep(timeStep - 1);
-  reader->UpdateInformation();
-  std::array<vtkExodusIIReader::ObjectType, 8> objectTypes = {
+  static constexpr std::array<vtkExodusIIReader::ObjectType, 8> objectTypes = {
       vtkExodusIIReader::ObjectType::ELEM_BLOCK_ELEM_CONN,
       vtkExodusIIReader::ObjectType::NODE_SET_CONN,
       vtkExodusIIReader::ObjectType::SIDE_SET_CONN,
@@ -1666,6 +1613,14 @@ vtkSmartPointer<vtkExodusIIReader> exoGeoMesh::getExoReader(
       vtkExodusIIReader::ObjectType::ELEM_BLOCK,
       vtkExodusIIReader::ObjectType::NODE_SET,
       vtkExodusIIReader::ObjectType::SIDE_SET};
+  if (fileName.empty()) {
+    return nullptr;
+  }
+  auto reader = vtkSmartPointer<vtkExodusIIReader>::New();
+  reader->SetFileName(fileName.c_str());
+  // time steps are 1-indexed in Exodus
+  reader->SetTimeStep(timeStep - 1);
+  reader->UpdateInformation();
   for (const auto &objectType : objectTypes) {
     reader->SetAllArrayStatus(objectType, 1);
   }
@@ -1702,25 +1657,28 @@ void exoGeoMesh::resetNative() {
     }
     mesh->GetCellData()->AddArray(elemBlockIdArr);
   }
-  resetElemBlocksAndDim();
+  resetElemBlocks();
+  auto gm = getGeoMesh();
+  gm.findSide2OrigCell();
+  setGeoMesh(gm);
   setSideSetObjId();
 }
 
-void exoGeoMesh::resetElemBlocksAndDim() {
+void exoGeoMesh::resetElemBlocks() {
   _elemBlocks.clear();
   _elemBlockPropNames.clear();
   if (!_physGrpName.empty()) {
     _elemBlockPropNames.insert(_physGrpName);
   }
-  _dim = 2;
   std::map<std::pair<int, VTKCellType>, int> old2newElemBlock;
   auto mesh = getGeoMesh().mesh;
   auto elemBlockIds = vtkIntArray::SafeDownCast(
       mesh->GetCellData()->GetAbstractArray(getExoIdArrName()));
-  auto it = vtkSmartPointer<vtkCellIterator>::Take(mesh->NewCellIterator());
   vtkIdType i = 0;
   auto nextElemBlockId = nemAux::leastUnusedKey(_elemBlocks);
-  for (it->InitTraversal(); !it->IsDoneWithTraversal(); it->GoToNextCell()) {
+  for (auto it =
+           vtkSmartPointer<vtkCellIterator>::Take(mesh->NewCellIterator());
+       !it->IsDoneWithTraversal(); it->GoToNextCell()) {
     auto oldElemBlockId = elemBlockIds->GetValue(i);
     auto cellType = static_cast<VTKCellType>(it->GetCellType());
     auto inserted =
@@ -1734,9 +1692,6 @@ void exoGeoMesh::resetElemBlocksAndDim() {
       nextElemBlockId = nemAux::leastUnusedKey(_elemBlocks);
     }
     elemBlockIds->SetValue(i, inserted.first->second);
-    if (_dim == 2 && it->GetCellDimension() == 3) {
-      _dim = 3;
-    }
     ++i;
   }
 }
@@ -1751,66 +1706,45 @@ void exoGeoMesh::resetNodeSetPoints(vtkIdTypeArray *nodeMap) {
   }
 }
 
-void exoGeoMesh::resetSideSetPoints(vtkIdTypeArray *nodeMap) {
-  auto mesh = getGeoMesh().mesh;
-  auto sideSet = getGeoMesh().sideSet;
-  if (sideSet) {
-    sideSet->SetPoints(mesh->GetPoints());
-    for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
-      auto oldCell = sideSet->GetCell(i);
-      auto numPoints = oldCell->GetNumberOfPoints();
-      auto oldPoints = oldCell->GetPointIds();
-      for (int j = 0; j < numPoints; ++j) {
-        oldPoints->SetId(j, nodeMap->GetValue(oldPoints->GetId(j)));
-      }
-      sideSet->ReplaceCell(i, numPoints, oldPoints->GetPointer(0));
-    }
-  }
-}
-
 void exoGeoMesh::setSideSetObjId() {
   _sideSetNames.clear();
-  auto mesh = getGeoMesh().mesh;
-  auto link = getGeoMesh().link;
-  auto sideSet = getGeoMesh().sideSet;
-  if (sideSet) {
+  auto gm = getGeoMesh();
+  auto mesh = gm.mesh;
+  auto link = gm.link;
+  auto sideSet = gm.sideSet;
+  if (sideSet.sides) {
     auto sideSetObjId = vtkIntArray::FastDownCast(
-        sideSet->GetCellData()->GetAbstractArray(getExoIdArrName()));
+        sideSet.sides->GetCellData()->GetAbstractArray(getExoIdArrName()));
     if (sideSetObjId) {
-      for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+      for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
         _sideSetNames[sideSetObjId->GetValue(i)];
       }
     } else {
       sideSetObjId = vtkIntArray::New();
       sideSetObjId->SetName(getExoIdArrName());
-      sideSetObjId->Allocate(sideSet->GetNumberOfCells());
-      sideSet->GetCellData()->AddArray(sideSetObjId);
-      auto sideSetEntities = vtkIntArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_GEO_ENT_NAME));
-      auto sideSetOrigCell = vtkIdTypeArray::FastDownCast(
-          sideSet->GetCellData()->GetAbstractArray(SIDE_SET_ORIG_CELL_NAME));
-      vtkDataArray *parentEntity = nullptr;
-      if (!link.empty()) {
-        parentEntity = mesh->GetCellData()->GetArray(link.c_str());
-      }
-      if (!parentEntity) {
-        parentEntity = mesh->GetCellData()->GetArray(getExoIdArrName());
-      }
-      std::map<std::pair<int, int>, int> geoEnt2ExoId;
+      sideSetObjId->Allocate(sideSet.sides->GetNumberOfCells());
+      sideSet.sides->GetCellData()->AddArray(sideSetObjId);
+      auto sideSetEntities = gm.sideSet.getGeoEntArr();
+      auto nameArr = sideSet.getSideSetNames();
+      // Exodus II requires IDs to be positive, which is not always the case for
+      // other mesh types, hence use of extra array
+      std::map<int, int> geoEnt2ExoId;
       int nextSideSetId = 1;
-      for (vtkIdType i = 0; i < sideSet->GetNumberOfCells(); ++i) {
+      for (vtkIdType i = 0; i < sideSet.sides->GetNumberOfCells(); ++i) {
         int geoEnt = sideSetEntities->GetValue(i);
-        auto parentIdx = sideSetOrigCell->GetValue(i);
-        int parentEnt =
-            static_cast<int>(parentEntity->GetComponent(parentIdx, 0));
-        auto it = geoEnt2ExoId.insert({{geoEnt, parentEnt}, nextSideSetId});
-        if (it.second) {
-          sideSetObjId->InsertNextValue(nextSideSetId);
-          _sideSetNames[nextSideSetId];
+        // If geoEnt is not found in geoEnt2ExoID, call to operator[] to sets
+        // geoEnt2ExoId[geoEnt] to 0 (which is used as sentinel value)
+        auto &exoID = geoEnt2ExoId[geoEnt];
+        if (exoID == 0) {
+          exoID = nextSideSetId;
+          auto emplaceIter = _sideSetNames.emplace(exoID, std::string{});
+          if (emplaceIter.second && nameArr && geoEnt >= 0 &&
+              geoEnt < nameArr->GetNumberOfValues()) {
+            emplaceIter.first->second = nameArr->GetValue(geoEnt);
+          }
           ++nextSideSetId;
-        } else {
-          sideSetObjId->InsertNextValue(it.first->second);
         }
+        sideSetObjId->InsertNextValue(exoID);
       }
       sideSetObjId->Delete();
     }

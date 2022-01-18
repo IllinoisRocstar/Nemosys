@@ -1,8 +1,35 @@
-#include"convexContainer.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include"Geometry/convexContainer.H"
+
 #include<sstream>
 #include<string.h>
-
-using namespace std;
 
 namespace NEM {
 
@@ -36,15 +63,15 @@ void convexContainer::setVertex(std::vector<std::vector<double> >& inVrts)
 void convexContainer::computeConvexHull()
 {
     // computes/re-computes convex hull of the verices
-    std::vector<size_t> indxBuf; 
-    NEM::GEO::quickhull::VertexDataSource<double> vrtBuf; 
-    qHull = new NEM::GEO::quickhull::QuickHull<double>();
+    std::vector<size_t> indxBuf;
+    quickhull::VertexDataSource<double> vrtBuf;
+    qHull = new quickhull::QuickHull<double>();
     auto hull = qHull->getConvexHull(vrts, false, false, 1.e-14);
     indxBuf = hull.getIndexBuffer();
     vrtBuf = hull.getVertexBuffer();
 
     // converting to face-vector format
-    //std::cout << "Size of index buffer = " 
+    //std::cout << "Size of index buffer = "
     //    << indxBuf.size() << std::endl;
 
     // saving to vf
@@ -54,23 +81,23 @@ void convexContainer::computeConvexHull()
         for (int idx=0; idx<3; idx++)
         {
             NEM::MTH::Vector pnt;
-            pnt.x = (vrtBuf[indxBuf[it+idx]]).x; 
-            pnt.y = (vrtBuf[indxBuf[it+idx]]).y; 
-            pnt.z = (vrtBuf[indxBuf[it+idx]]).z; 
+            pnt.x = (vrtBuf[indxBuf[it+idx]]).x;
+            pnt.y = (vrtBuf[indxBuf[it+idx]]).y;
+            pnt.z = (vrtBuf[indxBuf[it+idx]]).z;
             f.v.push_back(pnt);
         }
         fv.push_back(f);
     }
 
     _isReady = true;
-    
+
 }
 
 bool convexContainer::isInConvexPoly(NEM::MTH::Vector const& p) {
     // check readiness
     if (!_isReady)
         computeConvexHull();
-    
+
     // looping through faces
     for (Face const& f : fv) {
         NEM::MTH::Vector p2f = f.v[0] - p;         // f.v[0] is an arbitrary point on f
@@ -88,9 +115,9 @@ bool convexContainer::isInConvexPoly(const std::vector<double>& p) {
     if (p.size() != 3)
         throw;
     NEM::MTH::Vector pnt;
-    pnt.x = p[0]; 
-    pnt.y = p[1]; 
-    pnt.z = p[2]; 
+    pnt.x = p[0];
+    pnt.y = p[1];
+    pnt.z = p[2];
     return(isInConvexPoly(pnt));
 }
 

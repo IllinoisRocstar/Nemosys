@@ -2,12 +2,12 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "cfmesh",
     "Mesh File Options": {
       "Input Geometry File": "geom.fms",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "cfmesh",
       "CFMesh Parameters": {
         "Generator": "cartesian2D",
         "MaxCellSize": 0.1,
@@ -16,6 +16,49 @@
         "BoundaryLayers": {
           "NLayers": 4,
           "ThicknessRatio": 1.1
+        },
+        "RenameBoundary":
+        {
+          "DefaultName": "face",
+          "DefaultType": "patch",
+          "NewPatchNames": 
+          [
+            {
+              "Name": "left*",
+              "NewName": "left1",
+              "NewType": "wall"
+            },
+            {
+              "Name": "bottom*",
+              "NewName": "bottom",
+              "NewType": "wall"
+            },
+            {
+              "Name": "right*",
+              "NewName": "right",
+              "NewType": "wall"
+            },
+            {
+              "Name": "top0*",
+              "NewName": "top0",
+              "NewType": "wall"
+            },
+            {
+              "Name": "top1*",
+              "NewName": "top1",
+              "NewType": "wall"
+            },
+            {
+              "Name": "bottomEmptyFaces*",
+              "NewName": "bottomEmptyFaces",
+              "NewType": "empty"
+            },
+            {
+              "Name": "topEmptyFaces*",
+              "NewName": "topEmptyFaces",
+              "NewType": "empty"
+            }
+          ]
         }
       }
     }

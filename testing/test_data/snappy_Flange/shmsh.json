@@ -2,19 +2,16 @@
   {
     "Reference File": "geom_mesh_ref.vtu",
     "Program Type": "Mesh Generation",
-    "Mesh Generation Engine": "snappyHexMesh",
     "Mesh File Options": {
       "Input Geometry File": "flange.stl",
       "Output Mesh File": "geom_mesh.vtu"
     },
-    "Meshing Modules Options": {
-    },
-    "Meshing Parameters": {
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "snappyHexMesh",
       "snappyHexMesh Parameters": {
         "Castellated Mesh": true,
         "Snapping": true,
         "Layer Addition": false,
-
         "Geometry Definition": {
             "Enable Multi Patches": false,
             "InputPatchName": "flange", // Optional and only used if whole STL is one solid
@@ -22,22 +19,19 @@
                 {
                     "Custom Patch Name": "refineBox",
                     "Searchable Shape": "searchableBox",
-                    "minimum bound": "(-35 -35 -35)",
-                    "maximum bound": "(-50 35 52)"
+                    "minimum bound": [-35, -35, -35],
+                    "maximum bound": [-50, 35, 52]
                 },
                 {
                     "Custom Patch Name": "refineHole",
                     "Searchable Shape": "searchableSphere",
-                    "Center": "(0 0 -0.012)",
+                    "Center": [0, 0, -0.012],
                     "Radius": 0.003
                 }
             ]
         },
-
         "Castellated Mesh Controls": {
             "CellZones": false,
-            "RegionRefine": true,
-            "SurfaceRefine": true,
             "maxLocalCells": 1000000,
             "maxGlobalCells": 10000000,
             "minRefCells": 0,
@@ -48,9 +42,7 @@
             "GeneralGapLevelIncrement": 1,
             "gapLevelIncrement": 2,
             "planarAngle": 30,
-            "locationInMeshX": -9.23149e-05,
-            "locationInMeshY": -0.0025,
-            "locationInMeshZ": -0.0025,
+            "locationInMesh": [-9.23149e-05, -0.0025, -0.0025],
             "allowFreeStandingZoneFaces": true,
             "GeomRefinementRegions": [
                 {
@@ -61,7 +53,6 @@
                 }
             ]
         },
-
         "Snapping Controls": {
             "nSmoothPatch": 3,
             "tolerance": 1.0,
@@ -72,7 +63,6 @@
             "explicitFeatureSnap":false,
             "multiRegionFeatureSnap":false
         },
-
         "Mesh Layers Controls": {
             "relativeSizes": true,
             "expansionRatio": 1.0,
@@ -80,19 +70,18 @@
             "minThickness": 0.25,
             "nGrow": 0,
             "featureAngle": 30,
-            "maxFaceThicknessRatio": 0.5,
-            "nSmoothSurfaceNormals": 1,
-            "nSmoothThickness": 10,
-            "minMedialAxisAngle": 90,
-            "maxThicknessToMedialRatio": 0.3,
-            "nSmoothNormals": 3,
-            "slipFeatureAngle": 30,
             "nRelaxIter": 5,
+            "nSmoothSurfaceNormals": 1,
+            "nSmoothNormals": 3,
+            "nSmoothThickness": 10,
+            "maxFaceThicknessRatio": 0.5,
+            "maxThicknessToMedialRatio": 0.3,
+            "minMedialAxisAngle": 90,
             "nBufferCellsNoExtrude": 0,
             "nLayerIter": 50,
+            "slipFeatureAngle": 30,
             "nRelaxedIter": 20
         },
-        
         "Mesh Quality Controls": {
             "maxNonOrtho": 65,
             "maxBoundarySkewness": 20,
@@ -109,7 +98,6 @@
             "qcnSmoothScale": 4,
             "errorReduction": 0.75
         },
-
         "mergeTolerance": 1e-06
       }
     }

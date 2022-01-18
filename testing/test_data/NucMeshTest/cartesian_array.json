@@ -1,0 +1,74 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "cartesian_array.vtu"
+  },
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "Obj2",
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Rings": [
+          {"Shape Type": "Circle", "Radius": 0.02, "Mesh": {"Type": "T"}, "Material": "A"},
+          {"Shape Type": "Circle", "Radius": 0.21, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "A"},
+          {"Shape Type": "Circle", "Radius": 0.3, "Mesh": {"Type": "S", "Number of Elems": [1, 7]}, "Material": "D"},
+          {"Shape Type": "Poly", "Radius": 0.5, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "E"}
+        ]
+      },
+      {
+        "Name": "Obj3",
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Rings": [
+          {"Shape Type": "Circle", "Radius": 0.02, "Mesh": {"Type": "T"}, "Material": "A"},
+          {"Shape Type": "Circle", "Radius": 0.21, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "A"},
+          {"Shape Type": "Circle", "Radius": 0.28, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "B"},
+          {"Shape Type": "Circle", "Radius": 0.3, "Mesh": {"Type": "S", "Number of Elems": [1, 7]}, "Material": "C"},
+          {"Shape Type": "Poly", "Radius": 0.5, "Mesh": {"Type": "S", "Number of Elems": [2, 7]}, "Material": "E"}
+        ]
+      },
+      {
+        "Name": "Square",
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Rings": [
+          {"Shape Type": "Poly", "Radius": 0.02, "Mesh": {"Type": "T"}, "Material": "E"},
+          {"Shape Type": "Poly", "Radius": 0.5, "Mesh": {"Type": "S", "Number of Elems": [3, 7]}, "Material": "E"}
+        ]
+      }
+    ],
+    "Shapes": [
+      {
+        "Type": "Circles And Polys",
+        "Number of Sides": 4,
+        "Rings": [
+          {"Shape Type": "Poly", "Radius": 2.75, "Mesh": {"Type": "T"}, "Material": "F"},
+          {"Shape Type": "Poly", "Radius": 3, "Mesh": {"Type": "S", "Number of Elems": [2, 35]}, "Material": "G"}
+        ]
+      },
+      {
+        "Type": "Rectangular Array",
+        "Grid Distance": [0.707107, 0.707107],
+        "Pattern": [
+          [0, 1, 1, 1, 0],
+          [1, 2, 2, 2, 1],
+          [1, 2, 0, 2, 1],
+          [1, 2, 2, 2, 1],
+          [2, 1, 1, 1, 2]
+        ],
+        "Shapes": [
+          {
+            "Saved Object": "Square"
+          },
+          {
+            "Saved Object": "Obj2"
+          },
+          {
+            "Saved Object": "Obj3"
+          }
+        ]
+      }
+    ]
+  }
+}

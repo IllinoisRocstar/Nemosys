@@ -1,0 +1,117 @@
+[
+  {
+    "Program Type": "Mesh Generation",
+    "Mesh File Options": {
+      "Input Geometry File": "./pitzdaily.step",
+      "Output Mesh File": "./pitzdaily_test.msh"
+    },
+    "Mesh Generation Options": {
+      "Mesh Generation Engine": "gmsh",
+      "Gmsh Parameters": {
+        "surfaceAlgorithm": "Automatic",
+        "volumeAlgorithm": "Automatic",
+        "optimize": false,
+        "elementOrder" : 2,
+        "subdivisionAlgorithm" : 2,
+        "saveAll" : false,
+        "fragment" : true,
+        "ColorMap":
+        [
+          {
+            "Color": [0,0,255],
+            "Group" : "Wall"
+          },
+          {
+            "Color": [0,255,0],
+            "Group" : "Inlet"
+          },
+          {
+            "Color": [255,0,0],
+            "Group" : "Outlet"
+          }
+        ],
+        "TransfiniteBlocks":
+        [
+          {
+            "Volume": 1,
+            "Axis": [ [1,0,0], [0,1,0], [0,0,1] ],
+            "x": {
+              "Vertices": 3,
+              "Progression": 0.91
+            },
+            "y": {
+              "Vertices": 3,
+              "Bump": 0.1
+            },
+            "z": {
+              "Vertices": 3,
+              "Bump": 0.1
+            }
+          },
+          {
+            "Volume": 2,
+            "Axis": [ [1,0,0], [0,1,0], [0,0,1] ],
+            "x": {
+              "Vertices": 8,
+              "Bump": 0.1
+            },
+            "y": {
+              "Vertices": 3,
+              "Bump": 0.1
+            },
+            "z": {
+              "Vertices": 3,
+              "Bump": 0.1
+            }
+          },
+          {
+            "Volume": 3,
+            "Axis": [ [1,0,0], [0,1,0], [0,0,1] ],
+            "x": {
+              "Vertices": 5
+            },
+            "y": {
+              "Vertices": 3,
+              "Progression": 0.71428
+            },
+            "z": {
+              "Vertices": 3,
+              "Bump": 0.1
+            }
+          },
+          {
+            "Volume": 4,
+            "Axis": [ [1,0,0], [0,1,0], [0,0,1] ],
+            "x": {
+              "Vertices": 8,
+              "Bump": 0.1
+            },
+            "y": {
+              "Vertices": 3,
+              "Bump": 0.1
+            },
+            "z": {
+              "Vertices": 3,
+              "Bump": 0.1
+            }
+          },
+          {
+            "Volume": 5,
+            "Axis": [ [1,0,0], [0,1,0], [0,0,1] ],
+            "x": {
+              "Vertices": 5
+            },
+            "y": {
+              "Vertices": 3,
+              "Progression": 1.4
+            },
+            "z": {
+              "Vertices": 3,
+              "Bump": 0.1
+            }
+          }
+        ]
+      }
+    }
+  }
+]

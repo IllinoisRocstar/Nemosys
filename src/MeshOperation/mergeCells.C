@@ -1,3 +1,31 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 /*
  * Adopted from vtkMergeCells, VTK, with very minor
  * modifications to return a map between old and new cells. Note duplicating
@@ -5,30 +33,30 @@
  * members of this class are protected.
  */
 
+#include "MeshOperation/mergeCells.H"
+
 #include <algorithm>
 #include <cstdlib>
 #include <map>
-#include "vtkCell.h"
-#include "vtkCellArray.h"
-#include "vtkCellData.h"
-#include "vtkCharArray.h"
-#include "vtkDataArray.h"
-#include "vtkIdTypeArray.h"
-#include "vtkIntArray.h"
-#include "vtkKdTree.h"
-#include "vtkMergePoints.h"
-#include "vtkObjectFactory.h"
-#include "vtkPointData.h"
-#include "vtkPoints.h"
-#include "vtkUnsignedCharArray.h"
-#include "vtkUnstructuredGrid.h"
-
-#include "mergeCells.H"
+#include <vtkCell.h>
+#include <vtkCellArray.h>
+#include <vtkCellData.h>
+#include <vtkCharArray.h>
+#include <vtkDataArray.h>
+#include <vtkIdTypeArray.h>
+#include <vtkIntArray.h>
+#include <vtkKdTree.h>
+#include <vtkMergePoints.h>
+#include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkPoints.h>
+#include <vtkUnsignedCharArray.h>
+#include <vtkUnstructuredGrid.h>
 
 namespace NEM {
 namespace MSH {
 
-vtkStandardNewMacro(mergeCells);
+vtkStandardNewMacro(mergeCells)
 
 class mergeCellsSTLCloak {
  public:

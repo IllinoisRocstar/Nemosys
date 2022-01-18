@@ -1,13 +1,43 @@
-#include "RocPartCommGenDriver.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Drivers/RocPartCommGenDriver.H"
 
 #include "AuxiliaryFunctions.H"
-#include "TransferDriver.H"
-#include "cgnsWriter.H"
-#include "meshBase.H"
+#include "Drivers/TransferDriver.H"
+#include "IO/cgnsWriter.H"
+#include "Mesh/meshBase.H"
 
+#include <cgnslib.h>
 #include <vtkAppendFilter.h>
 #include <vtkCellData.h>
 #include <vtkCleanPolyData.h>
+#include <vtkEdgeTable.h>
 #include <vtkGenericCell.h>
 #include <vtkPointData.h>
 #include <vtkPointLocator.h>
@@ -19,12 +49,288 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <set>
 #include <vector>
 
 namespace NEM {
 namespace DRV {
 
-RocPartCommGenDriver::RocPartCommGenDriver(
+namespace {
+
+/**
+ * @brief Helper class to implement RocPartCommGenDriver
+ */
+class RocPartCommGenRunner {
+ public:
+  /*
+  RocPartCommGenRunner(
+      std::shared_ptr<meshBase> vol, std::shared_ptr<meshBase> surf,
+      std::shared_ptr<meshBase> volWithSol,
+      std::shared_ptr<meshBase> surfWithSol,
+      std::shared_ptr<meshBase> burnSurfWithSol, int numPartitions,
+      const std::string &base_t, int writeIntermediateFiles,
+      double searchTolerance, const std::string &caseName,
+      const std::map<std::string, std::vector<int>> &surfacePatchTypes,
+      bool _withC2CTransSmooth = false,
+      const std::string &_prefix_path = std::string());
+  */
+  RocPartCommGenRunner(const std::string &volname, const std::string &surfname,
+                       int numPartitions);
+  ~RocPartCommGenRunner();
+
+  // --- executor functions
+ private:
+  // run the driver (called on construction)
+  void execute(int numPartitions);
+  // extract patches from each surface partition and get patch virtual cells
+  void extractPatches();
+  // add global cell ids to provided mesh (used to add to full surface)
+  void AddGlobalCellIds(std::shared_ptr<meshBase> mesh) const;
+  // find shared nodes and sent nodes/cells from me to other procs
+  void getGhostInformation(int me, bool vol);
+  // get global ids and maps which were loaded into vol mesh partitions during
+  // partitioning
+  void getGlobalIdsAndMaps(int numPartitions, bool vol);
+  // get virtual cells for complete (not patch) vol (vol=true) or surf
+  // (vol=false) partition
+  void getVirtualCells(int me, int you, bool vol);
+  // get the shared nodes between patches both intra- and inter-partition
+  void getSharedPatchInformation();
+
+  // --- info for write to cgns and intermediaries
+ private:
+  // base time step (Rocstar convention, eg. 04.210000)
+  std::string base_t;
+  // trimmed time step (eg. 4.21)
+  std::string trimmed_base_t;
+  // if true, all intermediate files will be written (i.e. surf partitions,
+  // virtuals etc.)
+  int writeAllFiles;
+  // Rocstar case name, used to write Rocstar input file names
+  std::string caseName;
+
+  // --- write cgns files
+ private:
+  // write vol cgns (proc is partition num, type is patch num, prefix usually
+  // fluid)
+  void writeVolCgns(const std::string &prefix, int proc, int type);
+  // write surf cgns (proc is partition num, other info is deduced from maps)
+  void writeSurfCgns(const std::string &prefix, int proc);
+  // void writeVolGs(const std::string& prefix, int proc, int type);
+  void writeVolCellFaces(const std::string &prefix, int proc, int type) const;
+
+  // --- write Rocstar files
+ private:
+  // write region mapping file
+  void mapWriter() const;
+  // write cell mapping file
+  void cmpWriter(int proc, int nCells) const;
+  // write communication lists file
+  void comWriter(int proc) const;
+  // write dimensions file
+  void dimWriter(int proc, std::shared_ptr<meshBase> realMB,
+                 std::shared_ptr<meshBase> totalMB) const;
+  // write surface information for dimensions file
+  void dimSurfWriter(int proc, const std::vector<cgsize_t> &cgConnReal,
+                     const std::vector<cgsize_t> &cgConnVirtual, int patchNo);
+  void dimSurfWriter(int proc) const;
+  void dimSurfSort(int proc) const;
+  // write processor mapping file
+  void txtWriter() const;
+  // utilities
+
+  // --- real and virtual meshes
+ private:
+  // remeshed volume to be partitioned
+  std::shared_ptr<meshBase> mesh;
+  // stitched surface
+  std::shared_ptr<meshBase> remeshedSurf;
+  // original volume mesh with solution data
+  std::shared_ptr<meshBase> volWithSol;
+  // original surface mesh with solution data
+  std::shared_ptr<meshBase> surfWithSol;
+  // original burning surface mesh with solution data (iburn)
+  std::shared_ptr<meshBase> burnSurfWithSol;
+  // TODO: add meshBase (mbObj[2] from remeshDriver) for iburn solution mesh
+  //       (iBurnWithSol) figure out a way to extract the cells with bflag on
+  //       each surf/vol partition transfer data from iBurnWithSol to surf
+  //       partitions and write them out to cgns
+
+  // partitions <proc, partition>
+  std::vector<std::shared_ptr<meshBase>> partitions;
+  // <proc, <proc, mesh>>
+  std::vector<std::map<int, std::shared_ptr<meshBase>>>
+      virtualCellsOfPartitions;
+  // surface partitions <proc, partition>
+  std::vector<std::shared_ptr<meshBase>> surfacePartitions;
+  // <proc, <proc, mesh>>
+  std::vector<std::map<int, std::shared_ptr<meshBase>>>
+      virtualCellsOfSurfPartitions;
+  // <proc, <patch, mesh>>
+  std::vector<std::map<int, std::shared_ptr<meshBase>>>
+      patchesOfSurfacePartitions;
+  // <proc, <proc, <patch, mesh>>>
+  std::vector<std::map<int, std::map<int, std::shared_ptr<meshBase>>>>
+      virtualCellsOfPatchesOfSurfacePartitions;
+
+  // --- tolerance for cell and point search
+ private:
+  double searchTolerance;
+
+  // --- global to local node and cell index maps
+  // --- the following are cleared and reused for vol and surf partitions
+ private:
+  // global node indices of partition
+  std::vector<std::vector<nemId_t>> globalNodeIds;
+  // global cell indices of partition
+  std::vector<std::vector<nemId_t>> globalCellIds;
+  // <proc, <global nodeId, local nodeId>>
+  std::vector<std::map<nemId_t, nemId_t>> globToPartNodeMap;
+  // <proc, <global cellId, local cellId>>
+  std::vector<std::map<nemId_t, nemId_t>> globToPartCellMap;
+  // <proc, <local nodeId, global nodeId>>
+  std::vector<std::map<nemId_t, nemId_t>> partToGlobNodeMap;
+  // <proc, <local cellId, global cellId>>
+  std::vector<std::map<nemId_t, nemId_t>> partToGlobCellMap;
+
+  // --- volume partition ghost information
+ private:
+  // <proc, <proc, shared nodes>>
+  std::map<int, std::map<int, std::vector<int>>> sharedNodes;
+  // <proc, <proc, sent nodes>>
+  std::map<int, std::map<int, std::unordered_set<int>>> sentNodes;
+  // <proc, <proc, sent cells>>
+  std::map<int, std::map<int, std::unordered_set<int>>> sentCells;
+  // <proc, <proc, received nodes>>
+  std::map<int, std::map<int, std::unordered_set<int>>> receivedNodes;
+  // <proc, <proc, received cells>>
+  std::map<int, std::map<int, std::unordered_set<int>>> receivedCells;
+
+  // --- surface partition ghost information
+ private:
+  // <proc, <proc, shared nodes>>
+  std::map<int, std::map<int, std::vector<int>>> sharedSurfNodes;
+  // <proc, <proc, sent nodes>>
+  std::map<int, std::map<int, std::unordered_set<int>>> sentSurfNodes;
+  // <proc, <proc, sent cells>>
+  std::map<int, std::map<int, std::unordered_set<int>>> sentSurfCells;
+  // <proc, <proc, received nodes>>
+  std::map<int, std::map<int, std::unordered_set<int>>> receivedSurfNodes;
+  // <proc, <proc, received cells>>
+  std::map<int, std::map<int, std::unordered_set<int>>> receivedSurfCells;
+
+  // --- patch comm information
+ private:
+  /* shared nodes b/w patches and proc [proc][patch][proc][patch]
+     eg) partition 0's patch i potentially shares with patch j on proc 0 and
+         possibly the other process */
+  std::vector<std::map<int, std::map<int, std::map<int, std::vector<int>>>>>
+      sharedPatchNodes;
+
+  // --- pconn vectors for vol and surf partitions
+ private:
+  // pconn for each vol partition
+  // <proc, pconns>
+  std::vector<std::vector<int>> volPconns;
+  // pconn for each patch of each surf partition
+  // <proc, <patch, pconns>>
+  std::vector<std::map<int, std::vector<int>>> surfPconns;
+  // maximum Pconn values for each proc
+  std::map<int, int> pconnProcMax;
+  // minimum Pconn values for each proc
+  std::map<int, int> pconnProcMin;
+
+  // --- storing number of unique volumetric faces for each partition
+  // <proc, number of faces>
+  std::map<int, int> nUniqueVolFaces;
+
+  // --- volume to surface node maps for each partition
+ private:
+  // Stores volume meshes with virtual for each proc
+  std::vector<std::shared_ptr<meshBase>> procVolMesh;
+
+  // --- data transfer props
+ private:
+  bool smoothC2CTrans;
+
+  // --- other props
+ private:
+  std::string prefixPath;
+
+  // --- write pconn information into pconn vectors
+ private:
+  // write shared pconn vec for vol partition proc - returns length
+  int writeSharedToPconn(int proc, const std::string &type);
+
+  // write shared pconn vec for all patches in surf pconn proc
+  void writeSharedToPconn(int proc);
+  // write sent pconn vec for vol partition proc for nodes (nodeOrCell=true) and
+  // cells
+  void writeSentToPconn(int proc, const std::string &type, bool nodeOrCell);
+  // write received pconn vec for vol partition proc for nodes (nodeOrCell=true)
+  // and cells
+  void writeReceivedToPconn(int proc, const std::string &type, bool nodeOrCell);
+  // get shared nodes, sent nodes/cells, received nodes/cells for
+  // both partitions me and you
+  void getGhostInformation(int me, int you, bool hasShared, bool vol,
+                           vtkSmartPointer<vtkIdList> cellIdsList,
+                           vtkSmartPointer<vtkGenericCell> genCell);
+  // restructure Pconn information so that Rocstar can read it properly
+  void restructurePconn(std::vector<int> &pconnVec, int proc, int volOrSurf,
+                        const std::map<int, int> &old2New, int &nGhost);
+  // Map old to new indices for point data
+  void mapOld2NewPointData(std::vector<double> &pointData,
+                           const std::map<int, int> &new2Old) const;
+  // function for re-ordering tri indices
+  void swapTriOrdering(std::vector<cgsize_t> &connVec) const;
+
+ private:
+  // --- temporary vectors to assist with writing out pconn info to Rocstar
+  // input files
+  std::vector<int> neighborProcsTmp;
+  std::map<int, std::vector<int>> sharedNodesTmp;
+  std::map<int, std::vector<int>> sentNodesTmp;
+  std::map<int, std::vector<int>> receivedNodesTmp;
+  std::map<int, std::vector<int>> sentCellsTmp;
+  std::map<int, std::vector<int>> receivedCellsTmp;
+  std::map<int, int> totalTrisPerPatch;
+  // Rocflu
+  // <proc<patch, zone>>
+  std::vector<std::map<int, int>> surfZoneMap;
+  // <proc, zone>
+  std::vector<int> volZoneMap;
+  // Rocburn
+  std::vector<std::map<int, int>> burnSurfZoneMap;
+  // Map of surface type to patch numbers
+  // <type, <patch>>
+  std::map<std::string, std::vector<int>> surfacePatchTypes;
+
+  // --- utility to clear above vectors
+ private:
+  void clearPconnVectors();
+  void clearBorderVector();
+
+  // --- descriptors for cgns writing
+ private:
+  std::vector<int> notGhostInPconn;
+
+  // helpers
+ private:
+  /* deletes inter partition surfaces which result from extracting surface of
+     vol partition. this is done by comparing cells from full surface mesh to
+     extracted surface and removing those from the extracted surface which are
+     not found in the full surface */
+  vtkSmartPointer<vtkPolyData> deleteInterPartitionSurface(
+      std::shared_ptr<meshBase> fullSurf,
+      vtkSmartPointer<vtkDataSet> partSurf) const;
+  vtkSmartPointer<vtkEdgeTable> createPartitionEdgeTable(int i) const;
+
+  // gets Patch type for each patch number
+  std::string getPatchType(int patchNo) const;
+};
+
+/*
+RocPartCommGenRunner::RocPartCommGenRunner(
     std::shared_ptr<meshBase> _mesh, std::shared_ptr<meshBase> _remeshedSurf,
     std::shared_ptr<meshBase> _volWithSol,
     std::shared_ptr<meshBase> _surfWithSol,
@@ -33,7 +339,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(
     double _searchTolerance, const std::string &_caseName,
     const std::map<std::string, std::vector<int>> &_surfacePatchTypes,
     bool _withC2CTransSmooth, const std::string &_prefix_path) {
-  std::cout << "RocPartCommGenDriver created" << std::endl;
+  std::cout << "RocPartCommGenRunner created" << std::endl;
 
   // setting inputs
   prefixPath = _prefix_path;
@@ -60,11 +366,12 @@ RocPartCommGenDriver::RocPartCommGenDriver(
   // running
   this->execute(numPartitions);
 }
+*/
 
-RocPartCommGenDriver::RocPartCommGenDriver(const std::string &volname,
+RocPartCommGenRunner::RocPartCommGenRunner(const std::string &volname,
                                            const std::string &surfname,
                                            int numPartitions) {
-  std::cout << "RocPartCommGenDriver created" << std::endl;
+  std::cout << "RocPartCommGenRunner created" << std::endl;
 
   // load full volume mesh and create METIS partitions
   prefixPath = std::string();
@@ -76,7 +383,7 @@ RocPartCommGenDriver::RocPartCommGenDriver(const std::string &volname,
   this->execute(numPartitions);
 }
 
-void RocPartCommGenDriver::execute(int numPartitions) {
+void RocPartCommGenRunner::execute(int numPartitions) {
   std::cout << "executing" << std::endl;
   remeshedSurf->setContBool(false);
 
@@ -161,6 +468,7 @@ void RocPartCommGenDriver::execute(int numPartitions) {
   this->cmpWriter(0, this->mesh->getDataSet()->GetNumberOfCells());
   // write dimension file for entire mesh
   this->dimWriter(0, this->mesh, this->mesh);
+
   // get global ids and maps for surface partitions
   this->getGlobalIdsAndMaps(numPartitions, false);
   for (int i = 0; i < numPartitions; ++i) {
@@ -235,7 +543,7 @@ void RocPartCommGenDriver::execute(int numPartitions) {
   this->mapWriter();
 }
 
-void RocPartCommGenDriver::AddGlobalCellIds(
+void RocPartCommGenRunner::AddGlobalCellIds(
     std::shared_ptr<meshBase> _mesh) const {
   vtkSmartPointer<vtkDataArray> globalCellIds =
       vtkSmartPointer<vtkIdTypeArray>::New();
@@ -247,7 +555,7 @@ void RocPartCommGenDriver::AddGlobalCellIds(
   _mesh->getDataSet()->GetCellData()->AddArray(globalCellIds);
 }
 
-void RocPartCommGenDriver::getGlobalIdsAndMaps(int numPartitions, bool vol) {
+void RocPartCommGenRunner::getGlobalIdsAndMaps(int numPartitions, bool vol) {
   // clear vectors before use
   this->globToPartNodeMap.clear();
   this->globToPartCellMap.clear();
@@ -304,7 +612,7 @@ void RocPartCommGenDriver::getGlobalIdsAndMaps(int numPartitions, bool vol) {
   }
 }
 
-int RocPartCommGenDriver::writeSharedToPconn(int proc,
+int RocPartCommGenRunner::writeSharedToPconn(int proc,
                                              const std::string &type) {
   auto sharedItr = this->sharedNodes[proc].begin();
   while (sharedItr != this->sharedNodes[proc].end()) {
@@ -334,8 +642,7 @@ int RocPartCommGenDriver::writeSharedToPconn(int proc,
   return volPconns[proc].size();
 }
 
-
-void RocPartCommGenDriver::writeSharedToPconn(int proc) {
+void RocPartCommGenRunner::writeSharedToPconn(int proc) {
   auto it = this->sharedPatchNodes[proc].begin();  // patch
   while (it != sharedPatchNodes[proc].end()) {
     auto it1 = it->second.begin();  // proc
@@ -368,7 +675,7 @@ void RocPartCommGenDriver::writeSharedToPconn(int proc) {
   }
 }
 
-void RocPartCommGenDriver::writeSentToPconn(int proc, const std::string &type,
+void RocPartCommGenRunner::writeSentToPconn(int proc, const std::string &type,
                                             bool nodeOrCell) {
   std::map<int, std::unordered_set<int>>::iterator sentItr;
   std::map<int, std::unordered_set<int>>::iterator end;
@@ -454,7 +761,7 @@ void RocPartCommGenDriver::writeSentToPconn(int proc, const std::string &type,
   }
 }
 
-void RocPartCommGenDriver::writeReceivedToPconn(int proc,
+void RocPartCommGenRunner::writeReceivedToPconn(int proc,
                                                 const std::string &type,
                                                 bool nodeOrCell) {
   std::map<int, std::unordered_set<int>>::iterator receivedItr;
@@ -533,7 +840,7 @@ void RocPartCommGenDriver::writeReceivedToPconn(int proc,
   }
 }
 
-void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol) {
+void RocPartCommGenRunner::getVirtualCells(int me, int you, bool vol) {
   if (vol && this->sharedNodes[me][you].size()) {
     std::vector<nemId_t> virtuals(receivedCells[me][you].begin(),
                                   receivedCells[me][you].end());
@@ -561,7 +868,7 @@ void RocPartCommGenDriver::getVirtualCells(int me, int you, bool vol) {
   }
 }
 
-void RocPartCommGenDriver::getGhostInformation(int me, bool volOrSurf) {
+void RocPartCommGenRunner::getGhostInformation(int me, bool volOrSurf) {
   // will hold sent cell's indices
   vtkSmartPointer<vtkIdList> cellIdsList = vtkSmartPointer<vtkIdList>::New();
   vtkSmartPointer<vtkGenericCell> genCell =
@@ -577,7 +884,7 @@ void RocPartCommGenDriver::getGhostInformation(int me, bool volOrSurf) {
   }
 }
 
-void RocPartCommGenDriver::getGhostInformation(
+void RocPartCommGenRunner::getGhostInformation(
     int me, int you, bool hasShared, bool vol,
     vtkSmartPointer<vtkIdList> cellIdsList,
     vtkSmartPointer<vtkGenericCell> genCell) {
@@ -950,7 +1257,7 @@ void RocPartCommGenDriver::getGhostInformation(
   }
 }
 
-vtkSmartPointer<vtkEdgeTable> RocPartCommGenDriver::createPartitionEdgeTable(
+vtkSmartPointer<vtkEdgeTable> RocPartCommGenRunner::createPartitionEdgeTable(
     int iPart) const {
   if (iPart > partitions.size()) {
     std::cerr << "Wrong partition number, there are " << partitions.size()
@@ -979,7 +1286,7 @@ vtkSmartPointer<vtkEdgeTable> RocPartCommGenDriver::createPartitionEdgeTable(
   return eTab;
 }
 
-void RocPartCommGenDriver::getSharedPatchInformation() {
+void RocPartCommGenRunner::getSharedPatchInformation() {
   // get glob to part node maps for intersection calc
   std::map<int, std::map<int, std::map<int, int>>> patchProcGlobToPartNodeMaps;
   std::map<int, std::map<int, std::map<int, int>>> patchProcPartToGlobNodeMaps;
@@ -1050,7 +1357,7 @@ void RocPartCommGenDriver::getSharedPatchInformation() {
   }
 }
 
-vtkSmartPointer<vtkPolyData> RocPartCommGenDriver::deleteInterPartitionSurface(
+vtkSmartPointer<vtkPolyData> RocPartCommGenRunner::deleteInterPartitionSurface(
     std::shared_ptr<meshBase> fullSurf,
     vtkSmartPointer<vtkDataSet> _partSurf) const {
   vtkSmartPointer<vtkPolyData> partSurf = vtkPolyData::SafeDownCast(_partSurf);
@@ -1122,7 +1429,7 @@ vtkSmartPointer<vtkPolyData> RocPartCommGenDriver::deleteInterPartitionSurface(
   return cleanPolyData->GetOutput();
 }
 
-void RocPartCommGenDriver::extractPatches() {
+void RocPartCommGenRunner::extractPatches() {
   // calculating patches of surface partitions
   this->patchesOfSurfacePartitions.resize(surfacePartitions.size());
   for (int i = 0; i < this->surfacePartitions.size(); ++i) {
@@ -1183,19 +1490,11 @@ void RocPartCommGenDriver::extractPatches() {
   }
 }
 
-RocPartCommGenDriver *RocPartCommGenDriver::readJSON(
-    const jsoncons::json &inputjson) {
-  std::string volname = inputjson["Remeshed Volume"].as<std::string>();
-  std::string surfname = inputjson["Stitched Surface"].as<std::string>();
-  int numPartitions = inputjson["Number Of Partitions"].as<int>();
-  return new RocPartCommGenDriver(volname, surfname, numPartitions);
+RocPartCommGenRunner::~RocPartCommGenRunner() {
+  std::cout << "RocPartCommGenRunner destroyed" << std::endl;
 }
 
-RocPartCommGenDriver::~RocPartCommGenDriver() {
-  std::cout << "RocPartCommGenDriver destroyed" << std::endl;
-}
-
-void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me) {
+void RocPartCommGenRunner::writeSurfCgns(const std::string &prefix, int me) {
   // generating file name and instantiating a writer
   std::stringstream ss;
   ss << prefixPath << prefix << "_" << this->base_t
@@ -2016,7 +2315,7 @@ void RocPartCommGenDriver::writeSurfCgns(const std::string &prefix, int me) {
   }
 }
 
-void RocPartCommGenDriver::writeVolCgns(const std::string &prefix, int proc,
+void RocPartCommGenRunner::writeVolCgns(const std::string &prefix, int proc,
                                         int type) {
   std::stringstream ss;
   ss << prefixPath << prefix << "_" << this->base_t
@@ -2236,7 +2535,7 @@ void RocPartCommGenDriver::writeVolCgns(const std::string &prefix, int proc,
   }
 }
 
-void RocPartCommGenDriver::writeVolCellFaces(const std::string &prefix,
+void RocPartCommGenRunner::writeVolCellFaces(const std::string &prefix,
                                              int proc, int type) const {
   std::stringstream ss;
   ss << prefixPath << prefix << "_" << this->base_t
@@ -2263,7 +2562,7 @@ void RocPartCommGenDriver::writeVolCellFaces(const std::string &prefix,
   writer->writeVolCellFacesNumber();
 }
 
-void RocPartCommGenDriver::mapOld2NewPointData(
+void RocPartCommGenRunner::mapOld2NewPointData(
     std::vector<double> &nodeData, const std::map<int, int> &new2Old) const {
   std::vector<double> nodeDataTmp;
   for (auto itr = new2Old.begin(); itr != new2Old.end(); ++itr) {
@@ -2272,7 +2571,7 @@ void RocPartCommGenDriver::mapOld2NewPointData(
   nodeData = nodeDataTmp;
 }
 
-void RocPartCommGenDriver::restructurePconn(std::vector<int> &pConnVec,
+void RocPartCommGenRunner::restructurePconn(std::vector<int> &pConnVec,
                                             int proc, int volOrSurf,
                                             const std::map<int, int> &old2New,
                                             int &nGhost) {
@@ -2453,7 +2752,7 @@ void RocPartCommGenDriver::restructurePconn(std::vector<int> &pConnVec,
   }
 }
 
-void RocPartCommGenDriver::clearPconnVectors() {
+void RocPartCommGenRunner::clearPconnVectors() {
   sharedNodesTmp.clear();
   sentNodesTmp.clear();
   receivedNodesTmp.clear();
@@ -2461,11 +2760,11 @@ void RocPartCommGenDriver::clearPconnVectors() {
   receivedCellsTmp.clear();
 }
 
-void RocPartCommGenDriver::clearBorderVector() { neighborProcsTmp.clear(); }
+void RocPartCommGenRunner::clearBorderVector() { neighborProcsTmp.clear(); }
 
 // Assumes one region per process (i.e. a one-to-one mapping between
 // partitions and processes)
-void RocPartCommGenDriver::mapWriter() const {
+void RocPartCommGenRunner::mapWriter() const {
   // Get number of partitions
   int nPart = this->partitions.size();
 
@@ -2506,7 +2805,7 @@ void RocPartCommGenDriver::mapWriter() const {
 
 // Cell mapping file
 // Currently only supports tetrahedral elements
-void RocPartCommGenDriver::cmpWriter(int proc, int nCells) const {
+void RocPartCommGenRunner::cmpWriter(int proc, int nCells) const {
   // Get number of partitions
   // int nPart = this->partitions.size();
 
@@ -2547,7 +2846,7 @@ void RocPartCommGenDriver::cmpWriter(int proc, int nCells) const {
 
 // Write communication file
 // This data is the same as in PaneData/pconn in the fluid CGNS files
-void RocPartCommGenDriver::comWriter(int proc) const {
+void RocPartCommGenRunner::comWriter(int proc) const {
   // Get number of partitions
   // int nPart = this->partitions.size();
 
@@ -2691,7 +2990,7 @@ void RocPartCommGenDriver::comWriter(int proc) const {
     tmpStr += std::string(8 - vertStr1.length(), ' ') + vertStr1;
     tmpStr += std::string(8 - vertStr2.length(), ' ') + vertStr2;
     tmpStr += std::string(8 - vertStr3.length(), ' ') + vertStr3;
-   comFile << tmpStr << "\n";
+    comFile << tmpStr << "\n";
     tmpStr = "";
 
     if (!(this->sentNodesTmp.find(*itr) == this->sentNodesTmp.end())) {
@@ -2757,7 +3056,7 @@ void RocPartCommGenDriver::comWriter(int proc) const {
 }
 
 // Rocflu dimensions file
-void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
+void RocPartCommGenRunner::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
                                      std::shared_ptr<meshBase> totalMB) const {
   // Set number of borders for each proc
   // int nBorders[partitions.size()];
@@ -2772,7 +3071,7 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
- std::string fname =
+  std::string fname =
       prefixPath + this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
   std::ofstream dimFile;
   dimFile.open(fname);
@@ -2906,23 +3205,23 @@ void RocPartCommGenDriver::dimWriter(int proc, std::shared_ptr<meshBase> realMB,
       tmpStr += std::string(8 - vertStr2.length(), ' ') + vertStr2;
       tmpStr += std::string(8 - vertStr3.length(), ' ') + vertStr3;
 
-     dimFile << tmpStr << "\n";
+      dimFile << tmpStr << "\n";
     }
   }
 
   // Write borders
- dimFile << "# End" << std::endl;
+  dimFile << "# End" << std::endl;
   dimFile.close();
 }
 
 // Write surface information for Rocstar dimension file
-void RocPartCommGenDriver::dimSurfWriter(
+void RocPartCommGenRunner::dimSurfWriter(
     int proc, const std::vector<cgsize_t> &cgConnReal,
     const std::vector<cgsize_t> &cgConnVirtual, int patchNo) {
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
- std::string fname =
+  std::string fname =
       prefixPath + this->caseName + ".dim_" + procStrPadded + "_0.00000E+00";
 
   std::string line;
@@ -2988,12 +3287,12 @@ void RocPartCommGenDriver::dimSurfWriter(
   std::ofstream dimFile;
   dimFile.open(fname);
   for (auto itr = newLines.begin(); itr != newLines.end(); ++itr)
-   dimFile << *itr << "\n";
+    dimFile << *itr << "\n";
   dimFile.close();
 }
 
 // Write surface information for Rocstar dimension file
-void RocPartCommGenDriver::dimSurfWriter(int proc) const {
+void RocPartCommGenRunner::dimSurfWriter(int proc) const {
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
@@ -3019,7 +3318,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc) const {
   }
 
   // Insert Patch lines in existing file
- std::vector<std::string> newLines;
+  std::vector<std::string> newLines;
   std::string patchStr1;
   std::string patchStr2;
   std::string patchStr3;
@@ -3038,7 +3337,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc) const {
         tmpStr = "";
         patchStr1 = std::to_string(*itr2);
         tmpStr += std::string(8 - patchStr1.length(), ' ') + patchStr1;
-       patchStr2 = std::to_string((this->totalTrisPerPatch.at(*itr2)) / 3);
+        patchStr2 = std::to_string((this->totalTrisPerPatch.at(*itr2)) / 3);
         tmpStr += std::string(8 - patchStr2.length(), ' ') + patchStr2;
         patchStr3 = std::to_string((this->totalTrisPerPatch.at(*itr2)) / 3);
         tmpStr += std::string(8 - patchStr3.length(), ' ') + patchStr3;
@@ -3064,7 +3363,7 @@ void RocPartCommGenDriver::dimSurfWriter(int proc) const {
   dimFile.close();
 }
 
-void RocPartCommGenDriver::txtWriter() const {
+void RocPartCommGenRunner::txtWriter() const {
   // Write txt files for fluid and ifluid
   std::string fname;
   fname = prefixPath + "fluid_in_" + this->base_t + ".txt";
@@ -3126,7 +3425,7 @@ void RocPartCommGenDriver::txtWriter() const {
     tmpStr += "\n";
     ifluid_in << tmpStr << std::endl;
 
-   // Write to burn_file
+    // Write to burn_file
     iburn_in << "@Proc: " << std::to_string(iPart) << "\n";
     if (burnStrTmp.empty()) {
       iburn_in << "@Files:"
@@ -3141,7 +3440,7 @@ void RocPartCommGenDriver::txtWriter() const {
     iburn_in << tmpStr << std::endl;
 
     // Write to iburn_file
-   burn_in << "@Proc: " << std::to_string(iPart) << "\n";
+    burn_in << "@Proc: " << std::to_string(iPart) << "\n";
     if (burnStrTmp.empty()) {
       burn_in << "@Files:"
               << "\n";
@@ -3158,7 +3457,7 @@ void RocPartCommGenDriver::txtWriter() const {
   ifluid_in.close();
 }
 
-void RocPartCommGenDriver::swapTriOrdering(
+void RocPartCommGenRunner::swapTriOrdering(
     std::vector<cgsize_t> &connVec) const {
   // Change ordering from counter-clockwise to clockwise convention
   std::vector<cgsize_t> connVecTmp;
@@ -3180,7 +3479,7 @@ void RocPartCommGenDriver::swapTriOrdering(
   connVec = connVecTmp;
 }
 
-std::string RocPartCommGenDriver::getPatchType(int patchNo) const {
+std::string RocPartCommGenRunner::getPatchType(int patchNo) const {
   if (std::find(surfacePatchTypes.at("Burning").begin(),
                 surfacePatchTypes.at("Burning").end(),
                 patchNo) != surfacePatchTypes.at("Burning").end()) {
@@ -3201,7 +3500,7 @@ std::string RocPartCommGenDriver::getPatchType(int patchNo) const {
 }
 
 // Write surface information for Rocstar dimension file
-void RocPartCommGenDriver::dimSurfSort(int proc) const {
+void RocPartCommGenRunner::dimSurfSort(int proc) const {
   // Write com file for this proc
   std::string procStr = std::to_string(proc);
   std::string procStrPadded = std::string(5 - procStr.length(), '0') + procStr;
@@ -3217,7 +3516,7 @@ void RocPartCommGenDriver::dimSurfSort(int proc) const {
     myLines.push_back(line);
   }
 
- std::map<int, std::string> patchLines;
+  std::map<int, std::string> patchLines;
   int patchCounter = 0;
 
   // Get patch lines, implicitly sorted by patch number
@@ -3259,6 +3558,23 @@ void RocPartCommGenDriver::dimSurfSort(int proc) const {
   }
 
   dimFile.close();
+}
+
+}  // namespace
+
+RocPartCommGenDriver::RocPartCommGenDriver(std::string volName,
+                                           std::string surfName,
+                                           int numPartitions)
+    : volName(std::move(volName)),
+      surfName(std::move(surfName)),
+      numPartitions(numPartitions) {}
+
+jsoncons::string_view RocPartCommGenDriver::getProgramType() const {
+  return programType;
+}
+
+void RocPartCommGenDriver::execute() const {
+  RocPartCommGenRunner(this->volName, this->surfName, this->numPartitions);
 }
 
 }  // namespace DRV

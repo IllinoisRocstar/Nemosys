@@ -1,15 +1,44 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #ifdef HAVE_EPIC
 
-#include "ep16Post.H"
 #include "AuxiliaryFunctions.H"
-#include "csv.H"
-#include "point.H"
-#include "kmeans.H"
-#include "convexContainer.H"
+#include "Geometry/convexContainer.H"
+#include "InputGeneration/ep16Post.H"
 
 #include <iostream>
 #include <fstream>
 #include <memory>
+
+#include <point.h>
+#include <kmeans.h>
+#include <csv.h>
 
 namespace NEM {
 
@@ -123,21 +152,21 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
   csv.read_header(io::ignore_extra_column, "ELM#", "MAT", "X", "Y", "Z");
   size_t elm,mat; 
   double x,y,z;
-  std::vector<Point> pnts;
+  std::vector<kmeans::Point> pnts;
   std::vector<size_t> elmIds, matIds;
 
   while(csv.read_row(elm, mat, x, y, z))
   {
       //std::cout << elm << " " << mat << " "
       //    << x << " " << y << " " << z << std::endl;
-      Point p(x,y,z);
+      kmeans::Point p(x,y,z);
       pnts.push_back(p);
       elmIds.push_back(elm);
       matIds.push_back(mat);
   }
 
   // kmeans
-  kmeans = new NEM::MTH::KMeans(nClst, _kmeans_max_itr);
+  auto kmeans = new kmeans::KMeans(nClst, _kmeans_max_itr);
   //kmeans->verbose();
   kmeans->init(pnts);
   bool ret = kmeans->run();
@@ -148,6 +177,7 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
   }
   kmeans->printMeans();
   pnts = kmeans->getPoints();
+  delete kmeans;
 
   // creating convex containers and output
   for (int iClst=0; iClst<nClst; iClst++)
@@ -161,12 +191,13 @@ int ep16Post::procErode(const jsoncons::json &jtsk)
           quickhull::Vector3<double>(pit->data_[0], pit->data_[1], pit->data_[2]) );
       }
     }
-    cont = new convexContainer(clPntCrd);
+    auto cont = new NEM::GEO::convexContainer(clPntCrd);
     cont->computeConvexHull();
     std::stringstream ss;
     ss << iClst;
     std::string clFName = ofClStem + ss.str(); 
     cont->toSTL(clFName);
+    delete cont;
   }
 
   return(0);

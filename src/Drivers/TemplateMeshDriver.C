@@ -1,5 +1,33 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 #define _USE_MATH_DEFINES
-#include "TemplateMeshDriver.H"
+#include "Drivers/TemplateMeshDriver.H"
 
 //#include <cstdio>
 #include <gmsh.h>
@@ -16,78 +44,45 @@
 namespace NEM {
 namespace DRV {
 
-nemAux::Timer T;
+TemplateMeshDriver::Opts::Opts(std::string templateName)
+    : templateName(std::move(templateName)) {}
+
+TemplateMeshDriver::TemplateMeshDriver(Files file, Opts opts)
+    : file_(std::move(file)), opts_(std::move(opts)) {
+  std::cout << "TemplateMeshDriver created" << std::endl;
+}
+
+TemplateMeshDriver::TemplateMeshDriver()
+    : TemplateMeshDriver(Files{{}}, Opts{{}}) {}
 
 TemplateMeshDriver::~TemplateMeshDriver() {
   std::cout << "TemplateMeshDriver destroyed" << std::endl;
 }
 
-TemplateMeshDriver *TemplateMeshDriver::readJSON(
-    const jsoncons::json &inputjson) {
-  std::cout << "Reading Input JSON File." << std::endl;
-
-  if (inputjson.contains("Template Name")) {
-    auto tmplObj = new TemplateMeshDriver(inputjson);
-    return tmplObj;
-  } else {
-    std::cerr << "Error: 'Template Name' keyword not found, expected after "
-                 "'Program Type'"
-              << std::endl;
-    exit(-1);
-  }
+const TemplateMeshDriver::Files &TemplateMeshDriver::getFiles() const {
+  return file_;
 }
 
-TemplateMeshDriver::TemplateMeshDriver(jsoncons::json inputjson) {
-  std::cout << "TemplateMeshDriver created" << std::endl;
+void TemplateMeshDriver::setFiles(Files file) { this->file_ = std::move(file); }
 
-  if (inputjson.contains("Encrypt")) {
-    if (inputjson["Encrypt"].as_bool() == true) {
-      std::string in, out;
-      if (inputjson.contains("In")) {
-        in = inputjson["In"].as_string();
-      } else {
-        std::cout << "Error: Keyword 'In' is not in JSON file. Input file name."
-                  << std::endl;
-        exit(-1);
-      }
-      if (inputjson.contains("Out")) {
-        out = inputjson["Out"].as_string();
-      } else {
-        std::cout
-            << "Error: Keyword 'Out' is not in JSON file. Output file name."
-            << std::endl;
-        exit(-1);
-      }
-      std::ifstream i(in);
-      std::ifstream o(out);
-      if (!i.is_open()) {
-        std::cerr << "Error: " << in << " file is not readable." << std::endl;
-        exit(-1);
-      }
-      encrypt(in, out);
-      exit(0);
-    }
-  }
+const TemplateMeshDriver::Opts &TemplateMeshDriver::getOpts() const {
+  return opts_;
+}
 
-  std::string outName;
-  if (inputjson.contains("Output File Name"))
-    outName = inputjson["Output File Name"].as_string();
-  else {
-    std::cerr << "Error: 'Output File Name' keyword not found." << std::endl;
-    exit(-1);
-  }
+void TemplateMeshDriver::setOpts(Opts opts) { this->opts_ = std::move(opts); }
 
-  // Map of template keyword to template file name
-  // TODO: as more templates are made, populate this map
-  std::map<std::string, std::string> tpl_map = {
+jsoncons::string_view TemplateMeshDriver::getProgramType() const {
+  return programType;
+}
+
+void TemplateMeshDriver::execute() const {
+  static const std::map<std::string, std::string> tpl_map = {
       {"Spiral Tape Pipe", "spiral_tape_pipe.tpl"}};
 
-  // Retrieve the template file name
-  std::string tplName = inputjson["Template Name"].as_string();
+  std::string params_name{};
   // Generate parameters file for template
-  if (tplName == "Spiral Tape Pipe") {
-    params_name = spiralTapePipe(inputjson);
-
+  if (this->opts_.templateName == "Spiral Tape Pipe") {
+    params_name = spiralTapePipe(this->opts_.templateParams);
   } else {
     std::cerr << "Error: Template name not found" << std::endl;
     exit(-1);
@@ -97,9 +92,11 @@ TemplateMeshDriver::TemplateMeshDriver(jsoncons::json inputjson) {
   gmsh::option::setNumber("General.Terminal", 1);
 
   std::cout << "Generating mesh from template" << std::endl;
+  nemAux::Timer T;
   T.start();
   // Execute the template script
-  executeTemplate(tpl_map[tplName], outName, params_name);
+  executeTemplate(tpl_map.at(this->opts_.templateName), this->file_.outputFile,
+                  params_name);
   T.stop();
   std::cout << "Meshing time = " << (T.elapsed() / 1000.0) << " seconds\n";
 }
@@ -110,7 +107,7 @@ void TemplateMeshDriver::executeTemplate(std::string tplName,
   // Decrypt the tpl and return the file name
   std::string name = decrypt(tplName);
   // Insert the name of the parameters file into the decrypted tpl
-  insertParams(name);
+  insertParams(name, params);
 
   // Open and mesh the tpl
   gmsh::open(name);
@@ -145,37 +142,36 @@ std::string TemplateMeshDriver::spiralTapePipe(jsoncons::json inputjson) {
   int element_order = 1;  // Finite element order
   int fan_points = 3;     // Number of fan points in boundary layer at corners
 
-  if (inputjson.contains("Params")) {
-    jsoncons::json params = inputjson["Params"];
-    if (params.contains("rx")) rx = params["rx"].as_double();
-    if (params.contains("ry")) ry = params["ry"].as_double();
-    if (params.contains("thickness"))
-      thickness = params["thickness"].as_double();
-    if (params.contains("extrude_len"))
-      extrude_len = params["extrude_len"].as_double();
-    if (params.contains("n_turns")) n_turns = params["n_turns"].as_double();
-    if (params.contains("width_percent"))
-      width_percent = params["width_percent"].as_double();
+  if (inputjson.contains("rx")) rx = inputjson["rx"].as_double();
+  if (inputjson.contains("ry")) ry = inputjson["ry"].as_double();
+  if (inputjson.contains("thickness"))
+    thickness = inputjson["thickness"].as_double();
+  if (inputjson.contains("extrude_len"))
+    extrude_len = inputjson["extrude_len"].as_double();
+  if (inputjson.contains("n_turns")) n_turns = inputjson["n_turns"].as_double();
+  if (inputjson.contains("width_percent"))
+    width_percent = inputjson["width_percent"].as_double();
 
-    if (params.contains("dist_min")) dist_min = params["dist_min"].as_double();
-    if (params.contains("dist_max")) dist_max = params["dist_max"].as_double();
-    if (params.contains("mSize_min"))
-      mSize_min = params["mSize_min"].as_double();
-    if (params.contains("mSize_max"))
-      mSize_max = params["mSize_max"].as_double();
-    if (params.contains("bl_wall_n"))
-      bl_wall_n = params["bl_wall_n"].as_double();
-    if (params.contains("bl_far")) bl_far = params["bl_far"].as_double();
-    if (params.contains("bl_thickness"))
-      bl_thickness = params["bl_thickness"].as_double();
-    if (params.contains("ratio")) ratio = params["ratio"].as_double();
-    if (params.contains("fan_points"))
-      fan_points = params["fan_points"].as<int>();
-    if (params.contains("extrude_layers"))
-      extrude_layers = params["extrude_layers"].as_double();
-    if (params.contains("element_order"))
-      element_order = params["element_order"].as<int>();
-  }
+  if (inputjson.contains("dist_min"))
+    dist_min = inputjson["dist_min"].as_double();
+  if (inputjson.contains("dist_max"))
+    dist_max = inputjson["dist_max"].as_double();
+  if (inputjson.contains("mSize_min"))
+    mSize_min = inputjson["mSize_min"].as_double();
+  if (inputjson.contains("mSize_max"))
+    mSize_max = inputjson["mSize_max"].as_double();
+  if (inputjson.contains("bl_wall_n"))
+    bl_wall_n = inputjson["bl_wall_n"].as_double();
+  if (inputjson.contains("bl_far")) bl_far = inputjson["bl_far"].as_double();
+  if (inputjson.contains("bl_thickness"))
+    bl_thickness = inputjson["bl_thickness"].as_double();
+  if (inputjson.contains("ratio")) ratio = inputjson["ratio"].as_double();
+  if (inputjson.contains("fan_points"))
+    fan_points = inputjson["fan_points"].as<int>();
+  if (inputjson.contains("extrude_layers"))
+    extrude_layers = inputjson["extrude_layers"].as_double();
+  if (inputjson.contains("element_order"))
+    element_order = inputjson["element_order"].as<int>();
 
   std::ofstream out;
 
@@ -208,7 +204,8 @@ std::string TemplateMeshDriver::spiralTapePipe(jsoncons::json inputjson) {
   return paramsName;
 }
 
-void TemplateMeshDriver::insertParams(std::string file) {
+void TemplateMeshDriver::insertParams(std::string file,
+                                      std::string params_name) {
   std::ifstream in(file);
   std::string str;
   std::vector<std::string> text;

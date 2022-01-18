@@ -1,31 +1,108 @@
-#include "AutoVerificationDriver.H"
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
+#include "Drivers/AutoVerificationDriver.H"
 
-#include "AuxiliaryFunctions.H"
+#include "SolutionVerification/OrderOfAccuracy.H"
+#include "Mesh/meshBase.H"
+
+#ifdef HAVE_OPENMP
+#  include <omp.h>
+#endif
 
 namespace NEM {
 namespace DRV {
-AutoVerificationDriver::AutoVerificationDriver(
-    meshBase *coarseMesh, meshBase *fineMesh, meshBase *finerMesh,
-    std::vector<int> arrayIDs, std::string transferType, double targetGCI,
-    int numThreads) {
-  std::cout << "AutoVerificationDriver created." << std::endl;
+
+AutoVerificationDriver::Files::Files(std::string coarseMesh,
+                                     std::string fineMesh,
+                                     std::string finerMesh)
+    : coarseMeshFile(std::move(coarseMesh)),
+      fineMeshFile(std::move(fineMesh)),
+      finerMeshFile(std::move(finerMesh)) {}
+
+AutoVerificationDriver::Opts::Opts(std::vector<int> arrayIds)
+    : arrayIds(std::move(arrayIds)) {}
+
+AutoVerificationDriver::AutoVerificationDriver(Files files, Opts opts)
+    : files_(std::move(files)), opts_(std::move(opts)) {}
+
+AutoVerificationDriver::AutoVerificationDriver()
+    : AutoVerificationDriver({{}, {}, {}}, Opts{{}}) {}
+
+const AutoVerificationDriver::Files &AutoVerificationDriver::getFiles() const {
+  return files_;
+}
+
+void AutoVerificationDriver::setFiles(Files files) {
+  this->files_ = std::move(files);
+}
+
+const AutoVerificationDriver::Opts &AutoVerificationDriver::getOpts() const {
+  return opts_;
+}
+
+void AutoVerificationDriver::setOpts(Opts opts) {
+  this->opts_ = std::move(opts);
+}
+
+jsoncons::string_view AutoVerificationDriver::getProgramType() const {
+  return programType;
+}
+
+void AutoVerificationDriver::execute() const {
+  auto coarseMesh = meshBase::CreateShared(this->files_.coarseMeshFile);
+  auto fineMesh = meshBase::CreateShared(this->files_.fineMeshFile);
+  auto finerMesh = meshBase::CreateShared(this->files_.finerMeshFile);
 #ifdef HAVE_OPENMP
-  omp_set_num_threads(numThreads);
-  std::cout << "Number of threads set to : " << numThreads << std::endl;
+  auto threads = this->opts_.numThreads.value_or(omp_get_max_threads());
+  omp_set_num_threads(threads);
+  std::cout << "Number of threads set to : " << threads << std::endl;
+#else
+  if (this->opts_.numThreads) {
+    std::cerr << "OpenMP is not enabled. Verification will continue in serial."
+              << std::endl;
+  }
 #endif
   std::cout << "Running verification." << std::endl;
-  this->oac = std::make_shared<OrderOfAccuracy>(OrderOfAccuracy(
-      coarseMesh, fineMesh, finerMesh, arrayIDs, transferType, targetGCI));
+  auto oac = std::make_shared<OrderOfAccuracy>(
+      coarseMesh.get(), fineMesh.get(), finerMesh.get(), this->opts_.arrayIds,
+      this->opts_.transferType, this->opts_.targetGCI);
   std::cout << "Checking if in asymptotic range." << std::endl;
   std::cout << "Target GCI is set to : " << oac->getTargetGCI() << std::endl;
-  auto asymp = this->oac->checkAsymptoticRange();
+  auto asymp = oac->checkAsymptoticRange();
   bool inRange = true;
   for (int i = 0; i < asymp.size(); ++i) {
     for (int j = 0; j < asymp[0].size(); ++j) {
       double gci = asymp[i][j];
       if (gci > oac->getTargetGCI()) {
         std::cout << "GCI of " << gci;
-        std::cout << " exceeds target GCI of " << targetGCI << std::endl;
+        std::cout << " exceeds target GCI of " << oac->getTargetGCI()
+                  << std::endl;
         std::cout << "at array " << i << ", component " << j << std::endl;
         inRange = false;
       }
@@ -38,93 +115,5 @@ AutoVerificationDriver::AutoVerificationDriver(
   }
 }
 
-AutoVerificationDriver *AutoVerificationDriver::readJSON(
-    const std::string &ifname) {
-  if (nemAux::find_ext(ifname) != ".json") {
-    std::cerr << "Input File must be in .json format" << std::endl;
-    exit(1);
-  }
-
-  std::ifstream inputStream(ifname);
-  if (!inputStream.good()) {
-    std::cerr << "Error opening file " << ifname << std::endl;
-    exit(1);
-  }
-
-  jsoncons::json inputjson;
-  inputStream >> inputjson;
-
-  // checking if array
-  if (inputjson.is_array()) {
-    std::cerr
-        << "Warning: Input is an array. Only first element will be processed\n";
-    return AutoVerificationDriver::readJSON(inputjson[0]);
-  } else {
-    return AutoVerificationDriver::readJSON(inputjson);
-  }
-}
-
-AutoVerificationDriver *AutoVerificationDriver::readJSON(
-    const jsoncons::json &inputjson) {
-  auto meshFileOptions = inputjson["Mesh File Options"];
-
-  std::string coarseMeshFname =
-      meshFileOptions["Coarse Mesh File"].as<std::string>();
-  std::string fineMeshFname =
-      meshFileOptions["Fine Mesh File"].as<std::string>();
-  std::string finerMeshFname =
-      meshFileOptions["Finer Mesh File"].as<std::string>();
-
-  auto coarseMesh = meshBase::CreateShared(coarseMeshFname);
-  auto fineMesh = meshBase::CreateShared(fineMeshFname);
-  auto finerMesh = meshBase::CreateShared(finerMeshFname);
-
-  auto verificationOptions = inputjson["Verification Options"];
-
-  // required
-  std::vector<int> arrayIds;
-  jsoncons::json jsonArrayIDs = inputjson["Verification Options"]["Array IDs"];
-  if (!jsonArrayIDs.is_null()) {
-    for (const auto &item : jsonArrayIDs.array_range()) {
-      int id = item.as<int>();
-      arrayIds.push_back(id);
-    }
-  } else {
-    std::cerr << "No array IDs specified for verification. Aborting."
-              << std::endl;
-    exit(1);
-  }
-
-  // optional
-  std::string transferType = "Consistent Interpolation";
-  if (verificationOptions.find("Transfer Type") !=
-      verificationOptions.object_range().end()) {
-    transferType = verificationOptions["Transfer Type"].as<std::string>();
-  }
-  // optional
-  double targetGCI = 1.1;
-  if (verificationOptions.find("Target GCI") !=
-      verificationOptions.object_range().end()) {
-    targetGCI = verificationOptions["Target GCI"].as<double>();
-  }
-
-  int numThreads = 1;
-#ifdef HAVE_OPENMP
-  numThreads = omp_get_max_threads();
-  if (verificationOptions.find("Threads") !=
-      verificationOptions.object_range().end()) {
-    numThreads = verificationOptions["Threads"].as<int>();
-  }
-#else
-  if (verificationOptions.find("Threads") !=
-      verificationOptions.object_range().end()) {
-    std::cerr << "OpenMP is not enabled. Verification will continue in serial."
-              << std::endl;
-  }
-#endif
-  return new AutoVerificationDriver(coarseMesh.get(), fineMesh.get(),
-                                    finerMesh.get(), arrayIds, transferType,
-                                    targetGCI, numThreads);
-}
 }  // namespace DRV
 }  // namespace NEM

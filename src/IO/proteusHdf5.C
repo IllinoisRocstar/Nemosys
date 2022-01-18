@@ -1,9 +1,38 @@
+/*******************************************************************************
+* Promesh                                                                      *
+* Copyright (C) 2022, IllinoisRocstar LLC. All rights reserved.                *
+*                                                                              *
+* Promesh is the property of IllinoisRocstar LLC.                              *
+*                                                                              *
+* IllinoisRocstar LLC                                                          *
+* Champaign, IL                                                                *
+* www.illinoisrocstar.com                                                      *
+* promesh@illinoisrocstar.com                                                  *
+*******************************************************************************/
+/*******************************************************************************
+* This file is part of Promesh                                                 *
+*                                                                              *
+* This version of Promesh is free software: you can redistribute it and/or     *
+* modify it under the terms of the GNU Lesser General Public License as        *
+* published by the Free Software Foundation, either version 3 of the License,  *
+* or (at your option) any later version.                                       *
+*                                                                              *
+* Promesh is distributed in the hope that it will be useful, but WITHOUT ANY   *
+* WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS    *
+* FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more *
+* details.                                                                     *
+*                                                                              *
+* You should have received a copy of the GNU Lesser General Public License     *
+* along with this program. If not, see <https://www.gnu.org/licenses/>.        *
+*                                                                              *
+*******************************************************************************/
 /* Special purpose class for Proteus HDF5 files */
 
-#include "proteusHdf5.H"
-#include <ConversionDriver.H>
-#include <TransferBase.H>
-#include <TransferDriver.H>
+#include "IO/proteusHdf5.H"
+#include "Drivers/Conversion/ConversionDriver.H"
+#include "Transfer/TransferBase.H"
+#include "Drivers/TransferDriver.H"
+
 #include <stdio.h>
 #include <string.h>
 #include <vtkCell.h>
@@ -195,12 +224,11 @@ proteusHdf5::proteusHdf5(std::string fname, std::string meshFname,
 
   refinedMeshBase->write();
 
-  NEM::DRV::ConversionDriver *convdrvobj = new NEM::DRV::ConversionDriver();
   std::vector<meshBase *> mbVec;
   mbVec.push_back(refinedMeshBase);
   std::string exoName = exoMeshFName;
 
-  convdrvobj->genExo(mbVec, exoName);
+  NEM::DRV::ConversionDriver::genExo(mbVec, exoName);
 
   // Close HDF5 file
   closeFile();

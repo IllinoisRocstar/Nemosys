@@ -15,6 +15,7 @@
 #include "GmshEntities.h"
 #include "GmshModel.h"
 #include "gmsh/Context.h"
+#include "gmsh/discreteVertex.h"
 
 namespace MAd {
 

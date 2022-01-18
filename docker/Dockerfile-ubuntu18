@@ -2,11 +2,14 @@ FROM ubuntu:18.04
 
 RUN apt-get update --fix-missing
 
+RUN apt-get -y install apt-transport-https
+RUN apt-get update --fix-missing
+
 # Compilers and build tools.
 RUN apt-get -y install build-essential cmake gfortran libopenmpi-dev
+RUN apt-get -y install doxygen graphviz
 
 # System TPLs needed by NEMoSys dependencies.
-RUN apt-get -y install zlib1g-dev libfreetype6-dev "libfltk1.3-dev" libxmu-dev libxi-dev
 RUN apt-get -y install libhdf5-dev liblapack-dev libjpeg-dev
 
 # System TPLs needed by NEMoSys.
@@ -17,42 +20,28 @@ RUN apt-get -y install "python3.7-dev" python3-pip "python2.7-dev" python-pip sw
 RUN apt-get -y install libboost-filesystem-dev libboost-regex-dev
 
 # Run setuptools upgrade twice in case of "distribute" switch
-RUN pip2 install --upgrade pip
-RUN pip2 install --upgrade setuptools
-RUN pip2 install --upgrade setuptools
 RUN pip3 install --upgrade pip
 RUN pip3 install --upgrade setuptools
 RUN pip3 install --upgrade setuptools
+
 # Potentially comment out the above
-
-# OpenFOAM 7
-RUN apt-get -y install wget
-RUN sh -c "wget -O - http://dl.openfoam.org/gpg.key | apt-key add -"
-RUN apt-get update --fix-missing
-RUN apt-get -y install git software-properties-common apt-transport-https
-RUN add-apt-repository "http://dl.openfoam.org/ubuntu"
-RUN apt-get update
-RUN apt-get -y install openfoam7
-
-# Copy TPLs
-#COPY . /Nemosys/TPLs
+RUN apt-get -y install software-properties-common
 RUN sh -c "wget -O - http://nemosys-repository.illinois.rocstar/nemosys-repository-pub.gpg | apt-key add -"
 RUN add-apt-repository "deb http://nemosys-repository.illinois.rocstar/ bionic main"
 RUN apt-get update
 
-# Install the previously built TPLs
+# Prebuilt dependencies
+RUN apt-get -y install vtk=8.2.0
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install opencascade
 RUN apt-get -y install gmsh
-RUN apt-get -y install vtk
-# a dependency of netgen wishes to be configure via the commandline, which is not possible
-# when building the image. Install the package in non-interactive mode so that it ignores
-# the prompts that the package requests.
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install netgen
-# Custom CGNS build with ENABLE_SCOPING, because package provided by rpm
-# results in a namespace collision
-RUN apt-get install cgns -y
+RUN apt-get -y install netgen
+RUN apt-get -y install openfoam2006-dev
 
-# Load OpenFOAM7 env variables
-RUN echo "source /opt/openfoam7/etc/bashrc" >> /etc/bashrc
+RUN wget -q https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz --directory-prefix /usr/local && \
+    tar -xzf /usr/local/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz -C /usr/local && \
+    rm -f /usr/local/libtensorflow-cpu-linux-x86_64-2.6.0.tar.gz;
+
+RUN echo "source /usr/lib/openfoam/openfoam2006/etc/bashrc" >> /etc/bashrc
 
 ENV BASH_ENV "/etc/bashrc"
 
