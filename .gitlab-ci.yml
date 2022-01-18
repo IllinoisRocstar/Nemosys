@@ -27,6 +27,7 @@ test:ubuntu18-gpl:
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_INSTALL_PREFIX=../install
+      -DBUILD_DOCUMENTATION=OFF
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=OFF
       -DENABLE_EPIC=ON
@@ -52,6 +53,7 @@ test:ubuntu18-lgpl:
       cmake ..
       -DCMAKE_BUILD_TYPE=Release
       -DCMAKE_INSTALL_PREFIX=../install
+      -DBUILD_DOCUMENTATION=OFF
       -DBUILD_SHARED_LIBS=ON
       -DENABLE_MPI=OFF
       -DENABLE_EPIC=ON
