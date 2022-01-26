@@ -1,7 +1,11 @@
-# Quick Start Guide
+# Install from Source #
 
+> These instructions detail how to build and install *Promesh* from source.
+> For a much faster installation, consider using Conda.
+>
+> [![Anaconda-Server Badge](https://anaconda.org/illinoisrocstar/promesh/badges/installer/conda.svg)](https://anaconda.org/illinoisrocstar/promesh)
 
-## Introduction
+## Introduction ## 
 *Promesh* is a modular, extensible
 resource designed for use in typical application development systems as well as
 distributed web-services environments. The project focus is providing a
@@ -9,11 +13,11 @@ framework for robust, automated mesh generation, mesh quality analysis, adaptive
 mesh refinement, and data transfer between arbitrary meshes. Python bindings to
 the *Promesh* library can also be enabled.
 
-## Installation
+## Installation ##
 
->**Note:** These installation guides have been tested for Ubuntu 18.04 and CentOS 7 systems.
+> **Note:** These installation guides have been tested for Ubuntu 18.04 and CentOS 7 systems.
 
-### Prerequisites
+### Prerequisites ### 
 
 Before *Promesh* can be installed, there are some dependencies and third 
 party libraries (TPLs) that must be acquired and installed. Some of these can be
@@ -35,7 +39,7 @@ apt update --fix-missing
 * **zlib1g-dev** - *Netgen* requirement
 * **tk-dev** - *OpenCASCADE* requirement
 * **libfreetype6-dev** - *OpenCASCADE* requirement
-* **mesacommon-dev** - *OpenCASCADE* requirement
+* **mesa-common-dev** - *OpenCASCADE* requirement
 * **libxmu-dev** - *OpenCASCADE* requirement
 * **libxi-dev** - *OpenCASCADE* requirement
 
@@ -58,6 +62,7 @@ yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.r
 
 yum groupinstall "Development Tools"
 ```
+Then install via `yum install`:
 * **centos-release-scl** - Makes the developer toolset available
 * **devtoolset-7** - Provides the necessary compiler version.
 * **cmake3** - Provides the modern CMake required
@@ -89,20 +94,28 @@ source code via GitLab/GitHub whenever possible, since that method allows for ea
 version updates.
 
 Currently, the libraries are:
-
-* [VTK v8.2.0 ](#vtk)
-* [boost v1.45+](#boost)
-* [OpenCASCADE v7.4.0](#opencascade)
-* [Netgen v6.2.1910](#netgen) (recommended)
-* [Kokkos v2+](#kokkos) (optional; if using GPU-enabled adaptive mesh refinement)
-* [Gmsh v4.5.1](#gmsh) (optional; GPL)
-* [OpenFOAM v2006](#openfoam) (optional; GPL)
+* *VTK* v8.2.0
+* *Boost* v1.45+
+* *OpenCASCADE* v7.4.0
+* *Netgen* v6.2.1910 (strongly recommended)
+* *Kokkos* v2+ (optional; used for GPU-enabled adaptive mesh refinement)
+* *Gmsh* v4.5.1 (optional; **GPL license**)
+* *OpenFOAM* v2006 (optional; **GPL license**)
+<!--
+* [VTK v8.2.0 ](#VTK)
+* [boost v1.45+](#Boost)
+* [OpenCASCADE v7.4.0](#OpenCASCADE)
+* [Netgen v6.2.1910](#Netgen) (recommended)
+* [Kokkos v2+](#Kokkos) (optional; if using GPU-enabled adaptive mesh refinement)
+* [Gmsh v4.5.1](#Gmsh) (optional; GPL)
+* [OpenFOAM v2006](#OpenFOAM) (optional; GPL)
+* -->
 <!--
 * [TensorFlow v2.1.0](#tensorflow) (if using machine learning based adaptive mesh refinement)
 * [frugally-deep](#frugally-deep) (if using machine learning based adaptive mesh refinement)
 -->
 Because these are third party, we cannot guarantee that the links below
-will be active or correct in perpetuity. To report a broken link, [contact us](#contact-us).
+will be active or correct in perpetuity.
 
 Note that all the TPLs will be installed to the same directory. To streamline
 compilation and installation, an alias can be created:
@@ -110,8 +123,7 @@ compilation and installation, an alias can be created:
 export PROMESH_DEPS_INSTALL_PATH=/path/to/desired/installation/path
 ```
 
-### VTK
-
+###VTK ###
 
 VTK v8.2.0 is required. VTK provides the core mesh data structure upon which *Promesh* is based.
 
@@ -151,7 +163,7 @@ make -j$(nproc)
 make install
 ```
 
-### Boost
+###Boost ###
 
 *Boost* is required for the base meshing capabilities of *Promesh*
 The file system included with *Boost* v1.45+ is required for mesh generation with 
@@ -170,7 +182,7 @@ If *Boost* is not available through your package manager, detailed installation
 instructions can be [found here.](https://www.boost.org/doc/libs/1_78_0/more/getting_started/index.html)
 
 
-### OpenCASCADE
+###OpenCASCADE ###
 
 *OpenCASCADE* v7.4.0 is required. It provides the geometry kernel used in the Nucmesh and Packmesh modules.  
 
@@ -211,7 +223,7 @@ make -j$(nproc)
 make install
 ```
 
-### Netgen
+### Netgen ###
 
 *Netgen* v6.2.1910 is strongly recommended. It provides enhanced mesh generation
 capabilities and is required for quad meshing.
@@ -232,7 +244,7 @@ git checkout v6.2.1910
 
 **Build and Install**
 
-> **Note:** [*OpenCASCADE*](#opencascade) must be installed prior to making and installing *Netgen*.
+> **Note:** *OpenCASCADE* must be installed prior to making and installing *Netgen*.
 
 Build and install *Netgen* by running the following commands:
 ```commandline
@@ -250,7 +262,7 @@ make -j$(nproc)
 make install
 ```
 
-### Kokkos
+### Kokkos ###
 
 *Kokkos* v2 is required for GPU-enabled mesh adaptation with *Omega_h*.
 
@@ -288,7 +300,7 @@ Pascal61 Volta70 Volta72`.
 
 
 <!--
-### TensorFlow
+### TensorFlow ###
 
 The *Promesh* adaptive mesh refinement module for CFD is now equipped with machine
 learning support. This module allows users to use trained machine learning
@@ -303,7 +315,7 @@ should be compiled with `ENABLE_MLAMR=ON`.
 
 
 
-### frugally-deep
+### frugally-deep ###
 
 To use ML-AMR, the frugally-deep library, which loads Python 
 trained ML models in C++, must be installed. 
@@ -330,7 +342,7 @@ ${PROMESH_DEPS_INSTALL_PATH}/netgen;
 ```
 
 
-### Gmsh
+### Gmsh ###
 
 *Gmsh* v4.5.1 is optional, and **it is important to note that enabling it will result
 in a GPL, rather than LGPL software.**
@@ -352,7 +364,7 @@ git checkout gmsh_4_5_1
 
 **Build and Install**
 
-> **Note:** [*OpenCASCADE*](#opencascade) must be installed prior to making and installing *Gmsh*.
+> **Note:** *OpenCASCADE* must be installed prior to making and installing *Gmsh*.
 
 Build and install *Gmsh* by running the following commands:
 ```commandline
@@ -368,7 +380,7 @@ make -j$(nproc)
 make install
 ```
 
-### OpenFOAM
+### OpenFOAM ###
 
 *OpenFOAM* v2006 is optional, and **it is important to note that enabling it will result
 in a GPL, rather than LGPL software.**
@@ -394,19 +406,19 @@ yum install openfoam2006
 ```
 
 
-## Promesh
+## Promesh ##
 
 Once all the third party libraries have been installed, *Promesh* can be 
 downloaded and installed.
 
-### Source
+### Source ###
 To acquire *Promesh*, you can download it from Illinois Rocstar's GitHub or clone
 it with the following command:
 ```commandline
 git clone https://github.com/IllinoisRocstar/Nemosys.git
 ```
 
-### Build and Install
+### Build and Install ###
 
 > **Warning:** The *Promesh* installation path (`PROMESH_INSTALL_PATH`) should not be 
 > the same as the source location (`PROMESH_PROJECT_PATH`). It is however acceptable that 
@@ -426,9 +438,10 @@ cd ${PROMESH_PROJECT_PATH}
 mkdir build && cd build
 ```
 The CMake commad must include a prefix path that indicates the location of the dependencies. The 
-command below can be altered to include or exclude TPLs as needed.
+command below can be altered to include or exclude TPLs as needed. Note that if `ENABLE_CFMESH` is
+`ON`, the *OpenFOAM* environment must be set prior to running the cmake command.
 
-See the [build options](#build-options) for more information on the available CMake options.
+See the build options tabulated below for more information on the available CMake options.
 
 | If your system is... | use the command...                                                                                                                                                                                                                                                            |
 |----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -450,7 +463,7 @@ bindings are enabled, the `pyNemosys` module is installed for the user. The
 configuration can be modified through the CMake Curses interface, `ccmake`, or
 by passing the command line options to `cmake`.
 
-### Build Options
+### Build Options ###
 
 The following table contains all available CMake options to
 configure *Promesh* functionality. Any necessary third-party library for 
@@ -516,7 +529,7 @@ and that `CMAKE_PREFIX_PATH` (or `$PATH`) contains
 `${PROMESH_DEPS_INSTALL_PATH}/kokkos/lib/CMake`. Note that both Kokkos and
 *Promesh* must be built as shared libraries (`-DBUILD_SHARED_LIBS=ON`).
 
-## Testing Promesh
+## Testing Promesh ##
 
 From the build directory, execute the following command to test the
 installation:
@@ -537,7 +550,7 @@ ctest -N
 ```
 
 <!--
-## Windows Build Instructions
+## Windows Build Instructions ##
 
 The dependencies are similar to a UNIX build of *Promesh* with the addition of 
 boost. An archive of pre-built Windows dependencies is available with some
@@ -553,18 +566,18 @@ matching the bitness (32 or 64) and the MSVC compiler version
 
 **SWIG** (only if Python bindings are enabled): http://swig.org/download.html
 
-### boost Dependency
+### boost Dependency ###
 
 boost will install by default to `C:\local\boost_#_##_#` where the `#` are
 the boost version. The boost location must be specified to CMake with the
 `BOOST_ROOT` variable.
 
-### netCDF Dependency
+### netCDF Dependency ### 
 
 The netCDF installation is not detected automatically. Pass the location to the
 build system through the `CMAKE_PREFIX_PATH` variable.
 
-### Archived Dependencies
+### Archived Dependencies ###
 
 Extract the archive to a custom location (`%TPL_DIR%). The dependencies must
 be given to CMake through the `CMAKE_PREFIX_PATH` variable.
@@ -574,7 +587,7 @@ be given to CMake through the `CMAKE_PREFIX_PATH` variable.
 
 Exclude any you wish to use a custom installation.
 
-### Python on Windows
+### Python on Windows ###
 
 Python bindings are generated using SWIG. A SWIG installer is needed on the
 system and must be available to CMake and available to the Python environment.
@@ -592,7 +605,7 @@ Note: On a system with multiple Python installations, the Cmake variable
 specific environment.
 
 
-### Build Promesh
+### Build Promesh ###
 
 With the dependencies specified above installed, we can compile *Promesh* with
 Python bindings and build tools with the following command from a MSVC command
@@ -622,7 +635,7 @@ Executing the commands above will build all libraries, executables, and
 bindings. The libraries are installed in `%PROMESH_INSTALL_PATH%\lib`.
 Executables are installed in `%PROMESH_INSTALL_PATH%\bin`.
 
-### Testing Promesh
+### Testing Promesh ###
 
 From the build directory, execute the following command to test the
 installation:
@@ -634,9 +647,9 @@ This will execute several tests found in `$PROMESH_PROJECT_PATH/testing`.
 
 -->
 
-## Running Promesh
+## Running Promesh ##
 
-### Setting the Environment
+### Setting the Environment ###
 
 Using *Promesh* requires setting the environment. In most cases, this will be
 done by setting the `LD_LIBRARY_PATH` in the terminal from which *Promesh* cases
@@ -663,7 +676,7 @@ The *OpenFOAM* environment must also be set:
 ```
 
 
-### Creating the Input File
+### Creating the Input File ###
 
 The simplest method to run a *Promesh* program is to start with a JSON input
 file. A sample one is provided below:
@@ -724,7 +737,7 @@ file. A sample one is provided below:
 }
 ```
 
-### Executing Promesh
+### Executing Promesh ###
 To run this program, copy and paste the input above into your favorite text editor
 and save it in the build folder as `test_run.json`. Within a terminal, navigate
 to the build folder and enter:
@@ -746,13 +759,13 @@ geoMeshBase destructed
 Gmsh finalized
 ```
 
-### Visualizing the Result
+### Visualizing the Result ###
 A `test.vtu` file should appear within the build directory. This can be visualized
 with *Paraview* or your visualization software of choice:
 
 ![The test.vtu mesh generated with NucMesh](doc/images/test_run.png)
 
-## Contact Us
+## Contact Us ##
 
 To report errors, broken links, or other feedback, contact the *Promesh* team at promesh@illinoisrocstar.com 
 or open an issue in GitHub at https://github.com/IllinoisRocstar/Nemosys/issues
