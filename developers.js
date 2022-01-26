@@ -1,12 +1,6 @@
 var developers =
 [
     [ "CI/CD", "cicd_dev.html", [
-      [ "Conda", "autotoc_md3.html#autotoc_md4", null ],
-      [ "Running Promesh", "autotoc_md3.html#autotoc_md5", [
-        [ "Creating the Input File", "autotoc_md3.html#autotoc_md6", null ],
-        [ "Executing Promesh", "autotoc_md3.html#autotoc_md7", null ],
-        [ "Visualizing the Result", "autotoc_md3.html#autotoc_md8", null ]
-      ] ],
       [ "Creating a new Debian repository", "cicd_dev.html#new_deb", null ]
     ] ],
     [ "geoMeshBase", "geoMeshBase_dev.html", [

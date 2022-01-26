@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['install_20from_20source',['Install from Source',['../autotoc_md13.html',1,'']]],
-  ['install_20from_20conda',['Install from Conda',['../autotoc_md3.html',1,'']]],
   ['icosidodecahedronphysicalgroup',['icosidodecahedronPhysicalGroup',['../classNEM_1_1GEO_1_1rocPack.html#a58e37099c003f2c7d8b0d596363dee67',1,'NEM::GEO::rocPack']]],
   ['icosidodecahedronshape',['icosidodecahedronShape',['../classNEM_1_1GEO_1_1icosidodecahedronShape.html',1,'NEM::GEO::icosidodecahedronShape'],['../classNEM_1_1GEO_1_1icosidodecahedronShape.html#a87597c7d563214bb7fe6230193de337f',1,'NEM::GEO::icosidodecahedronShape::icosidodecahedronShape()']]],
   ['icosidodecahedronshape_2ec',['icosidodecahedronShape.C',['../icosidodecahedronShape_8C.html',1,'']]],

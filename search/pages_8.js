@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['promesh_20manuals',['Promesh Manuals',['../index.html',1,'']]],
-  ['pack_20mesh_20generation',['Pack Mesh Generation',['../packmesh_ref.html',1,'reference']]]
+  ['quick_20start_20guide',['Quick Start Guide',['../autotoc_md7.html',1,'']]]
 ];
