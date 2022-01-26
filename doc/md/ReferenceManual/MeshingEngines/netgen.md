@@ -1,7 +1,5 @@
 @page netgen_ref Netgen
 
-[TOC]
-
 \section desc Description
 
 <em>Netgen</em> is an automatic mesh generation engine. It can read in a provided .stl geometry, generate a mesh, then refine it using h-refinement.
