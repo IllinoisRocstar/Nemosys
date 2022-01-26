@@ -1,0 +1,25 @@
+var structshmLayerControls =
+[
+    [ "bufferCells", "structshmLayerControls.html#abcb3f555fcf0e1055c42c328f2d56ad0", null ],
+    [ "expRatio", "structshmLayerControls.html#ac91517ca67d5c2c656e24791a41bb1a9", null ],
+    [ "featAngle", "structshmLayerControls.html#abe0d54ac47b39bec79dfb639efa98727", null ],
+    [ "finLThick", "structshmLayerControls.html#a281de53cc1bcc221df0cdcd3e0396e32", null ],
+    [ "firstLyrThickness", "structshmLayerControls.html#a90002269b1a3b2fadb51f66acc882b93", null ],
+    [ "layerVec", "structshmLayerControls.html#aeb15c6d7bec24c1daafaece1b3f60805", null ],
+    [ "maxFcTR", "structshmLayerControls.html#aa9ee46940504d59db4ec197713ffca68", null ],
+    [ "maxThickTMR", "structshmLayerControls.html#a4718aa83cbcf89e48387b66461891295", null ],
+    [ "minMedAngl", "structshmLayerControls.html#a091ac8e68ed107463cbbbbf60b35e98b", null ],
+    [ "minThick", "structshmLayerControls.html#af319c4783ffb4d7d00ba2112b8beb951", null ],
+    [ "nGrow", "structshmLayerControls.html#a5cbbd55a2c115f39569154ddc112baae", null ],
+    [ "nIter", "structshmLayerControls.html#af8e65fa2d69fa304257ba759637e174d", null ],
+    [ "nMedialAxisIter", "structshmLayerControls.html#a635ffa3d99e3fa2dad825fce4a2d49b9", null ],
+    [ "nRelaxedIter", "structshmLayerControls.html#a8dd439cc1dfd3e7b0af9d5cda3adc745", null ],
+    [ "nSmoothDisplacement", "structshmLayerControls.html#a38712de62e59829797c594885498d2d9", null ],
+    [ "relaxIter", "structshmLayerControls.html#a5b0bad908c0e11b581a875e927708c7d", null ],
+    [ "relSize", "structshmLayerControls.html#af1d93e56eb0fe32bd67ba36120384e41", null ],
+    [ "slipFeatureAngle", "structshmLayerControls.html#a3f22750d0338d576a90f72acd33e393d", null ],
+    [ "smthNorm", "structshmLayerControls.html#a3c7ad68479dd0137bdef43d1d078423c", null ],
+    [ "smthSurfNorm", "structshmLayerControls.html#a7a5f78ff884c41ad7f4037c7da1f62a9", null ],
+    [ "smthThick", "structshmLayerControls.html#aa370137264eb66b1a52e9b3807d86cc0", null ],
+    [ "thickness", "structshmLayerControls.html#a9c140450f442715bcef8bef986f9fd7a", null ]
+];

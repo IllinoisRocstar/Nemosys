@@ -1,0 +1,26 @@
+var classcfmeshParams =
+[
+    [ "cfmeshParams", "classcfmeshParams.html#a3985be32f3ea8482cc6bc9441dfe55e3", null ],
+    [ "alwDiscDomains", "classcfmeshParams.html#a6fd9feb81d7dc76174f2029644a10ecb", null ],
+    [ "bndryCellSize", "classcfmeshParams.html#a9e04f3195c3a4214a079daa0e9f1a065", null ],
+    [ "bndryCellSizeRefThk", "classcfmeshParams.html#abd1bdf08b94f0071dcd2e6e38b014582", null ],
+    [ "boundaryLayers", "classcfmeshParams.html#ad6a1761a87394dac0c4dedc5282c12a2", null ],
+    [ "chkGluMsh", "classcfmeshParams.html#ae2ffdef624020f5c91e7592a14fbc50f", null ],
+    [ "generator", "classcfmeshParams.html#a46aa70005f5347a7a0ecde34fecd1cfe", null ],
+    [ "geomFilePath", "classcfmeshParams.html#acd8414139fc885098b827b4099c3dfe2", null ],
+    [ "improveMeshQuality", "classcfmeshParams.html#a1c79266b3b06cecf918313ad9c707e3c", null ],
+    [ "isPackMesh", "classcfmeshParams.html#a3e23c85f456f063591fb3e74c10c3d1b", null ],
+    [ "keepCellIB", "classcfmeshParams.html#a0240fab3ff1458b9bb5d791ef7c3e0eb", null ],
+    [ "maxCellSize", "classcfmeshParams.html#a3752c5d78e83acd32daaa91b98bfd2dd", null ],
+    [ "minCellSize", "classcfmeshParams.html#adb962919cd25fd1de11ff8330d2b34fe", null ],
+    [ "objRefLst", "classcfmeshParams.html#a7a3a6c317fd69eb23533a439c21cdf5f", null ],
+    [ "refCellSize", "classcfmeshParams.html#aa8aa7e9c4e0c8a41460f45bd168b88b9", null ],
+    [ "refP0", "classcfmeshParams.html#ae529ea4e96a5ba1b27f1c169829311df", null ],
+    [ "refP1", "classcfmeshParams.html#a0cd1a06f5a3d4d88125d861c61f65c23", null ],
+    [ "refPatches", "classcfmeshParams.html#a0f3ab7d7abe6951797938f65d3aa64f4", null ],
+    [ "refRad0", "classcfmeshParams.html#a9063b32df015cc40540374b1cfe51dca", null ],
+    [ "refRad1", "classcfmeshParams.html#a98655cf45d18dbef232321e7dcce1d6e", null ],
+    [ "refTyp", "classcfmeshParams.html#a4a28684d03a694fb89a16d9b9f9c70e7", null ],
+    [ "renBndry", "classcfmeshParams.html#a53b0948c798da53e3cdd540d287347f7", null ],
+    [ "srfEdge", "classcfmeshParams.html#a741ca247a30e037f2cc096fe7f8b1cf2", null ]
+];
