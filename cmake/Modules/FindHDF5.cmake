@@ -1,0 +1,12 @@
+find_library(HDF5_CPP_LIBRARY hdf5_cpp)
+find_path(HDF5_INCLUDE_DIR NAMES H5Cpp.h PATH_SUFFIXES hdf5/serial)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(HDF5
+    REQUIRED_VARS HDF5_INCLUDE_DIR HDF5_CPP_LIBRARY)
+
+set(HAVE_HDF5 TRUE)
+add_library(HDF5::HDF5_CPP UNKNOWN IMPORTED)
+set_target_properties(HDF5::HDF5_CPP PROPERTIES
+    IMPORTED_LOCATION "${HDF5_CPP_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${HDF5_INCLUDE_DIR}")
