@@ -100,7 +100,6 @@ int diffMesh(geoMeshBase *gmb1, geoMeshBase *gmb2, double floor, double relTol,
           std::cerr << "Coord 1 " << std::setprecision(15) << coord1[j]
                     << " Coord 2 " << std::setprecision(15) << coord2[j]
                     << std::endl;
-          std::cerr << "Meshes differ in point coordinates" << std::endl;
           return 1;
         }
       }
@@ -113,15 +112,18 @@ int diffMesh(geoMeshBase *gmb1, geoMeshBase *gmb2, double floor, double relTol,
       vtkSmartPointer<vtkPoints> points2 = gmb2->getCell(i)->GetPoints();
 
       if (points1->GetNumberOfPoints() != points2->GetNumberOfPoints()) {
-        std::cerr << "Meshes differ in cells" << std::endl;
+        std::cerr << "Meshes have different numbers of cell points"
+                  << std::endl;
         return 1;
       }
 
       for (int j = 0; j < points1->GetNumberOfPoints(); ++j) {
         std::vector<double> coord1(3);
         std::vector<double> coord2(3);
+
         points1->GetPoint(j, coord1.data());
         points2->GetPoint(j, coord2.data());
+
         for (int k = 0; k < 3; ++k) {
           if (!is_close(coord1[k], coord2[k], floor, relTol)) {
             std::cerr << "Meshes differ in cells" << std::endl;

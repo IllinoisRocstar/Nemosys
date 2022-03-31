@@ -39,8 +39,24 @@ class NEMOSYS_EXPORT SmartConversionDriver : public ConversionDriver {
  public:
   using Files = DriverInOutFiles;
 
-  explicit SmartConversionDriver(Files files);
+  struct NEMOSYS_EXPORT MeshData {
+    jsoncons::optional<std::string> inputFormat;
+    jsoncons::optional<std::string> outputFormat;
+  };
 
+  struct NEMOSYS_EXPORT Opts {
+    explicit Opts(jsoncons::optional<MeshData> meshData);
+    jsoncons::optional<MeshData> meshData;
+    JSONCONS_TYPE_TRAITS_FRIEND
+   private:
+    static constexpr const char *methodName = "SMART";
+    Opts() = default;
+  };
+
+  SmartConversionDriver(Files files, Opts opts);
+
+  const Opts &getOpts() const;
+  void setOpts(Opts opts);
   const Files &getFiles() const;
   void setFiles(Files files);
   void execute() const override;
@@ -51,14 +67,7 @@ class NEMOSYS_EXPORT SmartConversionDriver : public ConversionDriver {
   SmartConversionDriver();
 
   Files files_;
-
- public:
-  struct NEMOSYS_NO_EXPORT Opts {
-    static constexpr const char *methodName = "SMART";
-  };
-
- private:
-  const Opts &getOpts() const;
+  Opts opts_;
 };
 
 }  // namespace DRV

@@ -170,14 +170,15 @@ JSONCONS_N_MEMBER_NAME_TRAITS(
     (needsPostProc, "Post Processing"), (numTasks, "Number of Tasks"),
     (tasks, "Tasks"))
 
-JSONCONS_N_MEMBER_NAME_TRAITS(NEM::DRV::GmshToExoConversionDriver::MeshData, 1,
-                              (meshFileName, "File"), (meshName, "Name"),
-                              (usePhys, "Use Physical Groups"),
-                              (makeFreeSurfSS, "Free Surface Side Set"),
-                              (splitTopBotSS, "Split Top and Bottom"),
-                              (sideSetNames, "Side Set Names"),
-                              (elmBlkNames, "Element Block Names"),
-                              (addGlobalNodeSet, "Add Global Node Set"))
+JSONCONS_N_MEMBER_NAME_TRAITS(
+    NEM::DRV::GmshToExoConversionDriver::MeshData, 1,
+    (meshFileName, "File"), (meshName, "Name"),
+    (usePhys, "Use Physical Groups"),
+    (makeFreeSurfSS, "Free Surface Side Set"),
+    (splitTopBotSS, "Split Top and Bottom"),
+    (sideSetNames, "Side Set Names"),
+    (elmBlkNames, "Element Block Names"),
+    (addGlobalNodeSet, "Add Global Node Set"))
 
 JSONCONS_ALL_MEMBER_NAME_TRAITS(
     NEM::DRV::GmshToExoConversionDriver::PostProcTask, (taskFile, "File"))
@@ -190,7 +191,7 @@ NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
 
 JSONCONS_ALL_MEMBER_NAME_TRAITS(
     NEM::DRV::GmshToVtkConversionDriver::Opts,
-    (methodName , NEM::DRV::JSON::convMethod, JSONCONS_RDONLY,
+    (methodName, NEM::DRV::JSON::convMethod, JSONCONS_RDONLY,
      [](const jsoncons::string_view &x) {
        return x == NEM::DRV::GmshToVtkConversionDriver::Opts::methodName;
      }))
@@ -216,14 +217,20 @@ JSONCONS_N_MEMBER_NAME_TRAITS(NEM::DRV::ManipExoConversionDriver::CombineBlocks,
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
     NEM::DRV::SmartConversionDriver, NEM::DRV::ConversionDriver, 2,
     (getFiles, setFiles, NEM::DRV::JSON::meshFiles),
-    (getOpts, , NEM::DRV::JSON::convOptions, JSONCONS_RDONLY))
+    (getOpts, setOpts, NEM::DRV::JSON::convOptions, JSONCONS_RDWR))
 
-JSONCONS_ALL_MEMBER_NAME_TRAITS(
-    NEM::DRV::SmartConversionDriver::Opts,
-    (methodName , NEM::DRV::JSON::convMethod, JSONCONS_RDONLY,
+JSONCONS_N_MEMBER_NAME_TRAITS(
+    NEM::DRV::SmartConversionDriver::Opts, 1,
+    (methodName, NEM::DRV::JSON::convMethod, JSONCONS_RDONLY,
      [](const jsoncons::string_view &x) {
        return x == NEM::DRV::SmartConversionDriver::Opts::methodName;
-     }))
+     }),
+    (meshData, "Mesh Data"))
+
+JSONCONS_N_MEMBER_NAME_TRAITS(
+    NEM::DRV::SmartConversionDriver::MeshData, 0,
+    (inputFormat, "Input Mesh Format"),
+    (outputFormat, "Output Mesh Format"))
 
 // VtkHexToTetConversionDriver
 NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(

@@ -85,7 +85,9 @@ void addGmshEntitiesToDataSet(
         dataSet->InsertNextCell(ct, ptIds);
 
         // geoEnt: Add to geometric entity array
-        if (vtkEntities) vtkEntities->InsertNextValue(dimTag.second);
+        if (vtkEntities) {
+          vtkEntities->InsertNextValue(dimTag.second);
+        }
       }
     }
   }
@@ -187,7 +189,9 @@ VTKCellType gmshGeoMesh::getVTKTypeFromGmshType(const std::string &gmshType) {
 geoMeshBase::GeoMesh gmshGeoMesh::gmsh2GM(const std::string &gmshMesh) {
   auto vtkMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
-  if (gmshMesh.empty()) return {vtkMesh, gmshMesh, "", {}};
+  if (gmshMesh.empty()) {
+    return {vtkMesh, gmshMesh, "", {}};
+  }
 
   std::string geoEntArrayName = GEO_ENT_DEFAULT_NAME;
 
@@ -285,6 +289,9 @@ std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
     }
 
     gmsh::vectorpair dimTags;
+    if (dimTags.empty()) {
+      gmsh::model::addDiscreteEntity(geoMesh.getDimension());
+    }
     gmsh::model::getEntities(dimTags);
     gmsh::model::mesh::addNodes(dimTags[0].first, dimTags[0].second, nodeTags,
                                 coord);
@@ -323,7 +330,7 @@ std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
       for (vtkIdType pt = 0; pt < it->GetNumberOfPoints(); ++pt) {
         nodeTag.emplace_back(ptIds->GetId(pt) + 1);
       }
-
+      //make sure geoEnt actually exists
       gmsh::model::mesh::addElementsByType(
           geoEnt, getGmshTypeFromVTKType(it->GetCellType()),
           {static_cast<std::size_t>(it->GetCellId() + 1)}, nodeTag);
@@ -338,7 +345,7 @@ std::string gmshGeoMesh::GM2gmsh(const GeoMesh &geoMesh) {
 void gmshGeoMesh::resetNative() {
   auto gm = getGeoMesh();
   if (gm.geo.empty()) {
-    gm.geo = "geoMesh_" + nemAux::getRandomString(6);
+    gm.geo = "gmshGeoMesh_" + nemAux::getRandomString(6);
     gmsh::model::add(gm.geo);
   }
   if (gm.link.empty()) {

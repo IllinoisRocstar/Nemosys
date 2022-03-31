@@ -185,7 +185,9 @@ class InpParser {
             continueNextLine ? Continue::KEYWORD : Continue::NONE;
       } else {
         // Pretend to parse sections w/ unknown keywords
-        if (this->currKw == Keyword::UNKNOWN) { return; }
+        if (this->currKw == Keyword::UNKNOWN) {
+          return;
+        }
         jsoncons::json parsed = parseCSV(line);
         auto parsedRange = parsed.array_range();
         auto iter = parsedRange.begin();
@@ -513,7 +515,9 @@ void writeCells(std::ostream &outStream, vtkDataSet *data,
     }
 #endif
     outStream << "*ELEMENT, TYPE=" << std::get<1>(*inpType);
-    if (!elSet.empty()) { outStream << " ELSET=" << elSet; }
+    if (!elSet.empty()) {
+      outStream << " ELSET=" << elSet;
+    }
     outStream << '\n';
     for (const auto &cellIdx : elems.second) {
       auto cell = data->GetCell(cellIdx);
@@ -587,6 +591,12 @@ void eachGmshPhyGroup(vtkDataSet *dataSet, vtkDataArray *entArr, int dim,
   }
 }
 #endif
+
+/**
+ * @todo The conversion from INP to GM and back to INP loses set data.
+ * Nodes and elements are preserved, but not information about sets is
+ * kept.
+ */
 
 }  // namespace
 
@@ -723,7 +733,9 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
   SideSet sideSet{};
   std::string geoName{};
   std::string linkName{};
-  if (fileName.empty()) { return {{mesh, {}, {}, {}}, {}}; }
+  if (fileName.empty()) {
+    return {{mesh, {}, {}, {}}, {}};
+  }
   std::ifstream inFile(fileName);
   std::string line;
   InpParser parser{};
@@ -753,7 +765,7 @@ std::pair<geoMeshBase::GeoMesh, inpGeoMesh::InpSets> inpGeoMesh::inp2GM(
     mesh->Allocate(parserMesh.elems.size());
 #ifdef HAVE_GMSH
     GmshInterface::Initialize();
-    geoName = "geoMesh_" + nemAux::getRandomString(6);
+    geoName = "inpGeoMesh_" + nemAux::getRandomString(6);
     gmsh::model::add(geoName);
     gmsh::model::setCurrent(geoName);
 #endif

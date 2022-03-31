@@ -129,7 +129,7 @@ NEM_add_test_executable(ExoMesh)
 
 NEM_add_test_executable(GeoMeshBase)
 NEM_add_test_executable(GeoMeshFactory)
-
+NEM_add_test_executable(SmartConversion)
 NEM_add_test_executable(ExoGeoMesh)
 NEM_add_test_executable(InpGeoMesh)
 NEM_add_test_executable(OshGeoMesh)
@@ -216,6 +216,25 @@ NEM_add_test(conversion Conversion ConversionTest
     Building.vtu
     TetBuilding.vtu
     conversion_exo2exo.json
+    )
+
+NEM_add_test(smartConversion SmartConversion SmartConversionTest
+    foam_name
+    vtk_ref_foam.vtu
+    vtk_name.vtu
+    foam_ref_vtk
+    gmsh_name.msh
+    vtk_ref_gmsh.vtu
+    gmsh_ref_vtk.msh
+    exo_mesh.exo
+    vtk_ref_exo.vtu
+    exo_ref_vtk.exo
+    osh_mesh.osh
+    vtk_ref_osh.vtu
+    osh_ref_vtk.osh
+    inp_mesh.inp
+    vtk_ref_inp.vtu
+    inp_ref_vtk.inp
     )
 
 NEM_add_test(cobaltGen CobaltGen CobaltGenTest

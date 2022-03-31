@@ -50,6 +50,8 @@
 namespace NEM {
 namespace MSH {
 
+namespace {
+
 MeshType MeshTypeFromFilename(const std::string &fileName) {
   std::string fileExt = nemAux::find_ext(fileName);
 
@@ -73,8 +75,44 @@ MeshType MeshTypeFromFilename(const std::string &fileName) {
   }
 }
 
+MeshType MeshTypeFromFormatName(const std::string &formatName) {
+  // convert to lowercase to limit the number of options
+  std::string formatname = formatName;
+  nemAux::toLower(formatname);
+
+  if (formatname == "vtk") {
+    return MeshType::VTK_GEO_MESH;
+  } else if (formatname == "gmsh") {
+    return MeshType::GMSH_GEO_MESH;
+  } else if (formatname == "omega_h" || formatname == "omegah" ||
+             formatname == "omega h") {
+    return MeshType::OSH_GEO_MESH;
+  } else if (formatname == "exodus" || formatname == "exodus ii") {
+    return MeshType::EXO_GEO_MESH;
+  } else if (formatname == "calculix" || formatname == "abaqus") {
+    return MeshType::INP_GEO_MESH;
+  } else if (formatname == "open foam" || formatname == "openfoam" ||
+             formatname == "foam") {
+    return MeshType::FOAM_GEO_MESH;
+  } else {
+    std::cerr << "Format name " << formatName << " is not supported."
+              << std::endl;
+    exit(1);
+  }
+}
+
+}  // namespace
+
 geoMeshBase *Read(const std::string &fileName) {
   return Read(fileName, MeshTypeFromFilename(fileName));
+}
+
+geoMeshBase *Read(const std::string &fileName, const std::string &formatName) {
+  if (formatName.empty()) {
+    return Read(fileName);
+  } else {
+    return Read(fileName, MeshTypeFromFormatName(formatName));
+  }
 }
 
 geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
@@ -95,7 +133,10 @@ geoMeshBase *Read(const std::string &fileName, MeshType meshType) {
     case MeshType::FOAM_GEO_MESH: {
 #ifdef HAVE_CFMSH
       std::string fname = fileName;
-      fname.erase(fname.find_last_of('.'));
+      size_t dot_loc = fname.find_last_of('.');
+      if (dot_loc != std::string::npos) {
+        fname.erase(dot_loc);
+      }
       return foamGeoMesh::Read(fname);
 #else
       std::cerr << "Please build NEMoSys with ENABLE_CFMSH=ON to use this"
@@ -151,6 +192,14 @@ geoMeshBase *New(MeshType meshType) {
 
 geoMeshBase *New(const std::string &fileName) {
   return New(MeshTypeFromFilename(fileName));
+}
+
+geoMeshBase *New(const std::string &fileName, const std::string &formatName) {
+  if (formatName.empty()) {
+    return New(fileName);
+  } else {
+    return New(MeshTypeFromFormatName(formatName));
+  }
 }
 
 }  // namespace MSH

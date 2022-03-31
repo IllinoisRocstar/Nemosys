@@ -33,11 +33,14 @@
 namespace NEM {
 namespace DRV {
 
-SmartConversionDriver::SmartConversionDriver(Files files)
-    : files_(std::move(files)) {}
+SmartConversionDriver::SmartConversionDriver(Files files, Opts opts)
+    : files_(std::move(files)), opts_(std::move(opts)) {}
 
 SmartConversionDriver::SmartConversionDriver()
-    : SmartConversionDriver({{}, {}}) {}
+    : SmartConversionDriver({{}, {}}, Opts{{}}) {}
+
+SmartConversionDriver::Opts::Opts(jsoncons::optional<MeshData> meshData)
+    : meshData(std::move(meshData)) {}
 
 const SmartConversionDriver::Files &SmartConversionDriver::getFiles() const {
   return files_;
@@ -47,19 +50,38 @@ void SmartConversionDriver::setFiles(Files files) {
   this->files_ = std::move(files);
 }
 
-void SmartConversionDriver::execute() const {
-  vtkSmartPointer<NEM::MSH::geoMeshBase> srcGM =
-      NEM::MSH::Read(this->files_.inputMeshFile);
-  vtkSmartPointer<NEM::MSH::geoMeshBase> trgGM =
-      NEM::MSH::New(this->files_.outputMeshFile);
-
-  trgGM->takeGeoMesh(srcGM);
-  trgGM->write(this->files_.outputMeshFile);
+void SmartConversionDriver::setOpts(Opts opts) {
+  this->opts_ = std::move(opts);
 }
 
 const SmartConversionDriver::Opts &SmartConversionDriver::getOpts() const {
-  static constexpr Opts opts{};
-  return opts;
+  return opts_;
+}
+
+void SmartConversionDriver::execute() const {
+  if (this->opts_.meshData.has_value()) {
+    vtkSmartPointer<NEM::MSH::geoMeshBase> srcGM =
+        NEM::MSH::Read(this->files_.inputMeshFile,
+                       this->opts_.meshData.value().inputFormat.value_or(""));
+
+    vtkSmartPointer<NEM::MSH::geoMeshBase> trgGM =
+        NEM::MSH::New(this->files_.outputMeshFile,
+                      this->opts_.meshData.value().outputFormat.value_or(""));
+
+    trgGM->takeGeoMesh(srcGM);
+    trgGM->write(this->files_.outputMeshFile);
+  }
+
+  else {
+    vtkSmartPointer<NEM::MSH::geoMeshBase> srcGM =
+        NEM::MSH::Read(this->files_.inputMeshFile);
+
+    vtkSmartPointer<NEM::MSH::geoMeshBase> trgGM =
+        NEM::MSH::New(this->files_.outputMeshFile);
+
+    trgGM->takeGeoMesh(srcGM);
+    trgGM->write(this->files_.outputMeshFile);
+  }
 }
 
 }  // namespace DRV
