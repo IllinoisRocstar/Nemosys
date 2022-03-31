@@ -349,6 +349,7 @@ ManipExoConversionDriver.Files = DriverInOutFiles
 #include <Drivers/Conversion/SmartConversionDriver.H>
 %}
 %ignore NEM::DRV::SmartConversionDriver::Opts;
+%ignore NEM::DRV::SmartConversionDriver::MeshData;
 %include <Drivers/Conversion/SmartConversionDriver.H>
 %pythoncode {
 SmartConversionDriver.Files = DriverInOutFiles
