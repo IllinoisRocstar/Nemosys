@@ -2,10 +2,48 @@
 
 \section desc Description
 
-<em>Netgen</em> is an automatic mesh generation engine. It can read in a provided .stl geometry, generate a mesh, then refine it using h-refinement.
+<em>Netgen</em> is an automatic mesh generation engine. It can read in a provided .stl geometry, generate a mesh, then refine it using h-refinement. The figure below shows three meshes made from a hinge model. The leftmost mesh uses the default values, the center mesh refines without geometry adaptation, and the rightmost mesh refines with geometry adaptation.
 
-\section params Parameters
+![Three hinge models meshed with Netgen, using the default values (left), refining without geometry adaptation (center), and refining with geometry adaptation (right)](../../../images/MeshExamples/Netgen/default_unif_geom.png)
 
+A generic input file for mesh generation with <em>Netgen</em> is shown below, with the default values for each parameter provided. Note that
+all parameters listed under `"Netgen Parameters"` are optional.
+```json
+{
+  "Program Type": "Mesh Generation",
+  "Mesh File Options": {
+    "Input Geometry File": "geometry.stl",
+    "Output Mesh File": "meshed_geometry.vtu"
+  },
+  "Mesh Generation Options": {
+    "Mesh Generation Engine": "netgen",
+    "Netgen Parameters": {
+      "uselocalh": true,
+      "maxh": 1000.0,
+      "fineness": 0.5,
+      "grading": 0.3,
+      "elementsperedge": 2.0,
+      "elementspercurve": 2.0,
+      "closeedgeenable": false,
+      "closeedgefact": 2.0,
+      "second_order": false,
+      "meshsize_filename": "mesh_size_file",
+      "quad_dominated": false,
+      "optvolmeshenable": true,
+      "optsteps_2d": 3,
+      "optsteps_3d": 3,
+      "invert_tets": false,
+      "invert_trigs": false,
+      "check_overlap": true,
+      "check_overlapping_boundary": true,
+      "refine_with_geometry_adaptation": false,
+      "refine_without_geometry_adaptation": false
+    }
+  }
+}
+```
+
+\section params Netgen Parameters
 
 - <strong>`uselocalh`</strong>:  If `true`, enables local mesh size modifiers.  Default is `true`
 - <strong>`maxh`</strong>:  Sets the maximum global mesh size.  Default is 1000.0

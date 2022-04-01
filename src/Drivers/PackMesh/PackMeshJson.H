@@ -94,7 +94,7 @@ JSONCONS_N_MEMBER_NAME_TRAITS(
     (periodic3DOpts, "Periodic 3D Mesh"), (meshSize, "Mesh Size"),
     (meshAlgorithm, "Mesh Algorithm"), (scaleValue, "Scale Value"),
     (removeBoundaryPacks, "Remove geometries on boundary"),
-    (enableDefaultOut, "Enalbe Default Outputs"),
+    (enableDefaultOut, "Enable Default Outputs"),
     (preserveSize, "Enable Size Preservation"),
     (refineLevel, "Refinement Levels"), (upperThreshold, "Upper Threshold"),
     (lowerThreshold, "Lower Threshold"))
@@ -106,7 +106,7 @@ JSONCONS_N_MEMBER_NAME_TRAITS(NEM::DRV::SurfacePackMeshDriver::Periodic3DOpts,
                               (setPeriodicGeo, "Set Periodic Geometry"),
                               (elemOrder, "Element Order"),
                               (customDomain, "Custom Domain"),
-                              (transferMesh, "TransferMesh"))
+                              (transferMesh, "Transfer Mesh"))
 
 JSONCONS_ENUM_NAME_TRAITS(NEM::DRV::SurfacePackMeshDriver::PhysGrpOpts,
                           (NONE, "None"), (MULTI, "Multi Physical Groups"),

@@ -24,176 +24,171 @@ such as <em>blockMesh</em>.
 \section ex Examples
 
 Generic code for <em>snappyHexMesh</em>:
-
-    {
-        "Program Type": "Mesh Generation",
-        "Mesh File Options": {
-            "Input Geometry File": "geometry.stl"
-            "Output Mesh File": "meshed_geometry.vtu"
+```json
+{
+  "Program Type": "Mesh Generation",
+  "Mesh File Options": {
+    "Input Geometry File": "geometry.stl"
+    "Output Mesh File": "meshed_geometry.vtu"
+  },
+  "Mesh Generation Options": {
+    "Mesh Generation Engine": "snappyHexMesh",
+    "snappyHexMesh Parameters": {
+      "Castellated Mesh": true,
+      "Snapping": true, 
+      "Layer Addition": false,
+      "mergeTolerance": 1e-06,
+      "Geometry Definition": {
+        "Enable Multi Patches": true | false
+        "Input Patch Name": "patch_name"
+        "Custom Patches": [
+          {
+            "Custom Patch Name": "box_patch_name",
+            "Searchable Shape": "searchableBox",
+            "minimum bound": [-0.5, -0.5, -0.5],
+            "maximmum bound": [0.5, 0.5, 0.5]
+          },
+          {
+            "Custom Patch Name": "cylinder_patch_name",
+            "Searchable Shape": "searchableCylinder",
+            "Radius": 0.5,
+            "Axis Point 1": [-0.5, 0.0, 0.0],
+            "Axis Point 2": [0.5, 0.0, 0.0]
+          },
+          {
+            "Custom Patch Name": "sphere_patch_name",
+            "Searchable Shape": "searchableSphere",
+            "Radius": 0.5,
+            "Center": [0.0, 0.0, 0.0]
+          }
+        ]
+      },
+      "Castellated Mesh Controls": {
+        "CellZones": false,
+        "maxLocalCells": 2000000,
+        "maxGlobalCells": 4000000,
+        "minRefCells": 0,
+        "General GapLevelIncrement": 1,
+        "nCellsBetweenLevels": 3,
+        "surfaceRefinementLvlMin": 0,
+        "surfaceRefinementLvlMax": 0,
+        "resolveFeatureAngle": 60,
+        "gapLevelIncrement": 1,
+        "planarAngle": 30,
+        "locationInMesh": [0.0, 0.0, 0.0],
+        "allowFreeStandingZoneFaces": true,
+        "Feature File": {
+          "File Name": "geometry_feature_edge_file.eMesh",
+          "MinLevel": 1,
+          "MaxLevel": 3
         },
-        "Mesh Generation Options": {
-            "Mesh Generation Engine": "snappyHexMesh",
-            "snappyHexMesh Parameters": {
-                "Castellated Mesh": true,
-                "Snapping": true, 
-                "Layer Addition": false,
-                "mergeTolerance": 1e-06,
-                "Geometry Definition": {
-                    "Enable Multi Patches": true | false
-                    "Input Patch Name": "patch_name"
-                    "Custom Patches": [
-                        {
-                            "Custom Patch Name": "box_patch_name",
-                            "Searchable Shape": "searchableBox",
-                            "minimum bound": [-0.5, -0.5, -0.5],
-                            "maximmum bound": [0.5, 0.5, 0.5]
-                        },
-                        {
-                            "Custom Patch Name": "cylinder_patch_name",
-                            "Searchable Shape": "searchableCylinder",
-                            "Radius": 0.5,
-                            "Axis Point 1": [-0.5, 0., 0.],
-                            "Axis Point 2": [0.5, 0., 0.]
-                        },
-                        {
-                            "Custom Patch Name": "sphere_patch_name",
-                            "Searchable Shape": "searchableSphere",
-                            "Radius": 0.5,
-                            "Center": [0., 0., 0.]
-                        }
-                    ]
-                },
-                "Castellated Mesh Controls": {
-                    "CellZones": true | false,
-                    "maxLocalCells": 2000000,
-                    "maxGlobalCells": 4000000,
-                    "minRefCells": 0,
-                    "General GapLevelIncrement": 1,
-                    "nCellsBetweenLevels": 3,
-                    "surfaceRefinementLvlMin": 0,
-                    "surfaceRefinementLvlMax": 0,
-                    "resolveFeatureAngle": 60,
-                    "gapLevelIncrement": 1,
-                    "planarAngle": 30,
-                    "locationInMesh": [0., 0., 0.],
-                    "allowFreeStandingZoneFaces": true | false,
-                    "Feature File": {
-                        "File Name": "geometry_feature_edge_file.eMesh",
-                        "MinLevel": 1,
-                        "MaxLevel": 3
-                    },
-                    "SurfaceRefinementRegions": {
-                        "Patch Name": "patch_name_from_stl",
-                        "Patch Type": "patch" | "wall",
-                        "MinLevel": 1,
-                        "MaxLevel": 3
-                    },
-                    "GeomRefinementRegions": {
-                        "Patch Name": "custom_patch_name_from_geometry_def",
-                        "Mode": "inside" | "outside",
-                        "MinLevel": 1,
-                        "MaxLevel": 3
-                    }
-                },
-                "Snapping Controls": {
-                    "nSmoothPatch": 4,
-                    "tolerance": 0.5,
-                    "snapSolveIter": 200,
-                    "snapRelaxIter": 6,
-                    "nFeatureSnapIter": 10,
-                    "implicitFeatureSnap": true | false,
-                    "explicitFeatureSnap": true | false,
-                    "multiRegionFeatureSnap": true | false,
-                },
-                "Mesh Layer Controls": {
-                    "relativeSizes": true | false,
-                    "expansionRatio": 1.3,
-                    "finalLayerThickness": 1,
-                    "minThickness": 0.1,
-                    "firstLayerThickness": 0.1,
-                    "thickness": 0.2,
-                    "nGrow": 0,
-                    "featureAngle": 30,
-                    "nRelaxIter": 3,
-                    "nSmoothSurfaceNormals": 1,
-                    "nSmoothNormals": 3,
-                    "nSmoothThickness": 2,
-                    "maxFaceThicknessRatio":  0.5,
-                    "maxThicknessToMedialRatio": 1,
-                    "minMedialAxisAngle": 90,
-                    "nBufferCellsNoExtrude": 0,
-                    "nLayerIter": 50,
-                    "nRelaxedIter": 20,
-                    "slipFeatureAngle": 30,
-                    "nMedialAxisIter": 1,
-                    "nSmoothDisplacement": 1,
-                    "Layers": [
-                        {
-                            "Patch Name": "custom_patch_combo_1",
-                            "nSurfaceLayers": 1,
-                            "minThickness": 0.1,
-                            "expansionRatio": 1,
-                            "finalLayerThickness": 1
-                        },
-                        {
-                            "Patch Name": "custom_patch_combo_2",
-                            "nSurfaceLayers": 1,
-                            "minThickness": 0.1,
-                            "expansionRatio": 1,
-                            "firstLayerThickness": 0.1
-                        },
-                        {
-                            "Patch Name": "custom_patch_combo_3",
-                            "nSurfaceLayers": 1,
-                            "minThickness": 0.1,
-                            "thickness": 1,
-                            "finalLayerThickness": 1
-                        },
-                        {
-                            "Patch Name": "custom_patch_combo_4",
-                            "nSurfaceLayers": 1,
-                            "minThickness": 0.1,
-                            "thickness": 1,
-                            "firstLayerThickness": 0.1
-                        },
-                        {
-                            "Patch Name": "custom_patch_combo_5",
-                            "nSurfaceLayers": 1,
-                            "minThickness": 0.1,
-                            "expansionRatio": 1,
-                            "thickness": 1
-                        }
-                    ]        
-                },
-                "Mesh Quality Controls": {
-                    "maxNonOrtho": 65,
-                    "maxBoundarySkewness": 20,
-                    "maxInternalSkewness": 4,
-                    "maxConcave": 80,
-                    "minVol": 1e-13,
-                    "minTetQuality": 1e-15,
-                    "minArea": -1,
-                    "minTwist": 0.02,
-                    "minFaceWeight": 0.05,
-                    "minVolRatio": 0.01,
-                    "minDeterminant": 0.001,
-                    "minTriangleTwist": -1,
-                    "qcnSmoothScale": 5,
-                    "errorReduction": 0.75
-                }
-            }
+        "SurfaceRefinementRegions": {
+          "Patch Name": "patch_name_from_stl",
+          "Patch Type": "patch" | "wall",
+          "MinLevel": 1,
+          "MaxLevel": 3
+        },
+        "GeomRefinementRegions": {
+          "Patch Name": "custom_patch_name_from_geometry_def",
+          "Mode": "inside" | "outside",
+          "MinLevel": 1,
+          "MaxLevel": 3
         }
+      },
+      "Snapping Controls": {
+        "nSmoothPatch": 4,
+        "tolerance": 0.5,
+        "snapSolveIter": 200,
+        "snapRelaxIter": 6,
+        "nFeatureSnapIter": 10,
+        "implicitFeatureSnap": false,
+        "explicitFeatureSnap": false,
+        "multiRegionFeatureSnap": false
+      },
+      "Mesh Layer Controls": {
+        "relativeSizes": true,
+        "expansionRatio": 1.3,
+        "finalLayerThickness": 1,
+        "minThickness": 0.1,
+        "firstLayerThickness": 0.1,
+        "thickness": 0.2,
+        "nGrow": 0,
+        "featureAngle": 30,
+        "nRelaxIter": 3,
+        "nSmoothSurfaceNormals": 1,
+        "nSmoothNormals": 3,
+        "nSmoothThickness": 2,
+        "maxFaceThicknessRatio":  0.5,
+        "maxThicknessToMedialRatio": 1,
+        "minMedialAxisAngle": 90,
+        "nBufferCellsNoExtrude": 0,
+        "nLayerIter": 50,
+        "nRelaxedIter": 20,
+        "slipFeatureAngle": 30,
+        "nMedialAxisIter": 1,
+        "nSmoothDisplacement": 1,
+        "Layers": [
+          {
+            "Patch Name": "custom_patch_combo_1",
+            "nSurfaceLayers": 1,
+            "minThickness": 0.1,
+            "expansionRatio": 1,
+            "finalLayerThickness": 1
+          },
+          {
+            "Patch Name": "custom_patch_combo_2",
+            "nSurfaceLayers": 1,
+            "minThickness": 0.1,
+            "expansionRatio": 1,
+            "firstLayerThickness": 0.1
+          },
+          {
+            "Patch Name": "custom_patch_combo_3",
+            "nSurfaceLayers": 1,
+            "minThickness": 0.1,
+            "thickness": 1,
+            "finalLayerThickness": 1
+          },
+          {
+            "Patch Name": "custom_patch_combo_4",
+            "nSurfaceLayers": 1,
+            "minThickness": 0.1,
+            "thickness": 1,
+            "firstLayerThickness": 0.1
+          },
+          {
+            "Patch Name": "custom_patch_combo_5",
+            "nSurfaceLayers": 1,
+            "minThickness": 0.1,
+            "expansionRatio": 1,
+            "thickness": 1
+          }
+        ]        
+      },
+      "Mesh Quality Controls": {
+        "maxNonOrtho": 65,
+        "maxBoundarySkewness": 20,
+        "maxInternalSkewness": 4,
+        "maxConcave": 80,
+        "minVol": 1e-13,
+        "minTetQuality": 1e-15,
+        "minArea": -1,
+        "minTwist": 0.02,
+        "minFaceWeight": 0.05,
+        "minVolRatio": 0.01,
+        "minDeterminant": 0.001,
+        "minTriangleTwist": -1,
+        "qcnSmoothScale": 5,
+        "errorReduction": 0.75
+      }
     }
-
-
+  }
+}
+```
 
 \section params Parameters
 
-
-
 \subsection general_params snappyHexMesh Parameters
-
-
 
 - <strong>`Castellated Mesh`</strong>:  If `true`, enables castellated mesh option.  <strong>Required</strong> 
 - <strong>`Snapping`</strong>:  If `true`, enables surface snapping option. <strong>Required</strong> 
@@ -201,7 +196,6 @@ Generic code for <em>snappyHexMesh</em>:
 - <strong>`mergeTolerance`</strong>:  If specified, specifies a merge tolerance as a fraction of the bounding box of the initial mesh.  Default is 1e-06 
 
 \subsection geom_params Geometry Definition
-
 
 - <strong>`Enable Multi Patches`</strong>:  Should be enabled if the geometry file has more than one patch.  <strong>Required</strong> 
 - <strong>`Input Patch Name`</strong>:  If specified, will be assigned to the entire surface of the provided geometry.  Optional; should only be specified if entire .stl is one solid
@@ -226,7 +220,6 @@ being applied. For example, in a 2D cell, the first level of refinement splits i
 fifth level of refinement would produce \f$(2^2)^5 = 1024 \f$ cells, each \f$2^{(-5)}\f$ the size. Similarly, for a 3D 
 cell, the first level of refinement splits it into \f$(2^3)^1 = 8\f$ cells. The fifth level of refinement would produce 
 \f$(2^3)^5 = 32768\f$ cells.
-
 
 - <strong>`CellZones`</strong>:  If `true`, indicates that there will be multiple disconnected regions within the mesh.  <strong>Required</strong> 
 - <strong>`maxLocalCells`</strong>:  Specifies the maximum number of cells per processor.  Optional; default is 2000000 
@@ -255,10 +248,8 @@ cell, the first level of refinement splits it into \f$(2^3)^1 = 8\f$ cells. The 
     - <strong>`Mode`</strong>:  Indicates whether refinement should take place `inside` or `outside` the patch.  
     - <strong>`MinLevel`</strong>:  Sets the minimum level of refinement for the geometry.  
     - <strong>`MaxLevel`</strong>:  Sets the maximum level of refinement for the geometry.  
-
-
+    
 \subsection snapping Snapping Controls
-
 
 - <strong>`nSmoothPatch`</strong>:  Specifies the number of smoothing iterations to conform the mesh to the geometry surface.  Optional; default is 4 
 - <strong>`tolerance`</strong>:  Sets how far the algorithm will search for a point to snap to. Specifically, the ratio of the distance between a point and the surface feature to the local maximum edge length.  Optional; default is 0.5 
@@ -269,9 +260,7 @@ cell, the first level of refinement splits it into \f$(2^3)^1 = 8\f$ cells. The 
 - <strong>`explicitFeatureSnap`</strong>:  If `true`, enables snapping based on feature edges defined in the `Feature File`, specified in the `Castellated Mesh Controls` section.  Optional; default is `false` 
 - <strong>`multiRegionFeatureSnap`</strong>:  If `true` (and `explicitFeatureSnap` is enabled), features between multiple surfaces will be captured.  Optional; default is `false` 
 
-
 \subsection mesh_layer Mesh Layer Controls
-
 
 - <strong>`relativeSizes`</strong>:  Enables relative sizes option during layer addition. Allows the thickness of layers to be specified relative to the undistorted cell size rather than in absolute terms.  Optional; default is `true` 
 - <strong>`expansionRatio`</strong>:  Expansion ratio for layer addition.  Optional; default is 1.3 
@@ -310,9 +299,7 @@ Only certain combinations of layer options can be used:
 - `"thickness"` and `"firstLayerThickness"`
 - `"expansionRatio"` and `"thickness"`
 
-
 \subsection mesh_quality Mesh Quality Controls
-
 
 - <strong>`maxNonOrtho`</strong>:  Specifies the maximum allowable angle made by the vector between adjacent cell centers across the common face and face normal.  Optional; default is 65 
 - <strong>`maxBoundarySkewness`</strong>:  Sets the maximum allowable skewness in the boundaries.  Optional; default is 20. 

@@ -70,7 +70,8 @@ file. A sample one is provided below:
      }
     ]
    }
-  ]
+  ],
+  "Extrude": [0.5, 1.0, 2.0]
  }
 }
 ```
@@ -101,4 +102,4 @@ Gmsh finalized
 A `test.vtu` file should appear in the same directory. This can be visualized
 with *Paraview* or your visualization software of choice:
 
-![The test.vtu mesh generated with NucMesh](doc/images/test_run.png)
+![The test.vtu mesh generated with NucMesh](doc/images/installation_test_extruded.png)
