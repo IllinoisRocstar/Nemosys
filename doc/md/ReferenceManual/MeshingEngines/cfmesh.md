@@ -23,33 +23,32 @@ loaded, enable <em>cfMesh</em> build by adding this line to the cmake command:
 \section ex Examples
 
 Generic code for <em>cfMesh</em>:
-
-    {
-        "Program Type": "Mesh Generation",
-        "Mesh File Options": {
-            "Input Geometry File": "geometry.stl"
-            "Output Mesh File": "meshed_geometry.vtu"
-        },
-        "Mesh Generation Options": {
-            "Mesh Generation Engine": "cfmesh",
-            "CFMesh Parameters": {
-                "Generator": "<GENERATOR>"
-                }
+```json
+{
+    "Program Type": "Mesh Generation",
+    "Mesh File Options": {
+        "Input Geometry File": "geometry.stl"
+        "Output Mesh File": "meshed_geometry.vtu"
+    },
+    "Mesh Generation Options": {
+        "Mesh Generation Engine": "cfmesh",
+        "CFMesh Parameters": {
+            "Generator": "<GENERATOR>"
             }
         }
     }
-
+}
+```
 Where `"<GENERATOR>"` can be replaced with one of the four generators provided by <em>cfMesh</em>:
 - `"cartesian2D"`
 - `"cartesian3D"`
 - `"tetMesh"`
 - `"polyMesh"`
 
-
 \subsubsection cart2d Cartesian 2D
 The `"cartesian2D"` generator generates 2D meshes that are primarily made up of quadrilaterals, with some polygons around boundaries.
 
-![An example 2D shape meshed with cfMesh](cfm_2d.png "An example 2D shape meshed with cfMesh.") 
+![An example 2D shape meshed with cfMesh](../../../images/MeshExamples/CFMesh/cfm_2d.png "An example 2D shape meshed with cfMesh.") 
 
 \subsubsection cart3d Cartesian 3D
 The `"cartesian3D"` generator generates 3D meshes that are primarily made up of hexahedral elements, with some polyhedral elements around boundaries.
@@ -57,13 +56,13 @@ The `"cartesian3D"` generator generates 3D meshes that are primarily made up of 
 \subsubsection tetmesh TetMesh
 The `"tetMesh"` generator generates 3D meshes consisting of tetrahedral cells. It does not generate boundary layers by default, so they must be specified and refined by user request.
 
-![An example shape meshed with cfMesh](cfm_hinge.png "An example shape meshed with cfMesh.") 
+![An example shape meshed with cfMesh](../../../images/MeshExamples/CFMesh/cfm_hinge.png "An example shape meshed with cfMesh.") 
 
 
 \subsubsection polymesh PolyMesh
 The `"polyMesh"` generator generates meshes consisting of arbitrary polyhedral cells.
 
-![An example shape meshed with cfMesh](cfm_bunny.png "An example shape meshed with cfMesh.") 
+![An example shape meshed with cfMesh](../../../images/MeshExamples/CFMesh/cfm_bunny.png "An example shape meshed with cfMesh.") 
 
 \section params Parameters
 
@@ -131,13 +130,10 @@ Object refinement is used to specify refinement zones inside the volume. These z
         - <strong>`radius0_Outer`</strong>:  The outer radius at `"p0"` for the hollow cone object.  Must be present for `"hollowcone"`. Entered as string, eg `"5"`. 
         - <strong>`radius1_Inner`</strong>:  The inner radius at `"p1"` for the hollow cone object.  Must be present for `"hollowcone"`. Entered as string, eg `"2"`. 
         - <strong>`radius1_Outer`</strong>:  The outer radius at `"p1"` for the hollow cone object.  Must be present for `"hollowcone"`. Entered as string, eg `"3"`. 
-
-
-
+        
 \subsection improve_mesh_qual Improve Mesh Quality
 
 Mesh quality is improved via smoothing.
-
 
 - <strong>`ImproveMeshQuality`</strong>:     
     - <strong>`NIterations`</strong>:  Number of optimization iterations.  Default is 50 
@@ -171,7 +167,4 @@ It may be desired to change the names and types of patches during the meshing pr
         - <strong>`Name` </strong>  Patch name from the surface mesh.  Accepts regex 
         - <strong>`NewName`</strong>:  Patch name in the volume mesh.  Optional 
         - <strong>`NewType`</strong>:  Patch type in the volume mesh.  Optional 
-
-
-
-\section see_also See Also
+        

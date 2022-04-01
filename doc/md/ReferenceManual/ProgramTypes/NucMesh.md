@@ -8,30 +8,30 @@ simple concentric geometric shapes.
 [The user guide] (@ref nucmesh_UG) provides several tutorials covering the capabilities of <em>NucMesh</em>, including complete input files.
 
 <strong>NucMesh JSON Template</strong>
-
-    {
-        "Program Type": "NucMesh Generation",
-        "Mesh File Options": {
-            "Output Mesh File": "output_mesh",
-        },
-        "NucMesh Options": {
-            "Saved Objects": [
-                {
-                    "Name": 
-                    "Type":
-                    ...
-                }
-            ],
-            "Shapes": [
-                {
-                    "Type":
-                    ...
-                }
-            ],
-            "Extrude": []
-        }
-    }
-
+```json
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "output_mesh",
+  },
+  "NucMesh Options": {
+    "Saved Objects": [
+      {
+        "Name": "saved_object_name",
+        "Type": "Circles",
+        ...
+      }
+    ],
+    "Shapes": [
+      {
+        "Type": "Circles And Polys",
+        ...
+      }
+    ],
+    "Extrude": []
+  }
+}
+```
 
 The `"Output Mesh File"` gives the resultant mesh name. The file extension used will indicate to <em>NucMesh</em> which format should be used to create the mesh. Supported format types are <em>VTK</em>'s unstructured grid (`.vtu`/`.vtk`), <em>Omega_h</em> mesh (`.osh`), and <em>Exodus II</em> (`.exo`/`.e`).
 
@@ -58,7 +58,7 @@ specified by the value of `Type` being `Circles And Polys`, and require specifyi
     - <strong>`Material`</strong>: Specifies the material name as a string. This adds the mesh elements within the ring to a material zone; all material zones with the same name are treated as one material. Optional.
     - <strong>`Sideset`</strong>: Specifies the sideset name as a string. Outer edges of a ring can be assigned to a sideset; all mesh edges created from curves assigned the same name are treated as one sideset. Optional.
 
-@image html circlesInPoly.png "Circles And Polys objects for polygons with 3, 4, and 6 sides." width=600
+![Circles And Polys objects for polygons with 3, 4, and 6 sides.](../../../images/NucMesh/circlesInPoly.png)
 
 \subsection circles Circles
 
@@ -74,7 +74,7 @@ The `Circles` shape, effectively a special case of the `Circles And Polys` shape
      - <strong>`Sideset`</strong>: Specifies the sideset name as a string. Outer edges of a ring can be assigned to a sideset; all mesh edges created from curves assigned the same name are treated as one sideset. Optional.
 
 
-@image html concentricCircle.png "Concentric circle mesh with structured quads in the red, green, and blue regions. The red region has 32 circumferential elements while the green and blue regions have 16." width=400
+![Concentric circle mesh with structured quads in the red, green, and blue regions. The red region has 32 circumferential elements while the green and blue regions have 16.](../../../images/NucMesh/concentricCircle.png)
 
 
 \section arrays Arrays
@@ -86,7 +86,7 @@ Array objects are used to repeat shapes spatially with specific patterns. There 
 
 Each array type has a `Shapes` entry, which takes a list (a <em>JSON</em> array) of shapes (the same values as allowed in the `NucMesh Options` `Shapes` entry) as well as a `Pattern` entry, which defines how the shapes are arranged by referring to the zero-indexed entries in the array's `Shapes` list. Each array type also has an optional center. Array shape types are not aware of the center of their subshapes and simply perform translations defined by the pattern, then translate the entire array by the values given in `Center`.
 
-\note When arrays are used with polygons, care must be taken when defining the space between polygons. For such objects, the space will be assigned between the centers of the circles that would circumscribe those polygons.
+> When arrays are used with polygons, care must be taken when defining the space between polygons. For such objects, the space will be assigned between the centers of the circles that would circumscribe those polygons.
 
 \subsection rect_arrays Rectangular Arrays
 
@@ -112,13 +112,13 @@ value of `false`, and a `Center`.
 - <strong>`Pattern`</strong>: Describes the array's pattern as an array. Shapes are indicated by their position in the `"Shapes"` list, starting from 0. Required.
 - <strong>`Shapes`</strong>: The shapes or group of shapes to be used in the array. For empty spaces, use the keyword `null`. Shapes may be specified here, or saved objects may be used. Required.
 
-\note Polar arrays are designed with full circles in mind. Objects within an array will be \f$\frac{end\ angle - start\ angle}{number\ of\ shapes}\f$ degrees apart. This is done so that if a complete circle is specified, there is no overlap between the first and final objects. However, if only a partial arc is to be specified, the user should determine the end angle carefully so that objects are placed as expected.
+> Polar arrays are designed with full circles in mind. Objects within an array will be \f$\frac{end\ angle - start\ angle}{number\ of\ shapes}\f$ degrees apart. This is done so that if a complete circle is specified, there is no overlap between the first and final objects. However, if only a partial arc is to be specified, the user should determine the end angle carefully so that objects are placed as expected.
 For example, if a user wants three circle objects at 0, 45, and 90 degrees, then the appropriate end angle can be calculated as \f$(degrees\ apart)(number\ of\ shapes) + start\ angle = (45)(3)+0 = 135\f$. 
 
-@image html polarArray5.png "Polar array with two concentric rings of eight Circle objects." width=400
+![Polar array with two concentric rings of eight Circle objects.](../../../images/NucMesh/polarArray5.png)
 
 
-@image html polarArrayRotate.png "Arrays showing the two options for Rotate with Array; false on the left, true on the right." width=400
+![Arrays showing the two options for Rotate with Array; false on the left, true on the right.](../../../images/NucMesh/polarArrayRotate.png)
 
 \subsection hex_arrays Hexagonal Arrays
 

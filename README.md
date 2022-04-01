@@ -683,57 +683,58 @@ file. A sample one is provided below:
 
 ```json
 {
- "Program Type": "NucMesh Generation",
- "Mesh File Options": {
-  "Output Mesh File": "test.vtu"
- },
- "NucMesh Options": {
-  "Shapes": [
-   {
-    "Type": "Rectangular Array",
-    "Grid Distance": [1.5, 1.5],
-    "Pattern": [[0, 1],[1, 0]],
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "test.vtu"
+  },
+  "NucMesh Options": {
     "Shapes": [
-     {
-      "Type": "Circles",
-      "Rings": [
-       {
-        "Radius": 0.5,
-        "Mesh": {"Type": "T"},
-        "Material": "A"
-       },
-       {
-        "Radius": 1.0,
-        "Mesh": {
-         "Type": "S",
-         "Number of Elems": [3, 8]
-        },
-        "Material": "B"
-       }
-      ]
-     },
-     {
-      "Type": "Circles",
-      "Rings": [
-       {
-        "Radius": 0.5,
-        "Mesh": {"Type": "Q"},
-        "Material": "C"
-       },
-       {
-        "Radius": 1.0,
-        "Mesh": {
-         "Type": "S",
-         "Number of Elems": [3, 8]
-        },
-        "Material": "D"
-       }
-      ]
-     }
-    ]
-   }
-  ]
- }
+      {
+        "Type": "Rectangular Array",
+        "Grid Distance": [1.5, 1.5],
+        "Pattern": [[0, 1],[1, 0]],
+        "Shapes": [
+          {
+            "Type": "Circles",
+            "Rings": [
+              {
+                "Radius": 0.5,
+                "Mesh": {"Type": "T"},
+                "Material": "A"
+              },
+              {
+                "Radius": 1.0,
+                "Mesh": {
+                  "Type": "S",
+                  "Number of Elems": [3, 8]
+                },
+                "Material": "B"
+              }
+            ]
+          },
+          {
+            "Type": "Circles",
+            "Rings": [
+              {
+                "Radius": 0.5,
+                "Mesh": {"Type": "Q"},
+                "Material": "C"
+              },
+              {
+                "Radius": 1.0,
+                "Mesh": {
+                  "Type": "S",
+                  "Number of Elems": [3, 8]
+                },
+                "Material": "D"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "Extrude": [0.5, 1.0, 2.0]
+  }
 }
 ```
 
@@ -763,7 +764,7 @@ Gmsh finalized
 A `test.vtu` file should appear within the build directory. This can be visualized
 with *Paraview* or your visualization software of choice:
 
-![The test.vtu mesh generated with NucMesh](doc/images/test_run.png)
+![The test.vtu mesh generated with NucMesh](doc/images/installation_test_extruded.png)
 
 ## Contact Us ##
 

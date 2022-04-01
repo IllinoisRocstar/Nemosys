@@ -2,19 +2,19 @@
 
 
 <strong>Transfer JSON Template</strong>
-    
-    {
-        "Program Type": "Transfer",
-        "Mesh File Options": {
-            "Source Mesh File": "source"
-            "Target Mesh File": "target"
-            "Output Mesh File": "output"
-        },
-        "Transfer Options": {
-            ...
-        }
-    }
-
+```json    
+{
+  "Program Type": "Transfer",
+  "Mesh File Options": {
+    "Source Mesh File": "source"
+    "Target Mesh File": "target"
+    "Output Mesh File": "output"
+  },
+  "Transfer Options": {
+    ...
+  }
+}
+```
 \subsection transfer_params Transfer Parameters
 
 - <strong>`Method`</strong>:  Sets the transfer method. Options are `"Consistent Interpolation"`, `"Conservative Surface Transfer"`, and `"Conservative Volume Transfer"`   

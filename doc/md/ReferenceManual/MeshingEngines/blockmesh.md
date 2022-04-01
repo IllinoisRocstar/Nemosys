@@ -21,25 +21,25 @@ It is also possible to create assemblies of these elementary shapes using an inp
 
 
 Generic code for <em>blockMesh</em>:
-
-    {
-        "Program Type": "Mesh Generation",
-        "Mesh File Options": {
-            "Output Mesh File": "filename.vtu"
-        },
-        "Mesh Generation Options": {
-            "Mesh Generation Engine": "blockMesh",
-            "blockMesh Parameters": {
-                "Input Dict File": false,
-                "scaleToMeters": 1,
-                "NumCells": [40, 40, 40],
-                "<SHAPE> Parameters": {
-                    ...
-                }
+```json
+{
+    "Program Type": "Mesh Generation",
+    "Mesh File Options": {
+        "Output Mesh File": "filename.vtu"
+    },
+    "Mesh Generation Options": {
+        "Mesh Generation Engine": "blockMesh",
+        "blockMesh Parameters": {
+            "Input Dict File": false,
+            "scaleToMeters": 1,
+            "NumCells": [40, 40, 40],
+            "<SHAPE> Parameters": {
+                ...
             }
         }
     }
-
+}
+```
 
 where `"<SHAPE>"` can be replaced with `"Block"`, `"Sphere"`, or `"Cylinder/Tapered_Cone"`
 
@@ -60,71 +60,60 @@ Optionally, `"Cell_Size"` can be provided within the `"blockMesh Parameters"` bl
 
 The `"blockMesh Parameters"` block should contain <em>exactly one</em> of `"Block Parameters"`, `"Sphere Parameters"`, or `"Cylinder/Tapered_Cone Parameters"`. 
 
-----
-
-
 \subsubsection rprism Rectangular Prisms 
 
 
-![An example rectangular prism created and meshed with blockMesh](blockMsh_Box.png "An example rectangular prism created and meshed with blockMesh") 
+![An example rectangular prism created and meshed with blockMesh](../../../images/MeshExamples/BlockMesh/blockMsh_Box.png "An example rectangular prism created and meshed with blockMesh") 
+```json
+"Block Parameters": {
+    "InitialPoint": [0.0, 0.0, 0.0],
+    "Length": [1.0, 1.0, 1.0],
+    "Grading": [1.0, 1.0, 1.0]
+}
+```
 
-    "Block Parameters": {
-        "InitialPoint": [0., 0., 0.],
-        "Length": [1., 1., 1.],
-        "Grading": [1., 1., 1.]
-    }
+- <strong>`InitialPoint`</strong>:  Location of reference point, [<em>x</em>, <em>y</em>, <em>z</em>]For an initial point at the origin, set to [0, 0, 0]
+- <strong>`Length`</strong>:  Side length in each direction [<em>Lx</em>, <em>Ly</em>, <em>Lz</em>].For a 1x1x1 cube, set to [1.0, 1.0, 1.0]
+- <strong>`Grading`</strong>:  Ratio between the widths of the ending cell and the starting cell in each direction [<em>Gx</em>, <em>Gy</em>, <em>Gz</em>].For uniform cells, set to [1.0, 1.0, 1.0]
 
 
-- <strong>`InitialPoint`</strong>:  Location of reference point, [<em>x</em>, <em>y</em>, <em>z</em>]For an initial point at the origin, set to [0., 0., 0.]
-- <strong>`Length`</strong>:  Side length in each direction [<em>Lx</em>, <em>Ly</em>, <em>Lz</em>].For a 1x1x1 cube, set to [1., 1., 1.]
-- <strong>`Grading`</strong>:  Ratio between the widths of the ending cell and the starting cell in each direction [<em>Gx</em>, <em>Gy</em>, <em>Gz</em>].For uniform cells, set to [1., 1., 1.]
-
-----
 
 \subsubsection spheres Spheres
 
 
-![An example sphere created and meshed with blockMesh](blockMsh_Sphere.png "An example sphere created and meshed with blockMesh")
-
-    "Sphere Parameters": {
-        "Center": [1., 1., 1.],
-        "Radius": 1.,
-        "Grading": [1.5, 1.5, 1.5]
-    }
-
+![An example sphere created and meshed with blockMesh](../../../images/MeshExamples/BlockMesh/blockMsh_Sphere.png "An example sphere created and meshed with blockMesh")
+```json
+"Sphere Parameters": {
+    "Center": [1.0, 1.0, 1.0],
+    "Radius": 1.0,
+    "Grading": [1.5, 1.5, 1.5]
+}
+```
 
 - <strong>`Center`</strong>:  Location of center point, [<em>x</em>, <em>y</em>, <em>z</em>]  
 - <strong>`Radius`</strong>:  Radius of the sphere.  
 - <strong>`Grading`</strong>:  Ratio between the widths of the ending cell and the starting cell in each direction [<em>Gx</em>, <em>Gy</em>, <em>Gz</em>].   
 
-----
 
 \subsubsection cyl_cone Cylinders/Truncated Cones
 
 
-\note This is written as `"Cylinder/Tapered_Cone"` in the source code, and should be specified as shown in the input file. Nevertheless, what is <em>meant</em> is truncated, not tapered. 
+> This is written as `"Cylinder/Tapered_Cone"` in the source code, and should be specified as shown in the input file. Nevertheless, what is <em>meant</em> is truncated, not tapered. 
 
-
-    "Cylinder/Tapered_Cone Parameters": {
-        "Center": [1., 1., 1.],
-        "Radius1": 1.5,
-        "Radius2": 0.6,
-        "Height": 2.5
-        "Grading": [1., 1., 1.]
-    }
-
+```json
+"Cylinder/Tapered_Cone Parameters": {
+    "Center": [1.0, 1.0, 1.0],
+    "Radius1": 1.5,
+    "Radius2": 0.6,
+    "Height": 2.5
+    "Grading": [1.0, 1.0, 1.0]
+}
+```
 
 - <strong>`Center`</strong>:  Location of center point, [<em>x</em>, <em>y</em>, <em>z</em>] This refers to the center of the base circle. 
 - <strong>`Radius1`</strong>:  The bottom radius of the cylinder/truncated cone.  For a cylinder, the two radii should be the same.
 - <strong>`Radius2`</strong>:  The top radius of the cylinder/truncated cone. For a cylinder, the two radii should be the same.
 - <strong>`Height`</strong>:  The height of the cylinder/truncated cone.   
-- <strong>`Grading`</strong>:  Ratio between the widths of the ending cell and the starting cell in each direction [<em>Gx</em>, <em>Gy</em>, <em>Gz</em>].For uniform cells, set to [1., 1., 1.]
+- <strong>`Grading`</strong>:  Ratio between the widths of the ending cell and the starting cell in each direction [<em>Gx</em>, <em>Gy</em>, <em>Gz</em>].For uniform cells, set to [1.0, 1.0, 1.0]
 
-
-----
-
-\section see_also See Also
-
-
-See the [header file](blockMeshParams_8H_source.html) for source.
 
