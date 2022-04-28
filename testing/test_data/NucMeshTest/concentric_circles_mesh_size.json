@@ -1,0 +1,34 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {"Output Mesh File": "concentric_circles_mesh_size.vtu"},
+  "NucMesh Options": {
+  	//"Write STEP": "concentric_circles.step",
+  	"Max Mesh Size": 0.05,
+  	"Min Mesh Size": 0.01,
+    "Shapes": [
+      {
+        "Type": "Circles", "Rings": [
+        {"Radius": 0.5, "Mesh": {"Type": "T"}, "Material": "A"}, {"Radius": 1, "Mesh": {"Type": "T"}, "Material": "B"}
+      ]
+      },
+      {
+        "Type": "Circles", "Center": [2.5, 0, 0], "Rings": [
+        {"Radius": 0.5, "Mesh": {"Type": "T"}, "Material": "C"},
+        {"Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [2, 8]}, "Material": "D"}
+      ]
+      },
+      {
+        "Type": "Circles", "Center": [5, 0, 0], "Rings": [
+        {"Radius": 0.5, "Mesh": {"Type": "T"}, "Material": "E"}, {"Radius": 1, "Mesh": {"Type": "T"}, "Material": "F"}
+      ]
+      },
+      {
+        "Type": "Circles", "Center": [8.5, 0, 0], "Rings": [
+        {"Radius": 0.5, "Mesh": {"Type": "T"}, "Material": "A"},
+        {"Radius": 1, "Mesh": {"Type": "S", "Number of Elems": [2, 8]}, "Material": "B"},
+        {"Radius": 1.5, "Mesh": {"Type": "T"}, "Material": "C"}
+      ]
+      }
+    ]
+  }
+}

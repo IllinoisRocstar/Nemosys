@@ -695,6 +695,8 @@ if(ENABLE_OPENCASCADE)
       include/Geometry/ShapeData.H
       include/Geometry/GeoManager.H
       src/Geometry/GeoManager.C
+      include/Geometry/GeometryIO.H
+      src/Geometry/GeometryIO.C
 
       include/NucMesh/NucMeshGeo.H
       src/NucMesh/NucMeshGeo.C
@@ -704,6 +706,8 @@ if(ENABLE_OPENCASCADE)
       src/NucMesh/ShapeBase.C
       include/NucMesh/CirclesAndPolys.H
       src/NucMesh/CirclesAndPolys.C
+      include/NucMesh/FuelElement.H
+      src/NucMesh/FuelElement.C
       include/NucMesh/ShapesArray.H
       src/NucMesh/ShapesArray.C
       include/NucMesh/PolarArray.H

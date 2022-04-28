@@ -43,9 +43,7 @@
 namespace NEM {
 namespace GEO {
 
-GeoManager::GeoManager(int dim)
-    : map_(),
-      dim_(std::min(3, std::max(1, dim))) {}
+GeoManager::GeoManager(int dim) : map_(), dim_(std::min(3, std::max(1, dim))) {}
 
 int GeoManager::getDim() const { return dim_; }
 
@@ -128,18 +126,14 @@ void GeoManager::deleteShapes(const TopoDS_Shape &shape) {
   if (!isChild(shape)) {
     auto findIter = map_.find(shape);
     if (findIter != map_.end()) {
-      if (findIter->second) {
-        findIter->second->updateDeleted(shape, *this);
-      }
+      if (findIter->second) { findIter->second->updateDeleted(shape, *this); }
       map_.erase(findIter);
     }
   }
 }
 
 void GeoManager::deleteShapes(const std::vector<TopoDS_Shape> &shapes) {
-  for (auto &shape : shapes) {
-    this->deleteShapes(shape);
-  }
+  for (auto &shape : shapes) { this->deleteShapes(shape); }
 }
 
 TopoDS_Compound GeoManager::buildCompound() const {
@@ -229,5 +223,5 @@ void GeoManager::modifyImpl(BRepBuilderAPI_MakeShape &op,
   }
 }
 
-}  // namespace NUCMESH
+}  // namespace GEO
 }  // namespace NEM

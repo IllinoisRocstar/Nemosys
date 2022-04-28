@@ -1,0 +1,374 @@
+{
+  "Program Type": "NucMesh Generation",
+  "Mesh File Options": {
+    "Output Mesh File": "fuel_assembly.vtu"
+  },
+  "NucMesh Options": {
+  	"Max Mesh Size": 0.5,
+  	"Min Mesh Size": 0.1,
+    "Saved Objects": [
+      {
+      	"Name": "Fuel Element",
+      	"Type": "Fuel Element",
+        "Center": [0, 0, 0],
+        "Angle": 45,
+        "Start Radius": 7.6581,
+        "Plates": [
+          {
+          	"Thickness": 0.2032, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.4953,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel1"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel2"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel3"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel4"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel5"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel6"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel7"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel8"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel9"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel10"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel11"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel12"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel13"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel14"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel15"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel16"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel17"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.127, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.4445,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel18"}
+          },
+          {
+          	"Thickness": 0.19812, 
+          	"Fuel Thickness": 0.0,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.2413,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [1,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2"}
+          },
+          {
+          	"Thickness": 0.254, 
+          	"Fuel Thickness": 0.0508,
+          	"Side Width": 0.47498,
+          	"End Width": 0.0813,
+          	"Fuel Offset":  0.4953,
+          	"Mesh": {"End": {"Type": "S", "Number of Elems": [3,1]}, "Side": {"Type": "S", "Number of Elems": [3,2]}, "Plate": {"Type": "S", "Number of Elems": [1,12]}, "Fuel": {"Type": "S", "Number of Elems": [1,10]}}, 
+          	"Material": {"End": "Water", "Side": "Cladding1", "Plate": "Cladding2", "Fuel": "Fuel19"}
+          }
+        ]
+      },
+      {
+      	"Name": "Fuel Assembly 1",
+        "Type": "Polar Array",
+        "Radius": 0,
+        "Start Angle": 0,
+        "End Angle": 180,
+        "Rotate with Array": true,
+        "Pattern": [0,0,0,0],
+        "Shapes": [
+          {
+            "Saved Object": "Fuel Element"
+          }
+        ]
+      }
+    ],
+    "Shapes": [
+      {
+      	"Saved Object": "Fuel Assembly 1",
+      	"Center": [-21.59, 21.59, 0]
+      }
+    ]
+  }
+}

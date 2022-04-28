@@ -58,6 +58,23 @@ struct NEMOSYS_EXPORT NucMeshConf {
    * Empty array means that final mesh will be 2d (lying in xy plane)
    */
   std::vector<double> extrudeSteps;
+  /**
+   * @brief File name of output geometry file
+   */
+  std::string geoFileName;
+  /**
+   * @brief Maximum mesh edge length
+   */
+  double maxMeshSize = 1.e12;
+  /**
+   * @brief Minimum mesh edge length
+   */
+  double minMeshSize = 1.e12;
+  /**
+   * @brief Boolean for NETGEN engine
+   */
+  bool useNetgen = false;
+
 
   /**
    * Helper to insert shapes into @c geometryAndMesh

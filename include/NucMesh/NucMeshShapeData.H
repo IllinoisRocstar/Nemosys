@@ -54,12 +54,15 @@ class NEMOSYS_EXPORT NucMeshShapeData : public NEM::GEO::ShapeData {
    * @param[in,out] generator Generator that will mesh @shape
    * @param[in,out] mesh Mesh that will mesh @shape
    * @param[out] generatedHyps Output list of created hypotheses/algorithms
+   * @param[in] minSize Minimum mesh size for edge elements
+   * @param[in] maxSize Maximum mesh size for edge elements
    * (for memory management; will be deleted when the @c GeoManager instance is
    * deleted)
    */
   virtual void setupAlgos(
       const TopoDS_Shape &shape, SMESH_Gen &generator, SMESH_Mesh &mesh,
-      std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps) const {};
+      std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+      double minSize, double maxSize) const {};
 };
 
 /**
@@ -96,8 +99,8 @@ class NEMOSYS_EXPORT GroupData : public NucMeshShapeData {
 
   void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
                   SMESH_Mesh &mesh,
-                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps)
-      const override;
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
 
   std::string groupName;
   SMDSAbs_ElementType type;
@@ -114,9 +117,10 @@ class NEMOSYS_EXPORT SideSetEdge
 
   void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
                   SMESH_Mesh &mesh,
-                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps)
-      const override {
-    this->GroupData::setupAlgos(shape, generator, mesh, generatedHyps);
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override {
+    this->GroupData::setupAlgos(shape, generator, mesh, generatedHyps, minSize,
+                                maxSize);
   }
 };
 
@@ -130,8 +134,43 @@ class NEMOSYS_EXPORT EdgeSegments
 
   void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
                   SMESH_Mesh &mesh,
-                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps)
-      const override;
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
+
+ private:
+  int numSegments_;
+};
+
+/**
+ * Class to describe meshing an edge by @c StdMeshers_CompositeSegment_1D
+ */
+class NEMOSYS_EXPORT EdgeSegmentsComposite
+    : public CopyOverrideShapeData<EdgeSegmentsComposite, SideSetEdge> {
+ public:
+  explicit EdgeSegmentsComposite(std::string groupName, int numSegments);
+
+  void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
+                  SMESH_Mesh &mesh,
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
+
+ private:
+  int numSegments_;
+};
+
+/**
+ * Class to describe meshing an edge by @c StdMeshers_CompositeSegment_1D with
+ * node distribution
+ */
+class NEMOSYS_EXPORT EdgeSegmentsDistribution
+    : public CopyOverrideShapeData<EdgeSegmentsComposite, SideSetEdge> {
+ public:
+  explicit EdgeSegmentsDistribution(std::string groupName, int numSegments);
+
+  void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
+                  SMESH_Mesh &mesh,
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
 
  private:
   int numSegments_;
@@ -148,13 +187,13 @@ class NEMOSYS_EXPORT TriMeshSurface
 
   void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
                   SMESH_Mesh &mesh,
-                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps)
-      const override;
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
 };
 
 /**
  * Structured quad mesh (assuming edges meshed appropriately) or quad-dominant
- * mesh
+ * mesh with NETGEN
  */
 class NEMOSYS_EXPORT QuadMeshSurface
     : public CopyOverrideShapeData<QuadMeshSurface, GroupData> {
@@ -164,8 +203,24 @@ class NEMOSYS_EXPORT QuadMeshSurface
 
   void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
                   SMESH_Mesh &mesh,
-                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps)
-      const override;
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
+};
+
+/**
+ * Structured quad mesh (assuming edges meshed appropriately) or quad-dominant
+ * mesh with SMESH completely
+ */
+class NEMOSYS_EXPORT QuadMeshSurfaceComposite
+    : public CopyOverrideShapeData<QuadMeshSurfaceComposite, GroupData> {
+ public:
+  explicit QuadMeshSurfaceComposite(std::string groupName)
+      : CRTPBase(std::move(groupName), SMDSAbs_Face) {}
+
+  void setupAlgos(const TopoDS_Shape &shape, SMESH_Gen &generator,
+                  SMESH_Mesh &mesh,
+                  std::vector<std::unique_ptr<SMESH_Hypothesis>> &generatedHyps,
+                  double minSize, double maxSize) const override;
 };
 
 }  // namespace NUCMESH
