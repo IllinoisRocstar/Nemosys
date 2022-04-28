@@ -71,7 +71,7 @@ void ShapeBase::mergeGeo(NEM::GEO::GeoManager &keepGeo,
     return;
   } else {
     auto newCompound = removeGeo.buildCompound();
-    TopoDS_ListOfShape newShapes;
+    TopoDS_ListOfShape newShapes;  // NOTE: this is not used
     static constexpr std::array<TopAbs_ShapeEnum, 4> shapeTypes{
         TopAbs_SOLID, TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX};
     for (auto &shapeType : shapeTypes) {

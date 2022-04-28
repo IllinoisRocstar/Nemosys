@@ -40,7 +40,9 @@
 #include <type_traits>
 
 #include "NucMesh/CirclesAndPolys.H"
+#include "NucMesh/FuelElement.H"
 #include "NucMesh/HexagonalArray.H"
+#include "NucMesh/NucMeshGeo.H"
 #include "NucMesh/PolarArray.H"
 #include "NucMesh/RectangularArray.H"
 #include "NucMesh/ShapeBase.H"
@@ -177,6 +179,34 @@ construct_helper<NEM::NUCMESH::CirclesAndPolys>(
     const std::map<std::string, std::unique_ptr<NEM::NUCMESH::ShapeBase>>
         &savedShapes) {
   auto shape = new NEM::NUCMESH::CirclesAndPolys{{}, {}};
+  std::unique_ptr<NEM::NUCMESH::ShapeBase> out{shape};
+  modify_helper(json, *shape, savedShapes, true);
+  return out;
+}
+
+template <>
+void modify_helper(
+    const jsoncons::json &json, NEM::NUCMESH::FuelElement &shape,
+    const std::map<std::string, std::unique_ptr<NEM::NUCMESH::ShapeBase>>
+        &savedShapes,
+    bool checkRequired) {
+  setter_helper(shape, &NEM::NUCMESH::FuelElement::setStartRadius, json,
+                "Start Radius", checkRequired);
+  setter_helper(shape, &NEM::NUCMESH::FuelElement::setAngle, json, "Angle",
+                checkRequired);
+  setter_helper(shape, &NEM::NUCMESH::FuelElement::setPlates, json, "Plates",
+                checkRequired);
+  modify_helper(json, dynamic_cast<NEM::NUCMESH::ShapeBase &>(shape),
+                savedShapes, checkRequired);
+}
+
+template <>
+std::unique_ptr<NEM::NUCMESH::ShapeBase>
+construct_helper<NEM::NUCMESH::FuelElement>(
+    const jsoncons::json &json,
+    const std::map<std::string, std::unique_ptr<NEM::NUCMESH::ShapeBase>>
+        &savedShapes) {
+  auto shape = new NEM::NUCMESH::FuelElement{{}, {}, {}};
   std::unique_ptr<NEM::NUCMESH::ShapeBase> out{shape};
   modify_helper(json, *shape, savedShapes, true);
   return out;
@@ -354,6 +384,9 @@ inline std::unique_ptr<NEM::NUCMESH::ShapeBase> construct_from_alias(
                  dynamic_cast<const NEM::NUCMESH::CirclesAndPolys *>(
                      aliasShape)) {
     return construct_from_alias_helper(json, circlesAndPolys, savedShapes);
+  } else if (auto fuelElement =
+                 dynamic_cast<const NEM::NUCMESH::FuelElement *>(aliasShape)) {
+    return construct_from_alias_helper(json, fuelElement, savedShapes);
   } else if (auto polar =
                  dynamic_cast<const NEM::NUCMESH::PolarArray *>(aliasShape)) {
     return construct_from_alias_helper(json, polar, savedShapes);
@@ -372,9 +405,7 @@ inline std::unique_ptr<NEM::NUCMESH::ShapeBase> as_shape(
     const jsoncons::json &json,
     const std::map<std::string, std::unique_ptr<NEM::NUCMESH::ShapeBase>>
         &savedShapes) {
-  if (json.is_null()) {
-    return nullptr;
-  }
+  if (json.is_null()) { return nullptr; }
   static constexpr auto loadSavedStr = "Saved Object";
   if (json.contains(loadSavedStr)) {
     auto findIter = savedShapes.find(json.at(loadSavedStr).as_string());
@@ -396,8 +427,11 @@ inline std::unique_ptr<NEM::NUCMESH::ShapeBase> as_shape(
                                                               savedShapes);
     } else if (jsonType == "Hexagonal Array") {
       return construct_helper<NEM::NUCMESH::HexagonalArray>(json, savedShapes);
+    } else if (jsonType == "Fuel Element") {
+      return construct_helper<NEM::NUCMESH::FuelElement>(json, savedShapes);
     }
   }
+  // TODO: add 'Include' to read other JSON files here
   throw jsoncons::convert_error(jsoncons::convert_errc::conversion_failed,
                                 "Not a NEM::NUCMESH::ShapeBase");
 }
@@ -418,6 +452,9 @@ NEM_JSON_N_GETTER_SETTER_NAME_TRAITS_FINAL(
 JSONCONS_ENUM_NAME_TRAITS(NEM::NUCMESH::RingMeshOption::MeshingType, (TRI, "T"),
                           (QUAD, "Q"), (STRUCT, "S"))
 
+JSONCONS_ENUM_NAME_TRAITS(NEM::NUCMESH::PlateMeshOption::MeshingType,
+                          (TRI, "T"), (QUAD, "Q"), (STRUCT, "S"))
+
 JSONCONS_ENUM_NAME_TRAITS(NEM::NUCMESH::PolyRing::ShapeType, (CIRCLE, "Circle"),
                           (POLYGON, "Poly"))
 
@@ -431,9 +468,7 @@ struct json_type_traits<Json, NEM::NUCMESH::RingMeshOption> {
   static constexpr auto meshingTypeStr = "Type";
   static constexpr auto elemsStr = "Number of Elems";
   static bool is(const Json &ajson) noexcept {
-    if (!ajson.is_object()) return false;
-    if (!ajson.contains(meshingTypeStr)) return false;
-    return true;
+    return ajson.is_object() && ajson.contains(meshingTypeStr);
   }
   static value_type as(const Json &ajson) {
     using namespace NEM::NUCMESH;
@@ -547,6 +582,94 @@ template <>
 struct is_json_type_traits_declared<NEM::NUCMESH::PolyRing>
     : public std::true_type {};
 
+// Plate
+template <typename Json>
+struct json_type_traits<Json, NEM::NUCMESH::Plate> {
+  using value_type = NEM::NUCMESH::Plate;
+  using allocator_type = typename Json::allocator_type;
+  using char_type = typename Json::char_type;
+  using string_view_type = typename Json::string_view_type;
+  static constexpr auto thicknessStr = "Thickness";
+  static constexpr auto fuelThicknessStr = "Fuel Thickness";
+  static constexpr auto sideWidthStr = "Side Width";
+  static constexpr auto endWidthStr = "End Width";
+  static constexpr auto fuelOffsetStr = "Fuel Offset";
+  static constexpr auto meshTypeStr = "Mesh";
+  static constexpr auto materialStr = "Material";
+  static constexpr auto sidesetStr = "Sideset";
+  static bool is(const Json &ajson) noexcept {
+    return ajson.is_object() && ajson.contains(thicknessStr) &&
+           ajson.contains(fuelThicknessStr) && ajson.contains(sideWidthStr) &&
+           ajson.contains(endWidthStr) && ajson.contains(fuelOffsetStr) &&
+           ajson.contains(meshTypeStr) && ajson.contains(materialStr);
+  }
+  static value_type as(const Json &ajson) {
+    if (!is(ajson))
+      throw convert_error(convert_errc::conversion_failed,
+                          "Not a NEM::NUCMESH::Plate");
+    value_type aval(
+        ajson.at(thicknessStr).template as<decltype(value_type::thickness)>(),
+        ajson.at(fuelThicknessStr)
+            .template as<decltype(value_type::fuelThickness)>(),
+        ajson.at(sideWidthStr).template as<decltype(value_type::sideWidth)>(),
+        ajson.at(endWidthStr).template as<decltype(value_type::endWidth)>(),
+        ajson.at(fuelOffsetStr).template as<decltype(value_type::fuelOffset)>(),
+        ajson.at(meshTypeStr).template as<decltype(value_type::meshType_map)>(),
+        ajson.at(materialStr)
+            .template as<decltype(value_type::materials_map)>());
+    if (ajson.contains(sidesetStr))
+      jsoncons::json_traits_helper<Json>::set_udt_member(ajson, sidesetStr,
+                                                         aval.sideset_map);
+
+    return aval;
+  }
+};
+template <>
+struct is_json_type_traits_declared<NEM::NUCMESH::Plate>
+    : public std::true_type {};
+
+// PlateMeshOptions
+template <typename Json>
+struct json_type_traits<Json, NEM::NUCMESH::PlateMeshOption> {
+  using value_type = NEM::NUCMESH::PlateMeshOption;
+  using allocator_type = typename Json::allocator_type;
+  using char_type = typename Json::char_type;
+  using string_view_type = typename Json::string_view_type;
+  static constexpr auto meshingTypeStr = "Type";
+  static constexpr auto elemsStr = "Number of Elems";
+  static bool is(const Json &ajson) noexcept {
+    return ajson.is_object() && ajson.contains(meshingTypeStr);
+  }
+  static value_type as(const Json &ajson) {
+    using namespace NEM::NUCMESH;
+    using namespace NEM::DRV::JSON;
+    if (!is(ajson))
+      throw convert_error(convert_errc::conversion_failed,
+                          "Not a NEM::NUCMESH::PlateMeshOption");
+    auto meshingType =
+        ajson.at(meshingTypeStr).template as<PlateMeshOption::MeshingType>();
+    switch (meshingType) {
+      case PlateMeshOption::MeshingType::TRI:
+        return PlateMeshOption::ApplyTriMesh();
+      case PlateMeshOption::MeshingType::QUAD:
+        return PlateMeshOption::ApplyQuadMesh();
+      case PlateMeshOption::MeshingType::STRUCT:
+        if (ajson.contains(elemsStr)) {
+          return PlateMeshOption::ApplyStructuredMesh(
+              ajson.at(elemsStr)
+                  .template as<std::decay<first_argument_type<
+                      decltype(PlateMeshOption::ApplyStructuredMesh)>>::
+                                   type>());
+        }
+    }
+    throw convert_error(convert_errc::conversion_failed,
+                        "Not a NEM::NUCMESH::PlateMeshOption");
+  }
+};
+template <>
+struct is_json_type_traits_declared<NEM::NUCMESH::PlateMeshOption>
+    : public std::true_type {};
+
 template <>
 struct json_type_traits<json, NEM::DRV::NucMeshDriver::Opts> {
   using Json = json;
@@ -554,13 +677,15 @@ struct json_type_traits<json, NEM::DRV::NucMeshDriver::Opts> {
   constexpr static auto savedObjectStr = "Saved Objects";
   constexpr static auto savedObjectNameStr = "Name";
   constexpr static auto extrudeStr = "Extrude";
+  constexpr static auto writeGeoStr = "Write Geometry";
+  constexpr static auto maxMeshSizeStr = "Max Mesh Size";
+  constexpr static auto minMeshSizeStr = "Min Mesh Size";
+  constexpr static auto useNetgenStr = "Use Netgen";
   static bool is(const Json &ajson) noexcept {
-    if (!ajson.contains(NEM::DRV::JSON::arrayShapes) ||
-        !ajson.at(NEM::DRV::JSON::arrayShapes).is_array())
-      return false;
-    if (ajson.contains(savedObjectStr) && !ajson.at(savedObjectStr).is_array())
-      return false;
-    return true;
+    return ajson.contains(NEM::DRV::JSON::arrayShapes) &&
+           ajson.at(NEM::DRV::JSON::arrayShapes).is_array() &&
+           (!ajson.contains(savedObjectStr) ||
+            ajson.at(savedObjectStr).is_array());
   }
   static value_type as(const Json &ajson) {
     using namespace NEM::DRV;
@@ -589,6 +714,22 @@ struct json_type_traits<json, NEM::DRV::NucMeshDriver::Opts> {
     if (ajson.contains(extrudeStr)) {
       json_traits_helper<Json>::set_udt_member(ajson, extrudeStr,
                                                aval.extrudeSteps);
+    }
+    if (ajson.contains(writeGeoStr)) {
+      json_traits_helper<Json>::set_udt_member(ajson, writeGeoStr,
+                                               aval.geoFileName);
+    }
+    if (ajson.contains(maxMeshSizeStr)) {
+      json_traits_helper<Json>::set_udt_member(ajson, maxMeshSizeStr,
+                                               aval.maxMeshSize);
+    }
+    if (ajson.contains(minMeshSizeStr)) {
+      json_traits_helper<Json>::set_udt_member(ajson, minMeshSizeStr,
+                                               aval.minMeshSize);
+    }
+    if (ajson.contains(useNetgenStr)) {
+      json_traits_helper<Json>::set_udt_member(ajson, useNetgenStr,
+                                               aval.useNetgen);
     }
     return aval;
   }

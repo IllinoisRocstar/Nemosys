@@ -3581,12 +3581,12 @@ void LogicalBinary::SetMesh( const SMDS_Mesh* theMesh )
 
 void LogicalBinary::SetPredicate1( PredicatePtr thePredicate )
 {
-  myPredicate1 = thePredicate;
+  myPredicate1 = std::move(thePredicate); // SAP
 }
 
 void LogicalBinary::SetPredicate2( PredicatePtr thePredicate )
 {
-  myPredicate2 = thePredicate;
+  myPredicate2 = std::move(thePredicate); // SAP
 }
 
 SMDSAbs_ElementType LogicalBinary::GetType() const

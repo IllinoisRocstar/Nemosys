@@ -59,6 +59,7 @@ namespace GEO {
  * NEM::GEO::ShapeData
  */
 class NEMOSYS_EXPORT GeoManager {
+  friend class GeometryIO;
  public:
   /**
    * Hasher based on TopTools_ShapeMapHasher, which relies on
@@ -224,7 +225,7 @@ class NEMOSYS_EXPORT GeoManager {
     return emplaceIter;
   }
 
-  /*
+  /**
    * @copydoc GeoManager::getMap() const
    */
   MapType &getMap();

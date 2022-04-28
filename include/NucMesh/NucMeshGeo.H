@@ -32,6 +32,8 @@
 #include "nemosys_export.h"
 #include "Geometry/GeoManager.H"
 
+#include "AuxiliaryFunctions.H"
+
 #include <memory>
 #include <utility>
 
@@ -43,16 +45,28 @@ namespace NUCMESH {
 
 class NEMOSYS_EXPORT NucMeshGeo : public NEM::GEO::GeoManager {
   using NEM::GEO::GeoManager::GeoManager;
+
  public:
   /**
    * @brief Construct a mesh using the shapes in the map and their @c ShapeData.
    * @details Note there is a default edge hypothesis
-   * (StdMeshers_AutomaticLength), edge algorithm (StdMeshers_Regular_1D), and
+   * (StdMeshers_Adaptive1D), edge algorithm (StdMeshers_Regular_1D), and
    * face algorithm (StdMeshers_MEFISTO_2D). Geometry and mesh regenerated on
    * each call.
+   * @param generator SMESH generator
+   * @param useNetgen Bool to use the NETGEN triangular mesh generator
+   * @param geometryTime Geometry generation timer
+   * @param meshingTime Mesh generation timer
+   * @param maxMeshSize Maximum mesh size for edge elements
+   * @param minMeshSize Minimum mesh size for edge elements
    * @return Generated mesh
    */
-  std::unique_ptr<SMESH_Mesh> computeMesh(SMESH_Gen &generator);
+  std::unique_ptr<SMESH_Mesh> computeMesh(SMESH_Gen &generator, bool useNetgen,
+                                          double maxMeshSize = 1e12,
+                                          double minMeshSize = 1e12);
+
+  nemAux::Timer algosTime_;
+  nemAux::Timer meshingTime_;
 };
 
 }  // namespace NUCMESH

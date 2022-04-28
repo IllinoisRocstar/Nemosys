@@ -358,12 +358,18 @@ if(ENABLE_OPENCASCADE)
   set(NucMesh_ARGUMENTS
       hex_array_pattern.json
       hex_array_pattern_REF.vtu
+      fuel_element_REF.vtu
       circlesInPolys.json
       circlesInPolys_REF.vtu
+      concentric_circles_mesh_size.json
+      concentric_circles_mesh_size_REF.vtu
       rectangular_array_pattern.json
       rectangular_array_pattern_REF.vtu
       cartesian_array.json
-      cartesian_array_REF.vtu)
+      cartesian_array_REF.vtu
+      fuel_assembly.json
+      fuel_assembly_REF.vtu
+      )
   if(ENABLE_NETGEN)
     list(APPEND NucMesh_ARGUMENTS
         simple_circles.json

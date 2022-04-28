@@ -31,14 +31,17 @@
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 
+#include <SMESHDS_GroupBase.hxx>
+#include <SMESHDS_Mesh.hxx>
 #include <SMESH_ControlsDef.hxx>
 #include <SMESH_Group.hxx>
 #include <SMESH_Mesh.hxx>
 #include <SMESH_MeshEditor.hxx>
 #include <SMESH_TypeDefs.hxx>
-#include <SMESHDS_GroupBase.hxx>
-#include <SMESHDS_Mesh.hxx>
 
+#include "AuxiliaryFunctions.H"
+#include "Geometry/GeoManager.H"
+#include "Geometry/GeometryIO.H"
 #include "Mesh/smeshGeoMesh.H"
 #include "Mesh/smeshUtils.H"
 #include "NucMesh/NucMeshGeo.H"
@@ -73,13 +76,27 @@ int NucMeshSrv::FillOutputPortInformation(int port, vtkInformation *info) {
 int NucMeshSrv::RequestData(vtkInformation *request,
                             vtkInformationVector **inputVector,
                             vtkInformationVector *outputVector) {
+  // Set up timers
+  nemAux::Timer geometryTime, meshWriteTime;
+  // Generate geometry
   NEM::NUCMESH::NucMeshGeo geo(0);
+  geometryTime.start();
   for (auto &pattern : conf_.geometryAndMesh) {
     if (pattern) {
       NEM::NUCMESH::ShapeBase::mergeGeo(geo, pattern->createGeo());
     }
   }
-  auto mesh = geo.computeMesh(*this->conf_.generator);
+  // Write the geometry to STEP file before meshing
+  if (!conf_.geoFileName.empty()) {
+    GEO::GeometryIO geoIO = GEO::GeometryIO(&geo, conf_.geoFileName);
+    geoIO.write(conf_.geoFileName);
+  }
+  geometryTime.stop();
+  // meshingTime.start();
+
+  //  Compute mesh
+  auto mesh = geo.computeMesh(*this->conf_.generator, conf_.useNetgen,
+                              conf_.maxMeshSize, conf_.minMeshSize);
   std::array<TIDSortedElemSet, 2> elems_nodes;
   {
     auto elemContainer =
@@ -91,6 +108,7 @@ int NucMeshSrv::RequestData(vtkInformation *request,
     std::copy(nodesContainer.begin(), nodesContainer.end(),
               std::inserter(elems_nodes[1], elems_nodes[1].end()));
   }
+  // Extrude the mesh if needed
   if (!conf_.extrudeSteps.empty()) {
     std::set<int> groupsToRemove;
     // Remove all old face groups
@@ -143,10 +161,23 @@ int NucMeshSrv::RequestData(vtkInformation *request,
     }
     for (auto &groupID : groupsToRemove) { mesh->RemoveGroup(groupID); }
   }
-
+  geo.meshingTime_.stop();
+  meshWriteTime.start();
   MSH::smeshGeoMesh *output = MSH::smeshGeoMesh::SafeDownCast(
       outputVector->GetInformationObject(0)->Get(vtkDataObject::DATA_OBJECT()));
   output->setSMeshMesh(std::move(mesh), std::move(conf_.generator));
+  meshWriteTime.stop();
+  double ms2s = 1.0 / 1000.;
+  double geomT = geometryTime.elapsed() * ms2s;
+  double algosT = geo.algosTime_.elapsed() * ms2s;
+  double meshT = geo.meshingTime_.elapsed() * ms2s;
+  double meshOutT = meshWriteTime.elapsed() * ms2s;
+  double total = geomT + algosT + meshT + meshOutT;
+  std::cout << " - Geometry Generation: " << geomT << "s" << std::endl;
+  std::cout << " - Grouping & Algos: " << algosT << "s" << std::endl;
+  std::cout << " - Mesh Generation: " << meshT << "s" << std::endl;
+  std::cout << " - Mesh Write: " << meshOutT << "s" << std::endl;
+  std::cout << " - Total time: " << total << "s" << std::endl;
   return 1;
 }
 

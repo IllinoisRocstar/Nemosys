@@ -130,6 +130,7 @@ struct NEMOSYS_EXPORT Ring {
    * @param radius Outer radius
    * @param meshType Options for meshing
    * @param material Name of material
+   * @param sideset Name of sideset
    */
   Ring(double radius, const RingMeshOption &meshType, std::string material = {},
        std::string sideset = {})
@@ -151,7 +152,8 @@ struct NEMOSYS_EXPORT PolyRing : public Ring {
    * @param radius Outer radius
    * @param meshType Options for meshing
    * @param rotation Rotation of outer edges
-   * @param id Material ID
+   * @param material Material name string
+   * @param sideset Sideset name string
    */
   PolyRing(ShapeType shapeType, double radius, const RingMeshOption &meshType,
            double rotation = 0, std::string material = {},

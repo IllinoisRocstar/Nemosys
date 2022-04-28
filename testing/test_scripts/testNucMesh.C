@@ -30,7 +30,9 @@
 
 #include <Drivers/NucMeshDriver.H>
 #include <NucMesh/CirclesAndPolys.H>
+#include <NucMesh/FuelElement.H>
 #include <NucMesh/HexagonalArray.H>
+#include <NucMesh/PolarArray.H>
 
 #include <iostream>
 #include <string>
@@ -46,6 +48,7 @@
 namespace {
 std::string hex_array_pattern_test_json;
 std::string hex_array_reference;
+std::string fuel_element_reference;
 std::vector<std::pair<std::string, std::string>> json_and_reference;
 std::string threeD_json;
 std::string threeD_reference;
@@ -56,7 +59,8 @@ std::unique_ptr<NEM::DRV::NucMeshDriver> getDriver(
   jsoncons::json inputjson;
   inputStream >> inputjson;
   auto driver = NEM::DRV::NemDriver::readJSON(inputjson);
-  auto nucMeshDriver = dynamic_cast<NEM::DRV::NucMeshDriver *>(driver.get());
+  // This was assigned but never accessed
+  // auto nucMeshDriver = dynamic_cast<NEM::DRV::NucMeshDriver *>(driver.get());
   return std::unique_ptr<NEM::DRV::NucMeshDriver>{
       dynamic_cast<NEM::DRV::NucMeshDriver *>(driver.release())};
 }
@@ -69,24 +73,20 @@ TEST(NucMesh, JSON_deserializer) {
   {  // Use C++ API
     NEM::DRV::NucMeshDriver::Opts opts{};
     using namespace NEM::NUCMESH;
-    std::cout << "making first C&P" << std::endl;
     CirclesAndPolys hex{
         6,
         {{PolyRing::ShapeType::POLYGON, 0.2, RingMeshOption::ApplyTriMesh(),
           30., "B"},
          {PolyRing::ShapeType::POLYGON, 0.3,
           RingMeshOption::ApplyStructuredMesh({2, 3}), 30., "C"}}};
-    std::cout << "making second C&P" << std::endl;
     CirclesAndPolys hex2{
         6,
         {{PolyRing::ShapeType::POLYGON, 0.05, RingMeshOption::ApplyTriMesh(),
           30., "B"},
          {PolyRing::ShapeType::POLYGON, 0.3,
           RingMeshOption::ApplyStructuredMesh({2, 3}), 30., "D"}}};
-    std::cout << "Done making C&P" << std::endl;
     auto &arr = opts.makeShape<HexagonalArray>(3, 0.3 * std::sqrt(3) + 0.1);
-    std::cout << "opts.makeShape" << std::endl;
-    arr.setCenter({-1.5, 0, 0});
+    arr.setCenter({-1.5, 0., 0.});
     arr.insertPatternShape(1, std::move(hex));
     arr.insertPatternShape(2, std::move(hex2));
     for (int i = 0; i < 3; ++i) {
@@ -104,9 +104,7 @@ TEST(NucMesh, JSON_deserializer) {
     arr.setPatternCoordCenter(-2, 0, 1);
     NEM::DRV::NucMeshDriver driver{NEM::DRV::NucMeshDriver::Files{{}},
                                    std::move(opts)};
-    std::cout << "drawing" << std::endl;
     vug1 = driver.draw();
-    std::cout << "drawing done" << std::endl;
   }
   {  // Read from JSON
     auto driver2 = getDriver(hex_array_pattern_test_json);
@@ -124,8 +122,116 @@ TEST(NucMesh, JSON_deserializer) {
   auto gold_mesh = vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(
       NEM::MSH::Read(hex_array_reference));
   ASSERT_NE(gold_mesh, nullptr);
-  EXPECT_EQ(NEM::MSH::diffMesh(gold_mesh, vug2, 1e-9, 1e-6, 0.03, 0.03), 0);
+  EXPECT_EQ(NEM::MSH::diffMesh(gold_mesh, vug2, 1.e-9, 1.e-6, 0.03, 0.03), 0);
 }
+
+TEST(NucMesh, FuelElement) {
+  vtkSmartPointer<NEM::MSH::geoMeshBase> generated;
+  {
+    NEM::DRV::NucMeshDriver::Opts opts{};
+    using namespace NEM::NUCMESH;
+    std::map<std::string, PlateMeshOption> meshType_map = {
+        {"End", PlateMeshOption::ApplyStructuredMesh({3, 1})},
+        {"Side", PlateMeshOption::ApplyStructuredMesh({3, 2})},
+        {"Plate", PlateMeshOption::ApplyStructuredMesh({1, 12})},
+        {"Fuel", PlateMeshOption::ApplyStructuredMesh({1, 10})}};
+    std::map<std::string, std::string> mat_map = {
+        {"End", "A"}, {"Side", "B"}, {"Plate", "C"}, {"Fuel", "D"}};
+    std::vector<Plate> plates19{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.4953, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.127, 0.0508, 0.47498, 0.0813, 0.4445, meshType_map, mat_map},
+        {0.19812, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.254, 0.0508, 0.47498, 0.0813, 0.4953, meshType_map, mat_map}};
+
+    auto &fuelelement = opts.makeShape<FuelElement>(7.6581, 45, plates19);
+    NEM::DRV::NucMeshDriver driver{NEM::DRV::NucMeshDriver::Files{{}},
+                                   std::move(opts)};
+    generated = driver.draw();
+
+    auto gold_mesh = vtkSmartPointer<NEM::MSH::geoMeshBase>::Take(
+        NEM::MSH::Read(fuel_element_reference));
+    ASSERT_NE(gold_mesh, nullptr);
+    EXPECT_EQ(
+        NEM::MSH::diffMesh(gold_mesh, generated, 1.e-9, 1.e-6, 0.03, 0.03), 0);
+  }
+}
+
+/*TEST(NucMesh, FuelAssembly) {
+  vtkSmartPointer<NEM::MSH::geoMeshBase> vug1;
+  {
+    NEM::DRV::NucMeshDriver::Opts opts{};
+    using namespace NEM::NUCMESH;
+    std::map<std::string, PlateMeshOption> meshType_map = {
+        {"End", PlateMeshOption::ApplyStructuredMesh({3,1})},
+        {"Side", PlateMeshOption::ApplyStructuredMesh({3,2})},
+        {"Plate", PlateMeshOption::ApplyStructuredMesh({1,12})},
+        {"Fuel", PlateMeshOption::ApplyStructuredMesh({1,10})}};
+    std::map<std::string, std::string> mat_map = {
+        {"End", "A"}, {"Side", "B"}, {"Plate", "C"}, {"Fuel", "D"}};
+    std::vector<Plate> plates1{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map}};
+    std::vector<Plate> plates2{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.15, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map}};
+    std::vector<Plate> plates3{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.1413, meshType_map, mat_map}};
+    std::vector<Plate> plates4{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map}};
+    std::vector<Plate> plates18{
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map},
+        {0.2032, 0.0508, 0.47498, 0.0813, 0.2413, meshType_map, mat_map},
+        {0.2032, 0.0, 0.47498, 0.0813, 0.1413, meshType_map, mat_map}};
+    //FuelElement fe{7.5, 45, plates18 };
+    auto &fuelelement = opts.makeShape<FuelElement>(7.5, 45, plates2);
+
+    *//*auto &arr = opts.makeShape<PolarArray>(4, 0, 180, 0, true);
+    arr.setCenter({0,0,0});
+    arr.insertPatternShape(0, fe);
+    arr.insertPatternShape(1, fe);
+    arr.insertPatternShape(2, fe);
+    arr.insertPatternShape(3, fe);*//*
+
+    NEM::DRV::NucMeshDriver driver{NEM::DRV::NucMeshDriver::Files{{"fuel_assembly.vtu"}},
+                                   std::move(opts)};
+    //vug1 = driver.draw();
+    //driver.execute();
+  }
+}*/
 
 // Regression tests
 TEST(NucMesh, Match_Reference) {
@@ -145,7 +251,7 @@ TEST(NucMesh, Match_Reference) {
       // The tolerance is so large because MEFISTO2 C and Fortran version
       // differences (despite being translated using f2c)
       EXPECT_EQ(
-          NEM::MSH::diffMesh(gold_mesh, generated_mesh, 1e-9, 1e-6, 0.1, 0.1),
+          NEM::MSH::diffMesh(gold_mesh, generated_mesh, 1.e-9, 1.e-6, 0.1, 0.1),
           0);
     }
   }
@@ -171,7 +277,8 @@ int main(int argc, char **argv) {
   assert(argc >= 3 && argc % 2 == 1);
   hex_array_pattern_test_json = argv[1];
   hex_array_reference = argv[2];
-  for (int i = 3; i < argc - 1; i += 2) {
+  fuel_element_reference = argv[3];
+  for (int i = 4; i < argc - 1; i += 2) {
 #ifdef HAVE_NGEN
     if (i == argc - 2) {
       threeD_json = argv[i];
